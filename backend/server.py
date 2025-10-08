@@ -3681,21 +3681,25 @@ async def update_parametres_remplacements(
 
 # ==================== EPI ROUTES ====================
 
-@api_router.post("/epi", response_model=EPIEmploye)
-async def create_epi(epi: EPIEmployeCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/epi", response_model=EPIEmploye)
+async def create_epi(tenant_slug: str, epi: EPIEmployeCreate, current_user: User = Depends(get_current_user)):
     """Crée un nouvel EPI pour un employé (Admin/Superviseur)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier si l'employé existe
-    employe = await db.users.find_one({"id": epi.employe_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si l'employé existe dans ce tenant
+    employe = await db.users.find_one({"id": epi.employe_id, "tenant_id": tenant.id})
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
     # Vérifier qu'il n'existe pas déjà un EPI de ce type pour cet employé
     existing_epi = await db.epi_employes.find_one({
         "employe_id": epi.employe_id,
-        "type_epi": epi.type_epi
+        "type_epi": epi.type_epi,
+        "tenant_id": tenant.id
     })
     
     if existing_epi:
@@ -3704,27 +3708,38 @@ async def create_epi(epi: EPIEmployeCreate, current_user: User = Depends(get_cur
             detail=f"Un EPI de type {epi.type_epi} existe déjà pour cet employé"
         )
     
-    epi_obj = EPIEmploye(**epi.dict())
+    epi_dict = epi.dict()
+    epi_dict["tenant_id"] = tenant.id
+    epi_obj = EPIEmploye(**epi_dict)
     await db.epi_employes.insert_one(epi_obj.dict())
     
     return epi_obj
 
-@api_router.get("/epi/employe/{employe_id}", response_model=List[EPIEmploye])
-async def get_epi_employe(employe_id: str, current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/epi/employe/{employe_id}", response_model=List[EPIEmploye])
+async def get_epi_employe(tenant_slug: str, employe_id: str, current_user: User = Depends(get_current_user)):
     """Récupère tous les EPI d'un employé"""
     # Admin et superviseur peuvent voir tous les EPI
     # Employé peut voir seulement ses propres EPI
     if current_user.role not in ["admin", "superviseur"] and current_user.id != employe_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    epis = await db.epi_employes.find({"employe_id": employe_id}).to_list(100)
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epi_employes.find({
+        "employe_id": employe_id,
+        "tenant_id": tenant.id
+    }).to_list(100)
     cleaned_epis = [clean_mongo_doc(epi) for epi in epis]
     return [EPIEmploye(**epi) for epi in cleaned_epis]
 
-@api_router.get("/epi/{epi_id}", response_model=EPIEmploye)
-async def get_epi_by_id(epi_id: str, current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPIEmploye)
+async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Récupère un EPI spécifique par son ID"""
-    epi = await db.epi_employes.find_one({"id": epi_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
