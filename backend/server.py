@@ -1315,7 +1315,7 @@ class EPIEmploye(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class EPIEmployeCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     employe_id: str
     type_epi: str
     taille: str
