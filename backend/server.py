@@ -724,13 +724,16 @@ async def update_mon_profil(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour profil: {str(e)}")
 
-@api_router.put("/users/{user_id}", response_model=User)
-async def update_user(user_id: str, user_update: UserCreate, current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/users/{user_id}", response_model=User)
+async def update_user(tenant_slug: str, user_id: str, user_update: UserCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"id": user_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if user exists dans ce tenant
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
@@ -743,36 +746,40 @@ async def update_user(user_id: str, user_update: UserCreate, current_user: User 
         user_dict["mot_de_passe_hash"] = existing_user["mot_de_passe_hash"]
     
     user_dict["id"] = user_id
+    user_dict["tenant_id"] = tenant.id  # Assurer le tenant_id
     user_dict["statut"] = existing_user.get("statut", "Actif")
     user_dict["created_at"] = existing_user.get("created_at")
     
-    result = await db.users.replace_one({"id": user_id}, user_dict)
+    result = await db.users.replace_one({"id": user_id, "tenant_id": tenant.id}, user_dict)
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour l'utilisateur")
     
-    updated_user = await db.users.find_one({"id": user_id})
+    updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
     return User(**updated_user)
 
-@api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/users/{user_id}")
+async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"id": user_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if user exists dans ce tenant
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     # Delete user
-    result = await db.users.delete_one({"id": user_id})
+    result = await db.users.delete_one({"id": user_id, "tenant_id": tenant.id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de supprimer l'utilisateur")
     
-    # Also delete related data
-    await db.disponibilites.delete_many({"user_id": user_id})
-    await db.assignations.delete_many({"user_id": user_id})
-    await db.demandes_remplacement.delete_many({"demandeur_id": user_id})
+    # Also delete related data (filtré par tenant_id aussi)
+    await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.assignations.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.demandes_remplacement.delete_many({"demandeur_id": user_id, "tenant_id": tenant.id})
     
     return {"message": "Utilisateur supprimé avec succès"}
 
