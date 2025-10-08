@@ -1867,7 +1867,7 @@ async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depen
         stats_par_employe = []
         for user in users:
             user_assignations = [a for a in assignations if a["user_id"] == user["id"]]
-            user_disponibilites = await db.disponibilites.find({"user_id": user["id"]}).to_list(100)
+            user_disponibilites = await db.disponibilites.find({"user_id": user["id"], "tenant_id": tenant.id}).to_list(100)
             
             stats_par_employe.append({
                 "id": user["id"],
