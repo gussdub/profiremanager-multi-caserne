@@ -7116,7 +7116,7 @@ const AppLayout = () => {
       case 'parametres':
         return (
           <Suspense fallback={<LoadingComponent />}>
-            <Parametres user={user} />
+            <Parametres user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
       case 'monprofil':
