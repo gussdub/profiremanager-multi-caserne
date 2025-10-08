@@ -3297,7 +3297,18 @@ const Planning = () => {
               <div className="user-selection">
                 <h4>Sélectionner un pompier:</h4>
                 <div className="user-list">
-                  {users.map(userOption => (
+                  {users
+                    .filter(userOption => {
+                      // Filtrer les utilisateurs déjà assignés à cette garde
+                      const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                      const alreadyAssigned = assignations.some(a => 
+                        a.date === dateStr && 
+                        a.type_garde_id === selectedSlot.typeGarde.id && 
+                        a.user_id === userOption.id
+                      );
+                      return !alreadyAssigned;
+                    })
+                    .map(userOption => (
                     <div 
                       key={userOption.id} 
                       className="user-option"
@@ -3309,6 +3320,19 @@ const Planning = () => {
                       <span className="user-status">{userOption.statut}</span>
                     </div>
                   ))}
+                  {users.filter(userOption => {
+                    const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                    const alreadyAssigned = assignations.some(a => 
+                      a.date === dateStr && 
+                      a.type_garde_id === selectedSlot.typeGarde.id && 
+                      a.user_id === userOption.id
+                    );
+                    return !alreadyAssigned;
+                  }).length === 0 && (
+                    <p style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>
+                      Tous les pompiers sont déjà assignés à cette garde.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
