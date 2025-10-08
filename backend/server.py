@@ -873,33 +873,40 @@ def clean_mongo_doc(doc):
         doc.pop("_id", None)
     return doc
 
-@api_router.put("/types-garde/{type_garde_id}", response_model=TypeGarde)
-async def update_type_garde(type_garde_id: str, type_garde_update: TypeGardeCreate, current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/types-garde/{type_garde_id}", response_model=TypeGarde)
+async def update_type_garde(tenant_slug: str, type_garde_id: str, type_garde_update: TypeGardeCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if type garde exists
-    existing_type = await db.types_garde.find_one({"id": type_garde_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if type garde exists dans ce tenant
+    existing_type = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
     if not existing_type:
         raise HTTPException(status_code=404, detail="Type de garde non trouvé")
     
     # Update type garde data
     type_dict = type_garde_update.dict()
     type_dict["id"] = type_garde_id
+    type_dict["tenant_id"] = tenant.id
     type_dict["created_at"] = existing_type.get("created_at")
     
-    result = await db.types_garde.replace_one({"id": type_garde_id}, type_dict)
+    result = await db.types_garde.replace_one({"id": type_garde_id, "tenant_id": tenant.id}, type_dict)
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour le type de garde")
     
-    updated_type = await db.types_garde.find_one({"id": type_garde_id})
+    updated_type = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
     updated_type = clean_mongo_doc(updated_type)
     return TypeGarde(**updated_type)
 
-@api_router.delete("/types-garde/{type_garde_id}")
-async def delete_type_garde(type_garde_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/types-garde/{type_garde_id}")
+async def delete_type_garde(tenant_slug: str, type_garde_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     # Check if type garde exists
     existing_type = await db.types_garde.find_one({"id": type_garde_id})
