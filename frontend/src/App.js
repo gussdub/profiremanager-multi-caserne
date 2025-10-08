@@ -5950,18 +5950,18 @@ const MonProfil = () => {
         
         // Créer un objet de tailles pour l'édition
         const tailles = {};
-        episResponse.data.forEach(epi => {
+        episData.forEach(epi => {
           tailles[epi.type_epi] = epi.taille;
         });
         setEpiTailles(tailles);
         
         setProfileData({
-          nom: userResponse.data.nom,
-          prenom: userResponse.data.prenom,
-          email: userResponse.data.email,
-          telephone: userResponse.data.telephone,
-          contact_urgence: userResponse.data.contact_urgence || '',
-          heures_max_semaine: userResponse.data.heures_max_semaine || 25
+          nom: userData.nom,
+          prenom: userData.prenom,
+          email: userData.email,
+          telephone: userData.telephone,
+          contact_urgence: userData.contact_urgence || '',
+          heures_max_semaine: userData.heures_max_semaine || 25
         });
 
       } catch (error) {
@@ -5974,7 +5974,7 @@ const MonProfil = () => {
     if (user?.id) {
       fetchUserProfile();
     }
-  }, [user?.id]);
+  }, [user?.id, tenantSlug]);
 
   const handleSaveProfile = async () => {
     try {
