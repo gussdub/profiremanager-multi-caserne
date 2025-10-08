@@ -7065,7 +7065,8 @@ const AppLayout = () => {
 
 // Main App Component
 const App = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const { isSuperAdmin } = useTenant();
 
   if (loading) {
     return (
@@ -7075,6 +7076,19 @@ const App = () => {
     );
   }
 
+  // Si l'utilisateur est un Super-Admin, afficher le dashboard super-admin
+  if (user && isSuperAdmin) {
+    return (
+      <div className="App">
+        <Suspense fallback={<LoadingComponent />}>
+          <SuperAdminDashboard onLogout={logout} />
+        </Suspense>
+        <Toaster />
+      </div>
+    );
+  }
+
+  // Sinon, afficher l'interface normale
   return (
     <div className="App">
       {user ? <AppLayout /> : <Login />}
