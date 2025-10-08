@@ -2773,7 +2773,7 @@ const Planning = () => {
       console.error('Error removing all personnel:', error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de supprimer le personnel de cette garde",
+        description: error.detail || error.message || "Impossible de supprimer le personnel de cette garde",
         variant: "destructive"
       });
     }
@@ -2797,7 +2797,7 @@ const Planning = () => {
         return;
       }
 
-      await axios.delete(`${API}/planning/assignation/${assignationToRemove.id}`);
+      await apiDelete(tenantSlug, `/planning/assignation/${assignationToRemove.id}`);
       
       toast({
         title: "Personne retirée",
