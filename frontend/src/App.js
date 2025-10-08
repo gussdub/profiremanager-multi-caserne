@@ -2880,7 +2880,7 @@ const Planning = () => {
         assignation_type: "manuel_avance"
       };
 
-      await axios.post(`${API}/planning/assignation-avancee`, assignmentData);
+      await apiPost(tenantSlug, '/planning/assignation-avancee', assignmentData);
 
       const selectedUser = users.find(u => u.id === advancedAssignConfig.user_id);
       const selectedTypeGarde = typesGarde.find(t => t.id === advancedAssignConfig.type_garde_id);
