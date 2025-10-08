@@ -54,7 +54,19 @@
 - `PUT /{tenant_slug}/notifications/{id}/marquer-lu` - Marquer lue
 - `PUT /{tenant_slug}/notifications/marquer-toutes-lues` - Marquer toutes lues
 
-**Total : 34/55 routes migrées (62%)**
+### Module Auth/Me & Profil (2 routes) - COMPLET ✅
+- `GET /{tenant_slug}/auth/me` - Informations utilisateur connecté
+- `PUT /{tenant_slug}/users/mon-profil` - Modifier son profil
+
+### Module EPI (6 routes) - COMPLET ✅
+- `POST /{tenant_slug}/epi` - Créer EPI
+- `GET /{tenant_slug}/epi/employe/{employe_id}` - Liste EPI employé
+- `GET /{tenant_slug}/epi/{epi_id}` - Détails EPI
+- `PUT /{tenant_slug}/epi/{epi_id}` - Modifier EPI
+- `DELETE /{tenant_slug}/epi/{epi_id}` - Supprimer EPI
+- `POST /{tenant_slug}/epi/{epi_id}/inspection` - Ajouter inspection
+
+**Total : 42/55 routes migrées (76%)**
 
 ---
 
