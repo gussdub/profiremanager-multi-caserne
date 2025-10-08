@@ -3152,8 +3152,13 @@ const Planning = () => {
                     }
 
                     const coverage = getGardeCoverage(date, typeGarde);
-                    const assignation = getAssignationForSlot(date, typeGarde.id);
-                    const assignedUser = assignation ? getUserById(assignation.user_id) : null;
+                    const dateStr = date.toISOString().split('T')[0];
+                    const gardeAssignations = assignations.filter(a => 
+                      a.date === dateStr && a.type_garde_id === typeGarde.id
+                    );
+                    const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                    const assignedCount = assignedUsers.length;
+                    const requiredCount = typeGarde.personnel_requis;
 
                     return (
                       <div
@@ -3164,7 +3169,7 @@ const Planning = () => {
                           borderColor: getCoverageColor(coverage)
                         }}
                         onClick={() => {
-                          if (assignation && assignedUser) {
+                          if (assignedUsers.length > 0) {
                             openGardeDetails(date, typeGarde);
                           } else if (user.role !== 'employe') {
                             openAssignModal(date, typeGarde);
@@ -3178,20 +3183,47 @@ const Planning = () => {
                         </div>
                         
                         <div className="garde-content">
-                          {assignedUser ? (
+                          {assignedUsers.length > 0 ? (
                             <div className="assigned-info">
-                              <span className="assigned-name">{assignedUser.prenom} {assignedUser.nom.charAt(0)}.</span>
-                              <span className="assigned-grade">{assignedUser.grade}</span>
-                              {typeGarde.personnel_requis > 1 && (
-                                <span className="more-count">+{typeGarde.personnel_requis - 1}</span>
+                              {/* Afficher tous les noms si moins de 3, sinon afficher les 2 premiers + compteur */}
+                              {assignedUsers.length <= 2 ? (
+                                assignedUsers.map((user, idx) => (
+                                  <div key={idx} className="assigned-name-item">
+                                    <span className="assigned-name">{user.prenom} {user.nom.charAt(0)}.</span>
+                                    <span className="assigned-grade">{user.grade}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <>
+                                  <div className="assigned-name-item">
+                                    <span className="assigned-name">{assignedUsers[0].prenom} {assignedUsers[0].nom.charAt(0)}.</span>
+                                    <span className="assigned-grade">{assignedUsers[0].grade}</span>
+                                  </div>
+                                  <div className="assigned-name-item">
+                                    <span className="assigned-name">{assignedUsers[1].prenom} {assignedUsers[1].nom.charAt(0)}.</span>
+                                    <span className="assigned-grade">{assignedUsers[1].grade}</span>
+                                  </div>
+                                  {assignedUsers.length > 2 && (
+                                    <span className="more-count">+{assignedUsers.length - 2}</span>
+                                  )}
+                                </>
                               )}
                             </div>
                           ) : (
                             <div className="vacant-info">
                               <span className="vacant-text">Vacant</span>
-                              <span className="personnel-need">{typeGarde.personnel_requis}p</span>
                             </div>
                           )}
+                          
+                          {/* Afficher le ratio en bas */}
+                          <div className="personnel-ratio" style={{
+                            marginTop: '8px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: coverage === 'complete' ? '#10b981' : coverage === 'partielle' ? '#f59e0b' : '#ef4444'
+                          }}>
+                            {assignedCount}/{requiredCount}
+                          </div>
                         </div>
                         
                         <div className="coverage-indicator">
