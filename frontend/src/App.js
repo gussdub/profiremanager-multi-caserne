@@ -1403,7 +1403,7 @@ const Personnel = () => {
     }
 
     try {
-      await axios.delete(`${API}/epi/${epiId}`);
+      await apiDelete(tenantSlug, `/epi/${epiId}`);
       
       toast({
         title: "EPI supprimé",
@@ -1412,8 +1412,8 @@ const Personnel = () => {
       });
       
       // Recharger les EPI
-      const response = await axios.get(`${API}/epi/employe/${selectedUser.id}`);
-      setUserEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
     } catch (error) {
       toast({
         title: "Erreur",
