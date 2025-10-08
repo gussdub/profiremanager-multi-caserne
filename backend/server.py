@@ -607,10 +607,14 @@ async def login_legacy(user_login: UserLogin):
         }
     }
 
-@api_router.get("/auth/me")
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/auth/me")
+async def get_current_user_info(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant (optionnel ici car déjà validé dans le token)
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     return {
         "id": current_user.id,
+        "tenant_id": current_user.tenant_id,
         "nom": current_user.nom,
         "prenom": current_user.prenom,
         "email": current_user.email,
