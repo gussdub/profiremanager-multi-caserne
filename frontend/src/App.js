@@ -4686,14 +4686,14 @@ const Formations = () => {
   const handleInscription = async (sessionId, isInscrit) => {
     try {
       if (isInscrit) {
-        await axios.delete(`${API}/sessions-formation/${sessionId}/desinscription`);
+        await apiDelete(tenantSlug, `/sessions-formation/${sessionId}/desinscription`);
         toast({
           title: "Désinscription réussie",
           description: "Vous êtes désinscrit de cette formation",
           variant: "success"
         });
       } else {
-        await axios.post(`${API}/sessions-formation/${sessionId}/inscription`);
+        await apiPost(tenantSlug, `/sessions-formation/${sessionId}/inscription`, {});
         toast({
           title: "Inscription réussie",
           description: "Vous êtes maintenant inscrit à cette formation",
@@ -4707,7 +4707,7 @@ const Formations = () => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de traiter l'inscription",
+        description: error.detail || error.message || "Impossible de traiter l'inscription",
         variant: "destructive"
       });
     }
