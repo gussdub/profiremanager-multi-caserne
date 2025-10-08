@@ -6550,7 +6550,7 @@ const Rapports = () => {
 
   const handleExportExcel = async (typeRapport = "general") => {
     try {
-      const response = await axios.get(`${API}/rapports/export-excel?type_rapport=${typeRapport}`);
+      const responseData = await apiGet(tenantSlug, `/rapports/export-excel?type_rapport=${typeRapport}`);
       
       // Décoder le base64 et créer le téléchargement
       const binaryString = atob(response.data.data);
