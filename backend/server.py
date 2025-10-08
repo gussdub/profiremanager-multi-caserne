@@ -1471,26 +1471,33 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
 # ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
 # Demandes de congé routes
-@api_router.post("/demandes-conge", response_model=DemandeCongé)
-async def create_demande_conge(demande: DemandeCongeCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/demandes-conge", response_model=DemandeCongé)
+async def create_demande_conge(tenant_slug: str, demande: DemandeCongeCreate, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     # Calculer le nombre de jours
     date_debut = datetime.strptime(demande.date_debut, "%Y-%m-%d")
     date_fin = datetime.strptime(demande.date_fin, "%Y-%m-%d")
     nombre_jours = (date_fin - date_debut).days + 1
     
-    demande_obj = DemandeCongé(
-        **demande.dict(),
-        demandeur_id=current_user.id,
-        nombre_jours=nombre_jours
-    )
+    demande_dict = demande.dict()
+    demande_dict["tenant_id"] = tenant.id
+    demande_dict["demandeur_id"] = current_user.id
+    demande_dict["nombre_jours"] = nombre_jours
+    demande_obj = DemandeCongé(**demande_dict)
     await db.demandes_conge.insert_one(demande_obj.dict())
     
     # Créer notification pour approbation
     if current_user.role == "employe":
-        # Notifier les superviseurs et admins
-        superviseurs_admins = await db.users.find({"role": {"$in": ["superviseur", "admin"]}}).to_list(100)
+        # Notifier les superviseurs et admins de ce tenant
+        superviseurs_admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
         for superviseur in superviseurs_admins:
             await creer_notification(
+                tenant_id=tenant.id,
                 destinataire_id=superviseur["id"],
                 type="conge_demande",
                 titre="Nouvelle demande de congé",
@@ -1501,36 +1508,45 @@ async def create_demande_conge(demande: DemandeCongeCreate, current_user: User =
     
     return demande_obj
 
-@api_router.get("/demandes-conge", response_model=List[DemandeCongé])
-async def get_demandes_conge(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/demandes-conge", response_model=List[DemandeCongé])
+async def get_demandes_conge(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     if current_user.role == "employe":
         # Employés voient seulement leurs demandes
-        demandes = await db.demandes_conge.find({"demandeur_id": current_user.id}).to_list(1000)
+        demandes = await db.demandes_conge.find({
+            "tenant_id": tenant.id,
+            "demandeur_id": current_user.id
+        }).to_list(1000)
     else:
-        # Superviseurs et admins voient toutes les demandes
-        demandes = await db.demandes_conge.find().to_list(1000)
+        # Superviseurs et admins voient toutes les demandes de leur tenant
+        demandes = await db.demandes_conge.find({"tenant_id": tenant.id}).to_list(1000)
     
     cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
     return [DemandeCongé(**demande) for demande in cleaned_demandes]
 
-@api_router.put("/demandes-conge/{demande_id}/approuver")
-async def approuver_demande_conge(demande_id: str, action: str, commentaire: str = "", current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/demandes-conge/{demande_id}/approuver")
+async def approuver_demande_conge(tenant_slug: str, demande_id: str, action: str, commentaire: str = "", current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    demande = await db.demandes_conge.find_one({"id": demande_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande = await db.demandes_conge.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
     # Vérifier les permissions : superviseur peut approuver employés, admin peut tout approuver
-    demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
+    demandeur = await db.users.find_one({"id": demande["demandeur_id"], "tenant_id": tenant.id})
     if current_user.role == "superviseur" and demandeur["role"] != "employe":
         raise HTTPException(status_code=403, detail="Un superviseur ne peut approuver que les demandes d'employés")
     
     statut = "approuve" if action == "approuver" else "refuse"
     
     await db.demandes_conge.update_one(
-        {"id": demande_id},
+        {"id": demande_id, "tenant_id": tenant.id},
         {
             "$set": {
                 "statut": statut,
@@ -1542,7 +1558,6 @@ async def approuver_demande_conge(demande_id: str, action: str, commentaire: str
     )
     
     # Créer notification pour le demandeur
-    demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
     if demandeur:
         titre = f"Congé {statut}" if statut == "approuve" else "Congé refusé"
         message = f"Votre demande de congé du {demande['date_debut']} au {demande['date_fin']} a été {statut}e"
@@ -1550,6 +1565,7 @@ async def approuver_demande_conge(demande_id: str, action: str, commentaire: str
             message += f". Commentaire: {commentaire}"
         
         await creer_notification(
+            tenant_id=tenant.id,
             destinataire_id=demande["demandeur_id"],
             type=f"conge_{statut}",
             titre=titre,
