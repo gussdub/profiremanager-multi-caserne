@@ -6203,11 +6203,23 @@ const MonProfil = () => {
               </div>
 
               <div className="form-field">
+                <Label>Adresse</Label>
+                <Input
+                  value={profileData.adresse || ''}
+                  onChange={(e) => setProfileData({...profileData, adresse: e.target.value})}
+                  disabled={!isEditing}
+                  placeholder="123 Rue Principale, Ville, Province"
+                  data-testid="profile-address-input"
+                />
+              </div>
+
+              <div className="form-field">
                 <Label>Contact d'urgence</Label>
                 <Input
                   value={profileData.contact_urgence || ''}
                   onChange={(e) => setProfileData({...profileData, contact_urgence: e.target.value})}
                   disabled={!isEditing}
+                  placeholder="Nom et téléphone du contact d'urgence"
                   data-testid="profile-emergency-input"
                 />
               </div>
