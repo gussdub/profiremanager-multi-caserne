@@ -1162,7 +1162,7 @@ const Personnel = () => {
         mot_de_passe: 'TempPassword123!' // Mot de passe temporaire par défaut
       };
 
-      await axios.post(`${API}/users`, userToCreate);
+      await apiPost(tenantSlug, '/users', userToCreate);
       toast({
         title: "Pompier créé",
         description: "Le nouveau pompier a été ajouté avec succès. Configurez son accès dans Paramètres > Comptes d'Accès",
@@ -1172,12 +1172,12 @@ const Personnel = () => {
       setShowCreateModal(false);
       resetNewUser();
       
-      const response = await axios.get(`${API}/users`);
-      setUsers(response.data);
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de créer le pompier",
+        description: error.detail || error.message || "Impossible de créer le pompier",
         variant: "destructive"
       });
     }
