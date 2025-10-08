@@ -6014,7 +6014,7 @@ const MonProfil = () => {
       // Mettre à jour chaque EPI avec sa nouvelle taille
       const updatePromises = myEPIs.map(epi => {
         if (epiTailles[epi.type_epi] && epiTailles[epi.type_epi] !== epi.taille) {
-          return axios.put(`${API}/epi/${epi.id}`, {
+          return apiPut(tenantSlug, `/epi/${epi.id}`, {
             taille: epiTailles[epi.type_epi]
           });
         }
@@ -6024,8 +6024,8 @@ const MonProfil = () => {
       await Promise.all(updatePromises);
 
       // Recharger les EPI
-      const response = await axios.get(`${API}/epi/employe/${user.id}`);
-      setMyEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      setMyEPIs(episData);
 
       toast({
         title: "Tailles mises à jour",
