@@ -5909,6 +5909,7 @@ const MesDisponibilites = () => {
 // Mon Profil Component épuré - sans disponibilités et remplacements
 const MonProfil = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [userProfile, setUserProfile] = useState(null);
   const [formations, setFormations] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState({
@@ -5932,18 +5933,20 @@ const MonProfil = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      if (!tenantSlug) return;
+      
       try {
-        const [userResponse, formationsResponse, statsResponse, episResponse] = await Promise.all([
-          axios.get(`${API}/users/${user.id}`),
-          axios.get(`${API}/formations`),
-          axios.get(`${API}/users/${user.id}/stats-mensuelles`),
-          axios.get(`${API}/epi/employe/${user.id}`)
+        const [userData, formationsData, statsData, episData] = await Promise.all([
+          apiGet(tenantSlug, `/users/${user.id}`),
+          apiGet(tenantSlug, '/formations'),
+          apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`),
+          apiGet(tenantSlug, `/epi/employe/${user.id}`)
         ]);
         
-        setUserProfile(userResponse.data);
-        setFormations(formationsResponse.data);
-        setMonthlyStats(statsResponse.data);
-        setMyEPIs(episResponse.data);
+        setUserProfile(userData);
+        setFormations(formationsData);
+        setMonthlyStats(statsData);
+        setMyEPIs(episData);
         
         // Créer un objet de tailles pour l'édition
         const tailles = {};
