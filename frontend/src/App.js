@@ -7094,6 +7094,7 @@ const Rapports = () => {
 const AppLayout = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
 
   const renderCurrentPage = () => {
     switch (currentPage) {
