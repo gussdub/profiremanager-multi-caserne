@@ -933,6 +933,7 @@ async def delete_formation(formation_id: str, current_user: User = Depends(get_c
 
 class SessionFormation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     titre: str
     competence_id: str  # Lien vers Formation (compétence)
     duree_heures: int
@@ -948,6 +949,7 @@ class SessionFormation(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SessionFormationCreate(BaseModel):
+    tenant_id: str
     titre: str
     competence_id: str
     duree_heures: int
@@ -961,6 +963,7 @@ class SessionFormationCreate(BaseModel):
 
 class InscriptionFormation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     session_id: str
     user_id: str
     date_inscription: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -968,6 +971,7 @@ class InscriptionFormation(BaseModel):
 
 class DemandeCongé(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     demandeur_id: str
     type_conge: str  # maladie, vacances, parental, personnel
     date_debut: str  # YYYY-MM-DD
@@ -983,6 +987,7 @@ class DemandeCongé(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DemandeCongeCreate(BaseModel):
+    tenant_id: str
     type_conge: str
     date_debut: str
     date_fin: str
@@ -992,6 +997,7 @@ class DemandeCongeCreate(BaseModel):
 
 class Notification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     destinataire_id: str
     type: str  # remplacement_disponible, conge_approuve, conge_refuse, conge_demande, planning_assigne
     titre: str
@@ -1004,6 +1010,7 @@ class Notification(BaseModel):
 
 class NotificationRemplacement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     demande_remplacement_id: str
     destinataire_id: str
     message: str
@@ -1015,6 +1022,7 @@ class NotificationRemplacement(BaseModel):
 
 class ParametresRemplacements(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
     taille_groupe: int = 3  # Pour mode groupe_sequentiel
     delai_attente_heures: int = 24  # Délai avant de passer au suivant
