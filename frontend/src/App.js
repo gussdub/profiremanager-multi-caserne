@@ -3667,7 +3667,7 @@ const Remplacements = () => {
     }
 
     try {
-      await axios.post(`${API}/remplacements`, newDemande);
+      await apiPost(tenantSlug, '/remplacements', newDemande);
       toast({
         title: "Demande créée",
         description: "Votre demande de remplacement a été soumise et la recherche automatique va commencer",
@@ -3696,7 +3696,7 @@ const Remplacements = () => {
     }
 
     try {
-      await axios.post(`${API}/demandes-conge`, newConge);
+      await apiPost(tenantSlug, '/demandes-conge', newConge);
       toast({
         title: "Demande de congé créée",
         description: "Votre demande a été soumise et sera examinée par votre superviseur",
@@ -3718,7 +3718,7 @@ const Remplacements = () => {
     if (user.role === 'employe') return;
 
     try {
-      await axios.put(`${API}/demandes-conge/${demandeId}/approuver?action=${action}&commentaire=${commentaire}`);
+      await apiPut(tenantSlug, `/demandes-conge/${demandeId}/approuver?action=${action}&commentaire=${commentaire}`, {});
       toast({
         title: action === 'approuver' ? "Congé approuvé" : "Congé refusé",
         description: `La demande de congé a été ${action === 'approuver' ? 'approuvée' : 'refusée'}`,
