@@ -457,17 +457,16 @@ const Parametres = ({ user, tenantSlug }) => {
 
   const handleSaveValidationParams = async () => {
     try {
-      // Ici on pourrait sauvegarder les paramètres en base de données
-      // await axios.put(`${API}/validation-params`, validationParams);
+      await axios.put(`${API}/parametres/validation-planning`, validationParams);
       toast({
         title: "Configuration sauvegardée",
-        description: "Les paramètres de validation ont été enregistrés",
+        description: "Les paramètres de validation ont été enregistrés avec succès",
         variant: "success"
       });
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder la configuration",
+        description: error.response?.data?.detail || "Impossible de sauvegarder la configuration",
         variant: "destructive"
       });
     }
@@ -475,21 +474,32 @@ const Parametres = ({ user, tenantSlug }) => {
 
   const handleSendNotificationsManually = async () => {
     try {
-      // Ici on pourrait déclencher l'envoi manuel des notifications
-      // await axios.post(`${API}/send-planning-notifications`);
-      setValidationParams(prev => ({
-        ...prev,
-        derniere_notification: new Date().toISOString()
-      }));
+      // Calculer les dates selon la période configurée
+      const today = new Date();
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+      
+      const periode_debut = nextMonth.toISOString().split('T')[0];
+      const periode_fin = endOfNextMonth.toISOString().split('T')[0];
+      
+      const response = await axios.post(`${API}/planning/envoyer-notifications`, null, {
+        params: { periode_debut, periode_fin }
+      });
+      
+      // Mettre à jour la dernière notification
+      await axios.get(`${API}/parametres/validation-planning`).then(res => {
+        setValidationParams(res.data);
+      });
+      
       toast({
         title: "Notifications envoyées",
-        description: "Les notifications de planning ont été envoyées à tous les employés",
+        description: `${response.data.emails_envoyes} emails envoyés avec succès`,
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer les notifications",
+        title: "Erreur d'envoi",
+        description: error.response?.data?.detail || "Impossible d'envoyer les notifications",
         variant: "destructive"
       });
     }
