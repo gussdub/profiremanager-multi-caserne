@@ -6440,6 +6440,7 @@ const MonProfil = () => {
 // Rapports Component optimisé - Analytics et exports avancés
 const Rapports = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [statistiques, setStatistiques] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('vue-ensemble');
@@ -6452,19 +6453,21 @@ const Rapports = () => {
     if (user?.role === 'admin') {
       fetchStatistiques();
     }
-  }, [user]);
+  }, [user, tenantSlug]);
 
   useEffect(() => {
     if (activeSection === 'epi' && user?.role === 'admin') {
       fetchEPIData();
     }
-  }, [activeSection, user]);
+  }, [activeSection, user, tenantSlug]);
 
   const fetchStatistiques = async () => {
+    if (!tenantSlug) return;
+    
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/rapports/statistiques-avancees`);
-      setStatistiques(response.data);
+      const statsData = await apiGet(tenantSlug, '/rapports/statistiques-avancees');
+      setStatistiques(statsData);
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
       toast({
@@ -6478,10 +6481,12 @@ const Rapports = () => {
   };
 
   const fetchEPIData = async () => {
+    if (!tenantSlug) return;
+    
     setLoadingEPI(true);
     try {
-      const response = await axios.get(`${API}/epi/alertes/all`);
-      setEpiAlerts(response.data);
+      const alertsData = await apiGet(tenantSlug, '/epi/alertes/all');
+      setEpiAlerts(alertsData);
     } catch (error) {
       console.error('Erreur lors du chargement des données EPI:', error);
       toast({
