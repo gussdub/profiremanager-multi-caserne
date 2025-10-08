@@ -1057,62 +1057,77 @@ async def get_demandes_remplacement(current_user: User = Depends(get_current_use
     return [DemandeRemplacement(**demande) for demande in cleaned_demandes]
 
 # Formations routes
-@api_router.post("/formations", response_model=Formation)
-async def create_formation(formation: FormationCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/formations", response_model=Formation)
+async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    formation_obj = Formation(**formation.dict())
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formation_dict = formation.dict()
+    formation_dict["tenant_id"] = tenant.id
+    formation_obj = Formation(**formation_dict)
     await db.formations.insert_one(formation_obj.dict())
     return formation_obj
 
-@api_router.get("/formations", response_model=List[Formation])
-async def get_formations(current_user: User = Depends(get_current_user)):
-    formations = await db.formations.find().to_list(1000)
+@api_router.get("/{tenant_slug}/formations", response_model=List[Formation])
+async def get_formations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
     cleaned_formations = [clean_mongo_doc(formation) for formation in formations]
     return [Formation(**formation) for formation in cleaned_formations]
 
-@api_router.put("/formations/{formation_id}", response_model=Formation)
-async def update_formation(formation_id: str, formation_update: FormationCreate, current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/formations/{formation_id}", response_model=Formation)
+async def update_formation(tenant_slug: str, formation_id: str, formation_update: FormationCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if formation exists
-    existing_formation = await db.formations.find_one({"id": formation_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if formation exists dans ce tenant
+    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
     if not existing_formation:
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
     # Update formation data
     formation_dict = formation_update.dict()
     formation_dict["id"] = formation_id
+    formation_dict["tenant_id"] = tenant.id
     formation_dict["created_at"] = existing_formation.get("created_at")
     
-    result = await db.formations.replace_one({"id": formation_id}, formation_dict)
+    result = await db.formations.replace_one({"id": formation_id, "tenant_id": tenant.id}, formation_dict)
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour la formation")
     
-    updated_formation = await db.formations.find_one({"id": formation_id})
+    updated_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
     updated_formation = clean_mongo_doc(updated_formation)
     return Formation(**updated_formation)
 
-@api_router.delete("/formations/{formation_id}")
-async def delete_formation(formation_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/formations/{formation_id}")
+async def delete_formation(tenant_slug: str, formation_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if formation exists
-    existing_formation = await db.formations.find_one({"id": formation_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if formation exists dans ce tenant
+    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
     if not existing_formation:
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
     # Delete formation
-    result = await db.formations.delete_one({"id": formation_id})
+    result = await db.formations.delete_one({"id": formation_id, "tenant_id": tenant.id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de supprimer la formation")
     
-    # Remove from users' formations arrays
+    # Remove from users' formations arrays (uniquement dans ce tenant)
     await db.users.update_many(
-        {"formations": formation_id},
+        {"formations": formation_id, "tenant_id": tenant.id},
         {"$pull": {"formations": formation_id}}
     )
     
