@@ -1934,51 +1934,76 @@ async def desinscrire_formation(session_id: str, current_user: User = Depends(ge
     return {"message": "Désinscription réussie", "session_id": session_id}
 
 # Disponibilités routes
-@api_router.post("/disponibilites", response_model=Disponibilite)
-async def create_disponibilite(disponibilite: DisponibiliteCreate, current_user: User = Depends(get_current_user)):
-    disponibilite_obj = Disponibilite(**disponibilite.dict())
+@api_router.post("/{tenant_slug}/disponibilites", response_model=Disponibilite)
+async def create_disponibilite(tenant_slug: str, disponibilite: DisponibiliteCreate, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    dispo_dict = disponibilite.dict()
+    dispo_dict["tenant_id"] = tenant.id
+    disponibilite_obj = Disponibilite(**dispo_dict)
     await db.disponibilites.insert_one(disponibilite_obj.dict())
     return disponibilite_obj
 
-@api_router.get("/disponibilites/{user_id}", response_model=List[Disponibilite])
-async def get_user_disponibilites(user_id: str, current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/disponibilites/{user_id}", response_model=List[Disponibilite])
+async def get_user_disponibilites(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    disponibilites = await db.disponibilites.find({"user_id": user_id}).to_list(1000)
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    disponibilites = await db.disponibilites.find({
+        "user_id": user_id,
+        "tenant_id": tenant.id
+    }).to_list(1000)
     cleaned_disponibilites = [clean_mongo_doc(dispo) for dispo in disponibilites]
     return [Disponibilite(**dispo) for dispo in cleaned_disponibilites]
 
-@api_router.put("/disponibilites/{user_id}")
-async def update_user_disponibilites(user_id: str, disponibilites: List[DisponibiliteCreate], current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/disponibilites/{user_id}")
+async def update_user_disponibilites(tenant_slug: str, user_id: str, disponibilites: List[DisponibiliteCreate], current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Delete existing disponibilités for this user
-    await db.disponibilites.delete_many({"user_id": user_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Delete existing disponibilités for this user dans ce tenant
+    await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
     
     # Insert new disponibilités
     if disponibilites:
         dispo_docs = []
         for dispo in disponibilites:
-            dispo_obj = Disponibilite(**dispo.dict())
+            dispo_dict = dispo.dict()
+            dispo_dict["tenant_id"] = tenant.id
+            dispo_obj = Disponibilite(**dispo_dict)
             dispo_docs.append(dispo_obj.dict())
         
         await db.disponibilites.insert_many(dispo_docs)
     
     return {"message": f"Disponibilités mises à jour avec succès ({len(disponibilites)} entrées)"}
 
-@api_router.delete("/disponibilites/{disponibilite_id}")
-async def delete_disponibilite(disponibilite_id: str, current_user: User = Depends(get_current_user)):
-    # Find the disponibilité to check ownership
-    disponibilite = await db.disponibilites.find_one({"id": disponibilite_id})
+@api_router.delete("/{tenant_slug}/disponibilites/{disponibilite_id}")
+async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Find the disponibilité to check ownership dans ce tenant
+    disponibilite = await db.disponibilites.find_one({
+        "id": disponibilite_id,
+        "tenant_id": tenant.id
+    })
     if not disponibilite:
         raise HTTPException(status_code=404, detail="Disponibilité non trouvée")
     
     if current_user.role not in ["admin", "superviseur"] and current_user.id != disponibilite["user_id"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    result = await db.disponibilites.delete_one({"id": disponibilite_id})
+    result = await db.disponibilites.delete_one({
+        "id": disponibilite_id,
+        "tenant_id": tenant.id
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de supprimer la disponibilité")
     
