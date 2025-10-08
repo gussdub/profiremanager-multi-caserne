@@ -621,10 +621,13 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     }
 
 # User management routes
-@api_router.post("/users", response_model=User)
-async def create_user(user_create: UserCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/users", response_model=User)
+async def create_user(tenant_slug: str, user_create: UserCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     # Validation du mot de passe complexe
     if not validate_complex_password(user_create.mot_de_passe):
@@ -633,14 +636,15 @@ async def create_user(user_create: UserCreate, current_user: User = Depends(get_
             detail="Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (!@#$%^&*+-?())"
         )
     
-    # Check if user already exists
-    existing_user = await db.users.find_one({"email": user_create.email})
+    # Check if user already exists DANS CE TENANT
+    existing_user = await db.users.find_one({"email": user_create.email, "tenant_id": tenant.id})
     if existing_user:
-        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé dans cette caserne")
     
     user_dict = user_create.dict()
     temp_password = user_dict["mot_de_passe"]  # Sauvegarder pour l'email
     user_dict["mot_de_passe_hash"] = get_password_hash(user_dict.pop("mot_de_passe"))
+    user_dict["tenant_id"] = tenant.id  # Assigner le tenant
     user_obj = User(**user_dict)
     
     await db.users.insert_one(user_obj.dict())
