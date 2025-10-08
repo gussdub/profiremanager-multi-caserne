@@ -1025,15 +1025,26 @@ async def get_assignations(tenant_slug: str, semaine_debut: str, current_user: U
     return [Assignation(**assignation) for assignation in cleaned_assignations]
 
 # Remplacements routes
-@api_router.post("/remplacements", response_model=DemandeRemplacement)
-async def create_demande_remplacement(demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
-    demande_obj = DemandeRemplacement(**demande.dict(), demandeur_id=current_user.id)
+@api_router.post("/{tenant_slug}/remplacements", response_model=DemandeRemplacement)
+async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande_dict = demande.dict()
+    demande_dict["tenant_id"] = tenant.id
+    demande_dict["demandeur_id"] = current_user.id
+    demande_obj = DemandeRemplacement(**demande_dict)
     await db.demandes_remplacement.insert_one(demande_obj.dict())
     
-    # Créer notification pour les superviseurs/admins
-    superviseurs_admins = await db.users.find({"role": {"$in": ["superviseur", "admin"]}}).to_list(100)
+    # Créer notification pour les superviseurs/admins de ce tenant
+    superviseurs_admins = await db.users.find({
+        "tenant_id": tenant.id,
+        "role": {"$in": ["superviseur", "admin"]}
+    }).to_list(100)
+    
     for user in superviseurs_admins:
         await creer_notification(
+            tenant_id=tenant.id,
             destinataire_id=user["id"],
             type="remplacement_demande",
             titre="Nouvelle demande de remplacement",
@@ -1046,12 +1057,18 @@ async def create_demande_remplacement(demande: DemandeRemplacementCreate, curren
     cleaned_demande = clean_mongo_doc(demande_obj.dict())
     return DemandeRemplacement(**cleaned_demande)
 
-@api_router.get("/remplacements", response_model=List[DemandeRemplacement])
-async def get_demandes_remplacement(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])
+async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     if current_user.role == "employe":
-        demandes = await db.demandes_remplacement.find({"demandeur_id": current_user.id}).to_list(1000)
+        demandes = await db.demandes_remplacement.find({
+            "tenant_id": tenant.id,
+            "demandeur_id": current_user.id
+        }).to_list(1000)
     else:
-        demandes = await db.demandes_remplacement.find().to_list(1000)
+        demandes = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
     
     cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
     return [DemandeRemplacement(**demande) for demande in cleaned_demandes]
