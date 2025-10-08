@@ -1229,6 +1229,7 @@ const Personnel = () => {
       prenom: user.prenom,
       email: user.email,
       telephone: user.telephone,
+      adresse: user.adresse || '',
       contact_urgence: user.contact_urgence || '',
       grade: user.grade,
       fonction_superieur: user.fonction_superieur || false,
