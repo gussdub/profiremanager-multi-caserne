@@ -3185,29 +3185,14 @@ const Planning = () => {
                         <div className="garde-content">
                           {assignedUsers.length > 0 ? (
                             <div className="assigned-info">
-                              {/* Afficher tous les noms si moins de 3, sinon afficher les 2 premiers + compteur */}
-                              {assignedUsers.length <= 2 ? (
-                                assignedUsers.map((user, idx) => (
-                                  <div key={idx} className="assigned-name-item">
-                                    <span className="assigned-name">{user.prenom} {user.nom.charAt(0)}.</span>
-                                    <span className="assigned-grade">{user.grade}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                <>
-                                  <div className="assigned-name-item">
-                                    <span className="assigned-name">{assignedUsers[0].prenom} {assignedUsers[0].nom.charAt(0)}.</span>
-                                    <span className="assigned-grade">{assignedUsers[0].grade}</span>
-                                  </div>
-                                  <div className="assigned-name-item">
-                                    <span className="assigned-name">{assignedUsers[1].prenom} {assignedUsers[1].nom.charAt(0)}.</span>
-                                    <span className="assigned-grade">{assignedUsers[1].grade}</span>
-                                  </div>
-                                  {assignedUsers.length > 2 && (
-                                    <span className="more-count">+{assignedUsers.length - 2}</span>
-                                  )}
-                                </>
-                              )}
+                              {/* Afficher TOUS les noms - Liste compacte */}
+                              {assignedUsers.map((user, idx) => (
+                                <div key={idx} className="assigned-name-item-compact">
+                                  <span className="assigned-name-compact">
+                                    {user.prenom.charAt(0)}. {user.nom.charAt(0)}. - {user.grade.substring(0, 6)}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           ) : (
                             <div className="vacant-info">
