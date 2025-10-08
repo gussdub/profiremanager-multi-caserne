@@ -1250,7 +1250,7 @@ const Personnel = () => {
         mot_de_passe: newUser.mot_de_passe || 'unchanged' // Mot de passe optionnel
       };
 
-      await axios.put(`${API}/users/${selectedUser.id}`, userToUpdate);
+      await apiPut(tenantSlug, `/users/${selectedUser.id}`, userToUpdate);
       toast({
         title: "Pompier mis à jour",
         description: "Les informations ont été mises à jour avec succès",
@@ -1259,13 +1259,13 @@ const Personnel = () => {
       setShowEditModal(false);
       
       // Reload users list
-      const response = await axios.get(`${API}/users`);
-      setUsers(response.data);
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
         title: "Erreur de modification",
-        description: error.response?.data?.detail || "Impossible de mettre à jour le pompier",
+        description: error.detail || error.message || "Impossible de mettre à jour le pompier",
         variant: "destructive"
       });
     }
