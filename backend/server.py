@@ -1824,18 +1824,21 @@ async def export_excel_report(type_rapport: str = "general", current_user: User 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur génération Excel: {str(e)}")
 
-@api_router.get("/rapports/statistiques-avancees")
-async def get_statistiques_avancees(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/rapports/statistiques-avancees")
+async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     try:
-        # Récupérer toutes les données nécessaires
-        users = await db.users.find().to_list(1000)
-        assignations = await db.assignations.find().to_list(1000)
-        types_garde = await db.types_garde.find().to_list(1000)
-        formations = await db.formations.find().to_list(1000)
-        demandes_remplacement = await db.demandes_remplacement.find().to_list(1000)
+        # Récupérer toutes les données nécessaires filtrées par tenant
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+        formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
+        demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
         
         # Statistiques générales
         stats_generales = {
