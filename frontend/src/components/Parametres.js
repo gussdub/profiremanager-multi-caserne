@@ -4,11 +4,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
+import { buildApiUrl } from "../utils/api";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
-const Parametres = ({ user }) => {
+const Parametres = ({ user, tenantSlug }) => {
+  // Construire l'API URL avec le tenant
+  const API = `${BACKEND_URL}/api/${tenantSlug}`;
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('types-garde');
   const [typesGarde, setTypesGarde] = useState([]);
