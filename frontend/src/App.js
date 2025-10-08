@@ -92,7 +92,10 @@ const AuthProvider = ({ children }) => {
         mot_de_passe
       });
       
-      const { access_token, user: userData, tenant } = response.data;
+      // Pour Super Admin, la réponse contient 'admin' au lieu de 'user'
+      const { access_token, user: userData, admin: adminData, tenant } = response.data;
+      const finalUserData = isSuperAdmin ? adminData : userData;
+      
       localStorage.setItem('token', access_token);
       
       // Stocker les infos du tenant si présentes
@@ -101,7 +104,7 @@ const AuthProvider = ({ children }) => {
       }
       
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      setUser(userData);
+      setUser(finalUserData);
       return { success: true };
     } catch (error) {
       return { 
