@@ -1218,7 +1218,7 @@ class SessionFormation(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SessionFormationCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     titre: str
     competence_id: str
     duree_heures: int
