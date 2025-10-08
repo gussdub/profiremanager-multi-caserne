@@ -3940,6 +3940,17 @@ async def get_epi_alerts(current_user: User = Depends(get_current_user)):
     
     return alerts
 
+# Health check endpoint (pour Render, Vercel, etc.)
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint pour monitoring"""
+    return {
+        "status": "healthy",
+        "service": "ProFireManager API",
+        "version": "2.0",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
