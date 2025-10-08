@@ -4609,7 +4609,7 @@ const Formations = () => {
     }
 
     try {
-      await axios.post(`${API}/sessions-formation`, newSession);
+      await apiPost(tenantSlug, '/sessions-formation', newSession);
       toast({
         title: "Formation créée",
         description: "La session de formation a été programmée avec succès",
@@ -4619,8 +4619,8 @@ const Formations = () => {
       resetNewSession();
       
       // Reload sessions
-      const response = await axios.get(`${API}/sessions-formation`);
-      setSessions(response.data);
+      const sessionsData = await apiGet(tenantSlug, '/sessions-formation');
+      setSessions(sessionsData);
     } catch (error) {
       toast({
         title: "Erreur",
