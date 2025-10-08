@@ -695,7 +695,7 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     # Envoyer l'email de bienvenue
     try:
         user_name = f"{user_create.prenom} {user_create.nom}"
-        email_sent = send_welcome_email(user_create.email, user_name, user_create.role, temp_password)
+        email_sent = send_welcome_email(user_create.email, user_name, user_create.role, temp_password, tenant_slug)
         
         if email_sent:
             print(f"Email de bienvenue envoyé à {user_create.email}")
