@@ -52,6 +52,38 @@ SUPER_ADMIN_PASSWORD_HASH = ""  # Will be set on first run
 
 # Simplified password hashing
 
+# ==================== MULTI-TENANT HELPERS ====================
+
+async def get_tenant_from_slug(slug: str) -> Tenant:
+    """Récupère le tenant depuis son slug"""
+    tenant_data = await db.tenants.find_one({"slug": slug, "actif": True})
+    if not tenant_data:
+        raise HTTPException(status_code=404, detail=f"Caserne '{slug}' non trouvée ou inactive")
+    return Tenant(**tenant_data)
+
+async def get_current_tenant(tenant_slug: str) -> Tenant:
+    """Dépendance FastAPI pour obtenir le tenant actuel"""
+    return await get_tenant_from_slug(tenant_slug)
+
+async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Authentifie et retourne le super admin"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        admin_id: str = payload.get("sub")
+        role: str = payload.get("role")
+        
+        if role != "super_admin":
+            raise HTTPException(status_code=403, detail="Accès super admin requis")
+            
+        admin = await db.super_admins.find_one({"id": admin_id})
+        if not admin:
+            raise HTTPException(status_code=401, detail="Super admin non trouvé")
+        return SuperAdmin(**admin)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalide")
+
+# ==================== HELPER FUNCTIONS ====================
+
 # Helper functions
 def validate_complex_password(password: str) -> bool:
     """
