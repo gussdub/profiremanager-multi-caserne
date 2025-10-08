@@ -20,7 +20,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
     slug: '',
     contact_email: '',
     contact_telephone: '',
-    adresse: ''
+    adresse: '',
+    date_creation: ''
   });
   const { toast } = useToast();
 
