@@ -7,7 +7,6 @@ import asyncio
 import sys
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
-from passlib.context import CryptContext
 from datetime import datetime
 import uuid
 
@@ -15,11 +14,9 @@ import uuid
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DATABASE_NAME = "profiremanager"
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+# Import depuis server.py
+sys.path.insert(0, '/app/backend')
+from server import get_password_hash
 
 async def init_data():
     """Initialiser toutes les données de démonstration"""
