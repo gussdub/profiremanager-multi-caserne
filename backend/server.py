@@ -2427,8 +2427,8 @@ async def attribution_automatique(semaine_debut: str, current_user: User = Depen
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
 
 # Endpoint pour obtenir les statistiques personnelles mensuelles
-@api_router.get("/users/{user_id}/stats-mensuelles")
-async def get_user_monthly_stats(user_id: str, current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
+async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
