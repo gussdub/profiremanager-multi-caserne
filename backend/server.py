@@ -1337,7 +1337,52 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
         "par_caserne": tenant_stats
     }
 
-# ==================== TENANT ROUTES ====================
+# ==================== TENANT AUTH ROUTES ====================
+
+@api_router.post("/{tenant_slug}/auth/login")
+async def tenant_login(tenant_slug: str, user_login: UserLogin):
+    """Login pour un tenant spécifique"""
+    # Vérifier que le tenant existe
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Chercher l'utilisateur dans ce tenant
+    user_data = await db.users.find_one({
+        "email": user_login.email,
+        "tenant_id": tenant.id
+    })
+    
+    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    user = User(**user_data)
+    
+    # Inclure tenant_id dans le token
+    access_token = create_access_token(data={
+        "sub": user.id,
+        "tenant_id": tenant.id,
+        "tenant_slug": tenant.slug
+    })
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "tenant": {
+            "id": tenant.id,
+            "slug": tenant.slug,
+            "nom": tenant.nom
+        },
+        "user": {
+            "id": user.id,
+            "nom": user.nom,
+            "prenom": user.prenom,
+            "email": user.email,
+            "role": user.role,
+            "grade": user.grade,
+            "type_emploi": user.type_emploi
+        }
+    }
+
+# ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
 # Demandes de congé routes
 @api_router.post("/demandes-conge", response_model=DemandeCongé)
