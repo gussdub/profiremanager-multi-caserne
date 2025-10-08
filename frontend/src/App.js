@@ -3619,28 +3619,30 @@ const Remplacements = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [tenantSlug]);
 
   const fetchData = async () => {
+    if (!tenantSlug) return;
+    
     setLoading(true);
     try {
       const promises = [
-        axios.get(`${API}/remplacements`),
-        axios.get(`${API}/demandes-conge`),
-        axios.get(`${API}/types-garde`)
+        apiGet(tenantSlug, '/remplacements'),
+        apiGet(tenantSlug, '/demandes-conge'),
+        apiGet(tenantSlug, '/types-garde')
       ];
       
       if (user.role !== 'employe') {
-        promises.push(axios.get(`${API}/users`));
+        promises.push(apiGet(tenantSlug, '/users'));
       }
 
       const responses = await Promise.all(promises);
-      setDemandes(responses[0].data);
-      setDemandesConge(responses[1].data);
-      setTypesGarde(responses[2].data);
+      setDemandes(responses[0]);
+      setDemandesConge(responses[1]);
+      setTypesGarde(responses[2]);
       
       if (responses[3]) {
-        setUsers(responses[3].data);
+        setUsers(responses[3]);
       }
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
