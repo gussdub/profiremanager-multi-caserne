@@ -1033,6 +1033,7 @@ class ParametresRemplacements(BaseModel):
 # EPI Models
 class EPIEmploye(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     employe_id: str
     type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, masque_scba
     taille: str
@@ -1046,6 +1047,7 @@ class EPIEmploye(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class EPIEmployeCreate(BaseModel):
+    tenant_id: str
     employe_id: str
     type_epi: str
     taille: str
@@ -1063,6 +1065,7 @@ class EPIEmployeUpdate(BaseModel):
     notes: Optional[str] = None
 
 class InspectionEPI(BaseModel):
+    tenant_id: str
     date_inspection: str
     inspecteur_id: str
     resultat: str  # Conforme, Non conforme, Remplacement nécessaire
