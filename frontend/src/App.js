@@ -211,6 +211,7 @@ const Login = () => {
 // Sidebar Navigation avec menu hamburger mobile
 const Sidebar = ({ currentPage, setCurrentPage }) => {
   const { user, logout } = useAuth();
+  const { tenantSlug } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -218,12 +219,14 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
   // Charger les notifications
   const loadNotifications = async () => {
+    if (!tenantSlug) return;
+    
     try {
-      const response = await axios.get(`${API}/notifications`);
-      setNotifications(response.data);
+      const notificationsData = await apiGet(tenantSlug, '/notifications');
+      setNotifications(notificationsData);
       
-      const countResponse = await axios.get(`${API}/notifications/non-lues/count`);
-      setUnreadCount(countResponse.data.count);
+      const countData = await apiGet(tenantSlug, '/notifications/non-lues/count');
+      setUnreadCount(countData.count);
     } catch (error) {
       console.error('Erreur chargement notifications:', error);
     }
