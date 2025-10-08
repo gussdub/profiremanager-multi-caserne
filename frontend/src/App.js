@@ -868,14 +868,14 @@ const Dashboard = () => {
         setStatistiquesDetaillees(rapportsData);
         
         // Générer activité récente dynamique
-        const users = usersResponse.data;
+        const users = usersData;
         const activiteItems = [];
         
         // Dernières assignations (estimation basée sur stats)
-        if (statsResponse.data.gardes_cette_semaine > 0) {
+        if (statsData.gardes_cette_semaine > 0) {
           activiteItems.push({
             type: 'assignation',
-            text: `Assignation automatique effectuée (${statsResponse.data.gardes_cette_semaine} gardes)`,
+            text: `Assignation automatique effectuée (${statsData.gardes_cette_semaine} gardes)`,
             time: 'Il y a 2h',
             icon: '🤖'
           });
@@ -899,10 +899,10 @@ const Dashboard = () => {
         }
         
         // Formations planifiées
-        if (statsResponse.data.formations_planifiees > 0) {
+        if (statsData.formations_planifiees > 0) {
           activiteItems.push({
             type: 'formation',
-            text: `${statsResponse.data.formations_planifiees} formation(s) planifiée(s)`,
+            text: `${statsData.formations_planifiees} formation(s) planifiée(s)`,
             time: 'Hier',
             icon: '🎓'
           });
@@ -929,7 +929,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, tenantSlug]);
 
   const getPersonnelParType = () => {
     if (!statistiquesDetaillees) return { temps_plein: 0, temps_partiel: 0 };
