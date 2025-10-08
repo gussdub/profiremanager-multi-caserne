@@ -1,1 +1,2 @@
 Correction tenant_id optional - Wed Oct  8 20:33:29 UTC 2025
+Fix: Suppression compte - endpoint tenant-aware - Wed Oct  8 22:40:46 UTC 2025
