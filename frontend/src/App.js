@@ -1347,7 +1347,7 @@ const Personnel = () => {
     }
 
     try {
-      await axios.post(`${API}/epi`, {
+      await apiPost(tenantSlug, '/epi', {
         ...newEPI,
         employe_id: selectedUser.id
       });
@@ -1362,12 +1362,12 @@ const Personnel = () => {
       resetNewEPI();
       
       // Recharger les EPI
-      const response = await axios.get(`${API}/epi/employe/${selectedUser.id}`);
-      setUserEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible d'ajouter l'EPI",
+        description: error.detail || error.message || "Impossible d'ajouter l'EPI",
         variant: "destructive"
       });
     }
