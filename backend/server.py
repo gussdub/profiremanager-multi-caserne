@@ -1538,7 +1538,16 @@ async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends
     if existing:
         raise HTTPException(status_code=400, detail="Ce slug est déjà utilisé")
     
-    tenant = Tenant(**tenant_create.dict())
+    # Créer le tenant avec date personnalisée si fournie
+    tenant_data = tenant_create.dict()
+    if tenant_data.get('date_creation'):
+        # Convertir la date string en datetime
+        from datetime import datetime as dt
+        tenant_data['date_creation'] = dt.fromisoformat(tenant_data['date_creation']).replace(tzinfo=timezone.utc)
+    else:
+        tenant_data['date_creation'] = datetime.now(timezone.utc)
+    
+    tenant = Tenant(**tenant_data)
     await db.tenants.insert_one(tenant.dict())
     
     return {"message": f"Caserne '{tenant.nom}' créée avec succès", "tenant": tenant}
