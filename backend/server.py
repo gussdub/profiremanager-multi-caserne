@@ -348,6 +348,7 @@ class UserCreate(BaseModel):
     prenom: str
     email: str
     telephone: str = ""
+    adresse: str = ""  # Adresse du pompier
     contact_urgence: str = ""
     grade: str
     fonction_superieur: bool = False
