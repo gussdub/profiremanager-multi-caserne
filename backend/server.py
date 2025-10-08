@@ -2547,6 +2547,7 @@ async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_cu
         end_month = (start_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
         
         assignations_mois = await db.assignations.find({
+            "tenant_id": tenant.id,
             "date": {
                 "$gte": start_month.strftime("%Y-%m-%d"),
                 "$lte": end_month.strftime("%Y-%m-%d")
