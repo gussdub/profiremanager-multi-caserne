@@ -5399,7 +5399,7 @@ const MesDisponibilites = () => {
       // Combiner existantes + nouvelles
       const allDisponibilites = [...existingDispos, ...nouvelles_disponibilites];
 
-      await axios.put(`${API}/disponibilites/${user.id}`, allDisponibilites);
+      await apiPut(tenantSlug, `/disponibilites/${user.id}`, allDisponibilites);
       
       toast({
         title: "Disponibilités ajoutées",
@@ -5411,8 +5411,8 @@ const MesDisponibilites = () => {
       setSelectedDates([]);
       
       // Reload
-      const dispoResponse = await axios.get(`${API}/disponibilites/${user.id}`);
-      setUserDisponibilites(dispoResponse.data);
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      setUserDisponibilites(dispoData);
     } catch (error) {
       toast({
         title: "Erreur",
