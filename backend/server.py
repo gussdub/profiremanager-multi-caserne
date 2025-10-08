@@ -41,6 +41,60 @@ app = FastAPI(title="ProFireManager API", version="2.0")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ==================== INITIALIZATION ====================
+
+async def initialize_multi_tenant():
+    """Initialize super admin and default tenant on first run"""
+    # 1. Créer le super admin s'il n'existe pas
+    super_admin_exists = await db.super_admins.find_one({"email": SUPER_ADMIN_EMAIL})
+    
+    if not super_admin_exists:
+        super_admin = SuperAdmin(
+            email=SUPER_ADMIN_EMAIL,
+            nom="Super Admin",
+            mot_de_passe_hash=hash_password("230685Juin+")
+        )
+        await db.super_admins.insert_one(super_admin.dict())
+        print(f"✅ Super admin créé: {SUPER_ADMIN_EMAIL}")
+    
+    # 2. Créer le tenant Shefford s'il n'existe pas
+    shefford_exists = await db.tenants.find_one({"slug": "shefford"})
+    
+    if not shefford_exists:
+        shefford_tenant = Tenant(
+            slug="shefford",
+            nom="Service Incendie de Shefford",
+            ville="Shefford",
+            province="QC"
+        )
+        await db.tenants.insert_one(shefford_tenant.dict())
+        print(f"✅ Tenant Shefford créé: {shefford_tenant.id}")
+        
+        # 3. Migrer toutes les données existantes vers Shefford
+        # Ajouter tenant_id aux collections qui n'en ont pas
+        collections_to_migrate = [
+            "users", "types_garde", "assignations", "demandes_remplacement",
+            "formations", "disponibilites", "sessions_formation", 
+            "inscriptions_formation", "demandes_conge", "notifications",
+            "notifications_remplacement", "employee_epis", "parametres_remplacements"
+        ]
+        
+        for collection_name in collections_to_migrate:
+            collection = db[collection_name]
+            # Mise à jour des documents sans tenant_id
+            result = await collection.update_many(
+                {"tenant_id": {"$exists": False}},
+                {"$set": {"tenant_id": shefford_tenant.id}}
+            )
+            if result.modified_count > 0:
+                print(f"✅ {result.modified_count} documents migrés dans {collection_name}")
+
+@app.on_event("startup")
+async def startup_event():
+    """Événement de démarrage de l'application"""
+    await initialize_multi_tenant()
+    print("🚀 ProFireManager API Multi-Tenant démarré")
+
 # JWT and Password configuration
 SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
 ALGORITHM = "HS256"
