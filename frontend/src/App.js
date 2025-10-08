@@ -4698,8 +4698,8 @@ const Formations = () => {
       }
       
       // Reload sessions
-      const response = await axios.get(`${API}/sessions-formation`);
-      setSessions(response.data);
+      const sessionsData = await apiGet(tenantSlug, '/sessions-formation');
+      setSessions(sessionsData);
     } catch (error) {
       toast({
         title: "Erreur",
