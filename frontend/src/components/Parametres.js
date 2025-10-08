@@ -116,6 +116,16 @@ const Parametres = ({ user, tenantSlug }) => {
     epi_jours_avance_inspection: 14
   });
 
+  // Paramètres de validation du planning
+  const [validationParams, setValidationParams] = useState({
+    frequence: 'mensuel',
+    jour_envoi: 25,
+    heure_envoi: '17:00',
+    periode_couverte: 'mois_suivant',
+    envoi_automatique: true,
+    derniere_notification: null
+  });
+
   const { toast } = useToast();
 
   const joursOptions = [
