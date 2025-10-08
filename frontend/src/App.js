@@ -1805,14 +1805,24 @@ const Personnel = () => {
                       />
                     </div>
                     <div className="form-field">
-                      <Label>Contact d'urgence</Label>
+                      <Label>Adresse</Label>
                       <Input
-                        value={newUser.contact_urgence}
-                        onChange={(e) => setNewUser({...newUser, contact_urgence: e.target.value})}
-                        placeholder="Ex: 514-999-8888"
-                        data-testid="user-emergency-input"
+                        value={newUser.adresse}
+                        onChange={(e) => setNewUser({...newUser, adresse: e.target.value})}
+                        placeholder="123 Rue Principale, Ville, Province"
+                        data-testid="user-address-input"
                       />
                     </div>
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Contact d'urgence</Label>
+                    <Input
+                      value={newUser.contact_urgence}
+                      onChange={(e) => setNewUser({...newUser, contact_urgence: e.target.value})}
+                      placeholder="Nom et téléphone du contact d'urgence"
+                      data-testid="user-emergency-input"
+                    />
                   </div>
                 </div>
 
