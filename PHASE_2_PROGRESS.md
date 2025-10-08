@@ -37,7 +37,24 @@
 - `PUT /{tenant_slug}/disponibilites/{user_id}` - Mettre à jour disponibilités
 - `DELETE /{tenant_slug}/disponibilites/{id}` - Supprimer disponibilité
 
-**Total : 23/55 routes migrées (42%)**
+### Module Sessions de formation (4 routes) - COMPLET ✅
+- `POST /{tenant_slug}/sessions-formation` - Créer session
+- `GET /{tenant_slug}/sessions-formation` - Liste sessions
+- `POST /{tenant_slug}/sessions-formation/{id}/inscription` - S'inscrire
+- `DELETE /{tenant_slug}/sessions-formation/{id}/desinscription` - Se désinscrire
+
+### Module Demandes de congé (3 routes) - COMPLET ✅
+- `POST /{tenant_slug}/demandes-conge` - Créer demande
+- `GET /{tenant_slug}/demandes-conge` - Liste demandes
+- `PUT /{tenant_slug}/demandes-conge/{id}/approuver` - Approuver/refuser
+
+### Module Notifications (4 routes) - COMPLET ✅
+- `GET /{tenant_slug}/notifications` - Liste notifications
+- `GET /{tenant_slug}/notifications/non-lues/count` - Compteur non lues
+- `PUT /{tenant_slug}/notifications/{id}/marquer-lu` - Marquer lue
+- `PUT /{tenant_slug}/notifications/marquer-toutes-lues` - Marquer toutes lues
+
+**Total : 34/55 routes migrées (62%)**
 
 ---
 
