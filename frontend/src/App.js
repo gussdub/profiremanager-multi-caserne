@@ -851,18 +851,21 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { tenantSlug } = useTenant();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!tenantSlug) return;
+      
       try {
-        const [statsResponse, rapportsResponse, usersResponse] = await Promise.all([
-          axios.get(`${API}/statistiques`),
-          user.role === 'admin' ? axios.get(`${API}/rapports/statistiques-avancees`) : Promise.resolve({ data: null }),
-          axios.get(`${API}/users`)
+        const [statsData, rapportsData, usersData] = await Promise.all([
+          apiGet(tenantSlug, '/statistiques'),
+          user.role === 'admin' ? apiGet(tenantSlug, '/rapports/statistiques-avancees') : Promise.resolve(null),
+          apiGet(tenantSlug, '/users')
         ]);
         
-        setStats(statsResponse.data);
-        setStatistiquesDetaillees(rapportsResponse.data);
+        setStats(statsData);
+        setStatistiquesDetaillees(rapportsData);
         
         // Générer activité récente dynamique
         const users = usersResponse.data;
