@@ -1,3 +1,4 @@
 Correction tenant_id optional - Wed Oct  8 20:33:29 UTC 2025
 Fix: Suppression compte - endpoint tenant-aware - Wed Oct  8 22:40:46 UTC 2025
 Amélioration: Email de bienvenue - Instructions changement mot de passe - Wed Oct  8 22:50:50 UTC 2025
+Fix global: tenant_id Optional dans tous les modèles *Create - Wed Oct  8 23:00:28 UTC 2025
