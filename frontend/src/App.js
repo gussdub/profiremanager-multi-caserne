@@ -1198,6 +1198,7 @@ const Personnel = () => {
       prenom: '',
       email: '',
       telephone: '',
+      adresse: '',
       contact_urgence: '',
       grade: '',
       fonction_superieur: false,
