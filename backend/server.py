@@ -231,9 +231,25 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
                 
                 <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 20px 0;">
                     <h4 style="color: #92400e; margin-top: 0;">🔒 Sécurité de votre compte :</h4>
+                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
+                        ⚠️ IMPORTANT : Changez votre mot de passe temporaire dès maintenant !
+                    </p>
+                    <p style="color: #78350f; margin: 10px 0;">
+                        <strong>📍 Comment changer votre mot de passe :</strong>
+                    </p>
+                    <ol style="color: #78350f; margin: 10px 0;">
+                        <li>Connectez-vous à ProFireManager avec le mot de passe temporaire ci-dessus</li>
+                        <li>Cliquez sur <strong>"Mon Profil"</strong> dans le menu de gauche</li>
+                        <li>Descendez en <strong>bas de la page</strong></li>
+                        <li>Trouvez la section <strong>"Modifier le mot de passe"</strong></li>
+                        <li>Entrez votre nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 caractère spécial)</li>
+                        <li>Cliquez sur <strong>"Enregistrer"</strong></li>
+                    </ol>
+                    <p style="color: #78350f; margin: 10px 0;">
+                        💡 <strong>Conseils de sécurité :</strong>
+                    </p>
                     <ul style="color: #78350f; margin: 10px 0;">
-                        <li>Modifiez votre mot de passe temporaire dès votre première connexion</li>
-                        <li>Utilisez un mot de passe complexe (8 caractères, majuscule, chiffre, caractère spécial)</li>
+                        <li>Utilisez un mot de passe unique et complexe</li>
                         <li>Ne partagez jamais vos identifiants</li>
                         <li>Déconnectez-vous après chaque session</li>
                     </ul>
