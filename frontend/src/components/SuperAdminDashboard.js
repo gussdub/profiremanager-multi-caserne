@@ -569,6 +569,16 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   placeholder="123 Rue Principale, Ville, Province"
                 />
               </div>
+
+              <div>
+                <Label>Date de création</Label>
+                <Input
+                  type="date"
+                  value={newTenant.date_creation?.split('T')[0] || ''}
+                  onChange={(e) => setNewTenant({ ...newTenant, date_creation: e.target.value })}
+                />
+                <small style={{ color: '#64748b' }}>Date d'activation de la caserne</small>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
