@@ -363,7 +363,7 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
-    tenant_id: str  # Fourni automatiquement par le middleware
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     nom: str
     prenom: str
     email: str
