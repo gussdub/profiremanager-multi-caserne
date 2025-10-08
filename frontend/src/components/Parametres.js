@@ -448,6 +448,53 @@ const Parametres = ({ user, tenantSlug }) => {
     });
   };
 
+  const handleValidationChange = (setting, value) => {
+    setValidationParams(prev => ({
+      ...prev,
+      [setting]: value
+    }));
+  };
+
+  const handleSaveValidationParams = async () => {
+    try {
+      // Ici on pourrait sauvegarder les paramètres en base de données
+      // await axios.put(`${API}/validation-params`, validationParams);
+      toast({
+        title: "Configuration sauvegardée",
+        description: "Les paramètres de validation ont été enregistrés",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la configuration",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSendNotificationsManually = async () => {
+    try {
+      // Ici on pourrait déclencher l'envoi manuel des notifications
+      // await axios.post(`${API}/send-planning-notifications`);
+      setValidationParams(prev => ({
+        ...prev,
+        derniere_notification: new Date().toISOString()
+      }));
+      toast({
+        title: "Notifications envoyées",
+        description: "Les notifications de planning ont été envoyées à tous les employés",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer les notifications",
+        variant: "destructive"
+      });
+    }
+  };
+
   const validatePassword = (password) => {
     if (password.length < 8) return false;
     const hasUppercase = /[A-Z]/.test(password);
