@@ -256,14 +256,16 @@ const Parametres = ({ user, tenantSlug }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [typesResponse, formationsResponse, usersResponse] = await Promise.all([
+      const [typesResponse, formationsResponse, usersResponse, validationResponse] = await Promise.all([
         axios.get(`${API}/types-garde`),
         axios.get(`${API}/formations`),
-        axios.get(`${API}/users`)
+        axios.get(`${API}/users`),
+        axios.get(`${API}/parametres/validation-planning`).catch(() => ({ data: validationParams }))
       ]);
       setTypesGarde(typesResponse.data);
       setFormations(formationsResponse.data);
       setUsers(usersResponse.data);
+      setValidationParams(validationResponse.data);
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres:', error);
     } finally {
