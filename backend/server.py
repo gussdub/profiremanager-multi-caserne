@@ -2444,6 +2444,7 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
         
         user_assignations = await db.assignations.find({
             "user_id": user_id,
+            "tenant_id": tenant.id,
             "date": {
                 "$gte": month_start,
                 "$lte": month_end
@@ -2451,7 +2452,7 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
         }).to_list(1000)
         
         # Get types garde for calculating hours
-        types_garde = await db.types_garde.find().to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
         types_dict = {t["id"]: t for t in types_garde}
         
         # Calculate stats
