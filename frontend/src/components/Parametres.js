@@ -872,6 +872,131 @@ const Parametres = ({ user, tenantSlug }) => {
                   </label>
                 </div>
               </div>
+
+              {/* NOUVELLE SECTION: Validation du Planning */}
+              <div className="validation-planning-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
+                <h3>📅 Validation et Notification du Planning</h3>
+                <p style={{ color: '#64748b', marginBottom: '20px' }}>
+                  Configurez quand les pompiers seront avisés de leurs gardes assignées par email détaillé
+                </p>
+                
+                <div className="validation-params-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      Fréquence
+                    </label>
+                    <select 
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      value={validationParams.frequence || 'mensuel'}
+                      onChange={(e) => handleValidationChange('frequence', e.target.value)}
+                    >
+                      <option value="mensuel">Mensuel</option>
+                      <option value="hebdomadaire">Hebdomadaire</option>
+                      <option value="personnalise">Personnalisé</option>
+                    </select>
+                    <small style={{ color: '#64748b' }}>Fréquence d'envoi automatique</small>
+                  </div>
+
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      {validationParams.frequence === 'mensuel' ? 'Jour du mois' : 'Jour de la semaine'}
+                    </label>
+                    {validationParams.frequence === 'mensuel' ? (
+                      <input 
+                        type="number"
+                        min="1"
+                        max="31"
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                        value={validationParams.jour_envoi || 25}
+                        onChange={(e) => handleValidationChange('jour_envoi', parseInt(e.target.value))}
+                      />
+                    ) : (
+                      <select 
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                        value={validationParams.jour_envoi || 'vendredi'}
+                        onChange={(e) => handleValidationChange('jour_envoi', e.target.value)}
+                      >
+                        <option value="lundi">Lundi</option>
+                        <option value="mardi">Mardi</option>
+                        <option value="mercredi">Mercredi</option>
+                        <option value="jeudi">Jeudi</option>
+                        <option value="vendredi">Vendredi</option>
+                      </select>
+                    )}
+                    <small style={{ color: '#64748b' }}>Jour d'envoi des notifications</small>
+                  </div>
+
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      Heure d'envoi
+                    </label>
+                    <input 
+                      type="time"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      value={validationParams.heure_envoi || '17:00'}
+                      onChange={(e) => handleValidationChange('heure_envoi', e.target.value)}
+                    />
+                    <small style={{ color: '#64748b' }}>Heure d'envoi automatique</small>
+                  </div>
+
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      Période couverte
+                    </label>
+                    <select 
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      value={validationParams.periode_couverte || 'mois_suivant'}
+                      onChange={(e) => handleValidationChange('periode_couverte', e.target.value)}
+                    >
+                      <option value="mois_suivant">Mois suivant</option>
+                      <option value="2_semaines">2 semaines</option>
+                      <option value="4_semaines">4 semaines</option>
+                    </select>
+                    <small style={{ color: '#64748b' }}>Gardes à inclure dans l'email</small>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                  <label className="setting-toggle" style={{ marginBottom: 0 }}>
+                    <div className="toggle-info">
+                      <span>Envoi automatique</span>
+                      <small>Envoyer automatiquement selon la configuration</small>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={validationParams.envoi_automatique !== false}
+                      onChange={(e) => handleValidationChange('envoi_automatique', e.target.checked)}
+                    />
+                  </label>
+                </div>
+
+                {validationParams.derniere_notification && (
+                  <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <small style={{ color: '#1e40af' }}>
+                      📧 Dernière notification envoyée: {new Date(validationParams.derniere_notification).toLocaleString('fr-FR')}
+                    </small>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <Button 
+                    variant="outline"
+                    onClick={handleSaveValidationParams}
+                    data-testid="save-validation-params"
+                  >
+                    💾 Enregistrer la configuration
+                  </Button>
+                  
+                  <Button 
+                    variant="default"
+                    onClick={handleSendNotificationsManually}
+                    data-testid="send-notifications-manually"
+                    style={{ background: '#dc2626' }}
+                  >
+                    📧 Envoyer les notifications maintenant
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
