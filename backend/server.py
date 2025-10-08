@@ -850,13 +850,16 @@ async def update_user_access(user_id: str, role: str, statut: str, current_user:
     updated_user = clean_mongo_doc(updated_user)
     return User(**updated_user)
 
-@api_router.delete("/users/{user_id}/revoke")
-async def revoke_user_completely(user_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/users/{user_id}/revoke")
+async def revoke_user_completely(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"id": user_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Check if user exists IN THIS TENANT
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
@@ -864,12 +867,12 @@ async def revoke_user_completely(user_id: str, current_user: User = Depends(get_
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Impossible de supprimer votre propre compte")
     
-    # Delete user and all related data
-    await db.users.delete_one({"id": user_id})
-    await db.disponibilites.delete_many({"user_id": user_id})
-    await db.assignations.delete_many({"user_id": user_id})
-    await db.demandes_remplacement.delete_many({"demandeur_id": user_id})
-    await db.demandes_remplacement.delete_many({"remplacant_id": user_id})
+    # Delete user and all related data (only for this tenant)
+    await db.users.delete_one({"id": user_id, "tenant_id": tenant.id})
+    await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.assignations.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.demandes_remplacement.delete_many({"demandeur_id": user_id, "tenant_id": tenant.id})
+    await db.demandes_remplacement.delete_many({"remplacant_id": user_id, "tenant_id": tenant.id})
     
     return {"message": "Utilisateur et toutes ses données ont été supprimés définitivement"}
 
