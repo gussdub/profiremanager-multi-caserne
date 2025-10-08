@@ -2812,7 +2812,7 @@ const Planning = () => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de retirer la personne",
+        description: error.detail || error.message || "Impossible de retirer la personne",
         variant: "destructive"
       });
     }
@@ -2822,7 +2822,7 @@ const Planning = () => {
     if (user.role === 'employe') return;
 
     try {
-      await axios.post(`${API}/planning/assignation`, {
+      await apiPost(tenantSlug, '/planning/assignation', {
         user_id: userId,
         type_garde_id: typeGardeId,
         date: date,
