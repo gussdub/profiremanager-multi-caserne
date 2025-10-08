@@ -2585,6 +2585,7 @@ const Personnel = () => {
 // Planning Component optimisé - Vue moderne avec code couleur
 const Planning = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
     const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
