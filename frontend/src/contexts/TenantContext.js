@@ -47,6 +47,12 @@ export const TenantProvider = ({ children }) => {
           nom: slug.charAt(0).toUpperCase() + slug.slice(1)
         });
       }
+    } else {
+      // Pas de slug détecté - rediriger vers tenant par défaut pour la démo
+      // En production, cela devrait afficher une page de sélection de tenant
+      console.log('Aucun tenant détecté dans l\'URL, redirection vers /shefford');
+      window.location.href = '/shefford';
+      return;
     }
     
     setLoading(false);
