@@ -350,11 +350,60 @@ const SuperAdminDashboard = ({ onLogout }) => {
                         <div>
                           <strong>Statut:</strong>{' '}
                           <span style={{ 
-                            color: tenant.is_active ? '#10b981' : '#ef4444',
+                            color: tenant.statut === 'actif' ? '#10b981' : '#ef4444',
                             fontWeight: 'bold'
                           }}>
-                            {tenant.is_active ? '✓ Active' : '✗ Inactive'}
+                            {tenant.statut === 'actif' ? '✓ Active' : '✗ Inactive'}
                           </span>
+                        </div>
+                        <div style={{ 
+                          marginTop: '15px', 
+                          padding: '15px', 
+                          background: '#f8fafc', 
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
+                            📊 Facturation
+                          </div>
+                          <div style={{ display: 'grid', gap: '5px' }}>
+                            <div>
+                              <strong>Personnel:</strong> {tenant.nombre_employes || 0} / {
+                                tenant.nombre_employes <= 30 ? 30 : tenant.nombre_employes <= 50 ? 50 : '∞'
+                              }
+                            </div>
+                            <div>
+                              <strong>Palier:</strong>{' '}
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                background: tenant.nombre_employes <= 30 ? '#dbeafe' : tenant.nombre_employes <= 50 ? '#fef3c7' : '#fecaca',
+                                color: tenant.nombre_employes <= 30 ? '#1e40af' : tenant.nombre_employes <= 50 ? '#92400e' : '#991b1b'
+                              }}>
+                                {tenant.nombre_employes <= 30 ? 'Basic (1-30)' : tenant.nombre_employes <= 50 ? 'Standard (31-50)' : 'Premium (51+)'}
+                              </span>
+                            </div>
+                            <div>
+                              <strong>Prix:</strong>{' '}
+                              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>
+                                {tenant.nombre_employes <= 30 ? '12' : tenant.nombre_employes <= 50 ? '20' : '27'}$/mois
+                              </span>
+                            </div>
+                            {tenant.nombre_employes >= 30 && (
+                              <div style={{ 
+                                marginTop: '8px', 
+                                padding: '8px', 
+                                background: '#fef2f2', 
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                color: '#991b1b'
+                              }}>
+                                ⚠️ Limite de palier atteinte
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
