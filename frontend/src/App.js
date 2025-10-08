@@ -253,7 +253,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
   const marquerCommeLue = async (notifId) => {
     try {
-      await axios.put(`${API}/notifications/${notifId}/marquer-lu`);
+      await apiPut(tenantSlug, `/notifications/${notifId}/marquer-lu`, {});
       loadNotifications();
     } catch (error) {
       console.error('Erreur marquage notification:', error);
@@ -262,7 +262,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
   const marquerToutesLues = async () => {
     try {
-      await axios.put(`${API}/notifications/marquer-toutes-lues`);
+      await apiPut(tenantSlug, '/notifications/marquer-toutes-lues', {});
       loadNotifications();
     } catch (error) {
       console.error('Erreur marquage toutes notifications:', error);
