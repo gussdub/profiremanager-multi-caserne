@@ -14,6 +14,7 @@ import "./App.css";
 
 // Lazy loading pour optimiser les performances
 const Parametres = lazy(() => import("./components/Parametres"));
+const SuperAdminDashboard = lazy(() => import("./components/SuperAdminDashboard"));
 
 // Composant de chargement
 const LoadingComponent = () => (
