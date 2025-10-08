@@ -3751,8 +3751,9 @@ async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depe
     cleaned_epi = clean_mongo_doc(epi)
     return EPIEmploye(**cleaned_epi)
 
-@api_router.put("/epi/{epi_id}", response_model=EPIEmploye)
+@api_router.put("/{tenant_slug}/epi/{epi_id}", response_model=EPIEmploye)
 async def update_epi(
+    tenant_slug: str,
     epi_id: str,
     epi_update: EPIEmployeUpdate,
     current_user: User = Depends(get_current_user)
@@ -3762,7 +3763,10 @@ async def update_epi(
     - Admin/Superviseur: peuvent modifier tous les champs
     - Employé: peut modifier uniquement la taille
     """
-    epi = await db.epi_employes.find_one({"id": epi_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
@@ -3787,35 +3791,42 @@ async def update_epi(
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.epi_employes.update_one(
-        {"id": epi_id},
+        {"id": epi_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
-    updated_epi = await db.epi_employes.find_one({"id": epi_id})
+    updated_epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
     cleaned_epi = clean_mongo_doc(updated_epi)
     return EPIEmploye(**cleaned_epi)
 
-@api_router.delete("/epi/{epi_id}")
-async def delete_epi(epi_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/epi/{epi_id}")
+async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Supprime un EPI (Admin/Superviseur seulement)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    result = await db.epi_employes.delete_one({"id": epi_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.epi_employes.delete_one({"id": epi_id, "tenant_id": tenant.id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
     return {"message": "EPI supprimé avec succès"}
 
-@api_router.post("/epi/{epi_id}/inspection")
+@api_router.post("/{tenant_slug}/epi/{epi_id}/inspection")
 async def add_inspection(
+    tenant_slug: str,
     epi_id: str,
     inspection: InspectionEPI,
     current_user: User = Depends(get_current_user)
 ):
     """Ajoute une inspection à un EPI"""
-    epi = await db.epi_employes.find_one({"id": epi_id})
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
@@ -3827,9 +3838,10 @@ async def add_inspection(
     # Ajouter l'inspection à l'historique
     inspection_data = inspection.dict()
     inspection_data["inspecteur_id"] = current_user.id
+    inspection_data["tenant_id"] = tenant.id
     
     await db.epi_employes.update_one(
-        {"id": epi_id},
+        {"id": epi_id, "tenant_id": tenant.id},
         {
             "$push": {"historique_inspections": inspection_data},
             "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
@@ -3838,12 +3850,16 @@ async def add_inspection(
     
     # Si l'inspection indique un remplacement nécessaire, créer une notification
     if inspection.resultat == "Remplacement nécessaire":
-        employe = await db.users.find_one({"id": epi["employe_id"]})
+        employe = await db.users.find_one({"id": epi["employe_id"], "tenant_id": tenant.id})
         
-        # Notifier les admins et superviseurs
-        superviseurs_admins = await db.users.find({"role": {"$in": ["superviseur", "admin"]}}).to_list(100)
+        # Notifier les admins et superviseurs de ce tenant
+        superviseurs_admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
         for superviseur in superviseurs_admins:
             await creer_notification(
+                tenant_id=tenant.id,
                 destinataire_id=superviseur["id"],
                 type="epi_remplacement",
                 titre="Remplacement EPI nécessaire",
