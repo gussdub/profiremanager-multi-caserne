@@ -43,13 +43,27 @@ const useAuth = () => {
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { tenantSlug, isSuperAdmin } = useTenant();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    
+    // Ne pas vérifier le token si pas de tenantSlug
+    if (!tenantSlug) {
+      setLoading(false);
+      return;
+    }
+    
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Construire l'URL correcte selon le type d'utilisateur
+      const meUrl = isSuperAdmin 
+        ? `${API}/admin/auth/me` 
+        : `${API}/${tenantSlug}/auth/me`;
+      
       // Verify token and get user info
-      axios.get(`${API}/auth/me`)
+      axios.get(meUrl)
         .then(response => {
           setUser(response.data);
         })
@@ -63,17 +77,28 @@ const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [tenantSlug, isSuperAdmin]);
 
   const login = async (email, mot_de_passe) => {
     try {
-      const response = await axios.post(`${API}/auth/login`, {
+      // Utiliser l'endpoint tenant-spécifique
+      const loginUrl = isSuperAdmin
+        ? `${API}/admin/auth/login`
+        : `${API}/${tenantSlug}/auth/login`;
+      
+      const response = await axios.post(loginUrl, {
         email,
         mot_de_passe
       });
       
-      const { access_token, user: userData } = response.data;
+      const { access_token, user: userData, tenant } = response.data;
       localStorage.setItem('token', access_token);
+      
+      // Stocker les infos du tenant si présentes
+      if (tenant) {
+        localStorage.setItem('tenant', JSON.stringify(tenant));
+      }
+      
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(userData);
       return { success: true };
@@ -87,6 +112,7 @@ const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('tenant');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
