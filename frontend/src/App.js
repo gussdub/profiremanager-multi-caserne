@@ -5982,6 +5982,7 @@ const MonProfil = () => {
           prenom: userData.prenom,
           email: userData.email,
           telephone: userData.telephone,
+          adresse: userData.adresse || '',
           contact_urgence: userData.contact_urgence || '',
           heures_max_semaine: userData.heures_max_semaine || 25
         });
