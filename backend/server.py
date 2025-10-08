@@ -470,6 +470,7 @@ class TenantCreate(BaseModel):
     code_postal: str = ""
     telephone: str = ""
     email_contact: str = ""
+    date_creation: Optional[str] = None  # Date optionnelle
 
 class SuperAdmin(BaseModel):
     """Super administrateur gérant toutes les casernes"""
