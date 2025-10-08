@@ -328,6 +328,7 @@ class User(BaseModel):
     prenom: str
     email: str
     telephone: str = ""
+    adresse: str = ""  # Adresse du pompier
     contact_urgence: str = ""
     grade: str  # Capitaine, Directeur, Pompier, Lieutenant
     fonction_superieur: bool = False  # Pour pompiers pouvant agir comme lieutenant
