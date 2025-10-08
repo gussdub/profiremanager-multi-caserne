@@ -49,14 +49,28 @@ Migrer tous les appels `axios` directs vers les fonctions helpers `apiGet`, `api
 - ✅ Mise à jour de la gestion d'erreurs (`error.detail` au lieu de `error.response?.data?.detail`)
 - ✅ Ajout de `tenantSlug` dans les dépendances useEffect
 
+### Migration Complète! 🎉
+
+Tous les composants frontend ont été migrés avec succès:
+- ✅ Personnel
+- ✅ Dashboard
+- ✅ Planning
+- ✅ Remplacements
+- ✅ Formations
+- ✅ MesDisponibilites
+- ✅ MonProfil
+- ✅ Rapports
+- ✅ ModuleEPI
+- ✅ Sidebar (Notifications)
+
+**Note**: Les appels axios dans `AuthProvider` sont délibérément conservés car ils gèrent l'authentification initiale avant l'établissement du contexte tenant.
+
 ### Prochaines Étapes
 
-1. Migrer MesDisponibilites
-2. Migrer MonProfil  
-3. Migrer Rapports
-4. Vérifier s'il y a d'autres composants avec des appels axios
-5. Tester chaque module après migration
-6. Redémarrer les services et valider
+1. ✅ Migration des API calls - TERMINÉ
+2. 🔄 Redémarrer les services
+3. 🔄 Tester l'application avec un tenant
+4. 🔄 Valider le fonctionnement multi-tenant
 
 ### Notes Techniques
 
