@@ -1263,7 +1263,9 @@ async def super_admin_login(login: SuperAdminLogin):
 @api_router.get("/admin/tenants")
 async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
     """Liste toutes les casernes"""
-    tenants = await db.tenants.find().to_list(100)
+    tenants_data = await db.tenants.find().to_list(100)
+    # Convertir en objets Pydantic pour éviter les ObjectID
+    tenants = [Tenant(**t) for t in tenants_data]
     return tenants
 
 @api_router.post("/admin/tenants")
