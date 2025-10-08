@@ -2529,6 +2529,7 @@ async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_cu
                     
                     # Compter combien de personnes sont assignées pour cette garde ce jour
                     assignations_jour = await db.assignations.count_documents({
+                        "tenant_id": tenant.id,
                         "date": current_day.strftime("%Y-%m-%d"),
                         "type_garde_id": type_garde["id"]
                     })
