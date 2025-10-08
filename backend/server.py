@@ -705,6 +705,7 @@ class ProfileUpdate(BaseModel):
     nom: str
     email: str
     telephone: str = ""
+    adresse: str = ""
     contact_urgence: str = ""
     heures_max_semaine: int = 25
 
