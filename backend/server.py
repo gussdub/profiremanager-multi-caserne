@@ -308,6 +308,7 @@ class UserLogin(BaseModel):
 
 class TypeGarde(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     nom: str
     heure_debut: str
     heure_fin: str
