@@ -224,8 +224,50 @@ def get_password_hash(password):
 security = HTTPBearer()
 
 # Define Models
+# ==================== MULTI-TENANT MODELS ====================
+
+class Tenant(BaseModel):
+    """Modèle pour une caserne (tenant)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    slug: str  # URL slug (shefford, bromont, etc.)
+    nom: str  # Nom complet de la caserne
+    adresse: str = ""
+    ville: str = ""
+    province: str = "QC"
+    code_postal: str = ""
+    telephone: str = ""
+    email_contact: str = ""
+    actif: bool = True
+    date_creation: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    parametres: Dict[str, Any] = {}
+
+class TenantCreate(BaseModel):
+    slug: str
+    nom: str
+    adresse: str = ""
+    ville: str = ""
+    province: str = "QC"
+    code_postal: str = ""
+    telephone: str = ""
+    email_contact: str = ""
+
+class SuperAdmin(BaseModel):
+    """Super administrateur gérant toutes les casernes"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    nom: str = "Super Admin"
+    mot_de_passe_hash: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SuperAdminLogin(BaseModel):
+    email: str
+    mot_de_passe: str
+
+# ==================== USER MODELS ====================
+
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str  # ID de la caserne
     nom: str
     prenom: str
     email: str
