@@ -1275,14 +1275,14 @@ const Personnel = () => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce pompier ?")) return;
 
     try {
-      await axios.delete(`${API}/users/${userId}`);
+      await apiDelete(tenantSlug, `/users/${userId}`);
       toast({
         title: "Pompier supprimé",
         description: "Le pompier a été supprimé avec succès",
         variant: "success"
       });
-      const response = await axios.get(`${API}/users`);
-      setUsers(response.data);
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
     } catch (error) {
       toast({
         title: "Erreur",
