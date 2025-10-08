@@ -464,10 +464,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), tenant_slug: str = None):
+    """
+    Authentifie l'utilisateur et vérifie qu'il appartient au tenant
+    tenant_slug est optionnel pour compatibilité avec les routes qui ne l'utilisent pas encore
+    """
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")  # Tenant ID stocké dans le token
+        
         if user_id is None:
             raise HTTPException(status_code=401, detail="Token invalide")
     except jwt.PyJWTError:
@@ -476,6 +482,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user = await db.users.find_one({"id": user_id})
     if user is None:
         raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+    
+    # Vérifier que l'utilisateur appartient au tenant si tenant_slug est fourni
+    if tenant_slug:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        if user.get("tenant_id") != tenant.id:
+            raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
+    
     return User(**user)
 
 # Root route
