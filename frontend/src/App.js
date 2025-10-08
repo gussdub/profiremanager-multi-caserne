@@ -447,6 +447,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
 // Module EPI Component - Vue différente selon le rôle
 const ModuleEPI = ({ user }) => {
+  const { tenantSlug } = useTenant();
   const [loading, setLoading] = useState(true);
   const [myEPIs, setMyEPIs] = useState([]);
   const [allEPIs, setAllEPIs] = useState([]);
@@ -469,21 +470,21 @@ const ModuleEPI = ({ user }) => {
 
   useEffect(() => {
     fetchEPIData();
-  }, [user]);
+  }, [user, tenantSlug]);
 
   const fetchEPIData = async () => {
+    if (!tenantSlug) return;
+    
     setLoading(true);
     try {
       if (isAdminOrSupervisor) {
         // Admin/Superviseur : charger tous les EPI et les alertes
-        const [alertsResponse] = await Promise.all([
-          axios.get(`${API}/epi/alertes/all`)
-        ]);
-        setAlerts(alertsResponse.data);
+        const alertsData = await apiGet(tenantSlug, '/epi/alertes/all');
+        setAlerts(alertsData);
       } else {
         // Employé : charger ses propres EPI
-        const response = await axios.get(`${API}/epi/employe/${user.id}`);
-        setMyEPIs(response.data);
+        const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+        setMyEPIs(episData);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des EPI:', error);
