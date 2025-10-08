@@ -445,7 +445,7 @@ class Assignation(BaseModel):
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
 
 class AssignationCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     user_id: str
     type_garde_id: str
     date: str
