@@ -2465,7 +2465,7 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
                 heures_travaillees += type_garde.get("duree_heures", 8)
         
         # Get user formations count
-        user_data = await db.users.find_one({"id": user_id})
+        user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
         certifications = len(user_data.get("formations", [])) if user_data else 0
         
         return {
