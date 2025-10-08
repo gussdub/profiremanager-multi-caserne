@@ -6517,7 +6517,7 @@ const Rapports = () => {
       const params = new URLSearchParams({ type_rapport: typeRapport });
       if (userId) params.append('user_id', userId);
       
-      const response = await axios.get(`${API}/rapports/export-pdf?${params}`);
+      const responseData = await apiGet(tenantSlug, `/rapports/export-pdf?${params}`);
       
       // Décoder le base64 et créer le téléchargement
       const binaryString = atob(response.data.data);
