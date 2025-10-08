@@ -1319,8 +1319,8 @@ const Personnel = () => {
   // Fonctions de gestion des EPI
   const handleViewEPI = async (user) => {
     try {
-      const response = await axios.get(`${API}/epi/employe/${user.id}`);
-      setUserEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      setUserEPIs(episData);
       setSelectedUser(user);
       setShowEPIModal(true);
     } catch (error) {
