@@ -1863,25 +1863,36 @@ async def get_statistiques_avancees(current_user: User = Depends(get_current_use
         raise HTTPException(status_code=500, detail=f"Erreur calcul statistiques: {str(e)}")
 
 # Sessions de formation routes
-@api_router.post("/sessions-formation", response_model=SessionFormation)
-async def create_session_formation(session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
+async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    session_obj = SessionFormation(**session.dict())
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    session_dict = session.dict()
+    session_dict["tenant_id"] = tenant.id
+    session_obj = SessionFormation(**session_dict)
     await db.sessions_formation.insert_one(session_obj.dict())
     return session_obj
 
-@api_router.get("/sessions-formation", response_model=List[SessionFormation])
-async def get_sessions_formation(current_user: User = Depends(get_current_user)):
-    sessions = await db.sessions_formation.find().to_list(1000)
+@api_router.get("/{tenant_slug}/sessions-formation", response_model=List[SessionFormation])
+async def get_sessions_formation(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    sessions = await db.sessions_formation.find({"tenant_id": tenant.id}).to_list(1000)
     cleaned_sessions = [clean_mongo_doc(session) for session in sessions]
     return [SessionFormation(**session) for session in cleaned_sessions]
 
-@api_router.post("/sessions-formation/{session_id}/inscription")
-async def inscrire_formation(session_id: str, current_user: User = Depends(get_current_user)):
-    # Vérifier que la session existe
-    session = await db.sessions_formation.find_one({"id": session_id})
+@api_router.post("/{tenant_slug}/sessions-formation/{session_id}/inscription")
+async def inscrire_formation(tenant_slug: str, session_id: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que la session existe dans ce tenant
+    session = await db.sessions_formation.find_one({"id": session_id, "tenant_id": tenant.id})
     if not session:
         raise HTTPException(status_code=404, detail="Session de formation non trouvée")
     
@@ -1895,23 +1906,28 @@ async def inscrire_formation(session_id: str, current_user: User = Depends(get_c
     
     # Ajouter l'utilisateur aux participants
     await db.sessions_formation.update_one(
-        {"id": session_id},
+        {"id": session_id, "tenant_id": tenant.id},
         {"$push": {"participants": current_user.id}}
     )
     
     # Créer l'inscription
-    inscription_obj = InscriptionFormation(
-        session_id=session_id,
-        user_id=current_user.id
-    )
+    inscription_dict = {
+        "tenant_id": tenant.id,
+        "session_id": session_id,
+        "user_id": current_user.id
+    }
+    inscription_obj = InscriptionFormation(**inscription_dict)
     await db.inscriptions_formation.insert_one(inscription_obj.dict())
     
     return {"message": "Inscription réussie", "session_id": session_id}
 
-@api_router.delete("/sessions-formation/{session_id}/desinscription")
-async def desinscrire_formation(session_id: str, current_user: User = Depends(get_current_user)):
-    # Vérifier que la session existe
-    session = await db.sessions_formation.find_one({"id": session_id})
+@api_router.delete("/{tenant_slug}/sessions-formation/{session_id}/desinscription")
+async def desinscrire_formation(tenant_slug: str, session_id: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que la session existe dans ce tenant
+    session = await db.sessions_formation.find_one({"id": session_id, "tenant_id": tenant.id})
     if not session:
         raise HTTPException(status_code=404, detail="Session de formation non trouvée")
     
@@ -1921,14 +1937,15 @@ async def desinscrire_formation(session_id: str, current_user: User = Depends(ge
     
     # Retirer l'utilisateur des participants
     await db.sessions_formation.update_one(
-        {"id": session_id},
+        {"id": session_id, "tenant_id": tenant.id},
         {"$pull": {"participants": current_user.id}}
     )
     
     # Supprimer l'inscription
     await db.inscriptions_formation.delete_one({
         "session_id": session_id,
-        "user_id": current_user.id
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
     })
     
     return {"message": "Désinscription réussie", "session_id": session_id}
