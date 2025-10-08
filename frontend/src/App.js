@@ -507,7 +507,7 @@ const ModuleEPI = ({ user }) => {
     if (!selectedEPI) return;
 
     try {
-      await axios.post(`${API}/epi/${selectedEPI.id}/inspection`, {
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/inspection`, {
         ...inspectionForm,
         inspecteur_id: user.id
       });
