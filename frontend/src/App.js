@@ -1119,6 +1119,7 @@ const Personnel = () => {
     mot_de_passe: ''
   });
   const { toast } = useToast();
+  const { tenantSlug } = useTenant();
 
   const grades = ['Directeur', 'Capitaine', 'Lieutenant', 'Pompier'];
 
