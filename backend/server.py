@@ -343,6 +343,7 @@ class PlanningCreate(BaseModel):
 
 class Assignation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     user_id: str
     type_garde_id: str
     date: str
@@ -350,6 +351,7 @@ class Assignation(BaseModel):
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
 
 class AssignationCreate(BaseModel):
+    tenant_id: str
     user_id: str
     type_garde_id: str
     date: str
@@ -357,6 +359,7 @@ class AssignationCreate(BaseModel):
 
 class DemandeRemplacement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     demandeur_id: str
     type_garde_id: str
     date: str
