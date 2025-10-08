@@ -52,7 +52,7 @@ async def initialize_multi_tenant():
         super_admin = SuperAdmin(
             email=SUPER_ADMIN_EMAIL,
             nom="Super Admin",
-            mot_de_passe_hash=hash_password("230685Juin+")
+            mot_de_passe_hash=get_password_hash("230685Juin+")
         )
         await db.super_admins.insert_one(super_admin.dict())
         print(f"✅ Super admin créé: {SUPER_ADMIN_EMAIL}")
