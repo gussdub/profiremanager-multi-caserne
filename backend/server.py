@@ -2771,6 +2771,175 @@ async def reinitialiser_planning(current_user: User = Depends(get_current_user))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur réinitialisation: {str(e)}")
 
+
+
+# ==================== PARAMÈTRES DE VALIDATION DU PLANNING ====================
+
+@api_router.get("/{tenant_slug}/parametres/validation-planning")
+async def get_parametres_validation(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """
+    Récupérer les paramètres de validation du planning pour le tenant
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer les paramètres de validation ou retourner valeurs par défaut
+        validation_params = tenant.parametres.get('validation_planning', {
+            'frequence': 'mensuel',
+            'jour_envoi': 25,  # 25 du mois
+            'heure_envoi': '17:00',
+            'periode_couverte': 'mois_suivant',
+            'envoi_automatique': True,
+            'derniere_notification': None
+        })
+        
+        return validation_params
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur récupération paramètres: {str(e)}")
+
+@api_router.put("/{tenant_slug}/parametres/validation-planning")
+async def update_parametres_validation(tenant_slug: str, parametres: dict, current_user: User = Depends(get_current_user)):
+    """
+    Mettre à jour les paramètres de validation du planning
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        tenant_doc = await db.tenants.find_one({"id": tenant.id})
+        
+        if not tenant_doc:
+            raise HTTPException(status_code=404, detail="Tenant non trouvé")
+        
+        # Mettre à jour les paramètres
+        current_parametres = tenant_doc.get('parametres', {})
+        current_parametres['validation_planning'] = parametres
+        
+        await db.tenants.update_one(
+            {"id": tenant.id},
+            {"$set": {"parametres": current_parametres}}
+        )
+        
+        return {"message": "Paramètres mis à jour avec succès", "parametres": parametres}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur mise à jour paramètres: {str(e)}")
+
+@api_router.post("/{tenant_slug}/planning/envoyer-notifications")
+async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, periode_fin: str, current_user: User = Depends(get_current_user)):
+    """
+    Envoyer les notifications par email à tous les pompiers avec leurs gardes assignées
+    
+    Args:
+        tenant_slug: slug de la caserne
+        periode_debut: Date début (YYYY-MM-DD)
+        periode_fin: Date fin (YYYY-MM-DD)
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer toutes les assignations de la période
+        assignations_list = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {"$gte": periode_debut, "$lte": periode_fin}
+        }).to_list(length=None)
+        
+        # Récupérer tous les users et types de garde
+        users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        # Créer des maps pour accès rapide
+        users_map = {u['id']: u for u in users_list}
+        types_garde_map = {t['id']: t for t in types_garde_list}
+        
+        # Grouper les assignations par user
+        gardes_par_user = {}
+        for assignation in assignations_list:
+            user_id = assignation['user_id']
+            if user_id not in gardes_par_user:
+                gardes_par_user[user_id] = []
+            
+            type_garde = types_garde_map.get(assignation['type_garde_id'], {})
+            
+            # Trouver les collègues pour cette garde
+            collegues = [
+                f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}"
+                for a in assignations_list
+                if a['date'] == assignation['date'] and 
+                   a['type_garde_id'] == assignation['type_garde_id'] and 
+                   a['user_id'] != user_id and 
+                   a['user_id'] in users_map
+            ]
+            
+            # Formater la date
+            from datetime import datetime as dt
+            date_obj = dt.strptime(assignation['date'], '%Y-%m-%d')
+            jour_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][date_obj.weekday()]
+            
+            gardes_par_user[user_id].append({
+                'date': date_obj.strftime('%d %B %Y'),
+                'jour': jour_fr,
+                'type_garde': type_garde.get('nom', 'Garde'),
+                'horaire': f"{type_garde.get('heure_debut', '08:00')} - {type_garde.get('heure_fin', '08:00')}",
+                'collegues': collegues
+            })
+        
+        # Envoyer les emails
+        emails_envoyes = 0
+        emails_echoues = 0
+        
+        periode_str = f"{dt.strptime(periode_debut, '%Y-%m-%d').strftime('%B %Y')}"
+        
+        for user_id, gardes in gardes_par_user.items():
+            user = users_map.get(user_id)
+            if not user or not user.get('email'):
+                continue
+            
+            user_name = f"{user['prenom']} {user['nom']}"
+            email_sent = send_gardes_notification_email(
+                user['email'],
+                user_name,
+                gardes,
+                tenant_slug,
+                periode_str
+            )
+            
+            if email_sent:
+                emails_envoyes += 1
+            else:
+                emails_echoues += 1
+        
+        # Mettre à jour la date de dernière notification
+        tenant_doc = await db.tenants.find_one({"id": tenant.id})
+        current_parametres = tenant_doc.get('parametres', {})
+        if 'validation_planning' not in current_parametres:
+            current_parametres['validation_planning'] = {}
+        current_parametres['validation_planning']['derniere_notification'] = datetime.now(timezone.utc).isoformat()
+        
+        await db.tenants.update_one(
+            {"id": tenant.id},
+            {"$set": {"parametres": current_parametres}}
+        )
+        
+        return {
+            "message": "Notifications envoyées",
+            "emails_envoyes": emails_envoyes,
+            "emails_echoues": emails_echoues,
+            "total_pompiers": len(gardes_par_user)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur envoi notifications: {str(e)}")
+
+
 # Réparer tous les mots de passe démo
 @api_router.post("/repair-demo-passwords")
 async def repair_demo_passwords():
