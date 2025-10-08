@@ -5343,7 +5343,7 @@ const MesDisponibilites = () => {
 
       const allDisponibilites = [...existingDispos, ...newDispos];
 
-      await axios.put(`${API}/disponibilites/${user.id}`, allDisponibilites);
+      await apiPut(tenantSlug, `/disponibilites/${user.id}`, allDisponibilites);
       
       toast({
         title: "Toutes les disponibilités sauvegardées",
