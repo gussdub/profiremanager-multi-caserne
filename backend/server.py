@@ -2564,7 +2564,7 @@ async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_cu
                 heures_totales += type_garde.get("duree_heures", 8)
         
         # 6. Remplacements effectués (100% dynamique)
-        remplacements_count = await db.demandes_remplacement.count_documents({"statut": "approuve"})
+        remplacements_count = await db.demandes_remplacement.count_documents({"statut": "approuve", "tenant_id": tenant.id})
         
         return Statistiques(
             personnel_actif=personnel_count,
