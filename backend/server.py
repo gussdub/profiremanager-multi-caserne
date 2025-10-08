@@ -2509,7 +2509,7 @@ async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_cu
         
         # 4. Taux de couverture dynamique - CALCUL CORRECT
         # Calculer le total de personnel requis pour la semaine
-        total_assignations_required = await db.types_garde.find().to_list(1000)
+        total_assignations_required = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
         total_personnel_requis = 0
         total_personnel_assigne = 0
         
