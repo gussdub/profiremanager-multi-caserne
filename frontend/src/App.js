@@ -2642,24 +2642,26 @@ const Planning = () => {
 
   useEffect(() => {
     fetchPlanningData();
-  }, [currentWeek, currentMonth, viewMode]);
+  }, [currentWeek, currentMonth, viewMode, tenantSlug]);
 
   const fetchPlanningData = async () => {
+    if (!tenantSlug) return;
+    
     setLoading(true);
     try {
       const dateRange = viewMode === 'mois' ? 
         `${currentMonth}-01` : // Premier jour du mois
         currentWeek;
         
-      const [typesRes, assignationsRes, usersRes] = await Promise.all([
-        axios.get(`${API}/types-garde`),
-        axios.get(`${API}/planning/assignations/${dateRange}`),
-        user.role !== 'employe' ? axios.get(`${API}/users`) : Promise.resolve({ data: [] })
+      const [typesData, assignationsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/types-garde'),
+        apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
+        user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([])
       ]);
       
-      setTypesGarde(typesRes.data);
-      setAssignations(assignationsRes.data);
-      setUsers(usersRes.data);
+      setTypesGarde(typesData);
+      setAssignations(assignationsData);
+      setUsers(usersData);
     } catch (error) {
       console.error('Erreur lors du chargement du planning:', error);
       toast({
