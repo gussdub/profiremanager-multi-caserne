@@ -3536,30 +3536,42 @@ async def init_demo_data():
 
 # ==================== NOTIFICATIONS ====================
 
-@api_router.get("/notifications", response_model=List[Notification])
-async def get_notifications(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/notifications", response_model=List[Notification])
+async def get_notifications(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère toutes les notifications de l'utilisateur connecté"""
-    notifications = await db.notifications.find(
-        {"destinataire_id": current_user.id}
-    ).sort("date_creation", -1).limit(50).to_list(50)
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    notifications = await db.notifications.find({
+        "tenant_id": tenant.id,
+        "destinataire_id": current_user.id
+    }).sort("date_creation", -1).limit(50).to_list(50)
     
     cleaned_notifications = [clean_mongo_doc(notif) for notif in notifications]
     return [Notification(**notif) for notif in cleaned_notifications]
 
-@api_router.get("/notifications/non-lues/count")
-async def get_unread_count(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/notifications/non-lues/count")
+async def get_unread_count(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Compte le nombre de notifications non lues"""
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     count = await db.notifications.count_documents({
+        "tenant_id": tenant.id,
         "destinataire_id": current_user.id,
         "statut": "non_lu"
     })
     return {"count": count}
 
-@api_router.put("/notifications/{notification_id}/marquer-lu")
-async def marquer_notification_lue(notification_id: str, current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/notifications/{notification_id}/marquer-lu")
+async def marquer_notification_lue(tenant_slug: str, notification_id: str, current_user: User = Depends(get_current_user)):
     """Marque une notification comme lue"""
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     notification = await db.notifications.find_one({
         "id": notification_id,
+        "tenant_id": tenant.id,
         "destinataire_id": current_user.id
     })
     
@@ -3567,7 +3579,7 @@ async def marquer_notification_lue(notification_id: str, current_user: User = De
         raise HTTPException(status_code=404, detail="Notification non trouvée")
     
     await db.notifications.update_one(
-        {"id": notification_id},
+        {"id": notification_id, "tenant_id": tenant.id},
         {"$set": {
             "statut": "lu",
             "date_lecture": datetime.now(timezone.utc).isoformat()
@@ -3576,11 +3588,15 @@ async def marquer_notification_lue(notification_id: str, current_user: User = De
     
     return {"message": "Notification marquée comme lue"}
 
-@api_router.put("/notifications/marquer-toutes-lues")
-async def marquer_toutes_lues(current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/notifications/marquer-toutes-lues")
+async def marquer_toutes_lues(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Marque toutes les notifications comme lues"""
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     result = await db.notifications.update_many(
         {
+            "tenant_id": tenant.id,
             "destinataire_id": current_user.id,
             "statut": "non_lu"
         },
