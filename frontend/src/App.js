@@ -6007,6 +6007,7 @@ const MonProfil = () => {
         nom: profileData.nom,
         email: profileData.email,
         telephone: profileData.telephone,
+        adresse: profileData.adresse,
         contact_urgence: profileData.contact_urgence,
         heures_max_semaine: profileData.heures_max_semaine || 25
       };
