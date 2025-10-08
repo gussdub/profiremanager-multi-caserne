@@ -520,11 +520,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def root():
     return {"message": "ProFireManager API v2.0 - Multi-Tenant", "status": "running"}
 
-# Note: Super Admin routes are defined after get_super_admin dependency (line ~1370)
+# Note: Routes are ordered carefully:
+# 1. Super Admin routes (defined after dependencies at line ~1240)
+# 2. Tenant-specific routes (defined after super admin routes)
 
-# ==================== TENANT AUTH ROUTES ====================
-
-@api_router.post("/{tenant_slug}/auth/login")
+# Waiting for route definitions below...
 async def login(tenant_slug: str, user_login: UserLogin):
     """Login pour un tenant spécifique"""
     # Vérifier que le tenant existe
