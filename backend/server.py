@@ -3504,6 +3504,7 @@ async def marquer_toutes_lues(current_user: User = Depends(get_current_user)):
 
 # Helper function pour créer des notifications
 async def creer_notification(
+    tenant_id: str,
     destinataire_id: str,
     type: str,
     titre: str,
@@ -3513,6 +3514,7 @@ async def creer_notification(
 ):
     """Crée une notification dans la base de données"""
     notification = Notification(
+        tenant_id=tenant_id,
         destinataire_id=destinataire_id,
         type=type,
         titre=titre,
