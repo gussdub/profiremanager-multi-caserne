@@ -478,7 +478,7 @@ class Formation(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class FormationCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     nom: str
     description: str = ""
     duree_heures: int = 0
