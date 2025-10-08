@@ -2630,7 +2630,7 @@ const Planning = () => {
     return date;
   });
 
-  // Générer les dates du mois pour la vue mois
+  // Générer les dates du mois pour la vue mois (calendrier commençant le lundi)
   const monthDates = (() => {
     if (viewMode !== 'mois') return [];
     
@@ -2639,9 +2639,21 @@ const Planning = () => {
     const lastDay = new Date(year, month, 0);
     const dates = [];
     
+    // Calculer le jour de la semaine du premier jour (0 = dimanche, 1 = lundi, etc.)
+    let firstDayOfWeek = firstDay.getDay();
+    // Convertir pour que lundi = 0, dimanche = 6
+    firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    
+    // Ajouter les jours vides au début pour commencer à lundi
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      dates.push(null); // Jours vides
+    }
+    
+    // Ajouter tous les jours du mois
     for (let day = 1; day <= lastDay.getDate(); day++) {
       dates.push(new Date(year, month - 1, day));
     }
+    
     return dates;
   })();
 
