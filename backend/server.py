@@ -706,18 +706,22 @@ class ProfileUpdate(BaseModel):
     contact_urgence: str = ""
     heures_max_semaine: int = 25
 
-@api_router.put("/users/mon-profil", response_model=User)
+@api_router.put("/{tenant_slug}/users/mon-profil", response_model=User)
 async def update_mon_profil(
+    tenant_slug: str,
     profile_data: ProfileUpdate,
     current_user: User = Depends(get_current_user)
 ):
     """
     Permet à un utilisateur de modifier son propre profil
     """
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     try:
         # L'utilisateur peut modifier son propre profil
         result = await db.users.update_one(
-            {"id": current_user.id}, 
+            {"id": current_user.id, "tenant_id": tenant.id}, 
             {"$set": profile_data.dict()}
         )
         
@@ -725,7 +729,7 @@ async def update_mon_profil(
             raise HTTPException(status_code=400, detail="Impossible de mettre à jour le profil")
         
         # Récupérer le profil mis à jour
-        updated_user = await db.users.find_one({"id": current_user.id})
+        updated_user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
         updated_user = clean_mongo_doc(updated_user)
         return User(**updated_user)
         
