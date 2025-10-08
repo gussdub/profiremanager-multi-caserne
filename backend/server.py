@@ -922,33 +922,41 @@ async def delete_type_garde(tenant_slug: str, type_garde_id: str, current_user: 
     await db.assignations.delete_many({"type_garde_id": type_garde_id})
     
     return {"message": "Type de garde supprimé avec succès"}
-@api_router.get("/planning/{semaine_debut}")
-async def get_planning(semaine_debut: str, current_user: User = Depends(get_current_user)):
-    planning = await db.planning.find_one({"semaine_debut": semaine_debut})
+@api_router.get("/{tenant_slug}/planning/{semaine_debut}")
+async def get_planning(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    planning = await db.planning.find_one({"semaine_debut": semaine_debut, "tenant_id": tenant.id})
     if not planning:
         # Create empty planning for the week
         semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         planning_obj = Planning(semaine_debut=semaine_debut, semaine_fin=semaine_fin)
-        await db.planning.insert_one(planning_obj.dict())
-        planning = planning_obj.dict()
+        planning_dict = planning_obj.dict()
+        planning_dict["tenant_id"] = tenant.id
+        await db.planning.insert_one(planning_dict)
+        planning = planning_dict
     else:
         planning = clean_mongo_doc(planning)
     
     return planning
 
-@api_router.delete("/planning/assignation/{assignation_id}")
-async def retirer_assignation(assignation_id: str, current_user: User = Depends(get_current_user)):
+@api_router.delete("/{tenant_slug}/planning/assignation/{assignation_id}")
+async def retirer_assignation(tenant_slug: str, assignation_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     try:
-        # Trouver l'assignation
-        assignation = await db.assignations.find_one({"id": assignation_id})
+        # Trouver l'assignation dans ce tenant
+        assignation = await db.assignations.find_one({"id": assignation_id, "tenant_id": tenant.id})
         if not assignation:
             raise HTTPException(status_code=404, detail="Assignation non trouvée")
         
         # Supprimer l'assignation
-        result = await db.assignations.delete_one({"id": assignation_id})
+        result = await db.assignations.delete_one({"id": assignation_id, "tenant_id": tenant.id})
         if result.deleted_count == 0:
             raise HTTPException(status_code=400, detail="Impossible de retirer l'assignation")
         
@@ -962,21 +970,27 @@ async def retirer_assignation(assignation_id: str, current_user: User = Depends(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur suppression assignation: {str(e)}")
 
-@api_router.post("/planning/assignation")
-async def create_assignation(assignation: AssignationCreate, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/planning/assignation")
+async def create_assignation(tenant_slug: str, assignation: AssignationCreate, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Store assignation in database
-    assignation_obj = Assignation(**assignation.dict())
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Store assignation in database avec tenant_id
+    assignation_dict = assignation.dict()
+    assignation_dict["tenant_id"] = tenant.id
+    assignation_obj = Assignation(**assignation_dict)
     await db.assignations.insert_one(assignation_obj.dict())
     
-    # Créer notification pour l'employé assigné
-    user_assigne = await db.users.find_one({"id": assignation.user_id})
-    type_garde = await db.types_garde.find_one({"id": assignation.type_garde_id})
+    # Créer notification pour l'employé assigné (filtré par tenant)
+    user_assigne = await db.users.find_one({"id": assignation.user_id, "tenant_id": tenant.id})
+    type_garde = await db.types_garde.find_one({"id": assignation.type_garde_id, "tenant_id": tenant.id})
     
     if user_assigne and type_garde:
         await creer_notification(
+            tenant_id=tenant.id,
             destinataire_id=assignation.user_id,
             type="planning_assigne",
             titre="Nouveau quart assigné",
@@ -991,11 +1005,15 @@ async def create_assignation(assignation: AssignationCreate, current_user: User 
     
     return {"message": "Assignation créée avec succès"}
 
-@api_router.get("/planning/assignations/{semaine_debut}")
-async def get_assignations(semaine_debut: str, current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/planning/assignations/{semaine_debut}")
+async def get_assignations(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
     
     assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
         "date": {
             "$gte": semaine_debut,
             "$lte": semaine_fin
