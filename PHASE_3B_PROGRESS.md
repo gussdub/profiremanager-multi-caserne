@@ -33,13 +33,13 @@ Migrer tous les appels `axios` directs vers les fonctions helpers `apiGet`, `api
    - Migration: sessions-formation, formations
    - CRUD complet migré
 
-### Composants Restants 🔄
+### Composants Restants - TOUS TERMINÉS ✅
 
-6. **MesDisponibilites** - À faire
-7. **MonProfil** - À faire
-8. **Rapports** - À faire
-9. **ModuleEPI** - À vérifier si existe
-10. **Autres composants** - À identifier
+6. **MesDisponibilites** ✅ COMPLET
+7. **MonProfil** ✅ COMPLET
+8. **Rapports** ✅ COMPLET
+9. **ModuleEPI** ✅ COMPLET
+10. **Sidebar** (Notifications) ✅ COMPLET
 
 ### Modifications Globales Effectuées
 
