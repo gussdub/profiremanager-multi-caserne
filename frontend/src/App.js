@@ -3579,6 +3579,7 @@ const Planning = () => {
 // Remplacements Component optimisé - Gestion complète remplacements et congés
 const Remplacements = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [demandes, setDemandes] = useState([]);
   const [demandesConge, setDemandesConge] = useState([]);
   const [users, setUsers] = useState([]);
