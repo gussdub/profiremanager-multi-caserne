@@ -30,9 +30,27 @@ from sendgrid.helpers.mail import Mail
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB connection avec configuration SSL pour production
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+
+# Configuration SSL/TLS pour MongoDB Atlas et production
+# tlsAllowInvalidCertificates=true peut être nécessaire pour certains environnements
+if 'mongodb+srv' in mongo_url or 'ssl=true' in mongo_url.lower():
+    # Pour MongoDB Atlas, s'assurer que les paramètres SSL sont corrects
+    if '?' in mongo_url:
+        # Ajouter/forcer les paramètres SSL si nécessaire
+        if 'ssl=' not in mongo_url.lower() and 'tls=' not in mongo_url.lower():
+            mongo_url += '&tls=true&tlsAllowInvalidCertificates=false'
+    else:
+        mongo_url += '?tls=true&tlsAllowInvalidCertificates=false'
+
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=5000,  # Timeout de 5 secondes pour la sélection du serveur
+    connectTimeoutMS=10000,          # Timeout de 10 secondes pour la connexion
+    socketTimeoutMS=45000            # Timeout de 45 secondes pour les opérations
+)
+
 # Extraire le nom de la base de données depuis MONGO_URL ou utiliser un défaut
 db_name = os.environ.get('DB_NAME', 'profiremanager')
 db = client[db_name]
