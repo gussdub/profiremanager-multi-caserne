@@ -2482,11 +2482,14 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
         raise HTTPException(status_code=500, detail=f"Erreur lors du calcul des statistiques: {str(e)}")
 
 # Statistics routes
-@api_router.get("/statistiques", response_model=Statistiques)
-async def get_statistiques(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/statistiques", response_model=Statistiques)
+async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     try:
         # 1. Personnel actif (100% dynamique)
-        personnel_count = await db.users.count_documents({"statut": "Actif"})
+        personnel_count = await db.users.count_documents({"statut": "Actif", "tenant_id": tenant.id})
         
         # 2. Gardes cette semaine (100% dynamique)
         today = datetime.now(timezone.utc).date()
@@ -2494,6 +2497,7 @@ async def get_statistiques(current_user: User = Depends(get_current_user)):
         end_week = start_week + timedelta(days=6)
         
         gardes_count = await db.assignations.count_documents({
+            "tenant_id": tenant.id,
             "date": {
                 "$gte": start_week.strftime("%Y-%m-%d"),
                 "$lte": end_week.strftime("%Y-%m-%d")
@@ -2501,7 +2505,7 @@ async def get_statistiques(current_user: User = Depends(get_current_user)):
         })
         
         # 3. Formations planifiées (100% dynamique)
-        formations_count = await db.sessions_formation.count_documents({"statut": "planifie"})
+        formations_count = await db.sessions_formation.count_documents({"statut": "planifie", "tenant_id": tenant.id})
         
         # 4. Taux de couverture dynamique - CALCUL CORRECT
         # Calculer le total de personnel requis pour la semaine
