@@ -5988,10 +5988,10 @@ const MonProfil = () => {
         heures_max_semaine: profileData.heures_max_semaine || 25
       };
 
-      const response = await axios.put(`${API}/users/mon-profil`, updateData);
+      const updatedData = await apiPut(tenantSlug, '/users/mon-profil', updateData);
       
       // Mettre à jour le profil local avec la réponse
-      setUserProfile(response.data);
+      setUserProfile(updatedData);
       
       toast({
         title: "Profil mis à jour",
