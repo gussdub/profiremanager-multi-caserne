@@ -497,7 +497,7 @@ class Disponibilite(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DisponibiliteCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     user_id: str
     date: str  # Date exacte YYYY-MM-DD
     type_garde_id: Optional[str] = None
