@@ -146,9 +146,10 @@ def validate_complex_password(password: str) -> bool:
     
     return has_uppercase and has_digit and has_special
 
-def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_password: str):
+def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_password: str, tenant_slug: str = ""):
     """
     Envoie un email de bienvenue avec les informations de connexion
+    tenant_slug: slug de la caserne pour construire l'URL d'accès directe
     """
     try:
         # Définir les modules selon le rôle
