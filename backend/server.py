@@ -1524,11 +1524,20 @@ async def super_admin_login(login: SuperAdminLogin):
 
 @api_router.get("/admin/tenants")
 async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
-    """Liste toutes les casernes"""
+    """Liste toutes les casernes avec compteur de personnel"""
     tenants_data = await db.tenants.find().to_list(100)
-    # Convertir en objets Pydantic pour éviter les ObjectID
-    tenants = [Tenant(**t) for t in tenants_data]
-    return tenants
+    
+    # Ajouter le compteur d'employés pour chaque tenant
+    tenants_with_counts = []
+    for tenant_data in tenants_data:
+        # Compter le nombre d'employés
+        nombre_employes = await db.users.count_documents({"tenant_id": tenant_data['id']})
+        tenant_data['nombre_employes'] = nombre_employes
+        
+        # Convertir en objet Pydantic
+        tenants_with_counts.append(tenant_data)
+    
+    return tenants_with_counts
 
 @api_router.post("/admin/tenants")
 async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends(get_super_admin)):
