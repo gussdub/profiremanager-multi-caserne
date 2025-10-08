@@ -4544,6 +4544,7 @@ const Remplacements = () => {
 // Formations Component complet - Planning de formations
 const Formations = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [sessions, setSessions] = useState([]);
   const [competences, setCompetences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -4578,13 +4579,15 @@ const Formations = () => {
 
   useEffect(() => {
     const fetchFormations = async () => {
+      if (!tenantSlug) return;
+      
       try {
-        const [sessionsResponse, competencesResponse] = await Promise.all([
-          axios.get(`${API}/sessions-formation`),
-          axios.get(`${API}/formations`)
+        const [sessionsData, competencesData] = await Promise.all([
+          apiGet(tenantSlug, '/sessions-formation'),
+          apiGet(tenantSlug, '/formations')
         ]);
-        setSessions(sessionsResponse.data);
-        setCompetences(competencesResponse.data);
+        setSessions(sessionsData);
+        setCompetences(competencesData);
       } catch (error) {
         console.error('Erreur lors du chargement des formations:', error);
       } finally {
@@ -4593,7 +4596,7 @@ const Formations = () => {
     };
 
     fetchFormations();
-  }, []);
+  }, [tenantSlug]);
 
   const handleCreateSession = async () => {
     if (!newSession.titre || !newSession.competence_id || !newSession.date_debut || !newSession.lieu || !newSession.formateur) {
