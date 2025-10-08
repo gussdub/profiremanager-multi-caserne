@@ -1204,8 +1204,8 @@ const Personnel = () => {
     setSelectedUser(user);
     // Charger les EPI de l'utilisateur
     try {
-      const response = await axios.get(`${API}/epi/employe/${user.id}`);
-      setUserEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      setUserEPIs(episData);
     } catch (error) {
       console.error('Erreur lors du chargement des EPI:', error);
       setUserEPIs([]);
