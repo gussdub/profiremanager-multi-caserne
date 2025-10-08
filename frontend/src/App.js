@@ -6553,7 +6553,7 @@ const Rapports = () => {
       const responseData = await apiGet(tenantSlug, `/rapports/export-excel?type_rapport=${typeRapport}`);
       
       // Décoder le base64 et créer le téléchargement
-      const binaryString = atob(response.data.data);
+      const binaryString = atob(responseData.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -6563,7 +6563,7 @@ const Rapports = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = response.data.filename;
+      link.download = responseData.filename;
       link.click();
       window.URL.revokeObjectURL(url);
       
