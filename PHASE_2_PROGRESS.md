@@ -15,7 +15,29 @@
 - `PUT /{tenant_slug}/types-garde/{id}` - Modifier type de garde
 - `DELETE /{tenant_slug}/types-garde/{id}` - Supprimer type de garde
 
-**Total : 9/55 routes migrées (16%)**
+### Module Planning & Assignations (4 routes) - COMPLET ✅
+- `GET /{tenant_slug}/planning/{semaine_debut}` - Récupérer planning
+- `DELETE /{tenant_slug}/planning/assignation/{id}` - Retirer assignation
+- `POST /{tenant_slug}/planning/assignation` - Créer assignation
+- `GET /{tenant_slug}/planning/assignations/{semaine_debut}` - Liste assignations
+
+### Module Formations (4 routes) - COMPLET ✅
+- `POST /{tenant_slug}/formations` - Créer formation
+- `GET /{tenant_slug}/formations` - Liste formations
+- `PUT /{tenant_slug}/formations/{id}` - Modifier formation
+- `DELETE /{tenant_slug}/formations/{id}` - Supprimer formation
+
+### Module Remplacements (2 routes) - COMPLET ✅
+- `POST /{tenant_slug}/remplacements` - Créer demande de remplacement
+- `GET /{tenant_slug}/remplacements` - Liste demandes
+
+### Module Disponibilités (4 routes) - COMPLET ✅
+- `POST /{tenant_slug}/disponibilites` - Créer disponibilité
+- `GET /{tenant_slug}/disponibilites/{user_id}` - Liste disponibilités utilisateur
+- `PUT /{tenant_slug}/disponibilites/{user_id}` - Mettre à jour disponibilités
+- `DELETE /{tenant_slug}/disponibilites/{id}` - Supprimer disponibilité
+
+**Total : 23/55 routes migrées (42%)**
 
 ---
 
