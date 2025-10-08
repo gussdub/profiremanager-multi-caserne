@@ -5210,6 +5210,7 @@ const Formations = () => {
 // Mes Disponibilités Component - Module dédié
 const MesDisponibilites = () => {
   const { user } = useAuth();
+  const { tenantSlug } = useTenant();
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -5227,13 +5228,15 @@ const MesDisponibilites = () => {
 
   useEffect(() => {
     const fetchDisponibilites = async () => {
+      if (!tenantSlug) return;
+      
       try {
-        const [dispoResponse, typesResponse] = await Promise.all([
-          axios.get(`${API}/disponibilites/${user.id}`),
-          axios.get(`${API}/types-garde`)
+        const [dispoData, typesData] = await Promise.all([
+          apiGet(tenantSlug, `/disponibilites/${user.id}`),
+          apiGet(tenantSlug, '/types-garde')
         ]);
-        setUserDisponibilites(dispoResponse.data);
-        setTypesGarde(typesResponse.data);
+        setUserDisponibilites(dispoData);
+        setTypesGarde(typesData);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
       } finally {
@@ -5246,7 +5249,7 @@ const MesDisponibilites = () => {
     } else {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, tenantSlug]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
