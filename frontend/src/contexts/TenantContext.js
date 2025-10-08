@@ -21,7 +21,7 @@ export const TenantProvider = ({ children }) => {
     const path = window.location.pathname;
     
     // Vérifier si c'est l'interface super-admin
-    if (path.startsWith('/admin')) {
+    if (path === '/admin' || path.startsWith('/admin/')) {
       setIsSuperAdmin(true);
       setTenantSlug('admin');
       setLoading(false);
@@ -48,10 +48,13 @@ export const TenantProvider = ({ children }) => {
         });
       }
     } else {
-      // Pas de slug détecté - rediriger vers tenant par défaut pour la démo
-      // En production, cela devrait afficher une page de sélection de tenant
-      console.log('Aucun tenant détecté dans l\'URL, redirection vers /shefford');
-      window.location.href = '/shefford';
+      // Pas de slug détecté - afficher page de choix entre Super Admin et Tenant
+      // Par défaut pour démo, rediriger vers /shefford
+      console.log('Aucun tenant détecté dans l\'URL, redirection vers /admin ou /shefford');
+      // Pour permettre la connexion Super Admin, on ne force plus la redirection
+      // L'utilisateur peut aller sur /admin pour se connecter en super-admin
+      // ou sur /shefford pour se connecter à un tenant
+      setLoading(false);
       return;
     }
     
