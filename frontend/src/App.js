@@ -1125,13 +1125,15 @@ const Personnel = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!tenantSlug) return;
+      
       try {
-        const [usersResponse, formationsResponse] = await Promise.all([
-          axios.get(`${API}/users`),
-          axios.get(`${API}/formations`)
+        const [usersData, formationsData] = await Promise.all([
+          apiGet(tenantSlug, '/users'),
+          apiGet(tenantSlug, '/formations')
         ]);
-        setUsers(usersResponse.data);
-        setFormations(formationsResponse.data);
+        setUsers(usersData);
+        setFormations(formationsData);
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       } finally {
@@ -1140,7 +1142,7 @@ const Personnel = () => {
     };
 
     fetchData();
-  }, []);
+  }, [tenantSlug]);
 
   const handleCreateUser = async () => {
     if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.grade || !newUser.type_emploi || !newUser.date_embauche) {
