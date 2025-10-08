@@ -2429,6 +2429,9 @@ async def attribution_automatique(semaine_debut: str, current_user: User = Depen
 # Endpoint pour obtenir les statistiques personnelles mensuelles
 @api_router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
 async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
