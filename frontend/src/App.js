@@ -3182,7 +3182,12 @@ const Planning = () => {
           </div>
           
           <div className="calendrier-mois">
-            {monthDates.map(date => {
+            {monthDates.map((date, index) => {
+              // Si date est null, c'est un jour vide (avant le 1er du mois)
+              if (date === null) {
+                return <div key={`empty-${index}`} className="jour-mois jour-vide"></div>;
+              }
+
               const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
               const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Lundi = 0
               
