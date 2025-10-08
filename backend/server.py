@@ -33,7 +33,9 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Extraire le nom de la base de données depuis MONGO_URL ou utiliser un défaut
+db_name = os.environ.get('DB_NAME', 'profiremanager')
+db = client[db_name]
 
 # Create the main app without a prefix
 app = FastAPI(title="ProFireManager API", version="2.0")
