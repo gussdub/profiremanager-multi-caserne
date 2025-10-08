@@ -2702,11 +2702,11 @@ const Planning = () => {
 
     try {
       const targetDate = viewMode === 'mois' ? `${currentMonth}-01` : currentWeek;
-      const response = await axios.post(`${API}/planning/attribution-auto?semaine_debut=${targetDate}`);
+      const responseData = await apiPost(tenantSlug, `/planning/attribution-auto?semaine_debut=${targetDate}`, {});
       
       toast({
         title: "Attribution automatique réussie",
-        description: `${response.data.assignations_creees} nouvelles assignations créées`,
+        description: `${responseData.assignations_creees} nouvelles assignations créées`,
         variant: "success"
       });
 
@@ -2714,7 +2714,7 @@ const Planning = () => {
     } catch (error) {
       toast({
         title: "Erreur d'attribution",
-        description: error.response?.data?.detail || "Impossible d'effectuer l'attribution automatique",
+        description: error.detail || error.message || "Impossible d'effectuer l'attribution automatique",
         variant: "destructive"
       });
     }
