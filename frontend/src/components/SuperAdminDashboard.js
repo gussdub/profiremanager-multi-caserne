@@ -465,6 +465,17 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   placeholder="123 Rue Principale, Ville, Province"
                 />
               </div>
+
+              <div>
+                <Label>Date de création (optionnel)</Label>
+                <Input
+                  type="date"
+                  value={newTenant.date_creation}
+                  onChange={(e) => setNewTenant({ ...newTenant, date_creation: e.target.value })}
+                  placeholder="Laissez vide pour aujourd'hui"
+                />
+                <small style={{ color: '#64748b' }}>Laissez vide pour la date actuelle</small>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
