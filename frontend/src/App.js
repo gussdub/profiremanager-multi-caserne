@@ -1375,7 +1375,7 @@ const Personnel = () => {
 
   const handleUpdateEPITaille = async (epiId, newTaille) => {
     try {
-      await axios.put(`${API}/epi/${epiId}`, {
+      await apiPut(tenantSlug, `/epi/${epiId}`, {
         taille: newTaille
       });
       
@@ -1386,8 +1386,8 @@ const Personnel = () => {
       });
       
       // Recharger les EPI
-      const response = await axios.get(`${API}/epi/employe/${selectedUser.id}`);
-      setUserEPIs(response.data);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
     } catch (error) {
       toast({
         title: "Erreur",
