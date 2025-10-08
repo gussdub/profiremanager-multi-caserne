@@ -8,6 +8,8 @@ import { Label } from "./components/ui/label";
 import { Calendar } from "./components/ui/calendar";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
+import { useTenant } from "./contexts/TenantContext";
+import { apiGet, apiPost, apiPut, apiDelete } from "./utils/api";
 import "./App.css";
 
 // Lazy loading pour optimiser les performances
