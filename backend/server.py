@@ -375,6 +375,7 @@ class DemandeRemplacementCreate(BaseModel):
 
 class Formation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     nom: str
     description: str = ""
     duree_heures: int = 0
@@ -383,6 +384,7 @@ class Formation(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class FormationCreate(BaseModel):
+    tenant_id: str
     nom: str
     description: str = ""
     duree_heures: int = 0
@@ -391,6 +393,7 @@ class FormationCreate(BaseModel):
 
 class Disponibilite(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     user_id: str
     date: str  # Date exacte YYYY-MM-DD
     type_garde_id: Optional[str] = None  # Spécifier pour quel type de garde
@@ -400,6 +403,7 @@ class Disponibilite(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DisponibiliteCreate(BaseModel):
+    tenant_id: str
     user_id: str
     date: str  # Date exacte YYYY-MM-DD
     type_garde_id: Optional[str] = None
