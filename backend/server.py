@@ -46,6 +46,10 @@ SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24 hours
 
+# Super Admin credentials
+SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
+SUPER_ADMIN_PASSWORD_HASH = ""  # Will be set on first run
+
 # Simplified password hashing
 
 # Helper functions
