@@ -3944,12 +3944,57 @@ async def get_epi_alerts(current_user: User = Depends(get_current_user)):
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint pour monitoring"""
+    try:
+        # Test MongoDB connection
+        await db.command('ping')
+        db_status = "connected"
+    except:
+        db_status = "disconnected"
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status == "connected" else "degraded",
         "service": "ProFireManager API",
         "version": "2.0",
+        "database": db_status,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+# Endpoint d'initialisation (à appeler une fois après déploiement)
+@app.post("/api/admin/initialize-production")
+async def initialize_production_data():
+    """
+    Endpoint pour initialiser les données de production
+    À appeler UNE SEULE FOIS après le premier déploiement
+    """
+    try:
+        # Vérifier si déjà initialisé
+        existing_super_admin = await db.super_admins.find_one({"email": SUPER_ADMIN_EMAIL})
+        existing_tenant = await db.tenants.find_one({"slug": "shefford"})
+        
+        if existing_super_admin and existing_tenant:
+            return {
+                "status": "already_initialized",
+                "message": "Les données sont déjà initialisées",
+                "super_admin_email": SUPER_ADMIN_EMAIL,
+                "tenants_count": await db.tenants.count_documents({})
+            }
+        
+        # Initialiser via la fonction existante
+        await initialize_multi_tenant()
+        
+        return {
+            "status": "success",
+            "message": "Données de production initialisées avec succès",
+            "super_admin_email": SUPER_ADMIN_EMAIL,
+            "tenants_created": 1,
+            "instructions": "Connectez-vous en super-admin pour créer vos casernes"
+        }
+    except Exception as e:
+        logging.error(f"Erreur initialisation production: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de l'initialisation: {str(e)}"
+        )
 
 # Include the router in the main app
 app.include_router(api_router)
