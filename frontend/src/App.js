@@ -2754,7 +2754,7 @@ const Planning = () => {
 
       // Supprimer toutes les assignations de cette garde
       const deletePromises = assignationsWithIds.map(assignation => 
-        axios.delete(`${API}/planning/assignation/${assignation.id}`)
+        apiDelete(tenantSlug, `/planning/assignation/${assignation.id}`)
       );
 
       await Promise.all(deletePromises);
