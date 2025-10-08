@@ -208,6 +208,10 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
                 
                 <p>Votre compte <strong>{role_name}</strong> a été créé avec succès dans ProFireManager v2.0, le système de gestion des horaires et remplacements automatisés pour les services d'incendie du Canada.</p>
                 
+                <p style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0;">
+                    🏢 <strong>Votre caserne :</strong> {tenant_slug.title() if tenant_slug else 'Non spécifiée'}
+                </p>
+                
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
                     <h3 style="color: #dc2626; margin-top: 0;">🔑 Informations de connexion :</h3>
                     <p><strong>Email :</strong> {user_email}</p>
