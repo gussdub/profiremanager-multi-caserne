@@ -1256,13 +1256,12 @@ class DemandeCongé(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DemandeCongeCreate(BaseModel):
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
     type_conge: str
     date_debut: str
     date_fin: str
-    raison: str
-    priorite: str = "normale"
-    documents: List[str] = []
+    raison: str = ""
+    statut: str = "en_attente"
 
 class Notification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
