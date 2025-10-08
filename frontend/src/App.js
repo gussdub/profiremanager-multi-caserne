@@ -6045,6 +6045,17 @@ const MonProfil = () => {
       // Mettre à jour le profil local avec la réponse
       setUserProfile(updatedData);
       
+      // Mettre à jour aussi profileData pour que les champs affichent les bonnes valeurs
+      setProfileData({
+        nom: updatedData.nom,
+        prenom: updatedData.prenom,
+        email: updatedData.email,
+        telephone: updatedData.telephone,
+        adresse: updatedData.adresse || '',
+        contact_urgence: updatedData.contact_urgence || '',
+        heures_max_semaine: updatedData.heures_max_semaine || 25
+      });
+      
       toast({
         title: "Profil mis à jour",
         description: "Vos informations ont été sauvegardées et sont maintenant visibles dans Personnel.",
