@@ -1303,8 +1303,8 @@ const Personnel = () => {
     }
 
     try {
-      const response = await axios.get(`${API}/disponibilites/${user.id}`);
-      setUserDisponibilites(response.data);
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      setUserDisponibilites(disponibilitesData);
       setSelectedUser(user);
       setShowDisponibilitesModal(true);
     } catch (error) {
