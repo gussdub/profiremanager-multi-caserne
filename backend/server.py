@@ -308,6 +308,129 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
             print(f"❌ Erreur lors de l'envoi de l'email à {user_email}: {str(e)}")
             return False
         
+
+def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
+    """
+    Envoie un email détaillé avec les gardes assignées pour le mois
+    
+    Args:
+        user_email: Email du pompier
+        user_name: Nom complet du pompier
+        gardes_list: Liste des gardes [{date, type_garde, horaire, collegues}]
+        tenant_slug: Slug de la caserne
+        periode: Période concernée (ex: "janvier 2025")
+    """
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    
+    if not sendgrid_api_key or sendgrid_api_key == 'your-sendgrid-api-key-here-test':
+        print(f"[WARNING] SENDGRID_API_KEY non configurée - Email NON envoyé à {user_email}")
+        return False
+    
+    try:
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        subject = f"Vos gardes assignées - {periode}"
+        
+        # Construction de la liste des gardes en HTML
+        gardes_html = ''
+        for garde in gardes_list:
+            collegues_str = ', '.join(garde.get('collegues', [])) if garde.get('collegues') else 'Non spécifiés'
+            
+            gardes_html += f"""
+                <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="color: #1e293b; margin: 0 0 10px 0;">
+                        📅 {garde['jour']} {garde['date']}
+                    </h4>
+                    <p style="margin: 5px 0; color: #475569;">
+                        <strong>{garde['type_garde']}</strong> ({garde['horaire']})
+                    </p>
+                    <p style="margin: 5px 0; color: #64748b; font-size: 0.9rem;">
+                        👥 Avec: {collegues_str}
+                    </p>
+                    <p style="margin: 5px 0; color: #64748b; font-size: 0.9rem;">
+                        📍 Lieu: Caserne {tenant_slug.title()}
+                    </p>
+                </div>
+            """
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">🚒 ProFireManager</h1>
+                <p style="color: #fecaca; margin: 10px 0 0 0;">Planning validé</p>
+            </div>
+            
+            <div style="background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
+                
+                <p>Voici vos gardes assignées pour <strong>{periode}</strong>.</p>
+                
+                <p style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0;">
+                    🏢 <strong>Caserne:</strong> {tenant_slug.title()}
+                </p>
+                
+                <h3 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+                    📋 Vos gardes
+                </h3>
+                
+                {gardes_html}
+                
+                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                    <h4 style="color: #92400e; margin-top: 0;">📢 Important :</h4>
+                    <ul style="color: #78350f; margin: 10px 0;">
+                        <li>Ce planning a été validé par votre administrateur</li>
+                        <li>Des ajustements peuvent encore survenir en cas de remplacements</li>
+                        <li>Consultez régulièrement le planning en ligne pour les mises à jour</li>
+                        <li>En cas d'absence, signalez-le immédiatement via l'application</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')}/{tenant_slug}" 
+                       style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                        🚒 Consulter le planning
+                    </a>
+                </div>
+                
+                <div style="border-top: 2px solid #e2e8f0; margin-top: 30px; padding-top: 20px; text-align: center; color: #64748b; font-size: 0.875rem;">
+                    <p>ProFireManager v2.0 - Gestion des horaires et remplacements</p>
+                    <p>Services d'incendie du Canada</p>
+                    <p style="margin-top: 10px;">
+                        Cet email a été envoyé automatiquement. Ne pas répondre.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        message = Mail(
+            from_email=sender_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Email de gardes envoyé avec succès à {user_email}")
+            return True
+        else:
+            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
+        return False
+
+
     except Exception as e:
         print(f"Erreur envoi email: {str(e)}")
         return False
