@@ -4658,7 +4658,7 @@ const Formations = () => {
     }
 
     try {
-      await axios.put(`${API}/sessions-formation/${selectedSession.id}`, editSession);
+      await apiPut(tenantSlug, `/sessions-formation/${selectedSession.id}`, editSession);
       toast({
         title: "Formation mise à jour",
         description: "La session de formation a été modifiée avec succès",
