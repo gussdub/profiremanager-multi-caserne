@@ -464,6 +464,191 @@ class ProFireManagerTester:
             self.log_test("Replacement System", False, f"Replacement system error: {str(e)}")
             return False
     
+    def test_super_admin_authentication(self):
+        """Test Super Admin login with expected credentials"""
+        try:
+            # First try with expected credentials from review request
+            login_data = {
+                "email": SUPER_ADMIN_EMAIL,
+                "mot_de_passe": SUPER_ADMIN_PASSWORD
+            }
+            
+            response = self.session.post(f"{self.base_url}/admin/auth/login", json=login_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "access_token" in data:
+                    self.super_admin_token = data["access_token"]
+                    admin_info = data.get("admin", {})
+                    self.log_test("Super Admin Authentication", True, 
+                                f"Super Admin login successful for {admin_info.get('email', 'admin')}")
+                    return True
+                else:
+                    self.log_test("Super Admin Authentication", False, "No access token in response", data)
+                    return False
+            elif response.status_code == 401:
+                # Try fallback credentials
+                self.log_test("Super Admin Authentication", False, 
+                            f"Expected Super Admin credentials failed ({SUPER_ADMIN_EMAIL}), trying fallback...")
+                
+                fallback_login_data = {
+                    "email": FALLBACK_SUPER_ADMIN_EMAIL,
+                    "mot_de_passe": FALLBACK_SUPER_ADMIN_PASSWORD
+                }
+                
+                response = self.session.post(f"{self.base_url}/admin/auth/login", json=fallback_login_data)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "access_token" in data:
+                        self.super_admin_token = data["access_token"]
+                        admin_info = data.get("admin", {})
+                        self.log_test("Super Admin Authentication", True, 
+                                    f"Super Admin login successful with fallback credentials for {admin_info.get('email', 'admin')}")
+                        return True
+                
+                self.log_test("Super Admin Authentication", False, 
+                            f"Both expected and fallback Super Admin credentials failed", 
+                            {"expected": SUPER_ADMIN_EMAIL, "fallback": FALLBACK_SUPER_ADMIN_EMAIL})
+                return False
+            else:
+                self.log_test("Super Admin Authentication", False, f"Login failed with status {response.status_code}", 
+                            {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_test("Super Admin Authentication", False, f"Super Admin authentication error: {str(e)}")
+            return False
+    
+    def test_super_admin_tenants_api(self):
+        """Test Super Admin tenants API - main focus of review request"""
+        if not self.super_admin_token:
+            self.log_test("Super Admin Tenants API", False, "No Super Admin authentication token")
+            return False
+        
+        try:
+            # Create a new session with Super Admin token
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
+            
+            # Test GET /api/admin/tenants endpoint
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            
+            if response.status_code != 200:
+                self.log_test("Super Admin Tenants API", False, 
+                            f"Failed to fetch tenants: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            tenants = response.json()
+            
+            if not tenants or len(tenants) == 0:
+                self.log_test("Super Admin Tenants API", False, "No tenants found in response")
+                return False
+            
+            # Verify tenant data structure and required fields
+            required_fields = ['created_at', 'is_active', 'nombre_employes', 'contact_email', 'contact_telephone', 'nom', 'slug']
+            
+            # Check first tenant for field validation
+            first_tenant = tenants[0]
+            missing_fields = []
+            field_types = {}
+            
+            for field in required_fields:
+                if field == 'is_active':
+                    # Check for 'actif' field (French) as well
+                    if 'is_active' not in first_tenant and 'actif' not in first_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_value = first_tenant.get('is_active', first_tenant.get('actif'))
+                        field_types[field] = type(field_value).__name__
+                elif field == 'contact_email':
+                    # Check for 'email_contact' field as well
+                    if 'contact_email' not in first_tenant and 'email_contact' not in first_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_value = first_tenant.get('contact_email', first_tenant.get('email_contact'))
+                        field_types[field] = type(field_value).__name__
+                elif field == 'contact_telephone':
+                    # Check for 'telephone' field as well
+                    if 'contact_telephone' not in first_tenant and 'telephone' not in first_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_value = first_tenant.get('contact_telephone', first_tenant.get('telephone'))
+                        field_types[field] = type(field_value).__name__
+                elif field == 'created_at':
+                    # Check for 'date_creation' field as well
+                    if 'created_at' not in first_tenant and 'date_creation' not in first_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_value = first_tenant.get('created_at', first_tenant.get('date_creation'))
+                        field_types[field] = type(field_value).__name__
+                else:
+                    if field not in first_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_types[field] = type(first_tenant[field]).__name__
+            
+            # Validate field types
+            type_issues = []
+            
+            # Check is_active should be boolean
+            is_active_value = first_tenant.get('is_active', first_tenant.get('actif'))
+            if is_active_value is not None and not isinstance(is_active_value, bool):
+                type_issues.append(f"is_active should be boolean, got {type(is_active_value).__name__}")
+            
+            # Check nombre_employes should be number
+            if 'nombre_employes' in first_tenant and not isinstance(first_tenant['nombre_employes'], (int, float)):
+                type_issues.append(f"nombre_employes should be number, got {type(first_tenant['nombre_employes']).__name__}")
+            
+            # Check string fields
+            string_fields = ['contact_email', 'contact_telephone', 'nom', 'slug']
+            for field in string_fields:
+                actual_field = field
+                if field == 'contact_email' and field not in first_tenant:
+                    actual_field = 'email_contact'
+                elif field == 'contact_telephone' and field not in first_tenant:
+                    actual_field = 'telephone'
+                
+                if actual_field in first_tenant and not isinstance(first_tenant[actual_field], str):
+                    type_issues.append(f"{field} should be string, got {type(first_tenant[actual_field]).__name__}")
+            
+            # Check created_at should be string (ISO format)
+            created_at_value = first_tenant.get('created_at', first_tenant.get('date_creation'))
+            if created_at_value is not None and not isinstance(created_at_value, str):
+                type_issues.append(f"created_at should be string, got {type(created_at_value).__name__}")
+            
+            # Prepare result message
+            if missing_fields or type_issues:
+                issues = []
+                if missing_fields:
+                    issues.append(f"Missing fields: {', '.join(missing_fields)}")
+                if type_issues:
+                    issues.append(f"Type issues: {'; '.join(type_issues)}")
+                
+                self.log_test("Super Admin Tenants API", False, 
+                            f"Tenant data validation failed - {'; '.join(issues)}", 
+                            {
+                                "tenant_count": len(tenants),
+                                "first_tenant_fields": list(first_tenant.keys()),
+                                "field_types": field_types,
+                                "sample_tenant": first_tenant
+                            })
+                return False
+            else:
+                self.log_test("Super Admin Tenants API", True, 
+                            f"✅ Tenants API working correctly - Found {len(tenants)} tenant(s) with all required fields", 
+                            {
+                                "tenant_count": len(tenants),
+                                "field_types": field_types,
+                                "sample_tenant_fields": list(first_tenant.keys())
+                            })
+                return True
+            
+        except Exception as e:
+            self.log_test("Super Admin Tenants API", False, f"Super Admin tenants API error: {str(e)}")
+            return False
+    
     def create_admin_user_if_needed(self):
         """Create admin user if it doesn't exist"""
         try:
