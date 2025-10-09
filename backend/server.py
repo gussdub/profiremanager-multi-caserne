@@ -1695,16 +1695,8 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
 @api_router.post("/{tenant_slug}/auth/login")
 async def tenant_login(tenant_slug: str, user_login: UserLogin):
     """Login pour un tenant spécifique"""
-    # Vérifier que le tenant existe
+    # Vérifier que le tenant existe et est actif
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Vérifier si la caserne est active (vérifier is_active dans les données brutes)
-    tenant_data = await db.tenants.find_one({"slug": tenant_slug})
-    if not tenant_data.get('is_active', True):
-        raise HTTPException(
-            status_code=403, 
-            detail="Cette caserne est temporairement désactivée. Veuillez contacter votre administrateur."
-        )
     
     # Chercher l'utilisateur dans ce tenant
     user_data = await db.users.find_one({
