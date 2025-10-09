@@ -2,6 +2,7 @@
 """
 ProFireManager Backend API Testing Suite
 Tests all core backend functionality including authentication, settings, and CRUD operations.
+Includes Super Admin Dashboard API testing.
 """
 
 import requests
@@ -14,6 +15,13 @@ import uuid
 BASE_URL = "https://tenant-admin-1.preview.emergentagent.com/api"
 TEST_ADMIN_EMAIL = "admin@firefighter.com"
 TEST_ADMIN_PASSWORD = "Admin123!"
+
+# Super Admin Configuration (from review request)
+SUPER_ADMIN_EMAIL = "admin@profiremanager.ca"
+SUPER_ADMIN_PASSWORD = "Admin123!"
+# Fallback Super Admin (from backend code)
+FALLBACK_SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
+FALLBACK_SUPER_ADMIN_PASSWORD = "230685Juin+"
 
 class ProFireManagerTester:
     def __init__(self):
