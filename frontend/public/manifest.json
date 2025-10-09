@@ -16,14 +16,13 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "theme_color": "#D9072B",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "categories": ["productivity", "business", "utilities"],
   "lang": "fr-CA",
-  "scope": "/",
   "id": "profiremanager",
   "prefer_related_applications": false
 }
