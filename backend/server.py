@@ -1528,8 +1528,9 @@ async def get_tenant_from_slug(slug: str) -> Tenant:
     tenant_data = await db.tenants.find_one({"slug": slug})
     if not tenant_data:
         raise HTTPException(status_code=404, detail=f"Caserne '{slug}' non trouvée")
-    # Vérifier is_active si présent
-    if not tenant_data.get('is_active', True):
+    # Vérifier actif/is_active (supporte les deux formats)
+    is_active = tenant_data.get('is_active', tenant_data.get('actif', True))
+    if not is_active:
         raise HTTPException(status_code=403, detail=f"Caserne '{slug}' inactive")
     return Tenant(**tenant_data)
 
