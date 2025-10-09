@@ -139,6 +139,24 @@ backend:
         agent: "testing"
         comment: "✅ Super Admin Dashboard API fully functional - Successfully tested /api/admin/tenants endpoint with proper authentication. Found 1 tenant with all required fields: created_at (string), is_active (boolean), nombre_employes (number), contact_email (string), contact_telephone (string), nom (string), slug (string). Authentication works with fallback credentials (gussdub@icloud.com / 230685Juin+). Expected credentials (admin@profiremanager.ca / Admin123!) not found in system."
 
+  - task: "Tenant Modification and Inactive Login Blocking"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "New feature testing - tenant is_active field management and login blocking for inactive tenants"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL BUG FOUND: Login blocking logic was using AND instead of OR. The condition 'if not tenant.actif and not tenant_data.get('is_active', True)' should be 'if not tenant.actif or not tenant_data.get('is_active', True)'. This allowed users to login to inactive tenants."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIXED & FULLY FUNCTIONAL - Fixed login blocking logic in lines 748 and 1699 of server.py. All tests now pass: 1) Super Admin can update tenant with is_active=false via PUT /api/admin/tenants/{tenant_id}, 2) Login correctly returns 403 'Cette caserne est temporairement désactivée' for inactive tenants, 3) Re-activating tenant (is_active=true) allows login again. Used correct credentials (admin@firemanager.ca / admin123) for testing."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
