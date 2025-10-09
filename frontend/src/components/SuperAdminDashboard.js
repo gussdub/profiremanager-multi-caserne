@@ -483,21 +483,28 @@ const SuperAdminDashboard = ({ onLogout }) => {
                       <Button 
                         variant="default" 
                         onClick={() => handleAccessTenant(tenant)}
-                        style={{ minWidth: '120px' }}
+                        style={{ minWidth: '140px' }}
                       >
                         🔗 Accéder
                       </Button>
                       <Button 
                         variant="outline" 
+                        onClick={() => handleCreateAdmin(tenant)}
+                        style={{ minWidth: '140px', background: '#10b981', color: 'white', border: 'none' }}
+                      >
+                        👤 Créer Admin
+                      </Button>
+                      <Button 
+                        variant="outline" 
                         onClick={() => handleEditTenant(tenant)}
-                        style={{ minWidth: '120px' }}
+                        style={{ minWidth: '140px' }}
                       >
                         ✏️ Modifier
                       </Button>
                       <Button 
                         variant="destructive" 
                         onClick={() => handleDeleteTenant(tenant)}
-                        style={{ minWidth: '120px' }}
+                        style={{ minWidth: '140px' }}
                       >
                         🗑️ Supprimer
                       </Button>
