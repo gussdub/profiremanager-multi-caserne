@@ -800,6 +800,57 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # VÉRIFIER LA LIMITE DU PALIER
+    current_count = await db.users.count_documents({"tenant_id": tenant.id})
+    
+    # Déterminer le palier actuel
+    if current_count < 30:
+        palier = "Basic (1-30)"
+        limite = 30
+        prix = "12$"
+    elif current_count < 50:
+        palier = "Standard (31-50)"
+        limite = 50
+        prix = "20$"
+    else:
+        palier = "Premium (51+)"
+        limite = None
+        prix = "27$"
+    
+    # Bloquer si la limite du palier est atteinte
+    if limite and current_count >= limite:
+        # Envoyer email au super admin
+        super_admin_email = "gussdub@icloud.com"
+        try:
+            sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+            if sendgrid_api_key and sendgrid_api_key != 'your-sendgrid-api-key-here-test':
+                from sendgrid import SendGridAPIClient
+                from sendgrid.helpers.mail import Mail
+                
+                message = Mail(
+                    from_email=os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca'),
+                    to_emails=super_admin_email,
+                    subject=f'⚠️ Limite de palier atteinte - {tenant.nom}',
+                    html_content=f"""
+                    <h2>Alerte - Limite de palier atteinte</h2>
+                    <p><strong>Caserne:</strong> {tenant.nom} ({tenant_slug})</p>
+                    <p><strong>Palier actuel:</strong> {palier}</p>
+                    <p><strong>Personnel actuel:</strong> {current_count}/{limite}</p>
+                    <p><strong>Prix actuel:</strong> {prix}/mois</p>
+                    <p>L'administrateur a tenté de créer un {current_count + 1}e pompier mais la limite est atteinte.</p>
+                    <p><strong>Action requise:</strong> Contacter le client pour upgrade vers palier supérieur.</p>
+                    """
+                )
+                sg = SendGridAPIClient(sendgrid_api_key)
+                sg.send(message)
+        except Exception as e:
+            print(f"Erreur envoi email super admin: {str(e)}")
+        
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Limite du palier {palier} atteinte ({current_count}/{limite}). Contactez l'administrateur pour upgrader votre forfait."
+        )
+    
     # Validation du mot de passe complexe
     if not validate_complex_password(user_create.mot_de_passe):
         raise HTTPException(
