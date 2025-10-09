@@ -28,6 +28,7 @@ class ProFireManagerTester:
         self.base_url = BASE_URL
         self.session = requests.Session()
         self.auth_token = None
+        self.super_admin_token = None
         self.test_results = []
         
     def log_test(self, test_name, success, message, details=None):
