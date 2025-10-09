@@ -728,10 +728,10 @@ class ProFireManagerTester:
                 return False
             
             # Step 4: Test login blocking for inactive tenant
-            # Try to login with Shefford tenant user
+            # Try to login with Shefford tenant user (using correct credentials from backend code)
             login_data = {
                 "email": "admin@firemanager.ca",
-                "mot_de_passe": "Pompier123!"
+                "mot_de_passe": "admin123"
             }
             
             # Use regular session (not super admin) for login test
