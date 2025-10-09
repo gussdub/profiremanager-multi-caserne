@@ -227,6 +227,69 @@ const SuperAdminDashboard = ({ onLogout }) => {
     }
   };
 
+  const handleCreateAdmin = (tenant) => {
+    setSelectedTenant(tenant);
+    setNewAdmin({
+      email: '',
+      prenom: '',
+      nom: '',
+      mot_de_passe: ''
+    });
+    setShowCreateAdminModal(true);
+  };
+
+  const handleSubmitCreateAdmin = async () => {
+    if (!newAdmin.email || !newAdmin.prenom || !newAdmin.nom || !newAdmin.mot_de_passe) {
+      toast({
+        title: "Erreur",
+        description: "Tous les champs sont requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newAdmin.mot_de_passe.length < 6) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 6 caractères",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/tenants/${selectedTenant.id}/create-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newAdmin)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur création admin');
+      }
+
+      toast({
+        title: "Administrateur créé",
+        description: `L'admin ${newAdmin.prenom} ${newAdmin.nom} a été créé avec succès. Un email de bienvenue a été envoyé.`,
+        variant: "success"
+      });
+
+      setShowCreateAdminModal(false);
+      setNewAdmin({ email: '', prenom: '', nom: '', mot_de_passe: '' });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAccessTenant = (tenant) => {
     // Rediriger vers l'interface du tenant
     window.location.href = `/${tenant.slug}`;
