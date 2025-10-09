@@ -667,7 +667,7 @@ const Parametres = ({ user, tenantSlug }) => {
           onClick={() => setActiveTab('attribution')}
           data-testid="tab-attribution"
         >
-          ⚙️ Attribution
+          📅 Planning
         </button>
         <button
           className={`tab-button ${activeTab === 'comptes' ? 'active' : ''}`}
