@@ -6419,33 +6419,36 @@ const MonProfil = () => {
               </Button>
             </div>
 
-            {myEPIs.length > 0 ? (
-              <div className="epi-tailles-grid">
-                {myEPIs.map(epi => (
-                  <div key={epi.id} className="epi-taille-item">
-                    <span className="epi-taille-icon">{getEPIIcone(epi.type_epi)}</span>
+            <p className="section-description" style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
+              Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.
+            </p>
+
+            <div className="epi-tailles-grid">
+              {getAllEPITypes().map(epiType => {
+                const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+                return (
+                  <div key={epiType.id} className="epi-taille-item">
+                    <span className="epi-taille-icon">{epiType.icone}</span>
                     <div className="epi-taille-info">
-                      <Label>{getEPINom(epi.type_epi)}</Label>
+                      <Label>{epiType.nom}</Label>
                       <Input
-                        value={epiTailles[epi.type_epi] || epi.taille}
-                        onChange={(e) => setEpiTailles({...epiTailles, [epi.type_epi]: e.target.value})}
+                        value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
+                        onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
                         disabled={!isEditingEPI}
-                        placeholder="Taille"
+                        placeholder="Saisir la taille"
                         className="epi-taille-input"
-                        data-testid={`epi-taille-${epi.type_epi}`}
+                        data-testid={`epi-taille-${epiType.id}`}
                       />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-epi-text">Aucun EPI n'est actuellement attribué. Contactez votre superviseur.</p>
-            )}
+                );
+              })}
+            </div>
 
-            {isEditingEPI && myEPIs.length > 0 && (
+            {isEditingEPI && (
               <div className="form-actions">
                 <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
-                  Sauvegarder les tailles
+                  💾 Sauvegarder les tailles
                 </Button>
               </div>
             )}
