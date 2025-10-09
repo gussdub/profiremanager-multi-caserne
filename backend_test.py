@@ -649,6 +649,158 @@ class ProFireManagerTester:
             self.log_test("Super Admin Tenants API", False, f"Super Admin tenants API error: {str(e)}")
             return False
     
+    def test_tenant_modification_and_login_blocking(self):
+        """Test tenant modification with is_active field and login blocking for inactive tenants"""
+        if not self.super_admin_token:
+            self.log_test("Tenant Modification & Login Blocking", False, "No Super Admin authentication token")
+            return False
+        
+        try:
+            # Create a new session with Super Admin token
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
+            
+            # Step 1: Get list of tenants to find Shefford tenant ID
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Failed to fetch tenants: {response.status_code}")
+                return False
+            
+            tenants = response.json()
+            shefford_tenant = None
+            
+            # Find Shefford tenant
+            for tenant in tenants:
+                if tenant.get('slug') == 'shefford' or 'shefford' in tenant.get('nom', '').lower():
+                    shefford_tenant = tenant
+                    break
+            
+            if not shefford_tenant:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            "Shefford tenant not found in tenant list")
+                return False
+            
+            tenant_id = shefford_tenant.get('id')
+            if not tenant_id:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            "Shefford tenant ID not found")
+                return False
+            
+            # Step 2: Test PUT /api/admin/tenants/{tenant_id} with is_active: false
+            update_payload = {
+                "is_active": False,
+                "nom": shefford_tenant.get('nom', 'Service Incendie de Shefford'),
+                "slug": shefford_tenant.get('slug', 'shefford')
+            }
+            
+            response = super_admin_session.put(f"{self.base_url}/admin/tenants/{tenant_id}", json=update_payload)
+            if response.status_code != 200:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Failed to update tenant with is_active=false: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            # Step 3: Verify the update by getting tenant again
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Failed to fetch tenants after update: {response.status_code}")
+                return False
+            
+            updated_tenants = response.json()
+            updated_shefford = None
+            for tenant in updated_tenants:
+                if tenant.get('id') == tenant_id:
+                    updated_shefford = tenant
+                    break
+            
+            if not updated_shefford:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            "Could not find updated Shefford tenant")
+                return False
+            
+            # Check if is_active is now false
+            is_active_after_update = updated_shefford.get('is_active', updated_shefford.get('actif'))
+            if is_active_after_update is not False:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Tenant is_active field was not updated correctly. Expected: false, Got: {is_active_after_update}")
+                return False
+            
+            # Step 4: Test login blocking for inactive tenant
+            # Try to login with Shefford tenant user
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "Pompier123!"
+            }
+            
+            # Use regular session (not super admin) for login test
+            login_session = requests.Session()
+            response = login_session.post(f"{self.base_url}/auth/login", json=login_data)
+            
+            # Should return 403 status code
+            if response.status_code != 403:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Expected 403 status for inactive tenant login, got: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            # Check error message contains expected text
+            response_text = response.text.lower()
+            expected_message = "cette caserne est temporairement désactivée"
+            if expected_message not in response_text:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Error message doesn't contain expected text. Expected: '{expected_message}', Got: {response.text}")
+                return False
+            
+            # Step 5: Re-activate tenant (is_active: true)
+            reactivate_payload = {
+                "is_active": True,
+                "nom": shefford_tenant.get('nom', 'Service Incendie de Shefford'),
+                "slug": shefford_tenant.get('slug', 'shefford')
+            }
+            
+            response = super_admin_session.put(f"{self.base_url}/admin/tenants/{tenant_id}", json=reactivate_payload)
+            if response.status_code != 200:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Failed to reactivate tenant: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            # Step 6: Verify login now works correctly
+            response = login_session.post(f"{self.base_url}/auth/login", json=login_data)
+            
+            # Should now return 200 or 401 (if user doesn't exist, but not 403)
+            if response.status_code == 403:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Login still blocked after reactivating tenant: {response.status_code}")
+                return False
+            elif response.status_code == 200:
+                # Login successful - perfect
+                login_result = response.json()
+                if "access_token" in login_result:
+                    self.log_test("Tenant Modification & Login Blocking", True, 
+                                "✅ All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works")
+                    return True
+                else:
+                    self.log_test("Tenant Modification & Login Blocking", False, 
+                                "Login returned 200 but no access token found")
+                    return False
+            elif response.status_code == 401:
+                # User doesn't exist or wrong password - but tenant is active (not 403)
+                self.log_test("Tenant Modification & Login Blocking", True, 
+                            "✅ All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works (user credentials may not exist but tenant is active)")
+                return True
+            else:
+                self.log_test("Tenant Modification & Login Blocking", False, 
+                            f"Unexpected status code after reactivation: {response.status_code}")
+                return False
+            
+        except Exception as e:
+            self.log_test("Tenant Modification & Login Blocking", False, 
+                        f"Tenant modification and login blocking test error: {str(e)}")
+            return False
+    
     def create_admin_user_if_needed(self):
         """Create admin user if it doesn't exist"""
         try:
