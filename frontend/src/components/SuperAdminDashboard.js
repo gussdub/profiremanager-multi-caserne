@@ -630,6 +630,63 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 />
                 <small style={{ color: '#64748b' }}>Date d'activation de la caserne</small>
               </div>
+
+              <div style={{ 
+                padding: '20px', 
+                background: '#f8fafc', 
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <Label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px' }}>
+                      Statut de la caserne
+                    </Label>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: '5px 0 0 0' }}>
+                      {newTenant.is_active 
+                        ? "✅ Caserne active - Les utilisateurs peuvent se connecter" 
+                        : "⚠️ Caserne inactive - Les utilisateurs ne peuvent pas se connecter"}
+                    </p>
+                  </div>
+                  <label style={{ 
+                    position: 'relative', 
+                    display: 'inline-block', 
+                    width: '60px', 
+                    height: '34px',
+                    cursor: 'pointer'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={newTenant.is_active}
+                      onChange={(e) => setNewTenant({ ...newTenant, is_active: e.target.checked })}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: newTenant.is_active ? '#10b981' : '#ef4444',
+                      transition: '0.4s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '',
+                        height: '26px',
+                        width: '26px',
+                        left: newTenant.is_active ? '30px' : '4px',
+                        bottom: '4px',
+                        backgroundColor: 'white',
+                        transition: '0.4s',
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
