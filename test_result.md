@@ -127,6 +127,18 @@ backend:
         agent: "testing"
         comment: "✅ Notification system accessible - Notification endpoints found and accessible"
 
+  - task: "Super Admin Dashboard API"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Super Admin Dashboard API fully functional - Successfully tested /api/admin/tenants endpoint with proper authentication. Found 1 tenant with all required fields: created_at (string), is_active (boolean), nombre_employes (number), contact_email (string), contact_telephone (string), nom (string), slug (string). Authentication works with fallback credentials (gussdub@icloud.com / 230685Juin+). Expected credentials (admin@profiremanager.ca / Admin123!) not found in system."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
