@@ -5,3 +5,4 @@ Fix global: tenant_id Optional dans tous les modèles *Create - Wed Oct  8 23:00
 Amélioration: Email avec URL caserne spécifique - Wed Oct  8 23:06:05 UTC 2025
 Amélioration Planning: Ratio X/Y + noms visibles - Wed Oct  8 23:19:46 UTC 2025
 Fonctionnalités complètes: Planning ratio+noms, Anti-double-affectation, Notification planning validé - Wed Oct  8 23:41:32 UTC 2025
+Super Admin: Date création modifiable, Compteur personnel + paliers + limites avec blocage - Thu Oct  9 00:00:50 UTC 2025
