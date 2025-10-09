@@ -1655,6 +1655,64 @@ async def update_tenant(
     
     return {"message": "Caserne mise à jour avec succès"}
 
+@api_router.post("/admin/tenants/{tenant_id}/create-admin")
+async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin = Depends(get_super_admin)):
+    """Créer un administrateur pour une caserne"""
+    # Vérifier que la caserne existe
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Vérifier que l'email n'existe pas déjà
+    existing_user = await db.users.find_one({"email": user_data.get("email")})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Un utilisateur avec cet email existe déjà")
+    
+    # Créer le hash du mot de passe
+    password = user_data.get("mot_de_passe", "")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    password_hash = get_password_hash(password)
+    
+    # Créer l'utilisateur
+    new_user = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.get("email"),
+        "mot_de_passe_hash": password_hash,
+        "tenant_id": tenant_id,
+        "role": "admin",
+        "nom": user_data.get("nom", ""),
+        "prenom": user_data.get("prenom", ""),
+        "statut": "Actif",
+        "type_emploi": "temps_plein",
+        "grade": "Administrateur",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    # Envoyer l'email de bienvenue
+    try:
+        await send_welcome_email(
+            user_data.get("email"),
+            password,
+            tenant.get("slug", ""),
+            tenant.get("nom", "")
+        )
+    except Exception as e:
+        print(f"Erreur envoi email: {e}")
+    
+    return {
+        "message": "Administrateur créé avec succès",
+        "user": {
+            "id": new_user["id"],
+            "email": new_user["email"],
+            "nom": new_user["nom"],
+            "prenom": new_user["prenom"]
+        }
+    }
+
 @api_router.delete("/admin/tenants/{tenant_id}")
 async def deactivate_tenant(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
     """Désactiver une caserne (soft delete)"""
