@@ -3,28 +3,28 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-09T01:46:09.286589",
+    "timestamp": "2025-10-09T01:47:35.041407",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": false,
     "message": "Expected Super Admin credentials failed (admin@profiremanager.ca), trying fallback...",
-    "timestamp": "2025-10-09T01:46:09.293170",
+    "timestamp": "2025-10-09T01:47:35.052275",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful with fallback credentials for gussdub@icloud.com",
-    "timestamp": "2025-10-09T01:46:09.303304",
+    "timestamp": "2025-10-09T01:47:35.059840",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API",
     "success": true,
     "message": "\u2705 Tenants API working correctly - Found 1 tenant(s) with all required fields",
-    "timestamp": "2025-10-09T01:46:09.340465",
+    "timestamp": "2025-10-09T01:47:35.167020",
     "details": {
       "tenant_count": 1,
       "field_types": {
@@ -52,18 +52,16 @@
   },
   {
     "test": "Tenant Modification & Login Blocking",
-    "success": false,
-    "message": "Expected 403 status for inactive tenant login, got: 200",
-    "timestamp": "2025-10-09T01:46:09.430649",
-    "details": {
-      "response": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWMyNmU3OC1jYWE3LTRkZDItYTg5NC00YzJlYTk3NTM0ZjciLCJ0ZW5hbnRfaWQiOiIwNWVmMWIyMi03ZjQxLTQzZjQtOGY2Mi1kODBkNWY3YmZmMDMiLCJ0ZW5hbnRfc2x1ZyI6InNoZWZmb3JkIiwiZXhwIjoxNzYwMDYwNzY5fQ.1mi1EN147MJxXtYCvR5myufYEaW1J3eeTRJU8omPozU\",\"token_type\":\"bearer\",\"tenant\":{\"id\":\"05ef1b22-7f41-43f4-8f62-d80d5f7bff03\",\"slug\":\"shefford\",\"nom\":\"Service Incendie de Shefford\"},\"user\":{\"id\":\"a1c26e78-caa7-4dd2-a894-4c2ea97534f7\",\"nom\":\"Admin\",\"prenom\":\"Syst\u00e8me\",\"email\":\"admin@firemanager.ca\",\"role\":\"admin\",\"grade\":\"Directeur\",\"type_emploi\":\"temps_plein\"}}"
-    }
+    "success": true,
+    "message": "\u2705 All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works",
+    "timestamp": "2025-10-09T01:47:35.294266",
+    "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-09T01:46:09.439392",
+    "timestamp": "2025-10-09T01:47:35.346237",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -73,7 +71,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-09T01:46:09.446770",
+    "timestamp": "2025-10-09T01:47:35.352602",
     "details": {}
   }
 ]
