@@ -1575,11 +1575,14 @@ async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
     # Ajouter le compteur d'employés pour chaque tenant
     tenants_with_counts = []
     for tenant_data in tenants_data:
+        # Supprimer _id (ObjectId non sérialisable)
+        if '_id' in tenant_data:
+            del tenant_data['_id']
+        
         # Compter le nombre d'employés
         nombre_employes = await db.users.count_documents({"tenant_id": tenant_data['id']})
         tenant_data['nombre_employes'] = nombre_employes
         
-        # Convertir en objet Pydantic
         tenants_with_counts.append(tenant_data)
     
     return tenants_with_counts
