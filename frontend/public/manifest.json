@@ -4,19 +4,21 @@
   "description": "Application de gestion des horaires et remplacements automatisés pour services d'incendie au Canada",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23dc2626'/%3E%3Ctext x='50' y='65' font-size='40' text-anchor='middle' fill='white'%3E🔥%3C/text%3E%3C/svg%3E",
+      "src": "logo192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23dc2626'/%3E%3Ctext x='50' y='65' font-size='40' text-anchor='middle' fill='white'%3E🔥%3C/text%3E%3C/svg%3E",
+      "src": "logo512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#dc2626",
+  "theme_color": "#D9072B",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "categories": ["productivity", "business", "utilities"],
