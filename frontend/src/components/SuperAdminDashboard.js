@@ -14,6 +14,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [newTenant, setNewTenant] = useState({
     nom: '',
@@ -22,6 +23,12 @@ const SuperAdminDashboard = ({ onLogout }) => {
     contact_telephone: '',
     adresse: '',
     date_creation: ''
+  });
+  const [newAdmin, setNewAdmin] = useState({
+    email: '',
+    prenom: '',
+    nom: '',
+    mot_de_passe: ''
   });
   const { toast } = useToast();
 
