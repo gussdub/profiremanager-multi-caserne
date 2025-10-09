@@ -345,15 +345,15 @@ const SuperAdminDashboard = ({ onLogout }) => {
                           </div>
                         )}
                         <div>
-                          <strong>Créée le:</strong> {tenant.created_at ? new Date(tenant.created_at).toLocaleDateString('fr-FR') : 'Non disponible'}
+                          <strong>Créée le:</strong> {tenant.date_creation ? new Date(tenant.date_creation).toLocaleDateString('fr-FR') : tenant.created_at ? new Date(tenant.created_at).toLocaleDateString('fr-FR') : 'Non spécifiée'}
                         </div>
                         <div>
                           <strong>Statut:</strong>{' '}
                           <span style={{ 
-                            color: (tenant.is_active === true || tenant.is_active === undefined) ? '#10b981' : '#ef4444',
+                            color: tenant.is_active ? '#10b981' : '#ef4444',
                             fontWeight: 'bold'
                           }}>
-                            {(tenant.is_active === true || tenant.is_active === undefined) ? '✓ Active' : '✗ Inactive'}
+                            {tenant.is_active ? '✓ Active' : '✗ Inactive'}
                           </span>
                         </div>
                         <div style={{ 
