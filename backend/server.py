@@ -1518,9 +1518,25 @@ class InspectionEPI(BaseModel):
 
 async def get_tenant_from_slug(slug: str) -> Tenant:
     """Récupère le tenant depuis son slug"""
+    # Essayer d'abord avec 'actif' (production)
     tenant_data = await db.tenants.find_one({"slug": slug, "actif": True})
+    
+    # Si non trouvé, essayer avec 'is_active' (dev)
     if not tenant_data:
-        raise HTTPException(status_code=404, detail=f"Caserne '{slug}' non trouvée ou inactive")
+        tenant_data = await db.tenants.find_one({"slug": slug, "is_active": True})
+    
+    # Si toujours pas trouvé, essayer sans filtre de statut (pour rétrocompatibilité)
+    if not tenant_data:
+        tenant_data = await db.tenants.find_one({"slug": slug})
+        if tenant_data:
+            # Vérifier manuellement le statut
+            is_active = tenant_data.get('actif', tenant_data.get('is_active', True))
+            if not is_active:
+                raise HTTPException(status_code=403, detail=f"Caserne '{slug}' inactive")
+    
+    if not tenant_data:
+        raise HTTPException(status_code=404, detail=f"Caserne '{slug}' non trouvée")
+    
     return Tenant(**tenant_data)
 
 async def get_current_tenant(tenant_slug: str) -> Tenant:
