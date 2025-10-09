@@ -155,7 +155,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
           nom: newTenant.nom,
           contact_email: newTenant.contact_email,
           contact_telephone: newTenant.contact_telephone,
-          adresse: newTenant.adresse
+          adresse: newTenant.adresse,
+          is_active: newTenant.is_active
         })
       });
 
