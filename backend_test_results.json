@@ -2,78 +2,69 @@
   {
     "test": "Server Health Check",
     "success": true,
-    "message": "Server is running: ProFireManager API v2.0",
-    "timestamp": "2025-10-07T14:52:55.278214",
+    "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
+    "timestamp": "2025-10-09T01:18:56.752408",
     "details": {}
+  },
+  {
+    "test": "Super Admin Authentication",
+    "success": false,
+    "message": "Expected Super Admin credentials failed (admin@profiremanager.ca), trying fallback...",
+    "timestamp": "2025-10-09T01:18:56.805886",
+    "details": {}
+  },
+  {
+    "test": "Super Admin Authentication",
+    "success": true,
+    "message": "Super Admin login successful with fallback credentials for gussdub@icloud.com",
+    "timestamp": "2025-10-09T01:18:56.820428",
+    "details": {}
+  },
+  {
+    "test": "Super Admin Tenants API",
+    "success": true,
+    "message": "\u2705 Tenants API working correctly - Found 1 tenant(s) with all required fields",
+    "timestamp": "2025-10-09T01:18:56.862458",
+    "details": {
+      "tenant_count": 1,
+      "field_types": {
+        "created_at": "str",
+        "is_active": "bool",
+        "nombre_employes": "int",
+        "contact_email": "str",
+        "contact_telephone": "str",
+        "nom": "str",
+        "slug": "str"
+      },
+      "sample_tenant_fields": [
+        "id",
+        "slug",
+        "nom",
+        "ville",
+        "province",
+        "contact_email",
+        "contact_telephone",
+        "is_active",
+        "created_at",
+        "nombre_employes"
+      ]
+    }
   },
   {
     "test": "Admin Authentication",
-    "success": true,
-    "message": "Login successful for admin@firefighter.com (Role: admin)",
-    "timestamp": "2025-10-07T14:52:55.290142",
-    "details": {}
+    "success": false,
+    "message": "Authentication failed - admin user may not exist",
+    "timestamp": "2025-10-09T01:18:56.876876",
+    "details": {
+      "status_code": 401,
+      "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
+    }
   },
   {
-    "test": "JWT Token Validation",
-    "success": true,
-    "message": "Token valid - User: admin@firefighter.com",
-    "timestamp": "2025-10-07T14:52:55.296724",
-    "details": {}
-  },
-  {
-    "test": "Database Connectivity",
-    "success": true,
-    "message": "Database accessible - Found 24 users",
-    "timestamp": "2025-10-07T14:52:55.305979",
-    "details": {}
-  },
-  {
-    "test": "Types-Garde CRUD",
-    "success": true,
-    "message": "All CRUD operations successful",
-    "timestamp": "2025-10-07T14:52:55.343849",
-    "details": {}
-  },
-  {
-    "test": "Formations API",
-    "success": true,
-    "message": "All formation operations successful - Found 8 existing formations",
-    "timestamp": "2025-10-07T14:52:55.375851",
-    "details": {}
-  },
-  {
-    "test": "Users Management",
-    "success": true,
-    "message": "All user operations successful - Found 24 existing users",
-    "timestamp": "2025-10-07T14:52:55.685276",
-    "details": {}
-  },
-  {
-    "test": "Settings API",
-    "success": true,
-    "message": "Replacement parameters retrieved and updated successfully",
-    "timestamp": "2025-10-07T14:52:55.708847",
-    "details": {}
-  },
-  {
-    "test": "Notification System",
-    "success": true,
-    "message": "Found notification endpoints: /notifications, /remplacements",
-    "timestamp": "2025-10-07T14:52:55.739425",
-    "details": {}
-  },
-  {
-    "test": "Planning Endpoints",
-    "success": true,
-    "message": "Planning endpoints working - Found 0 assignations for week 2025-10-06",
-    "timestamp": "2025-10-07T14:52:55.766552",
-    "details": {}
-  },
-  {
-    "test": "Replacement System",
-    "success": true,
-    "message": "Replacement system working - Found 0 replacement requests and 0 leave requests",
-    "timestamp": "2025-10-07T14:52:55.780175",
+    "test": "Admin User Creation",
+    "success": false,
+    "message": "Could not create admin user: 404",
+    "timestamp": "2025-10-09T01:18:56.884836",
     "details": {}
   }
 ]
