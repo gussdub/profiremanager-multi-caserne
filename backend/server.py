@@ -1696,7 +1696,7 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier si la caserne est active
-    if not tenant.actif and not getattr(tenant, 'is_active', True):
+    if not tenant.actif or not getattr(tenant, 'is_active', True):
         raise HTTPException(
             status_code=403, 
             detail="Cette caserne est temporairement désactivée. Veuillez contacter votre administrateur."
