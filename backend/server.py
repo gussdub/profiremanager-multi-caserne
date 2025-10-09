@@ -286,27 +286,26 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
             print(f"[WARNING] SENDGRID_API_KEY non configurée - Email non envoyé à {user_email}")
             return False
         
-        try:
-            message = Mail(
-                from_email=sender_email,
-                to_emails=user_email,
-                subject=subject,
-                html_content=html_content
-            )
-            
-            sg = SendGridAPIClient(sendgrid_api_key)
-            response = sg.send(message)
-            
-            if response.status_code in [200, 201, 202]:
-                print(f"✅ Email de bienvenue envoyé avec succès à {user_email}")
-                return True
-            else:
-                print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Erreur lors de l'envoi de l'email à {user_email}: {str(e)}")
+        message = Mail(
+            from_email=sender_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Email de bienvenue envoyé avec succès à {user_email}")
+            return True
+        else:
+            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
             return False
+                
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi de l'email à {user_email}: {str(e)}")
+        return False
         
 
 def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
