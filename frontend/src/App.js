@@ -6189,6 +6189,17 @@ const MonProfil = () => {
     return noms[typeEpi] || typeEpi;
   };
 
+  const getAllEPITypes = () => {
+    return [
+      { id: 'casque', nom: 'Casque', icone: '🪖' },
+      { id: 'bottes', nom: 'Bottes', icone: '👢' },
+      { id: 'veste_bunker', nom: 'Veste Bunker', icone: '🧥' },
+      { id: 'pantalon_bunker', nom: 'Pantalon Bunker', icone: '👖' },
+      { id: 'gants', nom: 'Gants', icone: '🧤' },
+      { id: 'masque_apria', nom: 'Facial APRIA', icone: '😷' },
+      { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+    ];
+  };
   const getEPIIcone = (typeEpi) => {
     const icones = {
       'casque': '🪖',
