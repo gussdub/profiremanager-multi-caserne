@@ -744,8 +744,9 @@ async def login_legacy(user_login: UserLogin):
     
     tenant = Tenant(**tenant_data)
     
-    # Vérifier si la caserne est active
-    if not tenant_data.get('is_active', True):
+    # Vérifier si la caserne est active (supporte 'actif' et 'is_active')
+    is_active = tenant_data.get('is_active', tenant_data.get('actif', True))
+    if not is_active:
         raise HTTPException(
             status_code=403, 
             detail="Cette caserne est temporairement désactivée. Veuillez contacter votre administrateur."
