@@ -430,11 +430,6 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
         return False
 
-
-    except Exception as e:
-        print(f"Erreur envoi email: {str(e)}")
-        return False
-
 def verify_password(plain_password, hashed_password):
     return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
