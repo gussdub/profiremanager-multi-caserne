@@ -127,7 +127,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
       slug: tenant.slug,
       contact_email: tenant.contact_email,
       contact_telephone: tenant.contact_telephone || '',
-      adresse: tenant.adresse || ''
+      adresse: tenant.adresse || '',
+      is_active: tenant.is_active !== undefined ? tenant.is_active : true
     });
     setShowEditModal(true);
   };
