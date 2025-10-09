@@ -855,6 +855,10 @@ class ProFireManagerTester:
         super_admin_auth_success = self.test_super_admin_authentication()
         if super_admin_auth_success:
             self.test_super_admin_tenants_api()
+            # NEW TEST: Tenant modification and login blocking
+            print("\n🎯 NEW TEST: Tenant Modification & Login Blocking")
+            print("-" * 40)
+            self.test_tenant_modification_and_login_blocking()
         else:
             print("⚠️  Super Admin authentication failed - cannot test tenants API")
         
