@@ -1613,9 +1613,16 @@ async def update_tenant(
     admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Modifier une caserne"""
+    update_data = tenant_update.dict()
+    
+    # Gérer la date_creation si modifiée
+    if update_data.get('date_creation') and isinstance(update_data['date_creation'], str):
+        from datetime import datetime as dt
+        update_data['date_creation'] = dt.fromisoformat(update_data['date_creation']).replace(tzinfo=timezone.utc)
+    
     result = await db.tenants.update_one(
         {"id": tenant_id},
-        {"$set": tenant_update.dict()}
+        {"$set": update_data}
     )
     
     if result.matched_count == 0:
