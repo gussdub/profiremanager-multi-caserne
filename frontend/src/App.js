@@ -1460,6 +1460,18 @@ const Personnel = () => {
     });
   };
 
+  const getAllEPITypes = () => {
+    return [
+      { id: 'casque', nom: 'Casque', icone: '🪖' },
+      { id: 'bottes', nom: 'Bottes', icone: '👢' },
+      { id: 'veste_bunker', nom: 'Veste Bunker', icone: '🧥' },
+      { id: 'pantalon_bunker', nom: 'Pantalon Bunker', icone: '👖' },
+      { id: 'gants', nom: 'Gants', icone: '🧤' },
+      { id: 'masque_apria', nom: 'Facial APRIA', icone: '😷' },
+      { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+    ];
+  };
+
   const getEPINom = (typeEpi) => {
     const noms = {
       'casque': 'Casque',
@@ -1467,7 +1479,8 @@ const Personnel = () => {
       'veste_bunker': 'Veste Bunker',
       'pantalon_bunker': 'Pantalon Bunker',
       'gants': 'Gants',
-      'masque_scba': 'Masque SCBA'
+      'masque_apria': 'Facial APRIA',
+      'cagoule': 'Cagoule Anti-Particules'
     };
     return noms[typeEpi] || typeEpi;
   };
@@ -1479,7 +1492,8 @@ const Personnel = () => {
       'veste_bunker': '🧥',
       'pantalon_bunker': '👖',
       'gants': '🧤',
-      'masque_scba': '😷'
+      'masque_apria': '😷',
+      'cagoule': '🎭'
     };
     return icones[typeEpi] || '🛡️';
   };
