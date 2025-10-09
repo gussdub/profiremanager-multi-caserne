@@ -352,10 +352,10 @@ const SuperAdminDashboard = ({ onLogout }) => {
                         <div>
                           <strong>Statut:</strong>{' '}
                           <span style={{ 
-                            color: tenant.is_active ? '#10b981' : '#ef4444',
+                            color: (tenant.is_active !== undefined ? tenant.is_active : tenant.actif) ? '#10b981' : '#ef4444',
                             fontWeight: 'bold'
                           }}>
-                            {tenant.is_active ? '✓ Active' : '✗ Inactive'}
+                            {(tenant.is_active !== undefined ? tenant.is_active : tenant.actif) ? '✓ Active' : '✗ Inactive'}
                           </span>
                         </div>
                         <div style={{ 
