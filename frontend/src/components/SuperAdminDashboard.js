@@ -781,6 +781,112 @@ const SuperAdminDashboard = ({ onLogout }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Créer Admin pour Caserne */}
+      {showCreateAdminModal && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '10px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: 'bold' }}>
+              👤 Créer un Administrateur
+            </h2>
+            <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
+              Créer le premier administrateur pour <strong>{selectedTenant?.nom}</strong>
+            </p>
+
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <div>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={newAdmin.email}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                  placeholder="admin@caserne.ca"
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div>
+                  <Label>Prénom *</Label>
+                  <Input
+                    value={newAdmin.prenom}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, prenom: e.target.value })}
+                    placeholder="Jean"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label>Nom *</Label>
+                  <Input
+                    value={newAdmin.nom}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, nom: e.target.value })}
+                    placeholder="Dupont"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Mot de passe *</Label>
+                <Input
+                  type="password"
+                  value={newAdmin.mot_de_passe}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, mot_de_passe: e.target.value })}
+                  placeholder="Minimum 6 caractères"
+                  required
+                />
+                <small style={{ color: '#64748b', fontSize: '12px' }}>
+                  Ce mot de passe sera envoyé par email à l'administrateur
+                </small>
+              </div>
+
+              <div style={{
+                padding: '15px',
+                background: '#f0f9ff',
+                borderRadius: '8px',
+                border: '1px solid #bae6fd',
+                fontSize: '13px',
+                color: '#0369a1'
+              }}>
+                ℹ️ L'administrateur recevra un email de bienvenue avec ses identifiants de connexion et pourra créer d'autres utilisateurs depuis le module Personnel.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
+              <Button variant="outline" onClick={() => {
+                setShowCreateAdminModal(false);
+                setSelectedTenant(null);
+                setNewAdmin({ email: '', prenom: '', nom: '', mot_de_passe: '' });
+              }}>
+                Annuler
+              </Button>
+              <Button onClick={handleSubmitCreateAdmin} style={{ background: '#10b981' }}>
+                ✅ Créer l'administrateur
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
