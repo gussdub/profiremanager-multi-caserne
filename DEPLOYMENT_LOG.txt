@@ -10,3 +10,4 @@ Fix: SyntaxError double except dans send_gardes_notification_email - Thu Oct  9 
 Fix CRITIQUE: SyntaxError double try imbriqués dans send_welcome_email + update_tenant date_creation - Thu Oct  9 00:17:56 UTC 2025
 Logo officiel ProFireManager intégré (#D9072B) + Super-admin réinitialisé - Thu Oct  9 00:33:49 UTC 2025
 Fix CRITIQUE: ObjectId non sérialisable dans list_tenants - Thu Oct  9 00:44:10 UTC 2025
+Fix: update_tenant accepte dict au lieu de TenantCreate pour éviter 422 - Thu Oct  9 00:50:50 UTC 2025
