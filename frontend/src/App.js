@@ -2588,18 +2588,31 @@ const Personnel = () => {
                   <div className="epi-tailles-grid-modal">
                     {getAllEPITypes().map(epiType => {
                       const existingEPI = userEPIs.find(e => e.type_epi === epiType.id);
+                      const currentValue = existingEPI ? existingEPI.taille : '';
+                      
                       return (
                         <div key={epiType.id} className="epi-taille-row">
                           <span className="epi-taille-icon-modal">{epiType.icone}</span>
                           <Label className="epi-taille-label-modal">{epiType.nom}</Label>
                           <Input
-                            value={existingEPI ? existingEPI.taille : ''}
+                            value={currentValue}
                             onChange={(e) => {
+                              const newValue = e.target.value;
                               if (existingEPI) {
+                                // Mettre à jour l'EPI existant
                                 const updatedEPIs = userEPIs.map(item => 
-                                  item.id === existingEPI.id ? {...item, taille: e.target.value} : item
+                                  item.id === existingEPI.id ? {...item, taille: newValue} : item
                                 );
                                 setUserEPIs(updatedEPIs);
+                              } else if (newValue) {
+                                // Créer un nouvel EPI si une valeur est saisie
+                                const newEPI = {
+                                  id: `temp-${epiType.id}-${Date.now()}`,
+                                  type_epi: epiType.id,
+                                  taille: newValue,
+                                  user_id: selectedUser.id
+                                };
+                                setUserEPIs([...userEPIs, newEPI]);
                               }
                             }}
                             placeholder="Saisir la taille"
