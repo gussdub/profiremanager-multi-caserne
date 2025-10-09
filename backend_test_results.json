@@ -3,28 +3,28 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-09T01:18:56.752408",
+    "timestamp": "2025-10-09T01:45:34.330074",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": false,
     "message": "Expected Super Admin credentials failed (admin@profiremanager.ca), trying fallback...",
-    "timestamp": "2025-10-09T01:18:56.805886",
+    "timestamp": "2025-10-09T01:45:34.341312",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful with fallback credentials for gussdub@icloud.com",
-    "timestamp": "2025-10-09T01:18:56.820428",
+    "timestamp": "2025-10-09T01:45:34.353749",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API",
     "success": true,
     "message": "\u2705 Tenants API working correctly - Found 1 tenant(s) with all required fields",
-    "timestamp": "2025-10-09T01:18:56.862458",
+    "timestamp": "2025-10-09T01:45:34.391924",
     "details": {
       "tenant_count": 1,
       "field_types": {
@@ -51,10 +51,19 @@
     }
   },
   {
+    "test": "Tenant Modification & Login Blocking",
+    "success": false,
+    "message": "Expected 403 status for inactive tenant login, got: 401",
+    "timestamp": "2025-10-09T01:45:34.491533",
+    "details": {
+      "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
+    }
+  },
+  {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-09T01:18:56.876876",
+    "timestamp": "2025-10-09T01:45:34.499667",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -64,7 +73,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-09T01:18:56.884836",
+    "timestamp": "2025-10-09T01:45:34.506622",
     "details": {}
   }
 ]
