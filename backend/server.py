@@ -743,6 +743,13 @@ async def login_legacy(user_login: UserLogin):
         raise HTTPException(status_code=404, detail="Caserne non trouvée")
     
     tenant = Tenant(**tenant_data)
+    
+    # Vérifier si la caserne est active
+    if not tenant.actif and not tenant_data.get('is_active', True):
+        raise HTTPException(
+            status_code=403, 
+            detail="Cette caserne est temporairement désactivée. Veuillez contacter votre administrateur."
+        )
     access_token = create_access_token(data={
         "sub": user.id,
         "tenant_id": tenant.id,
