@@ -689,6 +689,7 @@ class ProFireManagerTester:
         print("=" * 50)
         print(f"Testing against: {self.base_url}")
         print(f"Admin credentials: {TEST_ADMIN_EMAIL}")
+        print(f"Super Admin credentials: {SUPER_ADMIN_EMAIL}")
         print("=" * 50)
         
         # Test 1: Server Health
@@ -696,36 +697,45 @@ class ProFireManagerTester:
             print("\n❌ Server is not responding. Cannot continue with tests.")
             return False
         
-        # Test 2: Authentication
+        # Test 2: Super Admin Authentication and Tenants API (PRIORITY TEST)
+        print("\n🎯 PRIORITY TEST: Super Admin Dashboard API")
+        print("-" * 40)
+        super_admin_auth_success = self.test_super_admin_authentication()
+        if super_admin_auth_success:
+            self.test_super_admin_tenants_api()
+        else:
+            print("⚠️  Super Admin authentication failed - cannot test tenants API")
+        
+        # Test 3: Regular Authentication
         auth_success = self.test_admin_authentication()
         if not auth_success:
-            print("\n⚠️  Authentication failed. Trying to create admin user...")
+            print("\n⚠️  Regular authentication failed. Trying to create admin user...")
             # This will likely fail without auth, but worth trying
             self.create_admin_user_if_needed()
             print("\n❌ Cannot proceed with authenticated tests without valid credentials.")
             print("\n💡 Please ensure admin user exists with credentials:")
             print(f"   Email: {TEST_ADMIN_EMAIL}")
             print(f"   Password: {TEST_ADMIN_PASSWORD}")
-            return False
-        
-        # Test 3: JWT Validation
-        self.test_jwt_validation()
-        
-        # Test 4: Database Connectivity
-        self.test_database_connectivity()
-        
-        # Test 5: Core API Endpoints
-        self.test_types_garde_crud()
-        self.test_formations_api()
-        self.test_users_management()
-        
-        # Test 6: Settings and Notifications
-        self.test_settings_api()
-        self.test_notification_system()
-        
-        # Test 7: Additional Core Functionality
-        self.test_planning_endpoints()
-        self.test_replacement_system()
+            # Don't return False here - we still want to show Super Admin results
+        else:
+            # Test 4: JWT Validation
+            self.test_jwt_validation()
+            
+            # Test 5: Database Connectivity
+            self.test_database_connectivity()
+            
+            # Test 6: Core API Endpoints
+            self.test_types_garde_crud()
+            self.test_formations_api()
+            self.test_users_management()
+            
+            # Test 7: Settings and Notifications
+            self.test_settings_api()
+            self.test_notification_system()
+            
+            # Test 8: Additional Core Functionality
+            self.test_planning_endpoints()
+            self.test_replacement_system()
         
         # Summary
         print("\n" + "=" * 50)
@@ -746,6 +756,14 @@ class ProFireManagerTester:
             print("\n❌ FAILED TESTS:")
             for test in failed_tests:
                 print(f"   - {test['test']}: {test['message']}")
+        
+        # Show Super Admin specific results
+        super_admin_tests = [result for result in self.test_results if "Super Admin" in result["test"]]
+        if super_admin_tests:
+            print("\n🎯 SUPER ADMIN TEST RESULTS:")
+            for test in super_admin_tests:
+                status = "✅ PASS" if test["success"] else "❌ FAIL"
+                print(f"   {status} - {test['test']}: {test['message']}")
         
         return passed == total
 
