@@ -1612,11 +1612,17 @@ async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends
 @api_router.put("/admin/tenants/{tenant_id}")
 async def update_tenant(
     tenant_id: str, 
-    tenant_update: TenantCreate,
+    tenant_update: dict,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Modifier une caserne"""
-    update_data = tenant_update.dict()
+    update_data = tenant_update.copy()
+    
+    # Supprimer les champs calculés qui ne doivent pas être sauvegardés
+    if 'nombre_employes' in update_data:
+        del update_data['nombre_employes']
+    if '_id' in update_data:
+        del update_data['_id']
     
     # Gérer la date_creation si modifiée
     if update_data.get('date_creation') and isinstance(update_data['date_creation'], str):
