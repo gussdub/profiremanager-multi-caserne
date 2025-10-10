@@ -1117,6 +1117,12 @@ const Personnel = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
+  const [newDisponibilite, setNewDisponibilite] = useState({
+    date: new Date().toISOString().split('T')[0],
+    heure_debut: '08:00',
+    heure_fin: '17:00',
+    statut: 'disponible'
+  });
   const [editingEPIId, setEditingEPIId] = useState(null);
   const [newEPI, setNewEPI] = useState({
     type_epi: '',
