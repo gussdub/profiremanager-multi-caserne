@@ -193,6 +193,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="off"
                   data-testid="login-email-input"
                 />
               </div>
@@ -204,6 +205,7 @@ const Login = () => {
                   value={motDePasse}
                   onChange={(e) => setMotDePasse(e.target.value)}
                   required
+                  autoComplete="new-password"
                   data-testid="login-password-input"
                 />
               </div>
