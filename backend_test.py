@@ -913,18 +913,24 @@ class ProFireManagerTester:
             print("\n❌ Server is not responding. Cannot continue with tests.")
             return False
         
-        # Test 2: Super Admin Authentication and Tenants API (PRIORITY TEST)
-        print("\n🎯 PRIORITY TEST: Super Admin Dashboard API")
-        print("-" * 40)
+        # Test 2: Super Admin Authentication and Dashboard API (PRIORITY TESTS FROM REVIEW REQUEST)
+        print("\n🎯 PRIORITY TESTS: Super Admin Dashboard API Corrections")
+        print("-" * 50)
         super_admin_auth_success = self.test_super_admin_authentication()
         if super_admin_auth_success:
-            self.test_super_admin_tenants_api()
-            # NEW TEST: Tenant modification and login blocking
-            print("\n🎯 NEW TEST: Tenant Modification & Login Blocking")
-            print("-" * 40)
-            self.test_tenant_modification_and_login_blocking()
+            # Test 1: NEW endpoint /api/admin/auth/me
+            print("\n🆕 Testing NEW endpoint: /api/admin/auth/me")
+            self.test_super_admin_auth_me_endpoint()
+            
+            # Test 2: MODIFIED endpoint /api/admin/tenants
+            print("\n🔄 Testing MODIFIED endpoint: /api/admin/tenants")
+            self.test_super_admin_tenants_api_modified()
+            
+            # Test 3: MODIFIED endpoint /api/admin/stats
+            print("\n🔄 Testing MODIFIED endpoint: /api/admin/stats")
+            self.test_super_admin_stats_api_modified()
         else:
-            print("⚠️  Super Admin authentication failed - cannot test tenants API")
+            print("⚠️  Super Admin authentication failed - cannot test dashboard API corrections")
         
         # Test 3: Regular Authentication
         auth_success = self.test_admin_authentication()
