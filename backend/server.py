@@ -1585,8 +1585,9 @@ async def super_admin_login(login: SuperAdminLogin):
 
 @api_router.get("/admin/tenants")
 async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
-    """Liste toutes les casernes avec compteur de personnel"""
-    tenants_data = await db.tenants.find().to_list(100)
+    """Liste toutes les casernes actives avec compteur de personnel"""
+    # Filtrer pour retourner seulement les tenants actifs
+    tenants_data = await db.tenants.find({"actif": True}).to_list(100)
     
     # Ajouter le compteur d'employés pour chaque tenant
     tenants_with_counts = []
