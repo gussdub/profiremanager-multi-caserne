@@ -1677,9 +1677,9 @@ async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(se
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Token invalide")
 
-# ==================== SUPER ADMIN ROUTES ====================
+# Duplicate Super Admin routes removed - they are now defined earlier in the file
 
-@api_router.post("/admin/auth/login")
+# @api_router.post("/admin/auth/login")
 async def super_admin_login(login: SuperAdminLogin):
     """Authentification du super admin"""
     admin_data = await db.super_admins.find_one({"email": login.email})
