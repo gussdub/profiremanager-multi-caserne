@@ -848,7 +848,8 @@ class ProFireManagerTester:
             # Verify details_par_caserne contains Shefford data
             shefford_details = None
             for detail in details_par_caserne:
-                if 'shefford' in detail.get('nom', '').lower():
+                caserne_name = detail.get('caserne', '').lower()
+                if 'shefford' in caserne_name:
                     shefford_details = detail
                     break
             
