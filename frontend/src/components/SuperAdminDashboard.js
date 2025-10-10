@@ -192,12 +192,47 @@ const SuperAdminDashboard = ({ onLogout }) => {
   };
 
   const handleDeleteTenant = async (tenant) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la caserne "${tenant.nom}" ?\n\nATTENTION: Toutes les données associées seront supprimées définitivement.`)) {
-      return;
-    }
-
     try {
+      // Récupérer l'impact de la suppression
       const token = localStorage.getItem('token');
+      const impactResponse = await fetch(`${API}/admin/tenants/${tenant.id}/deletion-impact`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!impactResponse.ok) {
+        throw new Error('Impossible de récupérer les informations');
+      }
+
+      const impactData = await impactResponse.json();
+      const impact = impactData.impact;
+
+      // Construire le message de confirmation détaillé
+      let message = `⚠️ SUPPRESSION DÉFINITIVE DE LA CASERNE "${tenant.nom}"\n\n`;
+      message += `Cette action est IRRÉVERSIBLE et supprimera:\n\n`;
+      message += `• ${impact.utilisateurs} utilisateur(s)\n`;
+      message += `• ${impact.assignations} assignation(s)\n`;
+      message += `• ${impact.formations} formation(s)\n`;
+      message += `• ${impact.epi} EPI\n`;
+      message += `• ${impact.gardes} garde(s)\n`;
+      message += `• ${impact.disponibilites} disponibilité(s)\n`;
+      message += `• ${impact.conges} congé(s)\n`;
+      message += `\n❌ TOUTES CES DONNÉES SERONT PERDUES DÉFINITIVEMENT!\n\n`;
+      message += `Tapez "${tenant.nom}" pour confirmer la suppression.`;
+
+      const confirmation = window.prompt(message);
+      
+      if (confirmation !== tenant.nom) {
+        toast({
+          title: "Suppression annulée",
+          description: "La confirmation ne correspond pas au nom de la caserne",
+          variant: "default"
+        });
+        return;
+      }
+
+      // Procéder à la suppression
       const response = await fetch(`${API}/admin/tenants/${tenant.id}`, {
         method: 'DELETE',
         headers: {
@@ -211,9 +246,11 @@ const SuperAdminDashboard = ({ onLogout }) => {
         throw new Error(error.detail || 'Erreur suppression');
       }
 
+      const result = await response.json();
+
       toast({
-        title: "Caserne supprimée",
-        description: `La caserne ${tenant.nom} a été supprimée`,
+        title: "✅ Caserne supprimée définitivement",
+        description: `${result.deleted.users} utilisateur(s) et toutes les données associées ont été supprimés`,
         variant: "success"
       });
 
