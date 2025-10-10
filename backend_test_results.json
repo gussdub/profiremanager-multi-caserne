@@ -3,65 +3,44 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-09T01:47:41.124077",
+    "timestamp": "2025-10-10T14:43:45.462444",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
+    "success": true,
+    "message": "Super Admin login successful for gussdub@icloud.com",
+    "timestamp": "2025-10-10T14:43:45.476316",
+    "details": {}
+  },
+  {
+    "test": "Super Admin /auth/me Endpoint",
     "success": false,
-    "message": "Expected Super Admin credentials failed (admin@profiremanager.ca), trying fallback...",
-    "timestamp": "2025-10-09T01:47:41.137080",
-    "details": {}
-  },
-  {
-    "test": "Super Admin Authentication",
-    "success": true,
-    "message": "Super Admin login successful with fallback credentials for gussdub@icloud.com",
-    "timestamp": "2025-10-09T01:47:41.146297",
-    "details": {}
-  },
-  {
-    "test": "Super Admin Tenants API",
-    "success": true,
-    "message": "\u2705 Tenants API working correctly - Found 1 tenant(s) with all required fields",
-    "timestamp": "2025-10-09T01:47:41.183301",
+    "message": "Failed to fetch admin info: 401",
+    "timestamp": "2025-10-10T14:43:45.521479",
     "details": {
-      "tenant_count": 1,
-      "field_types": {
-        "created_at": "str",
-        "is_active": "bool",
-        "nombre_employes": "int",
-        "contact_email": "str",
-        "contact_telephone": "str",
-        "nom": "str",
-        "slug": "str"
-      },
-      "sample_tenant_fields": [
-        "id",
-        "slug",
-        "nom",
-        "ville",
-        "province",
-        "contact_email",
-        "contact_telephone",
-        "is_active",
-        "created_at",
-        "nombre_employes"
-      ]
+      "response": "{\"detail\":\"Utilisateur non trouv\u00e9\"}"
     }
   },
   {
-    "test": "Tenant Modification & Login Blocking",
+    "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works",
-    "timestamp": "2025-10-09T01:47:42.338841",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 4 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-10T14:43:45.560810",
+    "details": {}
+  },
+  {
+    "test": "Super Admin Stats API (Modified)",
+    "success": false,
+    "message": "Service Incendie de Shefford not found in details_par_caserne",
+    "timestamp": "2025-10-10T14:43:45.598858",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-09T01:47:42.348171",
+    "timestamp": "2025-10-10T14:43:45.606388",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -71,7 +50,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-09T01:47:42.355409",
+    "timestamp": "2025-10-10T14:43:45.613265",
     "details": {}
   }
 ]
