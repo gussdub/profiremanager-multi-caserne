@@ -1121,7 +1121,12 @@ const Personnel = () => {
     date: new Date().toISOString().split('T')[0],
     heure_debut: '08:00',
     heure_fin: '17:00',
-    statut: 'disponible'
+    statut: 'disponible',
+    recurrence: false,
+    type_recurrence: 'hebdomadaire',
+    jours_semaine: [],
+    bi_hebdomadaire: false,
+    date_fin: ''
   });
   const [editingEPIId, setEditingEPIId] = useState(null);
   const [newEPI, setNewEPI] = useState({
