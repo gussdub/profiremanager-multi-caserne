@@ -1714,6 +1714,35 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
         }
     }
 
+@api_router.get("/admin/tenants/{tenant_id}/deletion-impact")
+async def get_deletion_impact(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
+    """Obtenir l'impact d'une suppression (pour confirmation)"""
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Compter toutes les données associées
+    users_count = await db.users.count_documents({"tenant_id": tenant_id})
+    assignations_count = await db.assignations.count_documents({"tenant_id": tenant_id})
+    formations_count = await db.formations.count_documents({"tenant_id": tenant_id})
+    epi_count = await db.epi.count_documents({"tenant_id": tenant_id})
+    gardes_count = await db.gardes.count_documents({"tenant_id": tenant_id})
+    disponibilites_count = await db.disponibilites.count_documents({"tenant_id": tenant_id})
+    conges_count = await db.conges.count_documents({"tenant_id": tenant_id})
+    
+    return {
+        "tenant_name": tenant["nom"],
+        "impact": {
+            "utilisateurs": users_count,
+            "assignations": assignations_count,
+            "formations": formations_count,
+            "epi": epi_count,
+            "gardes": gardes_count,
+            "disponibilites": disponibilites_count,
+            "conges": conges_count
+        }
+    }
+
 @api_router.delete("/admin/tenants/{tenant_id}")
 async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
     """Suppression DÉFINITIVE d'une caserne et toutes ses données"""
