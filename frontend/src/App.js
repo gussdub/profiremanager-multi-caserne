@@ -2252,7 +2252,7 @@ const Personnel = () => {
         </div>
       )}
 
-      {/* Disponibilités Modal */}
+      {/* Disponibilités Modal - Lecture seule */}
       {showDisponibilitesModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowDisponibilitesModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="disponibilites-modal">
@@ -2280,6 +2280,120 @@ const Personnel = () => {
                   ))
                 ) : (
                   <div className="no-disponibilites">
+                    <p>Aucune disponibilité renseignée</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de gestion des disponibilités - Admin/Superviseur */}
+      {showManageDisponibilitesModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowManageDisponibilitesModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="manage-disponibilites-modal">
+            <div className="modal-header">
+              <h3>✏️ Gérer les disponibilités - {selectedUser.prenom} {selectedUser.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowManageDisponibilitesModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              {/* Formulaire d'ajout */}
+              <div className="add-disponibilite-form" style={{ marginBottom: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                <h4 style={{ marginBottom: '1rem' }}>➕ Ajouter une disponibilité</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Date</label>
+                    <input
+                      type="date"
+                      value={newDisponibilite.date}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, date: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Heure début</label>
+                    <input
+                      type="time"
+                      value={newDisponibilite.heure_debut}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, heure_debut: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Heure fin</label>
+                    <input
+                      type="time"
+                      value={newDisponibilite.heure_fin}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, heure_fin: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Statut</label>
+                    <select
+                      value={newDisponibilite.statut}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, statut: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    >
+                      <option value="disponible">✅ Disponible</option>
+                      <option value="indisponible">❌ Indisponible</option>
+                    </select>
+                  </div>
+                  <Button onClick={handleAddDisponibilite}>
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+
+              {/* Liste des disponibilités existantes */}
+              <div className="disponibilites-list">
+                <h4 style={{ marginBottom: '1rem' }}>📋 Disponibilités existantes</h4>
+                {userDisponibilites.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {userDisponibilites.sort((a, b) => new Date(a.date) - new Date(b.date)).map(dispo => (
+                      <div key={dispo.id} style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '150px 120px 120px 150px auto', 
+                        gap: '1rem', 
+                        padding: '0.75rem', 
+                        background: 'white', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '6px',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <strong>{new Date(dispo.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          {dispo.heure_debut}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          {dispo.heure_fin}
+                        </div>
+                        <div>
+                          <span style={{ 
+                            padding: '0.25rem 0.75rem', 
+                            borderRadius: '12px', 
+                            fontSize: '0.875rem',
+                            background: dispo.statut === 'disponible' ? '#dcfce7' : '#fee2e2',
+                            color: dispo.statut === 'disponible' ? '#166534' : '#991b1b'
+                          }}>
+                            {dispo.statut === 'disponible' ? '✅ Disponible' : '❌ Indisponible'}
+                          </span>
+                        </div>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeleteDisponibilite(dispo.id)}
+                        >
+                          🗑️ Supprimer
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
                     <p>Aucune disponibilité renseignée</p>
                   </div>
                 )}
