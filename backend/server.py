@@ -2649,15 +2649,18 @@ async def assignation_manuelle_avancee(
         raise HTTPException(status_code=500, detail=f"Erreur assignation avancée: {str(e)}")
 
 # Mode démo spécial - Attribution automatique agressive pour impression client
-@api_router.post("/planning/attribution-auto-demo")
-async def attribution_automatique_demo(semaine_debut: str, current_user: User = Depends(get_current_user)):
+@api_router.post("/{tenant_slug}/planning/attribution-auto-demo")
+async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     try:
-        # Get all available users and types de garde
-        users = await db.users.find({"statut": "Actif"}).to_list(1000)
-        types_garde = await db.types_garde.find().to_list(1000)
+        # Get all available users and types de garde pour ce tenant
+        users = await db.users.find({"statut": "Actif", "tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
         
         # Get existing assignations for the week
         semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
@@ -2665,7 +2668,8 @@ async def attribution_automatique_demo(semaine_debut: str, current_user: User = 
             "date": {
                 "$gte": semaine_debut,
                 "$lte": semaine_fin
-            }
+            },
+            "tenant_id": tenant.id
         }).to_list(1000)
         
         nouvelles_assignations = []
