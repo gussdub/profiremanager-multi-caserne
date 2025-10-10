@@ -681,11 +681,128 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def root():
     return {"message": "ProFireManager API v2.0 - Multi-Tenant", "status": "running"}
 
-# Note: Routes are ordered carefully:
-# 1. Super Admin routes (defined after dependencies at line ~1240)
-# 2. Tenant-specific routes (defined after super admin routes)
+# ==================== SUPER ADMIN ROUTES ====================
+# Note: Super Admin routes MUST be defined before tenant routes to avoid conflicts
 
-# Waiting for route definitions below...
+@api_router.post("/admin/auth/login")
+async def super_admin_login(login: SuperAdminLogin):
+    """Authentification du super admin"""
+    admin_data = await db.super_admins.find_one({"email": login.email})
+    
+    if not admin_data or not verify_password(login.mot_de_passe, admin_data["mot_de_passe_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    admin = SuperAdmin(**admin_data)
+    access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "admin": {
+            "id": admin.id,
+            "email": admin.email,
+            "nom": admin.nom
+        }
+    }
+
+@api_router.get("/admin/auth/me")
+async def get_super_admin_me(admin: SuperAdmin = Depends(get_super_admin)):
+    """Récupère les informations du super admin authentifié"""
+    return {
+        "id": admin.id,
+        "email": admin.email,
+        "nom": admin.nom,
+        "role": "super_admin"
+    }
+
+@api_router.get("/admin/tenants")
+async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
+    """Liste toutes les casernes (actives et inactives) avec compteur de personnel"""
+    # Récupérer TOUTES les casernes (pas de filtre) pour que le Super Admin puisse tout voir
+    tenants_data = await db.tenants.find({}).to_list(100)
+    
+    # Ajouter le compteur d'employés pour chaque tenant
+    tenants_with_counts = []
+    for tenant_data in tenants_data:
+        # Supprimer _id (ObjectId non sérialisable)
+        if '_id' in tenant_data:
+            del tenant_data['_id']
+        
+        # Compter le nombre d'employés
+        nombre_employes = await db.users.count_documents({"tenant_id": tenant_data['id']})
+        tenant_data['nombre_employes'] = nombre_employes
+        
+        # Normaliser le statut actif (gérer les deux champs actif et is_active)
+        # Pour compatibilité avec anciennes et nouvelles données
+        if 'is_active' not in tenant_data and 'actif' in tenant_data:
+            tenant_data['is_active'] = tenant_data['actif']
+        elif 'is_active' in tenant_data and 'actif' not in tenant_data:
+            tenant_data['actif'] = tenant_data['is_active']
+        
+        tenants_with_counts.append(tenant_data)
+    
+    return tenants_with_counts
+
+@api_router.get("/admin/stats")
+async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
+    """Statistiques globales avec calcul des revenus mensuels"""
+    # Récupérer tous les tenants pour gérer les deux champs actif et is_active
+    tous_tenants = await db.tenants.find({}).to_list(100)
+    
+    total_casernes_actives = 0
+    total_casernes_inactives = 0
+    tenants_actifs = []
+    
+    # Analyser chaque tenant pour déterminer son statut
+    for tenant in tous_tenants:
+        # Un tenant est actif si actif=True OU is_active=True
+        is_active = tenant.get('actif', False) or tenant.get('is_active', False)
+        
+        if is_active:
+            total_casernes_actives += 1
+            tenants_actifs.append(tenant)
+        else:
+            total_casernes_inactives += 1
+    
+    # Calculer les revenus mensuels
+    revenus_mensuels = 0
+    total_pompiers = 0
+    details_revenus = []
+    
+    for tenant in tenants_actifs:
+        # Compter les pompiers de cette caserne
+        user_count = await db.users.count_documents({"tenant_id": tenant["id"]})
+        total_pompiers += user_count
+        
+        # Déterminer le prix par pompier selon le palier
+        if user_count <= 30:
+            prix_par_pompier = 12
+        elif user_count <= 50:
+            prix_par_pompier = 20
+        else:
+            prix_par_pompier = 27
+        
+        # Calculer le revenu pour cette caserne
+        revenu_caserne = user_count * prix_par_pompier
+        revenus_mensuels += revenu_caserne
+        
+        details_revenus.append({
+            "caserne": tenant["nom"],
+            "pompiers": user_count,
+            "prix_par_pompier": prix_par_pompier,
+            "revenu_mensuel": revenu_caserne
+        })
+    
+    return {
+        "casernes_actives": total_casernes_actives,
+        "casernes_inactives": total_casernes_inactives,
+        "total_pompiers": total_pompiers,
+        "revenus_mensuels": revenus_mensuels,
+        "details_par_caserne": details_revenus
+    }
+
+# ==================== TENANT-SPECIFIC ROUTES ====================
+# Note: Tenant routes are defined after Super Admin routes to avoid conflicts
 async def login(tenant_slug: str, user_login: UserLogin):
     """Login pour un tenant spécifique"""
     # Vérifier que le tenant existe
