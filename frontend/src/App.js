@@ -4465,6 +4465,36 @@ const Remplacements = () => {
               </div>
             </div>
 
+            {/* Aide contextuelle pour les admins/superviseurs */}
+            {user.role !== 'employe' && demandes.filter(d => d.statut === 'en_cours').length > 0 && (
+              <div style={{ 
+                background: '#eff6ff', 
+                border: '1px solid #3b82f6', 
+                borderRadius: '8px', 
+                padding: '1rem', 
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'start',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>💡</span>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: '#1e40af', display: 'block', marginBottom: '0.5rem' }}>
+                    Actions manuelles disponibles
+                  </strong>
+                  <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0, lineHeight: '1.5' }}>
+                    Les demandes de remplacement sont <strong>automatiquement traitées</strong> selon vos paramètres. 
+                    Les boutons ci-dessous permettent d'<strong>intervenir manuellement</strong> si nécessaire :
+                  </p>
+                  <ul style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 1.5rem', lineHeight: '1.6' }}>
+                    <li><strong>🔍 Recherche auto</strong> : Relancer la recherche si l'automatisation a échoué</li>
+                    <li><strong>✅ Approuver</strong> : Valider manuellement (remplaçant trouvé hors système)</li>
+                    <li><strong>❌ Rejeter</strong> : Annuler si la demande n'est plus nécessaire</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
             {/* Liste des demandes de remplacement */}
             <div className="demandes-list">
               {demandes.length > 0 ? (
