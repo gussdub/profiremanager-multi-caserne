@@ -1110,6 +1110,7 @@ const Personnel = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDisponibilitesModal, setShowDisponibilitesModal] = useState(false);
+  const [showManageDisponibilitesModal, setShowManageDisponibilitesModal] = useState(false);
   const [showEPIModal, setShowEPIModal] = useState(false);
   const [showAddEPIModal, setShowAddEPIModal] = useState(false);
   const [showEPIAccordion, setShowEPIAccordion] = useState(false);
