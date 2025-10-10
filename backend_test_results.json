@@ -3,44 +3,42 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-10T14:43:45.462444",
+    "timestamp": "2025-10-10T14:49:05.621790",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-10T14:43:45.476316",
+    "timestamp": "2025-10-10T14:49:05.633834",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
-    "success": false,
-    "message": "Failed to fetch admin info: 401",
-    "timestamp": "2025-10-10T14:43:45.521479",
-    "details": {
-      "response": "{\"detail\":\"Utilisateur non trouv\u00e9\"}"
-    }
+    "success": true,
+    "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
+    "timestamp": "2025-10-10T14:49:05.673814",
+    "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
     "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 4 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-10T14:43:45.560810",
+    "timestamp": "2025-10-10T14:49:05.711257",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": false,
     "message": "Service Incendie de Shefford not found in details_par_caserne",
-    "timestamp": "2025-10-10T14:43:45.598858",
+    "timestamp": "2025-10-10T14:49:05.745604",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-10T14:43:45.606388",
+    "timestamp": "2025-10-10T14:49:05.758332",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -50,7 +48,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-10T14:43:45.613265",
+    "timestamp": "2025-10-10T14:49:05.765782",
     "details": {}
   }
 ]
