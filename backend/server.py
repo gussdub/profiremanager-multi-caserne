@@ -1805,12 +1805,23 @@ async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(
 @api_router.get("/admin/stats")
 async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
     """Statistiques globales avec calcul des revenus mensuels"""
-    # Compter casernes actives et inactives
-    total_casernes_actives = await db.tenants.count_documents({"actif": True})
-    total_casernes_inactives = await db.tenants.count_documents({"actif": False})
+    # Récupérer tous les tenants pour gérer les deux champs actif et is_active
+    tous_tenants = await db.tenants.find({}).to_list(100)
     
-    # Récupérer toutes les casernes actives
-    tenants_actifs = await db.tenants.find({"actif": True}).to_list(100)
+    total_casernes_actives = 0
+    total_casernes_inactives = 0
+    tenants_actifs = []
+    
+    # Analyser chaque tenant pour déterminer son statut
+    for tenant in tous_tenants:
+        # Un tenant est actif si actif=True OU is_active=True
+        is_active = tenant.get('actif', False) or tenant.get('is_active', False)
+        
+        if is_active:
+            total_casernes_actives += 1
+            tenants_actifs.append(tenant)
+        else:
+            total_casernes_inactives += 1
     
     # Calculer les revenus mensuels
     revenus_mensuels = 0
