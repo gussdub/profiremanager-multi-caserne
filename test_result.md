@@ -157,6 +157,24 @@ backend:
         agent: "testing"
         comment: "✅ BUG FIXED & FULLY FUNCTIONAL - Fixed login blocking logic in lines 748 and 1699 of server.py. All tests now pass: 1) Super Admin can update tenant with is_active=false via PUT /api/admin/tenants/{tenant_id}, 2) Login correctly returns 403 'Cette caserne est temporairement désactivée' for inactive tenants, 3) Re-activating tenant (is_active=true) allows login again. Used correct credentials (admin@firemanager.ca / admin123) for testing."
 
+  - task: "Super Admin Dashboard API Corrections"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing specific corrections from review request: NEW /api/admin/auth/me endpoint, MODIFIED /api/admin/tenants endpoint, MODIFIED /api/admin/stats endpoint"
+      - working: false
+        agent: "testing"
+        comment: "❌ ROUTE CONFLICT ISSUE: Super Admin routes were defined after tenant routes, causing /api/admin/auth/me to be matched by /{tenant_slug}/auth/me route. This resulted in 401 'Utilisateur non trouvé' error instead of proper Super Admin authentication."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL CORRECTIONS VERIFIED & WORKING - Fixed route ordering by moving Super Admin routes before tenant routes. All 3 priority tests now pass: 1) NEW /api/admin/auth/me endpoint returns correct fields (id, email, nom, role), 2) MODIFIED /api/admin/tenants endpoint returns Service Incendie de Shefford with nombre_employes calculated and both actif/is_active fields, demonstration caserne properly deleted, 3) MODIFIED /api/admin/stats endpoint returns correct stats (casernes_actives: 1, casernes_inactives: 0, total_pompiers: 4, revenus_mensuels: 48) with Shefford in details_par_caserne. Super Admin authentication works with gussdub@icloud.com / 230685Juin+."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
