@@ -624,10 +624,10 @@ class ProFireManagerTester:
             self.log_test("Super Admin Tenants API", False, f"Super Admin tenants API error: {str(e)}")
             return False
     
-    def test_tenant_modification_and_login_blocking(self):
-        """Test tenant modification with is_active field and login blocking for inactive tenants"""
+    def test_super_admin_auth_me_endpoint(self):
+        """Test NEW endpoint /api/admin/auth/me"""
         if not self.super_admin_token:
-            self.log_test("Tenant Modification & Login Blocking", False, "No Super Admin authentication token")
+            self.log_test("Super Admin /auth/me Endpoint", False, "No Super Admin authentication token")
             return False
         
         try:
@@ -635,145 +635,234 @@ class ProFireManagerTester:
             super_admin_session = requests.Session()
             super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
             
-            # Step 1: Get list of tenants to find Shefford tenant ID
-            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            # Test GET /api/admin/auth/me endpoint
+            response = super_admin_session.get(f"{self.base_url}/admin/auth/me")
+            
             if response.status_code != 200:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Failed to fetch tenants: {response.status_code}")
+                self.log_test("Super Admin /auth/me Endpoint", False, 
+                            f"Failed to fetch admin info: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            admin_info = response.json()
+            
+            # Verify required fields are present
+            required_fields = ['id', 'email', 'nom', 'role']
+            missing_fields = []
+            
+            for field in required_fields:
+                if field not in admin_info:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Super Admin /auth/me Endpoint", False, 
+                            f"Missing required fields: {', '.join(missing_fields)}", 
+                            {"response": admin_info})
+                return False
+            
+            # Verify email matches expected Super Admin
+            expected_email = FALLBACK_SUPER_ADMIN_EMAIL  # gussdub@icloud.com
+            if admin_info.get('email') != expected_email:
+                self.log_test("Super Admin /auth/me Endpoint", False, 
+                            f"Email mismatch. Expected: {expected_email}, Got: {admin_info.get('email')}")
+                return False
+            
+            self.log_test("Super Admin /auth/me Endpoint", True, 
+                        f"✅ /api/admin/auth/me endpoint working correctly - Admin: {admin_info.get('email')}, Role: {admin_info.get('role', 'N/A')}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Super Admin /auth/me Endpoint", False, f"Super Admin /auth/me endpoint error: {str(e)}")
+            return False
+
+    def test_super_admin_tenants_api_modified(self):
+        """Test MODIFIED endpoint /api/admin/tenants with specific requirements"""
+        if not self.super_admin_token:
+            self.log_test("Super Admin Tenants API (Modified)", False, "No Super Admin authentication token")
+            return False
+        
+        try:
+            # Create a new session with Super Admin token
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
+            
+            # Test GET /api/admin/tenants endpoint
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            
+            if response.status_code != 200:
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            f"Failed to fetch tenants: {response.status_code}", 
+                            {"response": response.text})
                 return False
             
             tenants = response.json()
+            
+            if not tenants or len(tenants) == 0:
+                self.log_test("Super Admin Tenants API (Modified)", False, "No tenants found in response")
+                return False
+            
+            # Verify only "Service Incendie de Shefford" is present
             shefford_tenant = None
+            demonstration_tenant = None
             
-            # Find Shefford tenant
             for tenant in tenants:
-                if tenant.get('slug') == 'shefford' or 'shefford' in tenant.get('nom', '').lower():
+                tenant_name = tenant.get('nom', '').lower()
+                if 'shefford' in tenant_name:
                     shefford_tenant = tenant
-                    break
+                elif 'démonstration' in tenant_name or 'demonstration' in tenant_name:
+                    demonstration_tenant = tenant
             
+            # Check that demonstration caserne was deleted
+            if demonstration_tenant:
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            "Demonstration caserne found but should have been deleted", 
+                            {"demonstration_tenant": demonstration_tenant})
+                return False
+            
+            # Check that Shefford caserne exists
             if not shefford_tenant:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            "Shefford tenant not found in tenant list")
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            "Service Incendie de Shefford not found in tenants list", 
+                            {"available_tenants": [t.get('nom') for t in tenants]})
                 return False
             
-            tenant_id = shefford_tenant.get('id')
-            if not tenant_id:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            "Shefford tenant ID not found")
-                return False
+            # Verify required fields are present
+            required_fields = ['nombre_employes', 'actif', 'is_active']
+            missing_fields = []
+            field_values = {}
             
-            # Step 2: Test PUT /api/admin/tenants/{tenant_id} with is_active: false
-            update_payload = {
-                "is_active": False,
-                "nom": shefford_tenant.get('nom', 'Service Incendie de Shefford'),
-                "slug": shefford_tenant.get('slug', 'shefford')
-            }
-            
-            response = super_admin_session.put(f"{self.base_url}/admin/tenants/{tenant_id}", json=update_payload)
-            if response.status_code != 200:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Failed to update tenant with is_active=false: {response.status_code}", 
-                            {"response": response.text})
-                return False
-            
-            # Step 3: Verify the update by getting tenant again
-            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
-            if response.status_code != 200:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Failed to fetch tenants after update: {response.status_code}")
-                return False
-            
-            updated_tenants = response.json()
-            updated_shefford = None
-            for tenant in updated_tenants:
-                if tenant.get('id') == tenant_id:
-                    updated_shefford = tenant
-                    break
-            
-            if not updated_shefford:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            "Could not find updated Shefford tenant")
-                return False
-            
-            # Check if is_active is now false
-            is_active_after_update = updated_shefford.get('is_active', updated_shefford.get('actif'))
-            if is_active_after_update is not False:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Tenant is_active field was not updated correctly. Expected: false, Got: {is_active_after_update}")
-                return False
-            
-            # Step 4: Test login blocking for inactive tenant
-            # Try to login with Shefford tenant user (using correct credentials from backend code)
-            login_data = {
-                "email": "admin@firemanager.ca",
-                "mot_de_passe": "admin123"
-            }
-            
-            # Use regular session (not super admin) for login test
-            login_session = requests.Session()
-            response = login_session.post(f"{self.base_url}/auth/login", json=login_data)
-            
-            # Should return 403 status code
-            if response.status_code != 403:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Expected 403 status for inactive tenant login, got: {response.status_code}", 
-                            {"response": response.text})
-                return False
-            
-            # Check error message contains expected text
-            response_text = response.text.lower()
-            expected_message = "cette caserne est temporairement désactivée"
-            if expected_message not in response_text:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Error message doesn't contain expected text. Expected: '{expected_message}', Got: {response.text}")
-                return False
-            
-            # Step 5: Re-activate tenant (is_active: true)
-            reactivate_payload = {
-                "is_active": True,
-                "nom": shefford_tenant.get('nom', 'Service Incendie de Shefford'),
-                "slug": shefford_tenant.get('slug', 'shefford')
-            }
-            
-            response = super_admin_session.put(f"{self.base_url}/admin/tenants/{tenant_id}", json=reactivate_payload)
-            if response.status_code != 200:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Failed to reactivate tenant: {response.status_code}", 
-                            {"response": response.text})
-                return False
-            
-            # Step 6: Verify login now works correctly
-            response = login_session.post(f"{self.base_url}/auth/login", json=login_data)
-            
-            # Should now return 200 or 401 (if user doesn't exist, but not 403)
-            if response.status_code == 403:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Login still blocked after reactivating tenant: {response.status_code}")
-                return False
-            elif response.status_code == 200:
-                # Login successful - perfect
-                login_result = response.json()
-                if "access_token" in login_result:
-                    self.log_test("Tenant Modification & Login Blocking", True, 
-                                "✅ All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works")
-                    return True
+            for field in required_fields:
+                if field == 'actif' or field == 'is_active':
+                    # Check for either actif or is_active field
+                    if 'actif' not in shefford_tenant and 'is_active' not in shefford_tenant:
+                        missing_fields.append('actif/is_active')
+                    else:
+                        field_values['actif'] = shefford_tenant.get('actif')
+                        field_values['is_active'] = shefford_tenant.get('is_active')
                 else:
-                    self.log_test("Tenant Modification & Login Blocking", False, 
-                                "Login returned 200 but no access token found")
-                    return False
-            elif response.status_code == 401:
-                # User doesn't exist or wrong password - but tenant is active (not 403)
-                self.log_test("Tenant Modification & Login Blocking", True, 
-                            "✅ All tests passed: Tenant update with is_active field works, login blocking for inactive tenants works, reactivation works (user credentials may not exist but tenant is active)")
-                return True
-            else:
-                self.log_test("Tenant Modification & Login Blocking", False, 
-                            f"Unexpected status code after reactivation: {response.status_code}")
+                    if field not in shefford_tenant:
+                        missing_fields.append(field)
+                    else:
+                        field_values[field] = shefford_tenant[field]
+            
+            if missing_fields:
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            f"Missing required fields in Shefford tenant: {', '.join(missing_fields)}", 
+                            {"shefford_tenant": shefford_tenant})
                 return False
+            
+            # Verify nombre_employes is calculated (should be a number)
+            nombre_employes = shefford_tenant.get('nombre_employes')
+            if not isinstance(nombre_employes, (int, float)):
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            f"nombre_employes should be a number, got: {type(nombre_employes).__name__}", 
+                            {"nombre_employes": nombre_employes})
+                return False
+            
+            # Verify is_active is True (tenant should be active)
+            is_active = shefford_tenant.get('is_active', shefford_tenant.get('actif'))
+            if is_active is not True:
+                self.log_test("Super Admin Tenants API (Modified)", False, 
+                            f"Service Incendie de Shefford should have is_active: True, got: {is_active}")
+                return False
+            
+            self.log_test("Super Admin Tenants API (Modified)", True, 
+                        f"✅ Modified tenants API working correctly - Found Shefford tenant with {nombre_employes} employees, is_active: {is_active}, demonstration caserne properly deleted")
+            return True
             
         except Exception as e:
-            self.log_test("Tenant Modification & Login Blocking", False, 
-                        f"Tenant modification and login blocking test error: {str(e)}")
+            self.log_test("Super Admin Tenants API (Modified)", False, f"Super Admin tenants API (modified) error: {str(e)}")
+            return False
+
+    def test_super_admin_stats_api_modified(self):
+        """Test MODIFIED endpoint /api/admin/stats with specific requirements"""
+        if not self.super_admin_token:
+            self.log_test("Super Admin Stats API (Modified)", False, "No Super Admin authentication token")
+            return False
+        
+        try:
+            # Create a new session with Super Admin token
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
+            
+            # Test GET /api/admin/stats endpoint
+            response = super_admin_session.get(f"{self.base_url}/admin/stats")
+            
+            if response.status_code != 200:
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"Failed to fetch stats: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            stats = response.json()
+            
+            # Verify required fields are present
+            required_fields = ['casernes_actives', 'casernes_inactives', 'total_pompiers', 'revenus_mensuels', 'details_par_caserne']
+            missing_fields = []
+            
+            for field in required_fields:
+                if field not in stats:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"Missing required fields: {', '.join(missing_fields)}", 
+                            {"response": stats})
+                return False
+            
+            # Verify casernes_actives should be 1 (Service Incendie de Shefford with is_active: True)
+            casernes_actives = stats.get('casernes_actives')
+            if casernes_actives != 1:
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"casernes_actives should be 1, got: {casernes_actives}")
+                return False
+            
+            # Verify casernes_inactives should be 0
+            casernes_inactives = stats.get('casernes_inactives')
+            if casernes_inactives != 0:
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"casernes_inactives should be 0, got: {casernes_inactives}")
+                return False
+            
+            # Verify total_pompiers is a number
+            total_pompiers = stats.get('total_pompiers')
+            if not isinstance(total_pompiers, (int, float)):
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"total_pompiers should be a number, got: {type(total_pompiers).__name__}")
+                return False
+            
+            # Verify revenus_mensuels is calculated (should be a number)
+            revenus_mensuels = stats.get('revenus_mensuels')
+            if not isinstance(revenus_mensuels, (int, float)):
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"revenus_mensuels should be a number, got: {type(revenus_mensuels).__name__}")
+                return False
+            
+            # Verify details_par_caserne is an array
+            details_par_caserne = stats.get('details_par_caserne')
+            if not isinstance(details_par_caserne, list):
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            f"details_par_caserne should be an array, got: {type(details_par_caserne).__name__}")
+                return False
+            
+            # Verify details_par_caserne contains Shefford data
+            shefford_details = None
+            for detail in details_par_caserne:
+                if 'shefford' in detail.get('nom', '').lower():
+                    shefford_details = detail
+                    break
+            
+            if not shefford_details:
+                self.log_test("Super Admin Stats API (Modified)", False, 
+                            "Service Incendie de Shefford not found in details_par_caserne")
+                return False
+            
+            self.log_test("Super Admin Stats API (Modified)", True, 
+                        f"✅ Modified stats API working correctly - casernes_actives: {casernes_actives}, casernes_inactives: {casernes_inactives}, total_pompiers: {total_pompiers}, revenus_mensuels: {revenus_mensuels}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
     
     def create_admin_user_if_needed(self):
