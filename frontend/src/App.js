@@ -115,10 +115,21 @@ const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Nettoyer complètement le localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('tenant');
+    localStorage.removeItem('user');
+    
+    // Supprimer le header Authorization d'axios
     delete axios.defaults.headers.common['Authorization'];
+    
+    // Réinitialiser l'état utilisateur
     setUser(null);
+    
+    // Forcer le rafraîchissement de la page pour éviter les problèmes de cache
+    setTimeout(() => {
+      window.location.href = window.location.origin + window.location.pathname;
+    }, 100);
   };
 
   return (
