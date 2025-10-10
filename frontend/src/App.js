@@ -6233,7 +6233,12 @@ const MonProfil = () => {
     }
 
     try {
-      // For demo - just show success
+      // Appeler l'API backend pour changer le mot de passe
+      await axios.put(`${API}/${tenantSlug}/users/${user.id}/password`, {
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      });
+      
       toast({
         title: "Mot de passe modifié",
         description: "Votre mot de passe a été mis à jour avec succès",
@@ -6242,9 +6247,10 @@ const MonProfil = () => {
       setShowPasswordModal(false);
       setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || "Impossible de modifier le mot de passe";
       toast({
         title: "Erreur",
-        description: "Impossible de modifier le mot de passe",
+        description: errorMessage,
         variant: "destructive"
       });
     }
