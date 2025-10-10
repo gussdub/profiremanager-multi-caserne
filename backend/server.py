@@ -892,7 +892,7 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
         email=user_data["email"],
         prenom=user_data["prenom"],
         nom=user_data["nom"],
-        mot_de_passe_hash=hash_password(user_data["mot_de_passe"]),
+        mot_de_passe_hash=get_password_hash(user_data["mot_de_passe"]),
         role="admin",
         statut="temps_plein",
         actif=True
