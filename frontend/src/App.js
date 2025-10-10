@@ -1387,15 +1387,51 @@ const Personnel = () => {
       return;
     }
 
+    // Validation pour récurrence
+    if (newDisponibilite.recurrence) {
+      if (!newDisponibilite.date_fin) {
+        toast({
+          title: "Date de fin requise",
+          description: "Veuillez spécifier une date de fin pour la récurrence",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (newDisponibilite.type_recurrence === 'hebdomadaire' && newDisponibilite.jours_semaine.length === 0) {
+        toast({
+          title: "Jours requis",
+          description: "Veuillez sélectionner au moins un jour de la semaine",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     try {
-      await apiPost(tenantSlug, '/disponibilites', {
-        ...newDisponibilite,
-        user_id: selectedUser.id
-      });
+      let disponibilitesToCreate = [];
+
+      if (newDisponibilite.recurrence) {
+        // Générer toutes les occurrences
+        disponibilitesToCreate = generateRecurringDisponibilites(newDisponibilite, selectedUser.id);
+      } else {
+        // Disponibilité unique
+        disponibilitesToCreate = [{
+          date: newDisponibilite.date,
+          heure_debut: newDisponibilite.heure_debut,
+          heure_fin: newDisponibilite.heure_fin,
+          statut: newDisponibilite.statut,
+          user_id: selectedUser.id
+        }];
+      }
+
+      // Créer toutes les disponibilités
+      for (const dispo of disponibilitesToCreate) {
+        await apiPost(tenantSlug, '/disponibilites', dispo);
+      }
 
       toast({
-        title: "Disponibilité ajoutée",
-        description: "La disponibilité a été ajoutée avec succès"
+        title: "Disponibilité(s) ajoutée(s)",
+        description: `${disponibilitesToCreate.length} disponibilité(s) créée(s) avec succès`
       });
 
       // Recharger les disponibilités
@@ -1407,7 +1443,12 @@ const Personnel = () => {
         date: new Date().toISOString().split('T')[0],
         heure_debut: '08:00',
         heure_fin: '17:00',
-        statut: 'disponible'
+        statut: 'disponible',
+        recurrence: false,
+        type_recurrence: 'hebdomadaire',
+        jours_semaine: [],
+        bi_hebdomadaire: false,
+        date_fin: ''
       });
     } catch (error) {
       toast({
@@ -1416,6 +1457,63 @@ const Personnel = () => {
         variant: "destructive"
       });
     }
+  };
+
+  // Fonction pour générer les disponibilités récurrentes
+  const generateRecurringDisponibilites = (config, userId) => {
+    const disponibilites = [];
+    const startDate = new Date(config.date);
+    const endDate = new Date(config.date_fin);
+
+    if (config.type_recurrence === 'hebdomadaire') {
+      // Pour chaque jour sélectionné
+      config.jours_semaine.forEach(jourIndex => {
+        let currentDate = new Date(startDate);
+        
+        // Trouver le premier jour correspondant
+        while (currentDate.getDay() !== jourIndex) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        let weekCounter = 0;
+        // Générer les occurrences
+        while (currentDate <= endDate) {
+          // Si bi-hebdomadaire, ne créer qu'une semaine sur deux
+          if (!config.bi_hebdomadaire || weekCounter % 2 === 0) {
+            disponibilites.push({
+              date: currentDate.toISOString().split('T')[0],
+              heure_debut: config.heure_debut,
+              heure_fin: config.heure_fin,
+              statut: config.statut,
+              user_id: userId
+            });
+          }
+          currentDate.setDate(currentDate.getDate() + 7);
+          weekCounter++;
+        }
+      });
+    } else if (config.type_recurrence === 'mensuelle') {
+      // Récurrence mensuelle (même jour du mois)
+      let currentDate = new Date(startDate);
+      const dayOfMonth = startDate.getDate();
+
+      while (currentDate <= endDate) {
+        disponibilites.push({
+          date: currentDate.toISOString().split('T')[0],
+          heure_debut: config.heure_debut,
+          heure_fin: config.heure_fin,
+          statut: config.statut,
+          user_id: userId
+        });
+
+        // Passer au mois suivant
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        // Garder le même jour du mois
+        currentDate.setDate(dayOfMonth);
+      }
+    }
+
+    return disponibilites;
   };
 
   const handleDeleteDisponibilite = async (disponibiliteId) => {
