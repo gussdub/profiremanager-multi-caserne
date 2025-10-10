@@ -1583,6 +1583,16 @@ async def super_admin_login(login: SuperAdminLogin):
         }
     }
 
+@api_router.get("/admin/auth/me")
+async def get_super_admin_me(admin: SuperAdmin = Depends(get_super_admin)):
+    """Récupère les informations du super admin authentifié"""
+    return {
+        "id": admin.id,
+        "email": admin.email,
+        "nom": admin.nom,
+        "role": "super_admin"
+    }
+
 @api_router.get("/admin/tenants")
 async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
     """Liste toutes les casernes actives avec compteur de personnel"""
