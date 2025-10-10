@@ -1372,6 +1372,68 @@ const Personnel = () => {
     }
   };
 
+  const handleAddDisponibilite = async () => {
+    if (!newDisponibilite.date || !newDisponibilite.heure_debut || !newDisponibilite.heure_fin) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await apiPost(tenantSlug, '/disponibilites', {
+        ...newDisponibilite,
+        user_id: selectedUser.id
+      });
+
+      toast({
+        title: "Disponibilité ajoutée",
+        description: "La disponibilité a été ajoutée avec succès"
+      });
+
+      // Recharger les disponibilités
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+      setUserDisponibilites(disponibilitesData);
+
+      // Réinitialiser le formulaire
+      setNewDisponibilite({
+        date: new Date().toISOString().split('T')[0],
+        heure_debut: '08:00',
+        heure_fin: '17:00',
+        statut: 'disponible'
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la disponibilité",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteDisponibilite = async (disponibiliteId) => {
+    try {
+      await apiDelete(tenantSlug, `/disponibilites/${disponibiliteId}`);
+
+      toast({
+        title: "Disponibilité supprimée",
+        description: "La disponibilité a été supprimée avec succès"
+      });
+
+      // Recharger les disponibilités
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+      setUserDisponibilites(disponibilitesData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la disponibilité",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Fonctions de gestion des EPI
   const handleViewEPI = async (user) => {
     try {
