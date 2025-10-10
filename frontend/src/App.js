@@ -1341,6 +1341,30 @@ const Personnel = () => {
     }
   };
 
+  const handleManageDisponibilites = async (user) => {
+    if (user.type_emploi !== 'temps_partiel') {
+      toast({
+        title: "Information",
+        description: "Les disponibilités ne concernent que les employés à temps partiel",
+        variant: "default"
+      });
+      return;
+    }
+
+    try {
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      setUserDisponibilites(disponibilitesData);
+      setSelectedUser(user);
+      setShowManageDisponibilitesModal(true);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les disponibilités",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Fonctions de gestion des EPI
   const handleViewEPI = async (user) => {
     try {
