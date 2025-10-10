@@ -2532,13 +2532,17 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     return {"message": "Disponibilité supprimée avec succès"}
 
 # Assignation manuelle avancée avec récurrence
-@api_router.post("/planning/assignation-avancee")
+@api_router.post("/{tenant_slug}/planning/assignation-avancee")
 async def assignation_manuelle_avancee(
+    tenant_slug: str,
     assignation_data: dict,
     current_user: User = Depends(get_current_user)
 ):
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
         user_id = assignation_data.get("user_id")
