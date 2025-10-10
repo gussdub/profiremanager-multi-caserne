@@ -1,79 +1,71 @@
 <analysis>
-The trajectory documents the iterative development of a full-stack application, ProFireManager, from an initial concept to a production-ready MVP. The AI engineer started by clarifying user requirements based on a description, images, and a PDF, focusing on a schedule and replacement management system for Canadian fire departments.
-
-The development process was highly interactive, with the AI building out the application incrementally and the user providing continuous feedback. Key phases included:
-1.  **Initial Scaffolding:** Building the basic frontend (React) and backend (FastAPI) structure with user authentication. This phase involved significant debugging of password hashing (bcrypt issues).
-2.  **Core Module Development:** Implementing the main features: Personnel management, Planning (with a complex AI-driven auto-assignment), Replacements/Leaves, User Profile, Availabilities, Trainings, Reports (with PDF/Excel exports), and a detailed Settings panel.
-3.  **UI/UX Refinement:** Iteratively improving the user interface based on feedback, including changing logos, adjusting layouts, fixing color schemes, and ensuring modals were functional.
-4.  **Mobile Optimization:** A dedicated phase focused on making the application responsive, which involved adding a hamburger menu, creating mobile-specific views (e.g., cards for the Personnel list), and fixing CSS layout bugs.
-5.  **Preparation for Deployment:** Creating realistic demo data, cleaning the codebase to produce a production version stripped of demo-specific features, and guiding the user through deployment on Vercel, Render, and MongoDB Atlas.
-
-The work concluded with troubleshooting a login issue on the client's first deployed instance, which was traced to an incorrect password hash in the new database. The AI has provided the correct hash and is awaiting confirmation.
+The AI engineer's work focused on iteratively enhancing the ProFireManager application, fixing bugs, and resolving complex deployment issues. Initially, the engineer addressed a user request to revert problematic Super Admin dashboard display fixes. Subsequent efforts included correcting tenant status display (handling  vs.  fields), implementing comprehensive EPI management in user profiles, renaming UI elements (e.g., Attribution to Planning), and developing robust tenant lifecycle management (activation/deactivation, permanent deletion with confirmation). A significant challenge involved debugging Vercel/Render production deployment synchronization, which was resolved by correcting GitHub repository links, Vercel root directory configurations, and addressing caching. The engineer also added monthly revenue calculations to the Super Admin dashboard. The trajectory concludes with the user requesting validation for the tenant deletion functionality and the updated statistics display.
 </analysis>
 
 <product_requirements>
-The goal is to build ProFireManager, a comprehensive web application for managing schedules, automated replacements, and personnel for Canadian fire departments.
+ProFireManager is a web application for Canadian fire departments, supporting various roles to manage personnel, schedules, and automated replacements across multiple independent departments (casernes).
 
-**Core Features & User Roles:**
-*   **User Roles:** The application supports multiple user roles with distinct permissions: Administrator (full access), Supervisor (manages employees), Full-Time Employee, and Part-Time Employee.
-*   **Authentication:** A secure login system with demo accounts for each role.
-
-**Modules Developed:**
-1.  **Dashboard:** A dynamic, role-based overview showing key statistics (active personnel, weekly shifts, coverage rate) and recent activity. Includes a dedicated section for admins to generate extensive demo data for client presentations.
-2.  **Personnel:** A module to manage all staff. Features include creating, viewing, updating, and deleting users, managing emergency contacts, assigning skills/certifications, and a special superior function designation for firefighters. It has a responsive card-based view for mobile.
-3.  **Planning:** An interactive weekly and monthly calendar. It features an intelligent auto-assignment algorithm (respecting availability, rank, seniority, and fair rotation) and an advanced manual assignment tool with recurrence options. The UI uses color codes (green/yellow/red) to indicate shift coverage.
-4.  **My Availabilities:** A dedicated module for part-time employees to submit their availability via an interactive monthly calendar, with the ability to specify availability for particular shift types.
-5.  **Replacements & Leaves:** A dual-tab module for managing both shift replacement requests and leave requests (vacation, sick leave) with a hierarchical approval workflow.
-6.  **Trainings:** A module for creating and managing training sessions, allowing users to enroll and track participation.
-7.  **Reports:** An advanced analytics section with PDF and Excel export capabilities, providing statistics on personnel, shift coverage, and training, broken down by role and individual employee.
-8.  **Settings:** A comprehensive admin panel to configure shift types, skills/certifications, auto-assignment rules, and user access.
-9.  **My Profile:** A user-specific page to view and edit personal information.
+**Implemented Features & Refinements:**
+- **Multi-Tenant & Super Admin**: Tenant creation, editing, and deletion (soft-deactivation and permanent data removal). Super Admin can create initial admin accounts for new casernes. Personnel count, billing tiers (2 for 1-30, 0 for 31-50, 7 for 51+ employees *per personnel*), and user creation limits are enforced. Tenant activation/deactivation toggle blocks login for inactive tenants.
+- **User & Profile Management**: Tenant-aware account creation with welcome emails. User profiles allow input of all EPI sizes. Mes disponibilités module is visible only for part-time employees.
+- **Planning Module**: Enhanced shift display (Assigned/Required ratio, color-coding, compact names). Attribution tab renamed to Planning. Configurable planning validation settings.
+- **Deployment & Stability**: Production deployment via Render (backend) and Vercel (frontend). Debugged Vercel/Render synchronization issues (GitHub repo, Vercel Root Directory, caching) and backend / field discrepancies in MongoDB.
+- **Reporting**: Super Admin dashboard now displays total active/inactive casernes, total personnel, and calculated monthly revenue based on active personnel.
+- **Bug Fixes**: Resolved Super Admin login, Pydantic validation, email , PWA shortcut routing issues, and the display of deleted tenants.
 </product_requirements>
 
 <key_technical_concepts>
-- **Full-Stack Application:** Built with React for the frontend and FastAPI (Python) for the backend.
-- **Database:** MongoDB (using the async  driver).
-- **Authentication:** JSON Web Tokens (JWT) with password hashing (, ).
-- **UI/UX:** Utilizes pre-built Shadcn UI components, custom Tailwind CSS, and FontAwesome for icons.
-- **Deployment:** The production version is deployed on a modern stack: Vercel for the frontend, Render for the backend, and MongoDB Atlas for the database.
-- **API Development:** RESTful API with Pydantic for data modeling and validation.
-- **Exports:** Generated server-side using  (PDF) and  (Excel).
+- **Full-Stack Development**: React (CRA) frontend, FastAPI (Python) backend with  for MongoDB.
+- **UI/UX**: Shadcn UI, Tailwind CSS.
+- **Data Persistence**: MongoDB (UUIDs,  handling, / field variations).
+- **API Design**: RESTful,  prefix, JWT authentication.
+- **Multi-Tenant Architecture**: Tenant-aware routing and data isolation.
+- **Deployment**: Render, Vercel, GitHub.
+- **Email Service**: SendGrid.
+- **Data Validation**: Pydantic.
 </key_technical_concepts>
 
 <code_architecture>
-The application follows a standard monolithic full-stack architecture with a decoupled frontend and backend.
 
 
-
-- ****
-    - **Importance:** This single file contains the entire FastAPI backend application. It defines all Pydantic models, database connections (MongoDB via ), API endpoints for every module (Personnel, Planning, Auth, etc.), business logic for features like auto-assignment and report generation, and CORS configuration.
-    - **Changes:** The file grew substantially from a basic scaffold to a comprehensive API. Key changes include implementing JWT authentication, adding CRUD endpoints for all modules, creating the complex 5-step auto-assignment algorithm, adding endpoints for PDF/Excel exports, and creating special endpoints for managing demo data. It was frequently modified to fix bugs, such as password hashing issues and incorrect data models (e.g., adding an uid=0(root) gid=0(root) groups=0(root) field to ).
-
-- ****
-    - **Importance:** This monolithic React file contains the entire frontend application logic. It manages all application state (e.g., current user, page, modal visibility), defines the component structure for all 9 modules, handles all API requests with Axios, and contains the routing logic.
-    - **Changes:** This was the most heavily edited file. It was continuously updated to build out each of the 9 modules from placeholders to fully functional interfaces. Major changes include implementing the main navigation sidebar, creating complex modals for data entry (e.g., advanced manual assignment), rendering the interactive planning calendar, displaying dynamic data from the backend, and adding mobile responsiveness with a hamburger menu. Several attempts were made to refactor parts into separate components (, ), but the final version appears to have consolidated the logic back into this single file for simplicity.
-
-- ****
-    - **Importance:** This file holds all the custom CSS styling for the application, complementing the utility classes from Tailwind CSS. It is crucial for achieving the specific red/white theme, modern UI look, and mobile responsiveness.
-    - **Changes:** It was frequently updated to add styles for new components, fix layout bugs (especially on mobile), style the custom flame logo, and refine the appearance of modals, cards, and buttons to match user feedback.
-
-- ****
-    - **Importance:** This directory contains the final, clean version of the application, stripped of all demo-related code (e.g., demo data generation buttons, demo accounts). This is the version intended for deployment for real clients.
-    - **Changes:** Created towards the end of the project by copying and cleaning the main  and  codebases.
+- ****:
+    - **Importance**: Stores backend environment variables.
+    - **Changes**:  changed from  to .
+- ****:
+    - **Importance**: Main FastAPI backend, handling API, models, and business logic.
+    - **Changes**: Models updated (, ).  in  models made optional. Backend logic adapted to check for both  and  fields for tenant status, supporting production and local DBs. Email functions (, ) enhanced/added. Endpoints for tenant management (), planning settings, and user creation () modified. New endpoint  added. Login endpoints updated for tenant status checks. Permanent tenant deletion logic implemented for . New  for pre-deletion stats and  for monthly revenue calculation were added. Redundant DB calls removed.
+- ****:
+    - **Importance**: Core React application, routing, and main components.
+    - **Changes**: Login adapted for Super Admin.  used for . Planning module display enhanced.  function modified and integrated into  component to display all EPI types, allowing user input. Logic for Mes disponibilités module display (part-time users) confirmed.
+- ****:
+    - **Importance**: Custom CSS styling.
+    - **Changes**: Added styles for planning module elements.
+- ****:
+    - **Importance**: Frontend component for various settings.
+    - **Changes**: API calls migrated to ,  incorporated. Planning Validation Settings section added. Attribution tab renamed to Planning.
+- ****:
+    - **Importance**: Frontend component for Super-Admin functionalities.
+    - **Changes**: Tenant display includes , / status, , billing tier, and price. An active/inactive toggle switch added to the tenant modification modal. UI elements (button, modal) for Créer un admin functionality implemented. Deletion confirmation modal with pre-deletion statistics integrated. Dashboard stats updated for monthly revenue and active/inactive casernes. Display logic updated to check .
+- ****:
+    - **Importance**: PWA manifest file.
+    - **Changes**: Updated .  changed to  and  to  to improve PWA deep linking for multi-tenant slugs.
+- ****:
+    - **Importance**: Main HTML file for the frontend.
+    - **Changes**: Updated icon meta tags.
+- ** (new file)**:
+    - **Importance**: Vercel configuration for routing.
+    - **Changes**: Created to handle SPA routing (redirects all unhandled paths to ) for proper deep linking in multi-tenant setup.
 </code_architecture>
 
 <pending_tasks>
-- **Multi-Tenant Architecture:** The user expressed interest in selling the application to multiple fire departments. A strategy for a multi-tenant architecture (one frontend, multiple backends/databases) was discussed and validated, but the codebase has not yet been refactored to support it. The current deployment is for a single client.
+- Confirm the permanent deletion of the démonstration caserne.
+- Validate the correct display of updated statistics (total active/inactive casernes, total personnel, monthly revenue) on the Super Admin dashboard.
 </pending_tasks>
 
 <current_work>
-The most recent task was guiding the user through the deployment of the clean production version of ProFireManager for their first client. This involved setting up the infrastructure using Vercel (frontend), Render (backend), and MongoDB Atlas (database).
-
-After deployment, the user encountered a critical issue: they were unable to log in with the  account they had created in their new, empty MongoDB Atlas database. The AI engineer diagnosed the problem by reviewing the user's screenshot of their database entry, identifying that the user had saved the password admin123 as a plain text string in the  field, instead of the required SHA-256 hash.
-
-The AI engineer provided the correct hash for admin123 and explained that the mismatch was the cause of the login failure. The user has acknowledged the deployment of the production version and the creation of the admin account but is still facing the login issue, indicating they may not have successfully updated the hash yet. The current state is waiting for the user to correct the password hash in their database to resolve the final login blocker for their first client's instance.
+Immediately before this summary request, the AI engineer had just implemented the calculation and display of monthly revenue on the Super Admin dashboard, and had also previously implemented the permanent deletion feature for tenants. The user reported that the démonstration caserne (which was supposedly deleted) was still present in the system, implying the deletion was not effective. Additionally, the user requested validation for the new statistics display, specifically the monthly revenue calculation. The AI engineer has received three screenshots from the user (, ,  from Chat Message 742) and is currently in the process of analyzing them to understand why the démonstration caserne is still visible and to confirm the correct display of the newly implemented statistics.
 </current_work>
 
 <optional_next_step>
-I will re-confirm with the user if they have successfully updated the password hash in their MongoDB Atlas database and guide them again if necessary, providing the correct hash value to ensure they can log in.
+Analyze the provided screenshots to confirm the démonstration caserne's deletion and the accurate display of updated Super Admin dashboard statistics.
 </optional_next_step>
