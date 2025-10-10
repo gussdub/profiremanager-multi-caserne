@@ -74,10 +74,10 @@ const SuperAdminDashboard = ({ onLogout }) => {
   };
 
   const handleCreateTenant = async () => {
-    if (!newTenant.nom || !newTenant.slug || !newTenant.contact_email) {
+    if (!newTenant.nom || !newTenant.slug) {
       toast({
         title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez remplir le nom et le slug",
         variant: "destructive"
       });
       return;
