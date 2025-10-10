@@ -900,17 +900,21 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
     
     await db.users.insert_one(new_user.dict())
     
-    # Envoyer l'email de bienvenue
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
-    tenant_url = f"{frontend_url}/{tenant['slug']}"
-    
-    await send_welcome_email(
-        user_email=new_user.email,
-        user_name=f"{new_user.prenom} {new_user.nom}",
-        tenant_name=tenant["nom"],
-        tenant_url=tenant_url,
-        temporary_password=user_data["mot_de_passe"]
-    )
+    # Envoyer l'email de bienvenue (sans bloquer si ça échoue)
+    try:
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
+        tenant_url = f"{frontend_url}/{tenant['slug']}"
+        
+        await send_welcome_email(
+            user_email=new_user.email,
+            user_name=f"{new_user.prenom} {new_user.nom}",
+            tenant_name=tenant["nom"],
+            tenant_url=tenant_url,
+            temporary_password=user_data["mot_de_passe"]
+        )
+    except Exception as e:
+        print(f"⚠️ Erreur envoi email de bienvenue: {e}")
+        # Continue même si l'email échoue
     
     return {
         "message": "Administrateur créé avec succès",
