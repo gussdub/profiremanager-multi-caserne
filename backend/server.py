@@ -2613,7 +2613,8 @@ async def assignation_manuelle_avancee(
                         existing = await db.assignations.find_one({
                             "user_id": user_id,
                             "type_garde_id": type_garde_id,
-                            "date": target_date.strftime("%Y-%m-%d")
+                            "date": target_date.strftime("%Y-%m-%d"),
+                            "tenant_id": tenant.id
                         })
                         
                         if not existing:
