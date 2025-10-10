@@ -370,45 +370,48 @@ const SuperAdminDashboard = ({ onLogout }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
           <Card>
             <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Total Casernes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2563eb' }}>
-                {stats.total_tenants}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Total Utilisateurs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>
-                {stats.total_users}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle style={{ fontSize: '14px', color: '#666' }}>Casernes Actives</CardTitle>
             </CardHeader>
             <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b' }}>
-                {stats.active_tenants}
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>
+                {stats.casernes_actives || 0}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Total Gardes (ce mois)</CardTitle>
+              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Casernes Inactives</CardTitle>
             </CardHeader>
             <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#8b5cf6' }}>
-                {stats.total_assignations_this_month || 0}
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ef4444' }}>
+                {stats.casernes_inactives || 0}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Total Pompiers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2563eb' }}>
+                {stats.total_pompiers || 0}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none' }}>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '14px', color: 'white' }}>💰 Revenus Mensuels</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'white' }}>
+                {stats.revenus_mensuels ? `${stats.revenus_mensuels}$` : '0$'}
+              </div>
+              <small style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
+                Basé sur {stats.total_pompiers || 0} pompiers actifs
+              </small>
             </CardContent>
           </Card>
         </div>
