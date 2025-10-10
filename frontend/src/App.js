@@ -82,6 +82,12 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, mot_de_passe) => {
     try {
+      // Nettoyer complètement avant une nouvelle connexion (au cas où)
+      localStorage.removeItem('token');
+      localStorage.removeItem('tenant');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      
       // Utiliser l'endpoint tenant-spécifique
       const loginUrl = isSuperAdmin
         ? `${API}/admin/auth/login`
