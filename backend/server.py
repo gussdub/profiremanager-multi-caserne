@@ -2560,7 +2560,8 @@ async def assignation_manuelle_avancee(
                 user_id=user_id,
                 type_garde_id=type_garde_id,
                 date=date_debut.strftime("%Y-%m-%d"),
-                assignation_type="manuel_avance"
+                assignation_type="manuel_avance",
+                tenant_id=tenant.id
             )
             await db.assignations.insert_one(assignation_obj.dict())
             assignations_creees.append(assignation_obj.dict())
