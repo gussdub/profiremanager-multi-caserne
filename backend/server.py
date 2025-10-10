@@ -1325,6 +1325,53 @@ async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depen
     
     return {"message": "Utilisateur supprimé avec succès"}
 
+@api_router.put("/{tenant_slug}/users/{user_id}/password")
+async def change_user_password(
+    tenant_slug: str,
+    user_id: str,
+    password_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Changer le mot de passe d'un utilisateur (uniquement son propre mot de passe)"""
+    # Vérifier que l'utilisateur change son propre mot de passe
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
+    
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer l'utilisateur
+    user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user_data:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Vérifier l'ancien mot de passe
+    if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
+        raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
+    
+    # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
+    new_password = password_data["new_password"]
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
+    if not any(c.isupper() for c in new_password):
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins une majuscule")
+    if not any(c.isdigit() for c in new_password):
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un chiffre")
+    if not any(c in '!@#$%^&*+-?()' for c in new_password):
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*+-?())")
+    
+    # Hasher et mettre à jour le mot de passe
+    new_password_hash = get_password_hash(new_password)
+    result = await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"mot_de_passe_hash": new_password_hash}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
+    
+    return {"message": "Mot de passe modifié avec succès"}
+
 @api_router.put("/users/{user_id}/access", response_model=User)
 async def update_user_access(user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
