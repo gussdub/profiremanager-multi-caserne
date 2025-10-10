@@ -820,6 +820,173 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
         "details_par_caserne": details_revenus
     }
 
+@api_router.post("/admin/tenants")
+async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends(get_super_admin)):
+    """Créer une nouvelle caserne"""
+    # Vérifier que le slug est unique
+    existing = await db.tenants.find_one({"slug": tenant_create.slug})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce slug est déjà utilisé")
+    
+    # Créer le tenant avec date personnalisée si fournie
+    tenant_data = tenant_create.dict()
+    if tenant_data.get('date_creation'):
+        # Convertir la date string en datetime
+        from datetime import datetime as dt
+        tenant_data['date_creation'] = dt.fromisoformat(tenant_data['date_creation']).replace(tzinfo=timezone.utc)
+    else:
+        tenant_data['date_creation'] = datetime.now(timezone.utc)
+    
+    tenant = Tenant(**tenant_data)
+    await db.tenants.insert_one(tenant.dict())
+    
+    return {"message": f"Caserne '{tenant.nom}' créée avec succès", "tenant": tenant}
+
+@api_router.put("/admin/tenants/{tenant_id}")
+async def update_tenant(
+    tenant_id: str, 
+    tenant_update: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Modifier une caserne"""
+    update_data = tenant_update.copy()
+    
+    # Supprimer les champs calculés qui ne doivent pas être sauvegardés
+    if 'nombre_employes' in update_data:
+        del update_data['nombre_employes']
+    if '_id' in update_data:
+        del update_data['_id']
+    
+    # Gérer la date_creation si modifiée
+    if update_data.get('date_creation') and isinstance(update_data['date_creation'], str):
+        from datetime import datetime as dt
+        update_data['date_creation'] = dt.fromisoformat(update_data['date_creation']).replace(tzinfo=timezone.utc)
+    
+    result = await db.tenants.update_one(
+        {"id": tenant_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    return {"message": "Caserne mise à jour avec succès"}
+
+@api_router.post("/admin/tenants/{tenant_id}/create-admin")
+async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin = Depends(get_super_admin)):
+    """Créer un administrateur pour une caserne"""
+    # Vérifier que la caserne existe
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Vérifier que l'email n'existe pas déjà
+    existing_user = await db.users.find_one({"email": user_data["email"]})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Un utilisateur avec cet email existe déjà")
+    
+    # Créer l'utilisateur administrateur
+    new_user = User(
+        id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+        email=user_data["email"],
+        prenom=user_data["prenom"],
+        nom=user_data["nom"],
+        mot_de_passe_hash=hash_password(user_data["mot_de_passe"]),
+        role="admin",
+        statut="temps_plein",
+        actif=True
+    )
+    
+    await db.users.insert_one(new_user.dict())
+    
+    # Envoyer l'email de bienvenue
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
+    tenant_url = f"{frontend_url}/{tenant['slug']}"
+    
+    await send_welcome_email(
+        user_email=new_user.email,
+        user_name=f"{new_user.prenom} {new_user.nom}",
+        tenant_name=tenant["nom"],
+        tenant_url=tenant_url,
+        temporary_password=user_data["mot_de_passe"]
+    )
+    
+    return {
+        "message": "Administrateur créé avec succès",
+        "user": {
+            "id": new_user.id,
+            "email": new_user.email,
+            "nom": new_user.nom,
+            "prenom": new_user.prenom,
+            "role": new_user.role
+        }
+    }
+
+@api_router.get("/admin/tenants/{tenant_id}/deletion-impact")
+async def get_deletion_impact(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
+    """Obtenir l'impact de la suppression d'une caserne (nombre de données affectées)"""
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Compter toutes les données qui seront supprimées
+    users_count = await db.users.count_documents({"tenant_id": tenant_id})
+    assignations_count = await db.assignations.count_documents({"tenant_id": tenant_id})
+    formations_count = await db.formations.count_documents({"tenant_id": tenant_id})
+    epi_count = await db.epi_employes.count_documents({"tenant_id": tenant_id})
+    gardes_count = await db.types_garde.count_documents({"tenant_id": tenant_id})
+    disponibilites_count = await db.disponibilites.count_documents({"tenant_id": tenant_id})
+    conges_count = await db.demandes_conge.count_documents({"tenant_id": tenant_id})
+    
+    return {
+        "tenant": {
+            "id": tenant["id"],
+            "nom": tenant["nom"],
+            "slug": tenant["slug"]
+        },
+        "impact": {
+            "utilisateurs": users_count,
+            "assignations": assignations_count,
+            "formations": formations_count,
+            "epi": epi_count,
+            "gardes": gardes_count,
+            "disponibilites": disponibilites_count,
+            "conges": conges_count
+        }
+    }
+
+@api_router.delete("/admin/tenants/{tenant_id}")
+async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
+    """Supprimer définitivement une caserne et toutes ses données"""
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Supprimer toutes les données associées
+    users_result = await db.users.delete_many({"tenant_id": tenant_id})
+    await db.assignations.delete_many({"tenant_id": tenant_id})
+    await db.formations.delete_many({"tenant_id": tenant_id})
+    await db.epi_employes.delete_many({"tenant_id": tenant_id})
+    await db.types_garde.delete_many({"tenant_id": tenant_id})
+    await db.disponibilites.delete_many({"tenant_id": tenant_id})
+    await db.demandes_conge.delete_many({"tenant_id": tenant_id})
+    await db.demandes_remplacement.delete_many({"tenant_id": tenant_id})
+    await db.notifications.delete_many({"tenant_id": tenant_id})
+    await db.parametres.delete_many({"tenant_id": tenant_id})
+    await db.sessions_formation.delete_many({"tenant_id": tenant_id})
+    
+    # Supprimer le tenant
+    await db.tenants.delete_one({"id": tenant_id})
+    
+    return {
+        "message": f"Caserne '{tenant['nom']}' et toutes ses données ont été supprimées définitivement",
+        "deleted": {
+            "tenant": tenant["nom"],
+            "users": users_result.deleted_count
+        }
+    }
+
 # ==================== TENANT-SPECIFIC ROUTES ====================
 # Note: Tenant routes are defined after Super Admin routes to avoid conflicts
 async def login(tenant_slug: str, user_login: UserLogin):
