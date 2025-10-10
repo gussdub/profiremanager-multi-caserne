@@ -2745,7 +2745,8 @@ async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, cur
                         user_id=selected_user["id"],
                         type_garde_id=type_garde["id"],
                         date=date_str,
-                        assignation_type="auto_demo"
+                        assignation_type="auto_demo",
+                        tenant_id=tenant.id
                     )
                     
                     await db.assignations.insert_one(assignation_obj.dict())
