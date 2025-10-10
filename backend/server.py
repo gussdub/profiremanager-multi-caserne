@@ -1787,30 +1787,49 @@ async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(
 
 @api_router.get("/admin/stats")
 async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
-    """Statistiques globales de toutes les casernes"""
-    total_tenants = await db.tenants.count_documents({"actif": True})
-    total_users = await db.users.count_documents({})
-    total_assignations = await db.assignations.count_documents({})
+    """Statistiques globales avec calcul des revenus mensuels"""
+    # Compter casernes actives et inactives
+    total_casernes_actives = await db.tenants.count_documents({"actif": True})
+    total_casernes_inactives = await db.tenants.count_documents({"actif": False})
     
-    tenants = await db.tenants.find({"actif": True}).to_list(100)
-    tenant_stats = []
+    # Récupérer toutes les casernes actives
+    tenants_actifs = await db.tenants.find({"actif": True}).to_list(100)
     
-    for tenant in tenants:
+    # Calculer les revenus mensuels
+    revenus_mensuels = 0
+    total_pompiers = 0
+    details_revenus = []
+    
+    for tenant in tenants_actifs:
+        # Compter les pompiers de cette caserne
         user_count = await db.users.count_documents({"tenant_id": tenant["id"]})
-        assignation_count = await db.assignations.count_documents({"tenant_id": tenant["id"]})
+        total_pompiers += user_count
         
-        tenant_stats.append({
-            "tenant": tenant["nom"],
-            "slug": tenant["slug"],
-            "users": user_count,
-            "assignations": assignation_count
+        # Déterminer le prix par pompier selon le palier
+        if user_count <= 30:
+            prix_par_pompier = 12
+        elif user_count <= 50:
+            prix_par_pompier = 20
+        else:
+            prix_par_pompier = 27
+        
+        # Calculer le revenu pour cette caserne
+        revenu_caserne = user_count * prix_par_pompier
+        revenus_mensuels += revenu_caserne
+        
+        details_revenus.append({
+            "caserne": tenant["nom"],
+            "pompiers": user_count,
+            "prix_par_pompier": prix_par_pompier,
+            "revenu_mensuel": revenu_caserne
         })
     
     return {
-        "total_casernes": total_tenants,
-        "total_utilisateurs": total_users,
-        "total_assignations": total_assignations,
-        "par_caserne": tenant_stats
+        "casernes_actives": total_casernes_actives,
+        "casernes_inactives": total_casernes_inactives,
+        "total_pompiers": total_pompiers,
+        "revenus_mensuels": revenus_mensuels,
+        "details_par_caserne": details_revenus
     }
 
 # ==================== TENANT AUTH ROUTES ====================
