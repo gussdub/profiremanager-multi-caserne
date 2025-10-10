@@ -1715,17 +1715,46 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
     }
 
 @api_router.delete("/admin/tenants/{tenant_id}")
-async def deactivate_tenant(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
-    """Désactiver une caserne (soft delete)"""
-    result = await db.tenants.update_one(
-        {"id": tenant_id},
-        {"$set": {"actif": False}}
-    )
-    
-    if result.matched_count == 0:
+async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(get_super_admin)):
+    """Suppression DÉFINITIVE d'une caserne et toutes ses données"""
+    # Vérifier que la caserne existe
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
         raise HTTPException(status_code=404, detail="Caserne non trouvée")
     
-    return {"message": "Caserne désactivée avec succès"}
+    # Compter les données associées avant suppression
+    users_count = await db.users.count_documents({"tenant_id": tenant_id})
+    assignations_count = await db.assignations.count_documents({"tenant_id": tenant_id})
+    formations_count = await db.formations.count_documents({"tenant_id": tenant_id})
+    epi_count = await db.epi.count_documents({"tenant_id": tenant_id})
+    gardes_count = await db.gardes.count_documents({"tenant_id": tenant_id})
+    disponibilites_count = await db.disponibilites.count_documents({"tenant_id": tenant_id})
+    
+    # Supprimer TOUTES les données associées à ce tenant
+    await db.users.delete_many({"tenant_id": tenant_id})
+    await db.assignations.delete_many({"tenant_id": tenant_id})
+    await db.formations.delete_many({"tenant_id": tenant_id})
+    await db.epi.delete_many({"tenant_id": tenant_id})
+    await db.gardes.delete_many({"tenant_id": tenant_id})
+    await db.disponibilites.delete_many({"tenant_id": tenant_id})
+    await db.conges.delete_many({"tenant_id": tenant_id})
+    await db.remplacements.delete_many({"tenant_id": tenant_id})
+    
+    # Supprimer la caserne elle-même
+    await db.tenants.delete_one({"id": tenant_id})
+    
+    return {
+        "message": "Caserne supprimée définitivement",
+        "deleted": {
+            "tenant": tenant["nom"],
+            "users": users_count,
+            "assignations": assignations_count,
+            "formations": formations_count,
+            "epi": epi_count,
+            "gardes": gardes_count,
+            "disponibilites": disponibilites_count
+        }
+    }
 
 @api_router.get("/admin/stats")
 async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
