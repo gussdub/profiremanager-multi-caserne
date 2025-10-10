@@ -681,6 +681,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def root():
     return {"message": "ProFireManager API v2.0 - Multi-Tenant", "status": "running"}
 
+# ==================== SUPER ADMIN DEPENDENCIES ====================
+
+async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Authentifie et retourne le super admin"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        admin_id: str = payload.get("sub")
+        role: str = payload.get("role")
+        
+        if role != "super_admin":
+            raise HTTPException(status_code=403, detail="Accès super admin requis")
+            
+        admin = await db.super_admins.find_one({"id": admin_id})
+        if not admin:
+            raise HTTPException(status_code=401, detail="Super admin non trouvé")
+        return SuperAdmin(**admin)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalide")
+
 # ==================== SUPER ADMIN ROUTES ====================
 # Note: Super Admin routes MUST be defined before tenant routes to avoid conflicts
 
