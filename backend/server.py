@@ -789,9 +789,18 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
     details_revenus = []
     
     for tenant in tenants_actifs:
+        # Exclure la caserne "démonstration" du calcul des revenus (compte démo client)
+        tenant_slug = tenant.get('slug', '').lower()
+        tenant_nom = tenant.get('nom', '').lower()
+        
+        is_demo = 'demonstration' in tenant_slug or 'demonstration' in tenant_nom or 'demo' in tenant_slug
+        
         # Compter les pompiers de cette caserne
         user_count = await db.users.count_documents({"tenant_id": tenant["id"]})
-        total_pompiers += user_count
+        
+        # Ajouter au total uniquement si ce n'est pas une caserne de démo
+        if not is_demo:
+            total_pompiers += user_count
         
         # Déterminer le prix par pompier selon le palier
         if user_count <= 30:
@@ -801,15 +810,16 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
         else:
             prix_par_pompier = 27
         
-        # Calculer le revenu pour cette caserne
-        revenu_caserne = user_count * prix_par_pompier
+        # Calculer le revenu pour cette caserne (0 si démo)
+        revenu_caserne = 0 if is_demo else (user_count * prix_par_pompier)
         revenus_mensuels += revenu_caserne
         
         details_revenus.append({
             "caserne": tenant["nom"],
             "pompiers": user_count,
-            "prix_par_pompier": prix_par_pompier,
-            "revenu_mensuel": revenu_caserne
+            "prix_par_pompier": prix_par_pompier if not is_demo else 0,
+            "revenu_mensuel": revenu_caserne,
+            "is_demo": is_demo
         })
     
     return {
