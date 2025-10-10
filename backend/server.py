@@ -894,8 +894,11 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
         nom=user_data["nom"],
         mot_de_passe_hash=get_password_hash(user_data["mot_de_passe"]),
         role="admin",
-        statut="temps_plein",
-        actif=True
+        grade="Directeur",
+        type_emploi="temps_plein",
+        statut="Actif",
+        numero_employe="ADMIN-" + str(uuid.uuid4())[:8].upper(),
+        date_embauche=datetime.now(timezone.utc).strftime("%Y-%m-%d")
     )
     
     await db.users.insert_one(new_user.dict())
