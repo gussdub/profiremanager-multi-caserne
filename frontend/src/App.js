@@ -2404,9 +2404,13 @@ const Personnel = () => {
               {/* Formulaire d'ajout */}
               <div className="add-disponibilite-form" style={{ marginBottom: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
                 <h4 style={{ marginBottom: '1rem' }}>➕ Ajouter une disponibilité</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+                
+                {/* Première ligne : Date, heures, statut */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Date</label>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      {newDisponibilite.recurrence ? 'Date de début' : 'Date'}
+                    </label>
                     <input
                       type="date"
                       value={newDisponibilite.date}
@@ -2443,10 +2447,121 @@ const Personnel = () => {
                       <option value="indisponible">❌ Indisponible</option>
                     </select>
                   </div>
-                  <Button onClick={handleAddDisponibilite}>
-                    Ajouter
-                  </Button>
                 </div>
+
+                {/* Checkbox récurrence */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newDisponibilite.recurrence}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, recurrence: e.target.checked})}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: '500', fontSize: '0.95rem' }}>📅 Récurrence (répéter cette disponibilité)</span>
+                  </label>
+                </div>
+
+                {/* Options de récurrence */}
+                {newDisponibilite.recurrence && (
+                  <div style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: '2px solid #3b82f6', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Type de récurrence</label>
+                        <select
+                          value={newDisponibilite.type_recurrence}
+                          onChange={(e) => setNewDisponibilite({...newDisponibilite, type_recurrence: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="hebdomadaire">📅 Hebdomadaire</option>
+                          <option value="mensuelle">📆 Mensuelle</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Date de fin *</label>
+                        <input
+                          type="date"
+                          value={newDisponibilite.date_fin}
+                          onChange={(e) => setNewDisponibilite({...newDisponibilite, date_fin: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sélection des jours pour hebdomadaire */}
+                    {newDisponibilite.type_recurrence === 'hebdomadaire' && (
+                      <>
+                        <div style={{ marginBottom: '1rem' }}>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                            Jours de la semaine *
+                          </label>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {[
+                              { label: 'Lun', value: 1 },
+                              { label: 'Mar', value: 2 },
+                              { label: 'Mer', value: 3 },
+                              { label: 'Jeu', value: 4 },
+                              { label: 'Ven', value: 5 },
+                              { label: 'Sam', value: 6 },
+                              { label: 'Dim', value: 0 }
+                            ].map(jour => (
+                              <label 
+                                key={jour.value}
+                                style={{ 
+                                  padding: '0.5rem 1rem', 
+                                  borderRadius: '6px', 
+                                  border: '2px solid',
+                                  borderColor: newDisponibilite.jours_semaine.includes(jour.value) ? '#3b82f6' : '#cbd5e1',
+                                  background: newDisponibilite.jours_semaine.includes(jour.value) ? '#dbeafe' : 'white',
+                                  cursor: 'pointer',
+                                  fontWeight: '500',
+                                  fontSize: '0.875rem'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={newDisponibilite.jours_semaine.includes(jour.value)}
+                                  onChange={(e) => {
+                                    const jours = e.target.checked 
+                                      ? [...newDisponibilite.jours_semaine, jour.value]
+                                      : newDisponibilite.jours_semaine.filter(j => j !== jour.value);
+                                    setNewDisponibilite({...newDisponibilite, jours_semaine: jours});
+                                  }}
+                                  style={{ display: 'none' }}
+                                />
+                                {jour.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Option bi-hebdomadaire */}
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={newDisponibilite.bi_hebdomadaire}
+                              onChange={(e) => setNewDisponibilite({...newDisponibilite, bi_hebdomadaire: e.target.checked})}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.875rem' }}>Une semaine sur deux (bi-hebdomadaire)</span>
+                          </label>
+                        </div>
+                      </>
+                    )}
+
+                    {newDisponibilite.type_recurrence === 'mensuelle' && (
+                      <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic' }}>
+                        💡 La disponibilité sera répétée le même jour chaque mois
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Bouton Ajouter */}
+                <Button onClick={handleAddDisponibilite} style={{ width: '100%' }}>
+                  {newDisponibilite.recurrence ? '➕ Créer les disponibilités récurrentes' : '➕ Ajouter'}
+                </Button>
               </div>
 
               {/* Liste des disponibilités existantes */}
