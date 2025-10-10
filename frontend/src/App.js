@@ -2130,16 +2130,27 @@ const Personnel = () => {
                     ✏️ Modifier ce profil
                   </Button>
                   {selectedUser.type_emploi === 'temps_partiel' && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowViewModal(false);
-                        handleViewDisponibilites(selectedUser);
-                      }}
-                      data-testid="quick-view-availability-btn"
-                    >
-                      📅 Voir disponibilités
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowViewModal(false);
+                          handleViewDisponibilites(selectedUser);
+                        }}
+                        data-testid="quick-view-availability-btn"
+                      >
+                        📅 Voir disponibilités
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          setShowViewModal(false);
+                          handleManageDisponibilites(selectedUser);
+                        }}
+                        data-testid="manage-availability-btn"
+                      >
+                        ✏️ Gérer disponibilités
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
