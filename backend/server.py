@@ -905,15 +905,12 @@ async def create_tenant_admin(tenant_id: str, user_data: dict, admin: SuperAdmin
     
     # Envoyer l'email de bienvenue (sans bloquer si ça échoue)
     try:
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
-        tenant_url = f"{frontend_url}/{tenant['slug']}"
-        
-        await send_welcome_email(
+        send_welcome_email(
             user_email=new_user.email,
             user_name=f"{new_user.prenom} {new_user.nom}",
-            tenant_name=tenant["nom"],
-            tenant_url=tenant_url,
-            temporary_password=user_data["mot_de_passe"]
+            user_role=new_user.role,
+            temp_password=user_data["mot_de_passe"],
+            tenant_slug=tenant['slug']
         )
     except Exception as e:
         print(f"⚠️ Erreur envoi email de bienvenue: {e}")
