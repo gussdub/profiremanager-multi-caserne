@@ -1595,9 +1595,9 @@ async def get_super_admin_me(admin: SuperAdmin = Depends(get_super_admin)):
 
 @api_router.get("/admin/tenants")
 async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
-    """Liste toutes les casernes actives avec compteur de personnel"""
-    # Filtrer pour retourner seulement les tenants actifs
-    tenants_data = await db.tenants.find({"actif": True}).to_list(100)
+    """Liste toutes les casernes (actives et inactives) avec compteur de personnel"""
+    # Récupérer TOUTES les casernes (pas de filtre) pour que le Super Admin puisse tout voir
+    tenants_data = await db.tenants.find({}).to_list(100)
     
     # Ajouter le compteur d'employés pour chaque tenant
     tenants_with_counts = []
@@ -1609,6 +1609,13 @@ async def list_tenants(admin: SuperAdmin = Depends(get_super_admin)):
         # Compter le nombre d'employés
         nombre_employes = await db.users.count_documents({"tenant_id": tenant_data['id']})
         tenant_data['nombre_employes'] = nombre_employes
+        
+        # Normaliser le statut actif (gérer les deux champs actif et is_active)
+        # Pour compatibilité avec anciennes et nouvelles données
+        if 'is_active' not in tenant_data and 'actif' in tenant_data:
+            tenant_data['is_active'] = tenant_data['actif']
+        elif 'is_active' in tenant_data and 'actif' not in tenant_data:
+            tenant_data['actif'] = tenant_data['is_active']
         
         tenants_with_counts.append(tenant_data)
     
