@@ -3719,8 +3719,8 @@ const Planning = () => {
                 return <div key={`empty-${index}`} className="jour-mois jour-vide"></div>;
               }
 
-              const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-              const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Lundi = 0
+              const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' });
+              const dayIndex = date.getUTCDay() === 0 ? 6 : date.getUTCDay() - 1; // Lundi = 0
               
               const gardesJour = typesGarde.filter(typeGarde => 
                 shouldShowTypeGardeForDay(typeGarde, dayIndex)
@@ -3730,7 +3730,7 @@ const Planning = () => {
                 <div key={date.toISOString().split('T')[0]} className="jour-mois">
                   <div className="jour-mois-header">
                     <span className="jour-mois-name">{dayName}</span>
-                    <span className="jour-mois-date">{date.getDate()}</span>
+                    <span className="jour-mois-date">{date.getUTCDate()}</span>
                   </div>
                   
                   <div className="gardes-jour-list">
