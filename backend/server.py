@@ -1598,13 +1598,29 @@ async def get_assignations(tenant_slug: str, semaine_debut: str, current_user: U
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+    # Déterminer la période en fonction du format de la date
+    # Si c'est le 1er du mois (ex: 2024-10-01), récupérer tout le mois
+    # Sinon, récupérer la semaine (7 jours)
+    date_debut = datetime.strptime(semaine_debut, "%Y-%m-%d")
+    
+    if date_debut.day == 1:
+        # Vue mensuelle : récupérer tout le mois
+        # Dernier jour du mois
+        if date_debut.month == 12:
+            date_fin = datetime(date_debut.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            date_fin = datetime(date_debut.year, date_debut.month + 1, 1) - timedelta(days=1)
+    else:
+        # Vue hebdomadaire : récupérer 7 jours
+        date_fin = date_debut + timedelta(days=6)
+    
+    date_fin_str = date_fin.strftime("%Y-%m-%d")
     
     assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "date": {
             "$gte": semaine_debut,
-            "$lte": semaine_fin
+            "$lte": date_fin_str
         }
     }).to_list(1000)
     
