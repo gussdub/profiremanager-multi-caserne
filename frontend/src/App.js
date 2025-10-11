@@ -3147,12 +3147,14 @@ const Planning = () => {
     if (viewMode !== 'mois') return [];
     
     const [year, month] = currentMonth.split('-').map(Number);
-    const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
+    
+    // Utiliser UTC pour éviter les problèmes de fuseau horaire
+    const firstDay = new Date(Date.UTC(year, month - 1, 1));
+    const lastDay = new Date(Date.UTC(year, month, 0));
     const dates = [];
     
     // Calculer le jour de la semaine du premier jour (0 = dimanche, 1 = lundi, etc.)
-    let firstDayOfWeek = firstDay.getDay();
+    let firstDayOfWeek = firstDay.getUTCDay();
     // Convertir pour que lundi = 0, dimanche = 6
     firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
     
@@ -3161,9 +3163,9 @@ const Planning = () => {
       dates.push(null); // Jours vides
     }
     
-    // Ajouter tous les jours du mois
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      dates.push(new Date(year, month - 1, day));
+    // Ajouter tous les jours du mois en UTC
+    for (let day = 1; day <= lastDay.getUTCDate(); day++) {
+      dates.push(new Date(Date.UTC(year, month - 1, day, 12, 0, 0))); // Midi UTC pour éviter les décalages
     }
     
     return dates;
