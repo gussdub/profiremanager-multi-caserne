@@ -2826,11 +2826,19 @@ async def attribution_automatique(tenant_slug: str, semaine_debut: str, current_
                 if type_garde.get("jours_application") and day_name not in type_garde["jours_application"]:
                     continue
                 
-                # ÉTAPE 1: Check if already assigned manually
-                existing = next((a for a in existing_assignations 
-                               if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]), None)
-                if existing and existing.get("assignation_type") == "manuel":
-                    continue  # Respecter les assignations manuelles
+                # ÉTAPE 1: Vérifier si la garde est déjà complète
+                existing_for_garde = [a for a in existing_assignations 
+                                     if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
+                
+                personnel_requis = type_garde.get("personnel_requis", 1)
+                personnel_assigne = len(existing_for_garde)
+                
+                # Si déjà complet ou plus, passer à la garde suivante
+                if personnel_assigne >= personnel_requis:
+                    continue  # Garde déjà complète, ne rien ajouter
+                
+                # Calculer combien de pompiers il faut encore assigner
+                places_restantes = personnel_requis - personnel_assigne
                 
                 # Find available users for this slot
                 available_users = []
