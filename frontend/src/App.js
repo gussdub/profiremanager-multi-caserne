@@ -3555,7 +3555,7 @@ const Planning = () => {
         </Button>
         <h2 className="period-title">
           {viewMode === 'mois' ? (
-            new Date(currentMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+            new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
           ) : (
             `Semaine du ${weekDates[0].toLocaleDateString('fr-FR')} au ${weekDates[6].toLocaleDateString('fr-FR')}`
           )}
