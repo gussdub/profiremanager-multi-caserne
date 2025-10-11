@@ -2894,7 +2894,17 @@ async def attribution_automatique(tenant_slug: str, semaine_debut: str, current_
                 
                 if len(users_with_min_hours) > 1:
                     # Sort by ancienneté (date_embauche) - oldest first
-                    users_with_min_hours.sort(key=lambda u: datetime.strptime(u["date_embauche"], "%d/%m/%Y"))
+                    # Gérer les deux formats de date possibles (ISO et français)
+                    def parse_date_flexible(date_str):
+                        try:
+                            return datetime.strptime(date_str, "%Y-%m-%d")
+                        except:
+                            try:
+                                return datetime.strptime(date_str, "%d/%m/%Y")
+                            except:
+                                return datetime(1900, 1, 1)  # Date par défaut si parsing échoue
+                    
+                    users_with_min_hours.sort(key=lambda u: parse_date_flexible(u.get("date_embauche", "1900-01-01")))
                 
                 # Select the best candidate
                 selected_user = users_with_min_hours[0]
