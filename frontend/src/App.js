@@ -3709,7 +3709,7 @@ const Planning = () => {
       ) : (
         <div className="planning-mois">
           <div className="mois-header">
-            <h3>📅 Planning mensuel - {new Date(currentMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h3>
+            <h3>📅 Planning mensuel - {new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</h3>
           </div>
           
           <div className="calendrier-mois">
