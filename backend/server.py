@@ -2914,23 +2914,45 @@ async def attribution_automatique(tenant_slug: str, semaine_debut: str, current_
                     
                     users_with_min_hours.sort(key=lambda u: parse_date_flexible(u.get("date_embauche", "1900-01-01")))
                 
-                # Select the best candidate
-                selected_user = users_with_min_hours[0]
+                # Assigner autant de pompiers que nécessaire pour remplir la garde
+                pompiers_assignes_cette_iteration = 0
                 
-                assignation_obj = Assignation(
-                    user_id=selected_user["id"],
-                    type_garde_id=type_garde["id"],
-                    date=date_str,
-                    assignation_type="auto",
-                    tenant_id=tenant.id
-                )
-                
-                await db.assignations.insert_one(assignation_obj.dict())
-                nouvelles_assignations.append(assignation_obj.dict())
-                existing_assignations.append(assignation_obj.dict())
-                
-                # Update monthly hours for next iteration
-                user_monthly_hours[selected_user["id"]] += type_garde.get("duree_heures", 8)
+                for _ in range(places_restantes):
+                    if not users_with_min_hours:
+                        break  # Plus de pompiers disponibles
+                    
+                    # Select the best candidate
+                    selected_user = users_with_min_hours[0]
+                    
+                    # Vérifier qu'il n'est pas déjà assigné à cette garde
+                    deja_assigne = any(a["user_id"] == selected_user["id"] and 
+                                      a["date"] == date_str and 
+                                      a["type_garde_id"] == type_garde["id"] 
+                                      for a in existing_assignations)
+                    
+                    if deja_assigne:
+                        users_with_min_hours.pop(0)  # Retirer ce pompier et essayer le suivant
+                        continue
+                    
+                    # Créer l'assignation
+                    assignation_obj = Assignation(
+                        user_id=selected_user["id"],
+                        type_garde_id=type_garde["id"],
+                        date=date_str,
+                        assignation_type="auto",
+                        tenant_id=tenant.id
+                    )
+                    
+                    await db.assignations.insert_one(assignation_obj.dict())
+                    nouvelles_assignations.append(assignation_obj.dict())
+                    existing_assignations.append(assignation_obj.dict())
+                    pompiers_assignes_cette_iteration += 1
+                    
+                    # Update monthly hours for next iteration
+                    user_monthly_hours[selected_user["id"]] += type_garde.get("duree_heures", 8)
+                    
+                    # Retirer ce pompier de la liste des disponibles pour cette garde
+                    users_with_min_hours.pop(0)
         
         return {
             "message": "Attribution automatique intelligente effectuée avec succès",
