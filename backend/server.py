@@ -2767,6 +2767,9 @@ async def generer_indisponibilites(
             "conserver_manuelles": generation_data.conserver_manuelles
         }
         
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is (don't convert to 500)
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
