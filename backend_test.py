@@ -1036,49 +1036,93 @@ class ProFireManagerTester:
                             "❌ CRITICAL BUG: Auto-generated entries still exist but should have been deleted")
                 return False
             
-            # TEST 2: Réinitialisation Mois Courant - Mode "tout"
-            reinit_mois_data = {
+            # Step 5: Test type_entree filter
+            # Create manual disponibilité (statut: disponible)
+            tomorrow = today + timedelta(days=1)
+            manual_disponible = {
                 "user_id": user_id,
-                "periode": "mois",
-                "mode": "tout"
+                "date": tomorrow.isoformat(),
+                "heure_debut": "08:00",
+                "heure_fin": "16:00",
+                "statut": "disponible",
+                "origine": "manuelle"
             }
             
-            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_mois_data)
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_disponible)
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 2 - Mois tout failed: {response.status_code}")
+                # Entry might already exist, try to delete and recreate
+                response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+                if response.status_code == 200:
+                    existing_entries = response.json()
+                    for entry in existing_entries:
+                        if entry.get('date') == tomorrow.isoformat():
+                            admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/{entry['id']}")
+                    # Try to create again
+                    response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_disponible)
+            
+            # Create manual indisponibilité (statut: indisponible)
+            day_after_tomorrow = today + timedelta(days=2)
+            manual_indisponible = {
+                "user_id": user_id,
+                "date": day_after_tomorrow.isoformat(),
+                "heure_debut": "08:00",
+                "heure_fin": "16:00",
+                "statut": "indisponible",
+                "origine": "manuelle"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_indisponible)
+            if response.status_code != 200:
+                # Entry might already exist, try to delete and recreate
+                response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+                if response.status_code == 200:
+                    existing_entries = response.json()
+                    for entry in existing_entries:
+                        if entry.get('date') == day_after_tomorrow.isoformat():
+                            admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/{entry['id']}")
+                    # Try to create again
+                    response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_indisponible)
+            
+            # Step 6: Reinitialiser with type_entree: "disponibilites"
+            reinit_disponibilites_data = {
+                "user_id": user_id,
+                "periode": "mois",
+                "mode": "tout",
+                "type_entree": "disponibilites"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_disponibilites_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            f"Type_entree test - Failed: {response.status_code}")
                 return False
             
-            mois_result = response.json()
-            
-            if mois_result.get('periode') != 'mois' or mois_result.get('mode') != 'tout':
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 2 - Wrong response values: {mois_result}")
-                return False
-            
-            # Verify ALL entries in current month are deleted
+            # Step 7: Verify only disponibilité deleted, indisponibilité preserved
             response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 2 - Failed to fetch disponibilites: {response.status_code}")
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            f"Type_entree test - Failed to fetch disponibilites: {response.status_code}")
                 return False
             
             disponibilites = response.json()
             
-            # Check current month entries
-            current_month_start = today.replace(day=1)
-            if today.month == 12:
-                current_month_end = today.replace(day=31)
-            else:
-                next_month = today.replace(month=today.month + 1, day=1)
-                current_month_end = next_month - timedelta(days=1)
+            disponible_exists = False
+            indisponible_exists = False
             
-            month_entries = [d for d in disponibilites 
-                           if current_month_start.isoformat() <= d.get('date', '') <= current_month_end.isoformat()]
+            for entry in disponibilites:
+                if entry.get('date') == tomorrow.isoformat() and entry.get('statut') == 'disponible':
+                    disponible_exists = True
+                elif entry.get('date') == day_after_tomorrow.isoformat() and entry.get('statut') == 'indisponible':
+                    indisponible_exists = True
             
-            if len(month_entries) > 0:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 2 - Entries still exist in current month after 'tout' reset: {len(month_entries)}")
+            if disponible_exists:
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            "❌ Type_entree filter failed: Disponibilité should have been deleted")
+                return False
+            
+            if not indisponible_exists:
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            "❌ Type_entree filter failed: Indisponibilité should have been preserved")
                 return False
             
             # TEST 3: Réinitialisation Année Courante - Mode "generees_seulement"
