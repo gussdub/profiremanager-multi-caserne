@@ -2603,8 +2603,8 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
         jours_depuis_debut = (current_date - premier_lundi).days
         jour_cycle = (jours_depuis_debut % 28) + 1
         
-        # Si le jour n'est PAS dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
-        if jour_cycle not in jours_travail:
+        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ (travail à l'emploi principal)
+        if jour_cycle in jours_travail:
             # Générer indisponibilité pour toute la journée (24h)
             indispo = {
                 "id": str(uuid.uuid4()),
