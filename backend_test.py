@@ -970,7 +970,7 @@ class ProFireManagerTester:
                     "mot_de_passe": "TestPass123!"
                 }
                 
-                response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+                response = tenant_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
                 if response.status_code != 200:
                     self.log_test("Indisponibilités Generation System", False, 
                                 f"Failed to create part-time user: {response.status_code}")
@@ -989,7 +989,7 @@ class ProFireManagerTester:
                 "conserver_manuelles": True
             }
             
-            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
+            response = tenant_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
             if response.status_code != 200:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Montreal 7/24 generation failed: {response.status_code}", 
