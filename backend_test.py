@@ -873,15 +873,70 @@ class ProFireManagerTester:
             return False
         
         try:
-            # Create a new session with Super Admin token
+            tenant_slug = "shefford"
+            
+            # First, create a test admin user for the Shefford tenant using Super Admin API
             super_admin_session = requests.Session()
             super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
             
-            # First, get users from Shefford tenant to find a part-time employee
-            tenant_slug = "shefford"
+            # Get Shefford tenant ID
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Failed to fetch tenants: {response.status_code}")
+                return False
             
-            # Login as Super Admin to get tenant users
-            response = super_admin_session.get(f"{self.base_url}/{tenant_slug}/users")
+            tenants = response.json()
+            shefford_tenant = None
+            for tenant in tenants:
+                if tenant.get('slug') == 'shefford':
+                    shefford_tenant = tenant
+                    break
+            
+            if not shefford_tenant:
+                self.log_test("Indisponibilités Generation System", False, "Shefford tenant not found")
+                return False
+            
+            tenant_id = shefford_tenant['id']
+            
+            # Create a test admin user for Shefford tenant
+            admin_user_data = {
+                "email": "test.admin@shefford.ca",
+                "prenom": "Test",
+                "nom": "Admin",
+                "mot_de_passe": "TestAdmin123!"
+            }
+            
+            response = super_admin_session.post(f"{self.base_url}/admin/tenants/{tenant_id}/create-admin", json=admin_user_data)
+            if response.status_code != 200:
+                # Admin might already exist, try to login with existing credentials
+                pass
+            
+            # Now login as the admin user to the Shefford tenant
+            login_data = {
+                "email": "test.admin@shefford.ca",
+                "mot_de_passe": "TestAdmin123!"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Indisponibilités Generation System", False, 
+                                f"Failed to login as tenant admin: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            tenant_token = login_result["access_token"]
+            
+            # Create a new session with tenant admin token
+            tenant_session = requests.Session()
+            tenant_session.headers.update({"Authorization": f"Bearer {tenant_token}"})
+            
+            # Get users from Shefford tenant to find a part-time employee
+            response = tenant_session.get(f"{self.base_url}/{tenant_slug}/users")
             if response.status_code != 200:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Failed to fetch users from {tenant_slug}: {response.status_code}")
