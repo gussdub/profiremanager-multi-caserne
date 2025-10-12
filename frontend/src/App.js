@@ -3098,7 +3098,12 @@ const Planning = () => {
   const { tenantSlug } = useTenant();
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
-    const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+    // Utiliser UTC pour éviter les problèmes de fuseau horaire
+    const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const dayOfWeek = todayUTC.getUTCDay(); // 0 = dimanche, 1 = lundi, etc.
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(todayUTC);
+    monday.setUTCDate(todayUTC.getUTCDate() + daysToMonday);
     return monday.toISOString().split('T')[0];
   });
   const [currentMonth, setCurrentMonth] = useState(() => {
