@@ -6127,7 +6127,8 @@ const MesDisponibilites = () => {
         body: JSON.stringify({
           user_id: user.id,
           periode: reinitConfig.periode,
-          mode: reinitConfig.mode
+          mode: reinitConfig.mode,
+          type_entree: reinitConfig.type_entree
         })
       });
       
@@ -6137,9 +6138,15 @@ const MesDisponibilites = () => {
         'annee': "l'année courante"
       }[reinitConfig.periode];
       
+      const typeLabel = {
+        'disponibilites': 'disponibilités',
+        'indisponibilites': 'indisponibilités',
+        'les_deux': 'disponibilités et indisponibilités'
+      }[reinitConfig.type_entree];
+      
       const modeLabel = reinitConfig.mode === 'tout' 
-        ? 'Toutes les entrées' 
-        : 'Les entrées générées automatiquement';
+        ? 'Toutes les' 
+        : 'Les entrées générées automatiquement de';
       
       toast({
         title: "Réinitialisation réussie",
