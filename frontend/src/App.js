@@ -5858,6 +5858,7 @@ const MesDisponibilites = () => {
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const [selectedDateDetails, setSelectedDateDetails] = useState(null);
   const [pendingConfigurations, setPendingConfigurations] = useState([]);
@@ -5867,6 +5868,14 @@ const MesDisponibilites = () => {
     heure_fin: '16:00',
     statut: 'disponible'
   });
+  const [generationConfig, setGenerationConfig] = useState({
+    horaire_type: 'montreal',
+    equipe: 'Rouge',
+    annee: new Date().getFullYear(),
+    date_jour_1: new Date().toISOString().split('T')[0],
+    conserver_manuelles: true
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
