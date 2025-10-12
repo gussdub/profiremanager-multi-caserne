@@ -3661,7 +3661,7 @@ const Planning = () => {
                       >
                         <div className="jour-header">
                           <span className="jour-name">{weekDays[dayIndex]}</span>
-                          <span className="jour-date">{date.getDate()}</span>
+                          <span className="jour-date">{date.getUTCDate()}</span>
                         </div>
                         
                         <div className="garde-content">
