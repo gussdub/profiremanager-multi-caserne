@@ -1042,7 +1042,7 @@ class ProFireManagerTester:
                 "conserver_manuelles": True
             }
             
-            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
+            response = tenant_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
             if response.status_code != 200:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Quebec 10/14 generation failed: {response.status_code}", 
