@@ -1382,18 +1382,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       return;
     }
 
-    try {
-      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
-      setUserDisponibilites(disponibilitesData);
-      setSelectedUser(user);
-      setShowManageDisponibilitesModal(true);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les disponibilités",
-        variant: "destructive"
-      });
-    }
+    // Stocker l'utilisateur et naviguer vers le module disponibilités
+    setManagingUserDisponibilites(user);
+    setCurrentPage('disponibilites');
   };
 
   const handleAddDisponibilite = async () => {
