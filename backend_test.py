@@ -1114,7 +1114,7 @@ class ProFireManagerTester:
                 "conserver_manuelles": True
             }
             
-            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=invalid_data)
+            response = tenant_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=invalid_data)
             if response.status_code != 400:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Invalid horaire_type should return 400, got: {response.status_code}")
@@ -1129,7 +1129,7 @@ class ProFireManagerTester:
                 "conserver_manuelles": True
             }
             
-            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_no_date)
+            response = tenant_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_no_date)
             if response.status_code != 400:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Quebec without date_jour_1 should return 400, got: {response.status_code}")
