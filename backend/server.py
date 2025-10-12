@@ -638,6 +638,11 @@ class IndisponibiliteGenerate(BaseModel):
     date_jour_1: Optional[str] = None  # Pour Quebec 10/14, date du Jour 1 du cycle (YYYY-MM-DD)
     conserver_manuelles: bool = True  # Conserver les modifications manuelles lors de la régénération
 
+class DisponibiliteReinitialiser(BaseModel):
+    user_id: str
+    periode: str  # "semaine", "mois", "annee"
+    mode: str  # "tout" ou "generees_seulement"
+
 class Statistiques(BaseModel):
     personnel_actif: int
     gardes_cette_semaine: int
