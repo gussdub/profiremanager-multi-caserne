@@ -6218,10 +6218,33 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   return (
     <div className="mes-disponibilites">
+      {/* Bouton retour si on gère un autre utilisateur */}
+      {managingUser && (
+        <div style={{ marginBottom: '20px' }}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setManagingUserDisponibilites(null);
+              setCurrentPage('personnel');
+            }}
+          >
+            ← Retour à Personnel
+          </Button>
+        </div>
+      )}
+
       <div className="disponibilites-header">
         <div>
-          <h1 data-testid="disponibilites-title">Mes disponibilités</h1>
-          <p>Gérez vos créneaux de disponibilité pour les différents types de garde</p>
+          <h1 data-testid="disponibilites-title">
+            {managingUser 
+              ? `Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
+              : 'Mes disponibilités'}
+          </h1>
+          <p>
+            {managingUser 
+              ? `Gérez les créneaux de disponibilité de ${targetUser.prenom} ${targetUser.nom}`
+              : 'Gérez vos créneaux de disponibilité pour les différents types de garde'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button 
