@@ -3485,8 +3485,9 @@ const Planning = () => {
   };
 
   const navigateWeek = (direction) => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + (direction * 7));
+    const [year, month, day] = currentWeek.split('-').map(Number);
+    const newDate = new Date(Date.UTC(year, month - 1, day));
+    newDate.setUTCDate(newDate.getUTCDate() + (direction * 7));
     setCurrentWeek(newDate.toISOString().split('T')[0]);
   };
 
