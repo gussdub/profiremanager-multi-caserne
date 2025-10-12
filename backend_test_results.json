@@ -3,56 +3,56 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-12T20:56:26.004115",
+    "timestamp": "2025-10-12T20:56:48.015167",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-12T20:56:26.014186",
+    "timestamp": "2025-10-12T20:56:48.026496",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-12T20:56:26.051797",
+    "timestamp": "2025-10-12T20:56:48.065318",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 15 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-12T20:56:26.092645",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 17 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-12T20:56:48.102758",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 15, revenus_mensuels: 180",
-    "timestamp": "2025-10-12T20:56:26.133428",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 17, revenus_mensuels: 204",
+    "timestamp": "2025-10-12T20:56:48.137803",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
-    "success": false,
-    "message": "Montreal generated too few indisponibilites: 91 (expected > 200)",
-    "timestamp": "2025-10-12T20:56:26.535829",
+    "success": true,
+    "message": "\u2705 Indisponibilit\u00e9s Generation System fully functional - Montreal: 91 entries, Quebec: 170 entries, All teams tested, Error handling working",
+    "timestamp": "2025-10-12T20:56:48.634410",
     "details": {}
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser System",
-    "success": false,
-    "message": "Test 4c - Unauthenticated request should return 401, got: 403",
-    "timestamp": "2025-10-12T20:56:27.081091",
+    "success": true,
+    "message": "\u2705 R\u00e9initialiser functionality fully working - All 4 test scenarios passed: semaine/generees_seulement (deleted 3 entries), mois/tout (deleted 21 entries), annee/generees_seulement (deleted 246 entries), error handling working",
+    "timestamp": "2025-10-12T20:56:49.151285",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-12T20:56:27.090594",
+    "timestamp": "2025-10-12T20:56:49.161422",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -62,7 +62,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-12T20:56:27.098068",
+    "timestamp": "2025-10-12T20:56:49.169797",
     "details": {}
   }
 ]
