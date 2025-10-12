@@ -3,49 +3,56 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-12T14:17:38.360240",
+    "timestamp": "2025-10-12T20:52:03.263726",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-12T14:17:38.370666",
+    "timestamp": "2025-10-12T20:52:03.283337",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-12T14:17:38.410823",
+    "timestamp": "2025-10-12T20:52:03.325452",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 6 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-12T14:17:38.449596",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 11 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-12T20:52:03.370300",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 6, revenus_mensuels: 72",
-    "timestamp": "2025-10-12T14:17:38.488913",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 11, revenus_mensuels: 132",
+    "timestamp": "2025-10-12T20:52:03.408894",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
-    "success": true,
-    "message": "\u2705 Indisponibilit\u00e9s Generation System fully functional - Montreal: 274 entries, Quebec: 260 entries, All teams tested, Error handling working",
-    "timestamp": "2025-10-12T14:17:38.986111",
+    "success": false,
+    "message": "Montreal generated too few indisponibilites: 91 (expected > 200)",
+    "timestamp": "2025-10-12T20:52:03.886701",
+    "details": {}
+  },
+  {
+    "test": "Disponibilit\u00e9s R\u00e9initialiser System",
+    "success": false,
+    "message": "Failed to fetch users: 500",
+    "timestamp": "2025-10-12T20:52:04.011013",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-12T14:17:38.995377",
+    "timestamp": "2025-10-12T20:52:04.020404",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -55,7 +62,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-12T14:17:39.002667",
+    "timestamp": "2025-10-12T20:52:04.028561",
     "details": {}
   }
 ]
