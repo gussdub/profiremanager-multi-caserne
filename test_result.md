@@ -175,6 +175,18 @@ backend:
         agent: "testing"
         comment: "✅ ALL CORRECTIONS VERIFIED & WORKING - Fixed route ordering by moving Super Admin routes before tenant routes. All 3 priority tests now pass: 1) NEW /api/admin/auth/me endpoint returns correct fields (id, email, nom, role), 2) MODIFIED /api/admin/tenants endpoint returns Service Incendie de Shefford with nombre_employes calculated and both actif/is_active fields, demonstration caserne properly deleted, 3) MODIFIED /api/admin/stats endpoint returns correct stats (casernes_actives: 1, casernes_inactives: 0, total_pompiers: 4, revenus_mensuels: 48) with Shefford in details_par_caserne. Super Admin authentication works with gussdub@icloud.com / 230685Juin+."
 
+  - task: "Indisponibilités Generation System"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Automatic unavailability generation for Quebec firefighter schedules (Montreal 7/24 and Quebec 10/14). Backend implementation complete with: 1) Added 'origine' field to Disponibilite model (manuelle, montreal_7_24, quebec_10_14, personnalisee), 2) New IndisponibiliteGenerate model for generation requests, 3) Helper functions generer_indisponibilites_montreal() and generer_indisponibilites_quebec() implementing 28-day cycle logic, 4) New API route POST /{tenant_slug}/disponibilites/generer with support for team selection (Rouge, Jaune, Bleu, Vert), year selection, and optional preservation of manual modifications. Frontend implementation complete with: 1) New generation modal with horaire type selection, team selection, year selection, and Jour 1 date picker for Quebec, 2) Visual indicators showing origine badges (Montreal/Quebec/Manual), 3) Statistics card showing auto-generated count, 4) Integration with existing availability system. NEEDS BACKEND TESTING."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
