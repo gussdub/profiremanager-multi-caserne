@@ -5975,7 +5975,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     try {
       // Combiner avec les disponibilités existantes + nouvelles configurations
       const existingDispos = userDisponibilites.map(d => ({
-        user_id: user.id,
+        user_id: targetUser.id,
         date: d.date,
         type_garde_id: d.type_garde_id || null,
         heure_debut: d.heure_debut,
@@ -5985,7 +5985,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
       const newDispos = pendingConfigurations.flatMap(config => 
         config.dates.map(date => ({
-          user_id: user.id,
+          user_id: targetUser.id,
           date: date.toISOString().split('T')[0],
           type_garde_id: config.type_garde_id || null,
           heure_debut: config.heure_debut,
@@ -5996,7 +5996,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
       const allDisponibilites = [...existingDispos, ...newDispos];
 
-      await apiPut(tenantSlug, `/disponibilites/${user.id}`, allDisponibilites);
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
       
       toast({
         title: "Toutes les disponibilités sauvegardées",
@@ -6008,7 +6008,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setPendingConfigurations([]);
       
       // Reload disponibilités
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
     } catch (error) {
       toast({
