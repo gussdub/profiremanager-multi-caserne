@@ -6976,16 +6976,21 @@ const MesDisponibilites = () => {
                   <p style={{ margin: '10px 0', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
                     Vous êtes sur le point de <strong>
                       {reinitConfig.mode === 'tout' 
-                        ? 'SUPPRIMER TOUTES' 
+                        ? 'SUPPRIMER TOUTES LES' 
                         : 'supprimer les entrées générées de'}
                     </strong> {' '}
+                    <strong>
+                      {reinitConfig.type_entree === 'disponibilites' && 'DISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'indisponibilites' && 'INDISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'les_deux' && 'DISPONIBILITÉS ET INDISPONIBILITÉS'}
+                    </strong> {' de '}
                     {reinitConfig.periode === 'semaine' && 'la semaine courante'}
                     {reinitConfig.periode === 'mois' && 'du mois courant'}
                     {reinitConfig.periode === 'annee' && 'de l\'année courante'}
                   </p>
                   <p style={{ margin: '10px 0', fontSize: '0.875rem', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
                     {reinitConfig.mode === 'tout' 
-                      ? '🚨 Cette action supprimera toutes vos disponibilités et indisponibilités (manuelles et automatiques).'
+                      ? `🚨 Cette action supprimera toutes les ${reinitConfig.type_entree === 'disponibilites' ? 'disponibilités' : reinitConfig.type_entree === 'indisponibilites' ? 'indisponibilités' : 'entrées'} (manuelles et automatiques).`
                       : '✅ Vos modifications manuelles seront préservées.'}
                   </p>
                 </div>
