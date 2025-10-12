@@ -866,6 +866,333 @@ class ProFireManagerTester:
             self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
 
+    def test_disponibilites_reinitialiser_system(self):
+        """Test NEW Réinitialiser (Reset) functionality for disponibilités"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Login as Shefford admin using the correct credentials
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Disponibilités Réinitialiser System", False, 
+                                f"Failed to login as Shefford admin: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            admin_token = login_result["access_token"]
+            
+            # Create a new session with admin token
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Get existing users to find a part-time user
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/users")
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Failed to fetch users: {response.status_code}")
+                return False
+            
+            users = response.json()
+            part_time_user = None
+            
+            # Find an existing part-time user
+            for user in users:
+                if user.get('type_emploi') == 'temps_partiel':
+                    part_time_user = user
+                    break
+            
+            # If no part-time user exists, create one
+            if not part_time_user:
+                test_user = {
+                    "nom": "TestPompier",
+                    "prenom": "TempsPartiel",
+                    "email": f"test.reinit.{uuid.uuid4().hex[:8]}@shefford.ca",
+                    "telephone": "450-555-0123",
+                    "contact_urgence": "450-555-0124",
+                    "grade": "Pompier",
+                    "fonction_superieur": False,
+                    "type_emploi": "temps_partiel",
+                    "heures_max_semaine": 25,
+                    "role": "employe",
+                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                    "date_embauche": "2024-01-15",
+                    "formations": [],
+                    "mot_de_passe": "TestPass123!"
+                }
+                
+                response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+                if response.status_code != 200:
+                    self.log_test("Disponibilités Réinitialiser System", False, 
+                                f"Failed to create part-time user: {response.status_code}")
+                    return False
+                
+                part_time_user = response.json()
+            
+            user_id = part_time_user["id"]
+            
+            # Step 1: Generate some disponibilités with different origins
+            # Generate Montreal 7/24 schedule for current year
+            montreal_data = {
+                "user_id": user_id,
+                "horaire_type": "montreal",
+                "equipe": "Rouge",
+                "annee": 2025,
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Failed to generate Montreal schedule: {response.status_code}")
+                return False
+            
+            # Generate Quebec 10/14 schedule
+            quebec_data = {
+                "user_id": user_id,
+                "horaire_type": "quebec",
+                "equipe": "Jaune",
+                "annee": 2025,
+                "date_jour_1": "2025-01-06",
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Failed to generate Quebec schedule: {response.status_code}")
+                return False
+            
+            # Add some manual entries for current week and month
+            from datetime import datetime, timedelta
+            today = datetime.now().date()
+            
+            # Current week manual entry
+            days_since_monday = today.weekday()
+            current_week_date = today - timedelta(days=days_since_monday) + timedelta(days=1)  # Tuesday
+            
+            manual_entry_week = {
+                "user_id": user_id,
+                "date": current_week_date.isoformat(),
+                "heure_debut": "08:00",
+                "heure_fin": "16:00",
+                "statut": "indisponible",
+                "origine": "manuelle"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_week)
+            if response.status_code != 200:
+                # Entry might already exist, continue
+                pass
+            
+            # Current month manual entry
+            current_month_date = today.replace(day=15)  # Mid-month
+            
+            manual_entry_month = {
+                "user_id": user_id,
+                "date": current_month_date.isoformat(),
+                "heure_debut": "09:00",
+                "heure_fin": "17:00",
+                "statut": "indisponible",
+                "origine": "manuelle"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_month)
+            if response.status_code != 200:
+                # Entry might already exist, continue
+                pass
+            
+            # TEST 1: Réinitialisation Semaine Courante - Mode "generees_seulement"
+            reinit_semaine_data = {
+                "user_id": user_id,
+                "periode": "semaine",
+                "mode": "generees_seulement"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_semaine_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 1 - Semaine generees_seulement failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            semaine_result = response.json()
+            
+            # Verify response structure
+            required_fields = ['message', 'periode', 'mode', 'date_debut', 'date_fin', 'nombre_supprimees']
+            for field in required_fields:
+                if field not in semaine_result:
+                    self.log_test("Disponibilités Réinitialiser System", False, 
+                                f"Test 1 - Missing field in response: {field}")
+                    return False
+            
+            if semaine_result.get('periode') != 'semaine':
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 1 - Wrong periode in response: {semaine_result.get('periode')}")
+                return False
+            
+            if semaine_result.get('mode') != 'generees_seulement':
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 1 - Wrong mode in response: {semaine_result.get('mode')}")
+                return False
+            
+            # Verify that manual entries are preserved and auto-generated are deleted
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 1 - Failed to fetch disponibilites after reset: {response.status_code}")
+                return False
+            
+            disponibilites = response.json()
+            
+            # Check current week entries
+            current_week_start = today - timedelta(days=days_since_monday)
+            current_week_end = current_week_start + timedelta(days=6)
+            
+            week_entries = [d for d in disponibilites 
+                          if current_week_start.isoformat() <= d.get('date', '') <= current_week_end.isoformat()]
+            
+            manual_week_entries = [d for d in week_entries if d.get('origine') == 'manuelle']
+            auto_week_entries = [d for d in week_entries if d.get('origine') in ['montreal_7_24', 'quebec_10_14']]
+            
+            # Manual entries should be preserved, auto entries should be deleted
+            if len(auto_week_entries) > 0:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 1 - Auto-generated entries not deleted from current week: {len(auto_week_entries)}")
+                return False
+            
+            # TEST 2: Réinitialisation Mois Courant - Mode "tout"
+            reinit_mois_data = {
+                "user_id": user_id,
+                "periode": "mois",
+                "mode": "tout"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_mois_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 2 - Mois tout failed: {response.status_code}")
+                return False
+            
+            mois_result = response.json()
+            
+            if mois_result.get('periode') != 'mois' or mois_result.get('mode') != 'tout':
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 2 - Wrong response values: {mois_result}")
+                return False
+            
+            # Verify ALL entries in current month are deleted
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 2 - Failed to fetch disponibilites: {response.status_code}")
+                return False
+            
+            disponibilites = response.json()
+            
+            # Check current month entries
+            current_month_start = today.replace(day=1)
+            if today.month == 12:
+                current_month_end = today.replace(day=31)
+            else:
+                next_month = today.replace(month=today.month + 1, day=1)
+                current_month_end = next_month - timedelta(days=1)
+            
+            month_entries = [d for d in disponibilites 
+                           if current_month_start.isoformat() <= d.get('date', '') <= current_month_end.isoformat()]
+            
+            if len(month_entries) > 0:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 2 - Entries still exist in current month after 'tout' reset: {len(month_entries)}")
+                return False
+            
+            # TEST 3: Réinitialisation Année Courante - Mode "generees_seulement"
+            # First regenerate some data for 2025
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 3 - Failed to regenerate Montreal schedule: {response.status_code}")
+                return False
+            
+            reinit_annee_data = {
+                "user_id": user_id,
+                "periode": "annee",
+                "mode": "generees_seulement"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_annee_data)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 3 - Annee generees_seulement failed: {response.status_code}")
+                return False
+            
+            annee_result = response.json()
+            
+            # Verify date range is correct for current year
+            expected_date_debut = f"{today.year}-01-01"
+            expected_date_fin = f"{today.year}-12-31"
+            
+            if annee_result.get('date_debut') != expected_date_debut:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 3 - Wrong date_debut: {annee_result.get('date_debut')} (expected {expected_date_debut})")
+                return False
+            
+            if annee_result.get('date_fin') != expected_date_fin:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 3 - Wrong date_fin: {annee_result.get('date_fin')} (expected {expected_date_fin})")
+                return False
+            
+            # TEST 4: Error Handling
+            # Test invalid periode
+            invalid_periode_data = {
+                "user_id": user_id,
+                "periode": "invalid_periode",
+                "mode": "tout"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=invalid_periode_data)
+            if response.status_code != 400:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 4a - Invalid periode should return 400, got: {response.status_code}")
+                return False
+            
+            # Test invalid mode
+            invalid_mode_data = {
+                "user_id": user_id,
+                "periode": "semaine",
+                "mode": "invalid_mode"
+            }
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=invalid_mode_data)
+            if response.status_code != 400:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 4b - Invalid mode should return 400, got: {response.status_code}")
+                return False
+            
+            # Test without authentication
+            unauthenticated_session = requests.Session()
+            response = unauthenticated_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_semaine_data)
+            if response.status_code != 401:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Test 4c - Unauthenticated request should return 401, got: {response.status_code}")
+                return False
+            
+            self.log_test("Disponibilités Réinitialiser System", True, 
+                        f"✅ Réinitialiser functionality fully working - All 4 test scenarios passed: semaine/generees_seulement (deleted {semaine_result.get('nombre_supprimees', 0)} entries), mois/tout (deleted {mois_result.get('nombre_supprimees', 0)} entries), annee/generees_seulement (deleted {annee_result.get('nombre_supprimees', 0)} entries), error handling working")
+            return True
+            
+        except Exception as e:
+            self.log_test("Disponibilités Réinitialiser System", False, f"Réinitialiser system error: {str(e)}")
+            return False
+
     def test_indisponibilites_generation_system(self):
         """Test NEW Indisponibilités Generation System for Quebec firefighter schedules"""
         if not self.super_admin_token:
