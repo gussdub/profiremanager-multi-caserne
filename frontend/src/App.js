@@ -6670,7 +6670,7 @@ const MesDisponibilites = () => {
                   <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
                     {generationConfig.horaire_type === 'montreal' 
                       ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
-                      : 'Horaire Quebec 10/14 : 2 jours Jour + 2 jours Nuit + 10 jours repos (répété 2 fois). Vous serez INDISPONIBLE les 4 jours travaillés par cycle.'}
+                      : 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'}
                   </small>
                 </div>
 
