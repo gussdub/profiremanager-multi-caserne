@@ -6151,7 +6151,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setShowReinitModal(false);
       
       // Recharger les disponibilités
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
       
     } catch (error) {
