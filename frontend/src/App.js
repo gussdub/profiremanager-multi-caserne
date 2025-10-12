@@ -6121,10 +6121,13 @@ const MesDisponibilites = () => {
     setIsReinitializing(true);
     
     try {
-      const response = await apiDelete(tenantSlug, '/disponibilites/reinitialiser', {
-        user_id: user.id,
-        periode: reinitConfig.periode,
-        mode: reinitConfig.mode
+      const response = await apiCall(tenantSlug, '/disponibilites/reinitialiser', {
+        method: 'DELETE',
+        body: JSON.stringify({
+          user_id: user.id,
+          periode: reinitConfig.periode,
+          mode: reinitConfig.mode
+        })
       });
       
       const periodeLabel = {
