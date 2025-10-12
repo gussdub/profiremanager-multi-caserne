@@ -6236,6 +6236,13 @@ const MesDisponibilites = () => {
           >
             📅 Configurer manuellement
           </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => setShowReinitModal(true)}
+            data-testid="reinit-disponibilites-btn"
+          >
+            🗑️ Réinitialiser
+          </Button>
         </div>
       </div>
 
