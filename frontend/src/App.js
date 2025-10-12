@@ -6074,6 +6074,43 @@ const MesDisponibilites = () => {
     }
   };
 
+  const handleGenerateIndisponibilites = async () => {
+    setIsGenerating(true);
+    
+    try {
+      const response = await apiPost(tenantSlug, '/disponibilites/generer', {
+        user_id: user.id,
+        horaire_type: generationConfig.horaire_type,
+        equipe: generationConfig.equipe,
+        annee: generationConfig.annee,
+        date_jour_1: generationConfig.horaire_type === 'quebec' ? generationConfig.date_jour_1 : null,
+        conserver_manuelles: generationConfig.conserver_manuelles
+      });
+      
+      toast({
+        title: "Génération réussie",
+        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe}`,
+        variant: "success"
+      });
+      
+      setShowGenerationModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur génération:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de générer les indisponibilités",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const getTypeGardeName = (typeGardeId) => {
     if (!typeGardeId) return 'Tous types';
     const typeGarde = typesGarde.find(t => t.id === typeGardeId);
