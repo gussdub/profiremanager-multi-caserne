@@ -3556,7 +3556,7 @@ const Planning = () => {
           {viewMode === 'mois' ? (
             new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
           ) : (
-            `Semaine du ${weekDates[0].toLocaleDateString('fr-FR')} au ${weekDates[6].toLocaleDateString('fr-FR')}`
+            `Semaine du ${weekDates[0].toLocaleDateString('fr-FR', { timeZone: 'UTC' })} au ${weekDates[6].toLocaleDateString('fr-FR', { timeZone: 'UTC' })}`
           )}
         </h2>
         <Button 
