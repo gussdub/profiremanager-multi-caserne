@@ -3,49 +3,49 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-12T14:15:21.466534",
+    "timestamp": "2025-10-12T14:16:47.009648",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-12T14:15:21.484100",
+    "timestamp": "2025-10-12T14:16:47.018656",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-12T14:15:21.524507",
+    "timestamp": "2025-10-12T14:16:47.055427",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
     "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 4 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-12T14:15:21.567940",
+    "timestamp": "2025-10-12T14:16:47.092178",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
     "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 4, revenus_mensuels: 48",
-    "timestamp": "2025-10-12T14:15:21.608977",
+    "timestamp": "2025-10-12T14:16:47.130364",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": false,
-    "message": "Failed to fetch users from shefford: 401",
-    "timestamp": "2025-10-12T14:15:21.642963",
+    "message": "Failed to fetch users from shefford: 500",
+    "timestamp": "2025-10-12T14:16:47.532589",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-12T14:15:21.654486",
+    "timestamp": "2025-10-12T14:16:47.540905",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -55,7 +55,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-12T14:15:21.665146",
+    "timestamp": "2025-10-12T14:16:47.547125",
     "details": {}
   }
 ]
