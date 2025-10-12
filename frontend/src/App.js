@@ -5842,9 +5842,12 @@ const Formations = () => {
 };
 
 // Mes Disponibilités Component - Module dédié
-const MesDisponibilites = () => {
+const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
+  
+  // Déterminer quel utilisateur on gère (soi-même ou un autre)
+  const targetUser = managingUser || user;
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
