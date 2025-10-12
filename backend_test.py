@@ -979,63 +979,61 @@ class ProFireManagerTester:
                             f"Failed to generate Montreal schedule: {response.status_code}")
                 return False
             
-            # TEST 1: Réinitialisation Semaine Courante - Mode "generees_seulement"
-            reinit_semaine_data = {
+            # Step 3: Call reinitialiser with mode "generees_seulement" and type_entree "les_deux"
+            reinit_data = {
                 "user_id": user_id,
-                "periode": "semaine",
-                "mode": "generees_seulement"
+                "periode": "mois",
+                "mode": "generees_seulement",
+                "type_entree": "les_deux"
             }
             
-            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_semaine_data)
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_data)
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 1 - Semaine generees_seulement failed: {response.status_code}", 
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            f"Main test - Mois generees_seulement failed: {response.status_code}", 
                             {"response": response.text})
                 return False
             
-            semaine_result = response.json()
+            reinit_result = response.json()
             
-            # Verify response structure
+            # Verify response structure includes new type_entree field
             required_fields = ['message', 'periode', 'mode', 'date_debut', 'date_fin', 'nombre_supprimees']
             for field in required_fields:
-                if field not in semaine_result:
-                    self.log_test("Disponibilités Réinitialiser System", False, 
-                                f"Test 1 - Missing field in response: {field}")
+                if field not in reinit_result:
+                    self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                                f"Main test - Missing field in response: {field}")
                     return False
             
-            if semaine_result.get('periode') != 'semaine':
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 1 - Wrong periode in response: {semaine_result.get('periode')}")
-                return False
-            
-            if semaine_result.get('mode') != 'generees_seulement':
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 1 - Wrong mode in response: {semaine_result.get('mode')}")
-                return False
-            
-            # Verify that manual entries are preserved and auto-generated are deleted
+            # Step 4: Verify manual entry STILL EXISTS and auto-generated entries DELETED
             response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 1 - Failed to fetch disponibilites after reset: {response.status_code}")
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            f"Main test - Failed to fetch disponibilites after reset: {response.status_code}")
                 return False
             
             disponibilites = response.json()
             
-            # Check current week entries
-            current_week_start = today - timedelta(days=days_since_monday)
-            current_week_end = current_week_start + timedelta(days=6)
+            # Check if manual entry for today still exists
+            manual_entry_exists = False
+            auto_entries_exist = False
             
-            week_entries = [d for d in disponibilites 
-                          if current_week_start.isoformat() <= d.get('date', '') <= current_week_end.isoformat()]
+            for entry in disponibilites:
+                if entry.get('date') == today.isoformat() and entry.get('origine') == 'manuelle':
+                    manual_entry_exists = True
+                elif entry.get('origine') in ['montreal_7_24', 'quebec_10_14']:
+                    # Check if it's in current month
+                    entry_date = datetime.fromisoformat(entry.get('date', '')).date()
+                    if entry_date.year == today.year and entry_date.month == today.month:
+                        auto_entries_exist = True
             
-            manual_week_entries = [d for d in week_entries if d.get('origine') == 'manuelle']
-            auto_week_entries = [d for d in week_entries if d.get('origine') in ['montreal_7_24', 'quebec_10_14']]
+            if not manual_entry_exists:
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            "❌ CRITICAL BUG: Manual entry was deleted but should have been preserved")
+                return False
             
-            # Manual entries should be preserved, auto entries should be deleted
-            if len(auto_week_entries) > 0:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 1 - Auto-generated entries not deleted from current week: {len(auto_week_entries)}")
+            if auto_entries_exist:
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            "❌ CRITICAL BUG: Auto-generated entries still exist but should have been deleted")
                 return False
             
             # TEST 2: Réinitialisation Mois Courant - Mode "tout"
