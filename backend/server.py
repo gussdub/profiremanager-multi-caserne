@@ -2592,9 +2592,25 @@ async def reinitialiser_disponibilites(
             }
         }
         
+        # Filtre par type d'entrée (disponibilités/indisponibilités)
+        if reinit_data.type_entree == "disponibilites":
+            delete_query["statut"] = "disponible"
+        elif reinit_data.type_entree == "indisponibilites":
+            delete_query["statut"] = "indisponible"
+        elif reinit_data.type_entree != "les_deux":
+            raise HTTPException(
+                status_code=400,
+                detail="type_entree doit être 'disponibilites', 'indisponibilites' ou 'les_deux'"
+            )
+        
         # Si mode "generees_seulement", ne supprimer que les entrées générées automatiquement
         if reinit_data.mode == "generees_seulement":
-            delete_query["origine"] = {"$ne": "manuelle"}
+            # Supprimer uniquement celles avec origine différente de "manuelle"
+            # ET qui ont un champ origine (pour gérer les anciennes entrées)
+            delete_query["$or"] = [
+                {"origine": {"$exists": True, "$ne": "manuelle"}},
+                {"origine": {"$exists": False}}  # Anciennes entrées sans champ origine
+            ]
         elif reinit_data.mode != "tout":
             raise HTTPException(
                 status_code=400,
