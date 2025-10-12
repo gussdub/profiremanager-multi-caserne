@@ -2557,6 +2557,222 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     
     return {"message": "Disponibilité supprimée avec succès"}
 
+# ==================== FONCTIONS HELPER POUR GÉNÉRATION D'INDISPONIBILITÉS ====================
+
+def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, annee: int) -> List[Dict]:
+    """
+    Génère les indisponibilités pour l'horaire Montreal 7/24
+    Cycle de 28 jours commençant toujours par lundi rouge
+    
+    Pattern Montreal 7/24 (par équipe) :
+    - Rouge : jours 1-7 (Jour 07:00-17:00, Nuit 19:00-09:00, 24h 07:00-07:00)
+    - Jaune : jours 8-14
+    - Bleu : jours 15-21
+    - Vert : jours 22-28
+    
+    On génère les INDISPONIBILITÉS pour les jours où l'équipe NE travaille PAS
+    """
+    equipes_pattern = {
+        "Rouge": list(range(1, 8)),    # jours 1-7
+        "Jaune": list(range(8, 15)),   # jours 8-14
+        "Bleu": list(range(15, 22)),   # jours 15-21
+        "Vert": list(range(22, 29))    # jours 22-28
+    }
+    
+    if equipe not in equipes_pattern:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
+    
+    jours_travail = equipes_pattern[equipe]
+    indisponibilites = []
+    
+    # Trouver le premier lundi rouge de l'année (premier lundi de janvier)
+    premiere_date = datetime(annee, 1, 1).date()
+    # Trouver le premier lundi
+    jours_jusqua_lundi = (7 - premiere_date.weekday()) % 7
+    if jours_jusqua_lundi == 0 and premiere_date.weekday() != 0:
+        jours_jusqua_lundi = 7
+    premier_lundi = premiere_date + timedelta(days=jours_jusqua_lundi)
+    
+    # Générer du 1er janvier au 31 décembre
+    date_debut = premiere_date
+    date_fin = datetime(annee, 12, 31).date()
+    
+    current_date = date_debut
+    while current_date <= date_fin:
+        # Calculer le jour dans le cycle (1-28)
+        jours_depuis_debut = (current_date - premier_lundi).days
+        jour_cycle = (jours_depuis_debut % 28) + 1
+        
+        # Si le jour n'est PAS dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
+        if jour_cycle not in jours_travail:
+            # Générer indisponibilité pour toute la journée (24h)
+            indispo = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "user_id": user_id,
+                "date": current_date.isoformat(),
+                "type_garde_id": None,  # Toutes les gardes
+                "heure_debut": "00:00",
+                "heure_fin": "23:59",
+                "statut": "indisponible",
+                "origine": "montreal_7_24",
+                "created_at": datetime.now(timezone.utc)
+            }
+            indisponibilites.append(indispo)
+        
+        current_date += timedelta(days=1)
+    
+    return indisponibilites
+
+def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, annee: int, date_jour_1: str) -> List[Dict]:
+    """
+    Génère les indisponibilités pour l'horaire Quebec 10/14
+    Cycle de 28 jours avec pattern complexe
+    
+    Pattern Quebec 10/14 (par équipe sur 28 jours) :
+    - Rouge : Jours 1-2 (Jour), Jours 3-4 (Nuit), Repos 10 jours, Jours 15-16 (Jour), Jours 17-18 (Nuit), Repos 10 jours
+    - Jaune : Décalé de 7 jours
+    - Bleu : Décalé de 14 jours
+    - Vert : Décalé de 21 jours
+    
+    Horaires :
+    - Jour : 07:00-17:00
+    - Nuit : 19:00-09:00
+    """
+    equipes_offset = {
+        "Rouge": 0,
+        "Jaune": 7,
+        "Bleu": 14,
+        "Vert": 21
+    }
+    
+    if equipe not in equipes_offset:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
+    
+    # Pattern de base pour Rouge (jours de travail dans le cycle de 28 jours)
+    # Jours 1-2 (Jour), 3-4 (Nuit), 15-16 (Jour), 17-18 (Nuit)
+    jours_travail_rouge = [1, 2, 3, 4, 15, 16, 17, 18]
+    
+    # Appliquer l'offset pour l'équipe sélectionnée
+    offset = equipes_offset[equipe]
+    jours_travail = [(j - 1 + offset) % 28 + 1 for j in jours_travail_rouge]
+    
+    indisponibilites = []
+    
+    # Parser la date du Jour 1
+    jour_1 = datetime.strptime(date_jour_1, "%Y-%m-%d").date()
+    
+    # Générer du 1er janvier au 31 décembre
+    date_debut = datetime(annee, 1, 1).date()
+    date_fin = datetime(annee, 12, 31).date()
+    
+    current_date = date_debut
+    while current_date <= date_fin:
+        # Calculer le jour dans le cycle (1-28)
+        jours_depuis_jour1 = (current_date - jour_1).days
+        jour_cycle = (jours_depuis_jour1 % 28) + 1
+        
+        # Si le jour n'est PAS dans les jours de travail, c'est une INDISPONIBILITÉ
+        if jour_cycle not in jours_travail:
+            indispo = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "user_id": user_id,
+                "date": current_date.isoformat(),
+                "type_garde_id": None,
+                "heure_debut": "00:00",
+                "heure_fin": "23:59",
+                "statut": "indisponible",
+                "origine": "quebec_10_14",
+                "created_at": datetime.now(timezone.utc)
+            }
+            indisponibilites.append(indispo)
+        
+        current_date += timedelta(days=1)
+    
+    return indisponibilites
+
+# ==================== ROUTE DE GÉNÉRATION D'INDISPONIBILITÉS ====================
+
+@api_router.post("/{tenant_slug}/disponibilites/generer")
+async def generer_indisponibilites(
+    tenant_slug: str,
+    generation_data: IndisponibiliteGenerate,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère automatiquement les indisponibilités selon l'horaire sélectionné
+    """
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions
+    if current_user.role not in ["admin", "superviseur"] and current_user.id != generation_data.user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        # Supprimer les anciennes disponibilités générées automatiquement si demandé
+        if not generation_data.conserver_manuelles:
+            # Supprimer toutes les disponibilités de cet utilisateur
+            await db.disponibilites.delete_many({
+                "user_id": generation_data.user_id,
+                "tenant_id": tenant.id
+            })
+        else:
+            # Supprimer uniquement les disponibilités générées automatiquement (préserver manuelles)
+            origine_type = "montreal_7_24" if generation_data.horaire_type == "montreal" else "quebec_10_14"
+            await db.disponibilites.delete_many({
+                "user_id": generation_data.user_id,
+                "tenant_id": tenant.id,
+                "origine": origine_type
+            })
+        
+        # Générer les nouvelles indisponibilités
+        if generation_data.horaire_type == "montreal":
+            indispos = generer_indisponibilites_montreal(
+                user_id=generation_data.user_id,
+                tenant_id=tenant.id,
+                equipe=generation_data.equipe,
+                annee=generation_data.annee
+            )
+        elif generation_data.horaire_type == "quebec":
+            if not generation_data.date_jour_1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="date_jour_1 est requis pour l'horaire Quebec 10/14"
+                )
+            indispos = generer_indisponibilites_quebec(
+                user_id=generation_data.user_id,
+                tenant_id=tenant.id,
+                equipe=generation_data.equipe,
+                annee=generation_data.annee,
+                date_jour_1=generation_data.date_jour_1
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="horaire_type doit être 'montreal' ou 'quebec'"
+            )
+        
+        # Insérer les indisponibilités dans la base de données
+        if indispos:
+            await db.disponibilites.insert_many(indispos)
+        
+        return {
+            "message": "Indisponibilités générées avec succès",
+            "horaire_type": generation_data.horaire_type,
+            "equipe": generation_data.equipe,
+            "annee": generation_data.annee,
+            "nombre_indisponibilites": len(indispos),
+            "conserver_manuelles": generation_data.conserver_manuelles
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Erreur lors de la génération des indisponibilités: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération: {str(e)}")
+
 # Assignation manuelle avancée avec récurrence
 @api_router.post("/{tenant_slug}/planning/assignation-avancee")
 async def assignation_manuelle_avancee(
