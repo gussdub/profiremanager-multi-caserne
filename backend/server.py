@@ -630,6 +630,14 @@ class DisponibiliteCreate(BaseModel):
     statut: str = "disponible"
     origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
 
+class IndisponibiliteGenerate(BaseModel):
+    user_id: str
+    horaire_type: str  # "montreal" ou "quebec"
+    equipe: str  # "Rouge", "Jaune", "Bleu", "Vert"
+    annee: int
+    date_jour_1: Optional[str] = None  # Pour Quebec 10/14, date du Jour 1 du cycle (YYYY-MM-DD)
+    conserver_manuelles: bool = True  # Conserver les modifications manuelles lors de la régénération
+
 class Statistiques(BaseModel):
     personnel_actif: int
     gardes_cette_semaine: int
