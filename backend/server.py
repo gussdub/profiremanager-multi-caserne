@@ -63,6 +63,20 @@ app = FastAPI(title="ProFireManager API", version="2.0")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ==================== FIREBASE INITIALIZATION ====================
+
+# Initialiser Firebase Admin
+firebase_cred_path = ROOT_DIR / 'firebase-credentials.json'
+if firebase_cred_path.exists():
+    try:
+        cred = credentials.Certificate(str(firebase_cred_path))
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin SDK initialized successfully")
+    except Exception as e:
+        print(f"⚠️ Firebase initialization error: {e}")
+else:
+    print("⚠️ Firebase credentials file not found - Push notifications will not work")
+
 # ==================== INITIALIZATION ====================
 
 async def initialize_multi_tenant():
