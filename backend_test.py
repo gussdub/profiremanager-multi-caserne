@@ -939,8 +939,32 @@ class ProFireManagerTester:
             
             user_id = part_time_user["id"]
             
-            # Step 1: Generate some disponibilités with different origins
-            # Generate Montreal 7/24 schedule for current year
+            # Step 1: Create 1 MANUAL disponibilité for today
+            from datetime import datetime, timedelta
+            today = datetime.now().date()
+            
+            manual_entry_today = {
+                "user_id": user_id,
+                "date": today.isoformat(),
+                "heure_debut": "08:00",
+                "heure_fin": "16:00",
+                "statut": "disponible",
+                "origine": "manuelle"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_today)
+            if response.status_code != 200:
+                # Entry might already exist, try to delete and recreate
+                response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+                if response.status_code == 200:
+                    existing_entries = response.json()
+                    for entry in existing_entries:
+                        if entry.get('date') == today.isoformat():
+                            admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/{entry['id']}")
+                    # Try to create again
+                    response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_today)
+            
+            # Step 2: Generate Montreal schedule (creates auto-generated entries)
             montreal_data = {
                 "user_id": user_id,
                 "horaire_type": "montreal",
@@ -951,64 +975,9 @@ class ProFireManagerTester:
             
             response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
                             f"Failed to generate Montreal schedule: {response.status_code}")
                 return False
-            
-            # Generate Quebec 10/14 schedule
-            quebec_data = {
-                "user_id": user_id,
-                "horaire_type": "quebec",
-                "equipe": "Jaune",
-                "annee": 2025,
-                "date_jour_1": "2025-01-06",
-                "conserver_manuelles": True
-            }
-            
-            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
-            if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Failed to generate Quebec schedule: {response.status_code}")
-                return False
-            
-            # Add some manual entries for current week and month
-            from datetime import datetime, timedelta
-            today = datetime.now().date()
-            
-            # Current week manual entry
-            days_since_monday = today.weekday()
-            current_week_date = today - timedelta(days=days_since_monday) + timedelta(days=1)  # Tuesday
-            
-            manual_entry_week = {
-                "user_id": user_id,
-                "date": current_week_date.isoformat(),
-                "heure_debut": "08:00",
-                "heure_fin": "16:00",
-                "statut": "indisponible",
-                "origine": "manuelle"
-            }
-            
-            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_week)
-            if response.status_code != 200:
-                # Entry might already exist, continue
-                pass
-            
-            # Current month manual entry
-            current_month_date = today.replace(day=15)  # Mid-month
-            
-            manual_entry_month = {
-                "user_id": user_id,
-                "date": current_month_date.isoformat(),
-                "heure_debut": "09:00",
-                "heure_fin": "17:00",
-                "statut": "indisponible",
-                "origine": "manuelle"
-            }
-            
-            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites", json=manual_entry_month)
-            if response.status_code != 200:
-                # Entry might already exist, continue
-                pass
             
             # TEST 1: Réinitialisation Semaine Courante - Mode "generees_seulement"
             reinit_semaine_data = {
