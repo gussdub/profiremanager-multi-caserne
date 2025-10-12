@@ -866,8 +866,8 @@ class ProFireManagerTester:
             self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
 
-    def test_disponibilites_reinitialiser_system(self):
-        """Test NEW Réinitialiser (Reset) functionality for disponibilités"""
+    def test_disponibilites_reinitialiser_corrected_system(self):
+        """Test CORRECTED Réinitialiser functionality with new type_entree filter"""
         try:
             tenant_slug = "shefford"
             
@@ -882,7 +882,7 @@ class ProFireManagerTester:
                 # Try with legacy login
                 response = requests.post(f"{self.base_url}/auth/login", json=login_data)
                 if response.status_code != 200:
-                    self.log_test("Disponibilités Réinitialiser System", False, 
+                    self.log_test("Disponibilités Réinitialiser Corrected System", False, 
                                 f"Failed to login as Shefford admin: {response.status_code}", 
                                 {"response": response.text})
                     return False
