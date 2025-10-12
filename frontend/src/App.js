@@ -6599,6 +6599,147 @@ const MesDisponibilites = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de génération automatique d'indisponibilités */}
+      {showGenerationModal && (
+        <div className="modal-overlay" onClick={() => setShowGenerationModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🚒 Générer les indisponibilités selon horaire</h3>
+              <Button variant="ghost" onClick={() => setShowGenerationModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="generation-config">
+                {/* Sélection du type d'horaire */}
+                <div className="config-section">
+                  <h4>📋 Type d'horaire</h4>
+                  <select
+                    value={generationConfig.horaire_type}
+                    onChange={(e) => setGenerationConfig({...generationConfig, horaire_type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="montreal">Montreal 7/24 (Cycle 28 jours)</option>
+                    <option value="quebec">Quebec 10/14 (Cycle 28 jours)</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {generationConfig.horaire_type === 'montreal' 
+                      ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge'
+                      : 'Horaire Quebec 10/14 : 2 jours Jour + 2 jours Nuit + 10 jours repos (répété 2 fois)'}
+                  </small>
+                </div>
+
+                {/* Sélection de l'équipe */}
+                <div className="config-section">
+                  <h4>👥 Équipe</h4>
+                  <div className="equipe-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    {['Rouge', 'Jaune', 'Bleu', 'Vert'].map(equipe => (
+                      <button
+                        key={equipe}
+                        onClick={() => setGenerationConfig({...generationConfig, equipe})}
+                        className={`equipe-button ${generationConfig.equipe === equipe ? 'selected' : ''}`}
+                        style={{
+                          padding: '12px',
+                          border: generationConfig.equipe === equipe ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          background: generationConfig.equipe === equipe ? '#fef2f2' : 'white',
+                          cursor: 'pointer',
+                          fontWeight: generationConfig.equipe === equipe ? 'bold' : 'normal'
+                        }}
+                      >
+                        {equipe}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sélection de l'année */}
+                <div className="config-section">
+                  <h4>📅 Année</h4>
+                  <select
+                    value={generationConfig.annee}
+                    onChange={(e) => setGenerationConfig({...generationConfig, annee: parseInt(e.target.value)})}
+                    className="form-select"
+                  >
+                    <option value={new Date().getFullYear()}>{new Date().getFullYear()} (Année courante)</option>
+                    <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+                    <option value={new Date().getFullYear() + 2}>{new Date().getFullYear() + 2}</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    Les indisponibilités seront générées du 1er janvier au 31 décembre {generationConfig.annee}
+                  </small>
+                </div>
+
+                {/* Date Jour 1 pour Quebec */}
+                {generationConfig.horaire_type === 'quebec' && (
+                  <div className="config-section">
+                    <h4>📍 Date du Jour 1 du cycle</h4>
+                    <Input
+                      type="date"
+                      value={generationConfig.date_jour_1}
+                      onChange={(e) => setGenerationConfig({...generationConfig, date_jour_1: e.target.value})}
+                    />
+                    <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                      Sélectionnez la date de référence pour le Jour 1 du cycle de 28 jours
+                    </small>
+                  </div>
+                )}
+
+                {/* Option de conservation des modifications manuelles */}
+                <div className="config-section">
+                  <h4>⚠️ Gestion des données existantes</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                    <input
+                      type="checkbox"
+                      id="conserver-manuelles"
+                      checked={generationConfig.conserver_manuelles}
+                      onChange={(e) => setGenerationConfig({...generationConfig, conserver_manuelles: e.target.checked})}
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <label htmlFor="conserver-manuelles" style={{ cursor: 'pointer', color: '#78350f' }}>
+                      <strong>Conserver les modifications manuelles</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>
+                        {generationConfig.conserver_manuelles 
+                          ? 'Les disponibilités ajoutées manuellement seront préservées'
+                          : '⚠️ ATTENTION : Toutes les disponibilités existantes seront supprimées'}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Résumé de la génération */}
+                <div className="config-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                  <h4 style={{ color: '#1e40af', marginTop: 0 }}>📊 Résumé de la génération</h4>
+                  <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#1e40af' }}>
+                    <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
+                    <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
+                    <li><strong>Année :</strong> {generationConfig.annee}</li>
+                    {generationConfig.horaire_type === 'quebec' && (
+                      <li><strong>Jour 1 :</strong> {new Date(generationConfig.date_jour_1).toLocaleDateString('fr-FR')}</li>
+                    )}
+                    <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
+                  </ul>
+                  <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
+                    💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe NE travaille PAS selon le cycle sélectionné.
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleGenerateIndisponibilites}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
