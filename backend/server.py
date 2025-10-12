@@ -617,6 +617,7 @@ class Disponibilite(BaseModel):
     heure_debut: str
     heure_fin: str
     statut: str = "disponible"  # disponible, indisponible, preference
+    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DisponibiliteCreate(BaseModel):
@@ -627,6 +628,7 @@ class DisponibiliteCreate(BaseModel):
     heure_debut: str
     heure_fin: str
     statut: str = "disponible"
+    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
 
 class Statistiques(BaseModel):
     personnel_actif: int
