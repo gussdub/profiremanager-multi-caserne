@@ -1121,7 +1121,7 @@ const Dashboard = () => {
 };
 
 // Personnel Component complet
-const Personnel = () => {
+const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [users, setUsers] = useState([]);
   const [formations, setFormations] = useState([]);
   const [loading, setLoading] = useState(true);
