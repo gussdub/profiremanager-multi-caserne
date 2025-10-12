@@ -309,8 +309,8 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     // Vérification du rôle
     if (!item.roles.includes(user?.role)) return false;
     
-    // Vérification spéciale pour "Mes disponibilités" - uniquement temps partiel
-    if (item.id === 'disponibilites' && user?.type_emploi !== 'temps_partiel') {
+    // Vérifier si c'est le module "Mes disponibilités" qui ne doit être visible que pour les utilisateurs temps partiel
+    if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') {
       return false;
     }
     
