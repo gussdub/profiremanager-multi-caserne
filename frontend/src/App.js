@@ -5876,6 +5876,12 @@ const MesDisponibilites = () => {
     conserver_manuelles: true
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showReinitModal, setShowReinitModal] = useState(false);
+  const [reinitConfig, setReinitConfig] = useState({
+    periode: 'mois',
+    mode: 'generees_seulement'
+  });
+  const [isReinitializing, setIsReinitializing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
