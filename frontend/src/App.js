@@ -8180,7 +8180,10 @@ const AppLayout = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'personnel':
-        return <Personnel />;
+        return <Personnel 
+          setCurrentPage={setCurrentPage}
+          setManagingUserDisponibilites={setManagingUserDisponibilites}
+        />;
       case 'epi':
         return <ModuleEPI user={user} />;
       case 'planning':
@@ -8188,7 +8191,12 @@ const AppLayout = () => {
       case 'remplacements':
         return <Remplacements />;
       case 'disponibilites':
-        return <MesDisponibilites user={user} />;
+        return <MesDisponibilites 
+          user={user}
+          managingUser={managingUserDisponibilites}
+          setCurrentPage={setCurrentPage}
+          setManagingUserDisponibilites={setManagingUserDisponibilites}
+        />;
       case 'formations':
         return <Formations />;
       case 'rapports':
