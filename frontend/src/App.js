@@ -6228,7 +6228,35 @@ const MesDisponibilites = () => {
               <span className="card-label">Types de garde</span>
             </div>
           </div>
+          
+          <div className="overview-card">
+            <div className="card-icon">🤖</div>
+            <div className="card-content">
+              <span className="card-number">
+                {userDisponibilites.filter(d => d.origine && d.origine !== 'manuelle').length}
+              </span>
+              <span className="card-label">Générées automatiquement</span>
+            </div>
+          </div>
         </div>
+        
+        {/* Notification si des indisponibilités sont générées automatiquement */}
+        {userDisponibilites.filter(d => d.origine && d.origine !== 'manuelle').length > 0 && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '12px', 
+            background: '#eff6ff', 
+            borderLeft: '4px solid #3b82f6', 
+            borderRadius: '8px' 
+          }}>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
+              💡 <strong>
+                {userDisponibilites.filter(d => d.origine === 'montreal_7_24').length > 0 && 'Horaire Montreal 7/24'}
+                {userDisponibilites.filter(d => d.origine === 'quebec_10_14').length > 0 && 'Horaire Quebec 10/14'}
+              </strong> actif - Vous pouvez toujours ajouter des disponibilités/indisponibilités manuelles
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Calendrier et détails des disponibilités */}
