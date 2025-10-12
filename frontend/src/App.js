@@ -5879,7 +5879,8 @@ const MesDisponibilites = () => {
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
     periode: 'mois',
-    mode: 'generees_seulement'
+    mode: 'generees_seulement',
+    type_entree: 'les_deux'
   });
   const [isReinitializing, setIsReinitializing] = useState(false);
   const { toast } = useToast();
