@@ -177,15 +177,18 @@ backend:
 
   - task: "Indisponibilités Generation System"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "NEW FEATURE - Automatic unavailability generation for Quebec firefighter schedules (Montreal 7/24 and Quebec 10/14). Backend implementation complete with: 1) Added 'origine' field to Disponibilite model (manuelle, montreal_7_24, quebec_10_14, personnalisee), 2) New IndisponibiliteGenerate model for generation requests, 3) Helper functions generer_indisponibilites_montreal() and generer_indisponibilites_quebec() implementing 28-day cycle logic, 4) New API route POST /{tenant_slug}/disponibilites/generer with support for team selection (Rouge, Jaune, Bleu, Vert), year selection, and optional preservation of manual modifications. Frontend implementation complete with: 1) New generation modal with horaire type selection, team selection, year selection, and Jour 1 date picker for Quebec, 2) Visual indicators showing origine badges (Montreal/Quebec/Manual), 3) Statistics card showing auto-generated count, 4) Integration with existing availability system. NEEDS BACKEND TESTING."
+      - working: true
+        agent: "testing"
+        comment: "✅ INDISPONIBILITÉS GENERATION SYSTEM FULLY FUNCTIONAL - Comprehensive testing completed successfully: 1) Montreal 7/24 Generation: Generated 274 unavailability entries for Rouge team in 2025, correct response structure with all required fields (message, horaire_type, equipe, annee, nombre_indisponibilites), 2) Quebec 10/14 Generation: Generated 260 unavailability entries for Jaune team with date_jour_1='2025-01-06', correct response structure, 3) Database Verification: Confirmed entries exist with correct origine fields (montreal_7_24, quebec_10_14), proper statut='indisponible', correct date ranges throughout 2025, 4) All 4 Teams Tested: Rouge, Jaune, Bleu, Vert all generate similar counts (~270 entries each) for Montreal schedule, 5) Error Handling Working: Invalid horaire_type returns 400 error, Quebec without date_jour_1 returns 400 error, 6) API Endpoint: POST /shefford/disponibilites/generer working correctly with proper authentication. Fixed HTTPException handling in backend to return correct 400 status codes instead of 500. System ready for production use."
 
 frontend:
   - task: "Frontend Integration"
