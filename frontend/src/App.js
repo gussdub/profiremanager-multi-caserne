@@ -5885,7 +5885,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
       try {
         const [dispoData, typesData] = await Promise.all([
-          apiGet(tenantSlug, `/disponibilites/${user.id}`),
+          apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
           apiGet(tenantSlug, '/types-garde')
         ]);
         setUserDisponibilites(dispoData);
@@ -5897,12 +5897,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       }
     };
 
-    if (user?.id && user?.type_emploi === 'temps_partiel') {
+    if (targetUser?.id && targetUser?.type_emploi === 'temps_partiel') {
       fetchDisponibilites();
     } else {
       setLoading(false);
     }
-  }, [user?.id, tenantSlug]);
+  }, [targetUser?.id, tenantSlug]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
