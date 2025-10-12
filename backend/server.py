@@ -2672,8 +2672,8 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
         jours_depuis_jour1 = (current_date - jour_1).days
         jour_cycle = (jours_depuis_jour1 % 28) + 1
         
-        # Si le jour n'est PAS dans les jours de travail, c'est une INDISPONIBILITÉ
-        if jour_cycle not in jours_travail:
+        # Si le jour EST dans les jours de travail, c'est une INDISPONIBILITÉ (travail à l'emploi principal)
+        if jour_cycle in jours_travail:
             indispo = {
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
