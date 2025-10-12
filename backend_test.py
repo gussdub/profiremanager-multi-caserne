@@ -865,6 +865,257 @@ class ProFireManagerTester:
         except Exception as e:
             self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
+
+    def test_indisponibilites_generation_system(self):
+        """Test NEW Indisponibilités Generation System for Quebec firefighter schedules"""
+        if not self.super_admin_token:
+            self.log_test("Indisponibilités Generation System", False, "No Super Admin authentication token")
+            return False
+        
+        try:
+            # Create a new session with Super Admin token
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {self.super_admin_token}"})
+            
+            # First, get users from Shefford tenant to find a part-time employee
+            tenant_slug = "shefford"
+            
+            # Login as Super Admin to get tenant users
+            response = super_admin_session.get(f"{self.base_url}/{tenant_slug}/users")
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Failed to fetch users from {tenant_slug}: {response.status_code}")
+                return False
+            
+            users = response.json()
+            
+            # Find a part-time employee (type_emploi: temps_partiel)
+            part_time_user = None
+            for user in users:
+                if user.get('type_emploi') == 'temps_partiel':
+                    part_time_user = user
+                    break
+            
+            if not part_time_user:
+                # Create a part-time user for testing
+                test_user = {
+                    "nom": "Pompier",
+                    "prenom": "TempsPartiel",
+                    "email": f"temps.partiel.{uuid.uuid4().hex[:8]}@shefford.ca",
+                    "telephone": "450-555-0123",
+                    "contact_urgence": "450-555-0124",
+                    "grade": "Pompier",
+                    "fonction_superieur": False,
+                    "type_emploi": "temps_partiel",
+                    "heures_max_semaine": 25,
+                    "role": "employe",
+                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                    "date_embauche": "2024-01-15",
+                    "formations": [],
+                    "mot_de_passe": "TestPass123!"
+                }
+                
+                response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+                if response.status_code != 200:
+                    self.log_test("Indisponibilités Generation System", False, 
+                                f"Failed to create part-time user: {response.status_code}")
+                    return False
+                
+                part_time_user = response.json()
+            
+            user_id = part_time_user["id"]
+            
+            # Test 1: Montreal 7/24 Generation
+            montreal_data = {
+                "user_id": user_id,
+                "horaire_type": "montreal",
+                "equipe": "Rouge",
+                "annee": 2025,
+                "conserver_manuelles": True
+            }
+            
+            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal 7/24 generation failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            montreal_result = response.json()
+            
+            # Verify Montreal response structure
+            required_fields = ['message', 'horaire_type', 'equipe', 'annee', 'nombre_indisponibilites']
+            missing_fields = []
+            for field in required_fields:
+                if field not in montreal_result:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal response missing fields: {', '.join(missing_fields)}")
+                return False
+            
+            # Verify Montreal response values
+            if montreal_result.get('horaire_type') != 'montreal':
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal horaire_type incorrect: {montreal_result.get('horaire_type')}")
+                return False
+            
+            if montreal_result.get('equipe') != 'Rouge':
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal equipe incorrect: {montreal_result.get('equipe')}")
+                return False
+            
+            if montreal_result.get('annee') != 2025:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal annee incorrect: {montreal_result.get('annee')}")
+                return False
+            
+            montreal_count = montreal_result.get('nombre_indisponibilites', 0)
+            if montreal_count < 200:  # Should be > 200 for a full year
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal generated too few indisponibilites: {montreal_count} (expected > 200)")
+                return False
+            
+            # Test 2: Quebec 10/14 Generation
+            quebec_data = {
+                "user_id": user_id,
+                "horaire_type": "quebec",
+                "equipe": "Jaune",
+                "annee": 2025,
+                "date_jour_1": "2025-01-06",
+                "conserver_manuelles": True
+            }
+            
+            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Quebec 10/14 generation failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            quebec_result = response.json()
+            
+            # Verify Quebec response
+            if quebec_result.get('horaire_type') != 'quebec':
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Quebec horaire_type incorrect: {quebec_result.get('horaire_type')}")
+                return False
+            
+            if quebec_result.get('equipe') != 'Jaune':
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Quebec equipe incorrect: {quebec_result.get('equipe')}")
+                return False
+            
+            quebec_count = quebec_result.get('nombre_indisponibilites', 0)
+            if quebec_count < 100:  # Should have significant number of indisponibilites
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Quebec generated too few indisponibilites: {quebec_count}")
+                return False
+            
+            # Test 3: Verify generated disponibilites in database
+            response = super_admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Failed to fetch generated disponibilites: {response.status_code}")
+                return False
+            
+            disponibilites = response.json()
+            
+            # Check for Montreal and Quebec entries
+            montreal_entries = [d for d in disponibilites if d.get('origine') == 'montreal_7_24']
+            quebec_entries = [d for d in disponibilites if d.get('origine') == 'quebec_10_14']
+            
+            if len(montreal_entries) == 0:
+                self.log_test("Indisponibilités Generation System", False, 
+                            "No Montreal 7/24 entries found in database")
+                return False
+            
+            if len(quebec_entries) == 0:
+                self.log_test("Indisponibilités Generation System", False, 
+                            "No Quebec 10/14 entries found in database")
+                return False
+            
+            # Verify entries have correct structure
+            sample_montreal = montreal_entries[0]
+            required_fields = ['id', 'user_id', 'date', 'statut', 'origine', 'heure_debut', 'heure_fin']
+            for field in required_fields:
+                if field not in sample_montreal:
+                    self.log_test("Indisponibilités Generation System", False, 
+                                f"Montreal entry missing field: {field}")
+                    return False
+            
+            if sample_montreal.get('statut') != 'indisponible':
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Montreal entry has wrong statut: {sample_montreal.get('statut')}")
+                return False
+            
+            # Test 4: Error Handling - Invalid horaire_type
+            invalid_data = {
+                "user_id": user_id,
+                "horaire_type": "invalid_type",
+                "equipe": "Rouge",
+                "annee": 2025,
+                "conserver_manuelles": True
+            }
+            
+            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=invalid_data)
+            if response.status_code != 400:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Invalid horaire_type should return 400, got: {response.status_code}")
+                return False
+            
+            # Test 5: Error Handling - Quebec without date_jour_1
+            quebec_no_date = {
+                "user_id": user_id,
+                "horaire_type": "quebec",
+                "equipe": "Rouge",
+                "annee": 2025,
+                "conserver_manuelles": True
+            }
+            
+            response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_no_date)
+            if response.status_code != 400:
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Quebec without date_jour_1 should return 400, got: {response.status_code}")
+                return False
+            
+            # Test 6: Different Teams - Test all 4 teams
+            teams = ["Rouge", "Jaune", "Bleu", "Vert"]
+            team_results = {}
+            
+            for team in teams:
+                team_data = {
+                    "user_id": user_id,
+                    "horaire_type": "montreal",
+                    "equipe": team,
+                    "annee": 2025,
+                    "conserver_manuelles": False  # Clear previous data
+                }
+                
+                response = super_admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=team_data)
+                if response.status_code != 200:
+                    self.log_test("Indisponibilités Generation System", False, 
+                                f"Team {team} generation failed: {response.status_code}")
+                    return False
+                
+                result = response.json()
+                team_results[team] = result.get('nombre_indisponibilites', 0)
+            
+            # Verify all teams generated similar number of indisponibilites (should be same for Montreal)
+            counts = list(team_results.values())
+            if not all(abs(count - counts[0]) < 10 for count in counts):  # Allow small variance
+                self.log_test("Indisponibilités Generation System", False, 
+                            f"Team counts vary too much: {team_results}")
+                return False
+            
+            self.log_test("Indisponibilités Generation System", True, 
+                        f"✅ Indisponibilités Generation System fully functional - Montreal: {montreal_count} entries, Quebec: {quebec_count} entries, All teams tested, Error handling working")
+            return True
+            
+        except Exception as e:
+            self.log_test("Indisponibilités Generation System", False, f"Indisponibilités generation system error: {str(e)}")
+            return False
     
     def create_admin_user_if_needed(self):
         """Create admin user if it doesn't exist"""
