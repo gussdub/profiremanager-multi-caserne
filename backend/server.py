@@ -2631,7 +2631,8 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
     Cycle de 28 jours avec pattern complexe
     
     Pattern Quebec 10/14 (par équipe sur 28 jours) :
-    - Rouge : Jours 1-2 (Jour), Jours 3-4 (Nuit), Repos 10 jours, Jours 15-16 (Jour), Jours 17-18 (Nuit), Repos 10 jours
+    - Rouge : 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS (7-10) + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS (18-28)
+    - Total : 13 jours de travail par cycle
     - Jaune : Décalé de 7 jours
     - Bleu : Décalé de 14 jours
     - Vert : Décalé de 21 jours
