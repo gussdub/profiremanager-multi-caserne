@@ -1550,6 +1550,10 @@ class ProFireManagerTester:
             # Test 4: NEW FEATURE - Indisponibilités Generation System
             print("\n🆕 Testing NEW FEATURE: Indisponibilités Generation System")
             self.test_indisponibilites_generation_system()
+            
+            # Test 5: NEW FEATURE - Disponibilités Réinitialiser System
+            print("\n🆕 Testing NEW FEATURE: Disponibilités Réinitialiser System")
+            self.test_disponibilites_reinitialiser_system()
         else:
             print("⚠️  Super Admin authentication failed - cannot test dashboard API corrections")
         
