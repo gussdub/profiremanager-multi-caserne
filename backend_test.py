@@ -1181,6 +1181,10 @@ class ProFireManagerTester:
             # Test 3: MODIFIED endpoint /api/admin/stats
             print("\n🔄 Testing MODIFIED endpoint: /api/admin/stats")
             self.test_super_admin_stats_api_modified()
+            
+            # Test 4: NEW FEATURE - Indisponibilités Generation System
+            print("\n🆕 Testing NEW FEATURE: Indisponibilités Generation System")
+            self.test_indisponibilites_generation_system()
         else:
             print("⚠️  Super Admin authentication failed - cannot test dashboard API corrections")
         
