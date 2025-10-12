@@ -6896,6 +6896,25 @@ const MesDisponibilites = () => {
                   </small>
                 </div>
 
+                {/* Sélection du type d'entrées */}
+                <div className="config-section">
+                  <h4>📊 Type d'entrées à supprimer</h4>
+                  <select
+                    value={reinitConfig.type_entree}
+                    onChange={(e) => setReinitConfig({...reinitConfig, type_entree: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="les_deux">Disponibilités ET Indisponibilités</option>
+                    <option value="disponibilites">Disponibilités uniquement</option>
+                    <option value="indisponibilites">Indisponibilités uniquement</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {reinitConfig.type_entree === 'disponibilites' && '✅ Supprime uniquement les jours disponibles'}
+                    {reinitConfig.type_entree === 'indisponibilites' && '❌ Supprime uniquement les jours indisponibles'}
+                    {reinitConfig.type_entree === 'les_deux' && '🔄 Supprime tous les types d\'entrées'}
+                  </small>
+                </div>
+
                 {/* Sélection du mode */}
                 <div className="config-section">
                   <h4>🎯 Mode de suppression</h4>
