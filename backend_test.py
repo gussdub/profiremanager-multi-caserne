@@ -1320,9 +1320,9 @@ class ProFireManagerTester:
                 return False
             
             montreal_count = montreal_result.get('nombre_indisponibilites', 0)
-            if montreal_count < 200:  # Should be > 200 for a full year
+            if montreal_count < 80:  # Should be around 91 for corrected logic (7 days × 13 cycles)
                 self.log_test("Indisponibilités Generation System", False, 
-                            f"Montreal generated too few indisponibilites: {montreal_count} (expected > 200)")
+                            f"Montreal generated too few indisponibilites: {montreal_count} (expected ~91)")
                 return False
             
             # Test 2: Quebec 10/14 Generation
