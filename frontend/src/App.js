@@ -6119,7 +6119,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       const response = await apiCall(tenantSlug, '/disponibilites/reinitialiser', {
         method: 'DELETE',
         body: JSON.stringify({
-          user_id: user.id,
+          user_id: targetUser.id,
           periode: reinitConfig.periode,
           mode: reinitConfig.mode,
           type_entree: reinitConfig.type_entree
