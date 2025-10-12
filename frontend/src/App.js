@@ -6117,6 +6117,50 @@ const MesDisponibilites = () => {
     }
   };
 
+  const handleReinitialiser = async () => {
+    setIsReinitializing(true);
+    
+    try {
+      const response = await apiDelete(tenantSlug, '/disponibilites/reinitialiser', {
+        user_id: user.id,
+        periode: reinitConfig.periode,
+        mode: reinitConfig.mode
+      });
+      
+      const periodeLabel = {
+        'semaine': 'la semaine courante',
+        'mois': 'le mois courant',
+        'annee': "l'année courante"
+      }[reinitConfig.periode];
+      
+      const modeLabel = reinitConfig.mode === 'tout' 
+        ? 'Toutes les entrées' 
+        : 'Les entrées générées automatiquement';
+      
+      toast({
+        title: "Réinitialisation réussie",
+        description: `${modeLabel} de ${periodeLabel} ont été supprimées (${response.nombre_supprimees} entrée(s))`,
+        variant: "success"
+      });
+      
+      setShowReinitModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur réinitialisation:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de réinitialiser",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReinitializing(false);
+    }
+  };
+
   const getTypeGardeName = (typeGardeId) => {
     if (!typeGardeId) return 'Tous types';
     const typeGarde = typesGarde.find(t => t.id === typeGardeId);
