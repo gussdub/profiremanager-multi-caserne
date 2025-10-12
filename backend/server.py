@@ -644,6 +644,25 @@ class DisponibiliteReinitialiser(BaseModel):
     mode: str  # "tout" ou "generees_seulement"
     type_entree: str = "les_deux"  # "disponibilites", "indisponibilites", "les_deux"
 
+class DeviceToken(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    device_token: str
+    platform: str  # "ios" ou "android"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DeviceTokenRegister(BaseModel):
+    user_id: str
+    device_token: str
+    platform: str
+
+class PushNotificationSend(BaseModel):
+    user_ids: List[str]
+    title: str
+    body: str
+    data: Optional[dict] = None
+
 class Statistiques(BaseModel):
     personnel_actif: int
     gardes_cette_semaine: int
