@@ -6426,6 +6426,24 @@ const MesDisponibilites = () => {
                       {dispo.statut === 'disponible' ? 'Disponible' : 
                        dispo.statut === 'preference' ? 'Préférence' : 'Indisponible'}
                     </span>
+                    {dispo.origine && dispo.origine !== 'manuelle' && (
+                      <span 
+                        className="origine-badge" 
+                        style={{
+                          display: 'inline-block',
+                          marginLeft: '8px',
+                          padding: '4px 8px',
+                          fontSize: '0.75rem',
+                          borderRadius: '4px',
+                          background: dispo.origine === 'montreal_7_24' ? '#dbeafe' : '#fef3c7',
+                          color: dispo.origine === 'montreal_7_24' ? '#1e40af' : '#78350f',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {dispo.origine === 'montreal_7_24' ? '🚒 Montreal' : 
+                         dispo.origine === 'quebec_10_14' ? '🚒 Quebec' : '🔄 Auto'}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
