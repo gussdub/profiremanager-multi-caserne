@@ -895,30 +895,30 @@ class ProFireManagerTester:
             admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
             
             # Create a new part-time user for testing (avoid problematic users endpoint)
-                test_user = {
-                    "nom": "TestPompier",
-                    "prenom": "TempsPartiel",
-                    "email": f"test.reinit.{uuid.uuid4().hex[:8]}@shefford.ca",
-                    "telephone": "450-555-0123",
-                    "contact_urgence": "450-555-0124",
-                    "grade": "Pompier",
-                    "fonction_superieur": False,
-                    "type_emploi": "temps_partiel",
-                    "heures_max_semaine": 25,
-                    "role": "employe",
-                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
-                    "date_embauche": "2024-01-15",
-                    "formations": [],
-                    "mot_de_passe": "TestPass123!"
-                }
-                
-                response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
-                if response.status_code != 200:
-                    self.log_test("Disponibilités Réinitialiser System", False, 
-                                f"Failed to create part-time user: {response.status_code}")
-                    return False
-                
-                part_time_user = response.json()
+            test_user = {
+                "nom": "TestPompier",
+                "prenom": "TempsPartiel",
+                "email": f"test.reinit.{uuid.uuid4().hex[:8]}@shefford.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_partiel",
+                "heures_max_semaine": 25,
+                "role": "employe",
+                "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "TestPass123!"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+            if response.status_code != 200:
+                self.log_test("Disponibilités Réinitialiser System", False, 
+                            f"Failed to create part-time user: {response.status_code}")
+                return False
+            
+            part_time_user = response.json()
             
             user_id = part_time_user["id"]
             
