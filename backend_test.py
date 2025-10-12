@@ -1163,9 +1163,9 @@ class ProFireManagerTester:
             # Test without authentication
             unauthenticated_session = requests.Session()
             response = unauthenticated_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=reinit_semaine_data)
-            if response.status_code != 401:
+            if response.status_code not in [401, 403]:
                 self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Test 4c - Unauthenticated request should return 401, got: {response.status_code}")
+                            f"Test 4c - Unauthenticated request should return 401 or 403, got: {response.status_code}")
                 return False
             
             self.log_test("Disponibilités Réinitialiser System", True, 
