@@ -6250,10 +6250,22 @@ const MesDisponibilites = () => {
       <div className="availability-overview-enhanced">
         <div className="overview-cards">
           <div className="overview-card">
-            <div className="card-icon">📅</div>
+            <div className="card-icon">✅</div>
             <div className="card-content">
-              <span className="card-number">{userDisponibilites.length}</span>
-              <span className="card-label">Disponibilités enregistrées</span>
+              <span className="card-number">
+                {userDisponibilites.filter(d => d.statut === 'disponible').length}
+              </span>
+              <span className="card-label">Disponibilités</span>
+            </div>
+          </div>
+          
+          <div className="overview-card">
+            <div className="card-icon">❌</div>
+            <div className="card-content">
+              <span className="card-number">
+                {userDisponibilites.filter(d => d.statut === 'indisponible').length}
+              </span>
+              <span className="card-label">Indisponibilités</span>
             </div>
           </div>
           
