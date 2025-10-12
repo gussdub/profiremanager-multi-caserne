@@ -2654,8 +2654,9 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
         raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
     
     # Pattern de base pour Rouge (jours de travail dans le cycle de 28 jours)
-    # Jours 1-2 (Jour), 3-4 (Nuit), 15-16 (Jour), 17-18 (Nuit)
-    jours_travail_rouge = [1, 2, 3, 4, 15, 16, 17, 18]
+    # 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS
+    # Total : 13 jours de travail par cycle de 28 jours
+    jours_travail_rouge = [1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 17]
     
     # Appliquer l'offset pour l'équipe sélectionnée
     offset = equipes_offset[equipe]
