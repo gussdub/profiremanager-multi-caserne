@@ -196,6 +196,21 @@ backend:
         agent: "testing"
         comment: "✅ QUEBEC 10/14 CORRECTED LOGIC FULLY VERIFIED - Tested the corrected Quebec logic as specifically requested in review: 1) Quebec Rouge 2025: Generated EXACTLY 169 unavailabilities (13 days × 13 cycles) - PERFECT MATCH with expected ~169, confirming the corrected Quebec logic with 13 working days per 28-day cycle is working correctly, 2) Pattern Verification: Confirmed working days [1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 17] = 13 days as per corrected pattern (2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS), 3) Montreal Validation: Montreal Rouge 2025 still generates exactly 91 unavailabilities (7 days × 13 cycles), confirming Montreal logic remains unaffected, 4) Database Verification: All Quebec entries correctly stored with origine='quebec_10_14', statut='indisponible', proper date ranges, and correct user assignment, 5) Authentication & User Management: Successfully used existing Shefford admin (admin@firemanager.ca / admin123) and created part-time users for testing. REVIEW REQUEST OBJECTIVE ACHIEVED: Quebec Rouge 2025 generates ~169 unavailabilities (NOT 105) with corrected 13-day working pattern."
 
+  - task: "Disponibilités Réinitialiser System"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW FEATURE - Testing Réinitialiser (Reset) functionality for disponibilités with ability to reset/delete disponibilités for specific periods (week/month/year) with two modes (delete all vs delete only auto-generated). Backend implementation includes: 1) New model DisponibiliteReinitialiser with fields user_id, periode (semaine/mois/annee), mode (tout/generees_seulement), 2) New route DELETE /{tenant_slug}/disponibilites/reinitialiser, 3) Logic calculates date ranges based on period and deletes accordingly. NEEDS COMPREHENSIVE TESTING."
+      - working: true
+        agent: "testing"
+        comment: "✅ RÉINITIALISER FUNCTIONALITY FULLY WORKING - Comprehensive testing completed successfully: 1) Test 1 - Semaine generees_seulement: Successfully deleted 3 auto-generated entries from current week while preserving manual entries, verified correct response structure with all required fields (message, periode, mode, date_debut, date_fin, nombre_supprimees), 2) Test 2 - Mois tout: Successfully deleted all 21 entries from current month, verified ALL entries (manual + auto-generated) removed, 3) Test 3 - Année generees_seulement: Successfully deleted 246 auto-generated entries from 2025, verified correct date range (2025-01-01 to 2025-12-31), 4) Test 4 - Error Handling: All error cases working correctly (invalid periode returns 400, invalid mode returns 400, unauthenticated request returns 403), 5) Route Conflict Resolution: Fixed critical route ordering issue where /{tenant_slug}/disponibilites/{disponibilite_id} was matching before /reinitialiser, moved specific route before generic route, 6) Authentication & User Management: Successfully used Shefford admin (admin@firemanager.ca / admin123) and created part-time users for testing, 7) Database Verification: Confirmed entries are properly deleted based on periode and mode criteria. All 4 test scenarios from review request completed successfully. System ready for production use."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
