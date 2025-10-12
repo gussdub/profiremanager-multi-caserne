@@ -894,31 +894,48 @@ class ProFireManagerTester:
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
             
-            # Create a new part-time user for testing (avoid problematic users endpoint)
-            test_user = {
-                "nom": "TestPompier",
-                "prenom": "TempsPartiel",
-                "email": f"test.reinit.{uuid.uuid4().hex[:8]}@shefford.ca",
-                "telephone": "450-555-0123",
-                "contact_urgence": "450-555-0124",
-                "grade": "Pompier",
-                "fonction_superieur": False,
-                "type_emploi": "temps_partiel",
-                "heures_max_semaine": 25,
-                "role": "employe",
-                "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
-                "date_embauche": "2024-01-15",
-                "formations": [],
-                "mot_de_passe": "TestPass123!"
-            }
-            
-            response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+            # Get existing part-time users instead of creating new ones
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/users")
             if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Failed to create part-time user: {response.status_code}")
+                self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                            f"Failed to fetch users: {response.status_code}")
                 return False
             
-            part_time_user = response.json()
+            users = response.json()
+            part_time_user = None
+            
+            # Find an existing part-time user
+            for user in users:
+                if user.get('type_emploi') == 'temps_partiel':
+                    part_time_user = user
+                    break
+            
+            if not part_time_user:
+                # Create a new part-time user if none exists
+                test_user = {
+                    "nom": "TestPompier",
+                    "prenom": "TempsPartiel",
+                    "email": f"test.corrected.{uuid.uuid4().hex[:8]}@shefford.ca",
+                    "telephone": "450-555-0123",
+                    "contact_urgence": "450-555-0124",
+                    "grade": "Pompier",
+                    "fonction_superieur": False,
+                    "type_emploi": "temps_partiel",
+                    "heures_max_semaine": 25,
+                    "role": "employe",
+                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                    "date_embauche": "2024-01-15",
+                    "formations": [],
+                    "mot_de_passe": "TestPass123!"
+                }
+                
+                response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+                if response.status_code != 200:
+                    self.log_test("Disponibilités Réinitialiser Corrected System", False, 
+                                f"Failed to create part-time user: {response.status_code}")
+                    return False
+                
+                part_time_user = response.json()
             
             user_id = part_time_user["id"]
             
