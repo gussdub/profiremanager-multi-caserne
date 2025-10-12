@@ -1,71 +1,110 @@
 <analysis>
-The AI engineer's work focused on iteratively enhancing the ProFireManager application, fixing bugs, and resolving complex deployment issues. Initially, the engineer addressed a user request to revert problematic Super Admin dashboard display fixes. Subsequent efforts included correcting tenant status display (handling  vs.  fields), implementing comprehensive EPI management in user profiles, renaming UI elements (e.g., Attribution to Planning), and developing robust tenant lifecycle management (activation/deactivation, permanent deletion with confirmation). A significant challenge involved debugging Vercel/Render production deployment synchronization, which was resolved by correcting GitHub repository links, Vercel root directory configurations, and addressing caching. The engineer also added monthly revenue calculations to the Super Admin dashboard. The trajectory concludes with the user requesting validation for the tenant deletion functionality and the updated statistics display.
+The AI engineer's work focused on iteratively enhancing the ProFireManager application, fixing bugs, and resolving complex deployment issues across both frontend and backend. Initially, the engineer addressed user requests regarding Super Admin dashboard display, tenant status (handling  vs.  fields), and implemented comprehensive EPI management. Key technical challenges included debugging Vercel/Render production deployment synchronization, which was a recurring theme, and correcting API routes and Pydantic validation. The engineer also implemented robust tenant lifecycle management (activation/deactivation, permanent deletion), monthly revenue calculations (excluding demo tenants), and clarified the replacement module functionalities. Significant progress was made in fixing persistent login issues, correcting the password change functionality (which was a demo stub), and rectifying date offsets and assignment inconsistencies in the planning module's monthly view. The trajectory concludes with a detailed planning phase for implementing an advanced Indisponibilités (unavailabilities) feature, requiring complex scheduling logic and UI integration.
 </analysis>
 
 <product_requirements>
-ProFireManager is a web application for Canadian fire departments, supporting various roles to manage personnel, schedules, and automated replacements across multiple independent departments (casernes).
+ProFireManager is a web application for Canadian fire departments (casernes) to manage personnel, schedules, and automated replacements.
 
-**Implemented Features & Refinements:**
-- **Multi-Tenant & Super Admin**: Tenant creation, editing, and deletion (soft-deactivation and permanent data removal). Super Admin can create initial admin accounts for new casernes. Personnel count, billing tiers (2 for 1-30, 0 for 31-50, 7 for 51+ employees *per personnel*), and user creation limits are enforced. Tenant activation/deactivation toggle blocks login for inactive tenants.
-- **User & Profile Management**: Tenant-aware account creation with welcome emails. User profiles allow input of all EPI sizes. Mes disponibilités module is visible only for part-time employees.
-- **Planning Module**: Enhanced shift display (Assigned/Required ratio, color-coding, compact names). Attribution tab renamed to Planning. Configurable planning validation settings.
-- **Deployment & Stability**: Production deployment via Render (backend) and Vercel (frontend). Debugged Vercel/Render synchronization issues (GitHub repo, Vercel Root Directory, caching) and backend / field discrepancies in MongoDB.
-- **Reporting**: Super Admin dashboard now displays total active/inactive casernes, total personnel, and calculated monthly revenue based on active personnel.
-- **Bug Fixes**: Resolved Super Admin login, Pydantic validation, email , PWA shortcut routing issues, and the display of deleted tenants.
+**Core Functionality & Refinements:**
+1.  **Multi-Tenant & Super Admin:**
+    *   Tenant creation, editing, and *permanent deletion*.
+    *   Super Admin dashboard displays total active/inactive casernes, personnel, and *monthly revenue (excluding demo tenants)*.
+    *   Super Admin can *create initial admin accounts for new casernes*.
+    *   Tenant creation fields (email, phone, address) made *optional* in frontend.
+2.  **User & Profile Management:**
+    *   Tenant-aware account creation with welcome emails.
+    *   User profiles allow input of EPI sizes.
+    *   Mes disponibilités module visible for *all part-time personnel* (admin, supervisor, employee).
+    *   *Password change functionality in Mon Profil was fixed* (previously a demo stub).
+3.  **Planning Module:**
+    *   Enhanced shift display.
+    *   Attribution tab renamed to Planning.
+    *   *Admin/supervisors can add/modify/delete availabilities/unavailabilities for personnel*.
+    *   *Recurring availabilities/unavailabilities* (weekly, bi-weekly, monthly with end dates) implemented.
+    *   *Advanced manual assignment* was fixed.
+    *   *Automatic assignment (Attribution auto) was fixed* to be idempotent, fill completely, and not exceed required personnel.
+    *   *Monthly planning view date offset and assignment display were corrected*.
+4.  **Deployment & Stability:**
+    *   Persistent debugging of Vercel/Render deployment and synchronization issues (GitHub repo, Vercel Root Directory, caching).
+    *   Backend / field discrepancies handled.
+    *   CORS and API validation errors resolved.
+5.  **Reporting:** Super Admin dashboard statistics were validated and corrected.
+6.  **Replacements Module:** Buttons (Recherche auto, ✅, ❌) were clarified with tooltips.
+
+**Current Major Development Focus:** Implementing a comprehensive Indisponibilités (unavailabilities) feature within the Mes disponibilités module. This involves generating unavailabilities based on specific Quebec firefighter schedules (Montreal 7/24, Quebec 10/14) and allowing manual overrides.
 </product_requirements>
 
 <key_technical_concepts>
-- **Full-Stack Development**: React (CRA) frontend, FastAPI (Python) backend with  for MongoDB.
-- **UI/UX**: Shadcn UI, Tailwind CSS.
-- **Data Persistence**: MongoDB (UUIDs,  handling, / field variations).
-- **API Design**: RESTful,  prefix, JWT authentication.
-- **Multi-Tenant Architecture**: Tenant-aware routing and data isolation.
-- **Deployment**: Render, Vercel, GitHub.
-- **Email Service**: SendGrid.
-- **Data Validation**: Pydantic.
+-   **Full-Stack Development**: React (CRA) frontend, FastAPI (Python) backend with  for MongoDB.
+-   **UI/UX**: Shadcn UI, Tailwind CSS.
+-   **Data Persistence**: MongoDB (UUIDs,  handling, / field variations, date format consistency).
+-   **API Design**: RESTful,  prefix, JWT authentication (SHA256 hashing).
+-   **Multi-Tenant Architecture**: Tenant-aware routing and data isolation.
+-   **Deployment**: Render, Vercel, GitHub (persistent issues with sync and caching).
+-   **Email Service**: SendGrid (handled gracefully on failure).
+-   **Data Validation**: Pydantic.
+-   **JavaScript Date Handling**: UTC vs. local timezone for consistency.
 </key_technical_concepts>
 
 <code_architecture>
 
-
-- ****:
-    - **Importance**: Stores backend environment variables.
-    - **Changes**:  changed from  to .
-- ****:
-    - **Importance**: Main FastAPI backend, handling API, models, and business logic.
-    - **Changes**: Models updated (, ).  in  models made optional. Backend logic adapted to check for both  and  fields for tenant status, supporting production and local DBs. Email functions (, ) enhanced/added. Endpoints for tenant management (), planning settings, and user creation () modified. New endpoint  added. Login endpoints updated for tenant status checks. Permanent tenant deletion logic implemented for . New  for pre-deletion stats and  for monthly revenue calculation were added. Redundant DB calls removed.
-- ****:
-    - **Importance**: Core React application, routing, and main components.
-    - **Changes**: Login adapted for Super Admin.  used for . Planning module display enhanced.  function modified and integrated into  component to display all EPI types, allowing user input. Logic for Mes disponibilités module display (part-time users) confirmed.
-- ****:
-    - **Importance**: Custom CSS styling.
-    - **Changes**: Added styles for planning module elements.
-- ****:
-    - **Importance**: Frontend component for various settings.
-    - **Changes**: API calls migrated to ,  incorporated. Planning Validation Settings section added. Attribution tab renamed to Planning.
-- ****:
-    - **Importance**: Frontend component for Super-Admin functionalities.
-    - **Changes**: Tenant display includes , / status, , billing tier, and price. An active/inactive toggle switch added to the tenant modification modal. UI elements (button, modal) for Créer un admin functionality implemented. Deletion confirmation modal with pre-deletion statistics integrated. Dashboard stats updated for monthly revenue and active/inactive casernes. Display logic updated to check .
-- ****:
-    - **Importance**: PWA manifest file.
-    - **Changes**: Updated .  changed to  and  to  to improve PWA deep linking for multi-tenant slugs.
-- ****:
-    - **Importance**: Main HTML file for the frontend.
-    - **Changes**: Updated icon meta tags.
-- ** (new file)**:
-    - **Importance**: Vercel configuration for routing.
-    - **Changes**: Created to handle SPA routing (redirects all unhandled paths to ) for proper deep linking in multi-tenant setup.
+-   ****:
+    -   **Importance**: Stores backend environment variables like , , , .
+    -   **Changes**:  was explicitly discussed as needing updates on Render for production.
+-   ****:
+    -   **Importance**: Main FastAPI backend, containing all API endpoints, data models (Pydantic), business logic for tenant, user, assignment, and availability management. It interacts with MongoDB via .
+    -   **Changes**:
+        -   **Super Admin Endpoints**:  endpoint added.  and  endpoints modified to handle both  and  fields for tenant status consistency. Tenant creation/update/deletion routes (, , ) were restored after accidental deletion and their paths adjusted to handle  prefix correctly.
+        -   **Authentication**:  typo corrected to  (critical fix for backend crashes during admin creation). Tenant creation flow in  now correctly provides all mandatory  model fields (, , , ) and wraps SendGrid email sending in a try-except block to prevent crashes. A new endpoint  was added for changing user passwords, including old password verification and new password validation.
+        -   **Tenant Data**: Monthly revenue calculation () was updated to explicitly *exclude* démonstration casernes from total personnel and revenue.
+        -   **Planning/Assignments**: Endpoint paths for , , and  were corrected to include .  was added to assignment creation and conflict verification queries.  and  logic was refined to ensure idempotency (not over-assigning) and fill guards completely up to . Backend date parsing for  (and similar fields) was adjusted from  to  for consistency with ISO format. The  endpoint () was modified to retrieve assignments for the *entire month* when  is active.
+        -   **Availability**: Backend already supports admin/supervisor roles for managing availabilities via .
+-   ****:
+    -   **Importance**: The main React application file, containing routing, global state (user, tenant), and many core components including login, planning, and personnel management.
+    -   **Changes**:
+        -   **Login/Logout**:  function enhanced to clear  completely and force a page refresh (). Login components ( function) updated with  for password fields and preventative cleanup before login attempts to mitigate persistent login issues.
+        -   **Super Admin Dashboard**: Frontend validation for tenant creation was relaxed, making , , and  optional.
+        -   **User Profile**: The password change functionality () was replaced from a demo stub to an actual API call to the new backend endpoint .
+        -   **Personnel Management**:
+            -   The Mes disponibilités module visibility logic was updated to display for *any* part-time user (), regardless of their  (admin, supervisor, employee).
+            -   New UI/logic added for admin/supervisor to manage other personnel's availabilities, including a modal with add/modify/delete functionality.
+            -   Implemented recurrence options (weekly, bi-weekly, monthly with end dates) in the availability management form and integrated logic into  to generate multiple recurring entries.
+        -   **Planning Module**: Date creation in monthly view adjusted to use  to prevent timezone-related date offsets. Monthly view rendering updated to use UTC date methods (, ). Month title generation in the monthly planning view was corrected to display the accurate month.
+        -   **Remplacements Module**: Tooltips/explanations were added for the Recherche auto, ✅, and ❌ buttons to clarify their purpose.
+-   ****:
+    -   **Importance**: Frontend component for Super-Admin functionalities, including tenant listing, creation, and statistics display.
+    -   **Changes**: Relaxed client-side validation for tenant creation (making contact fields optional) as mentioned in  changes. UI elements for tenant creation, modification and deletion (with pre-deletion stats) have been enhanced.
+-   ** & **:
+    -   **Importance**: PWA and main HTML files.
+    -   **Changes**: Updated icon meta tags and / for PWA deep linking.
+-   ****:
+    -   **Importance**: Vercel configuration for frontend routing.
+    -   **Changes**: Created to handle SPA routing for multi-tenant setup.
 </code_architecture>
 
 <pending_tasks>
-- Confirm the permanent deletion of the démonstration caserne.
-- Validate the correct display of updated statistics (total active/inactive casernes, total personnel, monthly revenue) on the Super Admin dashboard.
+-   Implement comprehensive Indisponibilités (unavailabilities) generation within the Mes disponibilités module. This involves:
+    -   Backend logic to generate unavailabilities based on specific Quebec firefighter schedules (Montreal 7/24 and Quebec 10/14 complex 28-day cycle) for selected teams and years.
+    -   Frontend UI for selecting schedule type, team, year, and triggering generation.
+    -   Allowing manual modification/deletion of generated unavailabilities.
+    -   Implementing confirmation logic before overwriting generated schedules while preserving manual entries.
+    -   Storing and displaying the  (source) of each unavailability.
+-   Address clarifying questions regarding the implementation of the unavailability feature.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer had just implemented the calculation and display of monthly revenue on the Super Admin dashboard, and had also previously implemented the permanent deletion feature for tenants. The user reported that the démonstration caserne (which was supposedly deleted) was still present in the system, implying the deletion was not effective. Additionally, the user requested validation for the new statistics display, specifically the monthly revenue calculation. The AI engineer has received three screenshots from the user (, ,  from Chat Message 742) and is currently in the process of analyzing them to understand why the démonstration caserne is still visible and to confirm the correct display of the newly implemented statistics.
+Immediately before this summary request, the AI engineer was engaged in a detailed planning phase for a significant new feature: implementing Indisponibilités (unavailabilities) for all part-time personnel. This feature aims to allow users to generate unavailabilities based on two specific Quebec firefighter schedules: Montreal 7/24 and Quebec 10/14 (a complex 28-day cycle), supporting four teams (Red, Yellow, Blue, Green). Users should also be able to create random unavailabilities and modify/delete any entries, with manual modifications preserved even when re-generating schedules.
+
+The trajectory concluded with the AI engineer posing several clarifying questions to the user to finalize the implementation plan. These questions focused on:
+1.  **Generation Approach**: Confirming if a configuration-by-selection method (Option B) for generating schedules is preferred over PDF parsing.
+2.  **Quebec Schedule**: How the Jour 1 for the 28-day Quebec cycle should be defined by the user (selecting a specific date vs. auto-calculation).
+3.  **Shift Hours**: Confirming the exact start/end times for Day, Night, and 24h shifts (e.g., Day: 07:00-17:00, Night: 19:00-09:00, 24h: 07:00-07:00).
+4.  **Implementation Order**: Whether to implement Montreal first, then Quebec, then personalized, or all at once.
+5.  **Year Generation**: If the generation should cover the full year (January 1st to December 31st, 2025) or just the remainder of the current year (October 10th to December 31st, 2025).
+
+This planning is critical before proceeding with any code changes, as the feature is complex and requires precise alignment with user expectations regarding firefighter schedules. All previous issues, including login, assignment, planning view, and administration functionalities, were addressed, but deployment synchronization and cache invalidation issues persist as an overarching operational challenge for the user.
 </current_work>
 
 <optional_next_step>
-Analyze the provided screenshots to confirm the démonstration caserne's deletion and the accurate display of updated Super Admin dashboard statistics.
+I will await the user's answers to the clarifying questions regarding the Indisponibilités feature before proceeding with the backend and frontend implementation.
 </optional_next_step>
