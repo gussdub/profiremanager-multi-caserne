@@ -8171,6 +8171,7 @@ const Rapports = () => {
 // Main Application Layout
 const AppLayout = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
 
