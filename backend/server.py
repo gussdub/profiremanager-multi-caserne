@@ -642,6 +642,7 @@ class DisponibiliteReinitialiser(BaseModel):
     user_id: str
     periode: str  # "semaine", "mois", "annee"
     mode: str  # "tout" ou "generees_seulement"
+    type_entree: str = "les_deux"  # "disponibilites", "indisponibilites", "les_deux"
 
 class Statistiques(BaseModel):
     personnel_actif: int
