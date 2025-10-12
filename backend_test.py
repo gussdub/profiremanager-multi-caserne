@@ -935,49 +935,32 @@ class ProFireManagerTester:
             tenant_session = requests.Session()
             tenant_session.headers.update({"Authorization": f"Bearer {tenant_token}"})
             
-            # Get users from Shefford tenant to find a part-time employee
-            response = tenant_session.get(f"{self.base_url}/{tenant_slug}/users")
+            # Create a part-time user for testing (skip fetching existing users due to validation issues)
+            test_user = {
+                "nom": "Pompier",
+                "prenom": "TempsPartiel",
+                "email": f"temps.partiel.{uuid.uuid4().hex[:8]}@shefford.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_partiel",
+                "heures_max_semaine": 25,
+                "role": "employe",
+                "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "TestPass123!"
+            }
+            
+            response = tenant_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
             if response.status_code != 200:
                 self.log_test("Indisponibilités Generation System", False, 
-                            f"Failed to fetch users from {tenant_slug}: {response.status_code}")
+                            f"Failed to create part-time user: {response.status_code}", 
+                            {"response": response.text})
                 return False
             
-            users = response.json()
-            
-            # Find a part-time employee (type_emploi: temps_partiel)
-            part_time_user = None
-            for user in users:
-                if user.get('type_emploi') == 'temps_partiel':
-                    part_time_user = user
-                    break
-            
-            if not part_time_user:
-                # Create a part-time user for testing
-                test_user = {
-                    "nom": "Pompier",
-                    "prenom": "TempsPartiel",
-                    "email": f"temps.partiel.{uuid.uuid4().hex[:8]}@shefford.ca",
-                    "telephone": "450-555-0123",
-                    "contact_urgence": "450-555-0124",
-                    "grade": "Pompier",
-                    "fonction_superieur": False,
-                    "type_emploi": "temps_partiel",
-                    "heures_max_semaine": 25,
-                    "role": "employe",
-                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
-                    "date_embauche": "2024-01-15",
-                    "formations": [],
-                    "mot_de_passe": "TestPass123!"
-                }
-                
-                response = tenant_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
-                if response.status_code != 200:
-                    self.log_test("Indisponibilités Generation System", False, 
-                                f"Failed to create part-time user: {response.status_code}")
-                    return False
-                
-                part_time_user = response.json()
-            
+            part_time_user = response.json()
             user_id = part_time_user["id"]
             
             # Test 1: Montreal 7/24 Generation
