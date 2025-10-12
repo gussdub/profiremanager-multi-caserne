@@ -6032,7 +6032,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     try {
       // CORRECTION : Combiner avec les disponibilités existantes au lieu de remplacer
       const existingDispos = userDisponibilites.map(d => ({
-        user_id: user.id,
+        user_id: targetUser.id,
         date: d.date,
         type_garde_id: d.type_garde_id || null,
         heure_debut: d.heure_debut,
@@ -6041,7 +6041,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       }));
 
       const nouvelles_disponibilites = selectedDates.map(date => ({
-        user_id: user.id,
+        user_id: targetUser.id,
         date: date.toISOString().split('T')[0],
         type_garde_id: availabilityConfig.type_garde_id || null,
         heure_debut: availabilityConfig.heure_debut,
@@ -6052,7 +6052,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       // Combiner existantes + nouvelles
       const allDisponibilites = [...existingDispos, ...nouvelles_disponibilites];
 
-      await apiPut(tenantSlug, `/disponibilites/${user.id}`, allDisponibilites);
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
       
       toast({
         title: "Disponibilités ajoutées",
@@ -6064,7 +6064,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setSelectedDates([]);
       
       // Reload
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
     } catch (error) {
       toast({
