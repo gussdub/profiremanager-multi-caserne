@@ -2403,7 +2403,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       )}
 
       {/* Modal de gestion des disponibilités - Admin/Superviseur */}
-      {showManageDisponibilitesModal && selectedUser && (
+      {/* Modal supprimé - On utilise maintenant le module complet Mes Disponibilités */}
+      
+      {false && showManageDisponibilitesModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowManageDisponibilitesModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="manage-disponibilites-modal">
             <div className="modal-header">
