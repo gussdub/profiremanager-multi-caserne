@@ -6080,7 +6080,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     
     try {
       const response = await apiPost(tenantSlug, '/disponibilites/generer', {
-        user_id: user.id,
+        user_id: targetUser.id,
         horaire_type: generationConfig.horaire_type,
         equipe: generationConfig.equipe,
         annee: generationConfig.annee,
@@ -6097,7 +6097,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setShowGenerationModal(false);
       
       // Recharger les disponibilités
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
       
     } catch (error) {
