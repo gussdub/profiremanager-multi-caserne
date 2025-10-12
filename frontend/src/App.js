@@ -6168,13 +6168,22 @@ const MesDisponibilites = () => {
           <h1 data-testid="disponibilites-title">Mes disponibilités</h1>
           <p>Gérez vos créneaux de disponibilité pour les différents types de garde</p>
         </div>
-        <Button 
-          variant="default" 
-          onClick={() => setShowCalendarModal(true)}
-          data-testid="configure-availability-btn"
-        >
-          📅 Configurer mes disponibilités
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowGenerationModal(true)}
+            data-testid="generate-indisponibilites-btn"
+          >
+            🚒 Générer selon horaire
+          </Button>
+          <Button 
+            variant="default" 
+            onClick={() => setShowCalendarModal(true)}
+            data-testid="configure-availability-btn"
+          >
+            📅 Configurer manuellement
+          </Button>
+        </div>
       </div>
 
       {/* Résumé des disponibilités - Design amélioré */}
