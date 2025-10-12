@@ -3130,8 +3130,9 @@ const Planning = () => {
   const weekDaysEn = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   
   const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(currentWeek);
-    date.setDate(date.getDate() + i);
+    const [year, month, day] = currentWeek.split('-').map(Number);
+    // Utiliser Date.UTC pour éviter les problèmes de fuseau horaire
+    const date = new Date(Date.UTC(year, month - 1, day + i));
     return date;
   });
 
