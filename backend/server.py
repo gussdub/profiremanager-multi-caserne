@@ -2570,7 +2570,8 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
     - Bleu : jours 15-21
     - Vert : jours 22-28
     
-    On génère les INDISPONIBILITÉS pour les jours où l'équipe NE travaille PAS
+    On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
+    (car ils ne sont pas disponibles pour les gardes de pompiers ces jours-là)
     """
     equipes_pattern = {
         "Rouge": list(range(1, 8)),    # jours 1-7
