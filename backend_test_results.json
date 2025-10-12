@@ -3,49 +3,49 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-12T14:16:47.009648",
+    "timestamp": "2025-10-12T14:17:13.755402",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-12T14:16:47.018656",
+    "timestamp": "2025-10-12T14:17:13.768146",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-12T14:16:47.055427",
+    "timestamp": "2025-10-12T14:17:13.806193",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 4 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-12T14:16:47.092178",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 5 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-12T14:17:13.841940",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 4, revenus_mensuels: 48",
-    "timestamp": "2025-10-12T14:16:47.130364",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 5, revenus_mensuels: 60",
+    "timestamp": "2025-10-12T14:17:13.877439",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": false,
-    "message": "Failed to fetch users from shefford: 500",
-    "timestamp": "2025-10-12T14:16:47.532589",
+    "message": "Invalid horaire_type should return 400, got: 500",
+    "timestamp": "2025-10-12T14:17:14.376424",
     "details": {}
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-12T14:16:47.540905",
+    "timestamp": "2025-10-12T14:17:14.385338",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -55,7 +55,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-12T14:16:47.547125",
+    "timestamp": "2025-10-12T14:17:14.393351",
     "details": {}
   }
 ]
