@@ -1069,7 +1069,7 @@ class ProFireManagerTester:
                 return False
             
             # Test 3: Verify generated disponibilites in database
-            response = super_admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+            response = tenant_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code != 200:
                 self.log_test("Indisponibilités Generation System", False, 
                             f"Failed to fetch generated disponibilites: {response.status_code}")
