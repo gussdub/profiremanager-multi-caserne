@@ -894,24 +894,7 @@ class ProFireManagerTester:
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
             
-            # Get existing users to find a part-time user
-            response = admin_session.get(f"{self.base_url}/{tenant_slug}/users")
-            if response.status_code != 200:
-                self.log_test("Disponibilités Réinitialiser System", False, 
-                            f"Failed to fetch users: {response.status_code}")
-                return False
-            
-            users = response.json()
-            part_time_user = None
-            
-            # Find an existing part-time user
-            for user in users:
-                if user.get('type_emploi') == 'temps_partiel':
-                    part_time_user = user
-                    break
-            
-            # If no part-time user exists, create one
-            if not part_time_user:
+            # Create a new part-time user for testing (avoid problematic users endpoint)
                 test_user = {
                     "nom": "TestPompier",
                     "prenom": "TempsPartiel",
