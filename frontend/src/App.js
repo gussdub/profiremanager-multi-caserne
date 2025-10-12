@@ -6150,7 +6150,7 @@ const MesDisponibilites = () => {
       
       toast({
         title: "Réinitialisation réussie",
-        description: `${modeLabel} de ${periodeLabel} ont été supprimées (${response.nombre_supprimees} entrée(s))`,
+        description: `${modeLabel} ${typeLabel} de ${periodeLabel} ont été supprimées (${response.nombre_supprimees} entrée(s))`,
         variant: "success"
       });
       
