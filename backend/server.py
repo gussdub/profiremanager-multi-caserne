@@ -2636,6 +2636,9 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
     - Bleu : Décalé de 14 jours
     - Vert : Décalé de 21 jours
     
+    On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
+    (car ils ne sont pas disponibles pour les gardes de pompiers ces jours-là)
+    
     Horaires :
     - Jour : 07:00-17:00
     - Nuit : 19:00-09:00
