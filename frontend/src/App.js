@@ -6765,7 +6765,7 @@ const MesDisponibilites = () => {
                     <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
                   </ul>
                   <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
-                    💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe NE travaille PAS selon le cycle sélectionné.
+                    💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe <strong>TRAVAILLE</strong> à son emploi principal selon le cycle sélectionné (vous ne serez donc pas disponible pour les gardes de pompiers ces jours-là).
                   </p>
                 </div>
               </div>
