@@ -2695,6 +2695,134 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     
     return {"message": "Disponibilité supprimée avec succès"}
 
+# ==================== PUSH NOTIFICATIONS ROUTES ====================
+
+@api_router.post("/{tenant_slug}/notifications/register-device")
+async def register_device_token(
+    tenant_slug: str,
+    device_data: DeviceTokenRegister,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Enregistre un device token pour les notifications push
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur enregistre son propre device
+    if current_user.id != device_data.user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        # Vérifier si un token existe déjà pour cet utilisateur et cette plateforme
+        existing = await db.device_tokens.find_one({
+            "user_id": device_data.user_id,
+            "platform": device_data.platform
+        })
+        
+        if existing:
+            # Mettre à jour le token existant
+            await db.device_tokens.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {
+                    "device_token": device_data.device_token,
+                    "updated_at": datetime.now(timezone.utc)
+                }}
+            )
+            message = "Device token mis à jour"
+        else:
+            # Créer un nouveau token
+            new_token = DeviceToken(
+                user_id=device_data.user_id,
+                device_token=device_data.device_token,
+                platform=device_data.platform
+            )
+            await db.device_tokens.insert_one(new_token.dict())
+            message = "Device token enregistré"
+        
+        return {"message": message, "platform": device_data.platform}
+    
+    except Exception as e:
+        print(f"Erreur lors de l'enregistrement du device token: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+async def send_push_notification_to_users(user_ids: List[str], title: str, body: str, data: Optional[dict] = None):
+    """
+    Helper function pour envoyer des notifications push à plusieurs utilisateurs
+    """
+    if not firebase_admin._apps:
+        print("⚠️ Firebase not initialized, skipping push notification")
+        return
+    
+    try:
+        # Récupérer tous les device tokens pour ces utilisateurs
+        tokens_cursor = db.device_tokens.find({"user_id": {"$in": user_ids}})
+        tokens_list = await tokens_cursor.to_list(length=None)
+        
+        if not tokens_list:
+            print(f"No device tokens found for users: {user_ids}")
+            return
+        
+        device_tokens = [token["device_token"] for token in tokens_list]
+        
+        # Créer le message
+        message = messaging.MulticastMessage(
+            notification=messaging.Notification(
+                title=title,
+                body=body
+            ),
+            data=data or {},
+            tokens=device_tokens
+        )
+        
+        # Envoyer
+        response = messaging.send_multicast(message)
+        print(f"✅ Push notification sent: {response.success_count} success, {response.failure_count} failures")
+        
+        # Supprimer les tokens invalides
+        if response.failure_count > 0:
+            failed_tokens = [device_tokens[idx] for idx, resp in enumerate(response.responses) if not resp.success]
+            await db.device_tokens.delete_many({"device_token": {"$in": failed_tokens}})
+            print(f"Removed {len(failed_tokens)} invalid tokens")
+        
+        return response
+    
+    except Exception as e:
+        print(f"Error sending push notification: {str(e)}")
+        return None
+
+@api_router.post("/{tenant_slug}/notifications/send")
+async def send_push_notification(
+    tenant_slug: str,
+    notification_data: PushNotificationSend,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Envoie une notification push à des utilisateurs spécifiques (Admin/Superviseur uniquement)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Seuls les admins et superviseurs peuvent envoyer des notifications
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        response = await send_push_notification_to_users(
+            user_ids=notification_data.user_ids,
+            title=notification_data.title,
+            body=notification_data.body,
+            data=notification_data.data
+        )
+        
+        return {
+            "message": "Notification envoyée",
+            "success_count": response.success_count if response else 0,
+            "failure_count": response.failure_count if response else 0
+        }
+    
+    except Exception as e:
+        print(f"Erreur lors de l'envoi de la notification: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
 # ==================== FONCTIONS HELPER POUR GÉNÉRATION D'INDISPONIBILITÉS ====================
 
 def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, annee: int) -> List[Dict]:
