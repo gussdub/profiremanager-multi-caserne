@@ -7020,6 +7020,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
               {/* Contenu de l'onglet Saisie manuelle */}
               {indispoTab === 'manuelle' && (
+                <div>
                 <div className="manual-indispo-config">
                   {/* Sélection des dates */}
                   <div className="config-section">
