@@ -6680,18 +6680,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                           })()}
                         </span>
                       </div>
-                      <div className="status-selection-simple">
-                        <Label>Statut de disponibilité</Label>
-                        <select 
-                          value={availabilityConfig.statut}
-                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, statut: e.target.value})}
-                          className="form-select"
-                          data-testid="availability-status-select"
-                        >
-                          <option value="disponible">✅ Disponible</option>
-                          <option value="preference">⚡ Préférence</option>
-                        </select>
-                      </div>
+                      <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                        ℹ️ Les disponibilités seront automatiquement enregistrées avec ces horaires
+                      </small>
                     </div>
                   </div>
                 )}
