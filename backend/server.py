@@ -130,7 +130,24 @@ async def initialize_multi_tenant():
 async def startup_event():
     """Événement de démarrage de l'application"""
     await initialize_multi_tenant()
+    
+    # Démarrer le job périodique pour vérifier les timeouts de remplacement
+    asyncio.create_task(job_verifier_timeouts_remplacements())
+    
     print("🚀 ProFireManager API Multi-Tenant démarré")
+
+async def job_verifier_timeouts_remplacements():
+    """
+    Job périodique qui vérifie les timeouts des demandes de remplacement
+    S'exécute toutes les minutes
+    """
+    while True:
+        try:
+            await asyncio.sleep(60)  # Attendre 60 secondes
+            await verifier_et_traiter_timeouts()
+        except Exception as e:
+            logging.error(f"❌ Erreur dans le job de vérification des timeouts: {e}", exc_info=True)
+            await asyncio.sleep(60)  # Attendre avant de réessayer même en cas d'erreur
 
 # JWT and Password configuration
 SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
