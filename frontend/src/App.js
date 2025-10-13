@@ -7134,17 +7134,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   </Button>
                   <Button 
                     variant="default" 
-                    onClick={() => {
-                      // TODO: Implémenter la sauvegarde manuelle
-                      toast({
-                        title: "À venir",
-                        description: "La saisie manuelle d'indisponibilités sera implémentée prochainement",
-                        variant: "default"
-                      });
-                    }}
+                    onClick={handleSaveManualIndisponibilites}
                     disabled={manualIndispoConfig.dates.length === 0}
                   >
-                    ✅ Enregistrer les indisponibilités
+                    ✅ Enregistrer {manualIndispoConfig.dates.length > 0 && `(${manualIndispoConfig.dates.length} jour${manualIndispoConfig.dates.length > 1 ? 's' : ''})`}
                   </Button>
                 </div>
               )}
