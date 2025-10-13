@@ -6807,6 +6807,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
               {/* Contenu de l'onglet Génération */}
               {indispoTab === 'generation' && (
+              <div>
               <div className="generation-config">
                 {/* Sélection du type d'horaire */}
                 <div className="config-section">
