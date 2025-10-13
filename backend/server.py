@@ -2041,46 +2041,75 @@ async def get_current_tenant(tenant_slug: str) -> Tenant:
 
 @api_router.post("/{tenant_slug}/auth/login")
 async def tenant_login(tenant_slug: str, user_login: UserLogin):
-    """Login pour un tenant spécifique"""
-    # Vérifier que le tenant existe et est actif
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Chercher l'utilisateur dans ce tenant
-    user_data = await db.users.find_one({
-        "email": user_login.email,
-        "tenant_id": tenant.id
-    })
-    
-    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    user = User(**user_data)
-    
-    # Inclure tenant_id dans le token
-    access_token = create_access_token(data={
-        "sub": user.id,
-        "tenant_id": tenant.id,
-        "tenant_slug": tenant.slug
-    })
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "tenant": {
-            "id": tenant.id,
-            "slug": tenant.slug,
-            "nom": tenant.nom
-        },
-        "user": {
-            "id": user.id,
-            "nom": user.nom,
-            "prenom": user.prenom,
-            "email": user.email,
-            "role": user.role,
-            "grade": user.grade,
-            "type_emploi": user.type_emploi
+    """Login pour un tenant spécifique avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion pour {user_login.email} sur tenant {tenant_slug}")
+        
+        # Vérifier que le tenant existe et est actif
+        tenant = await get_tenant_from_slug(tenant_slug)
+        logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
+        
+        # Chercher l'utilisateur dans ce tenant
+        user_data = await db.users.find_one({
+            "email": user_login.email,
+            "tenant_id": tenant.id
+        })
+        
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé: {user_login.email} dans tenant {tenant_slug}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Utilisateur trouvé: {user_data.get('nom')} {user_data.get('prenom')} (id: {user_data.get('id')})")
+        
+        current_hash = user_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        # Vérifier le mot de passe
+        if not verify_password(user_login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect pour {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès pour {user_login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
+        
+        user = User(**user_data)
+        
+        # Inclure tenant_id dans le token
+        access_token = create_access_token(data={
+            "sub": user.id,
+            "tenant_id": tenant.id,
+            "tenant_slug": tenant.slug
+        })
+        
+        logging.info(f"✅ Token JWT créé pour {user_login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "tenant": {
+                "id": tenant.id,
+                "slug": tenant.slug,
+                "nom": tenant.nom
+            },
+            "user": {
+                "id": user.id,
+                "nom": user.nom,
+                "prenom": user.prenom,
+                "email": user.email,
+                "role": user.role,
+                "grade": user.grade,
+                "type_emploi": user.type_emploi
+            }
         }
-    }
+    except HTTPException:
+        # Re-lever les HTTPExceptions sans les logger à nouveau
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login pour {user_login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 # ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
