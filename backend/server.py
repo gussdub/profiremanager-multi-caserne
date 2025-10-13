@@ -611,6 +611,7 @@ class TypeGarde(BaseModel):
     couleur: str
     jours_application: List[str] = []  # monday, tuesday, etc.
     officier_obligatoire: bool = False
+    competences_requises: List[str] = []  # Liste des formations/compétences requises pour cette garde
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TypeGardeCreate(BaseModel):
