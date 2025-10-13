@@ -143,6 +143,11 @@ const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Désenregistrer les notifications push
+    PushNotificationService.unregister().catch(err => 
+      console.error('Error unregistering push notifications:', err)
+    );
+    
     // Nettoyer COMPLÈTEMENT le localStorage et sessionStorage
     localStorage.clear();
     sessionStorage.clear();
