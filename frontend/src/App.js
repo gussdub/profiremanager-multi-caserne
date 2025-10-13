@@ -7142,6 +7142,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     ✅ Enregistrer {manualIndispoConfig.dates.length > 0 && `(${manualIndispoConfig.dates.length} jour${manualIndispoConfig.dates.length > 1 ? 's' : ''})`}
                   </Button>
                 </div>
+                </div>
               )}
             </div>
           </div>
