@@ -6606,7 +6606,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         <div className="modal-overlay" onClick={() => setShowCalendarModal(false)}>
           <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="availability-config-modal">
             <div className="modal-header">
-              <h3>📅 Configurer mes disponibilités</h3>
+              <h3>✅ Gérer disponibilités</h3>
               <Button variant="ghost" onClick={() => setShowCalendarModal(false)}>✕</Button>
             </div>
             <div className="modal-body">
