@@ -6659,19 +6659,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                           data-testid="availability-end-time"
                         />
                       </div>
-                      <div className="status-field">
-                        <Label>Statut</Label>
-                        <select 
-                          value={availabilityConfig.statut}
-                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, statut: e.target.value})}
-                          className="form-select"
-                          data-testid="availability-status-select"
-                        >
-                          <option value="disponible">✅ Disponible</option>
-                          <option value="preference">⚡ Préférence</option>
-                        </select>
-                      </div>
                     </div>
+                    <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                      ℹ️ Les entrées créées ici seront automatiquement marquées comme "Disponible"
+                    </small>
                   </div>
                 )}
 
