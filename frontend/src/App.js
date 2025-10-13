@@ -5879,6 +5879,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     conserver_manuelles: true
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [indispoTab, setIndispoTab] = useState('generation'); // 'generation' ou 'manuelle'
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
     periode: 'mois',
