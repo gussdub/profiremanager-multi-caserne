@@ -623,6 +623,7 @@ class TypeGardeCreate(BaseModel):
     couleur: str
     jours_application: List[str] = []
     officier_obligatoire: bool = False
+    competences_requises: List[str] = []
 
 class Planning(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
