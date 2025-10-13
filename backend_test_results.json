@@ -3,56 +3,65 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-12T21:10:14.932732",
+    "timestamp": "2025-10-13T21:00:22.057504",
+    "details": {}
+  },
+  {
+    "test": "Bcrypt Authentication System",
+    "success": true,
+    "message": "\u2705 All bcrypt authentication tests passed - SHA256 migration working, new users use bcrypt, password changes use bcrypt, logging functional",
+    "timestamp": "2025-10-13T21:00:25.209266",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-12T21:10:14.943331",
+    "timestamp": "2025-10-13T21:00:25.445398",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-12T21:10:14.982577",
+    "timestamp": "2025-10-13T21:00:25.485915",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 20 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-12T21:10:15.026358",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 23 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-13T21:00:25.522062",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 20, revenus_mensuels: 240",
-    "timestamp": "2025-10-12T21:10:15.064881",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 23, revenus_mensuels: 276",
+    "timestamp": "2025-10-13T21:00:25.559113",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": true,
     "message": "\u2705 Indisponibilit\u00e9s Generation System fully functional - Montreal: 91 entries, Quebec: 170 entries, All teams tested, Error handling working",
-    "timestamp": "2025-10-12T21:10:15.573074",
+    "timestamp": "2025-10-13T21:00:26.516106",
     "details": {}
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser Corrected System",
-    "success": true,
-    "message": "\u2705 CORRECTED R\u00e9initialiser functionality fully working - All tests passed: 1) Manual entries preserved when mode='generees_seulement' \u2705, 2) Auto-generated entries deleted \u2705, 3) type_entree filter working correctly (disponibilit\u00e9s deleted, indisponibilit\u00e9s preserved) \u2705, 4) New type_entree field supported \u2705",
-    "timestamp": "2025-10-12T21:10:16.032451",
-    "details": {}
+    "success": false,
+    "message": "Failed to login as Shefford admin: 401",
+    "timestamp": "2025-10-13T21:00:27.043624",
+    "details": {
+      "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
+    }
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-12T21:10:16.043947",
+    "timestamp": "2025-10-13T21:00:27.050814",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -62,7 +71,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-12T21:10:16.051941",
+    "timestamp": "2025-10-13T21:00:27.057502",
     "details": {}
   }
 ]
