@@ -6332,11 +6332,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     }
   };
 
-  if (user?.type_emploi !== 'temps_partiel') {
+  // Vérifier le type d'emploi de la personne dont on gère les disponibilités
+  if (targetUser?.type_emploi !== 'temps_partiel') {
     return (
       <div className="access-denied">
         <h1>Module réservé aux employés temps partiel</h1>
         <p>Ce module permet aux employés à temps partiel de gérer leurs disponibilités.</p>
+        {managingUser && (
+          <p style={{ marginTop: '10px', color: '#dc2626' }}>
+            ⚠️ <strong>{targetUser?.prenom} {targetUser?.nom}</strong> est un employé <strong>temps plein</strong> et ne peut pas gérer de disponibilités.
+          </p>
+        )}
       </div>
     );
   }
