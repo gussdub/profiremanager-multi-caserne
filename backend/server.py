@@ -1829,6 +1829,516 @@ async def get_assignations(tenant_slug: str, semaine_debut: str, current_user: U
     return [Assignation(**assignation) for assignation in cleaned_assignations]
 
 # Remplacements routes
+
+# ==================== SYSTÈME AUTOMATISÉ DE REMPLACEMENT ====================
+
+async def calculer_priorite_demande(date_garde: str) -> str:
+    """
+    Calcule la priorité d'une demande de remplacement
+    - urgent: Si la garde est dans 24h ou moins
+    - normal: Si la garde est dans plus de 24h
+    """
+    try:
+        date_garde_obj = datetime.strptime(date_garde, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        maintenant = datetime.now(timezone.utc)
+        delta = date_garde_obj - maintenant
+        
+        if delta.total_seconds() <= 86400:  # 24 heures en secondes
+            return "urgent"
+        return "normal"
+    except Exception as e:
+        logging.error(f"Erreur calcul priorité: {e}")
+        return "normal"
+
+async def trouver_remplacants_potentiels(
+    tenant_id: str,
+    type_garde_id: str,
+    date_garde: str,
+    demandeur_id: str,
+    exclus_ids: List[str] = []
+) -> List[Dict[str, Any]]:
+    """
+    Trouve les remplaçants potentiels selon les critères:
+    1. Compétences requises pour le type de garde
+    2. Grade équivalent ou supérieur (lieutenant peut remplacer pompier)
+    3. Pas d'indisponibilité pour cette date
+    4. Disponibilité déclarée (bonus de tri)
+    5. Ancienneté (date_embauche la plus ancienne)
+    
+    Retourne une liste triée de remplaçants par ordre de priorité
+    """
+    try:
+        # Récupérer le type de garde pour connaître les compétences requises
+        type_garde_data = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant_id})
+        if not type_garde_data:
+            logging.error(f"Type de garde non trouvé: {type_garde_id}")
+            return []
+        
+        competences_requises = type_garde_data.get("competences_requises", [])
+        officier_obligatoire = type_garde_data.get("officier_obligatoire", False)
+        
+        # Récupérer tous les utilisateurs du tenant (sauf demandeur et déjà exclus)
+        exclus_ids_set = set(exclus_ids + [demandeur_id])
+        
+        users_cursor = db.users.find({
+            "tenant_id": tenant_id,
+            "id": {"$nin": list(exclus_ids_set)},
+            "type_emploi": "temps_partiel"  # Seulement temps partiel pour remplacements
+        })
+        users_list = await users_cursor.to_list(length=None)
+        
+        remplacants_potentiels = []
+        
+        for user in users_list:
+            # 1. Vérifier les compétences/formations
+            user_formations = set(user.get("formations", []))
+            if competences_requises and not set(competences_requises).issubset(user_formations):
+                continue  # Ne possède pas toutes les compétences requises
+            
+            # 2. Vérifier le grade
+            user_grade = user.get("grade", "pompier")
+            grades_hierarchie = ["pompier", "lieutenant", "capitaine", "chef"]
+            
+            if officier_obligatoire:
+                # Pour officier obligatoire, il faut au moins lieutenant
+                if user_grade not in ["lieutenant", "capitaine", "chef"]:
+                    continue
+            
+            # 3. Vérifier qu'il n'a PAS d'indisponibilité pour cette date
+            indispo = await db.disponibilites.find_one({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": date_garde,
+                "statut": "indisponible"
+            })
+            
+            if indispo:
+                continue  # A une indisponibilité, on passe
+            
+            # 4. Vérifier s'il a une disponibilité déclarée (bonus)
+            dispo = await db.disponibilites.find_one({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": date_garde,
+                "statut": "disponible"
+            })
+            
+            has_disponibilite = dispo is not None
+            
+            # 5. Ancienneté (date_embauche)
+            date_embauche = user.get("date_embauche", "2999-12-31")  # Si pas de date, le plus récent
+            
+            remplacants_potentiels.append({
+                "user_id": user["id"],
+                "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "email": user.get("email", ""),
+                "grade": user_grade,
+                "date_embauche": date_embauche,
+                "has_disponibilite": has_disponibilite,
+                "formations": list(user_formations)
+            })
+        
+        # Trier par: 1. Disponibilité déclarée, 2. Ancienneté (date la plus ancienne)
+        remplacants_potentiels.sort(
+            key=lambda x: (
+                not x["has_disponibilite"],  # False (a dispo) avant True (pas de dispo)
+                x["date_embauche"]  # Date la plus ancienne en premier
+            )
+        )
+        
+        logging.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels pour demande {type_garde_id}")
+        return remplacants_potentiels
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la recherche de remplaçants: {e}", exc_info=True)
+        return []
+
+async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
+    """
+    Lance la recherche de remplaçant pour une demande
+    Contacte le(s) premier(s) remplaçant(s) selon le mode de notification
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            logging.error(f"Demande de remplacement non trouvée: {demande_id}")
+            return
+        
+        # Récupérer les paramètres de remplacement
+        parametres_data = await db.parametres.find_one({"tenant_id": tenant_id})
+        if not parametres_data:
+            # Paramètres par défaut
+            mode_notification = "un_par_un"
+            delai_attente_heures = 2
+            nombre_simultane = 1
+        else:
+            mode_notification = parametres_data.get("mode_notification", "un_par_un")
+            delai_attente_heures = parametres_data.get("delai_attente_heures", 2)
+            nombre_simultane = parametres_data.get("nombre_simultane", 3)
+        
+        # Trouver les remplaçants potentiels (excluant ceux déjà contactés)
+        exclus_ids = [t.get("user_id") for t in demande_data.get("tentatives_historique", [])]
+        
+        remplacants = await trouver_remplacants_potentiels(
+            tenant_id=tenant_id,
+            type_garde_id=demande_data["type_garde_id"],
+            date_garde=demande_data["date"],
+            demandeur_id=demande_data["demandeur_id"],
+            exclus_ids=exclus_ids
+        )
+        
+        if not remplacants:
+            # Aucun remplaçant trouvé, marquer comme expiree et notifier superviseur
+            logging.warning(f"⚠️ Aucun remplaçant trouvé pour la demande {demande_id}")
+            await db.demandes_remplacement.update_one(
+                {"id": demande_id},
+                {
+                    "$set": {
+                        "statut": "expiree",
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # Notifier superviseurs qu'aucun remplaçant n'a été trouvé
+            superviseurs = await db.users.find({
+                "tenant_id": tenant_id,
+                "role": {"$in": ["superviseur", "admin"]}
+            }).to_list(100)
+            
+            superviseur_ids = [s["id"] for s in superviseurs]
+            if superviseur_ids:
+                demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+                await send_push_notification_to_users(
+                    user_ids=superviseur_ids,
+                    title="❌ Aucun remplaçant trouvé",
+                    body=f"Aucun remplaçant disponible pour {demandeur.get('prenom', '')} {demandeur.get('nom', '')} le {demande_data['date']}",
+                    data={
+                        "type": "remplacement_expiree",
+                        "demande_id": demande_id
+                    }
+                )
+            return
+        
+        # Déterminer combien de remplaçants contacter
+        if mode_notification == "multiple":
+            nombre_a_contacter = min(nombre_simultane, len(remplacants))
+        else:  # un_par_un
+            nombre_a_contacter = 1
+        
+        remplacants_a_contacter = remplacants[:nombre_a_contacter]
+        
+        # Contacter les remplaçants
+        remplacant_ids = []
+        maintenant = datetime.now(timezone.utc)
+        
+        for remplacant in remplacants_a_contacter:
+            # Ajouter à l'historique
+            tentative = {
+                "user_id": remplacant["user_id"],
+                "nom_complet": remplacant["nom_complet"],
+                "date_contact": maintenant.isoformat(),
+                "statut": "contacted",
+                "date_reponse": None
+            }
+            
+            await db.demandes_remplacement.update_one(
+                {"id": demande_id},
+                {
+                    "$push": {"tentatives_historique": tentative},
+                    "$addToSet": {"remplacants_contactes_ids": remplacant["user_id"]}
+                }
+            )
+            
+            remplacant_ids.append(remplacant["user_id"])
+            
+            logging.info(f"📤 Contact remplaçant {remplacant['nom_complet']} pour demande {demande_id}")
+        
+        # Calculer la date de prochaine tentative (si timeout sans réponse)
+        date_prochaine = maintenant + timedelta(hours=delai_attente_heures)
+        
+        # Mettre à jour la demande
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "en_cours",
+                    "date_prochaine_tentative": date_prochaine,
+                    "updated_at": maintenant
+                },
+                "$inc": {"nombre_tentatives": 1}
+            }
+        )
+        
+        # Envoyer notifications push aux remplaçants
+        demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+        type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"]})
+        
+        await send_push_notification_to_users(
+            user_ids=remplacant_ids,
+            title="🚨 Demande de remplacement",
+            body=f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')} cherche un remplaçant pour {type_garde.get('nom', 'une garde')} le {demande_data['date']}",
+            data={
+                "type": "remplacement_proposition",
+                "demande_id": demande_id,
+                "lien": "/remplacements"
+            }
+        )
+        
+        logging.info(f"✅ Recherche lancée pour demande {demande_id}: {nombre_a_contacter} remplaçant(s) contacté(s)")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors du lancement de la recherche de remplaçant: {e}", exc_info=True)
+
+async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: str):
+    """
+    Traite l'acceptation d'un remplacement par un remplaçant
+    - Vérifie que le remplaçant est le plus ancien si plusieurs acceptations simultanées
+    - Met à jour le planning (assignations)
+    - Notifie le demandeur et les superviseurs
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande est toujours en cours
+        if demande_data["statut"] != "en_cours":
+            raise HTTPException(status_code=400, detail="Cette demande n'est plus disponible")
+        
+        # Vérifier que le remplaçant a bien été contacté
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à accepter cette demande")
+        
+        # Récupérer le remplaçant
+        remplacant = await db.users.find_one({"id": remplacant_id, "tenant_id": tenant_id})
+        if not remplacant:
+            raise HTTPException(status_code=404, detail="Remplaçant non trouvé")
+        
+        # Mettre à jour la demande
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "accepte",
+                    "remplacant_id": remplacant_id,
+                    "updated_at": maintenant
+                }
+            }
+        )
+        
+        # Mettre à jour l'historique des tentatives
+        await db.demandes_remplacement.update_one(
+            {
+                "id": demande_id,
+                "tentatives_historique.user_id": remplacant_id
+            },
+            {
+                "$set": {
+                    "tentatives_historique.$.statut": "accepted",
+                    "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                }
+            }
+        )
+        
+        # Mettre à jour le planning (assignations)
+        # Trouver l'assignation du demandeur pour cette date et ce type de garde
+        assignation = await db.assignations.find_one({
+            "tenant_id": tenant_id,
+            "user_id": demande_data["demandeur_id"],
+            "date": demande_data["date"],
+            "type_garde_id": demande_data["type_garde_id"]
+        })
+        
+        if assignation:
+            # Remplacer l'assignation par le remplaçant
+            await db.assignations.update_one(
+                {"id": assignation["id"]},
+                {
+                    "$set": {
+                        "user_id": remplacant_id,
+                        "est_remplacement": True,
+                        "demandeur_original_id": demande_data["demandeur_id"],
+                        "updated_at": maintenant
+                    }
+                }
+            )
+            logging.info(f"✅ Planning mis à jour: {remplacant['prenom']} {remplacant['nom']} remplace assignation {assignation['id']}")
+        else:
+            logging.warning(f"⚠️ Aucune assignation trouvée pour le demandeur {demande_data['demandeur_id']} le {demande_data['date']}")
+        
+        # Notifier le demandeur
+        demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+        await send_push_notification_to_users(
+            user_ids=[demande_data["demandeur_id"]],
+            title="✅ Remplacement trouvé!",
+            body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}",
+            data={
+                "type": "remplacement_accepte",
+                "demande_id": demande_id,
+                "remplacant_id": remplacant_id
+            }
+        )
+        
+        # Notifier les superviseurs
+        superviseurs = await db.users.find({
+            "tenant_id": tenant_id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
+        
+        superviseur_ids = [s["id"] for s in superviseurs]
+        if superviseur_ids:
+            await send_push_notification_to_users(
+                user_ids=superviseur_ids,
+                title="✅ Remplacement confirmé",
+                body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} remplace {demandeur.get('prenom', '')} {demandeur.get('nom', '')} le {demande_data['date']}",
+                data={
+                    "type": "remplacement_accepte",
+                    "demande_id": demande_id
+                }
+            )
+        
+        # Notifier les autres remplaçants contactés qu'ils ne sont plus nécessaires
+        autres_remplacants_ids = [
+            rid for rid in demande_data.get("remplacants_contactes_ids", [])
+            if rid != remplacant_id
+        ]
+        
+        if autres_remplacants_ids:
+            await send_push_notification_to_users(
+                user_ids=autres_remplacants_ids,
+                title="Remplacement pourvu",
+                body=f"Le remplacement du {demande_data['date']} a été pourvu par un autre pompier",
+                data={
+                    "type": "remplacement_pourvu",
+                    "demande_id": demande_id
+                }
+            )
+        
+        logging.info(f"✅ Remplacement accepté: demande {demande_id}, remplaçant {remplacant['nom_complet']}")
+        return True
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de l'acceptation du remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors de l'acceptation du remplacement")
+
+async def refuser_remplacement(demande_id: str, remplacant_id: str, tenant_id: str):
+    """
+    Traite le refus d'un remplacement par un remplaçant
+    - Met à jour l'historique
+    - Si tous les remplaçants contactés ont refusé, lance une nouvelle recherche
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que le remplaçant a bien été contacté
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à refuser cette demande")
+        
+        # Mettre à jour l'historique
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {
+                "id": demande_id,
+                "tentatives_historique.user_id": remplacant_id
+            },
+            {
+                "$set": {
+                    "tentatives_historique.$.statut": "refused",
+                    "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                }
+            }
+        )
+        
+        # Retirer de la liste des remplaçants en attente
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$pull": {"remplacants_contactes_ids": remplacant_id},
+                "$set": {"updated_at": maintenant}
+            }
+        )
+        
+        # Vérifier s'il reste des remplaçants en attente
+        demande_updated = await db.demandes_remplacement.find_one({"id": demande_id})
+        if not demande_updated.get("remplacants_contactes_ids"):
+            # Plus personne en attente, relancer la recherche immédiatement
+            logging.info(f"🔄 Tous les remplaçants ont refusé, relance de la recherche pour demande {demande_id}")
+            await lancer_recherche_remplacant(demande_id, tenant_id)
+        
+        logging.info(f"❌ Remplacement refusé par remplaçant {remplacant_id} pour demande {demande_id}")
+        return True
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors du refus du remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors du refus du remplacement")
+
+async def verifier_et_traiter_timeouts():
+    """
+    Fonction appelée périodiquement pour vérifier les demandes en timeout
+    Relance la recherche si le délai d'attente est dépassé
+    """
+    try:
+        maintenant = datetime.now(timezone.utc)
+        
+        # Trouver toutes les demandes en_cours dont la date_prochaine_tentative est dépassée
+        demandes_cursor = db.demandes_remplacement.find({
+            "statut": "en_cours",
+            "date_prochaine_tentative": {"$lte": maintenant}
+        })
+        
+        demandes_timeout = await demandes_cursor.to_list(length=None)
+        
+        for demande in demandes_timeout:
+            logging.info(f"⏱️ Timeout atteint pour demande {demande['id']}, relance de la recherche")
+            
+            # Marquer les remplaçants contactés comme expirés dans l'historique
+            for remplacant_id in demande.get("remplacants_contactes_ids", []):
+                await db.demandes_remplacement.update_one(
+                    {
+                        "id": demande["id"],
+                        "tentatives_historique.user_id": remplacant_id,
+                        "tentatives_historique.statut": "contacted"
+                    },
+                    {
+                        "$set": {
+                            "tentatives_historique.$.statut": "expired",
+                            "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                        }
+                    }
+                )
+            
+            # Vider la liste des remplaçants en attente
+            await db.demandes_remplacement.update_one(
+                {"id": demande["id"]},
+                {
+                    "$set": {
+                        "remplacants_contactes_ids": [],
+                        "updated_at": maintenant
+                    }
+                }
+            )
+            
+            # Relancer la recherche
+            await lancer_recherche_remplacant(demande["id"], demande["tenant_id"])
+        
+        if demandes_timeout:
+            logging.info(f"✅ Traité {len(demandes_timeout)} demande(s) en timeout")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la vérification des timeouts: {e}", exc_info=True)
+
+
 @api_router.post("/{tenant_slug}/remplacements", response_model=DemandeRemplacement)
 async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
     # Vérifier le tenant
