@@ -69,12 +69,17 @@ const AuthProvider = ({ children }) => {
           setUser(response.data);
         })
         .catch((error) => {
-          console.log('Token invalide ou expiré, nettoyage complet...');
-          // Nettoyer COMPLÈTEMENT le localStorage
+          console.log('Token invalide ou expiré, nettoyage complet et redirection...');
+          // Nettoyer COMPLÈTEMENT
           localStorage.clear();
           sessionStorage.clear();
           delete axios.defaults.headers.common['Authorization'];
           setUser(null);
+          
+          // Forcer le rechargement de la page pour retourner au login
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
         })
         .finally(() => {
           setLoading(false);
