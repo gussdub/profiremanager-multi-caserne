@@ -1830,6 +1830,9 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
         "role": {"$in": ["superviseur", "admin"]}
     }).to_list(100)
     
+    # Préparer les IDs pour les notifications push
+    superviseur_ids = []
+    
     for user in superviseurs_admins:
         await creer_notification(
             tenant_id=tenant.id,
@@ -1839,6 +1842,20 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             message=f"{current_user.prenom} {current_user.nom} demande un remplacement le {demande.date}",
             lien="/remplacements",
             data={"demande_id": demande_obj.id}
+        )
+        superviseur_ids.append(user["id"])
+    
+    # Envoyer notifications push aux superviseurs/admins
+    if superviseur_ids:
+        await send_push_notification_to_users(
+            user_ids=superviseur_ids,
+            title="Nouvelle demande de remplacement",
+            body=f"{current_user.prenom} {current_user.nom} demande un remplacement le {demande.date}",
+            data={
+                "type": "remplacement_demande",
+                "demande_id": demande_obj.id,
+                "lien": "/remplacements"
+            }
         )
     
     # Clean the object before returning to avoid ObjectId serialization issues
