@@ -5880,6 +5880,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [indispoTab, setIndispoTab] = useState('generation'); // 'generation' ou 'manuelle'
+  const [manualIndispoConfig, setManualIndispoConfig] = useState({
+    dates: [],
+    heure_debut: '08:00',
+    heure_fin: '16:00',
+    recurrence: false,
+    recurrence_type: 'semaine',
+    recurrence_interval: 1,
+    recurrence_end: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0]
+  });
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
     periode: 'mois',
