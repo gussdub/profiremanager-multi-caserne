@@ -6310,13 +6310,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const handleDateClick = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Normaliser la date en UTC pour éviter les problèmes de fuseau horaire
+    const normalizedDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dateStr = normalizedDate.toISOString().split('T')[0];
     const dispos = userDisponibilites.filter(d => d.date === dateStr);
+    
+    console.log('Date cliquée:', dateStr, 'Disponibilités trouvées:', dispos.length);
     
     if (dispos.length > 0) {
       // Afficher TOUTES les disponibilités pour cette date
       setSelectedDateDetails({
-        date: date,
+        date: normalizedDate,
         disponibilites: dispos, // Tableau au lieu d'un seul objet
         count: dispos.length
       });
