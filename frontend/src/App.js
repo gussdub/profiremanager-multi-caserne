@@ -6257,18 +6257,18 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button 
-            variant="outline" 
-            onClick={() => setShowGenerationModal(true)}
-            data-testid="generate-indisponibilites-btn"
-          >
-            🚒 Générer selon horaire
-          </Button>
-          <Button 
             variant="default" 
             onClick={() => setShowCalendarModal(true)}
             data-testid="configure-availability-btn"
           >
-            📅 Configurer manuellement
+            ✅ Gérer disponibilités
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowGenerationModal(true)}
+            data-testid="generate-indisponibilites-btn"
+          >
+            ❌ Gérer indisponibilités
           </Button>
           <Button 
             variant="destructive" 
