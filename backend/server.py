@@ -1186,42 +1186,70 @@ async def login(tenant_slug: str, user_login: UserLogin):
 # Route de compatibilité (OLD - sans tenant dans URL)
 @api_router.post("/auth/login")
 async def login_legacy(user_login: UserLogin):
-    """Login legacy - redirige automatiquement vers le tenant de l'utilisateur"""
-    user_data = await db.users.find_one({"email": user_login.email})
-    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    user = User(**user_data)
-    tenant_data = await db.tenants.find_one({"id": user.tenant_id})
-    
-    if not tenant_data:
-        raise HTTPException(status_code=404, detail="Caserne non trouvée")
-    
-    tenant = Tenant(**tenant_data)
-    access_token = create_access_token(data={
-        "sub": user.id,
-        "tenant_id": tenant.id,
-        "tenant_slug": tenant.slug
-    })
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "tenant": {
-            "id": tenant.id,
-            "slug": tenant.slug,
-            "nom": tenant.nom
-        },
-        "user": {
-            "id": user.id,
-            "nom": user.nom,
-            "prenom": user.prenom,
-            "email": user.email,
-            "role": user.role,
-            "grade": user.grade,
-            "type_emploi": user.type_emploi
+    """Login legacy - redirige automatiquement vers le tenant de l'utilisateur avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion legacy pour {user_login.email}")
+        
+        user_data = await db.users.find_one({"email": user_login.email})
+        
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé (legacy): {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Utilisateur trouvé (legacy): {user_data.get('nom')} {user_data.get('prenom')} (id: {user_data.get('id')})")
+        
+        current_hash = user_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        if not verify_password(user_login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect (legacy) pour {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès (legacy) pour {user_login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
+        
+        user = User(**user_data)
+        tenant_data = await db.tenants.find_one({"id": user.tenant_id})
+        
+        if not tenant_data:
+            logging.error(f"❌ Tenant non trouvé pour l'utilisateur {user_login.email}")
+            raise HTTPException(status_code=404, detail="Caserne non trouvée")
+        
+        tenant = Tenant(**tenant_data)
+        access_token = create_access_token(data={
+            "sub": user.id,
+            "tenant_id": tenant.id,
+            "tenant_slug": tenant.slug
+        })
+        
+        logging.info(f"✅ Token JWT créé (legacy) pour {user_login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "tenant": {
+                "id": tenant.id,
+                "slug": tenant.slug,
+                "nom": tenant.nom
+            },
+            "user": {
+                "id": user.id,
+                "nom": user.nom,
+                "prenom": user.prenom,
+                "email": user.email,
+                "role": user.role,
+                "grade": user.grade,
+                "type_emploi": user.type_emploi
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login legacy pour {user_login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @api_router.get("/{tenant_slug}/auth/me")
 async def get_current_user_info(tenant_slug: str, current_user: User = Depends(get_current_user)):
