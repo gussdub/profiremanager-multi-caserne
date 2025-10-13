@@ -446,11 +446,71 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
         return False
 
-def verify_password(plain_password, hashed_password):
-    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+def get_password_hash(password: str) -> str:
+    """
+    Crée un hash bcrypt du mot de passe.
+    Utilise bcrypt pour tous les nouveaux mots de passe.
+    """
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
-def get_password_hash(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Vérifie un mot de passe contre son hash.
+    Supporte à la fois bcrypt (nouveau) et SHA256 (ancien - pour migration).
+    
+    Retourne True si le mot de passe correspond, False sinon.
+    """
+    try:
+        password_bytes = plain_password.encode('utf-8')
+        
+        # Tenter avec bcrypt d'abord (nouveau format)
+        if hashed_password.startswith('$2b$') or hashed_password.startswith('$2a$') or hashed_password.startswith('$2y$'):
+            logging.info(f"🔐 Vérification avec bcrypt")
+            return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+        
+        # Sinon, tenter avec SHA256 (ancien format - migration)
+        logging.info(f"🔐 Vérification avec SHA256 (ancien format)")
+        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+        return sha256_hash == hashed_password
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la vérification du mot de passe: {e}")
+        return False
+
+async def migrate_password_if_needed(user_id: str, plain_password: str, current_hash: str, collection_name: str = "users"):
+    """
+    Migre automatiquement un mot de passe SHA256 vers bcrypt lors d'une connexion réussie.
+    
+    Args:
+        user_id: L'ID de l'utilisateur
+        plain_password: Le mot de passe en clair (vérifié)
+        current_hash: Le hash actuel dans la DB
+        collection_name: Nom de la collection MongoDB (users ou super_admins)
+    """
+    # Vérifier si c'est un ancien hash SHA256 qui nécessite migration
+    if not (current_hash.startswith('$2b$') or current_hash.startswith('$2a$') or current_hash.startswith('$2y$')):
+        try:
+            logging.info(f"🔄 Migration du mot de passe pour l'utilisateur {user_id} de SHA256 vers bcrypt")
+            new_hash = get_password_hash(plain_password)
+            
+            # Mettre à jour dans la base de données
+            collection = db[collection_name]
+            result = await collection.update_one(
+                {"id": user_id},
+                {"$set": {"mot_de_passe_hash": new_hash}}
+            )
+            
+            if result.modified_count > 0:
+                logging.info(f"✅ Migration du mot de passe réussie pour {user_id}")
+            else:
+                logging.warning(f"⚠️ Migration du mot de passe échouée pour {user_id} - aucun document modifié")
+                
+        except Exception as e:
+            logging.error(f"❌ Erreur lors de la migration du mot de passe pour {user_id}: {e}")
+            # Ne pas bloquer la connexion en cas d'erreur de migration
 
 security = HTTPBearer()
 
