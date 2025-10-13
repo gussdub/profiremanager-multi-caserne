@@ -6749,10 +6749,44 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         <div className="modal-overlay" onClick={() => setShowGenerationModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🚒 Générer les indisponibilités selon horaire</h3>
+              <h3>❌ Gérer indisponibilités</h3>
               <Button variant="ghost" onClick={() => setShowGenerationModal(false)}>✕</Button>
             </div>
             <div className="modal-body">
+              {/* Onglets */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
+                <button
+                  onClick={() => setIndispoTab('generation')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'generation' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'generation' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'generation' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'generation' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  🚒 Génération automatique
+                </button>
+                <button
+                  onClick={() => setIndispoTab('manuelle')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'manuelle' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'manuelle' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'manuelle' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'manuelle' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  ✍️ Saisie manuelle
+                </button>
+              </div>
+
+              {/* Contenu de l'onglet Génération */}
+              {indispoTab === 'generation' && (
               <div className="generation-config">
                 {/* Sélection du type d'horaire */}
                 <div className="config-section">
