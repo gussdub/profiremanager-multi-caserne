@@ -817,24 +817,50 @@ async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(se
 
 @api_router.post("/admin/auth/login")
 async def super_admin_login(login: SuperAdminLogin):
-    """Authentification du super admin"""
-    admin_data = await db.super_admins.find_one({"email": login.email})
-    
-    if not admin_data or not verify_password(login.mot_de_passe, admin_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    admin = SuperAdmin(**admin_data)
-    access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "admin": {
-            "id": admin.id,
-            "email": admin.email,
-            "nom": admin.nom
+    """Authentification du super admin avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion Super Admin: {login.email}")
+        
+        admin_data = await db.super_admins.find_one({"email": login.email})
+        
+        if not admin_data:
+            logging.warning(f"❌ Super Admin non trouvé: {login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Super Admin trouvé: {admin_data.get('nom')} (id: {admin_data.get('id')})")
+        
+        current_hash = admin_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        if not verify_password(login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect pour Super Admin {login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès pour Super Admin {login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(admin_data["id"], login.mot_de_passe, current_hash, "super_admins")
+        
+        admin = SuperAdmin(**admin_data)
+        access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
+        
+        logging.info(f"✅ Token JWT créé pour Super Admin {login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "admin": {
+                "id": admin.id,
+                "email": admin.email,
+                "nom": admin.nom
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login Super Admin pour {login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @api_router.get("/admin/auth/me")
 async def get_super_admin_me(admin: SuperAdmin = Depends(get_super_admin)):
