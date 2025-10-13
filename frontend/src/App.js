@@ -68,9 +68,13 @@ const AuthProvider = ({ children }) => {
         .then(response => {
           setUser(response.data);
         })
-        .catch(() => {
-          localStorage.removeItem('token');
+        .catch((error) => {
+          console.log('Token invalide ou expiré, nettoyage complet...');
+          // Nettoyer COMPLÈTEMENT le localStorage
+          localStorage.clear();
+          sessionStorage.clear();
           delete axios.defaults.headers.common['Authorization'];
+          setUser(null);
         })
         .finally(() => {
           setLoading(false);
