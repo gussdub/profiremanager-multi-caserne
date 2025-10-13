@@ -125,10 +125,9 @@ const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Nettoyer complètement le localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('tenant');
-    localStorage.removeItem('user');
+    // Nettoyer COMPLÈTEMENT le localStorage et sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
     
     // Supprimer le header Authorization d'axios
     delete axios.defaults.headers.common['Authorization'];
