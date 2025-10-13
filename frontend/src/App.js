@@ -6914,6 +6914,139 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
                 </Button>
               </div>
+              )}
+
+              {/* Contenu de l'onglet Saisie manuelle */}
+              {indispoTab === 'manuelle' && (
+                <div className="manual-indispo-config">
+                  {/* Sélection des dates */}
+                  <div className="config-section">
+                    <h4>📆 Sélection des dates d'indisponibilité</h4>
+                    <Calendar
+                      mode="multiple"
+                      selected={manualIndispoConfig.dates}
+                      onSelect={(dates) => setManualIndispoConfig({...manualIndispoConfig, dates: dates || []})}
+                      className="availability-calendar-large"
+                      locale={fr}
+                    />
+                    <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                      📌 Cliquez sur plusieurs dates pour sélectionner vos jours d'indisponibilité
+                    </small>
+                  </div>
+
+                  {/* Configuration des horaires */}
+                  <div className="config-section">
+                    <h4>⏰ Horaires d'indisponibilité</h4>
+                    <div className="time-config-row">
+                      <div className="time-field">
+                        <Label>Heure de début</Label>
+                        <Input 
+                          type="time" 
+                          value={manualIndispoConfig.heure_debut}
+                          onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_debut: e.target.value})}
+                        />
+                      </div>
+                      <div className="time-field">
+                        <Label>Heure de fin</Label>
+                        <Input 
+                          type="time" 
+                          value={manualIndispoConfig.heure_fin}
+                          onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_fin: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Récurrence */}
+                  <div className="config-section">
+                    <h4>🔄 Récurrence (optionnel)</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                      <input
+                        type="checkbox"
+                        id="manual-recurrence"
+                        checked={manualIndispoConfig.recurrence}
+                        onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence: e.target.checked})}
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      <label htmlFor="manual-recurrence" style={{ cursor: 'pointer', fontWeight: '500' }}>
+                        Répéter cette indisponibilité
+                      </label>
+                    </div>
+
+                    {manualIndispoConfig.recurrence && (
+                      <div style={{ paddingLeft: '30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                          <Label>Type de récurrence</Label>
+                          <select
+                            value={manualIndispoConfig.recurrence_type}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_type: e.target.value})}
+                            className="form-select"
+                          >
+                            <option value="semaine">Hebdomadaire</option>
+                            <option value="cycle28">Cycle de 28 jours</option>
+                          </select>
+                        </div>
+
+                        {manualIndispoConfig.recurrence_type === 'semaine' && (
+                          <div>
+                            <Label>Répéter tous les</Label>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="52"
+                                value={manualIndispoConfig.recurrence_interval}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_interval: parseInt(e.target.value)})}
+                                style={{ width: '80px' }}
+                              />
+                              <span>semaine(s)</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <Label>Date de fin de récurrence</Label>
+                          <Input
+                            type="date"
+                            value={manualIndispoConfig.recurrence_end}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_end: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Résumé */}
+                  <div className="config-section" style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                    <h4 style={{ color: '#991b1b', marginTop: 0 }}>📊 Résumé</h4>
+                    <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#991b1b' }}>
+                      <li><strong>Dates sélectionnées :</strong> {manualIndispoConfig.dates.length} jour(s)</li>
+                      <li><strong>Horaires :</strong> {manualIndispoConfig.heure_debut} - {manualIndispoConfig.heure_fin}</li>
+                      <li><strong>Récurrence :</strong> {manualIndispoConfig.recurrence ? `Oui (${manualIndispoConfig.recurrence_type})` : 'Non'}</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                    Annuler
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={() => {
+                      // TODO: Implémenter la sauvegarde manuelle
+                      toast({
+                        title: "À venir",
+                        description: "La saisie manuelle d'indisponibilités sera implémentée prochainement",
+                        variant: "default"
+                      });
+                    }}
+                    disabled={manualIndispoConfig.dates.length === 0}
+                  >
+                    ✅ Enregistrer les indisponibilités
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
