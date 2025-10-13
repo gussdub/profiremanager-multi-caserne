@@ -1499,44 +1499,62 @@ async def change_user_password(
     current_user: User = Depends(get_current_user)
 ):
     """Changer le mot de passe d'un utilisateur (uniquement son propre mot de passe)"""
-    # Vérifier que l'utilisateur change son propre mot de passe
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Récupérer l'utilisateur
-    user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    if not user_data:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    # Vérifier l'ancien mot de passe
-    if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
-    
-    # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
-    new_password = password_data["new_password"]
-    if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
-    if not any(c.isupper() for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins une majuscule")
-    if not any(c.isdigit() for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un chiffre")
-    if not any(c in '!@#$%^&*+-?()' for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*+-?())")
-    
-    # Hasher et mettre à jour le mot de passe
-    new_password_hash = get_password_hash(new_password)
-    result = await db.users.update_one(
-        {"id": user_id, "tenant_id": tenant.id},
-        {"$set": {"mot_de_passe_hash": new_password_hash}}
-    )
-    
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
-    
-    return {"message": "Mot de passe modifié avec succès"}
+    try:
+        logging.info(f"🔑 Demande de changement de mot de passe pour l'utilisateur {user_id}")
+        
+        # Vérifier que l'utilisateur change son propre mot de passe
+        if current_user.id != user_id:
+            logging.warning(f"❌ Tentative de changement de mot de passe non autorisée par {current_user.id} pour {user_id}")
+            raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
+        
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer l'utilisateur
+        user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé pour changement de mot de passe: {user_id}")
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        # Vérifier l'ancien mot de passe
+        if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
+            logging.warning(f"❌ Ancien mot de passe incorrect pour {user_id}")
+            raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
+        
+        logging.info(f"✅ Ancien mot de passe vérifié pour {user_id}")
+        
+        # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
+        new_password = password_data["new_password"]
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
+        if not any(c.isupper() for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins une majuscule")
+        if not any(c.isdigit() for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un chiffre")
+        if not any(c in '!@#$%^&*+-?()' for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*+-?())")
+        
+        # Hasher et mettre à jour le mot de passe (utilise bcrypt maintenant)
+        new_password_hash = get_password_hash(new_password)
+        logging.info(f"🔐 Nouveau mot de passe hashé avec bcrypt pour {user_id}")
+        
+        result = await db.users.update_one(
+            {"id": user_id, "tenant_id": tenant.id},
+            {"$set": {"mot_de_passe_hash": new_password_hash}}
+        )
+        
+        if result.modified_count == 0:
+            logging.error(f"❌ Impossible de mettre à jour le mot de passe pour {user_id}")
+            raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
+        
+        logging.info(f"✅ Mot de passe changé avec succès pour {user_id}")
+        return {"message": "Mot de passe modifié avec succès"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du changement de mot de passe pour {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @api_router.put("/users/{user_id}/access", response_model=User)
 async def update_user_access(user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
