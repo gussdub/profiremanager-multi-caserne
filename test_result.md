@@ -214,6 +214,30 @@ backend:
         agent: "testing"
         comment: "✅ CORRECTED RÉINITIALISER FUNCTIONALITY VERIFIED - Quick test of CORRECTED functionality with new filters completed successfully: 1) NEW type_entree filter (disponibilites/indisponibilites/les_deux) working correctly ✅, 2) FIXED mode 'generees_seulement' properly preserves manual entries with $or query checking origine field ✅, 3) Test Scenario: Created manual disponibilité for today, generated Montreal schedule (91 auto-generated entries), called reinitialiser with periode='mois', mode='generees_seulement', type_entree='les_deux' - Manual entry STILL EXISTS ✅, Auto-generated entries DELETED ✅, 4) Type_entree filter test: Created manual disponibilité (statut: disponible) and manual indisponibilité (statut: indisponible), reinitialiser with type_entree='disponibilites' - Only disponibilité deleted, indisponibilité preserved ✅. All corrections working as expected. System ready for production use."
 
+  - task: "Corrected Réinitialiser Functionality"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ CORRECTED RÉINITIALISER FUNCTIONALITY VERIFIED - Quick test of CORRECTED Réinitialiser functionality with new filters completed successfully as requested in review. BUGS FIXED: 1) Added type_entree filter (disponibilites/indisponibilites/les_deux) ✅, 2) Fixed mode 'generees_seulement' - now properly preserves manual entries with $or query checking origine field ✅. TEST RESULTS: Created manual disponibilité for today, generated Montreal schedule (91 auto-generated entries), called reinitialiser with periode='mois', mode='generees_seulement', type_entree='les_deux' - Manual entry STILL EXISTS ✅, Auto-generated entries DELETED ✅. Type_entree filter test: Created manual disponibilité (statut: disponible) and manual indisponibilité (statut: indisponible), reinitialiser with type_entree='disponibilites' - Only disponibilité deleted, indisponibilité preserved ✅. Expected behavior achieved: Manual entries preserved when mode='generees_seulement'. All corrections working perfectly."
+
+  - task: "Bcrypt Authentication System with Migration"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Refactored authentication system to use bcrypt instead of SHA256. Implementation includes: 1) Updated get_password_hash() to use bcrypt.hashpw() with salt generation, 2) Modified verify_password() to support both bcrypt (new format) and SHA256 (legacy format) for backward compatibility, 3) Created migrate_password_if_needed() to automatically migrate SHA256 passwords to bcrypt on successful login (transparent to users), 4) Enhanced all login endpoints (tenant_login at line 2041, super_admin_login at line 818, login_legacy at line 1187) with comprehensive logging (hash type detection, verification status, migration events, error tracking), 5) Updated change_password function with detailed logging. Migration Strategy: On login, system first tries bcrypt verification, falls back to SHA256 if bcrypt fails, automatically migrates SHA256 -> bcrypt on successful login, all new passwords/changed passwords use bcrypt. Logging includes: login attempts with email/tenant, user/tenant found confirmation, hash type detected (bcrypt/SHA256), password verification success/failure, migration events, JWT token generation, detailed errors with stack traces. NEEDS COMPREHENSIVE BACKEND TESTING to verify: 1) Existing users with SHA256 passwords can still login, 2) Automatic migration from SHA256 to bcrypt works on successful login, 3) New user creation uses bcrypt, 4) Password changes use bcrypt, 5) Super Admin login works with migration, 6) Logging provides useful debugging information."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
