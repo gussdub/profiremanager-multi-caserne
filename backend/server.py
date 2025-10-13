@@ -2341,52 +2341,69 @@ async def verifier_et_traiter_timeouts():
 
 @api_router.post("/{tenant_slug}/remplacements", response_model=DemandeRemplacement)
 async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    demande_dict = demande.dict()
-    demande_dict["tenant_id"] = tenant.id
-    demande_dict["demandeur_id"] = current_user.id
-    demande_obj = DemandeRemplacement(**demande_dict)
-    await db.demandes_remplacement.insert_one(demande_obj.dict())
-    
-    # Créer notification pour les superviseurs/admins de ce tenant
-    superviseurs_admins = await db.users.find({
-        "tenant_id": tenant.id,
-        "role": {"$in": ["superviseur", "admin"]}
-    }).to_list(100)
-    
-    # Préparer les IDs pour les notifications push
-    superviseur_ids = []
-    
-    for user in superviseurs_admins:
-        await creer_notification(
-            tenant_id=tenant.id,
-            destinataire_id=user["id"],
-            type="remplacement_demande",
-            titre="Nouvelle demande de remplacement",
-            message=f"{current_user.prenom} {current_user.nom} demande un remplacement le {demande.date}",
-            lien="/remplacements",
-            data={"demande_id": demande_obj.id}
-        )
-        superviseur_ids.append(user["id"])
-    
-    # Envoyer notifications push aux superviseurs/admins
-    if superviseur_ids:
-        await send_push_notification_to_users(
-            user_ids=superviseur_ids,
-            title="Nouvelle demande de remplacement",
-            body=f"{current_user.prenom} {current_user.nom} demande un remplacement le {demande.date}",
-            data={
-                "type": "remplacement_demande",
-                "demande_id": demande_obj.id,
-                "lien": "/remplacements"
-            }
-        )
-    
-    # Clean the object before returning to avoid ObjectId serialization issues
-    cleaned_demande = clean_mongo_doc(demande_obj.dict())
-    return DemandeRemplacement(**cleaned_demande)
+    """
+    Créer une demande de remplacement et lancer automatiquement la recherche de remplaçant
+    """
+    try:
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Calculer la priorité automatiquement
+        priorite = await calculer_priorite_demande(demande.date)
+        
+        demande_dict = demande.dict()
+        demande_dict["tenant_id"] = tenant.id
+        demande_dict["demandeur_id"] = current_user.id
+        demande_dict["priorite"] = priorite
+        demande_dict["statut"] = "en_attente"  # Commence en attente
+        
+        demande_obj = DemandeRemplacement(**demande_dict)
+        await db.demandes_remplacement.insert_one(demande_obj.dict())
+        
+        logging.info(f"✅ Demande de remplacement créée: {demande_obj.id} (priorité: {priorite})")
+        
+        # Créer notification pour les superviseurs/admins (info seulement, pas de gestion manuelle)
+        superviseurs_admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
+        
+        superviseur_ids = []
+        for user in superviseurs_admins:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=user["id"],
+                type="remplacement_demande",
+                titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
+                message=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                lien="/remplacements",
+                data={"demande_id": demande_obj.id}
+            )
+            superviseur_ids.append(user["id"])
+        
+        # Envoyer notifications push aux superviseurs (pour info)
+        if superviseur_ids:
+            await send_push_notification_to_users(
+                user_ids=superviseur_ids,
+                title=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement",
+                body=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                data={
+                    "type": "remplacement_demande",
+                    "demande_id": demande_obj.id,
+                    "lien": "/remplacements"
+                }
+            )
+        
+        # 🚀 LANCER LA RECHERCHE AUTOMATIQUE DE REMPLAÇANT
+        await lancer_recherche_remplacant(demande_obj.id, tenant.id)
+        
+        # Clean the object before returning
+        cleaned_demande = clean_mongo_doc(demande_obj.dict())
+        return DemandeRemplacement(**cleaned_demande)
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la création de la demande de remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de la demande")
 
 @api_router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])
 async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
