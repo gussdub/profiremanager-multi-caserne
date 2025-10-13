@@ -1,110 +1,101 @@
 <analysis>
-The AI engineer's work focused on iteratively enhancing the ProFireManager application, fixing bugs, and resolving complex deployment issues across both frontend and backend. Initially, the engineer addressed user requests regarding Super Admin dashboard display, tenant status (handling  vs.  fields), and implemented comprehensive EPI management. Key technical challenges included debugging Vercel/Render production deployment synchronization, which was a recurring theme, and correcting API routes and Pydantic validation. The engineer also implemented robust tenant lifecycle management (activation/deactivation, permanent deletion), monthly revenue calculations (excluding demo tenants), and clarified the replacement module functionalities. Significant progress was made in fixing persistent login issues, correcting the password change functionality (which was a demo stub), and rectifying date offsets and assignment inconsistencies in the planning module's monthly view. The trajectory concludes with a detailed planning phase for implementing an advanced Indisponibilités (unavailabilities) feature, requiring complex scheduling logic and UI integration.
+The AI engineer's work primarily focused on expanding the ProFireManager application by implementing a comprehensive Indisponibilités (unavailabilities) feature. This involved developing intricate backend logic for generating schedules based on specific Quebec firefighter patterns (Montreal 7/24, Quebec 10/14) and a flexible frontend UI for managing these entries, including manual input and reset options. The engineer also tackled significant frontend UI/UX enhancements, such as enlarging the calendar, renaming buttons, removing statistics, and improving date display consistency. A substantial part of the work involved persistent debugging of deployment issues and, crucially, addressing recurring, intermittent login problems. Despite multiple attempts to fix the login flow (token handling, error redirection), the issue persisted, especially in production. The trajectory concludes with the AI proposing a complete refactoring of the authentication system to use bcrypt, aiming for a more robust and stable solution, following user frustration and a request for simplification.
 </analysis>
 
 <product_requirements>
-ProFireManager is a web application for Canadian fire departments (casernes) to manage personnel, schedules, and automated replacements.
+ProFireManager is a web application for Canadian fire departments to manage personnel, schedules, and automated replacements.
 
-**Core Functionality & Refinements:**
-1.  **Multi-Tenant & Super Admin:**
-    *   Tenant creation, editing, and *permanent deletion*.
-    *   Super Admin dashboard displays total active/inactive casernes, personnel, and *monthly revenue (excluding demo tenants)*.
-    *   Super Admin can *create initial admin accounts for new casernes*.
-    *   Tenant creation fields (email, phone, address) made *optional* in frontend.
-2.  **User & Profile Management:**
-    *   Tenant-aware account creation with welcome emails.
-    *   User profiles allow input of EPI sizes.
-    *   Mes disponibilités module visible for *all part-time personnel* (admin, supervisor, employee).
-    *   *Password change functionality in Mon Profil was fixed* (previously a demo stub).
-3.  **Planning Module:**
-    *   Enhanced shift display.
-    *   Attribution tab renamed to Planning.
-    *   *Admin/supervisors can add/modify/delete availabilities/unavailabilities for personnel*.
-    *   *Recurring availabilities/unavailabilities* (weekly, bi-weekly, monthly with end dates) implemented.
-    *   *Advanced manual assignment* was fixed.
-    *   *Automatic assignment (Attribution auto) was fixed* to be idempotent, fill completely, and not exceed required personnel.
-    *   *Monthly planning view date offset and assignment display were corrected*.
-4.  **Deployment & Stability:**
-    *   Persistent debugging of Vercel/Render deployment and synchronization issues (GitHub repo, Vercel Root Directory, caching).
-    *   Backend / field discrepancies handled.
-    *   CORS and API validation errors resolved.
-5.  **Reporting:** Super Admin dashboard statistics were validated and corrected.
-6.  **Replacements Module:** Buttons (Recherche auto, ✅, ❌) were clarified with tooltips.
-
-**Current Major Development Focus:** Implementing a comprehensive Indisponibilités (unavailabilities) feature within the Mes disponibilités module. This involves generating unavailabilities based on specific Quebec firefighter schedules (Montreal 7/24, Quebec 10/14) and allowing manual overrides.
+**Key Functional Areas & Recent Developments:**
+1.  **Multi-Tenant & Super Admin**: Tenant lifecycle management (creation, edit, deletion), Super Admin dashboard for overall statistics, initial admin account creation.
+2.  **User & Profile Management**: Tenant-aware account creation, EPI management, and password change functionality. Mes disponibilités module accessible by all part-time personnel.
+3.  **Planning Module**: Enhanced shift display, Attribution renamed to Planning. Admin/supervisors can manage availabilities/unavailabilities for others, including recurring entries. Automatic and advanced manual assignments were fixed. Monthly planning view date offset corrected.
+    *   **Indisponibilités Feature**: Generate unavailabilities based on Montreal 7/24 (28-day cycle, starts Monday Red) and Quebec 10/14 (28-day cycle, 13 working days), for specific teams and years (initially rest of 2025, then 2026+). Manual input, modification, deletion, and selective reset options (all/generated, by period: week/month/year). Display origin (manual/generated).
+    *   **UI/UX Improvements**: Enlarged calendar view, renamed Générer selon horaire to Gérer indisponibilités (with manual input), renamed Configurer manuellement to Gérer disponibilités (fixed to disponible status), reordered buttons, removed statistics counters, and enabled date click details.
+4.  **Deployment & Stability**: Ongoing debugging of Vercel/Render sync issues, CORS, API validation. Persistent login problems (401/403 errors) led to authentication system refactoring proposal.
+5.  **Mobile App with Push Notifications**: Implement native push notifications via Capacitor for iOS/Android (transparent integration) with Firebase Cloud Messaging. Priority on Remplacement disponible notifications.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-Stack Development**: React (CRA) frontend, FastAPI (Python) backend with  for MongoDB.
+-   **Full-Stack Development**: React (frontend), FastAPI (Python backend), MongoDB (data persistence).
 -   **UI/UX**: Shadcn UI, Tailwind CSS.
--   **Data Persistence**: MongoDB (UUIDs,  handling, / field variations, date format consistency).
--   **API Design**: RESTful,  prefix, JWT authentication (SHA256 hashing).
--   **Multi-Tenant Architecture**: Tenant-aware routing and data isolation.
--   **Deployment**: Render, Vercel, GitHub (persistent issues with sync and caching).
--   **Email Service**: SendGrid (handled gracefully on failure).
--   **Data Validation**: Pydantic.
--   **JavaScript Date Handling**: UTC vs. local timezone for consistency.
+-   **Data Management**: Pydantic models, JWT for authentication (SHA256 hashing, proposed bcrypt).
+-   **Multi-Tenant Architecture**: Tenant-aware routing.
+-   **Deployment**: Render, Vercel, GitHub (source of recurring issues).
+-   **Mobile Integration**: Capacitor (PWA wrapper), Firebase Cloud Messaging (FCM) for push notifications.
+-   **Date Handling**: UTC for consistency across UI views.
 </key_technical_concepts>
 
 <code_architecture>
 
+-   ****: Stores backend environment variables.
+-   ****: Created to store Firebase Admin SDK private key for backend authentication.
 -   ****:
-    -   **Importance**: Stores backend environment variables like , , , .
-    -   **Changes**:  was explicitly discussed as needing updates on Render for production.
--   ****:
-    -   **Importance**: Main FastAPI backend, containing all API endpoints, data models (Pydantic), business logic for tenant, user, assignment, and availability management. It interacts with MongoDB via .
+    -   **Importance**: Main FastAPI application handling all API logic.
     -   **Changes**:
-        -   **Super Admin Endpoints**:  endpoint added.  and  endpoints modified to handle both  and  fields for tenant status consistency. Tenant creation/update/deletion routes (, , ) were restored after accidental deletion and their paths adjusted to handle  prefix correctly.
-        -   **Authentication**:  typo corrected to  (critical fix for backend crashes during admin creation). Tenant creation flow in  now correctly provides all mandatory  model fields (, , , ) and wraps SendGrid email sending in a try-except block to prevent crashes. A new endpoint  was added for changing user passwords, including old password verification and new password validation.
-        -   **Tenant Data**: Monthly revenue calculation () was updated to explicitly *exclude* démonstration casernes from total personnel and revenue.
-        -   **Planning/Assignments**: Endpoint paths for , , and  were corrected to include .  was added to assignment creation and conflict verification queries.  and  logic was refined to ensure idempotency (not over-assigning) and fill guards completely up to . Backend date parsing for  (and similar fields) was adjusted from  to  for consistency with ISO format. The  endpoint () was modified to retrieve assignments for the *entire month* when  is active.
-        -   **Availability**: Backend already supports admin/supervisor roles for managing availabilities via .
+        -   Updated  model with .
+        -   Added  and  Pydantic models.
+        -   Integrated Firebase Admin SDK for push notifications.
+        -   New API routes:  (for unavailability generation),  (for reset/deletion),  (for registering FCM tokens),  (for sending notifications).
+        -   Corrected unavailability generation logic for Montreal (7 working days/cycle) and Quebec (13 working days/cycle).
+        -   Authentication functions (login, password change) were reviewed and confirmed to use simple SHA256.
 -   ****:
-    -   **Importance**: The main React application file, containing routing, global state (user, tenant), and many core components including login, planning, and personnel management.
+    -   **Importance**: Main React component managing application state, routing, and core features.
     -   **Changes**:
-        -   **Login/Logout**:  function enhanced to clear  completely and force a page refresh (). Login components ( function) updated with  for password fields and preventative cleanup before login attempts to mitigate persistent login issues.
-        -   **Super Admin Dashboard**: Frontend validation for tenant creation was relaxed, making , , and  optional.
-        -   **User Profile**: The password change functionality () was replaced from a demo stub to an actual API call to the new backend endpoint .
-        -   **Personnel Management**:
-            -   The Mes disponibilités module visibility logic was updated to display for *any* part-time user (), regardless of their  (admin, supervisor, employee).
-            -   New UI/logic added for admin/supervisor to manage other personnel's availabilities, including a modal with add/modify/delete functionality.
-            -   Implemented recurrence options (weekly, bi-weekly, monthly with end dates) in the availability management form and integrated logic into  to generate multiple recurring entries.
-        -   **Planning Module**: Date creation in monthly view adjusted to use  to prevent timezone-related date offsets. Monthly view rendering updated to use UTC date methods (, ). Month title generation in the monthly planning view was corrected to display the accurate month.
-        -   **Remplacements Module**: Tooltips/explanations were added for the Recherche auto, ✅, and ❌ buttons to clarify their purpose.
+        -   **Authentication**: Enhanced 's error handling for 401/403 to trigger full logout and redirect to login, and  function now clears more local storage.
+        -   **Multi-User Availabilities**: Added  state;  module now navigates to  for a selected user, and  adapts its title, displays a Return button, and targets  for all operations. Removed old management modal from .
+        -   **Mes disponibilités Module UI/Logic**:
+            -   Implemented states and functions for unavailability generation () and manual input ().
+            -   Implemented reset functionality () with period and type filtering.
+            -   Buttons renamed (Générer selon horaire to Gérer indisponibilités; Configurer manuellement to Gérer disponibilités).
+            -   Gérer indisponibilités modal now has tabs for generation and manual input.
+            -   Gérer disponibilités modal no longer has a statut selector (fixed to disponible).
+            -   Removed statistics counters.
+            -   Fixed date display offset and  to use UTC for calendar consistency.
+            -   Multiple JSX structural fixes for modal rendering.
 -   ****:
-    -   **Importance**: Frontend component for Super-Admin functionalities, including tenant listing, creation, and statistics display.
-    -   **Changes**: Relaxed client-side validation for tenant creation (making contact fields optional) as mentioned in  changes. UI elements for tenant creation, modification and deletion (with pre-deletion stats) have been enhanced.
--   ** & **:
-    -   **Importance**: PWA and main HTML files.
-    -   **Changes**: Updated icon meta tags and / for PWA deep linking.
+    -   **Importance**: Global styles.
+    -   **Changes**: Modified  and  for a larger, more readable calendar display.
 -   ****:
-    -   **Importance**: Vercel configuration for frontend routing.
-    -   **Changes**: Created to handle SPA routing for multi-tenant setup.
+    -   **Importance**: Centralized API call utility.
+    -   **Changes**: Improved error handling to redirect on both 401 and 403 API responses.
+-   ****:
+    -   **Importance**: Placeholder for frontend push notification handling.
+    -   **Changes**: Created, but currently empty.
+-   ****:
+    -   **Importance**: Manages frontend dependencies.
+    -   **Changes**: Added Capacitor related packages (, , , ). Also added  to backend .
+-   ****:
+    -   **Importance**: Configuration for Capacitor to build native mobile applications.
+    -   **Changes**: Initialized and configured with push notification plugin settings.
+-   ****:
+    -   **Importance**: Firebase configuration file for the Android Capacitor project.
+    -   **Changes**: Created with user-provided content.
+-   ****:
+    -   **Importance**: Firebase configuration file for the iOS Capacitor project.
+    -   **Changes**: Created with user-provided content.
+-   ****:
+    -   **Importance**: Provides instructions for the user to set up Apple and Google developer accounts.
+    -   **Changes**: Created by the AI engineer.
 </code_architecture>
 
 <pending_tasks>
--   Implement comprehensive Indisponibilités (unavailabilities) generation within the Mes disponibilités module. This involves:
-    -   Backend logic to generate unavailabilities based on specific Quebec firefighter schedules (Montreal 7/24 and Quebec 10/14 complex 28-day cycle) for selected teams and years.
-    -   Frontend UI for selecting schedule type, team, year, and triggering generation.
-    -   Allowing manual modification/deletion of generated unavailabilities.
-    -   Implementing confirmation logic before overwriting generated schedules while preserving manual entries.
-    -   Storing and displaying the  (source) of each unavailability.
--   Address clarifying questions regarding the implementation of the unavailability feature.
+-   Implement the frontend logic for push notification registration and reception using  and Capacitor.
+-   Implement specific push notification sending logic in the backend for Remplacement disponible and other priority events.
+-   Guide the user through Apple and Google developer account setup and mobile app publication.
+-   **Address the persistent login issues in production by refactoring the authentication system to use bcrypt.**
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was engaged in a detailed planning phase for a significant new feature: implementing Indisponibilités (unavailabilities) for all part-time personnel. This feature aims to allow users to generate unavailabilities based on two specific Quebec firefighter schedules: Montreal 7/24 and Quebec 10/14 (a complex 28-day cycle), supporting four teams (Red, Yellow, Blue, Green). Users should also be able to create random unavailabilities and modify/delete any entries, with manual modifications preserved even when re-generating schedules.
+The AI engineer was most recently focused on resolving persistent, intermittent login issues reported by the user, particularly in the production environment. Initial debugging efforts involved checking JWT token expiration, enhancing local storage cleanup during logout and error handling (401/403 responses) in the frontend's  and . While these changes improved the local login experience, the problem persisted in production.
 
-The trajectory concluded with the AI engineer posing several clarifying questions to the user to finalize the implementation plan. These questions focused on:
-1.  **Generation Approach**: Confirming if a configuration-by-selection method (Option B) for generating schedules is preferred over PDF parsing.
-2.  **Quebec Schedule**: How the Jour 1 for the 28-day Quebec cycle should be defined by the user (selecting a specific date vs. auto-calculation).
-3.  **Shift Hours**: Confirming the exact start/end times for Day, Night, and 24h shifts (e.g., Day: 07:00-17:00, Night: 19:00-09:00, 24h: 07:00-07:00).
-4.  **Implementation Order**: Whether to implement Montreal first, then Quebec, then personalized, or all at once.
-5.  **Year Generation**: If the generation should cover the full year (January 1st to December 31st, 2025) or just the remainder of the current year (October 10th to December 31st, 2025).
-
-This planning is critical before proceeding with any code changes, as the feature is complex and requires precise alignment with user expectations regarding firefighter schedules. All previous issues, including login, assignment, planning view, and administration functionalities, were addressed, but deployment synchronization and cache invalidation issues persist as an overarching operational challenge for the user.
+Upon invoking the , it was diagnosed that the password hash for the  user in the *production database* was incorrect, causing 401 errors. However, the user questioned this diagnosis, stating the hash was correct and requested a simpler or completely redesigned authentication system. Acknowledging the user's frustration with the recurring problem, the AI engineer proposed a comprehensive refactoring of the authentication system. This plan includes:
+1.  Replacing the current SHA256 hashing with .
+2.  Simplifying the login route.
+3.  Improving error management.
+4.  Adding clearer debugging logs.
+This proposal represents the immediate next step, pending user confirmation, to provide a more stable and robust authentication mechanism.
 </current_work>
 
 <optional_next_step>
-I will await the user's answers to the clarifying questions regarding the Indisponibilités feature before proceeding with the backend and frontend implementation.
+Implement the proposed refactor of the authentication system by replacing the current SHA256 hashing with bcrypt in the backend.
 </optional_next_step>
