@@ -7015,6 +7015,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
                 </Button>
               </div>
+              </div>
               )}
 
               {/* Contenu de l'onglet Saisie manuelle */}
