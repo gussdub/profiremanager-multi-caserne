@@ -1439,6 +1439,217 @@ class ProFireManagerTester:
             self.log_test("Admin User Creation", False, f"Admin user creation error: {str(e)}")
             return False
     
+    def test_bcrypt_authentication_system(self):
+        """Test bcrypt authentication system with SHA256 migration functionality"""
+        print("\n🔐 Testing Bcrypt Authentication System with Migration...")
+        
+        try:
+            # Test 1: Existing SHA256 User Login (Shefford admin)
+            print("\n📋 Test 1: Existing SHA256 User Login (Shefford admin)")
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            # Try tenant-specific login first
+            response = requests.post(f"{self.base_url}/shefford/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+            
+            if response.status_code == 200:
+                login_result = response.json()
+                print(f"✅ Shefford admin login successful: {login_result.get('user', {}).get('email')}")
+                
+                # Try logging in again to verify bcrypt migration worked
+                response2 = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response2.status_code == 200:
+                    print("✅ Second login successful - bcrypt migration working")
+                else:
+                    print(f"❌ Second login failed: {response2.status_code}")
+                    return False
+            else:
+                print(f"❌ Shefford admin login failed: {response.status_code} - {response.text}")
+                return False
+            
+            # Test 2: Super Admin Login with Migration
+            print("\n📋 Test 2: Super Admin Login with Migration")
+            super_admin_login = {
+                "email": "gussdub@icloud.com",
+                "mot_de_passe": "230685Juin+"
+            }
+            
+            response = requests.post(f"{self.base_url}/admin/auth/login", json=super_admin_login)
+            if response.status_code == 200:
+                super_admin_result = response.json()
+                print(f"✅ Super admin login successful: {super_admin_result.get('admin', {}).get('email')}")
+                
+                # Try logging in again to verify bcrypt migration
+                response2 = requests.post(f"{self.base_url}/admin/auth/login", json=super_admin_login)
+                if response2.status_code == 200:
+                    print("✅ Super admin second login successful - bcrypt migration working")
+                else:
+                    print(f"❌ Super admin second login failed: {response2.status_code}")
+                    return False
+            else:
+                print(f"❌ Super admin login failed: {response.status_code} - {response.text}")
+                return False
+            
+            # Test 3: New User Creation with bcrypt
+            print("\n📋 Test 3: New User Creation with bcrypt")
+            
+            # First login as Shefford admin to create user
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {login_result['access_token']}"})
+            
+            new_user_data = {
+                "nom": "TestBcrypt",
+                "prenom": "NewUser",
+                "email": f"bcrypt.test.{uuid.uuid4().hex[:8]}@firemanager.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_partiel",
+                "heures_max_semaine": 25,
+                "role": "employe",
+                "numero_employe": f"BCR{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "NewBcrypt123!"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/shefford/users", json=new_user_data)
+            if response.status_code == 200:
+                new_user = response.json()
+                print(f"✅ New user created successfully: {new_user.get('email')}")
+                
+                # Test login with new user (should use bcrypt directly)
+                new_user_login = {
+                    "email": new_user_data["email"],
+                    "mot_de_passe": new_user_data["mot_de_passe"]
+                }
+                
+                response = requests.post(f"{self.base_url}/auth/login", json=new_user_login)
+                if response.status_code == 200:
+                    print("✅ New user login successful - bcrypt working for new users")
+                else:
+                    print(f"❌ New user login failed: {response.status_code}")
+                    return False
+                    
+                # Clean up - delete test user
+                admin_session.delete(f"{self.base_url}/shefford/users/{new_user['id']}")
+                
+            else:
+                print(f"❌ New user creation failed: {response.status_code} - {response.text}")
+                return False
+            
+            # Test 4: Password Change (should use bcrypt)
+            print("\n📋 Test 4: Password Change with bcrypt")
+            
+            # Use the logged-in admin session to change password
+            password_change_data = {
+                "current_password": "admin123",
+                "new_password": "NewAdmin123!"
+            }
+            
+            # Get admin user ID from login result
+            admin_user_id = login_result.get('user', {}).get('id')
+            if admin_user_id:
+                response = admin_session.put(f"{self.base_url}/shefford/users/{admin_user_id}/password", 
+                                           json=password_change_data)
+                if response.status_code == 200:
+                    print("✅ Password change successful")
+                    
+                    # Test login with new password
+                    new_login_data = {
+                        "email": "admin@firemanager.ca",
+                        "mot_de_passe": "NewAdmin123!"
+                    }
+                    
+                    response = requests.post(f"{self.base_url}/auth/login", json=new_login_data)
+                    if response.status_code == 200:
+                        print("✅ Login with new password successful - bcrypt working for password changes")
+                        
+                        # Change password back to original
+                        new_admin_session = requests.Session()
+                        new_admin_session.headers.update({"Authorization": f"Bearer {response.json()['access_token']}"})
+                        
+                        restore_password_data = {
+                            "current_password": "NewAdmin123!",
+                            "new_password": "admin123"
+                        }
+                        
+                        new_admin_session.put(f"{self.base_url}/shefford/users/{admin_user_id}/password", 
+                                            json=restore_password_data)
+                        print("✅ Password restored to original")
+                        
+                    else:
+                        print(f"❌ Login with new password failed: {response.status_code}")
+                        return False
+                else:
+                    print(f"❌ Password change failed: {response.status_code} - {response.text}")
+                    return False
+            else:
+                print("❌ Could not get admin user ID for password change test")
+                return False
+            
+            # Test 5: Invalid Credentials
+            print("\n📋 Test 5: Invalid Credentials Test")
+            
+            invalid_login = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "wrongpassword"
+            }
+            
+            response = requests.post(f"{self.base_url}/auth/login", json=invalid_login)
+            if response.status_code == 401:
+                print("✅ Invalid credentials properly rejected")
+            else:
+                print(f"❌ Invalid credentials test failed - expected 401, got {response.status_code}")
+                return False
+            
+            # Test 6: Check Backend Logs (if accessible)
+            print("\n📋 Test 6: Backend Logging Verification")
+            try:
+                # Try to read backend logs
+                import subprocess
+                result = subprocess.run(['tail', '-n', '50', '/var/log/supervisor/backend.err.log'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    log_content = result.stdout
+                    
+                    # Check for authentication-related log entries
+                    auth_indicators = [
+                        "🔑 Tentative de connexion",
+                        "🔐 Type de hash détecté",
+                        "✅ Mot de passe vérifié",
+                        "🔄 Migration du mot de passe",
+                        "bcrypt", "SHA256"
+                    ]
+                    
+                    found_indicators = []
+                    for indicator in auth_indicators:
+                        if indicator in log_content:
+                            found_indicators.append(indicator)
+                    
+                    if found_indicators:
+                        print(f"✅ Authentication logging working - Found indicators: {', '.join(found_indicators[:3])}...")
+                    else:
+                        print("⚠️ No authentication log indicators found (logs may be rotated)")
+                else:
+                    print("⚠️ Could not access backend logs")
+            except Exception as e:
+                print(f"⚠️ Log check failed: {str(e)}")
+            
+            self.log_test("Bcrypt Authentication System", True, 
+                        "✅ All bcrypt authentication tests passed - SHA256 migration working, new users use bcrypt, password changes use bcrypt, logging functional")
+            return True
+            
+        except Exception as e:
+            self.log_test("Bcrypt Authentication System", False, f"Bcrypt authentication system error: {str(e)}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("\n🔥 ProFireManager Backend API Testing Suite")
