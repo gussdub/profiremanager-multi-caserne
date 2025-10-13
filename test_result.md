@@ -241,6 +241,18 @@ backend:
         agent: "testing"
         comment: "✅ BCRYPT AUTHENTICATION SYSTEM FULLY FUNCTIONAL - Comprehensive testing completed successfully: 1) Existing SHA256 User Login: Shefford admin (admin@firemanager.ca / admin123) login successful with automatic SHA256 -> bcrypt migration confirmed in logs, second login uses bcrypt verification ✅, 2) Super Admin Login with Migration: gussdub@icloud.com / 230685Juin+ login successful with SHA256 -> bcrypt migration, subsequent logins use bcrypt ✅, 3) New User Creation: Created new user with bcrypt password hash (starts with $2b$), login successful without migration needed ✅, 4) Password Change: Changed admin password successfully, new password uses bcrypt format, login with new password works, password restored ✅, 5) Invalid Credentials: Wrong password properly rejected with 401 status ✅, 6) Backend Logging: Comprehensive logging working perfectly - found authentication indicators including '🔑 Tentative de connexion', '🔐 Type de hash détecté', '✅ Mot de passe vérifié', '🔄 Migration du mot de passe', 'bcrypt', 'SHA256' in logs ✅. Migration is completely transparent to users, all authentication endpoints working correctly, logging provides excellent debugging information. System ready for production use."
 
+  - task: "Système Automatisé de Remplacement"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Système complet de remplacement automatisé implémenté. Fonctionnalités: 1) TypeGarde enrichi avec 'competences_requises' pour définir les formations/compétences nécessaires, 2) DemandeRemplacement enrichi avec: statut (en_attente, en_cours, accepte, expiree, annulee), priorite (urgent ≤24h, normal >24h calculée auto), remplacant_id, tentatives_historique (historique complet des contacts), remplacants_contactes_ids (liste active), date_prochaine_tentative, nombre_tentatives. 3) Algorithme de recherche trouver_remplacants_potentiels() avec filtres: compétences requises, grade équivalent/supérieur, pas d'indisponibilité, bonus disponibilité déclarée, tri par ancienneté (date_embauche). 4) Système de gestion: lancer_recherche_remplacant() contacte remplaçant(s) selon mode_notification (un_par_un/multiple), respecte delai_attente_heures, gère nombre_simultane, envoie notifications push ciblées. 5) Fonctions accepter_remplacement() et refuser_remplacement() avec: vérification ancienneté si acceptations multiples, mise à jour automatique planning (assignations), notifications demandeur/superviseurs/autres remplaçants. 6) Job périodique verifier_et_traiter_timeouts() qui s'exécute toutes les minutes, marque tentatives expirées, relance recherche automatiquement. 7) Endpoints: POST /remplacements (crée + lance recherche auto), GET /remplacements/propositions (liste pour remplaçant), PUT /remplacements/{id}/accepter, PUT /remplacements/{id}/refuser, DELETE /remplacements/{id} (annuler). 8) Mise à jour planning automatique: change user_id dans assignations, ajoute est_remplacement=true et demandeur_original_id. Le système gère le flux complet de A à Z sans intervention manuelle, respecte tous les critères et délais, notifie toutes les parties concernées. NEEDS COMPREHENSIVE BACKEND TESTING."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
