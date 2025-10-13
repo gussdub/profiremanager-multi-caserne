@@ -9172,14 +9172,49 @@ body {
 }
 
 .availability-calendar-large .rdp {
-  --rdp-cell-size: 40px;
+  --rdp-cell-size: 80px;
   --rdp-accent-color: #dc2626;
   margin: 0;
+  font-size: 1.2rem;
 }
 
 .availability-calendar-large .rdp-day {
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 500;
+  min-height: 80px;
+  font-size: 1.1rem;
+}
+
+.availability-calendar-large .rdp-caption {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.availability-calendar-large .rdp-head_cell {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .availability-calendar-large {
+    --rdp-cell-size: 50px;
+    font-size: 1rem;
+  }
+  
+  .availability-calendar-large .rdp-day {
+    min-height: 50px;
+    font-size: 0.95rem;
+  }
+  
+  .availability-calendar-large .rdp-caption {
+    font-size: 1.1rem;
+  }
+  
+  .availability-calendar-large .rdp-head_cell {
+    font-size: 0.85rem;
+  }
 }
 
 .calendar-legend-modern {
