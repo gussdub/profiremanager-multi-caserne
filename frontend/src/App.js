@@ -6185,6 +6185,107 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     }
   };
 
+  const handleSaveManualIndisponibilites = async () => {
+    if (manualIndispoConfig.dates.length === 0) {
+      toast({
+        title: "Aucune date sélectionnée",
+        description: "Veuillez sélectionner au moins une date",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      let allIndisponibilites = [];
+
+      // Pour chaque date sélectionnée
+      for (const date of manualIndispoConfig.dates) {
+        const startDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        
+        if (manualIndispoConfig.recurrence) {
+          // Avec récurrence
+          const endDate = new Date(manualIndispoConfig.recurrence_end);
+          let currentDate = new Date(startDate);
+
+          while (currentDate <= endDate) {
+            allIndisponibilites.push({
+              user_id: targetUser.id,
+              date: currentDate.toISOString().split('T')[0],
+              type_garde_id: null,
+              heure_debut: manualIndispoConfig.heure_debut,
+              heure_fin: manualIndispoConfig.heure_fin,
+              statut: 'indisponible',
+              origine: 'manuelle'
+            });
+
+            // Calculer la prochaine date selon le type de récurrence
+            if (manualIndispoConfig.recurrence_type === 'semaine') {
+              currentDate.setUTCDate(currentDate.getUTCDate() + (7 * manualIndispoConfig.recurrence_interval));
+            } else if (manualIndispoConfig.recurrence_type === 'cycle28') {
+              currentDate.setUTCDate(currentDate.getUTCDate() + 28);
+            }
+          }
+        } else {
+          // Sans récurrence
+          allIndisponibilites.push({
+            user_id: targetUser.id,
+            date: startDate.toISOString().split('T')[0],
+            type_garde_id: null,
+            heure_debut: manualIndispoConfig.heure_debut,
+            heure_fin: manualIndispoConfig.heure_fin,
+            statut: 'indisponible',
+            origine: 'manuelle'
+          });
+        }
+      }
+
+      // Combiner avec les disponibilités existantes
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: targetUser.id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut,
+        origine: d.origine || 'manuelle'
+      }));
+
+      const allDisponibilites = [...existingDispos, ...allIndisponibilites];
+
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "Indisponibilités enregistrées",
+        description: `${allIndisponibilites.length} indisponibilité(s) ajoutée(s) avec succès`,
+        variant: "success"
+      });
+      
+      setShowGenerationModal(false);
+      setIndispoTab('generation'); // Réinitialiser l'onglet
+      setManualIndispoConfig({
+        dates: [],
+        heure_debut: '08:00',
+        heure_fin: '16:00',
+        recurrence: false,
+        recurrence_type: 'semaine',
+        recurrence_interval: 1,
+        recurrence_end: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0]
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde indisponibilités:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer les indisponibilités",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getTypeGardeName = (typeGardeId) => {
     if (!typeGardeId) return 'Tous types';
     const typeGarde = typesGarde.find(t => t.id === typeGardeId);
