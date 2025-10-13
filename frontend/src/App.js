@@ -6922,17 +6922,18 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                 </div>
               </div>
 
-              <div className="modal-actions">
-                <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
-                  Annuler
-                </Button>
-                <Button 
-                  variant="default" 
-                  onClick={handleGenerateIndisponibilites}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
-                </Button>
+                <div className="modal-actions">
+                  <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                    Annuler
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleGenerateIndisponibilites}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
+                  </Button>
+                </div>
               </div>
               )}
 
