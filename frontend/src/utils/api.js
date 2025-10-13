@@ -49,11 +49,16 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
   try {
     const response = await fetch(url, config);
     
-    // Si 401, le token est invalide - rediriger vers login
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = `/${tenantSlug}`;
+    // Si 401 ou 403, le token est invalide - nettoyer et rediriger vers login
+    if (response.status === 401 || response.status === 403) {
+      console.log('Token invalide ou expiré, nettoyage et redirection...');
+      localStorage.clear(); // Nettoyer TOUT le localStorage
+      sessionStorage.clear(); // Nettoyer aussi sessionStorage
+      
+      // Attendre un peu pour éviter les boucles de redirection
+      setTimeout(() => {
+        window.location.href = `/${tenantSlug}`;
+      }, 100);
       return;
     }
     
@@ -71,7 +76,10 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
     
     return data;
   } catch (error) {
-    console.error('API Error:', error);
+    // Si erreur réseau ou parsing JSON
+    if (error.name === 'TypeError' || error.message.includes('JSON')) {
+      console.error('Erreur réseau ou parsing:', error);
+    }
     throw error;
   }
 };
