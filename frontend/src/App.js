@@ -121,6 +121,18 @@ const AuthProvider = ({ children }) => {
       
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(finalUserData);
+      
+      // Initialiser les notifications push pour les utilisateurs non-super-admin
+      if (!isSuperAdmin && tenantSlug && finalUserData?.id) {
+        try {
+          await PushNotificationService.initialize(tenantSlug, finalUserData.id);
+          console.log('✅ Push notifications initialized');
+        } catch (error) {
+          console.error('⚠️ Push notifications initialization failed:', error);
+          // Ne pas bloquer la connexion si les notifications échouent
+        }
+      }
+      
       return { success: true };
     } catch (error) {
       return { 
