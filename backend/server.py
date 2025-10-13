@@ -2421,6 +2421,131 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
     cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
     return [DemandeRemplacement(**demande) for demande in cleaned_demandes]
 
+@api_router.get("/{tenant_slug}/remplacements/propositions")
+async def get_propositions_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """
+    Récupère les propositions de remplacement pour l'utilisateur connecté
+    (Les demandes où il a été contacté et doit répondre)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Trouver les demandes où l'utilisateur est dans remplacants_contactes_ids et statut = en_cours
+    demandes = await db.demandes_remplacement.find({
+        "tenant_id": tenant.id,
+        "statut": "en_cours",
+        "remplacants_contactes_ids": current_user.id
+    }).to_list(1000)
+    
+    # Enrichir avec les détails du demandeur et du type de garde
+    propositions = []
+    for demande in demandes:
+        demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
+        type_garde = await db.types_garde.find_one({"id": demande["type_garde_id"]})
+        
+        demande["demandeur"] = {
+            "nom": demandeur.get("nom", ""),
+            "prenom": demandeur.get("prenom", ""),
+            "email": demandeur.get("email", "")
+        } if demandeur else None
+        
+        demande["type_garde"] = {
+            "nom": type_garde.get("nom", ""),
+            "heure_debut": type_garde.get("heure_debut", ""),
+            "heure_fin": type_garde.get("heure_fin", "")
+        } if type_garde else None
+        
+        propositions.append(clean_mongo_doc(demande))
+    
+    return propositions
+
+@api_router.put("/{tenant_slug}/remplacements/{demande_id}/accepter")
+async def accepter_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Accepter une proposition de remplacement
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await accepter_remplacement(demande_id, current_user.id, tenant.id)
+    
+    return {
+        "message": "Remplacement accepté avec succès",
+        "demande_id": demande_id
+    }
+
+@api_router.put("/{tenant_slug}/remplacements/{demande_id}/refuser")
+async def refuser_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Refuser une proposition de remplacement
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await refuser_remplacement(demande_id, current_user.id, tenant.id)
+    
+    return {
+        "message": "Remplacement refusé",
+        "demande_id": demande_id
+    }
+
+@api_router.delete("/{tenant_slug}/remplacements/{demande_id}")
+async def annuler_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Annuler une demande de remplacement (seulement par le demandeur)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer la demande
+    demande = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Vérifier que c'est bien le demandeur
+    if demande["demandeur_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le demandeur peut annuler la demande")
+    
+    # Vérifier que la demande n'est pas déjà acceptée
+    if demande["statut"] == "accepte":
+        raise HTTPException(status_code=400, detail="Impossible d'annuler une demande déjà acceptée")
+    
+    # Marquer comme annulée
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "annulee",
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Notifier les remplaçants contactés que la demande est annulée
+    if demande.get("remplacants_contactes_ids"):
+        await send_push_notification_to_users(
+            user_ids=demande["remplacants_contactes_ids"],
+            title="Demande annulée",
+            body=f"La demande de remplacement du {demande['date']} a été annulée",
+            data={
+                "type": "remplacement_annulee",
+                "demande_id": demande_id
+            }
+        )
+    
+    logging.info(f"✅ Demande de remplacement annulée: {demande_id}")
+    
+    return {
+        "message": "Demande annulée avec succès",
+        "demande_id": demande_id
+    }
+
 # Formations routes
 @api_router.post("/{tenant_slug}/formations", response_model=Formation)
 async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
