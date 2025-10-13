@@ -1664,7 +1664,12 @@ class ProFireManagerTester:
             print("\n❌ Server is not responding. Cannot continue with tests.")
             return False
         
-        # Test 2: Super Admin Authentication and Dashboard API (PRIORITY TESTS FROM REVIEW REQUEST)
+        # Test 2: Bcrypt Authentication System (PRIORITY TEST FROM REVIEW REQUEST)
+        print("\n🎯 PRIORITY TEST: Bcrypt Authentication System with SHA256 Migration")
+        print("-" * 50)
+        self.test_bcrypt_authentication_system()
+        
+        # Test 3: Super Admin Authentication and Dashboard API (PRIORITY TESTS FROM REVIEW REQUEST)
         print("\n🎯 PRIORITY TESTS: Super Admin Dashboard API Corrections")
         print("-" * 50)
         super_admin_auth_success = self.test_super_admin_authentication()
