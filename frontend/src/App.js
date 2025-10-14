@@ -11,6 +11,7 @@ import { Toaster } from "./components/ui/toaster";
 import { useTenant } from "./contexts/TenantContext";
 import { apiGet, apiPost, apiPut, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
+import { fr } from "date-fns/locale";
 import "./App.css";
 
 // Lazy loading pour optimiser les performances
