@@ -6605,49 +6605,250 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
       )}
 
-      <div className="disponibilites-header">
-        <div>
-          <h1 data-testid="disponibilites-title">
-            {managingUser 
-              ? `Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
-              : 'Mes disponibilités'}
-          </h1>
-          <p>
-            {managingUser 
-              ? `Gérez les créneaux de disponibilité de ${targetUser.prenom} ${targetUser.nom}`
-              : 'Gérez vos créneaux de disponibilité pour les différents types de garde'}
-          </p>
+      {/* Module Disponibilités - Design Visuel avec Grand Calendrier */}
+      <div className="disponibilites-visual-container">
+        {/* Header avec titre et actions */}
+        <div className="disponibilites-visual-header">
+          <div>
+            <h1 data-testid="disponibilites-title">
+              {managingUser 
+                ? `Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
+                : 'Mes disponibilités'}
+            </h1>
+            <p>
+              {managingUser 
+                ? `Calendrier visuel et interactif de ${targetUser.prenom} ${targetUser.nom}`
+                : 'Calendrier visuel et interactif de vos disponibilités'}
+            </p>
+          </div>
+          <div className="disponibilites-actions">
+            <Button 
+              variant="default" 
+              onClick={() => setShowCalendarModal(true)}
+              data-testid="configure-availability-btn"
+            >
+              ✅ Gérer disponibilités
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGenerationModal(true)}
+              data-testid="generate-indisponibilites-btn"
+            >
+              ❌ Gérer indisponibilités
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowReinitModal(true)}
+              data-testid="reinit-disponibilites-btn"
+            >
+              🗑️ Réinitialiser
+            </Button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button 
-            variant="default" 
-            onClick={() => setShowCalendarModal(true)}
-            data-testid="configure-availability-btn"
+
+        {/* Barre de navigation du mois */}
+        <div className="calendar-navigation-bar">
+          <button 
+            className="calendar-nav-button" 
+            onClick={() => navigateMonth('prev')}
           >
-            ✅ Gérer disponibilités
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowGenerationModal(true)}
-            data-testid="generate-indisponibilites-btn"
+            ◀
+          </button>
+          <div className="calendar-month-title">
+            {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
+          </div>
+          <button 
+            className="calendar-nav-button" 
+            onClick={() => navigateMonth('next')}
           >
-            ❌ Gérer indisponibilités
-          </Button>
-          <Button 
-            variant="destructive" 
-            onClick={() => setShowReinitModal(true)}
-            data-testid="reinit-disponibilites-btn"
-          >
-            🗑️ Réinitialiser
-          </Button>
+            ▶
+          </button>
+        </div>
+
+        {/* Grand Calendrier Visuel */}
+        <div className="visual-calendar">
+          {/* Jours de la semaine */}
+          <div className="calendar-weekdays">
+            <div className="calendar-weekday">Lun</div>
+            <div className="calendar-weekday">Mar</div>
+            <div className="calendar-weekday">Mer</div>
+            <div className="calendar-weekday">Jeu</div>
+            <div className="calendar-weekday">Ven</div>
+            <div className="calendar-weekday">Sam</div>
+            <div className="calendar-weekday">Dim</div>
+          </div>
+
+          {/* Grille des jours */}
+          <div className="calendar-days-grid">
+            {/* Cases vides pour aligner le premier jour */}
+            {Array.from({ length: getFirstDayOfMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, index) => (
+              <div key={`empty-${index}`} className="calendar-day-cell empty"></div>
+            ))}
+
+            {/* Jours du mois */}
+            {Array.from({ length: getDaysInMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, dayIndex) => {
+              const dayNumber = dayIndex + 1;
+              const currentDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+              const dateStr = currentDate.toISOString().split('T')[0];
+              const today = new Date();
+              const isToday = currentDate.toDateString() === today.toDateString();
+              
+              const dayDispos = userDisponibilites.filter(d => d.date === dateStr);
+              const disponibilites = dayDispos.filter(d => d.statut === 'disponible');
+              const hasIndisponibilite = dayDispos.some(d => d.statut === 'indisponible');
+
+              return (
+                <div 
+                  key={dayNumber} 
+                  className={`calendar-day-cell ${isToday ? 'today' : ''}`}
+                  onClick={() => handleDayClick(dayNumber)}
+                >
+                  <div className="calendar-day-number">{dayNumber}</div>
+                  <div className="calendar-day-content">
+                    {/* Indisponibilité: croix rouge */}
+                    {hasIndisponibilite && (
+                      <div className="calendar-indispo-marker">❌</div>
+                    )}
+
+                    {/* Disponibilités: pastilles colorées */}
+                    {!hasIndisponibilite && disponibilites.length > 0 && (
+                      <div className="calendar-dispo-pills">
+                        {disponibilites.slice(0, 2).map((dispo, idx) => {
+                          const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                          const color = typeGarde?.couleur || '#3b82f6';
+                          const typeName = typeGarde?.nom || 'Dispo';
+                          
+                          return (
+                            <div 
+                              key={idx}
+                              className="calendar-dispo-pill"
+                              style={{ backgroundColor: color }}
+                              title={`${typeName} ${dispo.heure_debut}-${dispo.heure_fin}`}
+                            >
+                              {typeName}
+                            </div>
+                          );
+                        })}
+                        {disponibilites.length > 2 && (
+                          <div className="calendar-dispo-more">+{disponibilites.length - 2}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Légende du calendrier */}
+        <div className="calendar-legend">
+          <div className="calendar-legend-item">
+            <span className="calendar-legend-icon">❌</span>
+            <span className="calendar-legend-label">Indisponible</span>
+          </div>
+          {typesGarde.map(type => (
+            <div key={type.id} className="calendar-legend-item">
+              <div 
+                className="calendar-legend-pill" 
+                style={{ backgroundColor: type.couleur }}
+              ></div>
+              <span className="calendar-legend-label">{type.nom}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Calendrier et détails des disponibilités */}
-      <div className="availability-main-enhanced">
-        <div className="calendar-section-large">
-          <h2>Calendrier de disponibilités - {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h2>
-          
+      {/* Modal détail du jour */}
+      {showDayDetailModal && selectedDayForDetail && (
+        <div className="day-detail-modal" onClick={() => setShowDayDetailModal(false)}>
+          <div className="day-detail-content" onClick={(e) => e.stopPropagation()}>
+            <div className="day-detail-header">
+              <h3>📅 {selectedDayForDetail.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3>
+              <Button variant="ghost" onClick={() => setShowDayDetailModal(false)}>✕</Button>
+            </div>
+            
+            <div className="day-detail-body">
+              {/* Disponibilités */}
+              <div className="day-detail-section">
+                <h4>✅ Disponibilités ({dayDetailData.disponibilites.length})</h4>
+                {dayDetailData.disponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune disponibilité ce jour</div>
+                ) : (
+                  dayDetailData.disponibilites.map(dispo => {
+                    const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                    return (
+                      <div key={dispo.id} className="day-detail-item">
+                        <div className="day-detail-item-header">
+                          <span className="day-detail-item-type" style={{ color: typeGarde?.couleur || '#3b82f6' }}>
+                            {typeGarde?.nom || 'Disponibilité'}
+                          </span>
+                          <div className="day-detail-item-actions">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleDeleteDisponibilite(dispo.id)}
+                            >
+                              🗑️ Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="day-detail-item-info">
+                          ⏰ {dispo.heure_debut} - {dispo.heure_fin}
+                          {dispo.origine && <span> • Origine: {dispo.origine}</span>}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Indisponibilités */}
+              <div className="day-detail-section">
+                <h4>❌ Indisponibilités ({dayDetailData.indisponibilites.length})</h4>
+                {dayDetailData.indisponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune indisponibilité ce jour</div>
+                ) : (
+                  dayDetailData.indisponibilites.map(indispo => (
+                    <div key={indispo.id} className="day-detail-item">
+                      <div className="day-detail-item-header">
+                        <span className="day-detail-item-type" style={{ color: '#dc2626' }}>
+                          Indisponible
+                        </span>
+                        <div className="day-detail-item-actions">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleDeleteDisponibilite(indispo.id)}
+                          >
+                            🗑️ Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="day-detail-item-info">
+                        ⏰ {indispo.heure_debut} - {indispo.heure_fin}
+                        {indispo.origine && <span> • Origine: {indispo.origine}</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="day-detail-footer">
+              <Button variant="outline" onClick={() => setShowDayDetailModal(false)}>
+                Fermer
+              </Button>
+              <Button variant="default" onClick={() => {
+                setShowDayDetailModal(false);
+                setShowCalendarModal(true);
+              }}>
+                + Ajouter une disponibilité
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
           <Calendar
             mode="multiple"
             selected={getAvailableDates()}
