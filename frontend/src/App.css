@@ -9743,24 +9743,41 @@ body {
   padding-bottom: 0.75rem;
 }
 
-/* Responsive pour mobile */
+/* Responsive pour mobile - Calendriers modaux */
 @media (max-width: 768px) {
   .availability-calendar-large {
-    --rdp-cell-size: 50px;
-    font-size: 1rem;
+    padding: 1rem;
   }
-  
-  .availability-calendar-large .rdp-day {
-    min-height: 50px;
+
+  .availability-calendar-large .rdp {
+    --rdp-cell-size: 45px;
     font-size: 0.95rem;
   }
   
+  .availability-calendar-large .rdp-day {
+    min-height: 45px;
+    font-size: 0.9rem;
+  }
+  
   .availability-calendar-large .rdp-caption {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
   }
   
   .availability-calendar-large .rdp-head_cell {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Responsive tablette - Calendriers modaux */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .availability-calendar-large .rdp {
+    --rdp-cell-size: 60px;
+  }
+  
+  .availability-calendar-large .rdp-day {
+    min-height: 60px;
   }
 }
 
