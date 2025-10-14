@@ -373,6 +373,7 @@ class PlanningModuleTester:
             return False
         
         # Step 2: Get test user
+        print("\n📋 Getting test user...")
         user_id = self.get_test_user()
         if not user_id:
             print("\n❌ No users available for testing - cannot proceed")
