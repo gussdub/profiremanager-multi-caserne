@@ -6863,21 +6863,26 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                 <div className="config-section">
                   <h4>👥 Équipe</h4>
                   <div className="equipe-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                    {['Rouge', 'Jaune', 'Bleu', 'Vert'].map(equipe => (
+                    {[
+                      {nom: 'Vert', numero: 1},
+                      {nom: 'Bleu', numero: 2},
+                      {nom: 'Jaune', numero: 3},
+                      {nom: 'Rouge', numero: 4}
+                    ].map(equipe => (
                       <button
-                        key={equipe}
-                        onClick={() => setGenerationConfig({...generationConfig, equipe})}
-                        className={`equipe-button ${generationConfig.equipe === equipe ? 'selected' : ''}`}
+                        key={equipe.nom}
+                        onClick={() => setGenerationConfig({...generationConfig, equipe: equipe.nom})}
+                        className={`equipe-button ${generationConfig.equipe === equipe.nom ? 'selected' : ''}`}
                         style={{
                           padding: '12px',
-                          border: generationConfig.equipe === equipe ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                          border: generationConfig.equipe === equipe.nom ? '2px solid #dc2626' : '2px solid #e2e8f0',
                           borderRadius: '8px',
-                          background: generationConfig.equipe === equipe ? '#fef2f2' : 'white',
+                          background: generationConfig.equipe === equipe.nom ? '#fef2f2' : 'white',
                           cursor: 'pointer',
-                          fontWeight: generationConfig.equipe === equipe ? 'bold' : 'normal'
+                          fontWeight: generationConfig.equipe === equipe.nom ? 'bold' : 'normal'
                         }}
                       >
-                        {equipe}
+                        {equipe.nom} (#{equipe.numero})
                       </button>
                     ))}
                   </div>
