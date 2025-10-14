@@ -3872,10 +3872,14 @@ async def generer_indisponibilites(
     try:
         # Supprimer les anciennes disponibilités générées automatiquement si demandé
         if not generation_data.conserver_manuelles:
-            # Supprimer toutes les disponibilités de cet utilisateur
+            # Supprimer toutes les disponibilités de cet utilisateur pour la période
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
-                "tenant_id": tenant.id
+                "tenant_id": tenant.id,
+                "date": {
+                    "$gte": generation_data.date_debut,
+                    "$lte": generation_data.date_fin
+                }
             })
         else:
             # Supprimer uniquement les disponibilités générées automatiquement (préserver manuelles)
@@ -3883,7 +3887,11 @@ async def generer_indisponibilites(
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
                 "tenant_id": tenant.id,
-                "origine": origine_type
+                "origine": origine_type,
+                "date": {
+                    "$gte": generation_data.date_debut,
+                    "$lte": generation_data.date_fin
+                }
             })
         
         # Générer les nouvelles indisponibilités
@@ -3892,7 +3900,8 @@ async def generer_indisponibilites(
                 user_id=generation_data.user_id,
                 tenant_id=tenant.id,
                 equipe=generation_data.equipe,
-                annee=generation_data.annee
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin
             )
         elif generation_data.horaire_type == "quebec":
             if not generation_data.date_jour_1:
@@ -3904,7 +3913,8 @@ async def generer_indisponibilites(
                 user_id=generation_data.user_id,
                 tenant_id=tenant.id,
                 equipe=generation_data.equipe,
-                annee=generation_data.annee,
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin,
                 date_jour_1=generation_data.date_jour_1
             )
         else:
@@ -3921,7 +3931,8 @@ async def generer_indisponibilites(
             "message": "Indisponibilités générées avec succès",
             "horaire_type": generation_data.horaire_type,
             "equipe": generation_data.equipe,
-            "annee": generation_data.annee,
+            "date_debut": generation_data.date_debut,
+            "date_fin": generation_data.date_fin,
             "nombre_indisponibilites": len(indispos),
             "conserver_manuelles": generation_data.conserver_manuelles
         }
