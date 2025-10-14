@@ -9684,36 +9684,63 @@ body {
 }
 
 .availability-calendar-large {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
   background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .availability-calendar-large .rdp {
-  --rdp-cell-size: 80px;
+  --rdp-cell-size: 70px;
   --rdp-accent-color: #dc2626;
-  margin: 0;
-  font-size: 1.2rem;
+  margin: 0 auto;
+  font-size: 1.15rem;
 }
 
 .availability-calendar-large .rdp-day {
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 500;
-  min-height: 80px;
-  font-size: 1.1rem;
+  min-height: 70px;
+  font-size: 1.05rem;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.availability-calendar-large .rdp-day:hover {
+  background-color: #fef2f2;
+  transform: scale(1.05);
+  border-color: #dc2626;
+}
+
+.availability-calendar-large .rdp-day_selected {
+  background-color: #dc2626 !important;
+  color: white !important;
+  font-weight: 700;
+  border-color: #dc2626 !important;
+}
+
+.availability-calendar-large .rdp-day_today {
+  font-weight: 700;
+  color: #16a34a;
+  border: 2px solid #16a34a;
 }
 
 .availability-calendar-large .rdp-caption {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #0f172a;
 }
 
 .availability-calendar-large .rdp-head_cell {
   font-size: 1rem;
   font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 0.75rem;
 }
 
 /* Responsive pour mobile */
