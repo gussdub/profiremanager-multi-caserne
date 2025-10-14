@@ -314,7 +314,8 @@ class PlanningModuleTester:
             response = self.session.get(f"{self.base_url}/{self.tenant_slug}/users")
             if response.status_code != 200:
                 print(f"❌ Failed to get users: {response.status_code}")
-                return None
+                print("📋 Trying to create user via Super Admin...")
+                return self.get_test_user_via_super_admin()
             
             users = response.json()
             print(f"📋 Found {len(users)} existing users")
@@ -322,14 +323,19 @@ class PlanningModuleTester:
             if not users or len(users) == 0:
                 # Create a test user
                 print("📋 No existing users, creating test user...")
-                return self.create_test_user()
+                user_id = self.create_test_user()
+                if not user_id:
+                    print("📋 Trying to create user via Super Admin...")
+                    return self.get_test_user_via_super_admin()
+                return user_id
             
             print(f"📋 Using existing user: {users[0].get('email', 'unknown')}")
             return users[0]['id']
             
         except Exception as e:
             print(f"❌ Error in get_test_user: {str(e)}")
-            return None
+            print("📋 Trying to create user via Super Admin...")
+            return self.get_test_user_via_super_admin()
     
     def create_test_user(self):
         """Create a test user for assignments"""
