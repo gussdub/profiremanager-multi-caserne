@@ -313,16 +313,22 @@ class PlanningModuleTester:
         try:
             response = self.session.get(f"{self.base_url}/{self.tenant_slug}/users")
             if response.status_code != 200:
+                print(f"❌ Failed to get users: {response.status_code}")
                 return None
             
             users = response.json()
+            print(f"📋 Found {len(users)} existing users")
+            
             if not users or len(users) == 0:
                 # Create a test user
+                print("📋 No existing users, creating test user...")
                 return self.create_test_user()
             
+            print(f"📋 Using existing user: {users[0].get('email', 'unknown')}")
             return users[0]['id']
             
-        except Exception:
+        except Exception as e:
+            print(f"❌ Error in get_test_user: {str(e)}")
             return None
     
     def create_test_user(self):
