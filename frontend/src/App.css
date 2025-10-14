@@ -3728,12 +3728,58 @@ body {
 
 .interactive-calendar {
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 2rem;
   background-color: white;
-  transform: scale(1.15);
-  transform-origin: top center;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Agrandir le calendrier react-day-picker dans les modals */
+.interactive-calendar .rdp {
+  --rdp-cell-size: 60px;
+  --rdp-accent-color: #16a34a;
+  margin: 0 auto;
+  font-size: 1.1rem;
+}
+
+.interactive-calendar .rdp-day {
+  border-radius: 8px;
+  font-weight: 500;
+  min-height: 60px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.interactive-calendar .rdp-day:hover {
+  background-color: #f0fdf4;
+  transform: scale(1.05);
+}
+
+.interactive-calendar .rdp-caption {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+.interactive-calendar .rdp-head_cell {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.interactive-calendar .rdp-day_selected {
+  background-color: #16a34a !important;
+  color: white !important;
+  font-weight: 700;
+}
+
+.interactive-calendar .rdp-day_today {
+  font-weight: 700;
+  color: #dc2626;
 }
 
 .selection-summary {
