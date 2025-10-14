@@ -6129,14 +6129,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         user_id: targetUser.id,
         horaire_type: generationConfig.horaire_type,
         equipe: generationConfig.equipe,
-        annee: generationConfig.annee,
+        date_debut: generationConfig.date_debut,
+        date_fin: generationConfig.date_fin,
         date_jour_1: generationConfig.horaire_type === 'quebec' ? generationConfig.date_jour_1 : null,
         conserver_manuelles: generationConfig.conserver_manuelles
       });
       
       toast({
         title: "Génération réussie",
-        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe}`,
+        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe} (${generationConfig.date_debut} au ${generationConfig.date_fin})`,
         variant: "success"
       });
       
