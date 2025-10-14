@@ -317,11 +317,45 @@ class PlanningModuleTester:
             
             users = response.json()
             if not users or len(users) == 0:
-                return None
+                # Create a test user
+                return self.create_test_user()
             
             return users[0]['id']
             
         except Exception:
+            return None
+    
+    def create_test_user(self):
+        """Create a test user for assignments"""
+        try:
+            test_user = {
+                "nom": "TestPompier",
+                "prenom": "Planning",
+                "email": f"planning.test.{uuid.uuid4().hex[:8]}@shefford.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_plein",
+                "heures_max_semaine": 40,
+                "role": "employe",
+                "numero_employe": f"PT{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "TestPass123!"
+            }
+            
+            response = self.session.post(f"{self.base_url}/{self.tenant_slug}/users", json=test_user)
+            if response.status_code in [200, 201]:
+                created_user = response.json()
+                print(f"📋 Created test user: {created_user['email']}")
+                return created_user['id']
+            else:
+                print(f"❌ Failed to create test user: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error creating test user: {str(e)}")
             return None
     
     def run_comprehensive_planning_tests(self):
