@@ -3729,8 +3729,11 @@ body {
 .interactive-calendar {
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1.5rem;
   background-color: white;
+  transform: scale(1.15);
+  transform-origin: top center;
+  margin: 1rem 0;
 }
 
 .selection-summary {
