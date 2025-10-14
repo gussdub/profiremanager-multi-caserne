@@ -6221,6 +6221,87 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     }
   };
 
+
+  // Fonctions pour le calendrier visuel
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Convertir dimanche (0) en 6, lundi reste 0
+  };
+
+  const navigateMonth = (direction) => {
+    if (direction === 'prev') {
+      if (calendarCurrentMonth === 0) {
+        setCalendarCurrentMonth(11);
+        setCalendarCurrentYear(calendarCurrentYear - 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth - 1);
+      }
+    } else {
+      if (calendarCurrentMonth === 11) {
+        setCalendarCurrentMonth(0);
+        setCalendarCurrentYear(calendarCurrentYear + 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth + 1);
+      }
+    }
+  };
+
+  const getDisponibilitesForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return userDisponibilites.filter(d => d.date === dateStr);
+  };
+
+  const handleDayClick = (dayNumber) => {
+    const clickedDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+    const dateStr = clickedDate.toISOString().split('T')[0];
+    
+    const disponibilites = userDisponibilites.filter(d => d.date === dateStr && d.statut === 'disponible');
+    const indisponibilites = userDisponibilites.filter(d => d.date === dateStr && d.statut === 'indisponible');
+    
+    setSelectedDayForDetail(clickedDate);
+    setDayDetailData({ disponibilites, indisponibilites });
+    setShowDayDetailModal(true);
+  };
+
+  const handleDeleteDisponibilite = async (dispoId) => {
+    try {
+      await apiDelete(tenantSlug, `/disponibilites/${dispoId}`);
+      toast({
+        title: "Supprimé",
+        description: "Entrée supprimée avec succès",
+        variant: "success"
+      });
+      
+      // Recharger
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Mettre à jour le modal
+      const dateStr = selectedDayForDetail.toISOString().split('T')[0];
+      const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
+      const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
+      setDayDetailData({ disponibilites, indisponibilites });
+      
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getMonthName = (month) => {
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return months[month];
+  };
+
+
   const handleGenerateIndisponibilites = async () => {
     setIsGenerating(true);
     
