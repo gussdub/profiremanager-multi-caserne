@@ -358,10 +358,65 @@ class PlanningModuleTester:
                 return created_user['id']
             else:
                 print(f"❌ Failed to create test user: {response.status_code}")
+                print(f"Response: {response.text}")
                 return None
                 
         except Exception as e:
             print(f"❌ Error creating test user: {str(e)}")
+            return None
+    
+    def get_test_user_via_super_admin(self):
+        """Get test user via Super Admin to bypass validation issues"""
+        try:
+            # Get Super Admin token
+            super_admin_login = {
+                "email": "gussdub@icloud.com",
+                "mot_de_passe": "230685Juin+"
+            }
+            
+            response = requests.post(f"{self.base_url}/admin/auth/login", json=super_admin_login)
+            if response.status_code != 200:
+                return None
+            
+            super_admin_token = response.json()["access_token"]
+            
+            # Get Shefford tenant ID
+            headers = {"Authorization": f"Bearer {super_admin_token}"}
+            response = requests.get(f"{self.base_url}/admin/tenants", headers=headers)
+            if response.status_code != 200:
+                return None
+            
+            tenants = response.json()
+            shefford_tenant = None
+            for tenant in tenants:
+                if tenant.get('slug') == 'shefford':
+                    shefford_tenant = tenant
+                    break
+            
+            if not shefford_tenant:
+                return None
+            
+            # Create a proper user via Super Admin
+            user_data = {
+                "email": f"planning.user.{uuid.uuid4().hex[:8]}@shefford.ca",
+                "prenom": "Planning",
+                "nom": "User",
+                "mot_de_passe": "PlanningUser123!"
+            }
+            
+            response = requests.post(f"{self.base_url}/admin/tenants/{shefford_tenant['id']}/create-admin", 
+                                   json=user_data, headers=headers)
+            
+            if response.status_code == 200:
+                created_user = response.json()
+                print(f"📋 Created user via Super Admin: {user_data['email']}")
+                return created_user['user']['id']
+            else:
+                print(f"❌ Failed to create user via Super Admin: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error creating user via Super Admin: {str(e)}")
             return None
     
     def run_comprehensive_planning_tests(self):
