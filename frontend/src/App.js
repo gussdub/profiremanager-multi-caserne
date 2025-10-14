@@ -6213,22 +6213,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       });
     }
   };
-      });
-      
-      setShowCalendarModal(false);
-      setSelectedDates([]);
-      
-      // Reload
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
-      setUserDisponibilites(dispoData);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder",
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleGenerateIndisponibilites = async () => {
     setIsGenerating(true);
