@@ -3,56 +3,58 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-13T21:00:22.057504",
+    "timestamp": "2025-10-14T19:29:02.992138",
     "details": {}
   },
   {
     "test": "Bcrypt Authentication System",
     "success": true,
     "message": "\u2705 All bcrypt authentication tests passed - SHA256 migration working, new users use bcrypt, password changes use bcrypt, logging functional",
-    "timestamp": "2025-10-13T21:00:25.209266",
+    "timestamp": "2025-10-14T19:29:06.145155",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-13T21:00:25.445398",
+    "timestamp": "2025-10-14T19:29:06.382530",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-13T21:00:25.485915",
+    "timestamp": "2025-10-14T19:29:06.417180",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 23 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-13T21:00:25.522062",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 24 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-14T19:29:06.448810",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 23, revenus_mensuels: 276",
-    "timestamp": "2025-10-13T21:00:25.559113",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 24, revenus_mensuels: 288",
+    "timestamp": "2025-10-14T19:29:06.486411",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
-    "success": true,
-    "message": "\u2705 Indisponibilit\u00e9s Generation System fully functional - Montreal: 91 entries, Quebec: 170 entries, All teams tested, Error handling working",
-    "timestamp": "2025-10-13T21:00:26.516106",
-    "details": {}
+    "success": false,
+    "message": "Montreal 7/24 generation failed: 422",
+    "timestamp": "2025-10-14T19:29:07.261669",
+    "details": {
+      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"d44fa670-c6f2-469a-9e8f-17bdb45c3158\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"d44fa670-c6f2-469a-9e8f-17bdb45c3158\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
+    }
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser Corrected System",
     "success": false,
     "message": "Failed to login as Shefford admin: 401",
-    "timestamp": "2025-10-13T21:00:27.043624",
+    "timestamp": "2025-10-14T19:29:07.789911",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
@@ -61,7 +63,7 @@
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-13T21:00:27.050814",
+    "timestamp": "2025-10-14T19:29:07.797606",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -71,7 +73,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-13T21:00:27.057502",
+    "timestamp": "2025-10-14T19:29:07.805992",
     "details": {}
   }
 ]
