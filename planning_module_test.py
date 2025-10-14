@@ -285,7 +285,7 @@ class PlanningModuleTester:
                 self.log_test("Test 5 - Delete Assignment", False, "No assignment ID provided")
                 return False
             
-            response = self.session.delete(f"{self.base_url}/{self.tenant_slug}/assignations/{assignment_id}")
+            response = self.session.delete(f"{self.base_url}/{self.tenant_slug}/planning/assignation/{assignment_id}")
             if response.status_code not in [200, 204]:
                 self.log_test("Test 5 - Delete Assignment", False, 
                             f"Failed to delete assignment: {response.status_code}")
