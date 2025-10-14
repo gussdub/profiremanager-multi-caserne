@@ -6822,6 +6822,40 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             </div>
             <div className="modal-body">
               <div className="availability-config-advanced">
+                {/* Sélecteur de mode */}
+                <div className="config-section" style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'calendrier'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'calendrier' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'calendrier' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'calendrier' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'calendrier' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      📅 Calendrier (Clics multiples)
+                    </button>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'recurrence'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'recurrence' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'recurrence' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'recurrence' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'recurrence' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      🔄 Avec récurrence
+                    </button>
+                  </div>
+                </div>
+
                 {/* Configuration du type de garde */}
                 <div className="config-section">
                   <h4>🚒 Type de garde spécifique</h4>
