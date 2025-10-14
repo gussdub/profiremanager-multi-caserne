@@ -7063,9 +7063,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   variant="default" 
                   onClick={handleSaveAvailability}
                   data-testid="save-availability-btn"
-                  disabled={!selectedDates || selectedDates.length === 0}
+                  disabled={availabilityConfig.mode === 'calendrier' && (!selectedDates || selectedDates.length === 0)}
                 >
-                  Sauvegarder ({selectedDates?.length || 0} jour(s))
+                  {availabilityConfig.mode === 'calendrier' 
+                    ? `✅ Sauvegarder (${selectedDates?.length || 0} jour${selectedDates?.length > 1 ? 's' : ''})`
+                    : '✅ Générer les disponibilités'}
                 </Button>
               </div>
             </div>
