@@ -23,8 +23,8 @@ import uuid
 # Configuration
 BASE_URL = "https://fireforce-scheduler.preview.emergentagent.com/api"
 TENANT_SLUG = "shefford"
-ADMIN_EMAIL = "admin@firemanager.ca"
-ADMIN_PASSWORD = "admin123"
+ADMIN_EMAIL = "test.planning@shefford.ca"
+ADMIN_PASSWORD = "PlanningTest123!"
 
 class PlanningModuleTester:
     def __init__(self):
