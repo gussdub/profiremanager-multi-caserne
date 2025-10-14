@@ -83,6 +83,35 @@ class PlanningModuleTester:
             self.log_test("Authentication", False, f"Authentication error: {str(e)}")
             return False
     
+    def create_test_guard_type(self):
+        """Create a test guard type if none exist"""
+        try:
+            test_guard_type = {
+                "nom": "Garde de Jour - Test",
+                "heure_debut": "08:00",
+                "heure_fin": "16:00",
+                "personnel_requis": 3,
+                "duree_heures": 8,
+                "couleur": "#FF5733",
+                "jours_application": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "officier_obligatoire": False,
+                "competences_requises": []
+            }
+            
+            response = self.session.post(f"{self.base_url}/{self.tenant_slug}/types-garde", json=test_guard_type)
+            if response.status_code in [200, 201]:
+                created_type = response.json()
+                print(f"📋 Created test guard type: {created_type['nom']}")
+                return created_type
+            else:
+                print(f"❌ Failed to create test guard type: {response.status_code}")
+                print(f"Response: {response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error creating test guard type: {str(e)}")
+            return None
+
     def test_1_retrieve_guard_types(self):
         """Test 1: GET /api/{tenant}/types-garde - Retrieve guard types"""
         try:
@@ -94,9 +123,13 @@ class PlanningModuleTester:
             
             types_garde = response.json()
             if not types_garde or len(types_garde) == 0:
-                self.log_test("Test 1 - Retrieve Guard Types", False, 
-                            "No types-garde configured in system")
-                return False, None
+                print("📋 No guard types found, creating test guard type...")
+                created_type = self.create_test_guard_type()
+                if not created_type:
+                    self.log_test("Test 1 - Retrieve Guard Types", False, 
+                                "No types-garde configured and cannot create test type")
+                    return False, None
+                types_garde = [created_type]
             
             # Verify required fields
             first_type = types_garde[0]
