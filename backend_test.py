@@ -1926,6 +1926,11 @@ class ProFireManagerTester:
             # Test 8: Additional Core Functionality
             self.test_planning_endpoints()
             self.test_replacement_system()
+            
+            # Test 9: COMPREHENSIVE PLANNING MODULE TEST (as requested in review)
+            print("\n🎯 COMPREHENSIVE PLANNING MODULE TEST (Review Request)")
+            print("-" * 50)
+            self.test_planning_module_comprehensive()
         
         # Summary
         print("\n" + "=" * 50)
