@@ -745,7 +745,8 @@ class IndisponibiliteGenerate(BaseModel):
     user_id: str
     horaire_type: str  # "montreal" ou "quebec"
     equipe: str  # "Rouge", "Jaune", "Bleu", "Vert"
-    annee: int
+    date_debut: str  # Date de début (YYYY-MM-DD)
+    date_fin: str  # Date de fin (YYYY-MM-DD)
     date_jour_1: Optional[str] = None  # Pour Quebec 10/14, date du Jour 1 du cycle (YYYY-MM-DD)
     conserver_manuelles: bool = True  # Conserver les modifications manuelles lors de la régénération
 
