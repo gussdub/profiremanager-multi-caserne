@@ -6959,7 +6959,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#1e40af' }}>
                     <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
                     <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
-                    <li><strong>Année :</strong> {generationConfig.annee}</li>
+                    <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
                     {generationConfig.horaire_type === 'quebec' && (
                       <li><strong>Jour 1 :</strong> {new Date(generationConfig.date_jour_1).toLocaleDateString('fr-FR')}</li>
                     )}
