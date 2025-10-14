@@ -5900,7 +5900,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [generationConfig, setGenerationConfig] = useState({
     horaire_type: 'montreal',
     equipe: 'Rouge',
-    annee: new Date().getFullYear(),
+    date_debut: new Date().toISOString().split('T')[0],  // Date du jour
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],  // 31 décembre de l'année en cours
     date_jour_1: new Date().toISOString().split('T')[0],
     conserver_manuelles: true
   });
