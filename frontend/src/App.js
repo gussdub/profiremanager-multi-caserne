@@ -6932,33 +6932,127 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   </div>
                 )}
 
-                {/* Sélection des dates */}
-                <div className="config-section">
-                  <h4>📆 Sélection des dates</h4>
-                  <div className="calendar-instructions">
-                    <p>Cliquez sur les dates où vous êtes disponible :</p>
+                {/* MODE CALENDRIER - Sélection des dates */}
+                {availabilityConfig.mode === 'calendrier' && (
+                  <div className="config-section">
+                    <h4>📆 Sélection des dates</h4>
+                    <div className="calendar-instructions">
+                      <p>Cliquez sur les dates où vous êtes disponible :</p>
+                    </div>
+                    
+                    <Calendar
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={setSelectedDates}
+                      className="interactive-calendar"
+                      disabled={(date) => date < new Date().setHours(0,0,0,0)}
+                    />
+                    
+                    <div className="selection-summary-advanced">
+                      <div className="summary-item">
+                        <strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}
+                      </div>
+                      <div className="summary-item">
+                        <strong>Dates sélectionnées :</strong> {selectedDates?.length || 0} jour(s)
+                      </div>
+                      <div className="summary-item">
+                        <strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}
+                      </div>
+                    </div>
                   </div>
-                  
-                  <Calendar
-                    mode="multiple"
-                    selected={selectedDates}
-                    onSelect={setSelectedDates}
-                    className="interactive-calendar"
-                    disabled={(date) => date < new Date().setHours(0,0,0,0)}
-                  />
-                  
-                  <div className="selection-summary-advanced">
-                    <div className="summary-item">
-                      <strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}
+                )}
+
+                {/* MODE RÉCURRENCE - Période avec récurrence */}
+                {availabilityConfig.mode === 'recurrence' && (
+                  <>
+                    <div className="config-section">
+                      <h4>📅 Période</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <Label>Date de début</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_debut}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_debut: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Date de fin</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_fin}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_fin: e.target.value})}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="summary-item">
-                      <strong>Dates sélectionnées :</strong> {selectedDates?.length || 0} jour(s)
+
+                    <div className="config-section">
+                      <h4>🔄 Récurrence</h4>
+                      <Label>Type de récurrence</Label>
+                      <select
+                        value={availabilityConfig.recurrence_type}
+                        onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_type: e.target.value})}
+                        className="form-select"
+                      >
+                        <option value="hebdomadaire">Toutes les semaines (hebdomadaire)</option>
+                        <option value="bihebdomadaire">Toutes les deux semaines (bihebdomadaire)</option>
+                        <option value="mensuelle">Tous les mois (mensuelle)</option>
+                        <option value="annuelle">Tous les ans (annuelle)</option>
+                        <option value="personnalisee">Personnalisée</option>
+                      </select>
+
+                      {availabilityConfig.recurrence_type === 'personnalisee' && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>⚙️ Configuration personnalisée</h5>
+                          <Label>Fréquence</Label>
+                          <select
+                            value={availabilityConfig.recurrence_frequence}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_frequence: e.target.value})}
+                            className="form-select"
+                            style={{ marginBottom: '10px' }}
+                          >
+                            <option value="jours">Jours</option>
+                            <option value="semaines">Semaines</option>
+                            <option value="mois">Mois</option>
+                            <option value="ans">Ans</option>
+                          </select>
+
+                          <Label>Intervalle : Tous les</Label>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={availabilityConfig.recurrence_intervalle}
+                              onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                              style={{ width: '100px' }}
+                            />
+                            <span>{availabilityConfig.recurrence_frequence}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="summary-item">
-                      <strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}
+
+                    {/* Résumé pour le mode récurrence */}
+                    <div className="config-section" style={{ background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <h4 style={{ color: '#15803d', marginTop: 0 }}>📊 Résumé</h4>
+                      <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#15803d' }}>
+                        <li><strong>Mode :</strong> Récurrence</li>
+                        <li><strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}</li>
+                        <li><strong>Période :</strong> Du {new Date(availabilityConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(availabilityConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                        <li><strong>Récurrence :</strong> {
+                          availabilityConfig.recurrence_type === 'hebdomadaire' ? 'Toutes les semaines' :
+                          availabilityConfig.recurrence_type === 'bihebdomadaire' ? 'Toutes les 2 semaines' :
+                          availabilityConfig.recurrence_type === 'mensuelle' ? 'Tous les mois' :
+                          availabilityConfig.recurrence_type === 'annuelle' ? 'Tous les ans' :
+                          `Tous les ${availabilityConfig.recurrence_intervalle} ${availabilityConfig.recurrence_frequence}`
+                        }</li>
+                        <li><strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}</li>
+                      </ul>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
               <div className="modal-actions">
