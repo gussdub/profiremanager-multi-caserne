@@ -5625,14 +5625,16 @@ body {
   margin-bottom: 2rem;
 }
 
-.calendar-weekdays {
+/* Force Grid avec spécificité maximale */
+.disponibilites-visual-container .visual-calendar .calendar-weekdays {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
+  grid-auto-flow: column !important;
   background: linear-gradient(135deg, #0f172a, #1e293b);
   padding: 1rem 0;
 }
 
-.calendar-weekday {
+.disponibilites-visual-container .visual-calendar .calendar-weekday {
   text-align: center;
   font-weight: 700;
   color: white;
@@ -5641,9 +5643,10 @@ body {
   letter-spacing: 0.5px;
 }
 
-.calendar-days-grid {
+.disponibilites-visual-container .visual-calendar .calendar-days-grid {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
+  grid-auto-flow: row !important;
   gap: 0;
   padding: 0;
 }
