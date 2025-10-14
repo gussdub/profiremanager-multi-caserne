@@ -6080,44 +6080,139 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const handleSaveAvailability = async () => {
-    if (selectedDates.length === 0) {
-      toast({
-        title: "Aucune date sélectionnée",
-        description: "Veuillez sélectionner au moins une date",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      // CORRECTION : Combiner avec les disponibilités existantes au lieu de remplacer
-      const existingDispos = userDisponibilites.map(d => ({
-        user_id: targetUser.id,
-        date: d.date,
-        type_garde_id: d.type_garde_id || null,
-        heure_debut: d.heure_debut,
-        heure_fin: d.heure_fin,
-        statut: d.statut
-      }));
-
-      const nouvelles_disponibilites = selectedDates.map(date => ({
-        user_id: targetUser.id,
-        date: date.toISOString().split('T')[0],
-        type_garde_id: availabilityConfig.type_garde_id || null,
-        heure_debut: availabilityConfig.heure_debut,
-        heure_fin: availabilityConfig.heure_fin,
-        statut: availabilityConfig.statut
-      }));
-
-      // Combiner existantes + nouvelles
-      const allDisponibilites = [...existingDispos, ...nouvelles_disponibilites];
-
-      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      let disponibilitesACreer = [];
+      
+      if (availabilityConfig.mode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (selectedDates.length === 0) {
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Créer une disponibilité pour chaque date sélectionnée
+        for (const date of selectedDates) {
+          disponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: date.toISOString().split('T')[0],
+            type_garde_id: availabilityConfig.type_garde_id || null,
+            heure_debut: availabilityConfig.heure_debut,
+            heure_fin: availabilityConfig.heure_fin,
+            statut: availabilityConfig.statut,
+            origine: 'manuelle'
+          });
+        }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        const dateDebut = new Date(availabilityConfig.date_debut);
+        const dateFin = new Date(availabilityConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (availabilityConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30;
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            if (availabilityConfig.recurrence_frequence === 'jours') {
+              intervalJours = availabilityConfig.recurrence_intervalle;
+            } else if (availabilityConfig.recurrence_frequence === 'semaines') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 7;
+            } else if (availabilityConfig.recurrence_frequence === 'mois') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 30;
+            } else if (availabilityConfig.recurrence_frequence === 'ans') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000;
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          disponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: currentDate.toISOString().split('T')[0],
+            type_garde_id: availabilityConfig.type_garde_id || null,
+            heure_debut: availabilityConfig.heure_debut,
+            heure_fin: availabilityConfig.heure_fin,
+            statut: availabilityConfig.statut,
+            origine: 'manuelle'
+          });
+          
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + intervalJours);
+          compteur++;
+        }
+      }
+      
+      // Envoyer les disponibilités au backend
+      for (const dispo of disponibilitesACreer) {
+        await apiPost(tenantSlug, '/disponibilites', dispo);
+      }
       
       toast({
-        title: "Disponibilités ajoutées",
-        description: `${nouvelles_disponibilites.length} nouveaux jours configurés (${allDisponibilites.length} total)`,
+        title: "Disponibilités enregistrées",
+        description: `${disponibilitesACreer.length} disponibilité(s) ajoutée(s) avec succès`,
         variant: "success"
+      });
+      
+      setShowCalendarModal(false);
+      setSelectedDates([]);
+      
+      // Réinitialiser la config
+      setAvailabilityConfig({
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00',
+        statut: 'disponible',
+        mode: 'calendrier',
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde disponibilités:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer les disponibilités",
+        variant: "destructive"
+      });
+    }
+  };
       });
       
       setShowCalendarModal(false);
