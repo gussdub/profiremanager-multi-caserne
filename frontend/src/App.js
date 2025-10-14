@@ -5895,7 +5895,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     type_garde_id: '',
     heure_debut: '08:00',
     heure_fin: '16:00',
-    statut: 'disponible'
+    statut: 'disponible',
+    // Pour mode récurrence
+    mode: 'calendrier', // 'calendrier' ou 'recurrence'
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    recurrence_type: 'hebdomadaire',
+    recurrence_frequence: 'jours',
+    recurrence_intervalle: 1
   });
   const [generationConfig, setGenerationConfig] = useState({
     horaire_type: 'montreal',
