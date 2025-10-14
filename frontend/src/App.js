@@ -6890,20 +6890,29 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   </div>
                 </div>
 
-                {/* Sélection de l'année */}
+                {/* Sélection des dates */}
                 <div className="config-section">
-                  <h4>📅 Année</h4>
-                  <select
-                    value={generationConfig.annee}
-                    onChange={(e) => setGenerationConfig({...generationConfig, annee: parseInt(e.target.value)})}
-                    className="form-select"
-                  >
-                    <option value={new Date().getFullYear()}>{new Date().getFullYear()} (Année courante)</option>
-                    <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
-                    <option value={new Date().getFullYear() + 2}>{new Date().getFullYear() + 2}</option>
-                  </select>
+                  <h4>📅 Période de génération</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de début</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_debut}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_debut: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de fin</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_fin}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_fin: e.target.value})}
+                      />
+                    </div>
+                  </div>
                   <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-                    Les indisponibilités seront générées du 1er janvier au 31 décembre {generationConfig.annee}
+                    Les indisponibilités seront générées entre ces deux dates
                   </small>
                 </div>
 
