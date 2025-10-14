@@ -165,7 +165,7 @@ class PlanningModuleTester:
                 "assignation_type": "manuel"
             }
             
-            response = self.session.post(f"{self.base_url}/{self.tenant_slug}/assignations", json=assignment_data)
+            response = self.session.post(f"{self.base_url}/{self.tenant_slug}/planning/assignation", json=assignment_data)
             if response.status_code not in [200, 201]:
                 self.log_test("Test 2 - Create Manual Assignment", False, 
                             f"Failed to create assignment: {response.status_code}", 
