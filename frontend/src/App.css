@@ -5541,7 +5541,15 @@ body {
 
 .epi-taille-row {
   display: grid;
-
+  grid-template-columns: 40px 1fr 200px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
 
 /* ============================================
    CALENDRIER VISUEL MENSUEL - Module Disponibilités
