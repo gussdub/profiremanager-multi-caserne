@@ -5906,15 +5906,22 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     conserver_manuelles: true
   });
   const [isGenerating, setIsGenerating] = useState(false);
-  const [indispoTab, setIndispoTab] = useState('generation'); // 'generation' ou 'manuelle'
+  const [indispoTab, setIndispoTab] = useState('generation'); // 'generation', 'manuelle_calendrier', 'manuelle_recurrence'
+  const [manualIndispoMode, setManualIndispoMode] = useState('calendrier'); // 'calendrier' ou 'recurrence'
   const [manualIndispoConfig, setManualIndispoConfig] = useState({
+    // Pour mode calendrier (clics multiples)
     dates: [],
-    heure_debut: '08:00',
-    heure_fin: '16:00',
-    recurrence: false,
-    recurrence_type: 'semaine',
-    recurrence_interval: 1,
-    recurrence_end: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0]
+    
+    // Pour mode récurrence
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    heure_debut: '00:00',
+    heure_fin: '23:59',
+    
+    // Options de récurrence
+    recurrence_type: 'hebdomadaire', // 'hebdomadaire', 'bihebdomadaire', 'mensuelle', 'annuelle', 'personnalisee'
+    recurrence_frequence: 'jours', // Pour personnalisée: 'jours', 'semaines', 'mois', 'ans'
+    recurrence_intervalle: 1 // Tous les X (jours/semaines/mois/ans)
   });
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
