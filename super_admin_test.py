@@ -8,7 +8,7 @@ import json
 import sys
 
 # Configuration
-BASE_URL = "https://fireforce-scheduler.preview.emergentagent.com/api"
+BASE_URL = "https://profire-manager-1.preview.emergentagent.com/api"
 SUPER_ADMIN_EMAIL = "admin@profiremanager.ca"
 SUPER_ADMIN_PASSWORD = "Admin123!"
 FALLBACK_SUPER_ADMIN_EMAIL = "gussdub@icloud.com"

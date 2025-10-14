@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 
 # Configuration
-BASE_URL = "https://fireforce-scheduler.preview.emergentagent.com/api"
+BASE_URL = "https://profire-manager-1.preview.emergentagent.com/api"
 
 def test_corrected_reinitialiser():
     """Test CORRECTED Réinitialiser functionality with new type_entree filter"""
