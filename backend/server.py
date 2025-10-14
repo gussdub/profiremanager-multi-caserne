@@ -3690,101 +3690,71 @@ async def send_push_notification(
 
 # ==================== FONCTIONS HELPER POUR GÉNÉRATION D'INDISPONIBILITÉS ====================
 
-def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, annee: int) -> List[Dict]:
+def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
     """
     Génère les indisponibilités pour l'horaire Montreal 7/24
-    Cycle de 28 jours commençant toujours par le premier lundi rouge
+    Cycle de 28 jours commençant le 27 janvier 2025 (premier lundi rouge = jour 1)
     
-    Pattern RÉEL Montreal 7/24 (vérifié avec calendrier 2026):
-    - Chaque équipe travaille 7 BLOCS de 3 jours consécutifs sur 28 jours
-    - Pattern: 3 jours travail + 1 jour repos (répété 7 fois)
-    - Total: 21 jours de travail + 7 jours de repos = 28 jours
+    Pattern RÉEL Montreal 7/24 (vérifié avec calendrier 2025):
+    Chaque équipe travaille exactement 7 jours spécifiques sur le cycle de 28 jours
     
-    Équipes avec numéros:
-    - Vert (Équipe #1) : débute au jour 1 du cycle
-    - Bleu (Équipe #2) : débute au jour 8 du cycle  
-    - Jaune (Équipe #3) : débute au jour 15 du cycle
-    - Rouge (Équipe #4) : débute au jour 22 du cycle
+    Équipes avec numéros et patterns:
+    - Vert (Équipe #1) : jours 2, 8, 11, 19, 21, 24, 27 du cycle
+    - Bleu (Équipe #2) : jours 3, 6, 9, 15, 18, 26, 28 du cycle
+    - Jaune (Équipe #3) : jours 5, 7, 10, 13, 16, 22, 25 du cycle
+    - Rouge (Équipe #4) : jours 1, 4, 12, 14, 17, 20, 23 du cycle
     
-    Le jour 1 du cycle = Premier lundi où Rouge travaille
+    Le jour 1 du cycle = 27 janvier 2025 (premier lundi rouge)
     
     On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
     """
     
-    # Mapping équipe -> numéro -> offset de départ dans le cycle
+    # Mapping équipe -> numéro -> jours de travail dans le cycle de 28 jours
     equipes_config = {
-        "Vert": {"numero": 1, "offset": 0},      # commence jour 1
-        "Bleu": {"numero": 2, "offset": 7},      # commence jour 8  
-        "Jaune": {"numero": 3, "offset": 14},    # commence jour 15
-        "Rouge": {"numero": 4, "offset": 21}     # commence jour 22
+        "Vert": {
+            "numero": 1,
+            "jours_cycle": [2, 8, 11, 19, 21, 24, 27]
+        },
+        "Bleu": {
+            "numero": 2,
+            "jours_cycle": [3, 6, 9, 15, 18, 26, 28]
+        },
+        "Jaune": {
+            "numero": 3,
+            "jours_cycle": [5, 7, 10, 13, 16, 22, 25]
+        },
+        "Rouge": {
+            "numero": 4,
+            "jours_cycle": [1, 4, 12, 14, 17, 20, 23]
+        }
     }
     
     if equipe not in equipes_config:
         raise ValueError(f"Équipe invalide: {equipe}. Doit être Vert, Bleu, Jaune ou Rouge")
     
     config = equipes_config[equipe]
-    offset = config["offset"]
+    jours_travail_cycle = config["jours_cycle"]
     
-    # Pattern: 3 jours travail + 1 jour repos, répété 7 fois
-    # Créer la liste des jours de travail pour cette équipe (relatif au cycle de 28 jours)
-    jours_travail_cycle = []
-    for bloc in range(7):  # 7 blocs
-        debut_bloc = offset + (bloc * 4)  # Chaque bloc fait 4 jours (3 travail + 1 repos)
-        for j in range(3):  # 3 jours de travail par bloc
-            jour_cycle = (debut_bloc + j) % 28
-            if jour_cycle == 0:
-                jour_cycle = 28
-            jours_travail_cycle.append(jour_cycle)
-    
-    # Trier pour faciliter le debug
-    jours_travail_cycle.sort()
     logging.info(f"Montreal 7/24 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
     
+    # Le jour 1 du cycle = 27 janvier 2025
+    jour_1_cycle = datetime(2025, 1, 27).date()
+    
+    # Parser les dates de début et fin
+    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d").date()
+    
     indisponibilites = []
+    current_date = date_debut_obj
     
-    # Trouver le premier lundi rouge de l'année
-    # Le premier lundi rouge est le premier lundi de janvier (ou très proche)
-    premiere_date = datetime(annee, 1, 1).date()
-    
-    # Pour Rouge (équipe 4), on cherche le premier lundi de l'année
-    # Pour les autres équipes, on décale en arrière selon l'offset
-    # Trouver le premier lundi de janvier
-    if premiere_date.weekday() == 0:  # Déjà un lundi
-        premier_lundi_janvier = premiere_date
-    else:
-        jours_jusqua_lundi = (7 - premiere_date.weekday()) % 7
-        if jours_jusqua_lundi == 0:
-            jours_jusqua_lundi = 7
-        premier_lundi_janvier = premiere_date + timedelta(days=jours_jusqua_lundi)
-    
-    # Le jour 1 du cycle est le jour où Rouge commence (jour 22 du cycle précédent)
-    # Donc Rouge commence réellement au jour 22, mais le cycle est défini par "jour 1 = lundi rouge"
-    # En réalité, si Rouge est au jour 22-28, et le cycle recommence, 
-    # le "premier lundi rouge" de l'année EST le jour 1 de son propre cycle
-    
-    # Pour simplifier: le premier lundi de janvier est considéré comme le début d'un cycle Rouge
-    # Les autres équipes sont décalées en ARRIÈRE par rapport à ce point
-    premier_lundi_rouge = premier_lundi_janvier
-    
-    # Calculer le jour 1 du cycle global (qui correspond au début du cycle)
-    # Si Rouge (offset 21) commence le premier_lundi_rouge, alors jour 1 du cycle est 21 jours avant
-    jour_1_cycle = premier_lundi_rouge - timedelta(days=offset)
-    
-    logging.info(f"Montreal 7/24 - {equipe}: Jour 1 du cycle = {jour_1_cycle}, Premier lundi rouge = {premier_lundi_rouge}")
-    
-    # Générer du 1er janvier au 31 décembre
-    date_debut = premiere_date
-    date_fin = datetime(annee, 12, 31).date()
-    
-    current_date = date_debut
-    while current_date <= date_fin:
+    while current_date <= date_fin_obj:
         # Calculer le jour dans le cycle (1-28)
         jours_depuis_jour1 = (current_date - jour_1_cycle).days
-        jour_cycle = (jours_depuis_jour1 % 28)
-        if jour_cycle == 0:
-            jour_cycle = 28
-        elif jour_cycle < 0:
-            jour_cycle = 28 + jour_cycle
+        jour_cycle = (jours_depuis_jour1 % 28) + 1
+        
+        # Si négatif (avant le 27 janvier 2025), calculer en arrière
+        if jours_depuis_jour1 < 0:
+            jour_cycle = 28 - ((-jours_depuis_jour1 - 1) % 28)
         
         # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
         if jour_cycle in jours_travail_cycle:
@@ -3804,7 +3774,7 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
         
         current_date += timedelta(days=1)
     
-    logging.info(f"✅ Montreal 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées pour {annee}")
+    logging.info(f"✅ Montreal 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
 def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, annee: int, date_jour_1: str) -> List[Dict]:
