@@ -6439,11 +6439,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       });
     }
   };
-        description: error.response?.data?.detail || "Impossible d'enregistrer les indisponibilités",
-        variant: "destructive"
-      });
-    }
-  };
 
   const getTypeGardeName = (typeGardeId) => {
     if (!typeGardeId) return 'Tous types';
