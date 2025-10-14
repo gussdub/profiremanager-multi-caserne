@@ -6221,50 +6221,25 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const handleSaveManualIndisponibilites = async () => {
-    if (manualIndispoConfig.dates.length === 0) {
-      toast({
-        title: "Aucune date sélectionnée",
-        description: "Veuillez sélectionner au moins une date",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      let allIndisponibilites = [];
-
-      // Pour chaque date sélectionnée
-      for (const date of manualIndispoConfig.dates) {
-        const startDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      let indisponibilitesACreer = [];
+      
+      if (manualIndispoMode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (manualIndispoConfig.dates.length === 0) {
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
         
-        if (manualIndispoConfig.recurrence) {
-          // Avec récurrence
-          const endDate = new Date(manualIndispoConfig.recurrence_end);
-          let currentDate = new Date(startDate);
-
-          while (currentDate <= endDate) {
-            allIndisponibilites.push({
-              user_id: targetUser.id,
-              date: currentDate.toISOString().split('T')[0],
-              type_garde_id: null,
-              heure_debut: manualIndispoConfig.heure_debut,
-              heure_fin: manualIndispoConfig.heure_fin,
-              statut: 'indisponible',
-              origine: 'manuelle'
-            });
-
-            // Calculer la prochaine date selon le type de récurrence
-            if (manualIndispoConfig.recurrence_type === 'semaine') {
-              currentDate.setUTCDate(currentDate.getUTCDate() + (7 * manualIndispoConfig.recurrence_interval));
-            } else if (manualIndispoConfig.recurrence_type === 'cycle28') {
-              currentDate.setUTCDate(currentDate.getUTCDate() + 28);
-            }
-          }
-        } else {
-          // Sans récurrence
-          allIndisponibilites.push({
+        // Créer une indisponibilité pour chaque date sélectionnée
+        for (const date of manualIndispoConfig.dates) {
+          indisponibilitesACreer.push({
             user_id: targetUser.id,
-            date: startDate.toISOString().split('T')[0],
+            date: new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString().split('T')[0],
             type_garde_id: null,
             heure_debut: manualIndispoConfig.heure_debut,
             heure_fin: manualIndispoConfig.heure_fin,
@@ -6272,39 +6247,97 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             origine: 'manuelle'
           });
         }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        const dateDebut = new Date(manualIndispoConfig.date_debut);
+        const dateFin = new Date(manualIndispoConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (manualIndispoConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30; // Approximation
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            // Calculer selon la fréquence et l'intervalle
+            if (manualIndispoConfig.recurrence_frequence === 'jours') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle;
+            } else if (manualIndispoConfig.recurrence_frequence === 'semaines') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 7;
+            } else if (manualIndispoConfig.recurrence_frequence === 'mois') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 30;
+            } else if (manualIndispoConfig.recurrence_frequence === 'ans') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000; // Sécurité pour éviter boucle infinie
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          indisponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: currentDate.toISOString().split('T')[0],
+            type_garde_id: null,
+            heure_debut: manualIndispoConfig.heure_debut,
+            heure_fin: manualIndispoConfig.heure_fin,
+            statut: 'indisponible',
+            origine: 'manuelle'
+          });
+          
+          // Avancer à la prochaine date
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + intervalJours);
+          compteur++;
+        }
       }
-
-      // Combiner avec les disponibilités existantes
-      const existingDispos = userDisponibilites.map(d => ({
-        user_id: targetUser.id,
-        date: d.date,
-        type_garde_id: d.type_garde_id || null,
-        heure_debut: d.heure_debut,
-        heure_fin: d.heure_fin,
-        statut: d.statut,
-        origine: d.origine || 'manuelle'
-      }));
-
-      const allDisponibilites = [...existingDispos, ...allIndisponibilites];
-
-      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      // Envoyer les indisponibilités au backend
+      for (const indispo of indisponibilitesACreer) {
+        await apiPost(tenantSlug, '/disponibilites', indispo);
+      }
       
       toast({
         title: "Indisponibilités enregistrées",
-        description: `${allIndisponibilites.length} indisponibilité(s) ajoutée(s) avec succès`,
+        description: `${indisponibilitesACreer.length} indisponibilité(s) ajoutée(s) avec succès`,
         variant: "success"
       });
       
       setShowGenerationModal(false);
-      setIndispoTab('generation'); // Réinitialiser l'onglet
+      
+      // Réinitialiser la config
       setManualIndispoConfig({
         dates: [],
-        heure_debut: '08:00',
-        heure_fin: '16:00',
-        recurrence: false,
-        recurrence_type: 'semaine',
-        recurrence_interval: 1,
-        recurrence_end: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0]
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        heure_debut: '00:00',
+        heure_fin: '23:59',
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1
       });
       
       // Recharger les disponibilités
@@ -6315,6 +6348,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       console.error('Erreur sauvegarde indisponibilités:', error);
       toast({
         title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer les indisponibilités",
+        variant: "destructive"
+      });
+    }
+  };
         description: error.response?.data?.detail || "Impossible d'enregistrer les indisponibilités",
         variant: "destructive"
       });
