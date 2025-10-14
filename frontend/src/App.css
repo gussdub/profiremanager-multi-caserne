@@ -5946,41 +5946,125 @@ body {
   justify-content: flex-end;
 }
 
-/* Responsive */
+/* Responsive Mobile */
 @media (max-width: 768px) {
+  .disponibilites-visual-container {
+    padding: 1rem;
+  }
+
+  .disponibilites-visual-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .disponibilites-visual-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .disponibilites-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .disponibilites-actions button {
+    width: 100%;
+  }
+
+  .visual-calendar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .calendar-days-grid {
-    gap: 2px;
+    gap: 1px;
+    min-width: 100%;
   }
   
   .calendar-day-cell {
-    padding: 0.25rem;
+    padding: 0.3rem;
+    min-width: 40px;
+    min-height: 40px;
+    aspect-ratio: 1;
   }
   
   .calendar-day-number {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
   }
   
   .calendar-dispo-pill {
-    font-size: 0.65rem;
-    padding: 0.2rem 0.4rem;
+    font-size: 0.55rem;
+    padding: 0.15rem 0.3rem;
+    max-width: 90%;
   }
   
   .calendar-indispo-marker {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
   
   .calendar-month-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   
   .calendar-nav-button {
     padding: 0.5rem 1rem;
     font-size: 1rem;
   }
-  
-  .disponibilites-visual-header {
-    flex-direction: column;
-    align-items: flex-start;
+
+  .calendar-navigation-bar {
+    padding: 1rem;
+  }
+
+  .calendar-legend {
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .calendar-legend-item {
+    font-size: 0.85rem;
+  }
+
+  /* Calendriers dans les modals - responsive */
+  .interactive-calendar {
+    padding: 1rem;
+  }
+
+  .interactive-calendar .rdp {
+    --rdp-cell-size: 40px;
+    font-size: 0.9rem;
+  }
+
+  .interactive-calendar .rdp-day {
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .interactive-calendar .rdp-caption {
+    font-size: 1.1rem;
+  }
+
+  .interactive-calendar .rdp-head_cell {
+    font-size: 0.75rem;
+  }
+}
+
+/* Responsive Tablette */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .disponibilites-visual-container {
+    padding: 1.5rem;
+  }
+
+  .calendar-day-cell {
+    padding: 0.4rem;
+  }
+
+  .calendar-day-number {
+    font-size: 0.95rem;
+  }
+
+  .calendar-dispo-pill {
+    font-size: 0.7rem;
   }
 }
 
