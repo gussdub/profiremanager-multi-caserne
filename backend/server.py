@@ -3922,18 +3922,12 @@ async def generer_indisponibilites(
                 date_fin=generation_data.date_fin
             )
         elif generation_data.horaire_type == "quebec":
-            if not generation_data.date_jour_1:
-                raise HTTPException(
-                    status_code=400,
-                    detail="date_jour_1 est requis pour l'horaire Quebec 10/14"
-                )
             indispos = generer_indisponibilites_quebec(
                 user_id=generation_data.user_id,
                 tenant_id=tenant.id,
                 equipe=generation_data.equipe,
                 date_debut=generation_data.date_debut,
-                date_fin=generation_data.date_fin,
-                date_jour_1=generation_data.date_jour_1
+                date_fin=generation_data.date_fin
             )
         else:
             raise HTTPException(
