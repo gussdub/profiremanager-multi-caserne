@@ -2655,182 +2655,596 @@ async def annuler_demande_remplacement(
         "demande_id": demande_id
     }
 
-# Formations routes
-@api_router.post("/{tenant_slug}/formations", response_model=Formation)
-async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+
+# ==================== COMPÉTENCES ROUTES ====================
+
+@api_router.post("/{tenant_slug}/competences", response_model=Competence)
+async def create_competence(tenant_slug: str, competence: CompetenceCreate, current_user: User = Depends(get_current_user)):
+    """Crée une nouvelle compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    competence_dict = competence.dict()
+    competence_dict["tenant_id"] = tenant.id
+    competence_obj = Competence(**competence_dict)
+    
+    comp_data = competence_obj.dict()
+    comp_data["created_at"] = competence_obj.created_at.isoformat()
+    
+    await db.competences.insert_one(comp_data)
+    
+    return competence_obj
+
+@api_router.get("/{tenant_slug}/competences", response_model=List[Competence])
+async def get_competences(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère toutes les compétences"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
+    cleaned = [clean_mongo_doc(c) for c in competences]
+    
+    for c in cleaned:
+        if isinstance(c.get("created_at"), str):
+            c["created_at"] = datetime.fromisoformat(c["created_at"].replace('Z', '+00:00'))
+    
+    return [Competence(**c) for c in cleaned]
+
+@api_router.put("/{tenant_slug}/competences/{competence_id}", response_model=Competence)
+async def update_competence(
+    tenant_slug: str,
+    competence_id: str,
+    competence_update: CompetenceUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    update_data = {k: v for k, v in competence_update.dict().items() if v is not None}
+    
+    result = await db.competences.update_one(
+        {"id": competence_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Compétence non trouvée")
+    
+    updated = await db.competences.find_one({"id": competence_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
+    
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    
+    return Competence(**cleaned)
+
+@api_router.delete("/{tenant_slug}/competences/{competence_id}")
+async def delete_competence(tenant_slug: str, competence_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime une compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier qu'aucune formation n'utilise cette compétence
+    formations_liees = await db.formations.count_documents({
+        "competence_id": competence_id,
+        "tenant_id": tenant.id
+    })
+    
+    if formations_liees > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossible de supprimer : {formations_liees} formation(s) utilisent cette compétence"
+        )
+    
+    result = await db.competences.delete_one({"id": competence_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Compétence non trouvée")
+    
+    return {"message": "Compétence supprimée avec succès"}
+
+# ==================== FORMATIONS ROUTES NFPA 1500 ====================
+
+@api_router.post("/{tenant_slug}/formations", response_model=Formation)
+async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
+    """Crée une nouvelle formation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     formation_dict = formation.dict()
     formation_dict["tenant_id"] = tenant.id
+    formation_dict["places_restantes"] = formation.places_max
     formation_obj = Formation(**formation_dict)
-    await db.formations.insert_one(formation_obj.dict())
+    
+    form_data = formation_obj.dict()
+    form_data["created_at"] = formation_obj.created_at.isoformat()
+    form_data["updated_at"] = formation_obj.updated_at.isoformat()
+    
+    await db.formations.insert_one(form_data)
+    
     return formation_obj
 
 @api_router.get("/{tenant_slug}/formations", response_model=List[Formation])
-async def get_formations(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
+async def get_formations(tenant_slug: str, annee: Optional[int] = None, current_user: User = Depends(get_current_user)):
+    """Récupère toutes les formations (filtre par année optionnel)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
-    cleaned_formations = [clean_mongo_doc(formation) for formation in formations]
-    return [Formation(**formation) for formation in cleaned_formations]
+    query = {"tenant_id": tenant.id}
+    if annee:
+        query["annee"] = annee
+    
+    formations = await db.formations.find(query).sort("date_debut", 1).to_list(1000)
+    cleaned = [clean_mongo_doc(f) for f in formations]
+    
+    for f in cleaned:
+        if isinstance(f.get("created_at"), str):
+            f["created_at"] = datetime.fromisoformat(f["created_at"].replace('Z', '+00:00'))
+        if isinstance(f.get("updated_at"), str):
+            f["updated_at"] = datetime.fromisoformat(f["updated_at"].replace('Z', '+00:00'))
+    
+    return [Formation(**f) for f in cleaned]
 
 @api_router.put("/{tenant_slug}/formations/{formation_id}", response_model=Formation)
-async def update_formation(tenant_slug: str, formation_id: str, formation_update: FormationCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+async def update_formation(
+    tenant_slug: str,
+    formation_id: str,
+    formation_update: FormationUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Check if formation exists dans ce tenant
-    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    if not existing_formation:
+    update_data = {k: v for k, v in formation_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.formations.update_one(
+        {"id": formation_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
-    # Update formation data
-    formation_dict = formation_update.dict()
-    formation_dict["id"] = formation_id
-    formation_dict["tenant_id"] = tenant.id
-    formation_dict["created_at"] = existing_formation.get("created_at")
+    updated = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
     
-    result = await db.formations.replace_one({"id": formation_id, "tenant_id": tenant.id}, formation_dict)
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour la formation")
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
     
-    updated_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    updated_formation = clean_mongo_doc(updated_formation)
-    return Formation(**updated_formation)
+    return Formation(**cleaned)
 
 @api_router.delete("/{tenant_slug}/formations/{formation_id}")
 async def delete_formation(tenant_slug: str, formation_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    """Supprime une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Check if formation exists dans ce tenant
-    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    if not existing_formation:
-        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    # Supprimer aussi toutes les inscriptions
+    await db.inscriptions_formations.delete_many({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id
+    })
     
-    # Delete formation
     result = await db.formations.delete_one({"id": formation_id, "tenant_id": tenant.id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de supprimer la formation")
     
-    # Remove from users' formations arrays (uniquement dans ce tenant)
-    await db.users.update_many(
-        {"formations": formation_id, "tenant_id": tenant.id},
-        {"$pull": {"formations": formation_id}}
-    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
     
     return {"message": "Formation supprimée avec succès"}
 
-class SessionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    titre: str
-    competence_id: str  # Lien vers Formation (compétence)
-    duree_heures: int
-    date_debut: str  # YYYY-MM-DD
-    heure_debut: str  # HH:MM
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
-    participants: List[str] = []  # IDs des utilisateurs inscrits
-    statut: str = "planifie"  # planifie, en_cours, termine, annule
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# ==================== INSCRIPTIONS FORMATIONS ====================
 
-class SessionFormationCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    titre: str
-    competence_id: str
-    duree_heures: int
-    date_debut: str
-    heure_debut: str
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
+@api_router.post("/{tenant_slug}/formations/{formation_id}/inscription")
+async def inscrire_formation(
+    tenant_slug: str,
+    formation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Inscrit un pompier à une formation (avec gestion liste d'attente)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier formation existe
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    
+    # Vérifier si déjà inscrit
+    existing = await db.inscriptions_formations.find_one({
+        "formation_id": formation_id,
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Déjà inscrit à cette formation")
+    
+    # Compter les inscrits actuels
+    nb_inscrits = await db.inscriptions_formations.count_documents({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id,
+        "statut": "inscrit"
+    })
+    
+    # Déterminer le statut
+    statut = "inscrit" if nb_inscrits < formation["places_max"] else "en_attente"
+    
+    # Créer inscription
+    inscription = InscriptionFormation(
+        tenant_id=tenant.id,
+        formation_id=formation_id,
+        user_id=current_user.id,
+        date_inscription=datetime.now(timezone.utc).date().isoformat(),
+        statut=statut
+    )
+    
+    insc_data = inscription.dict()
+    insc_data["created_at"] = inscription.created_at.isoformat()
+    insc_data["updated_at"] = inscription.updated_at.isoformat()
+    
+    await db.inscriptions_formations.insert_one(insc_data)
+    
+    # Mettre à jour places restantes
+    if statut == "inscrit":
+        await db.formations.update_one(
+            {"id": formation_id, "tenant_id": tenant.id},
+            {"$set": {"places_restantes": formation["places_max"] - nb_inscrits - 1}}
+        )
+    
+    # Si liste d'attente créée, notifier admin/superviseurs
+    if statut == "en_attente":
+        superviseurs = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["admin", "superviseur"]}
+        }).to_list(100)
+        
+        for sup in superviseurs:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=sup["id"],
+                type="formation_liste_attente",
+                titre="Liste d'attente formation",
+                message=f"La formation '{formation['nom']}' est complète. {current_user.prenom} {current_user.nom} est en liste d'attente.",
+                lien="/formations",
+                data={"formation_id": formation_id}
+            )
+    
+    return {
+        "message": "Inscription réussie",
+        "statut": statut,
+        "position_attente": nb_inscrits - formation["places_max"] + 1 if statut == "en_attente" else None
+    }
 
-class InscriptionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    session_id: str
-    user_id: str
-    date_inscription: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    statut: str = "inscrit"  # inscrit, present, absent, annule
+@api_router.get("/{tenant_slug}/formations/{formation_id}/inscriptions")
+async def get_inscriptions_formation(
+    tenant_slug: str,
+    formation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère toutes les inscriptions d'une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inscriptions = await db.inscriptions_formations.find({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    # Enrichir avec données utilisateur
+    result = []
+    for insc in inscriptions:
+        user = await db.users.find_one({"id": insc["user_id"], "tenant_id": tenant.id})
+        if user:
+            cleaned_insc = clean_mongo_doc(insc)
+            cleaned_insc["user_nom"] = f"{user['prenom']} {user['nom']}"
+            cleaned_insc["user_grade"] = user.get("grade", "")
+            result.append(cleaned_insc)
+    
+    return result
 
-class DemandeCongé(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demandeur_id: str
-    type_conge: str  # maladie, vacances, parental, personnel
-    date_debut: str  # YYYY-MM-DD
-    date_fin: str  # YYYY-MM-DD
-    nombre_jours: int
-    raison: str
-    documents: List[str] = []  # URLs des documents justificatifs
-    priorite: str = "normale"  # urgente, haute, normale, faible
-    statut: str = "en_attente"  # en_attente, approuve, refuse
-    approuve_par: Optional[str] = None  # ID du superviseur/admin qui approuve
-    date_approbation: Optional[str] = None
-    commentaire_approbation: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+@api_router.put("/{tenant_slug}/formations/{formation_id}/inscription/{user_id}/presence")
+async def valider_presence(
+    tenant_slug: str,
+    formation_id: str,
+    user_id: str,
+    presence_data: InscriptionFormationUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Valide la présence et crédite les heures"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer l'inscription
+    inscription = await db.inscriptions_formations.find_one({
+        "formation_id": formation_id,
+        "user_id": user_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not inscription:
+        raise HTTPException(status_code=404, detail="Inscription non trouvée")
+    
+    # Récupérer la formation pour les heures
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    
+    # Si présent, créditer les heures
+    heures = 0.0
+    if presence_data.statut == "present":
+        heures = formation["duree_heures"]
+    
+    update_data = {
+        "statut": presence_data.statut,
+        "heures_creditees": heures,
+        "notes": presence_data.notes or "",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inscriptions_formations.update_one(
+        {"formation_id": formation_id, "user_id": user_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Présence validée", "heures_creditees": heures}
 
-class DemandeCongeCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    type_conge: str
-    date_debut: str
-    date_fin: str
-    raison: str = ""
-    statut: str = "en_attente"
+@api_router.post("/{tenant_slug}/formations/{formation_id}/dupliquer")
+async def dupliquer_formation(
+    tenant_slug: str,
+    formation_id: str,
+    nouvelle_date: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Duplique une formation pour gérer la liste d'attente"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer formation originale
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    
+    # Créer nouvelle formation
+    nouvelle_formation = Formation(
+        tenant_id=tenant.id,
+        nom=formation["nom"] + " (Session 2)",
+        competence_id=formation["competence_id"],
+        description=formation["description"],
+        date_debut=nouvelle_date.get("date_debut"),
+        date_fin=nouvelle_date.get("date_fin"),
+        heure_debut=formation["heure_debut"],
+        heure_fin=formation["heure_fin"],
+        duree_heures=formation["duree_heures"],
+        lieu=formation["lieu"],
+        instructeur=formation["instructeur"],
+        places_max=formation["places_max"],
+        places_restantes=formation["places_max"],
+        annee=formation["annee"]
+    )
+    
+    form_data = nouvelle_formation.dict()
+    form_data["created_at"] = nouvelle_formation.created_at.isoformat()
+    form_data["updated_at"] = nouvelle_formation.updated_at.isoformat()
+    
+    await db.formations.insert_one(form_data)
+    
+    # Notifier les personnes en attente
+    en_attente = await db.inscriptions_formations.find({
+        "formation_id": formation_id,
+        "statut": "en_attente",
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    for insc in en_attente:
+        user = await db.users.find_one({"id": insc["user_id"], "tenant_id": tenant.id})
+        if user:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=user["id"],
+                type="formation_nouvelle_date",
+                titre="Nouvelle date de formation disponible",
+                message=f"Une nouvelle session de '{formation['nom']}' est disponible le {nouvelle_date.get('date_debut')}. Inscrivez-vous!",
+                lien="/formations",
+                data={"formation_id": nouvelle_formation.id}
+            )
+    
+    return {
+        "message": "Formation dupliquée avec succès",
+        "nouvelle_formation_id": nouvelle_formation.id,
+        "personnes_notifiees": len(en_attente)
+    }
 
-class Notification(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    destinataire_id: str
-    type: str  # remplacement_disponible, conge_approuve, conge_refuse, conge_demande, planning_assigne
-    titre: str
-    message: str
-    lien: Optional[str] = None  # Lien vers la page concernée
-    statut: str = "non_lu"  # non_lu, lu
-    data: Optional[Dict[str, Any]] = {}  # Données supplémentaires (demande_id, etc.)
-    date_creation: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    date_lecture: Optional[str] = None
+# ==================== RAPPORTS FORMATIONS NFPA 1500 ====================
 
-class NotificationRemplacement(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demande_remplacement_id: str
-    destinataire_id: str
-    message: str
-    type_notification: str = "remplacement_disponible"  # remplacement_disponible, approbation_requise
-    statut: str = "envoye"  # envoye, lu, accepte, refuse
-    date_envoi: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    date_reponse: Optional[datetime] = None
-    ordre_priorite: Optional[int] = None  # Pour le mode séquentiel
+@api_router.get("/{tenant_slug}/formations/rapports/conformite-nfpa1500")
+async def get_rapport_conformite_nfpa1500(
+    tenant_slug: str,
+    annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport conformité NFPA 1500 par pompier"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les pompiers
+    pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Récupérer les compétences
+    competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Récupérer les paramètres
+    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
+    heures_min = params.get("heures_minimales_annuelles", 100) if params else 100
+    
+    rapport = []
+    
+    for pompier in pompiers:
+        # Calculer heures par compétence
+        inscriptions = await db.inscriptions_formations.find({
+            "user_id": pompier["id"],
+            "tenant_id": tenant.id,
+            "statut": "present"
+        }).to_list(1000)
+        
+        heures_par_competence = {}
+        total_heures = 0
+        
+        for insc in inscriptions:
+            formation = await db.formations.find_one({
+                "id": insc["formation_id"],
+                "annee": annee,
+                "tenant_id": tenant.id
+            })
+            
+            if formation:
+                comp_id = formation["competence_id"]
+                heures = insc.get("heures_creditees", 0)
+                
+                if comp_id not in heures_par_competence:
+                    heures_par_competence[comp_id] = 0
+                
+                heures_par_competence[comp_id] += heures
+                total_heures += heures
+        
+        # Vérifier conformité
+        conforme = total_heures >= heures_min
+        
+        pompier_data = clean_mongo_doc(pompier)
+        pompier_data["total_heures"] = total_heures
+        pompier_data["heures_requises"] = heures_min
+        pompier_data["conforme"] = conforme
+        pompier_data["pourcentage"] = round((total_heures / heures_min * 100) if heures_min > 0 else 0, 1)
+        pompier_data["heures_par_competence"] = heures_par_competence
+        
+        rapport.append(pompier_data)
+    
+    # Trier par conformité puis heures
+    rapport.sort(key=lambda x: (-int(x["conforme"]), -x["total_heures"]))
+    
+    return {
+        "annee": annee,
+        "heures_minimales": heures_min,
+        "total_pompiers": len(rapport),
+        "pompiers_conformes": len([p for p in rapport if p["conforme"]]),
+        "pourcentage_conformite": round(len([p for p in rapport if p["conforme"]]) / len(rapport) * 100, 1) if len(rapport) > 0 else 0,
+        "pompiers": rapport
+    }
 
-class ParametresRemplacements(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
-    taille_groupe: int = 3  # Pour mode groupe_sequentiel
-    delai_attente_heures: int = 24  # Délai avant de passer au suivant
-    max_contacts: int = 5
-    priorite_grade: bool = True
-    priorite_competences: bool = True
+@api_router.get("/{tenant_slug}/formations/rapports/dashboard")
+async def get_dashboard_formations(
+    tenant_slug: str,
+    annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Dashboard formations pour NFPA 1500"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Heures planifiées
+    formations = await db.formations.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
+    heures_planifiees = sum([f.get("duree_heures", 0) for f in formations])
+    
+    # Heures effectuées (présences validées)
+    inscriptions = await db.inscriptions_formations.find({
+        "tenant_id": tenant.id,
+        "statut": "present"
+    }).to_list(10000)
+    
+    heures_effectuees = 0
+    for insc in inscriptions:
+        formation = await db.formations.find_one({
+            "id": insc["formation_id"],
+            "annee": annee,
+            "tenant_id": tenant.id
+        })
+        if formation:
+            heures_effectuees += insc.get("heures_creditees", 0)
+    
+    # Pompiers formés
+    total_pompiers = await db.users.count_documents({"tenant_id": tenant.id})
+    pompiers_avec_formation = len(set([insc["user_id"] for insc in inscriptions if await db.formations.find_one({"id": insc["formation_id"], "annee": annee, "tenant_id": tenant.id})]))
+    
+    return {
+        "annee": annee,
+        "heures_planifiees": heures_planifiees,
+        "heures_effectuees": heures_effectuees,
+        "pourcentage_realisation": round((heures_effectuees / heures_planifiees * 100) if heures_planifiees > 0 else 0, 1),
+        "total_pompiers": total_pompiers,
+        "pompiers_formes": pompiers_avec_formation,
+        "pourcentage_pompiers_formes": round((pompiers_avec_formation / total_pompiers * 100) if total_pompiers > 0 else 0, 1),
+        "nombre_formations": len(formations)
+    }
 
-# EPI Models
+# ==================== PARAMÈTRES FORMATIONS ====================
+
+@api_router.get("/{tenant_slug}/parametres/formations")
+async def get_parametres_formations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les paramètres formations"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        # Créer paramètres par défaut
+        default_params = ParametresFormations(tenant_id=tenant.id)
+        params_data = default_params.dict()
+        params_data["updated_at"] = default_params.updated_at.isoformat()
+        await db.parametres_formations.insert_one(params_data)
+        return default_params
+    
+    cleaned = clean_mongo_doc(params)
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
+    
+    return ParametresFormations(**cleaned)
+
+@api_router.put("/{tenant_slug}/parametres/formations")
+async def update_parametres_formations(
+    tenant_slug: str,
+    params: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres formations"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    params["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.parametres_formations.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": params},
+        upsert=True
+    )
+    
+    return {"message": "Paramètres mis à jour avec succès"}
+
 # ==================== MODÈLES EPI NFPA 1851 ====================
 
 class EPI(BaseModel):
