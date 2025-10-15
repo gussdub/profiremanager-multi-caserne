@@ -25,7 +25,7 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: isLargeCalendar ? "text-4xl font-bold" : "text-sm font-medium",
+        caption_label: isLargeCalendar ? "text-3xl font-bold" : "text-sm font-medium",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -37,7 +37,7 @@ function Calendar({
         head_row: "flex",
         head_cell: cn(
           "text-muted-foreground rounded-md font-normal",
-          isLargeCalendar ? "w-[150px] text-xl font-bold" : "w-8 text-[0.8rem]"
+          isLargeCalendar ? "w-[130px] text-lg font-bold" : "w-8 text-[0.8rem]"
         ),
         row: "flex w-full mt-2",
         cell: cn(
@@ -48,7 +48,7 @@ function Calendar({
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          isLargeCalendar ? "h-[150px] w-[150px] text-2xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
+          isLargeCalendar ? "h-[130px] w-[130px] text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
           "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
