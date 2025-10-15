@@ -499,410 +499,976 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 };
 
 // Module EPI Component - Vue différente selon le rôle
+
+
+// ==================== MODULE EPI NFPA 1851 - PHASE 1 ====================
 const ModuleEPI = ({ user }) => {
   const { tenantSlug } = useTenant();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [myEPIs, setMyEPIs] = useState([]);
-  const [allEPIs, setAllEPIs] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('inventaire');
+  
+  // États inventaire
+  const [epis, setEpis] = useState([]);
   const [selectedEPI, setSelectedEPI] = useState(null);
+  const [showEPIModal, setShowEPIModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  
+  const [epiForm, setEpiForm] = useState({
+    numero_serie: '',
+    type_epi: 'casque',
+    marque: '',
+    modele: '',
+    numero_serie_fabricant: '',
+    date_fabrication: '',
+    date_mise_en_service: new Date().toISOString().split('T')[0],
+    norme_certification: 'NFPA 1971',
+    cout_achat: 0,
+    couleur: '',
+    taille: '',
+    user_id: '',
+    statut: 'En service',
+    notes: ''
+  });
+  
+  // États inspections
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [typeInspection, setTypeInspection] = useState('apres_utilisation');
+  const [inspections, setInspections] = useState([]);
   const [inspectionForm, setInspectionForm] = useState({
     date_inspection: new Date().toISOString().split('T')[0],
-    resultat: 'Conforme',
-    integrite: true,
-    proprete: true,
-    dommages_visibles: false,
-    coutures: true,
-    fermetures: true,
-    observations: ''
+    inspecteur_nom: '',
+    inspecteur_id: '',
+    isp_id: '',
+    isp_nom: '',
+    isp_accreditations: '',
+    statut_global: 'conforme',
+    checklist: {},
+    commentaires: ''
   });
-  const { toast } = useToast();
-
-  const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'superviseur';
-
+  
+  // États ISP
+  const [isps, setIsps] = useState([]);
+  const [showISPModal, setShowISPModal] = useState(false);
+  const [selectedISP, setSelectedISP] = useState(null);
+  const [ispForm, setIspForm] = useState({
+    nom: '',
+    contact: '',
+    telephone: '',
+    email: '',
+    accreditations: '',
+    notes: ''
+  });
+  
+  // États rapports
+  const [rapportConformite, setRapportConformite] = useState(null);
+  const [rapportEcheances, setRapportEcheances] = useState(null);
+  
+  // Types EPI
+  const typesEPI = [
+    { id: 'casque', nom: 'Casque', icone: '🪖' },
+    { id: 'bottes', nom: 'Bottes', icone: '👢' },
+    { id: 'veste_bunker', nom: 'Manteau Habit de Combat', icone: '🧥' },
+    { id: 'pantalon_bunker', nom: 'Pantalon Habit de Combat', icone: '👖' },
+    { id: 'gants', nom: 'Gants', icone: '🧤' },
+    { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+  ];
+  
+  // Checklists NFPA 1851
+  const getChecklistTemplate = (type) => {
+    if (type === 'apres_utilisation') {
+      return {
+        propre: 'oui',
+        degradation_visible: 'non',
+        fermetures_fonctionnelles: 'oui',
+        bandes_reflechissantes_intactes: 'oui'
+      };
+    } else if (type === 'routine_mensuelle') {
+      return {
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: 'non',
+        dommages_chimiques: 'non',
+        dommages_mecaniques: 'non',
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon'
+      };
+    } else {
+      return {
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: 'non',
+        dommages_chimiques: 'non',
+        dommages_mecaniques: 'non',
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon',
+        inspection_detaillee_doublure: 'bon',
+        separation_doublure: 'non',
+        bulles_delamination: 'non',
+        coutures_cachees: 'bon',
+        test_ajustement_complet: 'bon',
+        condition_etiquettes: 'bon'
+      };
+    }
+  };
+  
   useEffect(() => {
-    fetchEPIData();
-  }, [user, tenantSlug]);
-
-  const fetchEPIData = async () => {
-    if (!tenantSlug) return;
-    
+    if (tenantSlug && user) {
+      loadData();
+      setInspectionForm(prev => ({
+        ...prev,
+        inspecteur_nom: `${user.prenom} ${user.nom}`,
+        inspecteur_id: user.id
+      }));
+    }
+  }, [tenantSlug, user]);
+  
+  useEffect(() => {
+    if (activeTab === 'rapports') {
+      loadRapports();
+    }
+  }, [activeTab]);
+  
+  const loadData = async () => {
     setLoading(true);
     try {
-      if (isAdminOrSupervisor) {
-        // Admin/Superviseur : charger tous les EPI et les alertes
-        const alertsData = await apiGet(tenantSlug, '/epi/alertes/all');
-        setAlerts(alertsData);
-      } else {
-        // Employé : charger ses propres EPI
-        const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
-        setMyEPIs(episData);
-      }
+      const [episData, ispsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/epi'),
+        apiGet(tenantSlug, '/isp'),
+        apiGet(tenantSlug, '/users')
+      ]);
+      setEpis(episData || []);
+      setIsps(ispsData || []);
+      setUsers(usersData || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des EPI:', error);
+      console.error('Erreur:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les données EPI",
+        description: "Impossible de charger les données",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
-
-  const handleStartInspection = (epi) => {
-    setSelectedEPI(epi);
-    setShowInspectionModal(true);
-  };
-
-  const handleSubmitInspection = async () => {
-    if (!selectedEPI) return;
-
+  
+  const loadRapports = async () => {
     try {
-      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/inspection`, {
-        ...inspectionForm,
-        inspecteur_id: user.id
-      });
-
-      toast({
-        title: "Inspection enregistrée",
-        description: "L'inspection a été enregistrée avec succès",
-        variant: "success"
-      });
-
-      setShowInspectionModal(false);
-      fetchEPIData();
-      resetInspectionForm();
+      const [conformite, echeances] = await Promise.all([
+        apiGet(tenantSlug, '/epi/rapports/conformite'),
+        apiGet(tenantSlug, '/epi/rapports/echeances?jours=30')
+      ]);
+      setRapportConformite(conformite);
+      setRapportEcheances(echeances);
+    } catch (error) {
+      console.error('Erreur rapports:', error);
+    }
+  };
+  
+  const loadInspections = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/inspections`);
+      setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur inspections:', error);
+    }
+  };
+  
+  // CRUD EPI
+  const handleSaveEPI = async () => {
+    try {
+      if (selectedEPI) {
+        await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, epiForm);
+        toast({ title: "Succès", description: "EPI modifié" });
+      } else {
+        await apiPost(tenantSlug, '/epi', epiForm);
+        toast({ title: "Succès", description: "EPI créé" });
+      }
+      setShowEPIModal(false);
+      loadData();
+      resetEPIForm();
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Impossible d'enregistrer l'inspection",
+        description: error.response?.data?.detail || "Erreur",
         variant: "destructive"
       });
     }
   };
-
-  const resetInspectionForm = () => {
-    setInspectionForm({
-      date_inspection: new Date().toISOString().split('T')[0],
-      resultat: 'Conforme',
-      integrite: true,
-      proprete: true,
-      dommages_visibles: false,
-      coutures: true,
-      fermetures: true,
-      observations: ''
+  
+  const handleDeleteEPI = async (epiId) => {
+    if (!window.confirm('Supprimer cet EPI ?')) return;
+    try {
+      await apiDelete(tenantSlug, `/epi/${epiId}`);
+      toast({ title: "Succès", description: "EPI supprimé" });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetEPIForm = () => {
+    setEpiForm({
+      numero_serie: '',
+      type_epi: 'casque',
+      marque: '',
+      modele: '',
+      numero_serie_fabricant: '',
+      date_fabrication: '',
+      date_mise_en_service: new Date().toISOString().split('T')[0],
+      norme_certification: 'NFPA 1971',
+      cout_achat: 0,
+      couleur: '',
+      taille: '',
+      user_id: '',
+      statut: 'En service',
+      notes: ''
     });
     setSelectedEPI(null);
   };
-
-  const getAllEPITypes = () => {
-    return [
-      { id: 'casque', nom: 'Casque', icone: '🪖' },
-      { id: 'bottes', nom: 'Bottes', icone: '👢' },
-      { id: 'veste_bunker', nom: 'Veste Bunker', icone: '🧥' },
-      { id: 'pantalon_bunker', nom: 'Pantalon Bunker', icone: '👖' },
-      { id: 'gants', nom: 'Gants', icone: '🧤' },
-      { id: 'masque_apria', nom: 'Facial APRIA', icone: '😷' },
-      { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
-    ];
+  
+  const openEditEPI = (epi) => {
+    setSelectedEPI(epi);
+    setEpiForm({
+      numero_serie: epi.numero_serie,
+      type_epi: epi.type_epi,
+      marque: epi.marque,
+      modele: epi.modele,
+      numero_serie_fabricant: epi.numero_serie_fabricant || '',
+      date_fabrication: epi.date_fabrication || '',
+      date_mise_en_service: epi.date_mise_en_service,
+      norme_certification: epi.norme_certification || 'NFPA 1971',
+      cout_achat: epi.cout_achat || 0,
+      couleur: epi.couleur || '',
+      taille: epi.taille || '',
+      user_id: epi.user_id || '',
+      statut: epi.statut,
+      notes: epi.notes || ''
+    });
+    setShowEPIModal(true);
   };
-  const getEPINom = (typeEpi) => {
-    const noms = {
-      'casque': 'Casque',
-      'bottes': 'Bottes',
-      'veste_bunker': 'Veste Bunker',
-      'pantalon_bunker': 'Pantalon Bunker',
-      'gants': 'Gants',
-      'masque_apria': 'Facial APRIA',
-      'cagoule': 'Cagoule Anti-Particules'
-    };
-    return noms[typeEpi] || typeEpi;
+  
+  const openDetailEPI = async (epi) => {
+    setSelectedEPI(epi);
+    await loadInspections(epi.id);
+    setShowDetailModal(true);
   };
-
-  const getEPIIcone = (typeEpi) => {
-    const icones = {
-      'casque': '🪖',
-      'bottes': '👢',
-      'veste_bunker': '🧥',
-      'pantalon_bunker': '👖',
-      'gants': '🧤',
-      'masque_apria': '😷',
-      'cagoule': '🎭'
-    };
-    return icones[typeEpi] || '🛡️';
+  
+  // Inspections
+  const handleSaveInspection = async () => {
+    try {
+      const data = {
+        ...inspectionForm,
+        type_inspection: typeInspection,
+        checklist: getChecklistTemplate(typeInspection)
+      };
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/inspection`, data);
+      toast({ title: "Succès", description: "Inspection enregistrée" });
+      setShowInspectionModal(false);
+      loadInspections(selectedEPI.id);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
   };
-
-  const getEtatColor = (etat) => {
+  
+  // ISP
+  const handleSaveISP = async () => {
+    try {
+      if (selectedISP) {
+        await apiPut(tenantSlug, `/isp/${selectedISP.id}`, ispForm);
+        toast({ title: "Succès", description: "Fournisseur modifié" });
+      } else {
+        await apiPost(tenantSlug, '/isp', ispForm);
+        toast({ title: "Succès", description: "Fournisseur ajouté" });
+      }
+      setShowISPModal(false);
+      loadData();
+      resetISPForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteISP = async (ispId) => {
+    if (!window.confirm('Supprimer ce fournisseur ?')) return;
+    try {
+      await apiDelete(tenantSlug, `/isp/${ispId}`);
+      toast({ title: "Succès", description: "Fournisseur supprimé" });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetISPForm = () => {
+    setIspForm({
+      nom: '',
+      contact: '',
+      telephone: '',
+      email: '',
+      accreditations: '',
+      notes: ''
+    });
+    setSelectedISP(null);
+  };
+  
+  const openEditISP = (isp) => {
+    setSelectedISP(isp);
+    setIspForm({
+      nom: isp.nom,
+      contact: isp.contact || '',
+      telephone: isp.telephone || '',
+      email: isp.email || '',
+      accreditations: isp.accreditations || '',
+      notes: isp.notes || ''
+    });
+    setShowISPModal(true);
+  };
+  
+  const getTypeIcon = (type) => typesEPI.find(t => t.id === type)?.icone || '🛡️';
+  const getTypeName = (type) => typesEPI.find(t => t.id === type)?.nom || type;
+  const getStatutColor = (statut) => {
     const colors = {
-      'Neuf': '#10B981',
-      'Bon': '#3B82F6',
-      'À remplacer': '#F59E0B',
-      'Défectueux': '#EF4444'
+      'En service': '#10B981',
+      'En inspection': '#F59E0B',
+      'En réparation': '#EF4444',
+      'Hors service': '#DC2626',
+      'Retiré': '#6B7280'
     };
-    return colors[etat] || '#6B7280';
+    return colors[statut] || '#6B7280';
   };
-
+  
+  const getUserName = (userId) => {
+    const user = users.find(u => u.id === userId);
+    return user ? `${user.prenom} ${user.nom}` : 'Non assigné';
+  };
+  
   if (loading) {
-    return <div className="loading">Chargement des EPI...</div>;
-  }
-
-  // Vue Admin/Superviseur
-  if (isAdminOrSupervisor) {
     return (
-      <div className="module-epi">
-        <div className="module-epi-header">
-          <div>
-            <h1>🛡️ Gestion des EPI</h1>
-            <p>Vue d'ensemble et actions rapides</p>
-          </div>
-        </div>
-
-        {/* Cartes d'alertes */}
-        <div className="epi-quick-actions-grid">
-          <div className="epi-stat-card">
-            <div className="epi-stat-header">
-              <h3>⚠️ Alertes</h3>
-            </div>
-            <div className="epi-stat-body">
-              <div className="alert-stats">
-                <div className="alert-stat-item">
-                  <span className="alert-stat-number">{alerts.filter(a => a.type === 'expiration').length}</span>
-                  <span className="alert-stat-label">Expirations proches</span>
-                </div>
-                <div className="alert-stat-item">
-                  <span className="alert-stat-number">{alerts.filter(a => a.type === 'inspection').length}</span>
-                  <span className="alert-stat-label">Inspections à venir</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="epi-stat-card">
-            <div className="epi-stat-header epi-stat-header-priorite">
-              <h3>🚨 Haute Priorité</h3>
-            </div>
-            <div className="epi-stat-body">
-              <div className="alert-stats">
-                <div className="alert-stat-item">
-                  <span className="alert-stat-number urgent">{alerts.filter(a => a.priorite === 'haute').length}</span>
-                  <span className="alert-stat-label">Actions urgentes</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tableau détaillé des alertes */}
-        {alerts.length > 0 ? (
-          <div className="epi-table-section">
-            <h3>📋 Détails des Alertes EPI</h3>
-            <div className="epi-table-wrapper">
-              <table className="epi-table">
-                <thead>
-                  <tr>
-                    <th>Priorité</th>
-                    <th>Employé</th>
-                    <th>Type EPI</th>
-                    <th>Type d'alerte</th>
-                    <th>Échéance</th>
-                    <th>Jours restants</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {alerts.map((alert, index) => (
-                    <tr key={index} className={`priority-row-${alert.priorite}`}>
-                      <td>
-                        <span className={`priority-badge ${alert.priorite}`}>
-                          {alert.priorite === 'haute' ? '🚨 Haute' : '⚠️ Moyenne'}
-                        </span>
-                      </td>
-                      <td><strong>{alert.employe_nom}</strong></td>
-                      <td>{getEPINom(alert.type_epi)}</td>
-                      <td>{alert.type === 'expiration' ? '⏰ Expiration' : '🔍 Inspection'}</td>
-                      <td>{alert.type === 'expiration' ? alert.date_expiration : alert.date_inspection}</td>
-                      <td>
-                        <span className={`days-badge ${alert.jours_restants <= 7 ? 'urgent' : 'warning'}`}>
-                          {alert.jours_restants} jour(s)
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="no-alerts-epi">
-            <p>✅ Aucune alerte EPI pour le moment</p>
-            <p>Tous les équipements sont à jour</p>
-          </div>
-        )}
-
-        <div className="epi-info-note">
-          <p>💡 La gestion détaillée des EPI de chaque employé se fait via <strong>Personnel &gt; Fiche employé</strong></p>
-        </div>
+      <div className="module-container">
+        <div className="loading-spinner"></div>
+        <p>Chargement...</p>
       </div>
     );
   }
-
-  // Vue Employé
+  
   return (
-    <div className="module-epi">
-      <div className="module-epi-header">
+    <div className="module-epi-nfpa">
+      <div className="module-header">
         <div>
-          <h1>🛡️ Mes EPI</h1>
-          <p>Gestion et inspections de vos équipements</p>
+          <h1>🛡️ Gestion EPI - NFPA 1851</h1>
+          <p>Système complet de gestion des équipements de protection</p>
         </div>
       </div>
-
-      {myEPIs.length > 0 ? (
-        <div className="my-epi-grid">
-          {myEPIs.map(epi => (
-            <div key={epi.id} className="my-epi-card">
-              <div className="my-epi-card-header">
-                <span className="my-epi-icon">{getEPIIcone(epi.type_epi)}</span>
-                <h3>{getEPINom(epi.type_epi)}</h3>
-              </div>
-              <div className="my-epi-card-body">
-                <div className="my-epi-details">
-                  <div className="my-epi-detail-row">
-                    <span>Taille:</span>
-                    <strong>{epi.taille}</strong>
+      
+      {/* Onglets */}
+      <div className="epi-tabs">
+        <button 
+          className={activeTab === 'inventaire' ? 'active' : ''}
+          onClick={() => setActiveTab('inventaire')}
+        >
+          📦 Inventaire ({epis.length})
+        </button>
+        <button 
+          className={activeTab === 'isp' ? 'active' : ''}
+          onClick={() => setActiveTab('isp')}
+        >
+          🏢 Fournisseurs ISP ({isps.length})
+        </button>
+        <button 
+          className={activeTab === 'rapports' ? 'active' : ''}
+          onClick={() => setActiveTab('rapports')}
+        >
+          📊 Rapports
+        </button>
+      </div>
+      
+      {/* ONGLET INVENTAIRE */}
+      {activeTab === 'inventaire' && (
+        <div className="epi-inventaire">
+          <div className="inventaire-actions">
+            <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }}>
+              ➕ Nouvel EPI
+            </Button>
+          </div>
+          
+          <div className="epi-grid">
+            {epis.map(epi => (
+              <div key={epi.id} className="epi-card">
+                <div className="epi-card-header">
+                  <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
+                  <div>
+                    <h3>{getTypeName(epi.type_epi)}</h3>
+                    <p className="epi-numero">#{epi.numero_serie}</p>
                   </div>
-                  <div className="my-epi-detail-row">
-                    <span>État:</span>
-                    <span style={{ color: getEtatColor(epi.etat), fontWeight: 600 }}>{epi.etat}</span>
-                  </div>
-                  <div className="my-epi-detail-row">
-                    <span>Expiration:</span>
-                    <strong>{epi.date_expiration}</strong>
-                  </div>
-                </div>
-                <div className="my-epi-actions">
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleStartInspection(epi)}
-                    data-testid={`inspect-epi-${epi.id}`}
+                  <span 
+                    className="epi-statut-badge" 
+                    style={{ backgroundColor: getStatutColor(epi.statut) }}
                   >
-                    🔍 Inspecter
+                    {epi.statut}
+                  </span>
+                </div>
+                <div className="epi-card-body">
+                  <p><strong>Marque:</strong> {epi.marque}</p>
+                  <p><strong>Modèle:</strong> {epi.modele}</p>
+                  <p><strong>Assigné à:</strong> {getUserName(epi.user_id)}</p>
+                  <p><strong>Mise en service:</strong> {new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div className="epi-card-actions">
+                  <Button size="sm" variant="outline" onClick={() => openDetailEPI(epi)}>
+                    📋 Détails
+                  </Button>
+                  <Button size="sm" onClick={() => openEditEPI(epi)}>
+                    ✏️ Modifier
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteEPI(epi.id)}>
+                    🗑️
                   </Button>
                 </div>
               </div>
+            ))}
+          </div>
+          
+          {epis.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun EPI enregistré</p>
+              <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }}>
+                Créer le premier EPI
+              </Button>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="no-epi-message">
-          <p>Aucun EPI n'est actuellement enregistré pour vous.</p>
-          <p>Contactez votre superviseur pour l'attribution de vos équipements.</p>
+          )}
         </div>
       )}
-
-      {/* Modal Inspection NFPA 1851 */}
-      {showInspectionModal && selectedEPI && (
-        <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
-          <div className="modal-content medium-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🔍 Inspection NFPA 1851 - {getEPINom(selectedEPI.type_epi)}</h3>
-              <Button variant="ghost" onClick={() => setShowInspectionModal(false)}>✕</Button>
+      
+      {/* ONGLET ISP */}
+      {activeTab === 'isp' && (
+        <div className="epi-isp">
+          <div className="isp-actions">
+            <Button onClick={() => { resetISPForm(); setShowISPModal(true); }}>
+              ➕ Nouveau Fournisseur
+            </Button>
+          </div>
+          
+          <div className="isp-list">
+            {isps.map(isp => (
+              <div key={isp.id} className="isp-card">
+                <div className="isp-header">
+                  <h3>🏢 {isp.nom}</h3>
+                </div>
+                <div className="isp-body">
+                  <p><strong>Contact:</strong> {isp.contact}</p>
+                  <p><strong>Téléphone:</strong> {isp.telephone}</p>
+                  <p><strong>Email:</strong> {isp.email}</p>
+                  <p><strong>Accréditations:</strong> {isp.accreditations || 'Aucune'}</p>
+                </div>
+                <div className="isp-actions">
+                  <Button size="sm" onClick={() => openEditISP(isp)}>
+                    ✏️ Modifier
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteISP(isp.id)}>
+                    🗑️
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {isps.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun fournisseur enregistré</p>
+              <Button onClick={() => { resetISPForm(); setShowISPModal(true); }}>
+                Ajouter un fournisseur
+              </Button>
             </div>
+          )}
+        </div>
+      )}
+      
+      {/* ONGLET RAPPORTS */}
+      {activeTab === 'rapports' && rapportConformite && (
+        <div className="epi-rapports">
+          <h2>📊 Rapport de Conformité Générale</h2>
+          <div className="rapport-stats">
+            <div className="stat-card">
+              <h3>{rapportConformite.total}</h3>
+              <p>Total EPI</p>
+            </div>
+            <div className="stat-card" style={{background: '#D1FAE5'}}>
+              <h3>{rapportConformite.en_service}</h3>
+              <p>En service</p>
+            </div>
+            <div className="stat-card" style={{background: '#FEF3C7'}}>
+              <h3>{rapportConformite.en_inspection}</h3>
+              <p>En inspection</p>
+            </div>
+            <div className="stat-card" style={{background: '#FEE2E2'}}>
+              <h3>{rapportConformite.en_reparation}</h3>
+              <p>En réparation</p>
+            </div>
+          </div>
+          
+          <h2 style={{marginTop: '2rem'}}>📅 Échéances d'Inspection (30 jours)</h2>
+          {rapportEcheances && rapportEcheances.echeances.length > 0 ? (
+            <div className="echeances-list">
+              {rapportEcheances.echeances.map(epi => (
+                <div key={epi.id} className="echeance-card">
+                  <div>
+                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <p>#{epi.numero_serie}</p>
+                  </div>
+                  <div>
+                    <span className={`jours-badge ${epi.jours_restants <= 7 ? 'urgent' : ''}`}>
+                      {epi.jours_restants} jours restants
+                    </span>
+                    <p>Type: {epi.type_inspection_requise.replace('_', ' ')}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>Aucune échéance dans les 30 prochains jours</p>
+          )}
+        </div>
+      )}
+      
+      {/* MODAL EPI */}
+      {showEPIModal && (
+        <div className="modal-overlay" onClick={() => setShowEPIModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedEPI ? 'Modifier EPI' : 'Nouvel EPI'}</h2>
+              <Button variant="ghost" onClick={() => setShowEPIModal(false)}>✕</Button>
+            </div>
+            
             <div className="modal-body">
-              <div className="inspection-form">
-                <div className="form-field">
-                  <Label>Date d'inspection</Label>
-                  <Input
-                    type="date"
-                    value={inspectionForm.date_inspection}
-                    onChange={(e) => setInspectionForm({...inspectionForm, date_inspection: e.target.value})}
+              <div className="form-grid">
+                <div>
+                  <Label>Numéro de série interne *</Label>
+                  <Input 
+                    value={epiForm.numero_serie}
+                    onChange={e => setEpiForm({...epiForm, numero_serie: e.target.value})}
+                    placeholder="Ex: EPI-2025-001"
                   />
                 </div>
-
-                <div className="inspection-criteria">
-                  <h4>Critères d'inspection (Norme NFPA 1851)</h4>
-                  
-                  <label className="inspection-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={inspectionForm.integrite}
-                      onChange={(e) => setInspectionForm({...inspectionForm, integrite: e.target.checked})}
-                    />
-                    <span>Intégrité générale</span>
-                  </label>
-
-                  <label className="inspection-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={inspectionForm.proprete}
-                      onChange={(e) => setInspectionForm({...inspectionForm, proprete: e.target.checked})}
-                    />
-                    <span>Propreté</span>
-                  </label>
-
-                  <label className="inspection-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={!inspectionForm.dommages_visibles}
-                      onChange={(e) => setInspectionForm({...inspectionForm, dommages_visibles: !e.target.checked})}
-                    />
-                    <span>Aucun dommage visible</span>
-                  </label>
-
-                  <label className="inspection-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={inspectionForm.coutures}
-                      onChange={(e) => setInspectionForm({...inspectionForm, coutures: e.target.checked})}
-                    />
-                    <span>Coutures en bon état</span>
-                  </label>
-
-                  <label className="inspection-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={inspectionForm.fermetures}
-                      onChange={(e) => setInspectionForm({...inspectionForm, fermetures: e.target.checked})}
-                    />
-                    <span>Fermetures fonctionnelles</span>
-                  </label>
-                </div>
-
-                <div className="form-field">
-                  <Label>Résultat de l'inspection</Label>
-                  <select
-                    value={inspectionForm.resultat}
-                    onChange={(e) => setInspectionForm({...inspectionForm, resultat: e.target.value})}
+                
+                <div>
+                  <Label>Type d'EPI *</Label>
+                  <select 
                     className="form-select"
+                    value={epiForm.type_epi}
+                    onChange={e => setEpiForm({...epiForm, type_epi: e.target.value})}
                   >
-                    <option value="Conforme">Conforme</option>
-                    <option value="Non conforme">Non conforme</option>
-                    <option value="À nettoyer">À nettoyer</option>
-                    <option value="À réparer">À réparer</option>
-                    <option value="Remplacement nécessaire">Remplacement nécessaire</option>
+                    {typesEPI.map(t => (
+                      <option key={t.id} value={t.id}>{t.icone} {t.nom}</option>
+                    ))}
                   </select>
                 </div>
-
-                <div className="form-field">
-                  <Label>Observations</Label>
-                  <textarea
-                    value={inspectionForm.observations}
-                    onChange={(e) => setInspectionForm({...inspectionForm, observations: e.target.value})}
-                    className="form-textarea"
-                    rows="4"
-                    placeholder="Remarques ou observations..."
+                
+                <div>
+                  <Label>Marque *</Label>
+                  <Input 
+                    value={epiForm.marque}
+                    onChange={e => setEpiForm({...epiForm, marque: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Modèle *</Label>
+                  <Input 
+                    value={epiForm.modele}
+                    onChange={e => setEpiForm({...epiForm, modele: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>N° série fabricant</Label>
+                  <Input 
+                    value={epiForm.numero_serie_fabricant}
+                    onChange={e => setEpiForm({...epiForm, numero_serie_fabricant: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Date fabrication</Label>
+                  <Input 
+                    type="date"
+                    value={epiForm.date_fabrication}
+                    onChange={e => setEpiForm({...epiForm, date_fabrication: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Date mise en service *</Label>
+                  <Input 
+                    type="date"
+                    value={epiForm.date_mise_en_service}
+                    onChange={e => setEpiForm({...epiForm, date_mise_en_service: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Norme certification</Label>
+                  <Input 
+                    value={epiForm.norme_certification}
+                    onChange={e => setEpiForm({...epiForm, norme_certification: e.target.value})}
+                    placeholder="Ex: NFPA 1971, édition 2018"
+                  />
+                </div>
+                
+                <div>
+                  <Label>Coût d'achat</Label>
+                  <Input 
+                    type="number"
+                    value={epiForm.cout_achat}
+                    onChange={e => setEpiForm({...epiForm, cout_achat: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Couleur</Label>
+                  <Input 
+                    value={epiForm.couleur}
+                    onChange={e => setEpiForm({...epiForm, couleur: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Taille</Label>
+                  <Input 
+                    value={epiForm.taille}
+                    onChange={e => setEpiForm({...epiForm, taille: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Assigné à</Label>
+                  <select 
+                    className="form-select"
+                    value={epiForm.user_id}
+                    onChange={e => setEpiForm({...epiForm, user_id: e.target.value})}
+                  >
+                    <option value="">Non assigné</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Statut *</Label>
+                  <select 
+                    className="form-select"
+                    value={epiForm.statut}
+                    onChange={e => setEpiForm({...epiForm, statut: e.target.value})}
+                  >
+                    <option>En service</option>
+                    <option>En inspection</option>
+                    <option>En réparation</option>
+                    <option>Hors service</option>
+                    <option>Retiré</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={epiForm.notes}
+                  onChange={e => setEpiForm({...epiForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowEPIModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveEPI}>
+                {selectedEPI ? 'Modifier' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL DÉTAIL EPI */}
+      {showDetailModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{getTypeIcon(selectedEPI.type_epi)} Détails EPI - #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowDetailModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="epi-detail-grid">
+                <div className="detail-section">
+                  <h3>Informations générales</h3>
+                  <p><strong>Type:</strong> {getTypeName(selectedEPI.type_epi)}</p>
+                  <p><strong>Marque:</strong> {selectedEPI.marque}</p>
+                  <p><strong>Modèle:</strong> {selectedEPI.modele}</p>
+                  <p><strong>N° série fabricant:</strong> {selectedEPI.numero_serie_fabricant || 'N/A'}</p>
+                  <p><strong>Norme:</strong> {selectedEPI.norme_certification}</p>
+                  <p><strong>Statut:</strong> <span style={{color: getStatutColor(selectedEPI.statut)}}>{selectedEPI.statut}</span></p>
+                </div>
+                
+                <div className="detail-section">
+                  <h3>Dates & Coûts</h3>
+                  <p><strong>Fabrication:</strong> {selectedEPI.date_fabrication ? new Date(selectedEPI.date_fabrication).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                  <p><strong>Mise en service:</strong> {new Date(selectedEPI.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Coût d'achat:</strong> {selectedEPI.cout_achat} $</p>
+                </div>
+                
+                <div className="detail-section">
+                  <h3>Affectation</h3>
+                  <p><strong>Assigné à:</strong> {getUserName(selectedEPI.user_id)}</p>
+                  <p><strong>Taille:</strong> {selectedEPI.taille || 'N/A'}</p>
+                  <p><strong>Couleur:</strong> {selectedEPI.couleur || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div className="inspections-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>📋 Historique des inspections ({inspections.length})</h3>
+                  <Button onClick={() => setShowInspectionModal(true)}>
+                    ➕ Nouvelle inspection
+                  </Button>
+                </div>
+                
+                {inspections.length > 0 ? (
+                  <div className="inspections-list">
+                    {inspections.map(insp => (
+                      <div key={insp.id} className="inspection-card">
+                        <div className="inspection-header">
+                          <span className="inspection-type-badge">
+                            {insp.type_inspection === 'apres_utilisation' ? '🔍 Après utilisation' :
+                             insp.type_inspection === 'routine_mensuelle' ? '📅 Routine mensuelle' :
+                             '🔬 Avancée annuelle'}
+                          </span>
+                          <span className={`statut-badge ${insp.statut_global}`}>
+                            {insp.statut_global}
+                          </span>
+                        </div>
+                        <p><strong>Date:</strong> {new Date(insp.date_inspection).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Inspecteur:</strong> {insp.inspecteur_nom}</p>
+                        {insp.isp_nom && <p><strong>ISP:</strong> {insp.isp_nom}</p>}
+                        {insp.commentaires && <p><strong>Commentaires:</strong> {insp.commentaires}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucune inspection enregistrée</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL INSPECTION */}
+      {showInspectionModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📋 Nouvelle Inspection - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowInspectionModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type d'inspection *</Label>
+                  <select 
+                    className="form-select"
+                    value={typeInspection}
+                    onChange={e => setTypeInspection(e.target.value)}
+                  >
+                    <option value="apres_utilisation">🔍 Après utilisation</option>
+                    <option value="routine_mensuelle">📅 Routine mensuelle</option>
+                    <option value="avancee_annuelle">🔬 Avancée annuelle</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date inspection *</Label>
+                  <Input 
+                    type="date"
+                    value={inspectionForm.date_inspection}
+                    onChange={e => setInspectionForm({...inspectionForm, date_inspection: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Inspecteur *</Label>
+                  <Input 
+                    value={inspectionForm.inspecteur_nom}
+                    onChange={e => setInspectionForm({...inspectionForm, inspecteur_nom: e.target.value})}
+                  />
+                </div>
+                
+                {typeInspection === 'avancee_annuelle' && (
+                  <>
+                    <div>
+                      <Label>ISP (Fournisseur)</Label>
+                      <select 
+                        className="form-select"
+                        value={inspectionForm.isp_id}
+                        onChange={e => {
+                          const isp = isps.find(i => i.id === e.target.value);
+                          setInspectionForm({
+                            ...inspectionForm,
+                            isp_id: e.target.value,
+                            isp_nom: isp?.nom || '',
+                            isp_accreditations: isp?.accreditations || ''
+                          });
+                        }}
+                      >
+                        <option value="">Interne</option>
+                        {isps.map(isp => (
+                          <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+                
+                <div>
+                  <Label>Statut global *</Label>
+                  <select 
+                    className="form-select"
+                    value={inspectionForm.statut_global}
+                    onChange={e => setInspectionForm({...inspectionForm, statut_global: e.target.value})}
+                  >
+                    <option value="conforme">✅ Conforme</option>
+                    <option value="non_conforme">❌ Non conforme</option>
+                    <option value="necessite_reparation">🔧 Nécessite réparation</option>
+                    <option value="hors_service">🚫 Hors service</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Commentaires</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="4"
+                  value={inspectionForm.commentaires}
+                  onChange={e => setInspectionForm({...inspectionForm, commentaires: e.target.value})}
+                  placeholder="Observations, détails des points vérifiés..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#f0f9ff', borderRadius: '8px'}}>
+                <p style={{fontSize: '0.875rem', color: '#1e40af'}}>
+                  💡 <strong>Checklist NFPA 1851</strong> sera automatiquement générée selon le type d'inspection sélectionné.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowInspectionModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveInspection}>Enregistrer l'inspection</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL ISP */}
+      {showISPModal && (
+        <div className="modal-overlay" onClick={() => setShowISPModal(false)}>
+          <div className="modal-content medium-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedISP ? 'Modifier Fournisseur' : 'Nouveau Fournisseur'}</h2>
+              <Button variant="ghost" onClick={() => setShowISPModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Nom *</Label>
+                  <Input 
+                    value={ispForm.nom}
+                    onChange={e => setIspForm({...ispForm, nom: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Contact</Label>
+                  <Input 
+                    value={ispForm.contact}
+                    onChange={e => setIspForm({...ispForm, contact: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Téléphone</Label>
+                  <Input 
+                    value={ispForm.telephone}
+                    onChange={e => setIspForm({...ispForm, telephone: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    value={ispForm.email}
+                    onChange={e => setIspForm({...ispForm, email: e.target.value})}
                   />
                 </div>
               </div>
-
-              <div className="modal-actions">
-                <Button variant="outline" onClick={() => setShowInspectionModal(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={handleSubmitInspection}>
-                  📝 Enregistrer l'inspection
-                </Button>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Accréditations</Label>
+                <Input 
+                  value={ispForm.accreditations}
+                  onChange={e => setIspForm({...ispForm, accreditations: e.target.value})}
+                  placeholder="Ex: NFPA 1851, ISO 9001..."
+                />
               </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={ispForm.notes}
+                  onChange={e => setIspForm({...ispForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowISPModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveISP}>
+                {selectedISP ? 'Modifier' : 'Créer'}
+              </Button>
             </div>
           </div>
         </div>
@@ -911,7 +1477,6 @@ const ModuleEPI = ({ user }) => {
   );
 };
 
-// Dashboard Component optimisé - 100% dynamique
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [activiteRecente, setActiviteRecente] = useState([]);
