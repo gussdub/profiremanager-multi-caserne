@@ -9803,10 +9803,10 @@ body {
 
 /* DESKTOP - Calendrier ÉNORME et TRÈS visible dans modal Indisponibilités */
 .availability-calendar-large .rdp {
-  --rdp-cell-size: 140px !important;
+  --rdp-cell-size: 150px !important;
   --rdp-accent-color: #dc2626 !important;
   margin: 0 auto !important;
-  font-size: 1.4rem !important;
+  font-size: 1.5rem !important;
   width: 100% !important;
 }
 
