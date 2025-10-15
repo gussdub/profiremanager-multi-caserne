@@ -9815,12 +9815,6 @@ const Rapports = () => {
     }
   }, [user, tenantSlug]);
 
-  useEffect(() => {
-    if (activeSection === 'epi' && user?.role === 'admin') {
-      fetchEPIData();
-    }
-  }, [activeSection, user, tenantSlug]);
-
   const fetchStatistiques = async () => {
     if (!tenantSlug) return;
     
