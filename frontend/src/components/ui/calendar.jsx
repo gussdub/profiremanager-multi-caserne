@@ -12,7 +12,10 @@ function Calendar({
   ...props
 }) {
   // Check if this calendar is used in interactive mode (large calendar in modals)
-  const isInteractiveCalendar = className && className.includes('interactive-calendar');
+  const isInteractiveCalendar = className && (
+    className.includes('interactive-calendar') || 
+    className.includes('availability-calendar-large')
+  );
   
   // Dynamic day cell sizing based on context
   const daySize = isInteractiveCalendar ? "w-40 h-40" : "h-8 w-8"; // 160px for interactive, 32px for normal
