@@ -926,14 +926,14 @@ const Dashboard = () => {
         const [statsData, rapportsData, usersData] = await Promise.all([
           apiGet(tenantSlug, '/statistiques'),
           user.role === 'admin' ? apiGet(tenantSlug, '/rapports/statistiques-avancees') : Promise.resolve(null),
-          apiGet(tenantSlug, '/users')
+          user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([])
         ]);
         
         setStats(statsData);
         setStatistiquesDetaillees(rapportsData);
         
         // Générer activité récente dynamique
-        const users = usersData;
+        const users = usersData || [];
         const activiteItems = [];
         
         // Dernières assignations (estimation basée sur stats)
