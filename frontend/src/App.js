@@ -1208,6 +1208,91 @@ const ModuleEPI = ({ user }) => {
         </div>
       )}
       
+
+      {/* ONGLET NETTOYAGE & ENTRETIEN */}
+      {activeTab === 'nettoyage' && (
+        <div className="epi-nettoyage">
+          <div className="nettoyage-header">
+            <h2>🧼 Nettoyage & Entretien</h2>
+            <p>Suivi des nettoyages routines et avancés selon NFPA 1851</p>
+          </div>
+          
+          <div className="nettoyage-info-card">
+            <h3>📋 Exigences NFPA 1851</h3>
+            <ul>
+              <li><strong>Nettoyage Routine:</strong> Après chaque utilisation ou contamination visible</li>
+              <li><strong>Nettoyage Avancé:</strong> Au moins 2 fois par an minimum</li>
+              <li><strong>Méthode recommandée:</strong> Laveuse extractrice avec cycle programmable</li>
+              <li><strong>Température:</strong> Eau tiède maximum 40°C</li>
+              <li><strong>Séchage:</strong> À l'abri des UV</li>
+            </ul>
+          </div>
+          
+          <div className="nettoyage-list">
+            <h3>Historique par EPI</h3>
+            {epis.filter(e => e.statut !== 'Retiré').map(epi => (
+              <div key={epi.id} className="nettoyage-epi-card">
+                <div className="nettoyage-epi-header">
+                  <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</span>
+                  <span>#{epi.numero_serie}</span>
+                  <Button 
+                    size="sm"
+                    onClick={async () => {
+                      setSelectedEPI(epi);
+                      await loadNettoyages(epi.id);
+                      setShowNettoyageModal(true);
+                    }}
+                  >
+                    ➕ Ajouter nettoyage
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* ONGLET RÉPARATIONS */}
+      {activeTab === 'reparations' && (
+        <div className="epi-reparations">
+          <div className="reparations-header">
+            <h2>🔧 Gestion des Réparations</h2>
+            <p>Suivi des tickets de réparation et interventions</p>
+          </div>
+          
+          <div className="reparations-stats">
+            <div className="stat-card">
+              <h3>{epis.filter(e => e.statut === 'En réparation').length}</h3>
+              <p>En cours</p>
+            </div>
+          </div>
+          
+          <div className="reparations-list">
+            {epis.filter(e => e.statut !== 'Retiré').map(epi => (
+              <div key={epi.id} className="reparation-epi-card">
+                <div className="reparation-epi-header">
+                  <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)} - #{epi.numero_serie}</span>
+                  <span className="epi-statut-badge" style={{backgroundColor: getStatutColor(epi.statut)}}>
+                    {epi.statut}
+                  </span>
+                  <Button 
+                    size="sm"
+                    onClick={async () => {
+                      setSelectedEPI(epi);
+                      await loadReparations(epi.id);
+                      setSelectedReparation(null);
+                      setShowReparationModal(true);
+                    }}
+                  >
+                    ➕ Nouvelle réparation
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ONGLET RAPPORTS */}
       {activeTab === 'rapports' && rapportConformite && (
         <div className="epi-rapports">
