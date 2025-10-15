@@ -2741,46 +2741,127 @@ class ParametresRemplacements(BaseModel):
     priorite_competences: bool = True
 
 # EPI Models
-class EPIEmploye(BaseModel):
+# ==================== MODÈLES EPI NFPA 1851 ====================
+
+class EPI(BaseModel):
+    """Modèle complet d'un équipement de protection individuelle selon NFPA 1851"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
-    employe_id: str
-    type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, masque_scba
-    taille: str
-    date_attribution: str
-    etat: str = "Neuf"  # Neuf, Bon, À remplacer, Défectueux
-    date_expiration: str
-    date_prochaine_inspection: Optional[str] = None
-    historique_inspections: List[Dict[str, Any]] = []
-    notes: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    numero_serie: str  # Numéro de série interne (format libre)
+    type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, cagoule
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""  # ex: NFPA 1971, édition 2018
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None  # Affecté à quel pompier
+    statut: str = "En service"  # En service, En inspection, En réparation, Hors service, Retiré
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class EPIEmployeCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    employe_id: str
+class EPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    numero_serie: str
     type_epi: str
-    taille: str
-    date_attribution: str
-    etat: str = "Neuf"
-    date_expiration: str
-    date_prochaine_inspection: Optional[str] = None
-    notes: Optional[str] = None
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None
+    statut: str = "En service"
+    notes: str = ""
 
-class EPIEmployeUpdate(BaseModel):
+class EPIUpdate(BaseModel):
+    numero_serie: Optional[str] = None
+    type_epi: Optional[str] = None
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    numero_serie_fabricant: Optional[str] = None
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: Optional[str] = None
+    norme_certification: Optional[str] = None
+    cout_achat: Optional[float] = None
+    couleur: Optional[str] = None
     taille: Optional[str] = None
-    etat: Optional[str] = None
-    date_expiration: Optional[str] = None
-    date_prochaine_inspection: Optional[str] = None
+    user_id: Optional[str] = None
+    statut: Optional[str] = None
     notes: Optional[str] = None
 
 class InspectionEPI(BaseModel):
+    """Modèle pour les 3 types d'inspections NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
+    epi_id: str
+    type_inspection: str  # apres_utilisation, routine_mensuelle, avancee_annuelle
     date_inspection: str
-    inspecteur_id: str
-    resultat: str  # Conforme, Non conforme, Remplacement nécessaire
-    observations: Optional[str] = None
-    photos: List[str] = []  # URLs des photos d'inspection
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None  # Si c'est un utilisateur du système
+    isp_id: Optional[str] = None  # Si inspection par ISP
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str  # conforme, non_conforme, necessite_reparation, hors_service
+    checklist: Dict[str, Any] = {}  # JSON avec tous les points de vérification
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""  # Pour inspection avancée
+    signature_numerique: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_inspection: str
+    date_inspection: str
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str
+    checklist: Dict[str, Any] = {}
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""
+    signature_numerique: str = ""
+
+class ISP(BaseModel):
+    """Fournisseur de Services Indépendant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ISPCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+
+class ISPUpdate(BaseModel):
+    nom: Optional[str] = None
+    contact: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    accreditations: Optional[str] = None
+    notes: Optional[str] = None
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
