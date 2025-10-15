@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BASE_URL = "https://profire-manager-1.preview.emergentagent.com/api"
+BASE_URL = "https://disponible-pro.preview.emergentagent.com/api"
 FALLBACK_SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
 FALLBACK_SUPER_ADMIN_PASSWORD = "230685Juin+"
 
