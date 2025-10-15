@@ -55,7 +55,7 @@ function Calendar({
           buttonVariants({ variant: "ghost" }),
           daySize,
           "p-0 font-normal aria-selected:opacity-100",
-          isInteractiveCalendar ? "text-2xl font-semibold border-2 border-gray-200 rounded-xl" : ""
+          isInteractiveCalendar ? "text-xl font-semibold border-2 border-gray-200 rounded-lg" : ""
         ),
         day_range_start: "day-range-start",
         day_range_end: "day-range-end",
