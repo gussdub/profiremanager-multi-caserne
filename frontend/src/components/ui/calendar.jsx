@@ -34,12 +34,12 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex",
+        head_row: "flex justify-center",
         head_cell: cn(
           "text-muted-foreground rounded-md font-normal",
-          isLargeCalendar ? "w-[130px] text-lg font-bold" : "w-8 text-[0.8rem]"
+          isLargeCalendar ? "w-[125px] text-lg font-bold" : "w-8 text-[0.8rem]"
         ),
-        row: "flex w-full mt-2",
+        row: "flex w-full mt-2 justify-center",
         cell: cn(
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent",
           props.mode === "range"
@@ -48,7 +48,7 @@ function Calendar({
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          isLargeCalendar ? "h-[130px] w-[130px] text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
+          isLargeCalendar ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
           "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
