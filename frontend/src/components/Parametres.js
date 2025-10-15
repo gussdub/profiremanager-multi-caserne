@@ -116,6 +116,14 @@ const Parametres = ({ user, tenantSlug }) => {
     epi_jours_avance_inspection: 14
   });
 
+  // Paramètres Formations NFPA 1500
+  const [parametresFormations, setParametresFormations] = useState({
+    heures_minimales_annuelles: 100,
+    delai_notification_liste_attente: 7,
+    email_notifications_actif: true
+  });
+
+
   // Paramètres de validation du planning
   const [validationParams, setValidationParams] = useState({
     frequence: 'mensuel',
