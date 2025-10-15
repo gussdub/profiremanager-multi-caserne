@@ -6829,6 +6829,44 @@ const Formations = () => {
         </div>
       </div>
       
+      {/* KPI Personnel - Employé */}
+      {user?.role === 'employe' && monTauxPresence && (
+        <div className="mon-kpi-presence">
+          <h2>📊 Mon Taux de Présence {anneeSelectionnee}</h2>
+          <div className="kpi-personnel-grid">
+            <div className="kpi-card-large">
+              <div className="kpi-circle" style={{
+                background: `conic-gradient(${monTauxPresence.conforme ? '#10B981' : '#EF4444'} ${monTauxPresence.taux_presence * 3.6}deg, #E5E7EB 0deg)`
+              }}>
+                <div className="kpi-circle-inner">
+                  <h2>{monTauxPresence.taux_presence}%</h2>
+                  <p>Présence</p>
+                </div>
+              </div>
+              <div className="kpi-details">
+                <p><strong>Présences:</strong> {monTauxPresence.presences_validees}</p>
+                <p><strong>Absences:</strong> {monTauxPresence.absences}</p>
+                <p><strong>Total formations passées:</strong> {monTauxPresence.formations_passees}</p>
+                <p><strong>Minimum requis:</strong> {monTauxPresence.pourcentage_minimum}%</p>
+              </div>
+            </div>
+            <div className={`statut-conformite ${monTauxPresence.conforme ? 'conforme' : 'non-conforme'}`}>
+              {monTauxPresence.conforme ? (
+                <>
+                  <h3>✅ Conforme</h3>
+                  <p>Vous respectez le taux de présence minimum</p>
+                </>
+              ) : (
+                <>
+                  <h3>❌ Non Conforme</h3>
+                  <p>Vous devez améliorer votre taux de présence</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Dashboard KPIs */}
       {user?.role !== 'employe' && dashboardData && (
         <div className="formations-dashboard">
