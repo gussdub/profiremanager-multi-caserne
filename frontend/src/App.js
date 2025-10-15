@@ -1466,12 +1466,15 @@ const ModuleEPI = ({ user }) => {
             <div className="modal-body">
               <div className="form-grid">
                 <div>
-                  <Label>Numéro de série interne *</Label>
+                  <Label>Numéro de série interne (optionnel)</Label>
                   <Input 
                     value={epiForm.numero_serie}
                     onChange={e => setEpiForm({...epiForm, numero_serie: e.target.value})}
-                    placeholder="Ex: EPI-2025-001"
+                    placeholder="Généré automatiquement si vide (Ex: EPI-2025-0001)"
                   />
+                  <small style={{display: 'block', marginTop: '4px', color: '#666'}}>
+                    Laissez vide pour génération automatique
+                  </small>
                 </div>
                 
                 <div>
