@@ -2728,44 +2728,6 @@ async def delete_formation(tenant_slug: str, formation_id: str, current_user: Us
     
     return {"message": "Formation supprimée avec succès"}
 
-class SessionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    titre: str
-    competence_id: str  # Lien vers Formation (compétence)
-    duree_heures: int
-    date_debut: str  # YYYY-MM-DD
-    heure_debut: str  # HH:MM
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
-    participants: List[str] = []  # IDs des utilisateurs inscrits
-    statut: str = "planifie"  # planifie, en_cours, termine, annule
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class SessionFormationCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    titre: str
-    competence_id: str
-    duree_heures: int
-    date_debut: str
-    heure_debut: str
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
-
-class InscriptionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    session_id: str
-    user_id: str
-    date_inscription: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    statut: str = "inscrit"  # inscrit, present, absent, annule
-
 class DemandeCongé(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
