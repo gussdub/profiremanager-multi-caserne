@@ -6927,15 +6927,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               <Button 
                 variant="default" 
                 onClick={() => {
-                  setQuickAddConfig({
-                    date: selectedDayForDetail.toISOString().split('T')[0],
-                    type_garde_id: '',
-                    heure_debut: '08:00',
-                    heure_fin: '16:00'
-                  });
-                  setQuickAddType('disponibilite');
-                  setShowDayDetailModal(false);
-                  setShowQuickAddModal(true);
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '08:00',
+                      heure_fin: '16:00'
+                    });
+                    setQuickAddType('disponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
                 }}
                 style={{ background: '#16a34a', borderColor: '#16a34a' }}
               >
@@ -6944,15 +6946,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               <Button 
                 variant="destructive" 
                 onClick={() => {
-                  setQuickAddConfig({
-                    date: selectedDayForDetail.toISOString().split('T')[0],
-                    type_garde_id: '',
-                    heure_debut: '00:00',
-                    heure_fin: '23:59'
-                  });
-                  setQuickAddType('indisponibilite');
-                  setShowDayDetailModal(false);
-                  setShowQuickAddModal(true);
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '00:00',
+                      heure_fin: '23:59'
+                    });
+                    setQuickAddType('indisponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
                 }}
               >
                 ❌ Ajouter indisponibilité
