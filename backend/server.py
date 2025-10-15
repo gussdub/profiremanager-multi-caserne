@@ -6573,10 +6573,26 @@ async def update_epi(
     update_data = {k: v for k, v in epi_update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    # Vérifier si changement d'affectation (user_id)
+    ancien_user_id = epi.get("user_id")
+    nouveau_user_id = update_data.get("user_id")
+    
     await db.epis.update_one(
         {"id": epi_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
+    
+    # Notifier si changement d'affectation
+    if nouveau_user_id and nouveau_user_id != ancien_user_id:
+        type_epi_nom = epi.get("type_epi", "EPI")
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=nouveau_user_id,
+            type="epi_nouvel_assignation",
+            titre="Nouvel EPI assigné",
+            message=f"Un {type_epi_nom} #{epi.get('numero_serie', '')} vous a été assigné",
+            lien="/epi"
+        )
     
     updated_epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     cleaned_epi = clean_mongo_doc(updated_epi)
