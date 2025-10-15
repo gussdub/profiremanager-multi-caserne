@@ -3792,20 +3792,20 @@ body {
 }
 
 .interactive-calendar .rdp-caption {
-  font-size: 1.875rem !important;
+  font-size: 2rem !important;
   font-weight: 700 !important;
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 1.75rem !important;
   color: #0f172a !important;
-  padding: 0.75rem 0 !important;
+  padding: 0.875rem 0 !important;
 }
 
 .interactive-calendar .rdp-head_cell {
-  font-size: 1.125rem !important;
-  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
   color: #64748b !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  padding-bottom: 1rem !important;
+  letter-spacing: 0.75px !important;
+  padding-bottom: 1.25rem !important;
 }
 
 .interactive-calendar .rdp-day_selected {
