@@ -12405,3 +12405,46 @@ body {
   }
 }
 
+
+/* ==================== FILTRES ET EXPORTS RAPPORTS EPI ==================== */
+
+.rapports-controls {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.filtres-section h3,
+.exports-section h3 {
+  margin: 0 0 1rem 0;
+  color: #1F2937;
+  font-size: 1.1rem;
+}
+
+.filtres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.exports-section {
+  border-top: 1px solid #E5E7EB;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.exports-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nettoyage-card p,
+.reparation-card p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
