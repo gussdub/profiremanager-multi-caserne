@@ -2487,7 +2487,7 @@ const Dashboard = () => {
         <div className="stat-card formations">
           <div className="stat-icon">🎓</div>
           <div className="stat-content">
-            <h3>Formations Planifiées</h3>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 500}}>Formations Planifiées</h3>
             <p className="stat-number" data-testid="stat-formations">{stats?.formations_planifiees || 0}</p>
             <p className="stat-label">Sessions à venir</p>
             <p className="stat-detail">Inscriptions ouvertes</p>
@@ -2497,7 +2497,7 @@ const Dashboard = () => {
         <div className="stat-card couverture">
           <div className="stat-icon">📊</div>
           <div className="stat-content">
-            <h3>Taux de Couverture</h3>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 500}}>Taux de Couverture</h3>
             <p className="stat-number" data-testid="stat-couverture">{stats?.taux_couverture || 0}%</p>
             <p className="stat-label">Efficacité du planning</p>
             <p className="stat-detail">
