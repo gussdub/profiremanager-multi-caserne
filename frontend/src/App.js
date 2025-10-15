@@ -7036,7 +7036,7 @@ const Formations = () => {
           </div>
           
           <div className="pompiers-list">
-            {rapportConformite.pompiers.map(pompier => (
+            {getPompiersFiltreTri().map(pompier => (
               <div key={pompier.id} className={`pompier-card ${pompier.conforme ? 'conforme' : 'non-conforme'}`}>
                 <div className="pompier-info">
                   <h4>{pompier.prenom} {pompier.nom}</h4>
