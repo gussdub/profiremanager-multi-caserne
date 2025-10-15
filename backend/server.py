@@ -3778,61 +3778,78 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
     logging.info(f"✅ Montreal 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
-def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, annee: int, date_jour_1: str) -> List[Dict]:
+def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str, date_jour_1: str) -> List[Dict]:
     """
     Génère les indisponibilités pour l'horaire Quebec 10/14
-    Cycle de 28 jours avec pattern complexe
+    Cycle de 28 jours commençant le 1er février 2026 (jour 1 du cycle)
     
-    Pattern Quebec 10/14 (par équipe sur 28 jours) :
-    - Rouge : 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS (7-10) + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS (18-28)
-    - Total : 13 jours de travail par cycle
-    - Jaune : Décalé de 7 jours
-    - Bleu : Décalé de 14 jours
-    - Vert : Décalé de 21 jours
+    Pattern RÉEL Quebec 10/14 (basé sur février 2026):
+    Chaque équipe travaille selon un pattern spécifique sur 28 jours
+    
+    Équipes avec numéros et jours de travail:
+    - Vert (Équipe #1) : jours 2,3,4,5, 12,13,14, 20,21, 22, 23,24,25
+    - Bleu (Équipe #2) : jours 6,7, 8, 9,10,11, 16,17,18,19, 26,27,28
+    - Jaune (Équipe #3) : jours 1, 2,3,4, 9,10,11,12, 19,20,21, 27,28
+    - Rouge (Équipe #4) : jours 5,6,7, 13,14, 15, 16,17,18, 23,24,25,26
+    
+    Le jour 1 du cycle = 1er février 2026
+    Le cycle recommence tous les 28 jours (1er mars, 29 mars, 26 avril, etc.)
     
     On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
     (car ils ne sont pas disponibles pour les gardes de pompiers ces jours-là)
     
-    Horaires :
-    - Jour : 07:00-17:00
-    - Nuit : 19:00-09:00
+    Note: Pour les gardes de nuit (17h-7h), on marque seulement le jour de début comme indisponible
     """
-    equipes_offset = {
-        "Rouge": 0,
-        "Jaune": 7,
-        "Bleu": 14,
-        "Vert": 21
+    
+    # Mapping équipe -> numéro -> jours de travail dans le cycle de 28 jours
+    equipes_config = {
+        "Vert": {
+            "numero": 1,
+            "jours_cycle": [2, 3, 4, 5, 12, 13, 14, 20, 21, 22, 23, 24, 25]
+        },
+        "Bleu": {
+            "numero": 2,
+            "jours_cycle": [6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 26, 27, 28]
+        },
+        "Jaune": {
+            "numero": 3,
+            "jours_cycle": [1, 2, 3, 4, 9, 10, 11, 12, 19, 20, 21, 27, 28]
+        },
+        "Rouge": {
+            "numero": 4,
+            "jours_cycle": [5, 6, 7, 13, 14, 15, 16, 17, 18, 23, 24, 25, 26]
+        }
     }
     
-    if equipe not in equipes_offset:
-        raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
+    if equipe not in equipes_config:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Vert, Bleu, Jaune ou Rouge")
     
-    # Pattern de base pour Rouge (jours de travail dans le cycle de 28 jours)
-    # 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS
-    # Total : 13 jours de travail par cycle de 28 jours
-    jours_travail_rouge = [1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 17]
+    config = equipes_config[equipe]
+    jours_travail_cycle = config["jours_cycle"]
     
-    # Appliquer l'offset pour l'équipe sélectionnée
-    offset = equipes_offset[equipe]
-    jours_travail = [(j - 1 + offset) % 28 + 1 for j in jours_travail_rouge]
+    logging.info(f"Quebec 10/14 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
+    
+    # Le jour 1 du cycle = date fournie par l'utilisateur (par défaut 1er février 2026)
+    jour_1_cycle = datetime.strptime(date_jour_1, "%Y-%m-%d").date()
+    
+    # Parser les dates de début et fin
+    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d").date()
     
     indisponibilites = []
+    current_date = date_debut_obj
     
-    # Parser la date du Jour 1
-    jour_1 = datetime.strptime(date_jour_1, "%Y-%m-%d").date()
-    
-    # Générer du 1er janvier au 31 décembre
-    date_debut = datetime(annee, 1, 1).date()
-    date_fin = datetime(annee, 12, 31).date()
-    
-    current_date = date_debut
-    while current_date <= date_fin:
+    while current_date <= date_fin_obj:
         # Calculer le jour dans le cycle (1-28)
-        jours_depuis_jour1 = (current_date - jour_1).days
+        jours_depuis_jour1 = (current_date - jour_1_cycle).days
         jour_cycle = (jours_depuis_jour1 % 28) + 1
         
-        # Si le jour EST dans les jours de travail, c'est une INDISPONIBILITÉ (travail à l'emploi principal)
-        if jour_cycle in jours_travail:
+        # Si négatif (avant le jour 1), calculer en arrière
+        if jours_depuis_jour1 < 0:
+            jour_cycle = 28 - ((-jours_depuis_jour1 - 1) % 28)
+        
+        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
+        if jour_cycle in jours_travail_cycle:
             indispo = {
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
@@ -3849,6 +3866,7 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
         
         current_date += timedelta(days=1)
     
+    logging.info(f"✅ Quebec 10/14 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
 # ==================== ROUTE DE GÉNÉRATION D'INDISPONIBILITÉS ====================
