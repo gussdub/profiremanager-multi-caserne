@@ -2863,6 +2863,117 @@ class ISPUpdate(BaseModel):
     accreditations: Optional[str] = None
     notes: Optional[str] = None
 
+# ==================== MODÈLES PHASE 2 : NETTOYAGE, RÉPARATIONS, RETRAIT ====================
+
+class NettoyageEPI(BaseModel):
+    """Suivi des nettoyages EPI selon NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    type_nettoyage: str  # routine, avance
+    date_nettoyage: str
+    methode: str  # laveuse_extractrice, manuel, externe
+    effectue_par: str  # Nom de la personne ou organisation
+    effectue_par_id: Optional[str] = None  # ID utilisateur si interne
+    isp_id: Optional[str] = None  # Si nettoyage externe
+    nombre_cycles: int = 1  # Pour suivi limite fabricant
+    temperature: str = ""  # Ex: "Eau tiède max 40°C"
+    produits_utilises: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NettoyageEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_nettoyage: str
+    date_nettoyage: str
+    methode: str
+    effectue_par: str
+    effectue_par_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    nombre_cycles: int = 1
+    temperature: str = ""
+    produits_utilises: str = ""
+    notes: str = ""
+
+class ReparationEPI(BaseModel):
+    """Gestion des réparations EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    statut: str  # demandee, en_cours, terminee, impossible
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_type: str  # interne, externe
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    pieces_remplacees: List[str] = []
+    cout_reparation: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReparationEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    statut: str = "demandee"
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    reparateur_type: str
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    notes: str = ""
+
+class ReparationEPIUpdate(BaseModel):
+    statut: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_nom: Optional[str] = None
+    isp_id: Optional[str] = None
+    pieces_remplacees: Optional[List[str]] = None
+    cout_reparation: Optional[float] = None
+    notes: Optional[str] = None
+
+class RetraitEPI(BaseModel):
+    """Enregistrement du retrait définitif d'un EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    date_retrait: str
+    raison: str  # age_limite, dommage_irreparable, echec_inspection, autre
+    description_raison: str
+    methode_disposition: str  # coupe_detruit, recyclage, don, autre
+    preuve_disposition: List[str] = []  # URLs photos
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RetraitEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    date_retrait: str
+    raison: str
+    description_raison: str
+    methode_disposition: str
+    preuve_disposition: List[str] = []
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+
+
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
 async def get_tenant_from_slug(slug: str) -> Tenant:
