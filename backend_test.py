@@ -2068,6 +2068,11 @@ class ProFireManagerTester:
             # Test 5: CORRECTED FEATURE - Disponibilités Réinitialiser System with new filters
             print("\n🔧 Testing CORRECTED FEATURE: Disponibilités Réinitialiser System with type_entree filter")
             self.test_disponibilites_reinitialiser_corrected_system()
+            
+            # Test 6: SPECIFIC TEST FOR REVIEW REQUEST - Quebec 10/14 February 2026 Pattern
+            print("\n🎯 SPECIFIC TEST FOR REVIEW REQUEST: Quebec 10/14 February 2026 Pattern")
+            print("-" * 50)
+            self.test_quebec_10_14_february_2026_pattern()
         else:
             print("⚠️  Super Admin authentication failed - cannot test dashboard API corrections")
         
