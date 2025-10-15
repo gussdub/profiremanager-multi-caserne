@@ -1031,18 +1031,6 @@ const ModuleEPI = ({ user }) => {
       });
     }
   };
-
-    setSelectedISP(isp);
-    setIspForm({
-      nom: isp.nom,
-      contact: isp.contact || '',
-      telephone: isp.telephone || '',
-      email: isp.email || '',
-      accreditations: isp.accreditations || '',
-      notes: isp.notes || ''
-    });
-    setShowISPModal(true);
-  };
   
   const getTypeIcon = (type) => typesEPI.find(t => t.id === type)?.icone || '🛡️';
   const getTypeName = (type) => typesEPI.find(t => t.id === type)?.nom || type;
