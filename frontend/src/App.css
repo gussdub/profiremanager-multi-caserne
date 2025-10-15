@@ -3735,51 +3735,76 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Agrandir le calendrier react-day-picker dans les modals */
+/* DESKTOP - Calendrier TRÈS GROS et visible dans modal Disponibilités */
 .interactive-calendar .rdp {
-  --rdp-cell-size: 60px;
+  --rdp-cell-size: 100px;
   --rdp-accent-color: #16a34a;
   margin: 0 auto;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
+}
+
+.interactive-calendar .rdp-month {
+  width: 100%;
+}
+
+.interactive-calendar .rdp-table {
+  width: 100%;
+  max-width: none;
 }
 
 .interactive-calendar .rdp-day {
-  border-radius: 8px;
-  font-weight: 500;
-  min-height: 60px;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  min-height: 100px;
+  font-size: 1.3rem;
   transition: all 0.2s ease;
+  border: 2px solid #e2e8f0;
+  background: white;
 }
 
-.interactive-calendar .rdp-day:hover {
+.interactive-calendar .rdp-day:hover:not(.rdp-day_disabled) {
   background-color: #f0fdf4;
-  transform: scale(1.05);
+  transform: scale(1.03);
+  border-color: #16a34a;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+  z-index: 10;
 }
 
 .interactive-calendar .rdp-caption {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   color: #0f172a;
+  padding: 0.5rem 0;
 }
 
 .interactive-calendar .rdp-head_cell {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  padding-bottom: 1rem;
 }
 
 .interactive-calendar .rdp-day_selected {
   background-color: #16a34a !important;
   color: white !important;
   font-weight: 700;
+  border-color: #16a34a !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
 }
 
 .interactive-calendar .rdp-day_today {
   font-weight: 700;
   color: #dc2626;
+  border: 3px solid #dc2626;
+  background: #fef2f2;
+}
+
+.interactive-calendar .rdp-day_disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .selection-summary {
