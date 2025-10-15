@@ -1850,6 +1850,181 @@ class ProFireManagerTester:
             self.log_test("Planning Module Comprehensive", False, f"Planning module error: {str(e)}")
             return False
     
+    def test_quebec_10_14_february_2026_pattern(self):
+        """Test Quebec 10/14 pattern for February 2026 with specific expected days"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Login as Shefford employee using the correct credentials
+            login_data = {
+                "email": "employe@firemanager.ca",
+                "mot_de_passe": "employe123"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Quebec 10/14 February 2026 Pattern", False, 
+                                f"Failed to login as employe@firemanager.ca: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            user_token = login_result["access_token"]
+            user_info = login_result.get("user", {})
+            user_id = user_info.get("id")
+            
+            if not user_id:
+                self.log_test("Quebec 10/14 February 2026 Pattern", False, "No user ID found in login response")
+                return False
+            
+            # Create a new session with user token
+            user_session = requests.Session()
+            user_session.headers.update({"Authorization": f"Bearer {user_token}"})
+            
+            # Expected patterns for February 2026 (28-day cycle starting 2026-02-01)
+            expected_patterns = {
+                "Vert": [2,3,4,5, 12,13,14, 20,21,22,23,24,25],  # 13 days
+                "Bleu": [6,7,8,9,10,11, 16,17,18,19, 26,27,28],  # 13 days  
+                "Jaune": [1, 2,3,4, 9,10,11,12, 19,20,21, 27,28],  # 13 days
+                "Rouge": [5,6,7, 13,14,15,16,17,18, 23,24,25,26]  # 13 days
+            }
+            
+            test_results = {}
+            
+            # Test each team
+            for equipe, expected_days in expected_patterns.items():
+                print(f"\n🧪 Testing {equipe} team for February 2026...")
+                
+                # Clean up any existing entries for this user first
+                cleanup_data = {
+                    "user_id": user_id,
+                    "periode": "annee",
+                    "mode": "tout",
+                    "type_entree": "les_deux"
+                }
+                
+                try:
+                    user_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=cleanup_data)
+                except:
+                    pass  # Cleanup might fail if no data exists
+                
+                # Generate Quebec 10/14 pattern for February 2026
+                quebec_data = {
+                    "user_id": user_id,
+                    "horaire_type": "quebec",
+                    "equipe": equipe,
+                    "date_debut": "2026-02-01",
+                    "date_fin": "2026-02-28", 
+                    "date_jour_1": "2026-02-01",  # Jour 1 du cycle = 2026-02-01
+                    "conserver_manuelles": False
+                }
+                
+                response = user_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
+                if response.status_code != 200:
+                    self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", False, 
+                                f"Generation failed: {response.status_code}", 
+                                {"response": response.text})
+                    test_results[equipe] = False
+                    continue
+                
+                generation_result = response.json()
+                generated_count = generation_result.get('nombre_indisponibilites', 0)
+                
+                # Verify the count matches expected (13 days)
+                if generated_count != 13:
+                    self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", False, 
+                                f"Expected 13 indisponibilités, got {generated_count}")
+                    test_results[equipe] = False
+                    continue
+                
+                # Fetch the generated entries to verify dates
+                response = user_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+                if response.status_code != 200:
+                    self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", False, 
+                                f"Failed to fetch generated entries: {response.status_code}")
+                    test_results[equipe] = False
+                    continue
+                
+                disponibilites = response.json()
+                
+                # Filter entries for February 2026 with quebec_10_14 origin
+                february_entries = []
+                for entry in disponibilites:
+                    if (entry.get('origine') == 'quebec_10_14' and 
+                        entry.get('date', '').startswith('2026-02') and
+                        entry.get('statut') == 'indisponible'):
+                        february_entries.append(entry)
+                
+                # Extract day numbers from dates
+                actual_days = []
+                for entry in february_entries:
+                    date_str = entry.get('date', '')
+                    if date_str:
+                        day = int(date_str.split('-')[2])
+                        actual_days.append(day)
+                
+                actual_days.sort()
+                expected_days_sorted = sorted(expected_days)
+                
+                # Verify the pattern matches exactly
+                if actual_days != expected_days_sorted:
+                    self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", False, 
+                                f"Pattern mismatch. Expected days: {expected_days_sorted}, Got: {actual_days}")
+                    test_results[equipe] = False
+                    continue
+                
+                # Verify all entries have correct properties
+                all_correct = True
+                for entry in february_entries:
+                    if (entry.get('origine') != 'quebec_10_14' or
+                        entry.get('statut') != 'indisponible' or
+                        entry.get('heure_debut') != '00:00' or
+                        entry.get('heure_fin') != '23:59'):
+                        all_correct = False
+                        break
+                
+                if not all_correct:
+                    self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", False, 
+                                f"Entry properties incorrect (origine, statut, hours)")
+                    test_results[equipe] = False
+                    continue
+                
+                self.log_test(f"Quebec 10/14 February 2026 Pattern - {equipe}", True, 
+                            f"✅ Perfect match: 13 indisponibilités on days {expected_days_sorted}")
+                test_results[equipe] = True
+                
+                # Clean up after each team test
+                cleanup_data = {
+                    "user_id": user_id,
+                    "periode": "annee",
+                    "mode": "generees_seulement", 
+                    "type_entree": "indisponibilites"
+                }
+                try:
+                    user_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=cleanup_data)
+                except:
+                    pass  # Cleanup might fail
+            
+            # Overall test result
+            all_teams_passed = all(test_results.values())
+            
+            if all_teams_passed:
+                self.log_test("Quebec 10/14 February 2026 Pattern - Overall", True, 
+                            f"✅ ALL 4 TEAMS PASSED - Quebec 10/14 pattern verified for February 2026. Each team generated exactly 13 indisponibilités on correct days with proper origine='quebec_10_14', statut='indisponible', heure_debut='00:00', heure_fin='23:59'")
+            else:
+                failed_teams = [team for team, passed in test_results.items() if not passed]
+                self.log_test("Quebec 10/14 February 2026 Pattern - Overall", False, 
+                            f"❌ FAILED TEAMS: {', '.join(failed_teams)}")
+            
+            return all_teams_passed
+            
+        except Exception as e:
+            self.log_test("Quebec 10/14 February 2026 Pattern", False, f"Test error: {str(e)}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("\n🔥 ProFireManager Backend API Testing Suite")
