@@ -607,7 +607,7 @@ const ModuleEPI = ({ user }) => {
     preuve_disposition: [],
     certificat_disposition_url: '',
     cout_disposition: 0,
-    retire_par: `${user?.prenom} ${user?.nom}` || '',
+    retire_par: user ? `${user.prenom} ${user.nom}` : '',
     retire_par_id: user?.id || '',
     notes: ''
   });
