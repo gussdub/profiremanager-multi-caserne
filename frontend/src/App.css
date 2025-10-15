@@ -3750,10 +3750,10 @@ body {
 }
 
 .interactive-calendar .rdp {
-  --rdp-cell-size: 140px !important;
+  --rdp-cell-size: 150px !important;
   --rdp-accent-color: #16a34a !important;
   margin: 0 auto !important;
-  font-size: 1.4rem !important;
+  font-size: 1.5rem !important;
   width: 100% !important;
 }
 
