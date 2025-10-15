@@ -6558,6 +6558,79 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     return typeGarde ? typeGarde.couleur : '#10B981';
   };
 
+  // Fonction pour sauvegarde rapide (ajout simple d'une dispo ou indispo)
+  const handleQuickAddSave = async () => {
+    try {
+      // Validation
+      if (!quickAddConfig.date) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner une date",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'entrée
+      const newEntry = {
+        user_id: targetUser.id,
+        date: quickAddConfig.date,
+        type_garde_id: quickAddConfig.type_garde_id || null,
+        heure_debut: quickAddConfig.heure_debut,
+        heure_fin: quickAddConfig.heure_fin,
+        statut: quickAddType === 'disponibilite' ? 'disponible' : 'indisponible',
+        origine: 'manuelle'
+      };
+
+      // Récupérer les disponibilités existantes
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: d.user_id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut,
+        origine: d.origine
+      }));
+
+      // Ajouter la nouvelle entrée
+      const allDisponibilites = [...existingDispos, newEntry];
+
+      // Sauvegarder
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "✅ Enregistré !",
+        description: quickAddType === 'disponibilite' 
+          ? `Disponibilité ajoutée pour le ${quickAddConfig.date}`
+          : `Indisponibilité ajoutée pour le ${quickAddConfig.date}`,
+        variant: "success"
+      });
+      
+      setShowQuickAddModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Réinitialiser le formulaire
+      setQuickAddConfig({
+        date: new Date().toISOString().split('T')[0],
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00'
+      });
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde rapide:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getDisponibiliteForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0];
     return userDisponibilites.find(d => d.date === dateStr);
