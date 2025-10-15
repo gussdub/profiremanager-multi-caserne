@@ -7507,9 +7507,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
                     <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
                     <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
-                    {generationConfig.horaire_type === 'quebec' && (
-                      <li><strong>Jour 1 :</strong> {new Date(generationConfig.date_jour_1).toLocaleDateString('fr-FR')}</li>
-                    )}
                     <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
                   </ul>
                   <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
