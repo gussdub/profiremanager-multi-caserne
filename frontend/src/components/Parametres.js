@@ -119,6 +119,7 @@ const Parametres = ({ user, tenantSlug }) => {
   // Paramètres Formations NFPA 1500
   const [parametresFormations, setParametresFormations] = useState({
     heures_minimales_annuelles: 100,
+    pourcentage_presence_minimum: 80,
     delai_notification_liste_attente: 7,
     email_notifications_actif: true
   });
