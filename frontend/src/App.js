@@ -918,6 +918,17 @@ const ModuleEPI = ({ user }) => {
   };
   
   const openEditISP = (isp) => {
+    setSelectedISP(isp);
+    setIspForm({
+      nom: isp.nom,
+      contact: isp.contact || '',
+      telephone: isp.telephone || '',
+      email: isp.email || '',
+      accreditations: isp.accreditations || '',
+      notes: isp.notes || ''
+    });
+    setShowISPModal(true);
+  };
 
   // Phase 2 - Handlers Nettoyage
   const handleSaveNettoyage = async () => {
