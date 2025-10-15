@@ -818,13 +818,12 @@ class Disponibilite(BaseModel):
     heure_debut: str
     heure_fin: str
     statut: str = "disponible"  # disponible, indisponible, preference
+    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # Alias pour compatibilité
 SessionFormation = Formation
 SessionFormationCreate = FormationCreate
-
-    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DisponibiliteCreate(BaseModel):
     tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
