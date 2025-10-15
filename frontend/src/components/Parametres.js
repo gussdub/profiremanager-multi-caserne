@@ -98,6 +98,14 @@ const Parametres = ({ user, tenantSlug }) => {
     // Nouvelles règles de validation pour remplacements
     privilegier_disponibles: true,
     grade_egal: true,
+
+  // Paramètres Formations NFPA 1500
+  const [parametresFormations, setParametresFormations] = useState({
+    heures_minimales_annuelles: 100,
+    delai_notification_liste_attente: 7,
+    email_notifications_actif: true
+  });
+
     competences_egales: true,
     // Paramètres de notification de remplacement
     mode_notification: 'simultane',
