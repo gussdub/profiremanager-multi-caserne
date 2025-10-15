@@ -6327,7 +6327,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         equipe: generationConfig.equipe,
         date_debut: generationConfig.date_debut,
         date_fin: generationConfig.date_fin,
-        date_jour_1: generationConfig.horaire_type === 'quebec' ? generationConfig.date_jour_1 : null,
         conserver_manuelles: generationConfig.conserver_manuelles
       });
       
