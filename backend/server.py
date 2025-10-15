@@ -590,8 +590,8 @@ class User(BaseModel):
     heures_max_semaine: int = 40  # Heures max par semaine (pour temps partiel)
     role: str  # admin, superviseur, employe
     statut: str = "Actif"  # Actif, Inactif
-    numero_employe: str
-    date_embauche: str
+    numero_employe: str = ""
+    date_embauche: str = ""
     formations: List[str] = []
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
