@@ -549,7 +549,6 @@ class Tenant(BaseModel):
     actif: bool = True
     date_creation: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     parametres: Dict[str, Any] = {}
-    modules_verrouilles: List[str] = []  # Liste des modules en lecture seule: "epi", "remplacements", "disponibilites"
 
 class TenantCreate(BaseModel):
     slug: str
