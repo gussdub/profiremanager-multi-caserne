@@ -2407,6 +2407,26 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [user, tenantSlug]);
 
+
+  const calculerTempsPasse = (dateStr) => {
+    try {
+      const date = new Date(dateStr);
+      const maintenant = new Date();
+      const diffMs = maintenant - date;
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHeures = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffJours = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffMins < 60) return `Il y a ${diffMins} min`;
+      if (diffHeures < 24) return `Il y a ${diffHeures}h`;
+      if (diffJours === 1) return 'Hier';
+      if (diffJours < 7) return `Il y a ${diffJours} jours`;
+      return date.toLocaleDateString('fr-FR');
+    } catch {
+      return 'Récemment';
+    }
+  };
+
   const getPersonnelParType = () => {
     if (!statistiquesDetaillees) return { temps_plein: 0, temps_partiel: 0 };
     
