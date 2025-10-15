@@ -1492,53 +1492,12 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
               </div>
 
-              {/* Types d'EPI et normes NFPA - Version épurée */}
-              <div className="epi-types-section">
-                <h4>🛡️ Types d'EPI et normes NFPA</h4>
-                <div className="epi-types-modern-grid">
-                  {episTypesDefaut.map(epi => (
-                    <div key={epi.id} className="epi-modern-card" data-testid={`epi-type-${epi.id}`}>
-                      <div className="epi-card-header">
-                        <div className="epi-icon-large">{epi.icone}</div>
-                        <h5 className="epi-name">{epi.nom}</h5>
-                      </div>
-                      
-                      <div className="epi-specs">
-                        <div className="spec-item">
-                          <div className="spec-icon">⏱️</div>
-                          <div className="spec-content">
-                            <span className="spec-value">{epi.duree_vie_annees} ans</span>
-                            <span className="spec-label">Durée de vie</span>
-                          </div>
-                        </div>
-                        
-                        <div className="spec-item">
-                          <div className="spec-icon">🔍</div>
-                          <div className="spec-content">
-                            <span className="spec-value">{epi.inspection_mois} mois</span>
-                            <span className="spec-label">Inspection</span>
-                          </div>
-                        </div>
-                        
-                        <div className="spec-item">
-                          <div className="spec-icon">📏</div>
-                          <div className="spec-content">
-                            <span className="spec-value">{epi.tailles.length}</span>
-                            <span className="spec-label">Tailles disponibles</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Note : La gestion individuelle des EPI se trouve dans le module Personnel */}
+              {/* Note : La gestion individuelle des EPI se trouve dans le module EPI */}
               <div className="epi-info-section">
                 <div className="info-card">
                   <h4>💡 Information</h4>
-                  <p>La gestion des EPI individuels (tailles, dates, statuts) se trouve dans le <strong>module Personnel</strong>, dans la fiche de chaque employé.</p>
-                  <p>Utilisez cette section pour configurer les paramètres généraux et consulter les rapports globaux.</p>
+                  <p>La gestion complète des EPI selon NFPA 1851 se trouve dans le <strong>module EPI</strong>.</p>
+                  <p>Ce module inclut : inventaire, inspections (3 types), nettoyages, réparations, retrait, et rapports de conformité.</p>
                 </div>
               </div>
             </div>
