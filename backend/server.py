@@ -805,6 +805,11 @@ class ParametresFormations(BaseModel):
     email_notifications_actif: bool = True
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
+# Alias pour compatibilité avec anciennes routes
+SessionFormation = Formation
+SessionFormationCreate = FormationCreate
+
 class Disponibilite(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
