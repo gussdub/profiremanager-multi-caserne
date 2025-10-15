@@ -269,7 +269,10 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
   // Charger les notifications
   const loadNotifications = async () => {
-    if (!tenantSlug) return;
+    if (!tenantSlug || !user) return;
+    
+    // Ne charger les notifications que pour les utilisateurs non-employés
+    if (user.role === 'employe') return;
     
     try {
       const notificationsData = await apiGet(tenantSlug, '/notifications');
