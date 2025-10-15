@@ -9860,20 +9860,20 @@ body {
 }
 
 .availability-calendar-large .rdp-caption {
-  font-size: 2rem !important;
+  font-size: 2.1rem !important;
   font-weight: 700 !important;
-  margin-bottom: 1.75rem !important;
+  margin-bottom: 2rem !important;
   color: #0f172a !important;
-  padding: 0.875rem 0 !important;
+  padding: 1rem 0 !important;
 }
 
 .availability-calendar-large .rdp-head_cell {
-  font-size: 1.25rem !important;
+  font-size: 1.3rem !important;
   font-weight: 700 !important;
   color: #64748b !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.75px !important;
-  padding-bottom: 1.25rem !important;
+  letter-spacing: 1px !important;
+  padding-bottom: 1.5rem !important;
 }
 
 .availability-calendar-large .rdp-day_disabled {
