@@ -12755,3 +12755,141 @@ body {
   }
 }
 
+
+/* ==================== KPI PERSONNEL EMPLOYÉ ==================== */
+
+.mon-kpi-presence {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 2rem 0;
+}
+
+.mon-kpi-presence h2 {
+  margin: 0 0 1.5rem 0;
+  color: #1F2937;
+}
+
+.kpi-personnel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.kpi-card-large {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.kpi-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.kpi-circle-inner {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-circle-inner h2 {
+  margin: 0;
+  font-size: 3rem;
+  color: #1F2937;
+}
+
+.kpi-circle-inner p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 0.875rem;
+}
+
+.kpi-details {
+  flex: 1;
+}
+
+.kpi-details p {
+  margin: 0.75rem 0;
+  font-size: 1rem;
+}
+
+.statut-conformite {
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.statut-conformite.conforme {
+  background: #D1FAE5;
+  border: 2px solid #10B981;
+}
+
+.statut-conformite.non-conforme {
+  background: #FEE2E2;
+  border: 2px solid #EF4444;
+}
+
+.statut-conformite h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.statut-conformite.conforme h3 {
+  color: #065F46;
+}
+
+.statut-conformite.non-conforme h3 {
+  color: #991B1B;
+}
+
+.statut-conformite p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.statut-conformite.conforme p {
+  color: #047857;
+}
+
+.statut-conformite.non-conforme p {
+  color: #DC2626;
+}
+
+/* Responsive KPI Personnel */
+@media (max-width: 768px) {
+  .kpi-personnel-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .kpi-card-large {
+    flex-direction: column;
+  }
+  
+  .kpi-circle {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .kpi-circle-inner {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .kpi-circle-inner h2 {
+    font-size: 2rem;
+  }
+}
+
