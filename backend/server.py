@@ -2976,30 +2976,54 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
     pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
     params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
     heures_min = params.get("heures_minimales_annuelles", 100) if params else 100
+    pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
+    
+    aujourd_hui = datetime.now(timezone.utc).date()
     
     rapport = []
     for pompier in pompiers:
-        inscriptions = await db.inscriptions_formations.find({
+        # Toutes les inscriptions
+        toutes_inscriptions = await db.inscriptions_formations.find({
             "user_id": pompier["id"],
-            "tenant_id": tenant.id,
-            "statut": "present"
+            "tenant_id": tenant.id
         }).to_list(1000)
         
         total_heures = 0
-        for insc in inscriptions:
+        formations_passees = 0
+        presences = 0
+        
+        for insc in toutes_inscriptions:
             formation = await db.formations.find_one({
                 "id": insc["formation_id"],
                 "annee": annee,
                 "tenant_id": tenant.id
             })
+            
             if formation:
-                total_heures += insc.get("heures_creditees", 0)
+                date_fin = datetime.fromisoformat(formation["date_fin"]).date()
+                
+                # Heures créditées
+                if insc.get("statut") == "present":
+                    total_heures += insc.get("heures_creditees", 0)
+                
+                # Calcul taux de présence (formations passées seulement)
+                if date_fin < aujourd_hui:
+                    formations_passees += 1
+                    if insc.get("statut") == "present":
+                        presences += 1
+        
+        taux_presence = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
+        conforme_presence = taux_presence >= pourcentage_min
+        conforme_heures = total_heures >= heures_min
         
         pompier_data = clean_mongo_doc(pompier)
         pompier_data["total_heures"] = total_heures
         pompier_data["heures_requises"] = heures_min
-        pompier_data["conforme"] = total_heures >= heures_min
+        pompier_data["conforme"] = conforme_heures and conforme_presence
         pompier_data["pourcentage"] = round((total_heures / heures_min * 100) if heures_min > 0 else 0, 1)
+        pompier_data["taux_presence"] = taux_presence
+        pompier_data["formations_passees"] = formations_passees
+        pompier_data["presences"] = presences
         rapport.append(pompier_data)
     
     rapport.sort(key=lambda x: (-int(x["conforme"]), -x["total_heures"]))
