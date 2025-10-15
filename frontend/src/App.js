@@ -679,8 +679,8 @@ const ModuleEPI = ({ user }) => {
       loadData();
       setInspectionForm(prev => ({
         ...prev,
-        inspecteur_nom: `${user.prenom} ${user.nom}`,
-        inspecteur_id: user.id
+        inspecteur_nom: `${user?.prenom || ''} ${user?.nom || ''}`,
+        inspecteur_id: user?.id || ''
       }));
     }
   }, [tenantSlug, user]);
