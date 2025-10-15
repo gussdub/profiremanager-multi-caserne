@@ -9782,18 +9782,18 @@ body {
 .availability-calendar-large {
   border: 2px solid #e2e8f0;
   border-radius: 16px;
-  padding: 2.5rem;
+  padding: 3rem;
   margin-bottom: 1.5rem;
   background: white;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* DESKTOP - Calendrier TRÈS GROS et visible dans modal Indisponibilités */
+/* DESKTOP - Calendrier ÉNORME et TRÈS visible dans modal Indisponibilités */
 .availability-calendar-large .rdp {
-  --rdp-cell-size: 100px;
+  --rdp-cell-size: 145px;
   --rdp-accent-color: #dc2626;
   margin: 0 auto;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
 }
 
 .availability-calendar-large .rdp-month {
@@ -9806,20 +9806,24 @@ body {
 }
 
 .availability-calendar-large .rdp-day {
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 600;
-  min-height: 100px;
-  font-size: 1.3rem;
+  width: 145px;
+  height: 145px;
+  font-size: 1.5rem;
   transition: all 0.2s ease;
   border: 2px solid #e2e8f0;
   background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .availability-calendar-large .rdp-day:hover:not(.rdp-day_disabled) {
   background-color: #fef2f2;
-  transform: scale(1.03);
+  transform: scale(1.05);
   border-color: #dc2626;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2);
   z-index: 10;
 }
 
@@ -9828,7 +9832,7 @@ body {
   color: white !important;
   font-weight: 700;
   border-color: #dc2626 !important;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
 }
 
 .availability-calendar-large .rdp-day_today {
@@ -9839,20 +9843,20 @@ body {
 }
 
 .availability-calendar-large .rdp-caption {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   color: #0f172a;
-  padding: 0.5rem 0;
+  padding: 1rem 0;
 }
 
 .availability-calendar-large .rdp-head_cell {
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  padding-bottom: 1rem;
+  letter-spacing: 1px;
+  padding-bottom: 1.5rem;
 }
 
 .availability-calendar-large .rdp-day_disabled {
