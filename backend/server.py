@@ -6327,6 +6327,12 @@ async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user:
         "echeances": echeances
     }
 
+# ==================== HEALTH CHECK ====================
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint"""
+    try:
         # Test MongoDB connection
         await db.command('ping')
         db_status = "connected"
@@ -6338,6 +6344,8 @@ async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user:
         "service": "ProFireManager API",
         "version": "2.0",
         "database": db_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
