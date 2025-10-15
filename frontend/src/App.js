@@ -2014,7 +2014,7 @@ const ModuleEPI = ({ user }) => {
                 <div>
                   <Label>Effectué par</Label>
                   <Input 
-                    value={nettoyageForm.effectue_par || `${user.prenom} ${user.nom}`}
+                    value={nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`}
                     onChange={e => setNettoyageForm({...nettoyageForm, effectue_par: e.target.value})}
                   />
                 </div>
