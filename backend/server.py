@@ -6438,6 +6438,355 @@ async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user:
         "echeances": echeances
     }
 
+
+# ========== PHASE 2 : NETTOYAGE EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/nettoyage", response_model=NettoyageEPI)
+async def create_nettoyage(
+    tenant_slug: str,
+    epi_id: str,
+    nettoyage: NettoyageEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre un nettoyage EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    nettoyage_dict = nettoyage.dict()
+    nettoyage_dict["tenant_id"] = tenant.id
+    nettoyage_dict["epi_id"] = epi_id
+    nettoyage_obj = NettoyageEPI(**nettoyage_dict)
+    
+    nettoyage_data = nettoyage_obj.dict()
+    nettoyage_data["created_at"] = nettoyage_obj.created_at.isoformat()
+    
+    await db.nettoyages_epi.insert_one(nettoyage_data)
+    
+    return nettoyage_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/nettoyages", response_model=List[NettoyageEPI])
+async def get_nettoyages_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique de nettoyage d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    nettoyages = await db.nettoyages_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_nettoyage", -1).to_list(1000)
+    
+    cleaned_nettoyages = [clean_mongo_doc(n) for n in nettoyages]
+    
+    for n in cleaned_nettoyages:
+        if isinstance(n.get("created_at"), str):
+            n["created_at"] = datetime.fromisoformat(n["created_at"].replace('Z', '+00:00'))
+    
+    return [NettoyageEPI(**n) for n in cleaned_nettoyages]
+
+# ========== PHASE 2 : RÉPARATIONS EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/reparation", response_model=ReparationEPI)
+async def create_reparation(
+    tenant_slug: str,
+    epi_id: str,
+    reparation: ReparationEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée une demande de réparation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    reparation_dict = reparation.dict()
+    reparation_dict["tenant_id"] = tenant.id
+    reparation_dict["epi_id"] = epi_id
+    reparation_obj = ReparationEPI(**reparation_dict)
+    
+    reparation_data = reparation_obj.dict()
+    reparation_data["created_at"] = reparation_obj.created_at.isoformat()
+    reparation_data["updated_at"] = reparation_obj.updated_at.isoformat()
+    
+    await db.reparations_epi.insert_one(reparation_data)
+    
+    # Mettre à jour statut EPI
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "En réparation"}}
+    )
+    
+    return reparation_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/reparations", response_model=List[ReparationEPI])
+async def get_reparations_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique de réparations d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    reparations = await db.reparations_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_demande", -1).to_list(1000)
+    
+    cleaned_reparations = [clean_mongo_doc(r) for r in reparations]
+    
+    for r in cleaned_reparations:
+        if isinstance(r.get("created_at"), str):
+            r["created_at"] = datetime.fromisoformat(r["created_at"].replace('Z', '+00:00'))
+        if isinstance(r.get("updated_at"), str):
+            r["updated_at"] = datetime.fromisoformat(r["updated_at"].replace('Z', '+00:00'))
+    
+    return [ReparationEPI(**r) for r in cleaned_reparations]
+
+@api_router.put("/{tenant_slug}/epi/{epi_id}/reparation/{reparation_id}", response_model=ReparationEPI)
+async def update_reparation(
+    tenant_slug: str,
+    epi_id: str,
+    reparation_id: str,
+    reparation_update: ReparationEPIUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une réparation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    reparation = await db.reparations_epi.find_one({
+        "id": reparation_id,
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not reparation:
+        raise HTTPException(status_code=404, detail="Réparation non trouvée")
+    
+    update_data = {k: v for k, v in reparation_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.reparations_epi.update_one(
+        {"id": reparation_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    # Si réparation terminée, remettre EPI en service
+    if reparation_update.statut == "terminee":
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "En service"}}
+        )
+    
+    updated_reparation = await db.reparations_epi.find_one({
+        "id": reparation_id,
+        "tenant_id": tenant.id
+    })
+    
+    cleaned = clean_mongo_doc(updated_reparation)
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
+    
+    return ReparationEPI(**cleaned)
+
+# ========== PHASE 2 : RETRAIT EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/retrait", response_model=RetraitEPI)
+async def create_retrait(
+    tenant_slug: str,
+    epi_id: str,
+    retrait: RetraitEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre le retrait définitif d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    retrait_dict = retrait.dict()
+    retrait_dict["tenant_id"] = tenant.id
+    retrait_dict["epi_id"] = epi_id
+    retrait_obj = RetraitEPI(**retrait_dict)
+    
+    retrait_data = retrait_obj.dict()
+    retrait_data["created_at"] = retrait_obj.created_at.isoformat()
+    
+    await db.retraits_epi.insert_one(retrait_data)
+    
+    # Mettre à jour statut EPI
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "Retiré"}}
+    )
+    
+    return retrait_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/retrait", response_model=RetraitEPI)
+async def get_retrait_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les informations de retrait d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    retrait = await db.retraits_epi.find_one({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not retrait:
+        raise HTTPException(status_code=404, detail="Aucun retrait enregistré pour cet EPI")
+    
+    cleaned = clean_mongo_doc(retrait)
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    
+    return RetraitEPI(**cleaned)
+
+# ========== RAPPORTS PHASE 2 ==========
+
+@api_router.get("/{tenant_slug}/epi/rapports/retraits-prevus")
+async def get_rapport_retraits_prevus(
+    tenant_slug: str,
+    mois: int = 12,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport des EPI approchant de leur limite de 10 ans"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    aujourd_hui = datetime.now(timezone.utc)
+    limite_jours = mois * 30
+    
+    retraits_prevus = []
+    
+    for epi in epis:
+        if epi.get("statut") == "Retiré":
+            continue
+        
+        date_mise_service = datetime.fromisoformat(epi["date_mise_en_service"])
+        age_jours = (aujourd_hui - date_mise_service).days
+        age_limite_jours = 365 * 10  # 10 ans
+        
+        jours_restants = age_limite_jours - age_jours
+        
+        if 0 <= jours_restants <= limite_jours:
+            cleaned_epi = clean_mongo_doc(epi)
+            cleaned_epi["age_annees"] = round(age_jours / 365, 1)
+            cleaned_epi["jours_avant_limite"] = jours_restants
+            cleaned_epi["date_limite_prevue"] = (date_mise_service + timedelta(days=age_limite_jours)).isoformat()
+            retraits_prevus.append(cleaned_epi)
+    
+    retraits_prevus.sort(key=lambda x: x["jours_avant_limite"])
+    
+    return {
+        "total": len(retraits_prevus),
+        "periode_mois": mois,
+        "epis": retraits_prevus
+    }
+
+@api_router.get("/{tenant_slug}/epi/rapports/cout-total")
+async def get_rapport_cout_total(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport du coût total de possession (TCO) par EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = []
+    
+    for epi in epis:
+        # Coût d'achat
+        cout_achat = epi.get("cout_achat", 0)
+        
+        # Coûts de nettoyage (fictif, à améliorer si prix stockés)
+        nettoyages = await db.nettoyages_epi.find({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        cout_nettoyages = len([n for n in nettoyages if n.get("type_nettoyage") == "avance"]) * 50  # Ex: 50$ par nettoyage avancé
+        
+        # Coûts de réparation
+        reparations = await db.reparations_epi.find({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        cout_reparations = sum([r.get("cout_reparation", 0) for r in reparations])
+        
+        # Coût de retrait
+        retrait = await db.retraits_epi.find_one({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        })
+        cout_retrait = retrait.get("cout_disposition", 0) if retrait else 0
+        
+        cout_total = cout_achat + cout_nettoyages + cout_reparations + cout_retrait
+        
+        cleaned_epi = clean_mongo_doc(epi)
+        cleaned_epi["cout_achat"] = cout_achat
+        cleaned_epi["cout_nettoyages"] = cout_nettoyages
+        cleaned_epi["nombre_nettoyages"] = len(nettoyages)
+        cleaned_epi["cout_reparations"] = cout_reparations
+        cleaned_epi["nombre_reparations"] = len(reparations)
+        cleaned_epi["cout_retrait"] = cout_retrait
+        cleaned_epi["cout_total"] = cout_total
+        
+        rapport.append(cleaned_epi)
+    
+    # Trier par coût total décroissant
+    rapport.sort(key=lambda x: x["cout_total"], reverse=True)
+    
+    return {
+        "total_epis": len(rapport),
+        "cout_total_flotte": sum([e["cout_total"] for e in rapport]),
+        "cout_moyen_par_epi": sum([e["cout_total"] for e in rapport]) / len(rapport) if len(rapport) > 0 else 0,
+        "epis": rapport
+    }
+
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
