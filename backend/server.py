@@ -701,12 +701,39 @@ class DemandeRemplacementCreate(BaseModel):
     date: str
     raison: str
 
+# ==================== MODÈLES COMPÉTENCES ====================
+
+class Competence(BaseModel):
+    """Compétence avec exigences NFPA 1500"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    description: str = ""
+    heures_requises_annuelles: float = 0.0
+    obligatoire: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CompetenceCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    description: str = ""
+    heures_requises_annuelles: float = 0.0
+    obligatoire: bool = False
+
+class CompetenceUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    heures_requises_annuelles: Optional[float] = None
+    obligatoire: Optional[bool] = None
+
+# ==================== MODÈLES FORMATIONS NFPA 1500 ====================
+
 class Formation(BaseModel):
     """Formation planifiée avec gestion inscriptions NFPA 1500"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     nom: str
-    competence_id: str  # Lien vers la compétence
+    competence_id: str
     description: str = ""
     date_debut: str
     date_fin: str
@@ -717,7 +744,7 @@ class Formation(BaseModel):
     instructeur: str = ""
     places_max: int
     places_restantes: int
-    statut: str = "planifiee"  # planifiee, en_cours, terminee, annulee
+    statut: str = "planifiee"
     annee: int
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -752,13 +779,13 @@ class FormationUpdate(BaseModel):
     statut: Optional[str] = None
 
 class InscriptionFormation(BaseModel):
-    """Inscription d'un pompier à une formation"""
+    """Inscription pompier à formation"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     formation_id: str
     user_id: str
     date_inscription: str
-    statut: str = "inscrit"  # inscrit, en_attente, present, absent, complete
+    statut: str = "inscrit"
     heures_creditees: float = 0.0
     notes: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -774,34 +801,11 @@ class InscriptionFormationUpdate(BaseModel):
     heures_creditees: Optional[float] = None
     notes: Optional[str] = None
 
-class Competence(BaseModel):
-    """Compétence avec exigences NFPA 1500"""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    nom: str
-    description: str = ""
-    heures_requises_annuelles: float = 0.0
-    obligatoire: bool = False
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class CompetenceCreate(BaseModel):
-    tenant_id: Optional[str] = None
-    nom: str
-    description: str = ""
-    heures_requises_annuelles: float = 0.0
-    obligatoire: bool = False
-
-class CompetenceUpdate(BaseModel):
-    nom: Optional[str] = None
-    description: Optional[str] = None
-    heures_requises_annuelles: Optional[float] = None
-    obligatoire: Optional[bool] = None
-
 class ParametresFormations(BaseModel):
-    """Paramètres globaux formations pour NFPA 1500"""
+    """Paramètres formations NFPA 1500"""
     tenant_id: str
     heures_minimales_annuelles: float = 100.0
-    delai_notification_liste_attente: int = 7  # jours
+    delai_notification_liste_attente: int = 7
     email_notifications_actif: bool = True
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
