@@ -960,7 +960,7 @@ const ModuleEPI = ({ user }) => {
       } else {
         const data = {
           ...reparationForm,
-          demandeur: reparationForm.demandeur || `${user.prenom} ${user.nom}`
+          demandeur: reparationForm.demandeur || `${user?.prenom || ''} ${user?.nom || ''}`
         };
         await apiPost(tenantSlug, `/epi/${selectedEPI.id}/reparation`, data);
         toast({ title: "Succès", description: "Réparation créée" });
