@@ -5907,9 +5907,425 @@ async def update_parametres_remplacements(
     
     return {"message": "Paramètres mis à jour avec succès"}
 
-# ==================== EPI ROUTES ====================
+# ==================== EPI ROUTES NFPA 1851 ====================
 
-@api_router.post("/{tenant_slug}/epi", response_model=EPIEmploye)
+# ========== EPI CRUD ==========
+
+@api_router.post("/{tenant_slug}/epi", response_model=EPI)
+async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depends(get_current_user)):
+    """Crée un nouvel équipement EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le numéro de série est unique
+    existing_epi = await db.epis.find_one({
+        "numero_serie": epi.numero_serie,
+        "tenant_id": tenant.id
+    })
+    
+    if existing_epi:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Un EPI avec le numéro de série {epi.numero_serie} existe déjà"
+        )
+    
+    epi_dict = epi.dict()
+    epi_dict["tenant_id"] = tenant.id
+    epi_obj = EPI(**epi_dict)
+    
+    # Préparer pour MongoDB (conversion datetime -> ISO string)
+    epi_data = epi_obj.dict()
+    epi_data["created_at"] = epi_obj.created_at.isoformat()
+    epi_data["updated_at"] = epi_obj.updated_at.isoformat()
+    
+    await db.epis.insert_one(epi_data)
+    
+    return epi_obj
+
+@api_router.get("/{tenant_slug}/epi", response_model=List[EPI])
+async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les EPI du tenant (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    cleaned_epis = [clean_mongo_doc(epi) for epi in epis]
+    
+    # Convertir les dates ISO string vers datetime
+    for epi in cleaned_epis:
+        if isinstance(epi.get("created_at"), str):
+            epi["created_at"] = datetime.fromisoformat(epi["created_at"].replace('Z', '+00:00'))
+        if isinstance(epi.get("updated_at"), str):
+            epi["updated_at"] = datetime.fromisoformat(epi["updated_at"].replace('Z', '+00:00'))
+    
+    return [EPI(**epi) for epi in cleaned_epis]
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
+async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
+    """Récupère un EPI spécifique par son ID"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    cleaned_epi = clean_mongo_doc(epi)
+    
+    # Convertir les dates
+    if isinstance(cleaned_epi.get("created_at"), str):
+        cleaned_epi["created_at"] = datetime.fromisoformat(cleaned_epi["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned_epi.get("updated_at"), str):
+        cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
+    
+    return EPI(**cleaned_epi)
+
+@api_router.put("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
+async def update_epi(
+    tenant_slug: str,
+    epi_id: str,
+    epi_update: EPIUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    # Préparer les champs à mettre à jour
+    update_data = {k: v for k, v in epi_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    updated_epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    cleaned_epi = clean_mongo_doc(updated_epi)
+    
+    # Convertir les dates
+    if isinstance(cleaned_epi.get("created_at"), str):
+        cleaned_epi["created_at"] = datetime.fromisoformat(cleaned_epi["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned_epi.get("updated_at"), str):
+        cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
+    
+    return EPI(**cleaned_epi)
+
+@api_router.delete("/{tenant_slug}/epi/{epi_id}")
+async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime un EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.epis.delete_one({"id": epi_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    # Supprimer aussi toutes les inspections associées
+    await db.inspections_epi.delete_many({"epi_id": epi_id, "tenant_id": tenant.id})
+    
+    return {"message": "EPI supprimé avec succès"}
+
+# ========== INSPECTIONS EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/inspection", response_model=InspectionEPI)
+async def create_inspection(
+    tenant_slug: str,
+    epi_id: str,
+    inspection: InspectionEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée une nouvelle inspection pour un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    inspection_dict = inspection.dict()
+    inspection_dict["tenant_id"] = tenant.id
+    inspection_dict["epi_id"] = epi_id
+    inspection_obj = InspectionEPI(**inspection_dict)
+    
+    # Préparer pour MongoDB
+    inspection_data = inspection_obj.dict()
+    inspection_data["created_at"] = inspection_obj.created_at.isoformat()
+    
+    await db.inspections_epi.insert_one(inspection_data)
+    
+    # Mettre à jour le statut de l'EPI si nécessaire
+    if inspection.statut_global == "hors_service":
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "Hors service"}}
+        )
+    elif inspection.statut_global == "necessite_reparation":
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "En réparation"}}
+        )
+    
+    return inspection_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/inspections", response_model=List[InspectionEPI])
+async def get_epi_inspections(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
+    """Récupère toutes les inspections d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspections = await db.inspections_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_inspection", -1).to_list(1000)
+    
+    cleaned_inspections = [clean_mongo_doc(insp) for insp in inspections]
+    
+    # Convertir les dates
+    for insp in cleaned_inspections:
+        if isinstance(insp.get("created_at"), str):
+            insp["created_at"] = datetime.fromisoformat(insp["created_at"].replace('Z', '+00:00'))
+    
+    return [InspectionEPI(**insp) for insp in cleaned_inspections]
+
+# ========== ISP (Fournisseurs) ==========
+
+@api_router.post("/{tenant_slug}/isp", response_model=ISP)
+async def create_isp(tenant_slug: str, isp: ISPCreate, current_user: User = Depends(get_current_user)):
+    """Crée un nouveau fournisseur de services indépendant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isp_dict = isp.dict()
+    isp_dict["tenant_id"] = tenant.id
+    isp_obj = ISP(**isp_dict)
+    
+    # Préparer pour MongoDB
+    isp_data = isp_obj.dict()
+    isp_data["created_at"] = isp_obj.created_at.isoformat()
+    
+    await db.isps.insert_one(isp_data)
+    
+    return isp_obj
+
+@api_router.get("/{tenant_slug}/isp", response_model=List[ISP])
+async def get_all_isps(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les ISP du tenant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isps = await db.isps.find({"tenant_id": tenant.id}).to_list(100)
+    cleaned_isps = [clean_mongo_doc(isp) for isp in isps]
+    
+    # Convertir les dates
+    for isp in cleaned_isps:
+        if isinstance(isp.get("created_at"), str):
+            isp["created_at"] = datetime.fromisoformat(isp["created_at"].replace('Z', '+00:00'))
+    
+    return [ISP(**isp) for isp in cleaned_isps]
+
+@api_router.put("/{tenant_slug}/isp/{isp_id}", response_model=ISP)
+async def update_isp(
+    tenant_slug: str,
+    isp_id: str,
+    isp_update: ISPUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un ISP"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isp = await db.isps.find_one({"id": isp_id, "tenant_id": tenant.id})
+    if not isp:
+        raise HTTPException(status_code=404, detail="ISP non trouvé")
+    
+    update_data = {k: v for k, v in isp_update.dict().items() if v is not None}
+    
+    await db.isps.update_one(
+        {"id": isp_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    updated_isp = await db.isps.find_one({"id": isp_id, "tenant_id": tenant.id})
+    cleaned_isp = clean_mongo_doc(updated_isp)
+    
+    if isinstance(cleaned_isp.get("created_at"), str):
+        cleaned_isp["created_at"] = datetime.fromisoformat(cleaned_isp["created_at"].replace('Z', '+00:00'))
+    
+    return ISP(**cleaned_isp)
+
+@api_router.delete("/{tenant_slug}/isp/{isp_id}")
+async def delete_isp(tenant_slug: str, isp_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime un ISP"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.isps.delete_one({"id": isp_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="ISP non trouvé")
+    
+    return {"message": "ISP supprimé avec succès"}
+
+# ========== RAPPORTS ==========
+
+@api_router.get("/{tenant_slug}/epi/rapports/conformite")
+async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Rapport de conformité générale avec code couleur"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les EPI
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = {
+        "total": len(epis),
+        "en_service": 0,
+        "en_inspection": 0,
+        "en_reparation": 0,
+        "hors_service": 0,
+        "retire": 0,
+        "epis": []
+    }
+    
+    for epi in epis:
+        statut = epi.get("statut", "En service")
+        
+        # Compter par statut
+        if statut == "En service":
+            rapport["en_service"] += 1
+        elif statut == "En inspection":
+            rapport["en_inspection"] += 1
+        elif statut == "En réparation":
+            rapport["en_reparation"] += 1
+        elif statut == "Hors service":
+            rapport["hors_service"] += 1
+        elif statut == "Retiré":
+            rapport["retire"] += 1
+        
+        # Récupérer la dernière inspection
+        derniere_inspection = await db.inspections_epi.find_one(
+            {"epi_id": epi["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        # Déterminer le code couleur
+        couleur = "vert"  # Par défaut
+        
+        if statut in ["Hors service", "Retiré"]:
+            couleur = "rouge"
+        elif statut == "En réparation":
+            couleur = "jaune"
+        elif derniere_inspection:
+            # Vérifier si l'inspection est récente
+            date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
+            jours_depuis_inspection = (datetime.now(timezone.utc) - date_inspection).days
+            
+            if jours_depuis_inspection > 365:  # Inspection avancée en retard
+                couleur = "rouge"
+            elif jours_depuis_inspection > 330:  # Inspection bientôt en retard (dans 35 jours)
+                couleur = "jaune"
+        else:
+            # Pas d'inspection du tout
+            couleur = "rouge"
+        
+        cleaned_epi = clean_mongo_doc(epi)
+        cleaned_epi["code_couleur"] = couleur
+        cleaned_epi["derniere_inspection"] = clean_mongo_doc(derniere_inspection) if derniere_inspection else None
+        
+        rapport["epis"].append(cleaned_epi)
+    
+    return rapport
+
+@api_router.get("/{tenant_slug}/epi/rapports/echeances")
+async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user: User = Depends(get_current_user)):
+    """Rapport des échéances d'inspection (dans X jours)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les EPI
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    echeances = []
+    aujourd_hui = datetime.now(timezone.utc)
+    
+    for epi in epis:
+        # Récupérer la dernière inspection
+        derniere_inspection = await db.inspections_epi.find_one(
+            {"epi_id": epi["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        if derniere_inspection:
+            date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
+            type_inspection = derniere_inspection["type_inspection"]
+            
+            # Calculer la prochaine échéance selon le type
+            if type_inspection == "avancee_annuelle":
+                prochaine_echeance = date_inspection + timedelta(days=365)
+            elif type_inspection == "routine_mensuelle":
+                prochaine_echeance = date_inspection + timedelta(days=30)
+            else:  # apres_utilisation
+                prochaine_echeance = date_inspection + timedelta(days=30)  # Routine dans 30 jours
+            
+            # Vérifier si dans la fenêtre de X jours
+            jours_restants = (prochaine_echeance - aujourd_hui).days
+            
+            if 0 <= jours_restants <= jours:
+                cleaned_epi = clean_mongo_doc(epi)
+                cleaned_epi["prochaine_echeance"] = prochaine_echeance.isoformat()
+                cleaned_epi["jours_restants"] = jours_restants
+                cleaned_epi["type_inspection_requise"] = "avancee_annuelle" if type_inspection == "avancee_annuelle" else "routine_mensuelle"
+                echeances.append(cleaned_epi)
+        else:
+            # Pas d'inspection = inspection immédiate requise
+            cleaned_epi = clean_mongo_doc(epi)
+            cleaned_epi["prochaine_echeance"] = aujourd_hui.isoformat()
+            cleaned_epi["jours_restants"] = 0
+            cleaned_epi["type_inspection_requise"] = "routine_mensuelle"
+            echeances.append(cleaned_epi)
+    
+    # Trier par jours restants
+    echeances.sort(key=lambda x: x["jours_restants"])
+    
+    return {
+        "total": len(echeances),
+        "echeances": echeances
+    }
 async def create_epi(tenant_slug: str, epi: EPIEmployeCreate, current_user: User = Depends(get_current_user)):
     """Crée un nouvel EPI pour un employé (Admin/Superviseur)"""
     if current_user.role not in ["admin", "superviseur"]:
