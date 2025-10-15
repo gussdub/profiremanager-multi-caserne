@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendriers Modals - TRÈS GROS Desktop</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f8fafc;
+            margin: 0;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+        
+        .comparison {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .comparison h2 {
+            color: #16a34a;
+            margin: 0;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.6rem;
+            color: #0f172a;
+            margin: 0;
+        }
+        
+        .calendar-container {
+            margin: 2rem auto;
+        }
+        
+        /* DESKTOP - Calendrier TRÈS GROS */
+        .big-calendar {
+            display: grid;
+            gap: 0;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .calendar-header {
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0f172a;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            padding: 1rem 0;
+        }
+        
+        .calendar-weekday {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 2px solid #e2e8f0;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #0f172a;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            min-height: 100px;
+        }
+        
+        .calendar-day:hover {
+            background: #f0fdf4;
+            transform: scale(1.03);
+            border-color: #16a34a;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+            z-index: 10;
+        }
+        
+        .calendar-day.selected {
+            background: #16a34a;
+            color: white;
+            font-weight: 700;
+            border-color: #16a34a;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        
+        .calendar-day.today {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 3px solid #dc2626;
+            font-weight: 700;
+        }
+        
+        .calendar-day.empty {
+            background: #f8fafc;
+            cursor: default;
+            pointer-events: none;
+        }
+        
+        /* Version rouge pour indisponibilités */
+        .calendar-red .calendar-day:hover {
+            background: #fef2f2;
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+        
+        .calendar-red .calendar-day.selected {
+            background: #dc2626;
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        
+        .calendar-red .calendar-day.today {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 3px solid #16a34a;
+        }
+        
+        .selection-count {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f0fdf4;
+            border: 2px solid #16a34a;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #16a34a;
+        }
+        
+        .calendar-red .selection-count {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+        
+        .note {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            color: #92400e;
+        }
+        
+        .demo-switch {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        button {
+            padding: 1rem 2rem;
+            margin: 0 0.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-green {
+            background: #16a34a;
+            color: white;
+        }
+        
+        .btn-green:hover {
+            background: #15803d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        
+        .btn-red {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-red:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 40px;
+                font-size: 0.85rem;
+                padding: 0.3rem;
+            }
+            
+            .calendar-header {
+                font-size: 1.1rem;
+                padding: 1rem;
+            }
+            
+            .calendar-weekday {
+                font-size: 0.75rem;
+            }
+            
+            .demo-container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison">
+        <h2>🎯 NOUVEAU : Calendriers TRÈS GROS pour Desktop</h2>
+        <p style="margin: 0.5rem 0; color: #64748b;">
+            Cellules 100x100px • Font-size 1.3rem • Hover effects améliorés • Mobile inchangé (40px parfait)
+        </p>
+    </div>
+    
+    <h1>📅 Modal "Gérer Disponibilités"</h1>
+    
+    <div class="demo-switch">
+        <button class="btn-green" onclick="showDispo()">✅ Disponibilités</button>
+        <button class="btn-red" onclick="showIndispo()">❌ Indisponibilités</button>
+    </div>
+    
+    <!-- Calendrier Disponibilités -->
+    <div id="dispo-calendar" class="demo-container">
+        <div class="modal-header">
+            <h3>✅ Sélectionnez vos dates disponibles</h3>
+        </div>
+        
+        <div class="calendar-container">
+            <div class="big-calendar">
+                <div class="calendar-header">Décembre 2024</div>
+                
+                <div class="calendar-weekdays">
+                    <div class="calendar-weekday">Lun</div>
+                    <div class="calendar-weekday">Mar</div>
+                    <div class="calendar-weekday">Mer</div>
+                    <div class="calendar-weekday">Jeu</div>
+                    <div class="calendar-weekday">Ven</div>
+                    <div class="calendar-weekday">Sam</div>
+                    <div class="calendar-weekday">Dim</div>
+                </div>
+                
+                <div class="calendar-days">
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day">1</div>
+                    
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">2</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">3</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">4</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">5</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">6</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">7</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">8</div>
+                    
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">9</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">10</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">11</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">12</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">13</div>
+                    <div class="calendar-day today" onclick="this.classList.toggle('selected')">14</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">15</div>
+                    
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">16</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">17</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">18</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">19</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">20</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">21</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">22</div>
+                    
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">23</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">24</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">25</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">26</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">27</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">28</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">29</div>
+                    
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">30</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">31</div>
+                </div>
+            </div>
+            
+            <div class="selection-count">
+                ✅ 7 dates sélectionnées • Cliquez pour ajouter/retirer
+            </div>
+        </div>
+        
+        <div class="note">
+            💡 <strong>Astuce :</strong> Survolez les cellules pour voir l'effet hover amélioré !
+        </div>
+    </div>
+    
+    <!-- Calendrier Indisponibilités -->
+    <div id="indispo-calendar" class="demo-container" style="display: none;">
+        <div class="modal-header">
+            <h3>❌ Sélectionnez vos dates indisponibles</h3>
+        </div>
+        
+        <div class="calendar-container">
+            <div class="big-calendar calendar-red">
+                <div class="calendar-header">Janvier 2025</div>
+                
+                <div class="calendar-weekdays">
+                    <div class="calendar-weekday">Lun</div>
+                    <div class="calendar-weekday">Mar</div>
+                    <div class="calendar-weekday">Mer</div>
+                    <div class="calendar-weekday">Jeu</div>
+                    <div class="calendar-weekday">Ven</div>
+                    <div class="calendar-weekday">Sam</div>
+                    <div class="calendar-weekday">Dim</div>
+                </div>
+                
+                <div class="calendar-days">
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">1</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">2</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">3</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">4</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">5</div>
+                    
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">6</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">7</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">8</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">9</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">10</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">11</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">12</div>
+                    
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">13</div>
+                    <div class="calendar-day today" onclick="this.classList.toggle('selected')">14</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">15</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">16</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">17</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">18</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">19</div>
+                    
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">20</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">21</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">22</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">23</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">24</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">25</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">26</div>
+                    
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">27</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">28</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">29</div>
+                    <div class="calendar-day" onclick="this.classList.toggle('selected')">30</div>
+                    <div class="calendar-day selected" onclick="this.classList.toggle('selected')">31</div>
+                </div>
+            </div>
+            
+            <div class="selection-count">
+                ❌ 10 dates sélectionnées • Cliquez pour ajouter/retirer
+            </div>
+        </div>
+        
+        <div class="note">
+            💡 <strong>Astuce :</strong> Les cellules font 100x100px, parfaites pour desktop !
+        </div>
+    </div>
+    
+    <script>
+        function showDispo() {
+            document.getElementById('dispo-calendar').style.display = 'block';
+            document.getElementById('indispo-calendar').style.display = 'none';
+        }
+        
+        function showIndispo() {
+            document.getElementById('dispo-calendar').style.display = 'none';
+            document.getElementById('indispo-calendar').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
