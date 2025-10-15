@@ -17,9 +17,9 @@ function Calendar({
     className.includes('availability-calendar-large')
   );
   
-  // Dynamic day cell sizing based on context
-  const daySize = isInteractiveCalendar ? "w-40 h-40" : "h-8 w-8"; // 160px for interactive, 32px for normal
-  const headCellSize = isInteractiveCalendar ? "w-40" : "w-8";
+  // Dynamic day cell sizing based on context - optimized size
+  const daySize = isInteractiveCalendar ? "w-30 h-30" : "h-8 w-8"; // 120px for interactive, 32px for normal
+  const headCellSize = isInteractiveCalendar ? "w-30" : "w-8";
   
   return (
     <DayPicker
