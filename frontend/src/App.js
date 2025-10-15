@@ -6618,6 +6618,11 @@ const Formations = () => {
   const [selectedFormation, setSelectedFormation] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [rapportConformite, setRapportConformite] = useState(null);
+  const [monTauxPresence, setMonTauxPresence] = useState(null);
+  
+  // Filtres admin/superviseur
+  const [filtreNom, setFiltreNom] = useState('');
+  const [triPresence, setTriPresence] = useState('desc'); // desc ou asc
   
   // Modals
   const [showFormationModal, setShowFormationModal] = useState(false);
@@ -6636,6 +6641,7 @@ const Formations = () => {
     lieu: '',
     instructeur: '',
     places_max: 20,
+    obligatoire: false,
     annee: new Date().getFullYear()
   });
   
