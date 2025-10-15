@@ -6766,6 +6766,7 @@ const Formations = () => {
       lieu: '',
       instructeur: '',
       places_max: 20,
+      obligatoire: false,
       annee: anneeSelectionnee
     });
     setSelectedFormation(null);
@@ -6774,6 +6775,29 @@ const Formations = () => {
   const getCompetenceName = (id) => {
     const comp = competences.find(c => c.id === id);
     return comp ? comp.nom : 'N/A';
+  };
+  
+  // Filtrer et trier pompiers (admin/superviseur)
+  const getPompiersFiltreTri = () => {
+    if (!rapportConformite) return [];
+    
+    let pompiers = [...rapportConformite.pompiers];
+    
+    // Filtre par nom
+    if (filtreNom) {
+      pompiers = pompiers.filter(p => 
+        `${p.prenom} ${p.nom}`.toLowerCase().includes(filtreNom.toLowerCase())
+      );
+    }
+    
+    // Tri par taux présence
+    pompiers.sort((a, b) => {
+      const tauxA = a.taux_presence || 0;
+      const tauxB = b.taux_presence || 0;
+      return triPresence === 'desc' ? tauxB - tauxA : tauxA - tauxB;
+    });
+    
+    return pompiers;
   };
   
   if (loading) {
