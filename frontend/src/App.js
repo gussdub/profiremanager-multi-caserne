@@ -7478,21 +7478,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   </small>
                 </div>
 
-                {/* Date Jour 1 pour Quebec */}
-                {generationConfig.horaire_type === 'quebec' && (
-                  <div className="config-section">
-                    <h4>📍 Date du Jour 1 du cycle</h4>
-                    <Input
-                      type="date"
-                      value={generationConfig.date_jour_1}
-                      onChange={(e) => setGenerationConfig({...generationConfig, date_jour_1: e.target.value})}
-                    />
-                    <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-                      Sélectionnez la date de référence pour le Jour 1 du cycle de 28 jours
-                    </small>
-                  </div>
-                )}
-
                 {/* Option de conservation des modifications manuelles */}
                 <div className="config-section">
                   <h4>⚠️ Gestion des données existantes</h4>
