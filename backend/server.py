@@ -3583,6 +3583,26 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         logging.error(f"❌ Erreur inattendue lors du login pour {user_login.email}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
+
+class DemandeCongé(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str
+    date_debut: str
+    date_fin: str
+    type: str
+    raison: str = ""
+    statut: str = "en_attente"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DemandeCongeCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    user_id: str
+    date_debut: str
+    date_fin: str
+    type: str
+    raison: str = ""
+
 # ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
 # Demandes de congé routes
