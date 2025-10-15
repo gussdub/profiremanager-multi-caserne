@@ -9033,12 +9033,6 @@ body {
 }
 
 /* Enhanced Personnel Modal Styles */
-.extra-large-modal {
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
 .personnel-form-grid {
   display: flex;
   flex-direction: column;
