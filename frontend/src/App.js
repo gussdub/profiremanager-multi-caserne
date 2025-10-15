@@ -843,7 +843,11 @@ const ModuleEPI = ({ user }) => {
   
   const openDetailEPI = async (epi) => {
     setSelectedEPI(epi);
-    await loadInspections(epi.id);
+    await Promise.all([
+      loadInspections(epi.id),
+      loadNettoyages(epi.id),
+      loadReparations(epi.id)
+    ]);
     setShowDetailModal(true);
   };
   
