@@ -924,7 +924,7 @@ const ModuleEPI = ({ user }) => {
     try {
       const data = {
         ...nettoyageForm,
-        effectue_par: nettoyageForm.effectue_par || `${user.prenom} ${user.nom}`
+        effectue_par: nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`
       };
       await apiPost(tenantSlug, `/epi/${selectedEPI.id}/nettoyage`, data);
       toast({ title: "Succès", description: "Nettoyage enregistré" });
