@@ -9796,11 +9796,13 @@ body {
   border: 2px solid #e2e8f0 !important;
   border-radius: 16px !important;
   padding: 3rem !important;
-  margin-bottom: 1.5rem !important;
+  margin: 1.5rem auto !important;
   background: white !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-  width: 100% !important;
+  width: fit-content !important;
   max-width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 /* DESKTOP - Calendrier ÉNORME et TRÈS visible dans modal Indisponibilités */
