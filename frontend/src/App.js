@@ -2312,18 +2312,40 @@ const Dashboard = () => {
       if (!tenantSlug) return;
       
       try {
-        const [statsData, rapportsData, usersData] = await Promise.all([
+        const [statsData, rapportsData, usersData, notificationsData] = await Promise.all([
           apiGet(tenantSlug, '/statistiques'),
           user.role === 'admin' ? apiGet(tenantSlug, '/rapports/statistiques-avancees') : Promise.resolve(null),
-          user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([])
+          user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([]),
+          apiGet(tenantSlug, '/notifications').catch(() => [])
         ]);
         
         setStats(statsData);
         setStatistiquesDetaillees(rapportsData);
         
-        // Générer activité récente dynamique
-        const users = usersData || [];
+        // Générer activité récente depuis les vraies notifications
         const activiteItems = [];
+        const notifications = notificationsData || [];
+        
+        // Notifications EPI récentes (dernières 24h)
+        const notificationsEPI = notifications.filter(n => 
+          n.type && (n.type.includes('epi') || n.type === 'epi_reparation_terminee' || 
+          n.type === 'epi_inspection' || n.type === 'epi_nouvel_assignation')
+        ).slice(0, 5);
+        
+        notificationsEPI.forEach(notif => {
+          const tempsPasse = calculerTempsPasse(notif.created_at);
+          activiteItems.push({
+            type: notif.type,
+            text: notif.message,
+            time: tempsPasse,
+            icon: notif.type.includes('inspection') ? '🔍' : 
+                  notif.type.includes('reparation') ? '🔧' : 
+                  notif.type.includes('assignation') ? '🛡️' : '📦'
+          });
+        });
+        
+        // Autres activités
+        const users = usersData || [];
         
         // Dernières assignations (estimation basée sur stats)
         if (statsData.gardes_cette_semaine > 0) {
@@ -2373,7 +2395,7 @@ const Dashboard = () => {
           });
         }
         
-        setActiviteRecente(activiteItems.slice(0, 5)); // Max 5 items
+        setActiviteRecente(activiteItems.slice(0, 8)); // Max 8 items
         
       } catch (error) {
         console.error('Erreur lors du chargement du tableau de bord:', error);
