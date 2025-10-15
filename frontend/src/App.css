@@ -5990,25 +5990,38 @@ body {
   }
   
   .calendar-day-cell {
-    padding: 0.3rem;
-    min-width: 40px;
-    min-height: 40px;
-    aspect-ratio: 1;
+    padding: 0.2rem;
+    min-width: 45px;
+    min-height: 50px;
+    aspect-ratio: auto;
   }
   
   .calendar-day-number {
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  
+  .calendar-day-content {
+    gap: 0.15rem;
   }
   
   .calendar-dispo-pill {
-    font-size: 0.55rem;
-    padding: 0.15rem 0.3rem;
-    max-width: 90%;
+    font-size: 0.5rem;
+    padding: 0.2rem 0.25rem;
+    max-width: 95%;
+    border-radius: 4px;
+    line-height: 1.1;
   }
   
   .calendar-indispo-marker {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+  
+  .calendar-dispo-more {
+    font-size: 0.5rem;
   }
   
   .calendar-month-title {
