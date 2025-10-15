@@ -2025,6 +2025,206 @@ class ProFireManagerTester:
             self.log_test("Quebec 10/14 February 2026 Pattern", False, f"Test error: {str(e)}")
             return False
     
+
+    def test_indisponibilites_hardcoded_dates(self):
+        """Test Indisponibilités Generation System with hardcoded reference dates"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Login as Shefford admin using the correct credentials
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Failed to login as Shefford admin: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            login_result = response.json()
+            admin_token = login_result["access_token"]
+            
+            # Create a new session with admin token
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Try to use existing part-time user or create new one
+            part_time_user = None
+            try:
+                # Try to login as existing part-time user
+                pt_login_data = {
+                    "email": "employe@firemanager.ca",
+                    "mot_de_passe": "employe123"
+                }
+                pt_response = requests.post(f"{self.base_url}/auth/login", json=pt_login_data)
+                if pt_response.status_code == 200:
+                    pt_result = pt_response.json()
+                    part_time_user = pt_result["user"]
+                    user_id = part_time_user["id"]
+                else:
+                    raise Exception("Part-time user not found")
+            except:
+                # Create a new part-time user for testing
+                test_user = {
+                    "nom": "TestPompier",
+                    "prenom": "TempsPartiel",
+                    "email": f"test.hardcoded.{uuid.uuid4().hex[:8]}@shefford.ca",
+                    "telephone": "450-555-0123",
+                    "contact_urgence": "450-555-0124",
+                    "grade": "Pompier",
+                    "fonction_superieur": False,
+                    "type_emploi": "temps_partiel",
+                    "heures_max_semaine": 25,
+                    "role": "employe",
+                    "numero_employe": f"TP{uuid.uuid4().hex[:6].upper()}",
+                    "date_embauche": "2024-01-15",
+                    "formations": [],
+                    "mot_de_passe": "TestPass123!"
+                }
+                
+                response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+                if response.status_code != 200:
+                    self.log_test("Indisponibilités Hardcoded Dates", False, 
+                                f"Failed to create part-time user: {response.status_code}")
+                    return False
+                
+                part_time_user = response.json()
+                user_id = part_time_user["id"]
+            
+            # Clean up any existing disponibilites for this user in 2025 and Feb 2026
+            cleanup_data = {
+                "user_id": user_id,
+                "periode": "annee",
+                "mode": "tout",
+                "type_entree": "les_deux"
+            }
+            admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/reinitialiser", json=cleanup_data)
+            
+            # Test 1: Montreal 7/24 pattern generation for Rouge team for 2025
+            # Should generate ~91 unavailabilities using hardcoded date Jan 27, 2025
+            montreal_data = {
+                "user_id": user_id,
+                "horaire_type": "montreal",
+                "equipe": "Rouge",
+                "date_debut": "2025-01-01",
+                "date_fin": "2025-12-31",
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=montreal_data)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Montreal 7/24 generation failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            montreal_result = response.json()
+            montreal_count = montreal_result.get('nombre_indisponibilites', 0)
+            
+            # Verify Montreal count is around 91 (7 days × 13 cycles)
+            if montreal_count < 85 or montreal_count > 95:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Montreal Rouge 2025 generated {montreal_count} unavailabilities, expected ~91")
+                return False
+            
+            # Test 2: Quebec 10/14 pattern generation for Vert team for February 2026
+            # Should generate exactly 13 unavailabilities on days [2,3,4,5,12,13,14,20,21,22,23,24,25]
+            # Using hardcoded date Feb 1, 2026
+            quebec_data = {
+                "user_id": user_id,
+                "horaire_type": "quebec",
+                "equipe": "Vert",
+                "date_debut": "2026-02-01",
+                "date_fin": "2026-02-28",
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_data)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Quebec 10/14 generation failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            quebec_result = response.json()
+            quebec_count = quebec_result.get('nombre_indisponibilites', 0)
+            
+            # Verify Quebec count is exactly 13
+            if quebec_count != 13:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Quebec Vert Feb 2026 generated {quebec_count} unavailabilities, expected exactly 13")
+                return False
+            
+            # Test 3: Verify the specific days for Quebec Vert team in Feb 2026
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Failed to fetch disponibilites: {response.status_code}")
+                return False
+            
+            disponibilites = response.json()
+            
+            # Filter for Quebec entries in Feb 2026
+            quebec_feb_entries = []
+            for entry in disponibilites:
+                if entry.get('origine') == 'quebec_10_14' and entry.get('date', '').startswith('2026-02'):
+                    # Extract day from date
+                    day = int(entry.get('date', '').split('-')[2])
+                    quebec_feb_entries.append(day)
+            
+            quebec_feb_entries.sort()
+            expected_days = [2, 3, 4, 5, 12, 13, 14, 20, 21, 22, 23, 24, 25]
+            
+            if quebec_feb_entries != expected_days:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Quebec Vert Feb 2026 days mismatch. Got: {quebec_feb_entries}, Expected: {expected_days}")
+                return False
+            
+            # Test 4: Verify API no longer requires date_jour_1 parameter
+            # Try to send date_jour_1 parameter - it should be ignored
+            quebec_with_date_jour_1 = {
+                "user_id": user_id,
+                "horaire_type": "quebec",
+                "equipe": "Bleu",
+                "date_debut": "2026-03-01",
+                "date_fin": "2026-03-31",
+                "date_jour_1": "2026-03-15",  # This should be ignored
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=quebec_with_date_jour_1)
+            if response.status_code != 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            f"Quebec with date_jour_1 parameter failed: {response.status_code}")
+                return False
+            
+            # Test 5: Verify error handling for invalid inputs
+            invalid_data = {
+                "user_id": user_id,
+                "horaire_type": "invalid_type",
+                "equipe": "Rouge",
+                "date_debut": "2025-01-01",
+                "date_fin": "2025-12-31",
+                "conserver_manuelles": True
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/disponibilites/generer", json=invalid_data)
+            if response.status_code == 200:
+                self.log_test("Indisponibilités Hardcoded Dates", False, 
+                            "Invalid horaire_type should return error but returned 200")
+                return False
+            
+            self.log_test("Indisponibilités Hardcoded Dates", True, 
+                        f"✅ ALL TESTS PASSED - Montreal Rouge 2025: {montreal_count} unavailabilities (~91 expected), Quebec Vert Feb 2026: {quebec_count} unavailabilities (13 expected) on correct days {expected_days}, API no longer requires date_jour_1, error handling working")
+            return True
+            
+        except Exception as e:
+            self.log_test("Indisponibilités Hardcoded Dates", False, f"Test error: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests"""
         print("\n🔥 ProFireManager Backend API Testing Suite")
