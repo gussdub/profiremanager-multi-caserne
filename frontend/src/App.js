@@ -1847,6 +1847,337 @@ const ModuleEPI = ({ user }) => {
           </div>
         </div>
       )}
+
+      
+      {/* MODAL NETTOYAGE - Phase 2 */}
+      {showNettoyageModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowNettoyageModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🧼 Nouveau Nettoyage - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowNettoyageModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type de nettoyage *</Label>
+                  <select 
+                    className="form-select"
+                    value={nettoyageForm.type_nettoyage}
+                    onChange={e => setNettoyageForm({...nettoyageForm, type_nettoyage: e.target.value})}
+                  >
+                    <option value="routine">🧽 Routine (après utilisation)</option>
+                    <option value="avance">🧼 Avancé (2x par an minimum)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date nettoyage *</Label>
+                  <Input 
+                    type="date"
+                    value={nettoyageForm.date_nettoyage}
+                    onChange={e => setNettoyageForm({...nettoyageForm, date_nettoyage: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Méthode *</Label>
+                  <select 
+                    className="form-select"
+                    value={nettoyageForm.methode}
+                    onChange={e => setNettoyageForm({...nettoyageForm, methode: e.target.value})}
+                  >
+                    <option value="laveuse_extractrice">🌀 Laveuse extractrice</option>
+                    <option value="manuel">✋ Manuel</option>
+                    <option value="externe">🏢 Externe (ISP)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Effectué par</Label>
+                  <Input 
+                    value={nettoyageForm.effectue_par || `${user.prenom} ${user.nom}`}
+                    onChange={e => setNettoyageForm({...nettoyageForm, effectue_par: e.target.value})}
+                  />
+                </div>
+                
+                {nettoyageForm.methode === 'externe' && (
+                  <div>
+                    <Label>Fournisseur ISP</Label>
+                    <select 
+                      className="form-select"
+                      value={nettoyageForm.isp_id}
+                      onChange={e => setNettoyageForm({...nettoyageForm, isp_id: e.target.value})}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {isps.map(isp => (
+                        <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <Label>Nombre de cycles</Label>
+                  <Input 
+                    type="number"
+                    value={nettoyageForm.nombre_cycles}
+                    onChange={e => setNettoyageForm({...nettoyageForm, nombre_cycles: parseInt(e.target.value) || 1})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Température</Label>
+                  <Input 
+                    value={nettoyageForm.temperature}
+                    onChange={e => setNettoyageForm({...nettoyageForm, temperature: e.target.value})}
+                    placeholder="Ex: Eau tiède max 40°C"
+                  />
+                </div>
+                
+                <div>
+                  <Label>Produits utilisés</Label>
+                  <Input 
+                    value={nettoyageForm.produits_utilises}
+                    onChange={e => setNettoyageForm({...nettoyageForm, produits_utilises: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={nettoyageForm.notes}
+                  onChange={e => setNettoyageForm({...nettoyageForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowNettoyageModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveNettoyage}>Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL RÉPARATION - Phase 2 */}
+      {showReparationModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowReparationModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔧 {selectedReparation ? 'Mise à jour Réparation' : 'Nouvelle Réparation'} - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowReparationModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Statut *</Label>
+                  <select 
+                    className="form-select"
+                    value={reparationForm.statut}
+                    onChange={e => setReparationForm({...reparationForm, statut: e.target.value})}
+                  >
+                    <option value="demandee">📝 Demandée</option>
+                    <option value="en_cours">⚙️ En cours</option>
+                    <option value="terminee">✅ Terminée</option>
+                    <option value="impossible">❌ Impossible</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date demande *</Label>
+                  <Input 
+                    type="date"
+                    value={reparationForm.date_demande}
+                    onChange={e => setReparationForm({...reparationForm, date_demande: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Type de réparateur *</Label>
+                  <select 
+                    className="form-select"
+                    value={reparationForm.reparateur_type}
+                    onChange={e => setReparationForm({...reparationForm, reparateur_type: e.target.value})}
+                  >
+                    <option value="interne">🏠 Interne</option>
+                    <option value="externe">🏢 Externe (ISP)</option>
+                  </select>
+                </div>
+                
+                {reparationForm.reparateur_type === 'externe' && (
+                  <div>
+                    <Label>Fournisseur ISP</Label>
+                    <select 
+                      className="form-select"
+                      value={reparationForm.isp_id}
+                      onChange={e => {
+                        const isp = isps.find(i => i.id === e.target.value);
+                        setReparationForm({
+                          ...reparationForm,
+                          isp_id: e.target.value,
+                          reparateur_nom: isp?.nom || ''
+                        });
+                      }}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {isps.map(isp => (
+                        <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {reparationForm.reparateur_type === 'interne' && (
+                  <div>
+                    <Label>Nom du réparateur</Label>
+                    <Input 
+                      value={reparationForm.reparateur_nom}
+                      onChange={e => setReparationForm({...reparationForm, reparateur_nom: e.target.value})}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Description du problème *</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={reparationForm.probleme_description}
+                  onChange={e => setReparationForm({...reparationForm, probleme_description: e.target.value})}
+                  placeholder="Décrivez le problème nécessitant réparation..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="2"
+                  value={reparationForm.notes}
+                  onChange={e => setReparationForm({...reparationForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowReparationModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveReparation}>
+                {selectedReparation ? 'Mettre à jour' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL RETRAIT - Phase 2 */}
+      {showRetraitModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowRetraitModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{background: '#DC2626', color: 'white'}}>
+              <h2>🚫 Retrait Définitif EPI - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowRetraitModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="alert-warning" style={{marginBottom: '1.5rem', padding: '1rem', background: '#FEF3C7', borderRadius: '8px'}}>
+                <p style={{margin: 0, color: '#92400E'}}>
+                  ⚠️ <strong>ATTENTION:</strong> Cette action est définitive. L'EPI sera marqué comme retiré et ne pourra plus être utilisé.
+                </p>
+              </div>
+              
+              <div className="form-grid">
+                <div>
+                  <Label>Date de retrait *</Label>
+                  <Input 
+                    type="date"
+                    value={retraitForm.date_retrait}
+                    onChange={e => setRetraitForm({...retraitForm, date_retrait: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Raison du retrait *</Label>
+                  <select 
+                    className="form-select"
+                    value={retraitForm.raison}
+                    onChange={e => setRetraitForm({...retraitForm, raison: e.target.value})}
+                  >
+                    <option value="age_limite">⏰ Âge limite atteinte (10 ans)</option>
+                    <option value="dommage_irreparable">💔 Dommage irréparable</option>
+                    <option value="echec_inspection">❌ Échec inspection avancée</option>
+                    <option value="autre">📝 Autre raison</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Méthode de disposition *</Label>
+                  <select 
+                    className="form-select"
+                    value={retraitForm.methode_disposition}
+                    onChange={e => setRetraitForm({...retraitForm, methode_disposition: e.target.value})}
+                  >
+                    <option value="coupe_detruit">✂️ Coupé/Détruit</option>
+                    <option value="recyclage">♻️ Recyclage</option>
+                    <option value="don">🎁 Don</option>
+                    <option value="autre">📝 Autre</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Coût de disposition</Label>
+                  <Input 
+                    type="number"
+                    value={retraitForm.cout_disposition}
+                    onChange={e => setRetraitForm({...retraitForm, cout_disposition: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Description détaillée *</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="4"
+                  value={retraitForm.description_raison}
+                  onChange={e => setRetraitForm({...retraitForm, description_raison: e.target.value})}
+                  placeholder="Expliquez en détail pourquoi cet EPI doit être retiré..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes complémentaires</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="2"
+                  value={retraitForm.notes}
+                  onChange={e => setRetraitForm({...retraitForm, notes: e.target.value})}
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#FEE2E2', borderRadius: '8px'}}>
+                <p style={{margin: 0, fontSize: '0.875rem', color: '#991B1B'}}>
+                  📸 <strong>Preuve de disposition:</strong> Après validation, prenez des photos de l'EPI coupé/détruit comme preuve de mise au rebut selon NFPA 1851.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowRetraitModal(false)}>Annuler</Button>
+              <Button variant="destructive" onClick={handleSaveRetrait}>
+                🚫 Confirmer le retrait
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
