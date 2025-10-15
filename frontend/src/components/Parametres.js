@@ -697,6 +697,13 @@ const Parametres = ({ user, tenantSlug }) => {
         >
           🛡️ EPI
         </button>
+        <button
+          className={`tab-button ${activeTab === 'formations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('formations')}
+          data-testid="tab-formations"
+        >
+          📚 Formations
+        </button>
       </div>
 
       {/* Contenu conditionnel selon l'onglet actif */}
