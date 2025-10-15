@@ -7363,7 +7363,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       {/* Modal de génération automatique d'indisponibilités */}
       {showGenerationModal && (
         <div className="modal-overlay" onClick={() => setShowGenerationModal(false)}>
-          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>❌ Gérer indisponibilités</h3>
               <Button variant="ghost" onClick={() => setShowGenerationModal(false)}>✕</Button>
