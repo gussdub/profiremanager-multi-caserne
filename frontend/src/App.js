@@ -588,7 +588,7 @@ const ModuleEPI = ({ user }) => {
   const [reparationForm, setReparationForm] = useState({
     statut: 'demandee',
     date_demande: new Date().toISOString().split('T')[0],
-    demandeur: `${user?.prenom} ${user?.nom}` || '',
+    demandeur: user ? `${user.prenom} ${user.nom}` : '',
     demandeur_id: user?.id || '',
     reparateur_type: 'interne',
     reparateur_nom: '',
