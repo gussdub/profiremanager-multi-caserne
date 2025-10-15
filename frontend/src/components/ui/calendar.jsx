@@ -40,7 +40,8 @@ function Calendar({
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
         head_cell: cn(
-          "text-muted-foreground rounded-md font-normal text-[0.8rem]",
+          "text-muted-foreground rounded-md font-normal",
+          isInteractiveCalendar ? "text-lg font-semibold" : "text-[0.8rem]",
           headCellSize
         ),
         row: "flex w-full mt-2",
