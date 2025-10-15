@@ -1082,6 +1082,18 @@ const ModuleEPI = ({ user }) => {
           📦 Inventaire ({epis.length})
         </button>
         <button 
+          className={activeTab === 'nettoyage' ? 'active' : ''}
+          onClick={() => setActiveTab('nettoyage')}
+        >
+          🧼 Nettoyage & Entretien
+        </button>
+        <button 
+          className={activeTab === 'reparations' ? 'active' : ''}
+          onClick={() => setActiveTab('reparations')}
+        >
+          🔧 Réparations
+        </button>
+        <button 
           className={activeTab === 'isp' ? 'active' : ''}
           onClick={() => setActiveTab('isp')}
         >
