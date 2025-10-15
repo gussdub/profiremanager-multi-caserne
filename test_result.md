@@ -296,6 +296,18 @@ test_plan:
   test_all: true
   test_priority: "completed"
 
+  - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW MODIFICATION - Removed 'Date du premier jour du cycle' field from frontend and hardcoded reference dates in backend. Changes: BACKEND - Modified generer_indisponibilites_quebec() to use hardcoded date (Feb 1, 2026) instead of date_jour_1 parameter, removed date_jour_1 parameter from function signature, removed validation check for date_jour_1 in API route, Montreal pattern already had hardcoded date (Jan 27, 2025). FRONTEND - Removed date input field from generation modal for both patterns, removed date_jour_1 from state management and API calls, removed date display from summary section. This prevents users from accidentally breaking the fixed patterns by entering incorrect reference dates. NEEDS BACKEND TESTING to verify both patterns still work correctly with hardcoded dates."
+
 agent_communication:
   - agent: "main"
     message: "🔐 AUTHENTICATION SYSTEM REFACTOR - Implemented bcrypt-based authentication to replace SHA256. Changes include: 1) Added bcrypt import and updated get_password_hash() to use bcrypt.hashpw(), 2) Modified verify_password() to support both bcrypt (new) and SHA256 (legacy for migration), 3) Created migrate_password_if_needed() function to automatically migrate SHA256 passwords to bcrypt on successful login, 4) Updated all login endpoints (tenant_login, super_admin_login, login_legacy) with comprehensive logging and automatic migration, 5) Enhanced change_password function with detailed logging. The system now: verifies passwords with bcrypt first, falls back to SHA256 for legacy passwords, automatically migrates SHA256 -> bcrypt on successful login (transparent to users), logs all authentication steps for debugging (hash type, verification status, migration status), creates all new passwords with bcrypt. NEEDS BACKEND TESTING to verify login works with existing SHA256 passwords and automatic migration."
