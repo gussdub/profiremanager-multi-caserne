@@ -11,6 +11,12 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }) {
+  // Detect if used in modal (large calendar)
+  const isLargeCalendar = className && (
+    className.includes('interactive-calendar') || 
+    className.includes('availability-calendar-large')
+  );
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -19,7 +25,7 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption_label: isLargeCalendar ? "text-4xl font-bold" : "text-sm font-medium",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -30,7 +36,8 @@ function Calendar({
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
         head_cell: cn(
-          "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]"
+          "text-muted-foreground rounded-md font-normal",
+          isLargeCalendar ? "w-[150px] text-xl font-bold" : "w-8 text-[0.8rem]"
         ),
         row: "flex w-full mt-2",
         cell: cn(
@@ -41,7 +48,8 @@ function Calendar({
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 p-0 font-normal aria-selected:opacity-100"
+          isLargeCalendar ? "h-[150px] w-[150px] text-2xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
+          "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
         day_range_end: "day-range-end",
