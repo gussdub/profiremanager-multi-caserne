@@ -918,6 +918,109 @@ const ModuleEPI = ({ user }) => {
   };
   
   const openEditISP = (isp) => {
+
+  // Phase 2 - Handlers Nettoyage
+  const handleSaveNettoyage = async () => {
+    try {
+      const data = {
+        ...nettoyageForm,
+        effectue_par: nettoyageForm.effectue_par || `${user.prenom} ${user.nom}`
+      };
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/nettoyage`, data);
+      toast({ title: "Succès", description: "Nettoyage enregistré" });
+      setShowNettoyageModal(false);
+      loadNettoyages(selectedEPI.id);
+      setNettoyageForm({
+        type_nettoyage: 'routine',
+        date_nettoyage: new Date().toISOString().split('T')[0],
+        methode: 'laveuse_extractrice',
+        effectue_par: '',
+        effectue_par_id: user?.id || '',
+        isp_id: '',
+        nombre_cycles: 1,
+        temperature: '',
+        produits_utilises: '',
+        notes: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Phase 2 - Handlers Réparation
+  const handleSaveReparation = async () => {
+    try {
+      if (selectedReparation) {
+        await apiPut(tenantSlug, `/epi/${selectedEPI.id}/reparation/${selectedReparation.id}`, reparationForm);
+        toast({ title: "Succès", description: "Réparation mise à jour" });
+      } else {
+        const data = {
+          ...reparationForm,
+          demandeur: reparationForm.demandeur || `${user.prenom} ${user.nom}`
+        };
+        await apiPost(tenantSlug, `/epi/${selectedEPI.id}/reparation`, data);
+        toast({ title: "Succès", description: "Réparation créée" });
+      }
+      setShowReparationModal(false);
+      loadReparations(selectedEPI.id);
+      setSelectedReparation(null);
+      setReparationForm({
+        statut: 'demandee',
+        date_demande: new Date().toISOString().split('T')[0],
+        demandeur: `${user?.prenom} ${user?.nom}` || '',
+        demandeur_id: user?.id || '',
+        reparateur_type: 'interne',
+        reparateur_nom: '',
+        isp_id: '',
+        probleme_description: '',
+        notes: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const openEditReparation = (reparation) => {
+    setSelectedReparation(reparation);
+    setReparationForm({
+      statut: reparation.statut,
+      date_demande: reparation.date_demande,
+      demandeur: reparation.demandeur,
+      demandeur_id: reparation.demandeur_id || '',
+      reparateur_type: reparation.reparateur_type,
+      reparateur_nom: reparation.reparateur_nom || '',
+      isp_id: reparation.isp_id || '',
+      probleme_description: reparation.probleme_description,
+      notes: reparation.notes || ''
+    });
+    setShowReparationModal(true);
+  };
+  
+  // Phase 2 - Handlers Retrait
+  const handleSaveRetrait = async () => {
+    try {
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/retrait`, retraitForm);
+      toast({ title: "Succès", description: "EPI retiré avec succès" });
+      setShowRetraitModal(false);
+      setShowDetailModal(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+
     setSelectedISP(isp);
     setIspForm({
       nom: isp.nom,
