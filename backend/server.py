@@ -2852,7 +2852,7 @@ class EPI(BaseModel):
 
 class EPICreate(BaseModel):
     tenant_id: Optional[str] = None
-    numero_serie: str
+    numero_serie: str = ""  # Auto-généré si vide
     type_epi: str
     marque: str
     modele: str
