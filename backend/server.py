@@ -6116,20 +6116,28 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que le numéro de série est unique
-    existing_epi = await db.epis.find_one({
-        "numero_serie": epi.numero_serie,
-        "tenant_id": tenant.id
-    })
-    
-    if existing_epi:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Un EPI avec le numéro de série {epi.numero_serie} existe déjà"
-        )
-    
     epi_dict = epi.dict()
     epi_dict["tenant_id"] = tenant.id
+    
+    # Générer numéro de série automatique si vide
+    if not epi_dict.get("numero_serie") or epi_dict["numero_serie"].strip() == "":
+        # Compter les EPI existants pour générer un numéro unique
+        count = await db.epis.count_documents({"tenant_id": tenant.id})
+        annee = datetime.now(timezone.utc).year
+        epi_dict["numero_serie"] = f"EPI-{annee}-{count + 1:04d}"
+    else:
+        # Vérifier que le numéro de série est unique
+        existing_epi = await db.epis.find_one({
+            "numero_serie": epi_dict["numero_serie"],
+            "tenant_id": tenant.id
+        })
+        
+        if existing_epi:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un EPI avec le numéro de série {epi_dict['numero_serie']} existe déjà"
+            )
+    
     epi_obj = EPI(**epi_dict)
     
     # Préparer pour MongoDB (conversion datetime -> ISO string)
