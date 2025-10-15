@@ -1569,6 +1569,97 @@ const ModuleEPI = ({ user }) => {
                   <p>Aucune inspection enregistrée</p>
                 )}
               </div>
+              
+              {/* Section Nettoyages - Phase 2 */}
+              <div className="nettoyages-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>🧼 Historique des nettoyages ({nettoyages.length})</h3>
+                  <Button onClick={() => setShowNettoyageModal(true)}>
+                    ➕ Nouveau nettoyage
+                  </Button>
+                </div>
+                
+                {nettoyages.length > 0 ? (
+                  <div className="nettoyages-list">
+                    {nettoyages.map(nett => (
+                      <div key={nett.id} className="nettoyage-card">
+                        <div className="nettoyage-header">
+                          <span className={`type-badge ${nett.type_nettoyage}`}>
+                            {nett.type_nettoyage === 'routine' ? '🧽 Routine' : '🧼 Avancé'}
+                          </span>
+                          <span>{nett.methode}</span>
+                        </div>
+                        <p><strong>Date:</strong> {new Date(nett.date_nettoyage).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Effectué par:</strong> {nett.effectue_par}</p>
+                        <p><strong>Cycles:</strong> {nett.nombre_cycles}</p>
+                        {nett.notes && <p><strong>Notes:</strong> {nett.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucun nettoyage enregistré</p>
+                )}
+              </div>
+              
+              {/* Section Réparations - Phase 2 */}
+              <div className="reparations-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>🔧 Historique des réparations ({reparations.length})</h3>
+                  <Button onClick={() => {
+                    setSelectedReparation(null);
+                    setShowReparationModal(true);
+                  }}>
+                    ➕ Nouvelle réparation
+                  </Button>
+                </div>
+                
+                {reparations.length > 0 ? (
+                  <div className="reparations-list">
+                    {reparations.map(rep => (
+                      <div key={rep.id} className="reparation-card">
+                        <div className="reparation-header">
+                          <span className={`statut-badge ${rep.statut}`}>
+                            {rep.statut === 'demandee' ? '📝 Demandée' :
+                             rep.statut === 'en_cours' ? '⚙️ En cours' :
+                             rep.statut === 'terminee' ? '✅ Terminée' :
+                             '❌ Impossible'}
+                          </span>
+                          <span>{rep.reparateur_type === 'interne' ? '🏠 Interne' : '🏢 Externe'}</span>
+                        </div>
+                        <p><strong>Demande:</strong> {new Date(rep.date_demande).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Problème:</strong> {rep.probleme_description}</p>
+                        <p><strong>Coût:</strong> {rep.cout_reparation} $</p>
+                        <Button 
+                          size="sm" 
+                          onClick={() => openEditReparation(rep)}
+                          style={{marginTop: '0.5rem'}}
+                        >
+                          ✏️ Mettre à jour
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucune réparation enregistrée</p>
+                )}
+              </div>
+              
+              {/* Section Retrait - Phase 2 */}
+              {selectedEPI.statut !== 'Retiré' && (
+                <div className="retrait-section" style={{marginTop: '2rem', padding: '1.5rem', background: '#FEF3C7', borderRadius: '12px'}}>
+                  <h3 style={{color: '#92400E'}}>⚠️ Retrait de l'EPI</h3>
+                  <p style={{fontSize: '0.9rem', color: '#78350F'}}>
+                    Cet EPI doit être retiré du service de manière définitive ? (âge limite, dommage irréparable, etc.)
+                  </p>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setShowRetraitModal(true)}
+                    style={{marginTop: '1rem'}}
+                  >
+                    🚫 Retirer cet EPI
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
