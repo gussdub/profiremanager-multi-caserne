@@ -9805,8 +9805,6 @@ const Rapports = () => {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('vue-ensemble');
   const [selectedEmployee, setSelectedEmployee] = useState('');
-  const [epiAlerts, setEpiAlerts] = useState([]);
-  const [loadingEPI, setLoadingEPI] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -9831,25 +9829,6 @@ const Rapports = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchEPIData = async () => {
-    if (!tenantSlug) return;
-    
-    setLoadingEPI(true);
-    try {
-      const alertsData = await apiGet(tenantSlug, '/epi/alertes/all');
-      setEpiAlerts(alertsData);
-    } catch (error) {
-      console.error('Erreur lors du chargement des données EPI:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données EPI",
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingEPI(false);
     }
   };
 
