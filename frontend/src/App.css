@@ -9781,88 +9781,94 @@ body {
 }
 
 .availability-calendar-large {
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 3rem;
-  margin-bottom: 1.5rem;
-  background: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 3rem !important;
+  margin-bottom: 1.5rem !important;
+  background: white !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* DESKTOP - Calendrier ÉNORME et TRÈS visible dans modal Indisponibilités */
 .availability-calendar-large .rdp {
-  --rdp-cell-size: 145px;
-  --rdp-accent-color: #dc2626;
-  margin: 0 auto;
-  font-size: 1.5rem;
+  --rdp-cell-size: 160px !important;
+  --rdp-accent-color: #dc2626 !important;
+  margin: 0 auto !important;
+  font-size: 1.6rem !important;
+  width: 100% !important;
 }
 
 .availability-calendar-large .rdp-month {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .availability-calendar-large .rdp-table {
-  width: 100%;
-  max-width: none;
+  width: 100% !important;
+  max-width: none !important;
 }
 
 .availability-calendar-large .rdp-day {
-  border-radius: 14px;
-  font-weight: 600;
-  width: 145px;
-  height: 145px;
-  font-size: 1.5rem;
-  transition: all 0.2s ease;
-  border: 2px solid #e2e8f0;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  width: 160px !important;
+  height: 160px !important;
+  min-width: 160px !important;
+  min-height: 160px !important;
+  font-size: 1.6rem !important;
+  transition: all 0.2s ease !important;
+  border: 2px solid #e2e8f0 !important;
+  background: white !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .availability-calendar-large .rdp-day:hover:not(.rdp-day_disabled) {
-  background-color: #fef2f2;
-  transform: scale(1.05);
-  border-color: #dc2626;
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2);
-  z-index: 10;
+  background-color: #fef2f2 !important;
+  transform: scale(1.05) !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2) !important;
+  z-index: 10 !important;
 }
 
 .availability-calendar-large .rdp-day_selected {
   background-color: #dc2626 !important;
   color: white !important;
-  font-weight: 700;
+  font-weight: 700 !important;
   border-color: #dc2626 !important;
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4) !important;
 }
 
 .availability-calendar-large .rdp-day_today {
-  font-weight: 700;
-  color: #16a34a;
-  border: 3px solid #16a34a;
-  background: #f0fdf4;
+  font-weight: 700 !important;
+  color: #16a34a !important;
+  border: 3px solid #16a34a !important;
+  background: #f0fdf4 !important;
 }
 
 .availability-calendar-large .rdp-caption {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  color: #0f172a;
-  padding: 1rem 0;
+  font-size: 2.2rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 2rem !important;
+  color: #0f172a !important;
+  padding: 1rem 0 !important;
 }
 
 .availability-calendar-large .rdp-head_cell {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding-bottom: 1.5rem;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding-bottom: 1.5rem !important;
 }
 
 .availability-calendar-large .rdp-day_disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
 }
 
 /* Responsive pour mobile - Calendriers modaux */
