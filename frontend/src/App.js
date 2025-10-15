@@ -715,12 +715,16 @@ const ModuleEPI = ({ user }) => {
   
   const loadRapports = async () => {
     try {
-      const [conformite, echeances] = await Promise.all([
+      const [conformite, echeances, retraits, tco] = await Promise.all([
         apiGet(tenantSlug, '/epi/rapports/conformite'),
-        apiGet(tenantSlug, '/epi/rapports/echeances?jours=30')
+        apiGet(tenantSlug, '/epi/rapports/echeances?jours=30'),
+        apiGet(tenantSlug, '/epi/rapports/retraits-prevus?mois=12'),
+        apiGet(tenantSlug, '/epi/rapports/cout-total')
       ]);
       setRapportConformite(conformite);
       setRapportEcheances(echeances);
+      setRapportRetraits(retraits);
+      setRapportTCO(tco);
     } catch (error) {
       console.error('Erreur rapports:', error);
     }
@@ -730,6 +734,30 @@ const ModuleEPI = ({ user }) => {
     try {
       const data = await apiGet(tenantSlug, `/epi/${epiId}/inspections`);
       setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur inspections:', error);
+    }
+  };
+  
+  // Phase 2 - Charger nettoyages
+  const loadNettoyages = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/nettoyages`);
+      setNettoyages(data || []);
+    } catch (error) {
+      console.error('Erreur nettoyages:', error);
+    }
+  };
+  
+  // Phase 2 - Charger réparations
+  const loadReparations = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/reparations`);
+      setReparations(data || []);
+    } catch (error) {
+      console.error('Erreur réparations:', error);
+    }
+  };
     } catch (error) {
       console.error('Erreur inspections:', error);
     }
