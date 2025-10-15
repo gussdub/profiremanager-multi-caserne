@@ -3778,7 +3778,7 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
     logging.info(f"✅ Montreal 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
-def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str, date_jour_1: str) -> List[Dict]:
+def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
     """
     Génère les indisponibilités pour l'horaire Quebec 10/14
     Cycle de 28 jours commençant le 1er février 2026 (jour 1 du cycle)
@@ -3792,7 +3792,7 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, d
     - Jaune (Équipe #3) : jours 1, 2,3,4, 9,10,11,12, 19,20,21, 27,28
     - Rouge (Équipe #4) : jours 5,6,7, 13,14, 15, 16,17,18, 23,24,25,26
     
-    Le jour 1 du cycle = 1er février 2026
+    Le jour 1 du cycle = 1er février 2026 (DATE FIXE CODÉE EN DUR)
     Le cycle recommence tous les 28 jours (1er mars, 29 mars, 26 avril, etc.)
     
     On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
@@ -3829,8 +3829,8 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, d
     
     logging.info(f"Quebec 10/14 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
     
-    # Le jour 1 du cycle = date fournie par l'utilisateur (par défaut 1er février 2026)
-    jour_1_cycle = datetime.strptime(date_jour_1, "%Y-%m-%d").date()
+    # Le jour 1 du cycle = 1er février 2026 (DATE FIXE)
+    jour_1_cycle = datetime(2026, 2, 1).date()
     
     # Parser les dates de début et fin
     date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
