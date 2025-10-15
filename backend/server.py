@@ -6666,6 +6666,31 @@ async def create_inspection(
             {"$set": {"statut": "En réparation"}}
         )
     
+    # Notifier le pompier assigné
+    if epi.get("user_id"):
+        type_epi_nom = epi.get("type_epi", "EPI")
+        type_inspection_nom = {
+            'apres_utilisation': 'après utilisation',
+            'routine_mensuelle': 'de routine mensuelle',
+            'avancee_annuelle': 'avancée annuelle'
+        }.get(inspection.type_inspection, 'inspection')
+        
+        statut_msg = {
+            'conforme': 'est conforme',
+            'non_conforme': 'n\'est pas conforme',
+            'necessite_reparation': 'nécessite une réparation',
+            'hors_service': 'est hors service'
+        }.get(inspection.statut_global, 'a été inspecté')
+        
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=epi["user_id"],
+            type="epi_inspection",
+            titre=f"Inspection {type_inspection_nom}",
+            message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} {statut_msg}",
+            lien="/epi"
+        )
+    
     return inspection_obj
 
 @api_router.get("/{tenant_slug}/epi/{epi_id}/inspections", response_model=List[InspectionEPI])
