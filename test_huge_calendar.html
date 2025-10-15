@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier ÉNORME - 145px</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f1f5f9;
+            margin: 0;
+        }
+        
+        .comparison-banner {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(22, 163, 74, 0.3);
+        }
+        
+        .comparison-banner h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+        }
+        
+        .comparison-banner p {
+            margin: 0;
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+        
+        .modal-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid #e2e8f0;
+        }
+        
+        .modal-header h2 {
+            font-size: 2rem;
+            color: #0f172a;
+            margin: 0;
+        }
+        
+        .calendar-wrapper {
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 3rem;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .calendar-header {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2rem;
+            padding: 1rem 0;
+        }
+        
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 145px);
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 0;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            padding: 1.5rem 0;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .calendar-weekday {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 145px);
+            justify-content: center;
+            gap: 0;
+            border: 2px solid #0f172a;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .calendar-day {
+            width: 145px;
+            height: 145px;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0f172a;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+        
+        .calendar-day:hover:not(.empty):not(.disabled) {
+            background: #f0fdf4;
+            transform: scale(1.05);
+            border-color: #16a34a;
+            box-shadow: 0 6px 16px rgba(22, 163, 74, 0.2);
+            z-index: 10;
+        }
+        
+        .calendar-day.selected {
+            background: #16a34a;
+            color: white;
+            font-weight: 700;
+            border-color: #16a34a;
+            box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+        }
+        
+        .calendar-day.today {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 3px solid #dc2626;
+            font-weight: 700;
+        }
+        
+        .calendar-day.empty {
+            background: #f8fafc;
+            cursor: default;
+        }
+        
+        .stats {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 2px solid #16a34a;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        .stats h3 {
+            margin: 0 0 1rem 0;
+            color: #16a34a;
+            font-size: 1.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #16a34a;
+            margin: 0;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        
+        @media (max-width: 1200px) {
+            .calendar-weekdays,
+            .calendar-days {
+                grid-template-columns: repeat(7, 100px);
+            }
+            
+            .calendar-day {
+                width: 100px;
+                height: 100px;
+                font-size: 1.2rem;
+            }
+            
+            .calendar-weekday {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison-banner">
+        <h1>🎯 NOUVEAU : Calendrier ÉNORME !</h1>
+        <p>Cellules 145x145px • Modal 1400px • Font-size 1.5rem • Parfait pour desktop !</p>
+    </div>
+    
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>✅ Gérer Disponibilités - Modal Agrandi</h2>
+        </div>
+        
+        <div class="calendar-wrapper">
+            <div class="calendar-header">Décembre 2024</div>
+            
+            <div class="calendar-weekdays">
+                <div class="calendar-weekday">Lun</div>
+                <div class="calendar-weekday">Mar</div>
+                <div class="calendar-weekday">Mer</div>
+                <div class="calendar-weekday">Jeu</div>
+                <div class="calendar-weekday">Ven</div>
+                <div class="calendar-weekday">Sam</div>
+                <div class="calendar-weekday">Dim</div>
+            </div>
+            
+            <div class="calendar-days">
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">1</div>
+                
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">2</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">3</div>
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">4</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">5</div>
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">6</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">7</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">8</div>
+                
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">9</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">10</div>
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">11</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">12</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">13</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">14</div>
+                <div class="calendar-day today" onclick="this.classList.toggle('selected')">15</div>
+                
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">16</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">17</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">18</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">19</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">20</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">21</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">22</div>
+                
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">23</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">24</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">25</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">26</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">27</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">28</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">29</div>
+                
+                <div class="calendar-day selected" onclick="this.classList.toggle('selected')">30</div>
+                <div class="calendar-day" onclick="this.classList.toggle('selected')">31</div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <h3>📊 Spécifications Techniques</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">145px</div>
+                    <div class="stat-label">Taille des cellules</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">1400px</div>
+                    <div class="stat-label">Largeur du modal</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">1.5rem</div>
+                    <div class="stat-label">Font-size des numéros</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
