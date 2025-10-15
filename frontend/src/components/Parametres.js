@@ -1540,7 +1540,11 @@ const Parametres = ({ user, tenantSlug }) => {
                       <Label>Heures minimales par année (NFPA 1500)</Label>
                       <Input 
                         type="number"
-                        defaultValue={100}
+                        value={parametresFormations.heures_minimales_annuelles}
+                        onChange={e => setParametresFormations({
+                          ...parametresFormations,
+                          heures_minimales_annuelles: parseFloat(e.target.value) || 100
+                        })}
                         placeholder="100"
                         data-testid="heures-min-input"
                       />
@@ -1551,7 +1555,11 @@ const Parametres = ({ user, tenantSlug }) => {
                       <Label>Délai notification liste d'attente (jours)</Label>
                       <Input 
                         type="number"
-                        defaultValue={7}
+                        value={parametresFormations.delai_notification_liste_attente}
+                        onChange={e => setParametresFormations({
+                          ...parametresFormations,
+                          delai_notification_liste_attente: parseInt(e.target.value) || 7
+                        })}
                         placeholder="7"
                         data-testid="delai-notification-input"
                       />
@@ -1566,12 +1574,37 @@ const Parametres = ({ user, tenantSlug }) => {
                       <div className="toggle-switch">
                         <input 
                           type="checkbox"
-                          defaultChecked={true}
+                          checked={parametresFormations.email_notifications_actif}
+                          onChange={e => setParametresFormations({
+                            ...parametresFormations,
+                            email_notifications_actif: e.target.checked
+                          })}
                           data-testid="email-notifications-toggle"
                         />
                         <span className="slider"></span>
                       </div>
                     </label>
+                    
+                    <div style={{marginTop: '1.5rem'}}>
+                      <Button onClick={async () => {
+                        try {
+                          await axios.put(`${API}/parametres/formations`, parametresFormations);
+                          toast({
+                            title: "Succès",
+                            description: "Paramètres formations sauvegardés",
+                            variant: "success"
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Erreur",
+                            description: "Impossible de sauvegarder",
+                            variant: "destructive"
+                          });
+                        }
+                      }}>
+                        💾 Sauvegarder les paramètres
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
