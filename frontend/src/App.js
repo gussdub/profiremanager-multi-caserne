@@ -6962,6 +6962,134 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
       )}
 
+      {/* NOUVEAU : Modal d'ajout rapide */}
+      {showQuickAddModal && (
+        <div className="modal-overlay" onClick={() => setShowQuickAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </h3>
+              <Button variant="ghost" onClick={() => setShowQuickAddModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Date fixe - non modifiable */}
+              <div className="config-section" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <Label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#64748b' }}>📅 Date</Label>
+                <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0f172a', marginTop: '0.5rem' }}>
+                  {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              </div>
+
+              {/* Sélection du type de garde */}
+              <div className="config-section">
+                <Label>🚒 Type de garde</Label>
+                <select
+                  value={quickAddConfig.type_garde_id}
+                  onChange={(e) => {
+                    const selectedType = typesGarde.find(t => t.id === e.target.value);
+                    setQuickAddConfig({
+                      ...quickAddConfig,
+                      type_garde_id: e.target.value,
+                      heure_debut: selectedType ? selectedType.heure_debut : quickAddConfig.heure_debut,
+                      heure_fin: selectedType ? selectedType.heure_fin : quickAddConfig.heure_fin
+                    });
+                  }}
+                  className="form-select"
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  <option value="">
+                    {quickAddType === 'disponibilite' ? 'Tous les types de garde' : 'Toute la journée'}
+                  </option>
+                  {typesGarde.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.nom} ({type.heure_debut} - {type.heure_fin})
+                    </option>
+                  ))}
+                </select>
+                <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                  {quickAddConfig.type_garde_id 
+                    ? 'Les horaires du type de garde sont appliqués automatiquement'
+                    : quickAddType === 'disponibilite'
+                      ? 'Vous êtes disponible pour tous les types de garde avec les horaires ci-dessous'
+                      : 'Vous êtes indisponible toute la journée'
+                  }
+                </small>
+              </div>
+
+              {/* Horaires personnalisés si pas de type spécifique */}
+              <div className="config-section">
+                <Label>⏰ Horaires</Label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '0.5rem' }}>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de début</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_debut}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_debut: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de fin</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_fin}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_fin: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Résumé */}
+              <div style={{ 
+                background: quickAddType === 'disponibilite' ? '#f0fdf4' : '#fef2f2', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                border: quickAddType === 'disponibilite' ? '2px solid #16a34a' : '2px solid #dc2626',
+                marginTop: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626' }}>
+                  📋 Résumé
+                </div>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#0f172a' }}>
+                  {quickAddType === 'disponibilite' ? '✅ Vous serez disponible' : '❌ Vous serez indisponible'}<br/>
+                  📅 Le {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR')}<br/>
+                  ⏰ De {quickAddConfig.heure_debut} à {quickAddConfig.heure_fin}<br/>
+                  🚒 {quickAddConfig.type_garde_id 
+                    ? `Pour ${typesGarde.find(t => t.id === quickAddConfig.type_garde_id)?.nom}`
+                    : quickAddType === 'disponibilite' ? 'Pour tous les types de garde' : 'Toute la journée'
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowQuickAddModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={handleQuickAddSave}
+                style={{ 
+                  background: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626',
+                  borderColor: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626'
+                }}
+              >
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de configuration avancée */}
       {showCalendarModal && (
         <div className="modal-overlay" onClick={() => setShowCalendarModal(false)}>
