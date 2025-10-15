@@ -718,6 +718,7 @@ class Formation(BaseModel):
     places_max: int
     places_restantes: int
     statut: str = "planifiee"  # planifiee, en_cours, terminee, annulee
+    obligatoire: bool = False
     annee: int
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -735,6 +736,7 @@ class FormationCreate(BaseModel):
     lieu: str = ""
     instructeur: str = ""
     places_max: int
+    obligatoire: bool = False
     annee: int
 
 class FormationUpdate(BaseModel):
@@ -749,6 +751,7 @@ class FormationUpdate(BaseModel):
     lieu: Optional[str] = None
     instructeur: Optional[str] = None
     places_max: Optional[int] = None
+    obligatoire: Optional[bool] = None
     statut: Optional[str] = None
 
 class InscriptionFormation(BaseModel):
