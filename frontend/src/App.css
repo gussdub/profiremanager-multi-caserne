@@ -472,9 +472,9 @@ body {
 .stat-card.couverture .stat-icon { background-color: #ede9fe; }
 
 .stat-content h3 {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #94a3b8;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1740,9 +1740,9 @@ body {
 .stat-card.coverage .stat-icon { background-color: #ede9fe; }
 
 .stat-content h3 {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #94a3b8;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
