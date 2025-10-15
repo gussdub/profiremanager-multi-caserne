@@ -758,10 +758,6 @@ const ModuleEPI = ({ user }) => {
       console.error('Erreur réparations:', error);
     }
   };
-    } catch (error) {
-      console.error('Erreur inspections:', error);
-    }
-  };
   
   // CRUD EPI
   const handleSaveEPI = async () => {
