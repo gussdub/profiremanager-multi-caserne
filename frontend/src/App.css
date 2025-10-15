@@ -12115,3 +12115,293 @@ body {
   }
 }
 
+
+/* ==================== PHASE 2 : NETTOYAGE, RÉPARATIONS, RETRAIT ==================== */
+
+/* Nettoyage */
+.epi-nettoyage {
+  padding: 2rem;
+}
+
+.nettoyage-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #1F2937;
+}
+
+.nettoyage-header p {
+  margin: 0;
+  color: #6B7280;
+}
+
+.nettoyage-info-card {
+  background: #EFF6FF;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.nettoyage-info-card h3 {
+  margin: 0 0 1rem 0;
+  color: #1E40AF;
+}
+
+.nettoyage-info-card ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #1E40AF;
+}
+
+.nettoyage-info-card li {
+  margin: 0.5rem 0;
+}
+
+.nettoyage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nettoyage-epi-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+}
+
+.nettoyage-epi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nettoyages-section {
+  background: #F0FDF4;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.nettoyages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nettoyage-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.nettoyage-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.type-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.type-badge.routine {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.type-badge.avance {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+/* Réparations */
+.epi-reparations {
+  padding: 2rem;
+}
+
+.reparations-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #1F2937;
+}
+
+.reparations-header p {
+  margin: 0;
+  color: #6B7280;
+}
+
+.reparations-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.reparations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reparation-epi-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+}
+
+.reparation-epi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reparations-section {
+  background: #FEF3C7;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.reparation-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.reparation-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.statut-badge.demandee {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.statut-badge.en_cours {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.statut-badge.terminee {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.statut-badge.impossible {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+/* Retrait */
+.retrait-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #FEF3C7;
+  border-radius: 12px;
+  border: 2px solid #F59E0B;
+}
+
+.retrait-section h3 {
+  margin: 0 0 0.5rem 0;
+  color: #92400E;
+}
+
+/* Rapports Phase 2 */
+.retraits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.retrait-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.age-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background: #E0E7FF;
+  color: #3730A3;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.tco-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tco-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tco-card {
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tco-details {
+  text-align: right;
+}
+
+.tco-details p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive Phase 2 */
+@media (max-width: 768px) {
+  .reparation-epi-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .nettoyage-epi-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .retrait-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .tco-card {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .epi-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .epi-tabs button {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
