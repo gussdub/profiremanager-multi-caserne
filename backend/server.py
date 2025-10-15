@@ -6346,8 +6346,6 @@ async def health_check():
         "database": db_status,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
 
 # Endpoint d'initialisation (à appeler une fois après déploiement)
 @app.post("/api/admin/initialize-production")
