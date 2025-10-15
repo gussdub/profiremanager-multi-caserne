@@ -1292,6 +1292,56 @@ const ModuleEPI = ({ user }) => {
       {/* ONGLET RAPPORTS */}
       {activeTab === 'rapports' && rapportConformite && (
         <div className="epi-rapports">
+          {/* Filtres et Exports */}
+          <div className="rapports-controls">
+            <div className="filtres-section">
+              <h3>🔍 Filtres</h3>
+              <div className="filtres-grid">
+                <div>
+                  <Label>Employé</Label>
+                  <select className="form-select">
+                    <option value="">Tous les employés</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Type d'EPI</Label>
+                  <select className="form-select">
+                    <option value="">Tous les types</option>
+                    {typesEPI.map(t => (
+                      <option key={t.id} value={t.id}>{t.icone} {t.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date début</Label>
+                  <Input type="date" />
+                </div>
+                
+                <div>
+                  <Label>Date fin</Label>
+                  <Input type="date" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="exports-section">
+              <h3>📥 Exporter</h3>
+              <div className="exports-buttons">
+                <Button variant="outline">
+                  📄 Export PDF
+                </Button>
+                <Button variant="outline">
+                  📊 Export Excel
+                </Button>
+              </div>
+            </div>
+          </div>
+          
           <h2>📊 Rapport de Conformité Générale</h2>
           <div className="rapport-stats">
             <div className="stat-card">
