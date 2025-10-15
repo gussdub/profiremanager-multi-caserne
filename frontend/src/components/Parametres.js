@@ -1552,6 +1552,23 @@ const Parametres = ({ user, tenantSlug }) => {
                     </div>
                     
                     <div className="input-group">
+                      <Label>Pourcentage minimum de présence (%)</Label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={parametresFormations.pourcentage_presence_minimum || 80}
+                        onChange={e => setParametresFormations({
+                          ...parametresFormations,
+                          pourcentage_presence_minimum: parseFloat(e.target.value) || 80
+                        })}
+                        placeholder="80"
+                        data-testid="pourcentage-min-input"
+                      />
+                      <small>Pourcentage minimum de présence aux formations passées pour être conforme</small>
+                    </div>
+                    
+                    <div className="input-group">
                       <Label>Délai notification liste d'attente (jours)</Label>
                       <Input 
                         type="number"
