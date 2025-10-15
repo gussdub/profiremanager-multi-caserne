@@ -3770,11 +3770,11 @@ body {
 .interactive-calendar .rdp-day {
   border-radius: 12px !important;
   font-weight: 600 !important;
-  width: 120px !important;
-  height: 120px !important;
-  min-width: 120px !important;
-  min-height: 120px !important;
-  font-size: 1.25rem !important;
+  width: 140px !important;
+  height: 140px !important;
+  min-width: 140px !important;
+  min-height: 140px !important;
+  font-size: 1.4rem !important;
   transition: all 0.2s ease !important;
   border: 2px solid #e2e8f0 !important;
   background: white !important;
