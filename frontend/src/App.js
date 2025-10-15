@@ -2463,7 +2463,7 @@ const Dashboard = () => {
         <div className="stat-card personnel">
           <div className="stat-icon">👥</div>
           <div className="stat-content">
-            <h3>Personnel Actif</h3>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 500}}>Personnel Actif</h3>
             <p className="stat-number" data-testid="stat-personnel">{stats?.personnel_actif || 0}</p>
             <p className="stat-label">Pompiers en service</p>
             <p className="stat-detail">
@@ -2475,7 +2475,7 @@ const Dashboard = () => {
         <div className="stat-card gardes">
           <div className="stat-icon">✅</div>
           <div className="stat-content">
-            <h3>Gardes Cette Semaine</h3>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 500}}>Gardes Cette Semaine</h3>
             <p className="stat-number" data-testid="stat-gardes">{stats?.gardes_cette_semaine || 0}</p>
             <p className="stat-label">Assignations planifiées</p>
             <p className="stat-detail">
