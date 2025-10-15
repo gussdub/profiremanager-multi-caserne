@@ -6112,6 +6112,43 @@ body {
   .calendar-dispo-pill {
     font-size: 0.7rem;
   }
+  
+  /* Calendriers modals - taille intermédiaire pour tablette */
+  .interactive-calendar .rdp {
+    --rdp-cell-size: 70px;
+    font-size: 1.1rem;
+  }
+  
+  .interactive-calendar .rdp-day {
+    min-height: 70px;
+    font-size: 1.1rem;
+  }
+  
+  .interactive-calendar .rdp-caption {
+    font-size: 1.4rem;
+  }
+  
+  .interactive-calendar .rdp-head_cell {
+    font-size: 0.95rem;
+  }
+  
+  .availability-calendar-large .rdp {
+    --rdp-cell-size: 70px;
+    font-size: 1.1rem;
+  }
+  
+  .availability-calendar-large .rdp-day {
+    min-height: 70px;
+    font-size: 1.1rem;
+  }
+  
+  .availability-calendar-large .rdp-caption {
+    font-size: 1.4rem;
+  }
+  
+  .availability-calendar-large .rdp-head_cell {
+    font-size: 0.95rem;
+  }
 }
 
 .epi-taille-row:hover {
