@@ -298,15 +298,18 @@ test_plan:
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py, frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "NEW MODIFICATION - Removed 'Date du premier jour du cycle' field from frontend and hardcoded reference dates in backend. Changes: BACKEND - Modified generer_indisponibilites_quebec() to use hardcoded date (Feb 1, 2026) instead of date_jour_1 parameter, removed date_jour_1 parameter from function signature, removed validation check for date_jour_1 in API route, Montreal pattern already had hardcoded date (Jan 27, 2025). FRONTEND - Removed date input field from generation modal for both patterns, removed date_jour_1 from state management and API calls, removed date display from summary section. This prevents users from accidentally breaking the fixed patterns by entering incorrect reference dates. NEEDS BACKEND TESTING to verify both patterns still work correctly with hardcoded dates."
+      - working: true
+        agent: "testing"
+        comment: "✅ HARDCODED REFERENCE DATES FULLY FUNCTIONAL - Comprehensive testing completed successfully with all 5 test scenarios passing: 1) Montreal 7/24 Rouge 2025: Generated EXACTLY 91 unavailabilities using hardcoded reference date (Jan 27, 2025) ✅, 2) Quebec 10/14 Vert Feb 2026: Generated EXACTLY 13 unavailabilities using hardcoded reference date (Feb 1, 2026) ✅, 3) Quebec Vert Feb 2026 Days Verification: Confirmed correct days [2,3,4,5,12,13,14,20,21,22,23,24,25] - PERFECT MATCH ✅, 4) API Parameter Handling: API accepts date_jour_1 parameter but correctly ignores it (backward compatibility maintained) ✅, 5) Error Handling: Invalid horaire_type correctly rejected with 400 status ✅. Configuration: tenant=shefford, user=employe@firemanager.ca/employe123. Database verification confirms all entries have correct origine fields (montreal_7_24, quebec_10_14), statut='indisponible', proper date ranges, and correct time spans (00:00-23:59). REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: Both patterns work correctly with hardcoded reference dates, API no longer requires date_jour_1 parameter, users cannot accidentally break patterns by entering incorrect dates. System ready for production use."
 
 agent_communication:
   - agent: "main"
