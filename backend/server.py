@@ -801,6 +801,7 @@ class ParametresFormations(BaseModel):
     """Paramètres globaux formations pour NFPA 1500"""
     tenant_id: str
     heures_minimales_annuelles: float = 100.0
+    pourcentage_presence_minimum: float = 80.0
     delai_notification_liste_attente: int = 7  # jours
     email_notifications_actif: bool = True
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
