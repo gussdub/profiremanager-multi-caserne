@@ -565,6 +565,57 @@ const ModuleEPI = ({ user }) => {
   const [rapportConformite, setRapportConformite] = useState(null);
   const [rapportEcheances, setRapportEcheances] = useState(null);
   
+  // États Phase 2 - Nettoyages
+  const [nettoyages, setNettoyages] = useState([]);
+  const [showNettoyageModal, setShowNettoyageModal] = useState(false);
+  const [nettoyageForm, setNettoyageForm] = useState({
+    type_nettoyage: 'routine',
+    date_nettoyage: new Date().toISOString().split('T')[0],
+    methode: 'laveuse_extractrice',
+    effectue_par: '',
+    effectue_par_id: user?.id || '',
+    isp_id: '',
+    nombre_cycles: 1,
+    temperature: '',
+    produits_utilises: '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Réparations
+  const [reparations, setReparations] = useState([]);
+  const [showReparationModal, setShowReparationModal] = useState(false);
+  const [selectedReparation, setSelectedReparation] = useState(null);
+  const [reparationForm, setReparationForm] = useState({
+    statut: 'demandee',
+    date_demande: new Date().toISOString().split('T')[0],
+    demandeur: `${user?.prenom} ${user?.nom}` || '',
+    demandeur_id: user?.id || '',
+    reparateur_type: 'interne',
+    reparateur_nom: '',
+    isp_id: '',
+    probleme_description: '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Retrait
+  const [showRetraitModal, setShowRetraitModal] = useState(false);
+  const [retraitForm, setRetraitForm] = useState({
+    date_retrait: new Date().toISOString().split('T')[0],
+    raison: 'age_limite',
+    description_raison: '',
+    methode_disposition: 'coupe_detruit',
+    preuve_disposition: [],
+    certificat_disposition_url: '',
+    cout_disposition: 0,
+    retire_par: `${user?.prenom} ${user?.nom}` || '',
+    retire_par_id: user?.id || '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Rapports avancés
+  const [rapportRetraits, setRapportRetraits] = useState(null);
+  const [rapportTCO, setRapportTCO] = useState(null);
+  
   // Types EPI
   const typesEPI = [
     { id: 'casque', nom: 'Casque', icone: '🪖' },
