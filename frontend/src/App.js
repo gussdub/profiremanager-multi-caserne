@@ -5945,6 +5945,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     type_entree: 'les_deux'
   });
   const [isReinitializing, setIsReinitializing] = useState(false);
+  
+  // Nouveau modal d'ajout rapide
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [quickAddType, setQuickAddType] = useState('disponibilite'); // 'disponibilite' ou 'indisponibilite'
+  const [quickAddConfig, setQuickAddConfig] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type_garde_id: '',
+    heure_debut: '08:00',
+    heure_fin: '16:00'
+  });
+  
   const { toast } = useToast();
 
   useEffect(() => {
