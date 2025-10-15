@@ -7048,10 +7048,24 @@ async def update_reparation(
     
     # Si réparation terminée, remettre EPI en service
     if reparation_update.statut == "terminee":
+        epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+        
         await db.epis.update_one(
             {"id": epi_id, "tenant_id": tenant.id},
             {"$set": {"statut": "En service"}}
         )
+        
+        # Notifier le pompier assigné que son EPI est de retour
+        if epi and epi.get("user_id"):
+            type_epi_nom = epi.get("type_epi", "EPI")
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=epi["user_id"],
+                type="epi_reparation_terminee",
+                titre="EPI de retour de réparation",
+                message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} est de retour et remis en service",
+                lien="/epi"
+            )
     
     updated_reparation = await db.reparations_epi.find_one({
         "id": reparation_id,
