@@ -6092,27 +6092,30 @@ body {
     font-size: 0.85rem;
   }
 
-  /* Calendriers dans les modals - responsive */
+  /* Calendriers dans les modals - responsive MOBILE */
   .interactive-calendar {
-    padding: 1rem;
+    padding: 1.5rem !important;
   }
 
   .interactive-calendar .rdp {
-    --rdp-cell-size: 40px;
-    font-size: 0.9rem;
+    --rdp-cell-size: 50px !important;
+    font-size: 1rem !important;
   }
 
   .interactive-calendar .rdp-day {
-    min-height: 40px;
-    font-size: 0.85rem;
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    font-size: 0.95rem !important;
   }
 
   .interactive-calendar .rdp-caption {
-    font-size: 1.1rem;
+    font-size: 1.25rem !important;
   }
 
   .interactive-calendar .rdp-head_cell {
-    font-size: 0.75rem;
+    font-size: 0.85rem !important;
   }
 }
 
