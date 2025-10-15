@@ -3663,8 +3663,9 @@ body {
 
 /* Interactive Calendar Modal */
 .extra-large-modal {
-  max-width: 800px;
-  max-height: 90vh;
+  max-width: 1400px;
+  max-height: 95vh;
+  overflow-y: auto;
 }
 
 .availability-config {
