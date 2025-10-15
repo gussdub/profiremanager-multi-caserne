@@ -1337,6 +1337,74 @@ const ModuleEPI = ({ user }) => {
           ) : (
             <p>Aucune échéance dans les 30 prochains jours</p>
           )}
+          
+          {/* Rapport Retraits Prévus - Phase 2 */}
+          <h2 style={{marginTop: '3rem'}}>⏰ EPI à Retirer Prochainement (12 mois)</h2>
+          {rapportRetraits && rapportRetraits.epis && rapportRetraits.epis.length > 0 ? (
+            <div className="retraits-list">
+              {rapportRetraits.epis.map(epi => (
+                <div key={epi.id} className="retrait-card">
+                  <div>
+                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <p>#{epi.numero_serie} - {epi.marque} {epi.modele}</p>
+                  </div>
+                  <div>
+                    <span className="age-badge">
+                      Âge: {epi.age_annees} ans
+                    </span>
+                    <span className={`jours-badge ${epi.jours_avant_limite <= 90 ? 'urgent' : ''}`}>
+                      {epi.jours_avant_limite} jours avant limite
+                    </span>
+                    <p style={{fontSize: '0.85rem', color: '#666', marginTop: '0.5rem'}}>
+                      Limite: {new Date(epi.date_limite_prevue).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>Aucun EPI à retirer dans les 12 prochains mois</p>
+          )}
+          
+          {/* Rapport TCO - Phase 2 */}
+          <h2 style={{marginTop: '3rem'}}>💰 Coût Total de Possession (TCO)</h2>
+          {rapportTCO && rapportTCO.epis && (
+            <>
+              <div className="tco-summary" style={{marginBottom: '1.5rem'}}>
+                <div className="stat-card">
+                  <h3>{rapportTCO.total_epis}</h3>
+                  <p>Total EPI</p>
+                </div>
+                <div className="stat-card">
+                  <h3>{rapportTCO.cout_total_flotte.toFixed(2)} $</h3>
+                  <p>Coût Total Flotte</p>
+                </div>
+                <div className="stat-card">
+                  <h3>{rapportTCO.cout_moyen_par_epi.toFixed(2)} $</h3>
+                  <p>Coût Moyen/EPI</p>
+                </div>
+              </div>
+              
+              <div className="tco-list">
+                {rapportTCO.epis.slice(0, 10).map(epi => (
+                  <div key={epi.id} className="tco-card">
+                    <div>
+                      <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                      <p>#{epi.numero_serie}</p>
+                    </div>
+                    <div className="tco-details">
+                      <p><strong>Achat:</strong> {epi.cout_achat} $</p>
+                      <p><strong>Nettoyages:</strong> {epi.cout_nettoyages} $ ({epi.nombre_nettoyages}x)</p>
+                      <p><strong>Réparations:</strong> {epi.cout_reparations} $ ({epi.nombre_reparations}x)</p>
+                      <p style={{fontWeight: 'bold', color: '#1F2937', marginTop: '0.5rem'}}>
+                        Total: {epi.cout_total.toFixed(2)} $
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
       
