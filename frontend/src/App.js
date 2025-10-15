@@ -7005,6 +7005,31 @@ const Formations = () => {
             </div>
           </div>
           
+          {/* Filtres et Tri */}
+          <div className="rapports-controls" style={{marginTop: '2rem'}}>
+            <div className="filtres-grid">
+              <div>
+                <Label>Rechercher un pompier</Label>
+                <Input 
+                  placeholder="Nom ou prénom..."
+                  value={filtreNom}
+                  onChange={e => setFiltreNom(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Trier par taux de présence</Label>
+                <select 
+                  className="form-select"
+                  value={triPresence}
+                  onChange={e => setTriPresence(e.target.value)}
+                >
+                  <option value="desc">⬇️ Décroissant (meilleur en premier)</option>
+                  <option value="asc">⬆️ Croissant (faible en premier)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
           <div className="exports-section">
             <Button variant="outline">📄 Export PDF</Button>
             <Button variant="outline">📊 Export Excel</Button>
