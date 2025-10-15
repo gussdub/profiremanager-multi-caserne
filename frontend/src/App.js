@@ -7154,6 +7154,21 @@ const Formations = () => {
                   />
                 </div>
                 
+                <div style={{gridColumn: '1 / -1'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input 
+                      type="checkbox"
+                      checked={formationForm.obligatoire}
+                      onChange={e => setFormationForm({...formationForm, obligatoire: e.target.checked})}
+                      style={{width: '20px', height: '20px'}}
+                    />
+                    <strong>Formation obligatoire</strong>
+                    <span style={{fontSize: '0.875rem', color: '#666', marginLeft: '0.5rem'}}>
+                      (Tous les pompiers devront suivre cette formation)
+                    </span>
+                  </label>
+                </div>
+                
                 <div>
                   <Label>Lieu</Label>
                   <Input 
