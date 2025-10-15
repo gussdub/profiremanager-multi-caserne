@@ -7542,7 +7542,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     onClick={handleGenerateIndisponibilites}
                     disabled={isGenerating}
                   >
-                    {isGenerating ? 'Génération en cours...' : `🚀 Générer pour ${generationConfig.annee}`}
+                    {isGenerating ? 'Génération en cours...' : '🚀 Générer les indisponibilités'}
                   </Button>
                 </div>
               </div>
