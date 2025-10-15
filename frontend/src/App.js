@@ -6654,16 +6654,29 @@ const Formations = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [formationsData, competencesData, dashData, rapportData] = await Promise.all([
-        apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
-        apiGet(tenantSlug, '/competences'),
-        apiGet(tenantSlug, `/formations/rapports/dashboard?annee=${anneeSelectionnee}`),
-        apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`)
-      ]);
-      setFormations(formationsData || []);
-      setCompetences(competencesData || []);
-      setDashboardData(dashData);
-      setRapportConformite(rapportData);
+      if (user?.role === 'employe') {
+        // Vue employé : charger formations + mon taux de présence
+        const [formationsData, competencesData, tauxData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/mon-taux-presence?annee=${anneeSelectionnee}`)
+        ]);
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setMonTauxPresence(tauxData);
+      } else {
+        // Vue admin/superviseur : charger tout
+        const [formationsData, competencesData, dashData, rapportData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/rapports/dashboard?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`)
+        ]);
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setDashboardData(dashData);
+        setRapportConformite(rapportData);
+      }
     } catch (error) {
       console.error('Erreur:', error);
       toast({
