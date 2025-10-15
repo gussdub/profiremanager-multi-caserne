@@ -472,10 +472,12 @@ body {
 .stat-card.couverture .stat-icon { background-color: #ede9fe; }
 
 .stat-content h3 {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #64748b;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-number {
