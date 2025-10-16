@@ -7405,6 +7405,40 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
 
+  // Vérifier si un mois est bloqué selon les paramètres
+  const estMoisBloque = (date) => {
+    if (!parametresDisponibilites) return false;
+    
+    const jourBlocage = parametresDisponibilites.jour_blocage_dispos || 15;
+    const dateObj = new Date(date);
+    const aujourd_hui = new Date();
+    
+    const moisDate = dateObj.getMonth();
+    const anDate = dateObj.getFullYear();
+    const moisActuel = aujourd_hui.getMonth();
+    const anActuel = aujourd_hui.getFullYear();
+    const jourActuel = aujourd_hui.getDate();
+    
+    // Si on est après le jour de blocage du mois actuel
+    // ET que la date est pour le mois suivant ou après
+    if (jourActuel >= jourBlocage) {
+      // Bloquer le mois suivant
+      const moisSuivant = (moisActuel + 1) % 12;
+      const anSuivant = moisActuel === 11 ? anActuel + 1 : anActuel;
+      
+      if (anDate === anSuivant && moisDate === moisSuivant) {
+        return true;
+      }
+      // Bloquer aussi les mois encore plus loin
+      if (anDate > anSuivant || (anDate === anSuivant && moisDate > moisSuivant)) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+
 
   const handleAddConfiguration = () => {
     if (selectedDates.length === 0) {
