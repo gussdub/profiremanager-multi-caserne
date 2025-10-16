@@ -15,6 +15,7 @@ const Parametres = ({ user, tenantSlug }) => {
   const [activeTab, setActiveTab] = useState('types-garde');
   const [typesGarde, setTypesGarde] = useState([]);
   const [formations, setFormations] = useState([]);
+  const [competences, setCompetences] = useState([]);
   const [users, setUsers] = useState([]);
   const [episTypes, setEpisTypes] = useState([]);
   const [selectedUserEpi, setSelectedUserEpi] = useState(null);
