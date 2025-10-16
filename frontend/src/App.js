@@ -1451,7 +1451,6 @@ const ModuleEPI = ({ user }) => {
                 ))}
               </div>
             </>
-          )}
           ) : (
             <div className="loading-state">
               <div className="loading-spinner"></div>
