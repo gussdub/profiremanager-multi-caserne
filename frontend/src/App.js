@@ -7354,8 +7354,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     heure_debut: '08:00',
     heure_fin: '16:00'
   });
-  
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDisponibilites = async () => {
