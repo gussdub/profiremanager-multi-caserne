@@ -1289,10 +1289,12 @@ const ModuleEPI = ({ user }) => {
       )}
 
       {/* ONGLET RAPPORTS */}
-      {activeTab === 'rapports' && rapportConformite && (
+      {activeTab === 'rapports' && (
         <div className="epi-rapports">
-          {/* Filtres et Exports */}
-          <div className="rapports-controls">
+          {rapportConformite ? (
+            <>
+              {/* Filtres et Exports */}
+              <div className="rapports-controls">
             <div className="filtres-section">
               <h3>🔍 Filtres</h3>
               <div className="filtres-grid">
