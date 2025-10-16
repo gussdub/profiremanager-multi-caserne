@@ -1457,6 +1457,8 @@ const ModuleEPI = ({ user }) => {
               </div>
             </>
           )}
+          </>
+          )}
         </div>
       )}
       
