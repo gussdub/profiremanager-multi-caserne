@@ -7638,14 +7638,39 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         }
       }
       
+      // Filtrer les dates bloquées avant création
+      const disponibilitesNonBloquees = disponibilitesACreer.filter(dispo => {
+        return !estMoisBloque(dispo.date);
+      });
+      
+      const datesBloquees = disponibilitesACreer.length - disponibilitesNonBloquees.length;
+      
+      if (datesBloquees > 0) {
+        const jourBlocage = parametresDisponibilites?.jour_blocage_dispos || 15;
+        toast({
+          title: "Certaines dates bloquées",
+          description: `${datesBloquees} date(s) du mois suivant ignorée(s) (blocage au ${jourBlocage} du mois)`,
+          variant: "default"
+        });
+      }
+      
+      if (disponibilitesNonBloquees.length === 0) {
+        toast({
+          title: "Aucune disponibilité créée",
+          description: "Toutes les dates sont bloquées",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Envoyer les disponibilités au backend
-      for (const dispo of disponibilitesACreer) {
+      for (const dispo of disponibilitesNonBloquees) {
         await apiPost(tenantSlug, '/disponibilites', dispo);
       }
       
       toast({
         title: "Disponibilités enregistrées",
-        description: `${disponibilitesACreer.length} disponibilité(s) ajoutée(s) avec succès`,
+        description: `${disponibilitesNonBloquees.length} disponibilité(s) ajoutée(s) avec succès`,
         variant: "success"
       });
       
