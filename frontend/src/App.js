@@ -7449,6 +7449,18 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       });
       return;
     }
+    
+    // Vérifier si certaines dates sont bloquées
+    const datesBloquees = selectedDates.filter(date => estMoisBloque(date));
+    if (datesBloquees.length > 0) {
+      const jourBlocage = parametresDisponibilites?.jour_blocage_dispos || 15;
+      toast({
+        title: "Dates bloquées",
+        description: `Impossible de modifier les disponibilités du mois suivant après le ${jourBlocage} du mois. ${datesBloquees.length} date(s) bloquée(s).`,
+        variant: "destructive"
+      });
+      return;
+    }
 
     const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
     const newConfig = {
