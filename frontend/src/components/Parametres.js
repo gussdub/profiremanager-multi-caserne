@@ -2181,7 +2181,7 @@ const Parametres = ({ user, tenantSlug }) => {
 
               <div className="modal-actions">
                 <Button variant="outline" onClick={() => setShowCreateFormationModal(false)}>Annuler</Button>
-                <Button variant="default" onClick={handleCreateFormation} data-testid="create-competence-submit-btn">
+                <Button variant="default" onClick={handleCreateCompetence} data-testid="create-competence-submit-btn">
                   Créer la compétence
                 </Button>
               </div>
