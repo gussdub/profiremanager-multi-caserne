@@ -1508,7 +1508,12 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 </div>
 
-                {/* Section État actuel supprimée pour alléger le design */}
+                {/* Bouton Sauvegarder */}
+                <div style={{marginTop: '2rem', textAlign: 'center'}}>
+                  <Button onClick={handleSaveDisponibilitesParams}>
+                    💾 Sauvegarder les paramètres de disponibilités
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
