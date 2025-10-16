@@ -523,6 +523,33 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
+
+  const handleSaveDisponibilitesParams = async () => {
+    try {
+      const paramsToSave = {
+        jour_blocage_dispos: systemSettings.jour_blocage_dispos,
+        exceptions_admin_superviseur: systemSettings.exceptions_admin_superviseur,
+        admin_peut_modifier_temps_partiel: systemSettings.admin_peut_modifier_temps_partiel,
+        notifications_dispos_actives: systemSettings.notifications_dispos_actives,
+        jours_avance_notification: systemSettings.jours_avance_notification
+      };
+      
+      await axios.put(`${API}/parametres/disponibilites`, paramsToSave);
+      toast({
+        title: "Configuration sauvegardée",
+        description: "Les paramètres de disponibilités ont été enregistrés",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de sauvegarder",
+        variant: "destructive"
+      });
+    }
+  };
+
+
   const handleSendNotificationsManually = async () => {
     try {
       // Calculer les dates selon la période configurée
