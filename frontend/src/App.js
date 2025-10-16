@@ -7407,6 +7407,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const estMoisBloque = (date) => {
     if (!parametresDisponibilites) return false;
     
+    // Exception pour admin/superviseur si paramètre activé
+    const exceptionsActives = parametresDisponibilites.exceptions_admin_superviseur !== false; // true par défaut
+    if (exceptionsActives && user?.role && (user.role === 'admin' || user.role === 'superviseur')) {
+      return false; // Admin/Superviseur jamais bloqués si exceptions activées
+    }
+    
     const jourBlocage = parametresDisponibilites.jour_blocage_dispos || 15;
     const dateObj = new Date(date);
     const aujourd_hui = new Date();
