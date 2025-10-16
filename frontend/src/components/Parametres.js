@@ -266,15 +266,17 @@ const Parametres = ({ user, tenantSlug }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [typesResponse, formationsResponse, usersResponse, validationResponse, paramsFormationsResponse] = await Promise.all([
+      const [typesResponse, formationsResponse, competencesResponse, usersResponse, validationResponse, paramsFormationsResponse] = await Promise.all([
         axios.get(`${API}/types-garde`),
         axios.get(`${API}/formations`),
+        axios.get(`${API}/competences`),
         axios.get(`${API}/users`),
         axios.get(`${API}/parametres/validation-planning`).catch(() => ({ data: validationParams })),
         axios.get(`${API}/parametres/formations`).catch(() => ({ data: { heures_minimales_annuelles: 100, delai_notification_liste_attente: 7, email_notifications_actif: true } }))
       ]);
       setTypesGarde(typesResponse.data);
       setFormations(formationsResponse.data);
+      setCompetences(competencesResponse.data);
       setUsers(usersResponse.data);
       setValidationParams(validationResponse.data);
       setParametresFormations(paramsFormationsResponse.data);
