@@ -7288,6 +7288,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [parametresDisponibilites, setParametresDisponibilites] = useState(null);
+  const { toast } = useToast();
   
   // États pour le calendrier visuel mensuel
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(new Date().getMonth());
