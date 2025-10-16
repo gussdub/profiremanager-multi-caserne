@@ -411,6 +411,44 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
+
+  const handleCreateCompetence = async () => {
+    if (!newFormation.nom) {
+      toast({
+        title: "Champs requis",
+        description: "Le nom de la compétence est obligatoire",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const competenceData = {
+        nom: newFormation.nom,
+        description: newFormation.description || '',
+        heures_requises_annuelles: newFormation.duree_heures || 0,
+        obligatoire: newFormation.obligatoire || false
+      };
+      
+      await axios.post(`${API}/competences`, competenceData);
+      toast({
+        title: "Compétence créée",
+        description: "La nouvelle compétence a été ajoutée avec succès",
+        variant: "success"
+      });
+      setShowCreateFormationModal(false);
+      resetNewFormation();
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de créer la compétence",
+        variant: "destructive"
+      });
+    }
+  };
+
+
   const resetNewFormation = () => {
     setNewFormation({
       nom: '',
