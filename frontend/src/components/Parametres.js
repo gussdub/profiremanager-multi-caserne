@@ -865,18 +865,15 @@ const Parametres = ({ user, tenantSlug }) => {
             </div>
 
             <div className="competences-grid">
-              {formations.map(formation => (
-                <div key={formation.id} className="competence-card" data-testid={`competence-${formation.id}`}>
+              {competences.map(competence => (
+                <div key={competence.id} className="competence-card" data-testid={`competence-${competence.id}`}>
                   <div className="competence-header">
                     <div className="competence-info">
-                      <h3>{formation.nom}</h3>
-                      <p className="competence-description">{formation.description}</p>
+                      <h3>{competence.nom}</h3>
+                      <p className="competence-description">{competence.description}</p>
                       <div className="competence-details">
-                        <span className="detail-item">⏱️ {formation.duree_heures}h de formation</span>
-                        <span className="detail-item">
-                          📅 Validité: {formation.validite_mois === 0 ? 'Pas de renouvellement' : `${formation.validite_mois} mois`}
-                        </span>
-                        {formation.obligatoire && (
+                        <span className="detail-item">⏱️ {competence.heures_requises_annuelles || 0}h requises/an</span>
+                        {competence.obligatoire && (
                           <span className="detail-item obligatoire-indicator">⚠️ COMPÉTENCE OBLIGATOIRE</span>
                         )}
                       </div>
@@ -884,8 +881,8 @@ const Parametres = ({ user, tenantSlug }) => {
                     <div className="competence-actions">
                       <Button 
                         variant="ghost" 
-                        onClick={() => handleEditFormation(formation)}
-                        data-testid={`edit-competence-${formation.id}`}
+                        onClick={() => handleEditFormation(competence)}
+                        data-testid={`edit-competence-${competence.id}`}
                         title="Modifier cette compétence"
                       >
                         ✏️ Modifier
@@ -893,8 +890,8 @@ const Parametres = ({ user, tenantSlug }) => {
                       <Button 
                         variant="ghost" 
                         className="danger" 
-                        onClick={() => handleDeleteFormation(formation.id)}
-                        data-testid={`delete-competence-${formation.id}`}
+                        onClick={() => handleDeleteFormation(competence.id)}
+                        data-testid={`delete-competence-${competence.id}`}
                         title="Supprimer cette compétence"
                       >
                         🗑️ Supprimer
