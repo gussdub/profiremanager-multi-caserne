@@ -6463,6 +6463,52 @@ async def update_parametres_remplacements(
     
     return {"message": "Paramètres mis à jour avec succès"}
 
+
+
+# ==================== PARAMÈTRES DISPONIBILITÉS ====================
+
+@api_router.get("/{tenant_slug}/parametres/disponibilites")
+async def get_parametres_disponibilites(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les paramètres disponibilités"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        # Créer paramètres par défaut
+        default_params = {
+            "tenant_id": tenant.id,
+            "jour_blocage_dispos": 15,
+            "exceptions_admin_superviseur": True,
+            "admin_peut_modifier_temps_partiel": True,
+            "notifications_dispos_actives": True,
+            "jours_avance_notification": 3
+        }
+        await db.parametres_disponibilites.insert_one(default_params)
+        return default_params
+    
+    return clean_mongo_doc(params)
+
+@api_router.put("/{tenant_slug}/parametres/disponibilites")
+async def update_parametres_disponibilites(
+    tenant_slug: str,
+    params: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres disponibilités"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.parametres_disponibilites.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": params},
+        upsert=True
+    )
+    
+    return {"message": "Paramètres disponibilités mis à jour"}
+
 # ==================== EPI ROUTES NFPA 1851 ====================
 
 # ========== EPI CRUD ==========
