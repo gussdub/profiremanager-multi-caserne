@@ -592,6 +592,7 @@ class User(BaseModel):
     statut: str = "Actif"  # Actif, Inactif
     numero_employe: str = ""
     date_embauche: str = ""
+    taux_horaire: float = 0.0  # Taux horaire en $/h
     formations: List[str] = []
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
