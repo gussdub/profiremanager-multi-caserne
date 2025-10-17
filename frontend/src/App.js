@@ -5473,50 +5473,54 @@ const Planning = () => {
 
                 {/* Section 3: Configuration récurrence */}
                 <div className="assign-section">
-                  <h4>🔄 Type d'assignation</h4>
-                  <div className="recurrence-options">
-                    <label className="recurrence-option">
-                      <input
-                        type="radio"
-                        name="recurrence"
-                        value="unique"
-                        checked={advancedAssignConfig.recurrence_type === 'unique'}
-                        onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_type: e.target.value})}
-                      />
-                      <div className="recurrence-content">
-                        <span className="recurrence-title">📅 Assignation unique</span>
-                        <span className="recurrence-description">Une seule date spécifique</span>
-                      </div>
-                    </label>
-
-                    <label className="recurrence-option">
-                      <input
-                        type="radio"
-                        name="recurrence"
-                        value="hebdomadaire"
-                        checked={advancedAssignConfig.recurrence_type === 'hebdomadaire'}
-                        onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_type: e.target.value})}
-                      />
-                      <div className="recurrence-content">
-                        <span className="recurrence-title">🔁 Récurrence hebdomadaire</span>
-                        <span className="recurrence-description">Répéter chaque semaine sur des jours choisis</span>
-                      </div>
-                    </label>
-
-                    <label className="recurrence-option">
-                      <input
-                        type="radio"
-                        name="recurrence"
-                        value="mensuel"
-                        checked={advancedAssignConfig.recurrence_type === 'mensuel'}
-                        onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_type: e.target.value})}
-                      />
-                      <div className="recurrence-content">
-                        <span className="recurrence-title">📆 Récurrence mensuelle</span>
-                        <span className="recurrence-description">Répéter chaque mois aux mêmes dates</span>
-                      </div>
-                    </label>
+                  <h4>🔄 Type de récurrence</h4>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <select
+                      value={advancedAssignConfig.recurrence_type}
+                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_type: e.target.value})}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                    >
+                      <option value="unique">📅 Assignation unique</option>
+                      <option value="hebdomadaire">🔁 Toutes les semaines (hebdomadaire)</option>
+                      <option value="bihebdomadaire">🔄 Toutes les deux semaines (bi-hebdomadaire)</option>
+                      <option value="mensuelle">📆 Tous les mois (mensuelle)</option>
+                      <option value="annuelle">🗓️ Tous les ans (annuelle)</option>
+                      <option value="personnalisee">⚙️ Personnalisée</option>
+                    </select>
                   </div>
+
+                  {/* Options pour personnalisée */}
+                  {advancedAssignConfig.recurrence_type === 'personnalisee' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '6px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                          Tous les
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={advancedAssignConfig.recurrence_intervalle || 1}
+                          onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                          Type
+                        </label>
+                        <select
+                          value={advancedAssignConfig.recurrence_frequence || 'jours'}
+                          onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_frequence: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="jours">Jours</option>
+                          <option value="semaines">Semaines</option>
+                          <option value="mois">Mois</option>
+                          <option value="ans">Ans</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Section 4: Configuration dates */}
