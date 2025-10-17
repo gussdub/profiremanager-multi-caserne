@@ -2624,6 +2624,11 @@ class ProFireManagerTester:
             print("-" * 50)
             self.test_competences_crud_operations()
             
+            # Test 6.6: USER ACCESS MODIFICATION (CURRENT REVIEW REQUEST)
+            print("\n🎯 CURRENT REVIEW REQUEST TEST: User Access Modification in Settings Module")
+            print("-" * 50)
+            self.test_user_access_modification()
+            
             # Test 7: Settings and Notifications
             self.test_settings_api()
             self.test_notification_system()
