@@ -308,8 +308,8 @@ metadata:
 test_plan:
   current_focus: []
   stuck_tasks: []
-  test_all: true
-  test_priority: "completed"
+  test_all: false
+  test_priority: "competences_completed"
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
