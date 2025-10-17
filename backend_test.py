@@ -866,6 +866,231 @@ class ProFireManagerTester:
             self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
 
+    def test_password_reset_functionality(self):
+        """Test password reset functionality with email sending by administrator"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Test 1: Authenticate as admin Shefford
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Password Reset Functionality", False, 
+                                f"Failed to login as Shefford admin: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            admin_token = login_result["access_token"]
+            
+            # Create a new session with admin token
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Test 2: Create a test user with valid email
+            test_user = {
+                "nom": "TestUser",
+                "prenom": "PasswordReset",
+                "email": f"test.password.reset.{uuid.uuid4().hex[:8]}@firemanager.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_plein",
+                "heures_max_semaine": 40,
+                "role": "employe",
+                "numero_employe": f"PWR{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "InitialPass123!"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=test_user)
+            if response.status_code != 200:
+                self.log_test("Password Reset Functionality", False, 
+                            f"Failed to create test user: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            created_user = response.json()
+            user_id = created_user["id"]
+            user_email = created_user["email"]
+            
+            # Test 3: Call password reset endpoint PUT /api/shefford/users/{user_id}/password
+            temp_password = "TempPass123!"
+            reset_data = {
+                "mot_de_passe": temp_password,
+                "ancien_mot_de_passe": ""  # Empty for admin bypass
+            }
+            
+            response = admin_session.put(f"{self.base_url}/{tenant_slug}/users/{user_id}/password", json=reset_data)
+            if response.status_code != 200:
+                self.log_test("Password Reset Functionality", False, 
+                            f"Failed to reset password: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            reset_result = response.json()
+            
+            # Test 4: Verify response contains required fields
+            required_fields = ["message", "email_sent"]
+            missing_fields = []
+            for field in required_fields:
+                if field not in reset_result:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Password Reset Functionality", False, 
+                            f"Missing required fields in response: {', '.join(missing_fields)}", 
+                            {"response": reset_result})
+                return False
+            
+            # Verify message
+            if "Mot de passe modifié avec succès" not in reset_result.get("message", ""):
+                self.log_test("Password Reset Functionality", False, 
+                            f"Incorrect success message: {reset_result.get('message')}")
+                return False
+            
+            # Check email sending status
+            email_sent = reset_result.get("email_sent")
+            if email_sent:
+                # If email was sent, verify email_address field
+                if "email_address" not in reset_result:
+                    self.log_test("Password Reset Functionality", False, 
+                                "email_sent is true but email_address field missing")
+                    return False
+                
+                if reset_result.get("email_address") != user_email:
+                    self.log_test("Password Reset Functionality", False, 
+                                f"Email address mismatch: expected {user_email}, got {reset_result.get('email_address')}")
+                    return False
+            else:
+                # If email was not sent, verify error field
+                if "error" not in reset_result:
+                    self.log_test("Password Reset Functionality", False, 
+                                "email_sent is false but error field missing")
+                    return False
+            
+            # Test 5: Verify password was changed in database by testing login with new password
+            new_login_data = {
+                "email": user_email,
+                "mot_de_passe": temp_password
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=new_login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=new_login_data)
+                if response.status_code != 200:
+                    self.log_test("Password Reset Functionality", False, 
+                                f"Failed to login with new temporary password: {response.status_code}")
+                    return False
+            
+            # Test 6: Verify old password no longer works
+            old_login_data = {
+                "email": user_email,
+                "mot_de_passe": "InitialPass123!"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=old_login_data)
+            if response.status_code == 200:
+                self.log_test("Password Reset Functionality", False, 
+                            "Old password still works after reset - security issue!")
+                return False
+            
+            # Test 7: Test security - verify employee cannot reset another user's password
+            # First create another test user (employee)
+            employee_user = {
+                "nom": "Employee",
+                "prenom": "Test",
+                "email": f"test.employee.{uuid.uuid4().hex[:8]}@firemanager.ca",
+                "telephone": "450-555-0125",
+                "contact_urgence": "450-555-0126",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_plein",
+                "heures_max_semaine": 40,
+                "role": "employe",
+                "numero_employe": f"EMP{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "EmployeePass123!"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=employee_user)
+            if response.status_code != 200:
+                self.log_test("Password Reset Functionality", False, 
+                            f"Failed to create employee user for security test: {response.status_code}")
+                return False
+            
+            employee_created = response.json()
+            employee_id = employee_created["id"]
+            employee_email = employee_created["email"]
+            
+            # Login as employee
+            employee_login_data = {
+                "email": employee_email,
+                "mot_de_passe": "EmployeePass123!"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=employee_login_data)
+            if response.status_code != 200:
+                response = requests.post(f"{self.base_url}/auth/login", json=employee_login_data)
+                if response.status_code != 200:
+                    self.log_test("Password Reset Functionality", False, 
+                                f"Failed to login as employee for security test: {response.status_code}")
+                    return False
+            
+            employee_login_result = response.json()
+            employee_token = employee_login_result["access_token"]
+            
+            # Create employee session
+            employee_session = requests.Session()
+            employee_session.headers.update({"Authorization": f"Bearer {employee_token}"})
+            
+            # Try to reset another user's password as employee (should fail)
+            unauthorized_reset_data = {
+                "mot_de_passe": "HackedPass123!",
+                "ancien_mot_de_passe": ""
+            }
+            
+            response = employee_session.put(f"{self.base_url}/{tenant_slug}/users/{user_id}/password", json=unauthorized_reset_data)
+            if response.status_code == 200:
+                self.log_test("Password Reset Functionality", False, 
+                            "SECURITY ISSUE: Employee was able to reset another user's password!")
+                return False
+            
+            if response.status_code != 403:
+                self.log_test("Password Reset Functionality", False, 
+                            f"Expected 403 Forbidden for unauthorized reset, got {response.status_code}")
+                return False
+            
+            # Test 8: Check backend logs for email sending function call
+            # This is informational - we can't directly access logs but we can verify the response indicates email attempt
+            
+            # Cleanup: Delete test users
+            admin_session.delete(f"{self.base_url}/{tenant_slug}/users/{user_id}")
+            admin_session.delete(f"{self.base_url}/{tenant_slug}/users/{employee_id}")
+            
+            # Prepare detailed result message
+            email_status = "✅ Email sent successfully" if email_sent else f"⚠️ Email not sent: {reset_result.get('error', 'Unknown error')}"
+            sendgrid_status = "✅ SendGrid configured" if email_sent else "⚠️ SendGrid not configured or failed"
+            
+            self.log_test("Password Reset Functionality", True, 
+                        f"✅ Password reset functionality fully working - All tests passed: 1) Admin authentication successful ✅, 2) Test user created with valid email ✅, 3) Password reset via PUT /api/{tenant_slug}/users/{{user_id}}/password successful ✅, 4) Response contains required fields (message, email_sent, email_address/error) ✅, 5) Password changed in database - login with new password works ✅, 6) Old password no longer works ✅, 7) Security test passed - employee cannot reset other user's password (403 Forbidden) ✅, 8) Email sending: {email_status}, SendGrid: {sendgrid_status}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Password Reset Functionality", False, f"Password reset functionality error: {str(e)}")
+            return False
+
     def test_competences_crud_operations(self):
         """Test Compétences CRUD operations as requested in review"""
         try:
