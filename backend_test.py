@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - FINAL TEST WITH REAL MONGODB ATLAS
-Tests the FINAL system with the REAL MongoDB Atlas database.
-Focus on production users, password reset, and hybrid authentication system.
+ProFireManager Backend API Testing Suite - PASSWORD RESET MONGODB WRITE VERIFICATION
+Tests password reset functionality to verify MongoDB Atlas write operations work correctly.
+Focus: Verify that password resets actually write to MongoDB Atlas and allow subsequent logins.
 """
 
 import requests
@@ -15,12 +15,10 @@ import time
 # Configuration - REAL PRODUCTION URLs
 BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
 
-# REAL MongoDB Atlas Connection Testing
-# The backend is now connected to: mongodb+srv://profiremanager_admin:BsqKibVAy6FTiTxg@profiremanager-prod.crqjvsp.mongodb.net/profiremanager
-
-# Super Admin Configuration (REAL PRODUCTION)
-SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
-SUPER_ADMIN_PASSWORD = "230685Juin+"
+# Test Configuration for Shefford tenant
+TENANT_SLUG = "shefford"
+ADMIN_EMAIL = "admin@firemanager.ca"
+ADMIN_PASSWORD = "admin123"
 
 class ProFireManagerTester:
     def __init__(self):
