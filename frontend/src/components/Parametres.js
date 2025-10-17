@@ -2271,10 +2271,9 @@ const Parametres = ({ user, tenantSlug }) => {
                       className="form-select"
                       data-testid="new-user-grade"
                     >
-                      <option value="Pompier">Pompier</option>
-                      <option value="Lieutenant">Lieutenant</option>
-                      <option value="Capitaine">Capitaine</option>
-                      <option value="Directeur">Directeur</option>
+                      {grades.map(grade => (
+                        <option key={grade.id} value={grade.nom}>{grade.nom}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-field">
