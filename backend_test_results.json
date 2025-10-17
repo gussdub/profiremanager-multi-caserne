@@ -3,51 +3,58 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-17T13:52:02.259273",
+    "timestamp": "2025-10-17T14:05:02.980344",
+    "details": {}
+  },
+  {
+    "test": "Bcrypt Authentication System",
+    "success": true,
+    "message": "\u2705 All bcrypt authentication tests passed - SHA256 migration working, new users use bcrypt, password changes use bcrypt, logging functional",
+    "timestamp": "2025-10-17T14:05:06.232013",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-17T13:52:02.574910",
+    "timestamp": "2025-10-17T14:05:06.471527",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-17T13:52:02.610906",
+    "timestamp": "2025-10-17T14:05:06.510287",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 0 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-17T13:52:02.653758",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 3 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-17T14:05:06.547281",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 0, revenus_mensuels: 0",
-    "timestamp": "2025-10-17T13:52:02.693053",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 3, revenus_mensuels: 36",
+    "timestamp": "2025-10-17T14:05:06.586546",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": false,
     "message": "Montreal 7/24 generation failed: 422",
-    "timestamp": "2025-10-17T13:52:04.051493",
+    "timestamp": "2025-10-17T14:05:07.364849",
     "details": {
-      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"b71ae4e6-3a25-40ed-be25-652ad4a4781f\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"b71ae4e6-3a25-40ed-be25-652ad4a4781f\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
+      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"bb1f23c2-6ceb-4434-b2b6-8d2cacd83a90\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"bb1f23c2-6ceb-4434-b2b6-8d2cacd83a90\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
     }
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser Corrected System",
     "success": false,
     "message": "Failed to login as Shefford admin: 401",
-    "timestamp": "2025-10-17T13:52:04.132772",
+    "timestamp": "2025-10-17T14:05:07.895944",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
@@ -56,7 +63,7 @@
     "test": "Quebec 10/14 February 2026 Pattern",
     "success": false,
     "message": "Failed to login as employe@firemanager.ca: 401",
-    "timestamp": "2025-10-17T13:52:04.213002",
+    "timestamp": "2025-10-17T14:05:07.983465",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
@@ -65,7 +72,7 @@
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-17T13:52:04.223845",
+    "timestamp": "2025-10-17T14:05:07.996942",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -75,7 +82,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-17T13:52:04.230783",
+    "timestamp": "2025-10-17T14:05:08.006321",
     "details": {}
   }
 ]
