@@ -866,6 +866,156 @@ class ProFireManagerTester:
             self.log_test("Super Admin Stats API (Modified)", False, f"Super Admin stats API (modified) error: {str(e)}")
             return False
 
+    def test_competences_crud_operations(self):
+        """Test Compétences CRUD operations as requested in review"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Login as Shefford admin using the correct credentials
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Compétences CRUD Operations", False, 
+                                f"Failed to login as Shefford admin: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            admin_token = login_result["access_token"]
+            
+            # Create a new session with admin token
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Test 1: Create a new competence (POST /api/{tenant}/competences)
+            test_competence = {
+                "nom": "Test Compétence",
+                "description": "Test description",
+                "heures_requises_annuelles": 10,
+                "obligatoire": False
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/competences", json=test_competence)
+            if response.status_code != 200:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Failed to create competence: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            created_competence = response.json()
+            competence_id = created_competence["id"]
+            
+            # Verify created competence has correct data
+            if created_competence.get("nom") != "Test Compétence":
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Created competence name mismatch: expected 'Test Compétence', got '{created_competence.get('nom')}'")
+                return False
+            
+            if created_competence.get("heures_requises_annuelles") != 10:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Created competence hours mismatch: expected 10, got {created_competence.get('heures_requises_annuelles')}")
+                return False
+            
+            # Test 2: Retrieve competences list (GET /api/{tenant}/competences)
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/competences")
+            if response.status_code != 200:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Failed to retrieve competences: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            competences_list = response.json()
+            
+            # Verify the created competence is in the list
+            found_competence = None
+            for comp in competences_list:
+                if comp.get("id") == competence_id:
+                    found_competence = comp
+                    break
+            
+            if not found_competence:
+                self.log_test("Compétences CRUD Operations", False, 
+                            "Created competence not found in competences list")
+                return False
+            
+            # Test 3: Update the competence (PUT /api/{tenant}/competences/{competence_id})
+            update_data = {
+                "nom": "Test Modifié",
+                "heures_requises_annuelles": 20
+            }
+            
+            response = admin_session.put(f"{self.base_url}/{tenant_slug}/competences/{competence_id}", json=update_data)
+            if response.status_code != 200:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Failed to update competence: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            updated_competence = response.json()
+            
+            # Verify the update was successful
+            if updated_competence.get("nom") != "Test Modifié":
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Updated competence name mismatch: expected 'Test Modifié', got '{updated_competence.get('nom')}'")
+                return False
+            
+            if updated_competence.get("heures_requises_annuelles") != 20:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Updated competence hours mismatch: expected 20, got {updated_competence.get('heures_requises_annuelles')}")
+                return False
+            
+            # Test 4: Delete the competence (DELETE /api/{tenant}/competences/{competence_id})
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/competences/{competence_id}")
+            if response.status_code != 200:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Failed to delete competence: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            delete_result = response.json()
+            
+            # Verify delete response
+            if "message" not in delete_result or "supprimée" not in delete_result["message"]:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Delete response format incorrect: {delete_result}")
+                return False
+            
+            # Test 5: Verify the competence was deleted (GET should not find it)
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/competences")
+            if response.status_code != 200:
+                self.log_test("Compétences CRUD Operations", False, 
+                            f"Failed to retrieve competences after deletion: {response.status_code}")
+                return False
+            
+            competences_after_delete = response.json()
+            
+            # Verify the competence is no longer in the list
+            deleted_competence_found = False
+            for comp in competences_after_delete:
+                if comp.get("id") == competence_id:
+                    deleted_competence_found = True
+                    break
+            
+            if deleted_competence_found:
+                self.log_test("Compétences CRUD Operations", False, 
+                            "Deleted competence still found in competences list")
+                return False
+            
+            self.log_test("Compétences CRUD Operations", True, 
+                        f"✅ All competences CRUD operations successful - Created competence 'Test Compétence' with 10h, retrieved in list, updated to 'Test Modifié' with 20h, and successfully deleted. Used tenant '{tenant_slug}' with admin@firemanager.ca credentials.")
+            return True
+            
+        except Exception as e:
+            self.log_test("Compétences CRUD Operations", False, f"Competences CRUD error: {str(e)}")
+            return False
+
     def test_disponibilites_reinitialiser_corrected_system(self):
         """Test CORRECTED Réinitialiser functionality with new type_entree filter"""
         try:
