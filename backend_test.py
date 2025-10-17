@@ -2449,6 +2449,11 @@ class ProFireManagerTester:
             self.test_formations_api()
             self.test_users_management()
             
+            # Test 6.5: COMPETENCES CRUD OPERATIONS (REVIEW REQUEST)
+            print("\n🎯 REVIEW REQUEST TEST: Compétences CRUD Operations")
+            print("-" * 50)
+            self.test_competences_crud_operations()
+            
             # Test 7: Settings and Notifications
             self.test_settings_api()
             self.test_notification_system()
