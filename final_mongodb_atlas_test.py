@@ -470,7 +470,7 @@ class FinalMongoDBAtlasTester:
             print(f"   ✅ Entrée créée avec ID: {entry_id}")
             
             # Test 2: Retrieve the entry to verify it was saved
-            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites")
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code != 200:
                 self.log_test("Database Verification", False, 
                             f"Failed to retrieve disponibilités: {response.status_code}")
