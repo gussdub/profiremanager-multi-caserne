@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite
-Tests all core backend functionality including authentication, settings, and CRUD operations.
-Includes Super Admin Dashboard API testing.
+ProFireManager Backend API Testing Suite - FINAL TEST WITH REAL MONGODB ATLAS
+Tests the FINAL system with the REAL MongoDB Atlas database.
+Focus on production users, password reset, and hybrid authentication system.
 """
 
 import requests
@@ -10,18 +10,17 @@ import json
 import sys
 from datetime import datetime
 import uuid
+import time
 
-# Configuration
+# Configuration - REAL PRODUCTION URLs
 BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
-TEST_ADMIN_EMAIL = "admin@firefighter.com"
-TEST_ADMIN_PASSWORD = "Admin123!"
 
-# Super Admin Configuration (from review request)
-SUPER_ADMIN_EMAIL = "admin@profiremanager.ca"
-SUPER_ADMIN_PASSWORD = "Admin123!"
-# Fallback Super Admin (from backend code)
-FALLBACK_SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
-FALLBACK_SUPER_ADMIN_PASSWORD = "230685Juin+"
+# REAL MongoDB Atlas Connection Testing
+# The backend is now connected to: mongodb+srv://profiremanager_admin:BsqKibVAy6FTiTxg@profiremanager-prod.crqjvsp.mongodb.net/profiremanager
+
+# Super Admin Configuration (REAL PRODUCTION)
+SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
+SUPER_ADMIN_PASSWORD = "230685Juin+"
 
 class ProFireManagerTester:
     def __init__(self):
