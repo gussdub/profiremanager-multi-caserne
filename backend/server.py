@@ -381,6 +381,121 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
     except Exception as e:
         print(f"❌ Erreur lors de l'envoi de l'email à {user_email}: {str(e)}")
         return False
+
+
+def send_temporary_password_email(user_email: str, user_name: str, temp_password: str, tenant_slug: str = ""):
+    """
+    Envoie un email avec le mot de passe temporaire suite à une réinitialisation par l'administrateur
+    """
+    try:
+        subject = "Réinitialisation de votre mot de passe - ProFireManager"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
+                         alt="ProFireManager" 
+                         style="width: 60px; height: 60px; margin-bottom: 15px;">
+                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+                </div>
+                
+                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
+                
+                <p>Suite à votre demande, votre mot de passe a été réinitialisé par un administrateur.</p>
+                
+                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #92400e; margin-top: 0;">⚠️ IMPORTANT - Sécurité de votre compte</h3>
+                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
+                        Si vous n'avez jamais demandé ce changement, veuillez communiquer avec votre administrateur le plus rapidement possible.
+                    </p>
+                </div>
+                
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #dc2626; margin-top: 0;">🔑 Votre nouveau mot de passe temporaire :</h3>
+                    <p style="background: white; padding: 12px; border: 2px dashed #dc2626; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; text-align: center;">
+                        {temp_password}
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')}/{tenant_slug}" 
+                       style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                        🚒 Se connecter à ProFireManager
+                    </a>
+                </div>
+                
+                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                    <h4 style="color: #1e3a8a; margin-top: 0;">📍 Procédure pour changer votre mot de passe :</h4>
+                    <ol style="color: #1e3a8a; margin: 10px 0;">
+                        <li>Connectez-vous à ProFireManager avec le mot de passe temporaire ci-dessus</li>
+                        <li>Cliquez sur <strong>"Mon Profil"</strong> dans le menu de gauche</li>
+                        <li>Descendez en <strong>bas de la page</strong></li>
+                        <li>Trouvez la section <strong>"Modifier le mot de passe"</strong></li>
+                        <li>Entrez votre <strong>mot de passe actuel</strong> (le mot de passe temporaire)</li>
+                        <li>Entrez votre <strong>nouveau mot de passe</strong> (8 caractères min, 1 majuscule, 1 chiffre, 1 caractère spécial)</li>
+                        <li>Confirmez votre nouveau mot de passe</li>
+                        <li>Cliquez sur <strong>"Enregistrer les modifications"</strong></li>
+                    </ol>
+                    <p style="color: #1e3a8a; margin: 10px 0;">
+                        💡 <strong>Conseils de sécurité :</strong>
+                    </p>
+                    <ul style="color: #1e3a8a; margin: 10px 0;">
+                        <li>Utilisez un mot de passe unique et complexe</li>
+                        <li>Ne partagez jamais vos identifiants</li>
+                        <li>Déconnectez-vous après chaque session</li>
+                        <li>Changez votre mot de passe immédiatement</li>
+                    </ul>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                
+                <p style="color: #666; font-size: 14px; text-align: center;">
+                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
+                    Si vous avez des questions, contactez votre administrateur système.
+                </p>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #999; font-size: 12px;">
+                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada<br>
+                        Développé pour optimiser la gestion des horaires et remplacements automatisés
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Envoyer l'email via SendGrid
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        
+        if not sendgrid_api_key:
+            print(f"[WARNING] SENDGRID_API_KEY non configurée - Email non envoyé à {user_email}")
+            return False
+        
+        message = Mail(
+            from_email=sender_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Email de réinitialisation envoyé avec succès à {user_email}")
+            return True
+        else:
+            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
+            return False
+                
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi de l'email de réinitialisation à {user_email}: {str(e)}")
+        return False
         
 
 def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
