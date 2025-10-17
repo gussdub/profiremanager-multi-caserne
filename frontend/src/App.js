@@ -5586,6 +5586,34 @@ const Planning = () => {
                   </div>
                 </div>
 
+                {/* Section 2.5: Jour spécifique (pour récurrence) */}
+                <div className="assign-section" style={{ background: '#fffbeb', padding: '1rem', borderRadius: '8px', border: '2px solid #fbbf24' }}>
+                  <h4>📆 Jour spécifique pour la récurrence</h4>
+                  <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '1rem' }}>
+                    ⚠️ Important : Sélectionnez le jour de la semaine exact pour lequel vous voulez créer la récurrence.
+                    <br />
+                    <strong>Exemple :</strong> Si vous voulez uniquement les samedis, sélectionnez "Samedi" ci-dessous.
+                  </p>
+                  <div className="form-field">
+                    <Label>Jour de la semaine *</Label>
+                    <select
+                      value={advancedAssignConfig.jour_specifique || ''}
+                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, jour_specifique: e.target.value})}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '2px solid #fbbf24', fontSize: '0.95rem', background: 'white' }}
+                      data-testid="jour-specifique-select"
+                    >
+                      <option value="">-- Tous les jours (assignation unique) --</option>
+                      <option value="monday">🗓️ Lundi</option>
+                      <option value="tuesday">🗓️ Mardi</option>
+                      <option value="wednesday">🗓️ Mercredi</option>
+                      <option value="thursday">🗓️ Jeudi</option>
+                      <option value="friday">🗓️ Vendredi</option>
+                      <option value="saturday">🗓️ Samedi</option>
+                      <option value="sunday">🗓️ Dimanche</option>
+                    </select>
+                  </div>
+                </div>
+
                 {/* Section 3: Configuration récurrence */}
                 <div className="assign-section">
                   <h4>🔄 Type de récurrence</h4>
