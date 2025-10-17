@@ -4482,8 +4482,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             )}
                           </div>
                           <div className="formation-compact-meta">
-                            <span>{formation.duree_heures}h</span>
-                            <span>{formation.validite_mois === 0 ? 'Permanent' : `${formation.validite_mois}m`}</span>
+                            <span>{formation.heures_requises_annuelles || 0}h/an</span>
                           </div>
                         </div>
                       </label>
