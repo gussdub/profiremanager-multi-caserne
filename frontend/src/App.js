@@ -4604,6 +4604,8 @@ const Planning = () => {
     date_fin: '',
     exceptions: [] // dates d'exception
   });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedGardeDetails, setSelectedGardeDetails] = useState(null);
   const { toast } = useToast();
