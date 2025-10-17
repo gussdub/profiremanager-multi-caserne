@@ -6710,662 +6710,326 @@ const Remplacements = () => {
 };
 
 // Formations Component complet - Planning de formations
+
+
 const Formations = () => {
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
-  const [sessions, setSessions] = useState([]);
-  const [competences, setCompetences] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [editSession, setEditSession] = useState({
-    titre: '',
-    competence_id: '',
-    duree_heures: 8,
-    date_debut: '',
-    heure_debut: '09:00',
-    lieu: '',
-    formateur: '',
-    descriptif: '',
-    plan_cours: '',
-    places_max: 20
-  });
-  const [newSession, setNewSession] = useState({
-    titre: '',
-    competence_id: '',
-    duree_heures: 8,
-    date_debut: '',
-    heure_debut: '09:00',
-    lieu: '',
-    formateur: '',
-    descriptif: '',
-    plan_cours: '',
-    places_max: 20
-  });
   const { toast } = useToast();
-
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('formations');
+  const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
+  
+  const [formations, setFormations] = useState([]);
+  const [competences, setCompetences] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
+  const [selectedFormation, setSelectedFormation] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [rapportConformite, setRapportConformite] = useState(null);
+  const [monTauxPresence, setMonTauxPresence] = useState(null);
+  const [filtreNom, setFiltreNom] = useState('');
+  const [triPresence, setTriPresence] = useState('desc');
+  
+  const [showFormationModal, setShowFormationModal] = useState(false);
+  const [showInscriptionsModal, setShowInscriptionsModal] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  
+  const [formationForm, setFormationForm] = useState({
+    nom: '',
+    competence_id: '',
+    description: '',
+    date_debut: '',
+    date_fin: '',
+    heure_debut: '09:00',
+    heure_fin: '17:00',
+    duree_heures: 8,
+    lieu: '',
+    instructeur: '',
+    places_max: 20,
+    obligatoire: false,
+    annee: new Date().getFullYear()
+  });
+  
   useEffect(() => {
-    const fetchFormations = async () => {
-      if (!tenantSlug) return;
-      
-      try {
-        const [sessionsData, competencesData] = await Promise.all([
-          apiGet(tenantSlug, '/sessions-formation'),
-          apiGet(tenantSlug, '/formations')
+    if (tenantSlug) loadData();
+  }, [tenantSlug, anneeSelectionnee]);
+  
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (user?.role === 'employe') {
+        const [formationsData, competencesData, tauxData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/mon-taux-presence?annee=${anneeSelectionnee}`)
         ]);
-        setSessions(sessionsData);
-        setCompetences(competencesData);
-      } catch (error) {
-        console.error('Erreur lors du chargement des formations:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFormations();
-  }, [tenantSlug]);
-
-  const handleCreateSession = async () => {
-    if (!newSession.titre || !newSession.competence_id || !newSession.date_debut || !newSession.lieu || !newSession.formateur) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await apiPost(tenantSlug, '/sessions-formation', newSession);
-      toast({
-        title: "Formation créée",
-        description: "La session de formation a été programmée avec succès",
-        variant: "success"
-      });
-      setShowCreateModal(false);
-      resetNewSession();
-      
-      // Reload sessions
-      const sessionsData = await apiGet(tenantSlug, '/sessions-formation');
-      setSessions(sessionsData);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer la session de formation",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEditSession = (session) => {
-    setSelectedSession(session);
-    setEditSession({
-      titre: session.titre,
-      competence_id: session.competence_id,
-      duree_heures: session.duree_heures,
-      date_debut: session.date_debut,
-      heure_debut: session.heure_debut,
-      lieu: session.lieu,
-      formateur: session.formateur,
-      descriptif: session.descriptif || '',
-      plan_cours: session.plan_cours || '',
-      places_max: session.places_max
-    });
-    setShowEditModal(true);
-  };
-
-  const handleUpdateSession = async () => {
-    if (!editSession.titre || !editSession.competence_id || !editSession.date_debut || !editSession.lieu || !editSession.formateur) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await apiPut(tenantSlug, `/sessions-formation/${selectedSession.id}`, editSession);
-      toast({
-        title: "Formation mise à jour",
-        description: "La session de formation a été modifiée avec succès",
-        variant: "success"
-      });
-      setShowEditModal(false);
-      setSelectedSession(null);
-      
-      // Reload sessions
-      const sessionsData = await apiGet(tenantSlug, '/sessions-formation');
-      setSessions(sessionsData);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier la session de formation",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleInscription = async (sessionId, isInscrit) => {
-    try {
-      if (isInscrit) {
-        await apiDelete(tenantSlug, `/sessions-formation/${sessionId}/desinscription`);
-        toast({
-          title: "Désinscription réussie",
-          description: "Vous êtes désinscrit de cette formation",
-          variant: "success"
-        });
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setMonTauxPresence(tauxData);
       } else {
-        await apiPost(tenantSlug, `/sessions-formation/${sessionId}/inscription`, {});
-        toast({
-          title: "Inscription réussie",
-          description: "Vous êtes maintenant inscrit à cette formation",
-          variant: "success"
-        });
+        const [formationsData, competencesData, dashData, rapportData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/rapports/dashboard?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`)
+        ]);
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setDashboardData(dashData);
+        setRapportConformite(rapportData);
       }
-      
-      // Reload sessions
-      const sessionsData = await apiGet(tenantSlug, '/sessions-formation');
-      setSessions(sessionsData);
     } catch (error) {
+      console.error('Erreur:', error);
+    }
+    setLoading(false);
+  };
+  
+  const handleSaveFormation = async () => {
+    try {
+      if (selectedFormation) {
+        await apiPut(tenantSlug, `/formations/${selectedFormation.id}`, formationForm);
+        toast({ title: "Succès", description: "Formation modifiée" });
+      } else {
+        await apiPost(tenantSlug, '/formations', formationForm);
+        toast({ title: "Succès", description: "Formation créée" });
+      }
+      setShowFormationModal(false);
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
+  const handleInscrire = async (formationId) => {
+    try {
+      const result = await apiPost(tenantSlug, `/formations/${formationId}/inscription`, {});
       toast({
-        title: "Erreur",
-        description: error.detail || error.message || "Impossible de traiter l'inscription",
-        variant: "destructive"
+        title: "Succès",
+        description: result.statut === 'inscrit' ? 'Inscription confirmée' : 'Ajouté à la liste d\'attente'
       });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
     }
   };
-
-  const resetNewSession = () => {
-    setNewSession({
-      titre: '',
-      competence_id: '',
-      duree_heures: 8,
-      date_debut: '',
-      heure_debut: '09:00',
-      lieu: '',
-      formateur: '',
-      descriptif: '',
-      plan_cours: '',
-      places_max: 20
+  
+  const handleValiderPresence = async (userId, statut) => {
+    try {
+      await apiPut(tenantSlug, `/formations/${selectedFormation.id}/presence/${userId}`, { statut, notes: '' });
+      toast({ title: "Succès", description: "Présence validée" });
+      loadInscriptions(selectedFormation.id);
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
+  const loadInscriptions = async (formationId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/formations/${formationId}/inscriptions`);
+      setInscriptions(data || []);
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+  
+  const getCompetenceName = (id) => competences.find(c => c.id === id)?.nom || 'N/A';
+  
+  const getPompiersFiltreTri = () => {
+    if (!rapportConformite) return [];
+    let pompiers = [...rapportConformite.pompiers];
+    if (filtreNom) {
+      pompiers = pompiers.filter(p => `${p.prenom} ${p.nom}`.toLowerCase().includes(filtreNom.toLowerCase()));
+    }
+    pompiers.sort((a, b) => {
+      const tauxA = a.taux_presence || 0;
+      const tauxB = b.taux_presence || 0;
+      return triPresence === 'desc' ? tauxB - tauxA : tauxA - tauxB;
     });
+    return pompiers;
   };
-
-  const getCompetenceName = (competenceId) => {
-    const competence = competences.find(c => c.id === competenceId);
-    return competence ? competence.nom : 'Compétence non trouvée';
-  };
-
-  const isUserInscrit = (session) => {
-    return session.participants.includes(user.id);
-  };
-
-  const getStatutColor = (statut) => {
-    switch (statut) {
-      case 'planifie': return '#3B82F6';
-      case 'en_cours': return '#F59E0B';
-      case 'termine': return '#10B981';
-      case 'annule': return '#EF4444';
-      default: return '#6B7280';
-    }
-  };
-
-  const getStatutLabel = (statut) => {
-    switch (statut) {
-      case 'planifie': return 'Planifiée';
-      case 'en_cours': return 'En cours';
-      case 'termine': return 'Terminée';
-      case 'annule': return 'Annulée';
-      default: return statut;
-    }
-  };
-
-  if (loading) return <div className="loading" data-testid="formations-loading">Chargement des formations...</div>;
-
+  
+  if (loading) {
+    return <div className="module-container"><div className="loading-spinner"></div><p>Chargement...</p></div>;
+  }
+  
   return (
-    <div className="formations-planning">
-      <div className="formations-header">
+    <div className="module-formations-nfpa">
+      <div className="module-header">
         <div>
-          <h1 data-testid="formations-title">Planning des formations</h1>
-          <p>Sessions de formation et maintien des compétences</p>
+          <h1>📚 Formations - NFPA 1500</h1>
+          <p>Gestion des formations et conformité réglementaire</p>
         </div>
-        {user.role !== 'employe' && (
-          <Button 
-            variant="default" 
-            onClick={() => setShowCreateModal(true)}
-            data-testid="create-session-btn"
-          >
-            📚 Créer une formation
-          </Button>
-        )}
-      </div>
-
-      {/* Statistiques des formations */}
-      <div className="formations-stats">
-        <div className="stat-card-formation">
-          <div className="stat-icon">📅</div>
-          <div className="stat-content">
-            <span className="stat-number">{sessions.filter(s => s.statut === 'planifie').length}</span>
-            <span className="stat-label">Formations planifiées</span>
-          </div>
-        </div>
-        <div className="stat-card-formation">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <span className="stat-number">{sessions.reduce((total, s) => total + s.participants.length, 0)}</span>
-            <span className="stat-label">Participants inscrits</span>
-          </div>
-        </div>
-        <div className="stat-card-formation">
-          <div className="stat-icon">🎓</div>
-          <div className="stat-content">
-            <span className="stat-number">{sessions.filter(s => s.statut === 'termine').length}</span>
-            <span className="stat-label">Formations terminées</span>
-          </div>
+        <div className="header-controls">
+          <select className="form-select" value={anneeSelectionnee} onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}>
+            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
         </div>
       </div>
-
-      {/* Liste des sessions de formation */}
-      <div className="sessions-list">
-        {sessions.length > 0 ? (
-          <div className="sessions-grid">
-            {sessions.map(session => (
-              <div key={session.id} className="session-card" data-testid={`session-${session.id}`}>
-                <div className="session-header">
-                  <div className="session-title-area">
-                    <h3>{session.titre}</h3>
-                    <span 
-                      className="session-statut" 
-                      style={{ backgroundColor: getStatutColor(session.statut) }}
-                    >
-                      {getStatutLabel(session.statut)}
-                    </span>
-                  </div>
-                  <div className="session-competence">
-                    <span className="competence-badge">{getCompetenceName(session.competence_id)}</span>
-                  </div>
+      
+      {user?.role === 'employe' && monTauxPresence && (
+        <div className="mon-kpi-presence">
+          <h2>📊 Mon Taux de Présence {anneeSelectionnee}</h2>
+          <div className="kpi-personnel-grid">
+            <div className="kpi-card-large">
+              <div className="kpi-circle" style={{background: `conic-gradient(${monTauxPresence.conforme ? '#10B981' : '#EF4444'} ${monTauxPresence.taux_presence * 3.6}deg, #E5E7EB 0deg)`}}>
+                <div className="kpi-circle-inner">
+                  <h2>{monTauxPresence.taux_presence}%</h2>
+                  <p>Présence</p>
                 </div>
-
-                <div className="session-details">
-                  <div className="detail-row">
-                    <span className="detail-icon">📅</span>
-                    <span>{new Date(session.date_debut).toLocaleDateString('fr-FR')} à {session.heure_debut}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-icon">⏱️</span>
-                    <span>{session.duree_heures}h de formation</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-icon">📍</span>
-                    <span>{session.lieu}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-icon">👨‍🏫</span>
-                    <span>{session.formateur}</span>
-                  </div>
+              </div>
+              <div className="kpi-details">
+                <p><strong>Présences:</strong> {monTauxPresence.presences_validees}</p>
+                <p><strong>Absences:</strong> {monTauxPresence.absences}</p>
+                <p><strong>Total:</strong> {monTauxPresence.formations_passees}</p>
+              </div>
+            </div>
+            <div className={`statut-conformite ${monTauxPresence.conforme ? 'conforme' : 'non-conforme'}`}>
+              {monTauxPresence.conforme ? <><h3>✅ Conforme</h3><p>Taux de présence conforme</p></> : <><h3>❌ Non Conforme</h3><p>Améliorez votre présence</p></>}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {user?.role !== 'employe' && dashboardData && (
+        <div className="formations-dashboard">
+          <div className="kpi-grid">
+            <div className="kpi-card"><h3>{dashboardData.heures_planifiees}h</h3><p>Heures planifiées</p></div>
+            <div className="kpi-card" style={{background: '#D1FAE5'}}><h3>{dashboardData.heures_effectuees}h</h3><p>Heures effectuées</p></div>
+            <div className="kpi-card" style={{background: '#DBEAFE'}}><h3>{dashboardData.pourcentage_realisation}%</h3><p>Taux réalisation</p></div>
+            <div className="kpi-card" style={{background: '#FEF3C7'}}><h3>{dashboardData.pompiers_formes}/{dashboardData.total_pompiers}</h3><p>Pompiers formés</p></div>
+            <div className="kpi-card" style={{background: '#E0E7FF'}}><h3>{dashboardData.pourcentage_pompiers}%</h3><p>% Pompiers</p></div>
+          </div>
+        </div>
+      )}
+      
+      <div className="formations-tabs">
+        <button className={activeTab === 'formations' ? 'active' : ''} onClick={() => setActiveTab('formations')}>📋 Formations ({formations.length})</button>
+        {user?.role !== 'employe' && <button className={activeTab === 'rapports' ? 'active' : ''} onClick={() => setActiveTab('rapports')}>📊 Rapports</button>}
+      </div>
+      
+      {activeTab === 'formations' && (
+        <div className="formations-content">
+          {user?.role !== 'employe' && (
+            <div className="formations-actions"><Button onClick={() => { setSelectedFormation(null); setFormationForm({...formationForm, annee: anneeSelectionnee}); setShowFormationModal(true); }}>➕ Nouvelle Formation</Button></div>
+          )}
+          <div className="formations-grid">
+            {formations.map(f => (
+              <div key={f.id} className="formation-card">
+                <div className="formation-header">
+                  <h3>{f.nom}</h3>
+                  <span className={`statut-badge ${f.statut}`}>{f.statut}</span>
                 </div>
-
-                <div className="session-description">
-                  <p>{session.descriptif}</p>
+                <div className="formation-body">
+                  <p><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
+                  <p><strong>Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Durée:</strong> {f.duree_heures}h</p>
+                  <p><strong>Places:</strong> {f.places_restantes}/{f.places_max}</p>
                 </div>
-
-                <div className="session-participants">
-                  <div className="participants-count">
-                    <span className="count-badge">
-                      {session.participants.length}/{session.places_max}
-                    </span>
-                    <span className="participants-label">participants</span>
-                  </div>
-                  <div className="participants-progress">
-                    <div 
-                      className="progress-bar"
-                      style={{ 
-                        width: `${(session.participants.length / session.places_max) * 100}%`,
-                        backgroundColor: session.participants.length >= session.places_max ? '#EF4444' : '#10B981'
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="session-actions">
-                  {session.statut === 'planifie' && (
-                    <Button
-                      variant={isUserInscrit(session) ? "destructive" : "default"}
-                      onClick={() => handleInscription(session.id, isUserInscrit(session))}
-                      data-testid={`inscription-btn-${session.id}`}
-                      disabled={!isUserInscrit(session) && session.participants.length >= session.places_max}
-                    >
-                      {isUserInscrit(session) ? '❌ Se désinscrire' : 
-                       session.participants.length >= session.places_max ? '🚫 Complet' : '✅ S\'inscrire'}
-                    </Button>
-                  )}
-                  {user.role !== 'employe' && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleEditSession(session)}
-                      data-testid={`edit-session-${session.id}`}
-                    >
-                      ✏️ Modifier
-                    </Button>
+                <div className="formation-actions">
+                  {user?.role === 'employe' ? (
+                    <Button onClick={() => handleInscrire(f.id)}>✅ S'inscrire</Button>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="outline" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowInscriptionsModal(true); }}>
+                        👥 Inscrits ({f.places_max - f.places_restantes})
+                      </Button>
+                      <Button size="sm" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowValidationModal(true); }}>
+                        ✅ Présences
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="no-sessions">
-            <h3>Aucune formation planifiée</h3>
-            <p>Les sessions de formation apparaîtront ici une fois programmées.</p>
-            {user.role !== 'employe' && (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCreateModal(true)}
-                className="mt-4"
-              >
-                Créer la première formation
-              </Button>
-            )}
+          {formations.length === 0 && <div className="empty-state"><p>Aucune formation pour {anneeSelectionnee}</p></div>}
+        </div>
+      )}
+      
+      {activeTab === 'rapports' && rapportConformite && (
+        <div className="formations-rapports">
+          <h2>📊 Conformité NFPA 1500 - {anneeSelectionnee}</h2>
+          <div className="conformite-stats">
+            <div className="stat-card"><h3>{rapportConformite.total_pompiers}</h3><p>Total</p></div>
+            <div className="stat-card" style={{background: '#D1FAE5'}}><h3>{rapportConformite.conformes}</h3><p>Conformes</p></div>
+            <div className="stat-card" style={{background: '#DBEAFE'}}><h3>{rapportConformite.pourcentage_conformite}%</h3><p>% Conformité</p></div>
           </div>
-        )}
-      </div>
-
-      {/* Modal de création de session */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="create-session-modal">
-            <div className="modal-header">
-              <h3>📚 Créer une session de formation</h3>
-              <Button variant="ghost" onClick={() => setShowCreateModal(false)}>✕</Button>
+          <div className="rapports-controls" style={{marginTop: '2rem'}}>
+            <div className="filtres-grid">
+              <div><Label>Rechercher</Label><Input placeholder="Nom..." value={filtreNom} onChange={e => setFiltreNom(e.target.value)} /></div>
+              <div><Label>Tri</Label><select className="form-select" value={triPresence} onChange={e => setTriPresence(e.target.value)}><option value="desc">Meilleur en premier</option><option value="asc">Faible en premier</option></select></div>
             </div>
+          </div>
+          <div className="pompiers-list">
+            {getPompiersFiltreTri().map(p => (
+              <div key={p.id} className={`pompier-card ${p.conforme ? 'conforme' : 'non-conforme'}`}>
+                <div className="pompier-info"><h4>{p.prenom} {p.nom}</h4><p>{p.grade}</p></div>
+                <div className="pompier-heures">
+                  <div className="heures-bar"><div className="heures-progress" style={{width: `${Math.min(p.pourcentage, 100)}%`, background: p.conforme ? '#10B981' : '#EF4444'}} /></div>
+                  <p><strong>{p.total_heures}h</strong> / {p.heures_requises}h ({p.pourcentage}%)</p>
+                  <p style={{fontSize: '0.85rem', color: '#666'}}>Présence: {p.taux_presence}%</p>
+                </div>
+                <div className="pompier-statut">
+                  {p.conforme ? <span className="badge-conforme">✅ Conforme</span> : <span className="badge-non-conforme">❌ Non conforme</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {showFormationModal && (
+        <div className="modal-overlay" onClick={() => setShowFormationModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h2>Nouvelle Formation</h2><Button variant="ghost" onClick={() => setShowFormationModal(false)}>✕</Button></div>
             <div className="modal-body">
-              <div className="session-form-grid">
-                <div className="form-section">
-                  <h4 className="section-title">📋 Informations générales</h4>
-                  <div className="form-field">
-                    <Label>Titre de la formation *</Label>
-                    <Input
-                      value={newSession.titre}
-                      onChange={(e) => setNewSession({...newSession, titre: e.target.value})}
-                      placeholder="Ex: Formation sauvetage aquatique - Niveau 1"
-                      data-testid="session-titre-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Compétence associée *</Label>
-                    <select
-                      value={newSession.competence_id}
-                      onChange={(e) => setNewSession({...newSession, competence_id: e.target.value})}
-                      className="form-select"
-                      data-testid="session-competence-select"
-                    >
-                      <option value="">Sélectionner une compétence</option>
-                      {competences.map(comp => (
-                        <option key={comp.id} value={comp.id}>
-                          {comp.nom} - {comp.duree_heures}h
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-field">
-                      <Label>Date de début *</Label>
-                      <Input
-                        type="date"
-                        value={newSession.date_debut}
-                        onChange={(e) => setNewSession({...newSession, date_debut: e.target.value})}
-                        min={new Date().toISOString().split('T')[0]}
-                        data-testid="session-date-input"
-                      />
-                    </div>
-                    <div className="form-field">
-                      <Label>Heure de début *</Label>
-                      <Input
-                        type="time"
-                        value={newSession.heure_debut}
-                        onChange={(e) => setNewSession({...newSession, heure_debut: e.target.value})}
-                        data-testid="session-heure-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-field">
-                      <Label>Durée (heures) *</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="40"
-                        value={newSession.duree_heures}
-                        onChange={(e) => setNewSession({...newSession, duree_heures: parseInt(e.target.value)})}
-                        data-testid="session-duree-input"
-                      />
-                    </div>
-                    <div className="form-field">
-                      <Label>Nombre de places *</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={newSession.places_max}
-                        onChange={(e) => setNewSession({...newSession, places_max: parseInt(e.target.value)})}
-                        data-testid="session-places-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-section">
-                  <h4 className="section-title">📍 Logistique</h4>
-                  <div className="form-field">
-                    <Label>Lieu de formation *</Label>
-                    <Input
-                      value={newSession.lieu}
-                      onChange={(e) => setNewSession({...newSession, lieu: e.target.value})}
-                      placeholder="Ex: Caserne centrale, Salle de formation A"
-                      data-testid="session-lieu-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Formateur *</Label>
-                    <Input
-                      value={newSession.formateur}
-                      onChange={(e) => setNewSession({...newSession, formateur: e.target.value})}
-                      placeholder="Ex: Capitaine Martin Dubois"
-                      data-testid="session-formateur-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-section">
-                  <h4 className="section-title">📝 Contenu pédagogique</h4>
-                  <div className="form-field">
-                    <Label>Description de la formation *</Label>
-                    <textarea
-                      value={newSession.descriptif}
-                      onChange={(e) => setNewSession({...newSession, descriptif: e.target.value})}
-                      placeholder="Décrivez les objectifs et le contenu de cette formation..."
-                      rows="3"
-                      className="form-textarea"
-                      data-testid="session-descriptif-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Plan de cours (optionnel)</Label>
-                    <textarea
-                      value={newSession.plan_cours}
-                      onChange={(e) => setNewSession({...newSession, plan_cours: e.target.value})}
-                      placeholder="Détaillez le programme, les modules, les exercices pratiques..."
-                      rows="4"
-                      className="form-textarea"
-                      data-testid="session-plan-input"
-                    />
-                  </div>
-                </div>
+              <div className="form-grid">
+                <div><Label>Nom *</Label><Input value={formationForm.nom} onChange={e => setFormationForm({...formationForm, nom: e.target.value})} /></div>
+                <div><Label>Compétence *</Label><select className="form-select" value={formationForm.competence_id} onChange={e => setFormationForm({...formationForm, competence_id: e.target.value})}><option value="">Sélectionner...</option>{competences.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}</select></div>
+                <div><Label>Date début *</Label><Input type="date" value={formationForm.date_debut} onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})} /></div>
+                <div><Label>Date fin *</Label><Input type="date" value={formationForm.date_fin} onChange={e => setFormationForm({...formationForm, date_fin: e.target.value})} /></div>
+                <div><Label>Durée (h) *</Label><Input type="number" value={formationForm.duree_heures} onChange={e => setFormationForm({...formationForm, duree_heures: parseFloat(e.target.value) || 0})} /></div>
+                <div><Label>Places max *</Label><Input type="number" value={formationForm.places_max} onChange={e => setFormationForm({...formationForm, places_max: parseInt(e.target.value) || 20})} /></div>
+                <div><Label>Lieu</Label><Input value={formationForm.lieu} onChange={e => setFormationForm({...formationForm, lieu: e.target.value})} /></div>
+                <div><Label>Instructeur</Label><Input value={formationForm.instructeur} onChange={e => setFormationForm({...formationForm, instructeur: e.target.value})} /></div>
+                <div style={{gridColumn: '1 / -1'}}><label style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><input type="checkbox" checked={formationForm.obligatoire} onChange={e => setFormationForm({...formationForm, obligatoire: e.target.checked})} style={{width: '20px', height: '20px'}} /><strong>Formation obligatoire</strong></label></div>
               </div>
-
-              <div className="modal-actions">
-                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                  Annuler
-                </Button>
-                <Button variant="default" onClick={handleCreateSession} data-testid="create-session-submit-btn">
-                  📚 Créer la formation
-                </Button>
-              </div>
+              <div style={{marginTop: '1rem'}}><Label>Description</Label><textarea className="form-textarea" rows="3" value={formationForm.description} onChange={e => setFormationForm({...formationForm, description: e.target.value})} /></div>
+            </div>
+            <div className="modal-actions"><Button variant="outline" onClick={() => setShowFormationModal(false)}>Annuler</Button><Button onClick={handleSaveFormation}>Créer</Button></div>
+          </div>
+        </div>
+      )}
+      
+      {showInscriptionsModal && selectedFormation && (
+        <div className="modal-overlay" onClick={() => setShowInscriptionsModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h2>👥 Inscrits - {selectedFormation.nom}</h2><Button variant="ghost" onClick={() => setShowInscriptionsModal(false)}>✕</Button></div>
+            <div className="modal-body">
+              <div className="inscriptions-stats"><p><strong>Inscrits:</strong> {inscriptions.filter(i => i.statut === 'inscrit').length}</p><p><strong>Attente:</strong> {inscriptions.filter(i => i.statut === 'en_attente').length}</p></div>
+              <div className="inscriptions-list">{inscriptions.map(insc => <div key={insc.id} className="inscription-item"><span>{insc.user_nom}</span><span className={`badge-${insc.statut}`}>{insc.statut === 'inscrit' ? '✅ Inscrit' : insc.statut === 'en_attente' ? '⏳ Attente' : insc.statut === 'present' ? '✅ Présent' : '❌ Absent'}</span></div>)}</div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Modal Modifier Session */}
-      {showEditModal && selectedSession && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="edit-session-modal">
-            <div className="modal-header">
-              <h3>✏️ Modifier la session de formation</h3>
-              <Button variant="ghost" onClick={() => setShowEditModal(false)}>✕</Button>
-            </div>
+      
+      {showValidationModal && selectedFormation && (
+        <div className="modal-overlay" onClick={() => setShowValidationModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h2>✅ Validation Présences - {selectedFormation.nom}</h2><Button variant="ghost" onClick={() => setShowValidationModal(false)}>✕</Button></div>
             <div className="modal-body">
-              <div className="session-form-grid">
-                <div className="form-section">
-                  <h4 className="section-title">📋 Informations générales</h4>
-                  <div className="form-field">
-                    <Label>Titre de la formation *</Label>
-                    <Input
-                      value={editSession.titre}
-                      onChange={(e) => setEditSession({...editSession, titre: e.target.value})}
-                      placeholder="Ex: Formation sauvetage aquatique - Niveau 1"
-                      data-testid="edit-session-titre-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Compétence associée *</Label>
-                    <select
-                      value={editSession.competence_id}
-                      onChange={(e) => setEditSession({...editSession, competence_id: e.target.value})}
-                      className="form-select"
-                      data-testid="edit-session-competence-select"
-                    >
-                      <option value="">Sélectionner une compétence</option>
-                      {competences.map(comp => (
-                        <option key={comp.id} value={comp.id}>
-                          {comp.nom} - {comp.duree_heures}h
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-field">
-                      <Label>Date de début *</Label>
-                      <Input
-                        type="date"
-                        value={editSession.date_debut}
-                        onChange={(e) => setEditSession({...editSession, date_debut: e.target.value})}
-                        data-testid="edit-session-date-input"
-                      />
+              <p style={{marginBottom: '1.5rem'}}>Validez la présence. Seuls les présents seront crédités de {selectedFormation.duree_heures}h.</p>
+              <div className="validation-list">
+                {inscriptions.filter(i => i.statut === 'inscrit' || i.statut === 'present' || i.statut === 'absent').map(insc => (
+                  <div key={insc.id} className="validation-item">
+                    <div><strong>{insc.user_nom}</strong><p>{insc.user_grade}</p></div>
+                    <div className="validation-buttons">
+                      <Button size="sm" variant={insc.statut === 'present' ? 'default' : 'outline'} onClick={() => handleValiderPresence(insc.user_id, 'present')}>✅ Présent</Button>
+                      <Button size="sm" variant={insc.statut === 'absent' ? 'destructive' : 'outline'} onClick={() => handleValiderPresence(insc.user_id, 'absent')}>❌ Absent</Button>
                     </div>
-                    <div className="form-field">
-                      <Label>Heure de début *</Label>
-                      <Input
-                        type="time"
-                        value={editSession.heure_debut}
-                        onChange={(e) => setEditSession({...editSession, heure_debut: e.target.value})}
-                        data-testid="edit-session-heure-input"
-                      />
-                    </div>
+                    {insc.heures_creditees > 0 && <span className="heures-creditees">{insc.heures_creditees}h</span>}
                   </div>
-
-                  <div className="form-row">
-                    <div className="form-field">
-                      <Label>Durée (heures) *</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="40"
-                        value={editSession.duree_heures}
-                        onChange={(e) => setEditSession({...editSession, duree_heures: parseInt(e.target.value)})}
-                        data-testid="edit-session-duree-input"
-                      />
-                    </div>
-                    <div className="form-field">
-                      <Label>Nombre de places *</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={editSession.places_max}
-                        onChange={(e) => setEditSession({...editSession, places_max: parseInt(e.target.value)})}
-                        data-testid="edit-session-places-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-section">
-                  <h4 className="section-title">📍 Logistique</h4>
-                  <div className="form-field">
-                    <Label>Lieu de formation *</Label>
-                    <Input
-                      value={editSession.lieu}
-                      onChange={(e) => setEditSession({...editSession, lieu: e.target.value})}
-                      placeholder="Ex: Caserne centrale, Salle de formation A"
-                      data-testid="edit-session-lieu-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Formateur *</Label>
-                    <Input
-                      value={editSession.formateur}
-                      onChange={(e) => setEditSession({...editSession, formateur: e.target.value})}
-                      placeholder="Ex: Capitaine Martin Dubois"
-                      data-testid="edit-session-formateur-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-section">
-                  <h4 className="section-title">📝 Contenu pédagogique</h4>
-                  <div className="form-field">
-                    <Label>Description de la formation *</Label>
-                    <textarea
-                      value={editSession.descriptif}
-                      onChange={(e) => setEditSession({...editSession, descriptif: e.target.value})}
-                      placeholder="Décrivez les objectifs et le contenu de cette formation..."
-                      rows="3"
-                      className="form-textarea"
-                      data-testid="edit-session-descriptif-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <Label>Plan de cours (optionnel)</Label>
-                    <textarea
-                      value={editSession.plan_cours}
-                      onChange={(e) => setEditSession({...editSession, plan_cours: e.target.value})}
-                      placeholder="Détaillez le programme, les modules, les exercices pratiques..."
-                      rows="4"
-                      className="form-textarea"
-                      data-testid="edit-session-plan-input"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                  Annuler
-                </Button>
-                <Button variant="default" onClick={handleUpdateSession} data-testid="update-session-submit-btn">
-                  💾 Sauvegarder les modifications
-                </Button>
+                ))}
               </div>
             </div>
           </div>
@@ -7375,7 +7039,6 @@ const Formations = () => {
   );
 };
 
-// Mes Disponibilités Component - Module dédié
 const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
