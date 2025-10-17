@@ -625,13 +625,11 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
 
 def get_password_hash(password: str) -> str:
     """
-    Crée un hash bcrypt du mot de passe.
-    Utilise bcrypt pour tous les nouveaux mots de passe.
+    Crée un hash du mot de passe.
+    Utilise SHA256 pour la simplicité et la fiabilité.
     """
     password_bytes = password.encode('utf-8')
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
+    return hashlib.sha256(password_bytes).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
