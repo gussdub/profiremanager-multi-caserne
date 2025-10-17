@@ -4784,6 +4784,7 @@ async def assignation_manuelle_avancee(
         date_debut = datetime.strptime(assignation_data.get("date_debut"), "%Y-%m-%d").date()
         date_fin = datetime.strptime(assignation_data.get("date_fin", assignation_data.get("date_debut")), "%Y-%m-%d").date()
         jours_semaine = assignation_data.get("jours_semaine", [])
+        bi_hebdomadaire = assignation_data.get("bi_hebdomadaire", False)
         
         assignations_creees = []
         
@@ -4800,35 +4801,50 @@ async def assignation_manuelle_avancee(
             assignations_creees.append(assignation_obj.dict())
             
         elif recurrence_type == "hebdomadaire":
-            # Récurrence hebdomadaire
+            # Récurrence hebdomadaire (avec option bi-hebdomadaire)
             current_date = date_debut
             jours_semaine_index = {
                 'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
                 'friday': 4, 'saturday': 5, 'sunday': 6
             }
             
+            week_counter = 0
+            last_week_start = None
+            
             while current_date <= date_fin:
+                # Calculer le début de la semaine actuelle
+                week_start = current_date - timedelta(days=current_date.weekday())
+                
+                # Si on change de semaine, incrémenter le compteur
+                if last_week_start != week_start:
+                    if last_week_start is not None:
+                        week_counter += 1
+                    last_week_start = week_start
+                
                 day_name = current_date.strftime("%A").lower()
                 
+                # Vérifier si c'est un jour sélectionné
                 if day_name in jours_semaine:
-                    # Vérifier qu'il n'y a pas déjà une assignation
-                    existing = await db.assignations.find_one({
-                        "user_id": user_id,
-                        "type_garde_id": type_garde_id,
-                        "date": current_date.strftime("%Y-%m-%d"),
-                        "tenant_id": tenant.id
-                    })
-                    
-                    if not existing:
-                        assignation_obj = Assignation(
-                            user_id=user_id,
-                            type_garde_id=type_garde_id,
-                            date=current_date.strftime("%Y-%m-%d"),
-                            assignation_type="manuel_avance",
-                            tenant_id=tenant.id
-                        )
-                        await db.assignations.insert_one(assignation_obj.dict())
-                        assignations_creees.append(assignation_obj.dict())
+                    # Si bi-hebdomadaire, vérifier qu'on est sur une semaine paire
+                    if not bi_hebdomadaire or week_counter % 2 == 0:
+                        # Vérifier qu'il n'y a pas déjà une assignation
+                        existing = await db.assignations.find_one({
+                            "user_id": user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": current_date.strftime("%Y-%m-%d"),
+                            "tenant_id": tenant.id
+                        })
+                        
+                        if not existing:
+                            assignation_obj = Assignation(
+                                user_id=user_id,
+                                type_garde_id=type_garde_id,
+                                date=current_date.strftime("%Y-%m-%d"),
+                                assignation_type="manuel_avance",
+                                tenant_id=tenant.id
+                            )
+                            await db.assignations.insert_one(assignation_obj.dict())
+                            assignations_creees.append(assignation_obj.dict())
                 
                 current_date += timedelta(days=1)
                 
