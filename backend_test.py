@@ -2805,6 +2805,11 @@ class ProFireManagerTester:
             print("-" * 50)
             self.test_user_access_modification()
             
+            # Test 6.7: GRADES CRUD OPERATIONS (CURRENT REVIEW REQUEST)
+            print("\n🎯 CURRENT REVIEW REQUEST TEST: Grades CRUD Operations")
+            print("-" * 50)
+            self.test_grades_crud_operations()
+            
             # Test 7: Settings and Notifications
             self.test_settings_api()
             self.test_notification_system()
