@@ -3498,8 +3498,8 @@ class ProFireManagerTester:
             disponibilite_id = created_disponibilite.get("id")
             print(f"✅ Database write successful - Created disponibilité: {disponibilite_id}")
             
-            # Verify read operation
-            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites")
+            # Verify read operation - get disponibilités for the specific user
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code != 200:
                 self.log_test("MongoDB Atlas Final Connection", False, 
                             f"❌ Database read operation failed: {response.status_code}")
