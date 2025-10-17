@@ -9677,6 +9677,12 @@ const MonProfil = () => {
                   {userProfile?.date_embauche} 🔒
                 </span>
               </div>
+              <div className="info-item">
+                <span className="info-label">Taux horaire:</span>
+                <span className="info-value locked" data-testid="profile-taux-horaire">
+                  {userProfile?.taux_horaire ? `${userProfile.taux_horaire.toFixed(2)} $/h` : 'Non défini'} 🔒
+                </span>
+              </div>
             </div>
           </div>
 
