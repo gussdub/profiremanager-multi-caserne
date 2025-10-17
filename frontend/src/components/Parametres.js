@@ -33,6 +33,8 @@ const Parametres = ({ user, tenantSlug }) => {
   const [showEditGradeModal, setShowEditGradeModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showEditAccessModal, setShowEditAccessModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [tempPassword, setTempPassword] = useState('');
   const [showEpiModal, setShowEpiModal] = useState(false);
   const [showEpiReportModal, setShowEpiReportModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
