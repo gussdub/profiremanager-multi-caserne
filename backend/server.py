@@ -803,6 +803,24 @@ class CompetenceUpdate(BaseModel):
     heures_requises_annuelles: Optional[float] = None
     obligatoire: Optional[bool] = None
 
+class Grade(BaseModel):
+    """Grade hiérarchique pour les pompiers"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    niveau_hierarchique: int  # 1 = niveau le plus bas, 10 = niveau le plus haut
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GradeCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    niveau_hierarchique: int
+
+class GradeUpdate(BaseModel):
+    nom: Optional[str] = None
+    niveau_hierarchique: Optional[int] = None
+
 class ParametresFormations(BaseModel):
     """Paramètres globaux formations pour NFPA 1500"""
     tenant_id: str
