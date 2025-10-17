@@ -244,6 +244,21 @@ backend:
         agent: "testing"
         comment: "✅ BCRYPT AUTHENTICATION SYSTEM FULLY FUNCTIONAL - Comprehensive testing completed successfully: 1) Existing SHA256 User Login: Shefford admin (admin@firemanager.ca / admin123) login successful with automatic SHA256 -> bcrypt migration confirmed in logs, second login uses bcrypt verification ✅, 2) Super Admin Login with Migration: gussdub@icloud.com / 230685Juin+ login successful with SHA256 -> bcrypt migration, subsequent logins use bcrypt ✅, 3) New User Creation: Created new user with bcrypt password hash (starts with $2b$), login successful without migration needed ✅, 4) Password Change: Changed admin password successfully, new password uses bcrypt format, login with new password works, password restored ✅, 5) Invalid Credentials: Wrong password properly rejected with 401 status ✅, 6) Backend Logging: Comprehensive logging working perfectly - found authentication indicators including '🔑 Tentative de connexion', '🔐 Type de hash détecté', '✅ Mot de passe vérifié', '🔄 Migration du mot de passe', 'bcrypt', 'SHA256' in logs ✅. Migration is completely transparent to users, all authentication endpoints working correctly, logging provides excellent debugging information. System ready for production use."
 
+  - task: "Compétences CRUD Operations"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Compétences CRUD operations as requested in review. Need to test: 1) POST /api/{tenant}/competences - Create competence, 2) GET /api/{tenant}/competences - Retrieve competences, 3) PUT /api/{tenant}/competences/{id} - Update competence, 4) DELETE /api/{tenant}/competences/{id} - Delete competence. Using tenant 'shefford' with admin@firemanager.ca / admin123 credentials."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPÉTENCES CRUD FULLY FUNCTIONAL - Comprehensive testing completed successfully: 1) CREATE: Successfully created 'Test Compétence' with nom='Test Compétence', description='Test description', heures_requises_annuelles=10, obligatoire=false via POST /api/shefford/competences ✅, 2) READ: Successfully retrieved competences list via GET /api/shefford/competences, found created competence in list ✅, 3) UPDATE: Successfully modified competence via PUT /api/shefford/competences/{id}, changed nom='Test Modifié' and heures_requises_annuelles=20, verified changes saved ✅, 4) DELETE: Successfully deleted competence via DELETE /api/shefford/competences/{id}, received proper 'Compétence supprimée' message ✅, 5) VERIFICATION: Confirmed competence removed from list after deletion ✅. Used tenant 'shefford' with admin@firemanager.ca / admin123 credentials as requested. All CRUD operations working correctly, modification functionality specifically verified as working (was previously problematic). Super Admin created Shefford admin user successfully. All endpoints responding with correct data structures and status codes."
+
   - task: "Système Automatisé de Remplacement"
     implemented: true
     working: "NA"
