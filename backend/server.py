@@ -525,9 +525,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         password_bytes = plain_password.encode('utf-8')
         
         # Tenter avec bcrypt d'abord (nouveau format)
-        if hashed_password.startswith('$2b$') or hashed_password.startswith('$2a$') or hashed_password.startswith('$2y$'):
+        # bcrypt hash commence par $2, $2a$, $2b$, $2x$, $2y$
+        if hashed_password.startswith('$2'):
             logging.info(f"🔐 Vérification avec bcrypt")
-            return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+            try:
+                return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+            except Exception as bcrypt_error:
+                logging.error(f"❌ Erreur bcrypt: {bcrypt_error}")
+                return False
         
         # Sinon, tenter avec SHA256 (ancien format - migration)
         logging.info(f"🔐 Vérification avec SHA256 (ancien format)")
