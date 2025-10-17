@@ -4613,6 +4613,124 @@ const Planning = () => {
   const [selectedGardeDetails, setSelectedGardeDetails] = useState(null);
   const { toast } = useToast();
 
+  // Fonction pour calculer l'aperçu des dates de récurrence
+  const calculateRecurrenceDates = () => {
+    if (!advancedAssignConfig.date_debut || !advancedAssignConfig.recurrence_type) {
+      return [];
+    }
+
+    const dates = [];
+    const startDate = new Date(advancedAssignConfig.date_debut);
+    const endDate = advancedAssignConfig.date_fin 
+      ? new Date(advancedAssignConfig.date_fin)
+      : new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 an max pour aperçu
+    
+    let currentDate = new Date(startDate);
+    const maxDates = 10; // Afficher max 10 dates
+
+    // Mapper les jours
+    const dayMap = {
+      'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+      'friday': 5, 'saturday': 6, 'sunday': 0
+    };
+
+    if (advancedAssignConfig.recurrence_type === 'unique') {
+      dates.push(new Date(startDate));
+    } 
+    else if (advancedAssignConfig.jour_specifique) {
+      // Avec jour spécifique
+      const targetDay = dayMap[advancedAssignConfig.jour_specifique];
+      
+      if (advancedAssignConfig.recurrence_type === 'hebdomadaire') {
+        while (currentDate <= endDate && dates.length < maxDates) {
+          if (currentDate.getDay() === targetDay) {
+            dates.push(new Date(currentDate));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else if (advancedAssignConfig.recurrence_type === 'bihebdomadaire') {
+        let weekCount = 0;
+        let lastWeekStart = null;
+        
+        while (currentDate <= endDate && dates.length < maxDates) {
+          const weekStart = new Date(currentDate);
+          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+          
+          if (lastWeekStart === null || weekStart.getTime() !== lastWeekStart.getTime()) {
+            if (lastWeekStart !== null) weekCount++;
+            lastWeekStart = new Date(weekStart);
+          }
+          
+          if (currentDate.getDay() === targetDay && weekCount % 2 === 0) {
+            dates.push(new Date(currentDate));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else if (advancedAssignConfig.recurrence_type === 'personnalisee') {
+        const interval = advancedAssignConfig.recurrence_intervalle || 1;
+        const freq = advancedAssignConfig.recurrence_frequence || 'semaines';
+        
+        // Trouver le premier jour correspondant
+        while (currentDate.getDay() !== targetDay && currentDate <= endDate) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        while (currentDate <= endDate && dates.length < maxDates) {
+          dates.push(new Date(currentDate));
+          
+          if (freq === 'jours') {
+            currentDate.setDate(currentDate.getDate() + interval);
+          } else if (freq === 'semaines') {
+            currentDate.setDate(currentDate.getDate() + (interval * 7));
+          } else if (freq === 'mois') {
+            currentDate.setMonth(currentDate.getMonth() + interval);
+          } else if (freq === 'ans') {
+            currentDate.setFullYear(currentDate.getFullYear() + interval);
+          }
+        }
+      }
+    }
+
+    return dates;
+  };
+
+  // Fonction pour suggérer le prochain jour spécifique
+  const getSuggestedNextDay = () => {
+    if (!advancedAssignConfig.jour_specifique || !advancedAssignConfig.date_debut) {
+      return null;
+    }
+
+    const dayMap = {
+      'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+      'friday': 5, 'saturday': 6, 'sunday': 0
+    };
+    const dayNameMap = {
+      'monday': 'lundi', 'tuesday': 'mardi', 'wednesday': 'mercredi',
+      'thursday': 'jeudi', 'friday': 'vendredi', 'saturday': 'samedi', 'sunday': 'dimanche'
+    };
+
+    const startDate = new Date(advancedAssignConfig.date_debut);
+    const targetDay = dayMap[advancedAssignConfig.jour_specifique];
+    const startDay = startDate.getDay();
+
+    if (startDay === targetDay) {
+      return null; // Déjà le bon jour
+    }
+
+    // Calculer le prochain jour correspondant
+    let daysToAdd = targetDay - startDay;
+    if (daysToAdd < 0) daysToAdd += 7;
+
+    const suggestedDate = new Date(startDate);
+    suggestedDate.setDate(startDate.getDate() + daysToAdd);
+
+    return {
+      date: suggestedDate,
+      formatted: suggestedDate.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      dayName: dayNameMap[advancedAssignConfig.jour_specifique]
+    };
+  };
+
   const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const weekDaysEn = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   
