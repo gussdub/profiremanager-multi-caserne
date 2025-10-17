@@ -2134,6 +2134,95 @@ const Parametres = ({ user, tenantSlug }) => {
         </div>
       )}
 
+      {/* Modal de création de grade */}
+      {showCreateGradeModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateGradeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="create-grade-modal">
+            <div className="modal-header">
+              <h3>Nouveau grade</h3>
+              <Button variant="ghost" onClick={() => setShowCreateGradeModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-field">
+                  <Label>Nom du grade *</Label>
+                  <Input
+                    value={newGrade.nom}
+                    onChange={(e) => setNewGrade({...newGrade, nom: e.target.value})}
+                    placeholder="Ex: Sergent, Chef de bataillon..."
+                    data-testid="new-grade-nom"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Label>Niveau hiérarchique *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={newGrade.niveau_hierarchique}
+                    onChange={(e) => setNewGrade({...newGrade, niveau_hierarchique: parseInt(e.target.value) || 1})}
+                    data-testid="new-grade-niveau"
+                  />
+                  <small>1 = niveau le plus bas, 10 = niveau le plus haut</small>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCreateGradeModal(false)}>Annuler</Button>
+                <Button variant="default" onClick={handleCreateGrade} data-testid="create-grade-submit-btn">
+                  Créer le grade
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition de grade */}
+      {showEditGradeModal && editingItem && (
+        <div className="modal-overlay" onClick={() => setShowEditGradeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="edit-grade-modal">
+            <div className="modal-header">
+              <h3>Modifier le grade: {editingItem.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowEditGradeModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-field">
+                  <Label>Nom du grade *</Label>
+                  <Input
+                    value={editGrade.nom}
+                    onChange={(e) => setEditGrade({...editGrade, nom: e.target.value})}
+                    data-testid="edit-grade-nom"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Label>Niveau hiérarchique *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={editGrade.niveau_hierarchique}
+                    onChange={(e) => setEditGrade({...editGrade, niveau_hierarchique: parseInt(e.target.value) || 1})}
+                    data-testid="edit-grade-niveau"
+                  />
+                  <small>1 = niveau le plus bas, 10 = niveau le plus haut</small>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowEditGradeModal(false)}>Annuler</Button>
+                <Button variant="default" onClick={handleUpdateGrade} data-testid="save-grade-btn">
+                  Sauvegarder les modifications
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de création d'utilisateur */}
       {showCreateUserModal && (
         <div className="modal-overlay" onClick={() => setShowCreateUserModal(false)}>
