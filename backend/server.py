@@ -2764,6 +2764,111 @@ async def delete_competence(tenant_slug: str, competence_id: str, current_user: 
     
     return {"message": "Compétence supprimée"}
 
+# ==================== GRADES ROUTES ====================
+
+@api_router.post("/{tenant_slug}/grades", response_model=Grade)
+async def create_grade(tenant_slug: str, grade: GradeCreate, current_user: User = Depends(get_current_user)):
+    """Crée un grade"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si le grade existe déjà
+    existing = await db.grades.find_one({"nom": grade.nom, "tenant_id": tenant.id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce grade existe déjà")
+    
+    grade_dict = grade.dict()
+    grade_dict["tenant_id"] = tenant.id
+    grade_obj = Grade(**grade_dict)
+    
+    grade_data = grade_obj.dict()
+    grade_data["created_at"] = grade_obj.created_at.isoformat()
+    grade_data["updated_at"] = grade_obj.updated_at.isoformat()
+    
+    await db.grades.insert_one(grade_data)
+    return grade_obj
+
+@api_router.get("/{tenant_slug}/grades", response_model=List[Grade])
+async def get_grades(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les grades triés par niveau hiérarchique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    grades = await db.grades.find({"tenant_id": tenant.id}).sort("niveau_hierarchique", 1).to_list(1000)
+    cleaned = [clean_mongo_doc(g) for g in grades]
+    
+    for g in cleaned:
+        if isinstance(g.get("created_at"), str):
+            g["created_at"] = datetime.fromisoformat(g["created_at"].replace('Z', '+00:00'))
+        if isinstance(g.get("updated_at"), str):
+            g["updated_at"] = datetime.fromisoformat(g["updated_at"].replace('Z', '+00:00'))
+    
+    return [Grade(**g) for g in cleaned]
+
+@api_router.put("/{tenant_slug}/grades/{grade_id}", response_model=Grade)
+async def update_grade(
+    tenant_slug: str,
+    grade_id: str,
+    grade_update: GradeUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un grade"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    update_data = {k: v for k, v in grade_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.grades.update_one(
+        {"id": grade_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    updated = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
+    
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
+    
+    return Grade(**cleaned)
+
+@api_router.delete("/{tenant_slug}/grades/{grade_id}")
+async def delete_grade(tenant_slug: str, grade_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime un grade si aucun employé ne l'utilise"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si le grade existe
+    existing_grade = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})
+    if not existing_grade:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    # Vérifier si des employés utilisent ce grade
+    users_count = await db.users.count_documents({"grade": existing_grade["nom"], "tenant_id": tenant.id})
+    
+    if users_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer ce grade. {users_count} employé(s) l'utilisent actuellement. Veuillez d'abord réassigner ces employés à un autre grade."
+        )
+    
+    result = await db.grades.delete_one({"id": grade_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    return {"message": "Grade supprimé avec succès"}
+
 # ==================== FORMATIONS ROUTES NFPA 1500 ====================
 
 @api_router.post("/{tenant_slug}/formations", response_model=Formation)
