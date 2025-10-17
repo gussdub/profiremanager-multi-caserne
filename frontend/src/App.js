@@ -176,6 +176,7 @@ const AuthProvider = ({ children }) => {
 const Login = () => {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
@@ -232,15 +233,34 @@ const Login = () => {
               </div>
               <div>
                 <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={motDePasse}
-                  onChange={(e) => setMotDePasse(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  data-testid="login-password-input"
-                />
+                <div style={{position: 'relative'}}>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={motDePasse}
+                    onChange={(e) => setMotDePasse(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    data-testid="login-password-input"
+                    style={{paddingRight: '40px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.2rem'
+                    }}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
               <Button 
                 type="submit" 
