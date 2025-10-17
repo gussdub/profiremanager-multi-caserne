@@ -453,6 +453,64 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
+  const handleEditCompetence = (competence) => {
+    setEditingItem(competence);
+    setEditFormation({
+      nom: competence.nom,
+      description: competence.description,
+      duree_heures: competence.heures_requises_annuelles || 0,
+      validite_mois: 12, // not used for competences
+      obligatoire: competence.obligatoire
+    });
+    setShowEditFormationModal(true);
+  };
+
+  const handleUpdateCompetence = async () => {
+    try {
+      const competenceData = {
+        nom: editFormation.nom,
+        description: editFormation.description || '',
+        heures_requises_annuelles: editFormation.duree_heures || 0,
+        obligatoire: editFormation.obligatoire || false
+      };
+
+      await axios.put(`${API}/competences/${editingItem.id}`, competenceData);
+      toast({
+        title: "Compétence mise à jour",
+        description: "Les modifications ont été sauvegardées",
+        variant: "success"
+      });
+      setShowEditFormationModal(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour la compétence",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCompetence = async (competenceId) => {
+    if (!window.confirm("Supprimer cette compétence ?")) return;
+    
+    try {
+      await axios.delete(`${API}/competences/${competenceId}`);
+      toast({
+        title: "Compétence supprimée",
+        description: "La compétence a été supprimée avec succès",
+        variant: "success"
+      });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la compétence",
+        variant: "destructive"
+      });
+    }
+  };
+
 
   const resetNewFormation = () => {
     setNewFormation({
