@@ -2585,6 +2585,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     type_emploi: '',
     numero_employe: '',
     date_embauche: '',
+    taux_horaire: 0,
     formations: [],
     mot_de_passe: ''
   });
