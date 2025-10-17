@@ -274,7 +274,9 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
                 <div style="text-align: center; margin-bottom: 30px;">
                     <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
                          alt="ProFireManager" 
-                         style="width: 60px; height: 60px; margin-bottom: 15px;">
+                         width="60" 
+                         height="60"
+                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                     <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
                     <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
                 </div>
@@ -397,7 +399,9 @@ def send_temporary_password_email(user_email: str, user_name: str, temp_password
                 <div style="text-align: center; margin-bottom: 30px;">
                     <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
                          alt="ProFireManager" 
-                         style="width: 60px; height: 60px; margin-bottom: 15px;">
+                         width="60" 
+                         height="60"
+                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                     <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
                     <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
                 </div>
