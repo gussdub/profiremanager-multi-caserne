@@ -2616,10 +2616,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   }, [tenantSlug]);
 
   const handleCreateUser = async () => {
-    if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.grade || !newUser.type_emploi || !newUser.date_embauche) {
+    if (!newUser.nom || !newUser.prenom || !newUser.email) {
       toast({
         title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires (marqués d'un *)",
+        description: "Veuillez remplir Nom, Prénom et Email",
         variant: "destructive"
       });
       return;
@@ -2628,15 +2628,18 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     try {
       const userToCreate = {
         ...newUser,
+        grade: newUser.grade || 'Pompier',
+        type_emploi: newUser.type_emploi || 'temps_plein',
         role: 'employe',
         numero_employe: newUser.numero_employe || `POM${String(Date.now()).slice(-3)}`,
-        mot_de_passe: 'TempPassword123!' // Mot de passe temporaire par défaut
+        date_embauche: newUser.date_embauche || new Date().toISOString().split('T')[0],
+        mot_de_passe: 'TempPassword123!'
       };
 
       await apiPost(tenantSlug, '/users', userToCreate);
       toast({
         title: "Pompier créé",
-        description: "Le nouveau pompier a été ajouté avec succès. Configurez son accès dans Paramètres > Comptes d'Accès",
+        description: "Le nouveau pompier a été ajouté avec succès",
         variant: "success"
       });
       
