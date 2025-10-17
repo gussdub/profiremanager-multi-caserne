@@ -1147,9 +1147,6 @@ async def super_admin_login(login: SuperAdminLogin):
         
         logging.info(f"✅ Mot de passe vérifié avec succès pour Super Admin {login.email}")
         
-        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
-        await migrate_password_if_needed(admin_data["id"], login.mot_de_passe, current_hash, "super_admins")
-        
         admin = SuperAdmin(**admin_data)
         access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
         
