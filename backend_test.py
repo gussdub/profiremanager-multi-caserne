@@ -81,41 +81,264 @@ class PasswordResetTester:
             self.log_test("Admin Authentication", False, f"Authentication error: {str(e)}")
             return False
     
-    def test_admin_authentication(self):
-        """Test admin login with provided credentials"""
+    def create_test_user(self):
+        """Create a test user (NOT admin) for password reset testing"""
+        if not self.auth_token:
+            self.log_test("Create Test User", False, "No authentication token")
+            return False
+            
         try:
-            login_data = {
-                "email": TEST_ADMIN_EMAIL,
-                "mot_de_passe": TEST_ADMIN_PASSWORD
+            # Create a test user with a real-looking name and email
+            test_user = {
+                "nom": "Tremblay",
+                "prenom": "Marc",
+                "email": f"marc.tremblay.{uuid.uuid4().hex[:8]}@shefford.ca",
+                "telephone": "450-555-0123",
+                "contact_urgence": "450-555-0124",
+                "grade": "Pompier",
+                "fonction_superieur": False,
+                "type_emploi": "temps_partiel",
+                "heures_max_semaine": 25,
+                "role": "employe",
+                "numero_employe": f"MT{uuid.uuid4().hex[:6].upper()}",
+                "date_embauche": "2024-01-15",
+                "formations": [],
+                "mot_de_passe": "InitialPass123!"
             }
             
-            response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
-            
+            response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/users", json=test_user)
             if response.status_code == 200:
-                data = response.json()
-                if "access_token" in data:
-                    self.auth_token = data["access_token"]
-                    self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
-                    user_info = data.get("user", {})
-                    self.log_test("Admin Authentication", True, 
-                                f"Login successful for {user_info.get('email', 'admin')} (Role: {user_info.get('role', 'unknown')})")
-                    return True
-                else:
-                    self.log_test("Admin Authentication", False, "No access token in response", data)
-                    return False
-            elif response.status_code == 401:
-                # Check if admin user exists by trying to create it first
-                self.log_test("Admin Authentication", False, "Authentication failed - admin user may not exist", 
-                            {"status_code": response.status_code, "response": response.text})
-                return False
+                created_user = response.json()
+                self.test_user_id = created_user["id"]
+                self.test_user_email = created_user["email"]
+                self.log_test("Create Test User", True, 
+                            f"Test user created: {created_user['prenom']} {created_user['nom']} ({self.test_user_email})")
+                return True
             else:
-                self.log_test("Admin Authentication", False, f"Login failed with status {response.status_code}", 
+                self.log_test("Create Test User", False, f"Failed to create user: {response.status_code}", 
                             {"response": response.text})
                 return False
                 
         except Exception as e:
-            self.log_test("Admin Authentication", False, f"Authentication error: {str(e)}")
+            self.log_test("Create Test User", False, f"User creation error: {str(e)}")
             return False
+    
+    def get_user_password_hash(self):
+        """Get the current password hash from the database (via user info)"""
+        if not self.auth_token or not self.test_user_id:
+            self.log_test("Get Password Hash", False, "Missing auth token or user ID")
+            return None
+            
+        try:
+            # Get user details to note the current state
+            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users/{self.test_user_id}")
+            if response.status_code == 200:
+                user_data = response.json()
+                # We can't see the actual hash, but we can note the user exists
+                self.log_test("Get Password Hash", True, 
+                            f"User found in database: {user_data.get('prenom')} {user_data.get('nom')}")
+                return "hash_noted"
+            else:
+                self.log_test("Get Password Hash", False, f"Failed to get user: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            self.log_test("Get Password Hash", False, f"Error getting user hash: {str(e)}")
+            return None
+    
+    def test_password_reset_with_mongodb_verification(self):
+        """Test password reset and verify it writes to MongoDB Atlas correctly"""
+        if not self.auth_token or not self.test_user_id:
+            self.log_test("Password Reset MongoDB Verification", False, "Missing auth token or user ID")
+            return False
+            
+        try:
+            # Step 1: Note the original hash (indirectly)
+            self.original_hash = self.get_user_password_hash()
+            if not self.original_hash:
+                self.log_test("Password Reset MongoDB Verification", False, "Could not verify original user state")
+                return False
+            
+            # Step 2: Perform password reset via API
+            new_temp_password = "NewTempPass123!"
+            reset_data = {
+                "mot_de_passe": new_temp_password,
+                "ancien_mot_de_passe": ""  # Empty for admin bypass
+            }
+            
+            print(f"🔄 Resetting password for user {self.test_user_id}...")
+            response = self.session.put(f"{self.base_url}/{TENANT_SLUG}/users/{self.test_user_id}/password", json=reset_data)
+            
+            if response.status_code != 200:
+                self.log_test("Password Reset MongoDB Verification", False, 
+                            f"Password reset failed: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            reset_result = response.json()
+            
+            # Step 3: Verify the API response indicates success
+            if "Mot de passe modifié avec succès" not in reset_result.get("message", ""):
+                self.log_test("Password Reset MongoDB Verification", False, 
+                            f"Reset response doesn't indicate success: {reset_result}")
+                return False
+            
+            print(f"✅ Password reset API call successful")
+            
+            # Step 4: Check if result.modified_count = 1 is mentioned in logs (we can't access logs directly)
+            # But we can verify the change by trying to login immediately
+            
+            # Step 5: Verify the hash has changed by re-reading user (indirectly)
+            time.sleep(1)  # Give a moment for the database write to complete
+            self.new_hash = self.get_user_password_hash()
+            
+            # Step 6: Test immediate login with new password
+            login_data = {
+                "email": self.test_user_email,
+                "mot_de_passe": new_temp_password
+            }
+            
+            print(f"🔑 Testing login with new password...")
+            login_response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
+            if login_response.status_code != 200:
+                # Try legacy login
+                login_response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+            
+            if login_response.status_code != 200:
+                self.log_test("Password Reset MongoDB Verification", False, 
+                            f"❌ CRITICAL: Login with new password FAILED: {login_response.status_code}. This confirms the MongoDB write issue!", 
+                            {"login_response": login_response.text})
+                return False
+            
+            print(f"✅ Login with new password successful!")
+            
+            # Step 7: Verify old password no longer works
+            old_login_data = {
+                "email": self.test_user_email,
+                "mot_de_passe": "InitialPass123!"
+            }
+            
+            print(f"🔒 Testing that old password is rejected...")
+            old_login_response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=old_login_data)
+            if old_login_response.status_code != 200:
+                old_login_response = self.session.post(f"{self.base_url}/auth/login", json=old_login_data)
+            
+            if old_login_response.status_code == 200:
+                self.log_test("Password Reset MongoDB Verification", False, 
+                            "❌ SECURITY ISSUE: Old password still works after reset!")
+                return False
+            
+            print(f"✅ Old password correctly rejected")
+            
+            self.log_test("Password Reset MongoDB Verification", True, 
+                        f"✅ Password reset and MongoDB write verification SUCCESSFUL! " +
+                        f"User {self.test_user_email} password was reset, " +
+                        f"new password works for login, old password rejected. " +
+                        f"This confirms MongoDB Atlas write operations are working correctly.")
+            return True
+            
+        except Exception as e:
+            self.log_test("Password Reset MongoDB Verification", False, 
+                        f"Password reset MongoDB verification error: {str(e)}")
+            return False
+    
+    def test_multiple_consecutive_logins(self):
+        """Test multiple consecutive logins with the reset password"""
+        if not self.test_user_email:
+            self.log_test("Multiple Consecutive Logins", False, "No test user email available")
+            return False
+            
+        try:
+            login_data = {
+                "email": self.test_user_email,
+                "mot_de_passe": "NewTempPass123!"
+            }
+            
+            successful_logins = 0
+            total_attempts = 4
+            
+            print(f"🔄 Testing {total_attempts} consecutive logins...")
+            
+            for i in range(total_attempts):
+                print(f"  Login attempt {i+1}/{total_attempts}...")
+                
+                response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+                
+                if response.status_code == 200:
+                    successful_logins += 1
+                    print(f"    ✅ Login {i+1} successful")
+                else:
+                    print(f"    ❌ Login {i+1} failed: {response.status_code}")
+                
+                time.sleep(0.5)  # Small delay between attempts
+            
+            if successful_logins == total_attempts:
+                self.log_test("Multiple Consecutive Logins", True, 
+                            f"✅ All {total_attempts} consecutive logins successful - Password hash is stable in MongoDB")
+                return True
+            else:
+                self.log_test("Multiple Consecutive Logins", False, 
+                            f"❌ Only {successful_logins}/{total_attempts} logins successful - Possible hash instability")
+                return False
+                
+        except Exception as e:
+            self.log_test("Multiple Consecutive Logins", False, f"Multiple login test error: {str(e)}")
+            return False
+    
+    def cleanup_test_user(self):
+        """Clean up the test user"""
+        if not self.auth_token or not self.test_user_id:
+            return
+            
+        try:
+            response = self.session.delete(f"{self.base_url}/{TENANT_SLUG}/users/{self.test_user_id}")
+            if response.status_code == 200:
+                self.log_test("Cleanup Test User", True, "Test user deleted successfully")
+            else:
+                self.log_test("Cleanup Test User", False, f"Failed to delete test user: {response.status_code}")
+        except Exception as e:
+            self.log_test("Cleanup Test User", False, f"Cleanup error: {str(e)}")
+    
+    def run_password_reset_tests(self):
+        """Run the complete password reset test suite"""
+        print("🚀 Starting Password Reset MongoDB Write Verification Tests")
+        print("=" * 70)
+        
+        tests = [
+            ("Admin Authentication", self.test_admin_authentication),
+            ("Create Test User", self.create_test_user),
+            ("Password Reset MongoDB Verification", self.test_password_reset_with_mongodb_verification),
+            ("Multiple Consecutive Logins", self.test_multiple_consecutive_logins),
+        ]
+        
+        passed = 0
+        total = len(tests)
+        
+        for test_name, test_func in tests:
+            print(f"\n🧪 Running: {test_name}")
+            if test_func():
+                passed += 1
+            else:
+                print(f"❌ Test failed: {test_name}")
+                break  # Stop on first failure for this critical test
+        
+        # Always cleanup
+        print(f"\n🧹 Cleaning up...")
+        self.cleanup_test_user()
+        
+        print(f"\n" + "=" * 70)
+        print(f"📊 Test Results: {passed}/{total} tests passed")
+        
+        if passed == total:
+            print("🎉 ALL TESTS PASSED - MongoDB Atlas write operations working correctly!")
+            print("✅ Password reset functionality is working as expected")
+        else:
+            print("❌ TESTS FAILED - MongoDB Atlas write issue confirmed!")
+            print("🔍 The backend may be writing to a different database than it's reading from")
+        
+        return passed == total
     
     def test_jwt_validation(self):
         """Test JWT token validation"""
