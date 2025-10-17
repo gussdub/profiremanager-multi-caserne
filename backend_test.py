@@ -46,19 +46,39 @@ class PasswordResetTester:
         if details and not success:
             print(f"   Details: {details}")
     
-    def test_server_health(self):
-        """Test if the server is responding"""
+    def test_admin_authentication(self):
+        """Test admin authentication for Shefford tenant"""
         try:
-            response = self.session.get(f"{self.base_url}/")
+            login_data = {
+                "email": ADMIN_EMAIL,
+                "mot_de_passe": ADMIN_PASSWORD
+            }
+            
+            # Try tenant-specific login first
+            response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try legacy login
+                response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+            
             if response.status_code == 200:
                 data = response.json()
-                self.log_test("Server Health Check", True, f"Server is running: {data.get('message', 'OK')}")
-                return True
+                if "access_token" in data:
+                    self.auth_token = data["access_token"]
+                    self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
+                    user_info = data.get("user", {})
+                    self.log_test("Admin Authentication", True, 
+                                f"Login successful for {user_info.get('email', 'admin')} (Role: {user_info.get('role', 'unknown')})")
+                    return True
+                else:
+                    self.log_test("Admin Authentication", False, "No access token in response", data)
+                    return False
             else:
-                self.log_test("Server Health Check", False, f"Server returned status {response.status_code}")
+                self.log_test("Admin Authentication", False, f"Login failed with status {response.status_code}", 
+                            {"response": response.text})
                 return False
+                
         except Exception as e:
-            self.log_test("Server Health Check", False, f"Server connection failed: {str(e)}")
+            self.log_test("Admin Authentication", False, f"Authentication error: {str(e)}")
             return False
     
     def test_admin_authentication(self):
