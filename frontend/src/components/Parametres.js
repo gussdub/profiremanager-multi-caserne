@@ -1963,7 +1963,7 @@ const Parametres = ({ user, tenantSlug }) => {
 
               <div className="modal-actions">
                 <Button variant="outline" onClick={() => setShowEditFormationModal(false)}>Annuler</Button>
-                <Button variant="default" onClick={handleUpdateFormation} data-testid="save-competence-btn">
+                <Button variant="default" onClick={handleUpdateCompetence} data-testid="save-competence-btn">
                   Sauvegarder la compétence
                 </Button>
               </div>
