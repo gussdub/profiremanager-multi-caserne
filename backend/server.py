@@ -677,7 +677,8 @@ async def migrate_password_if_needed(user_id: str, plain_password: str, current_
         collection_name: Nom de la collection MongoDB (users ou super_admins)
     """
     # Vérifier si c'est un ancien hash SHA256 qui nécessite migration
-    if not (current_hash.startswith('$2b$') or current_hash.startswith('$2a$') or current_hash.startswith('$2y$')):
+    # Bcrypt hash commence par $2 (peut être $2$, $2a$, $2b$, $2x$, $2y$)
+    if not current_hash.startswith('$2'):
         try:
             logging.info(f"🔄 Migration du mot de passe pour l'utilisateur {user_id} de SHA256 vers bcrypt")
             new_hash = get_password_hash(plain_password)
