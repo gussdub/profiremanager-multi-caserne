@@ -4682,15 +4682,19 @@ const Planning = () => {
     if (user.role === 'employe') return;
 
     try {
-      const targetDate = viewMode === 'mois' ? `${currentMonth}-01` : currentWeek;
+      const targetDate = autoAttributionConfig.periode === 'semaine' 
+        ? autoAttributionConfig.date 
+        : `${autoAttributionConfig.date}-01`;
+      
       const responseData = await apiPost(tenantSlug, `/planning/attribution-auto?semaine_debut=${targetDate}`, {});
       
       toast({
         title: "Attribution automatique réussie",
-        description: `${responseData.assignations_creees} nouvelles assignations créées`,
+        description: `${responseData.assignations_creees} nouvelles assignations créées pour ${autoAttributionConfig.periode === 'semaine' ? 'la semaine' : 'le mois'}`,
         variant: "success"
       });
 
+      setShowAutoAttributionModal(false);
       fetchPlanningData();
     } catch (error) {
       toast({
