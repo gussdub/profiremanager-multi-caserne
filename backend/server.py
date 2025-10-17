@@ -631,39 +631,27 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Vérifie un mot de passe contre son hash.
-    Supporte à la fois bcrypt (nouveau) et SHA256 (ancien - pour migration).
+    Vérifie un mot de passe contre son hash bcrypt.
+    SIMPLE ET FIABLE - Uniquement bcrypt, pas de migration complexe.
     
     Retourne True si le mot de passe correspond, False sinon.
     """
     try:
         password_bytes = plain_password.encode('utf-8')
         
-        # Tenter avec bcrypt d'abord (nouveau format)
-        # bcrypt hash commence par $2, $2a$, $2b$, $2x$, $2y$
-        if hashed_password.startswith('$2'):
-            logging.info(f"🔐 Vérification avec bcrypt")
-            try:
-                # S'assurer que hashed_password est en bytes
-                if isinstance(hashed_password, str):
-                    hash_bytes = hashed_password.encode('utf-8')
-                else:
-                    hash_bytes = hashed_password
-                
-                result = bcrypt.checkpw(password_bytes, hash_bytes)
-                logging.info(f"✅ Résultat bcrypt.checkpw: {result}")
-                return result
-            except Exception as bcrypt_error:
-                logging.error(f"❌ Erreur bcrypt: {bcrypt_error}")
-                return False
+        # S'assurer que hashed_password est en bytes
+        if isinstance(hashed_password, str):
+            hash_bytes = hashed_password.encode('utf-8')
+        else:
+            hash_bytes = hashed_password
         
-        # Sinon, tenter avec SHA256 (ancien format - migration)
-        logging.info(f"🔐 Vérification avec SHA256 (ancien format)")
-        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
-        return sha256_hash == hashed_password
+        # Vérification bcrypt
+        result = bcrypt.checkpw(password_bytes, hash_bytes)
+        logging.info(f"🔐 Vérification mot de passe: {result}")
+        return result
         
     except Exception as e:
-        logging.error(f"❌ Erreur lors de la vérification du mot de passe: {e}")
+        logging.error(f"❌ Erreur vérification mot de passe: {e}")
         return False
 
 async def migrate_password_if_needed(user_id: str, plain_password: str, current_hash: str, collection_name: str = "users"):
