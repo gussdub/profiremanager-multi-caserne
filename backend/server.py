@@ -4928,6 +4928,118 @@ async def assignation_manuelle_avancee(
                 else:
                     current_month = current_month.replace(month=current_month.month + 1)
         
+        elif recurrence_type == "annuelle":
+            # Récurrence annuelle (même jour et mois chaque année)
+            jour_mois = date_debut.day
+            mois = date_debut.month
+            current_year = date_debut.year
+            
+            while True:
+                try:
+                    target_date = date(current_year, mois, jour_mois)
+                    
+                    if target_date > date_fin:
+                        break
+                    
+                    if target_date >= date_debut:
+                        existing = await db.assignations.find_one({
+                            "user_id": user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": target_date.strftime("%Y-%m-%d"),
+                            "tenant_id": tenant.id
+                        })
+                        
+                        if not existing:
+                            assignation_obj = Assignation(
+                                user_id=user_id,
+                                type_garde_id=type_garde_id,
+                                date=target_date.strftime("%Y-%m-%d"),
+                                assignation_type="manuel_avance",
+                                tenant_id=tenant.id
+                            )
+                            await db.assignations.insert_one(assignation_obj.dict())
+                            assignations_creees.append(assignation_obj.dict())
+                    
+                    current_year += 1
+                except ValueError:
+                    # Jour n'existe pas (ex: 29 février dans une année non bissextile)
+                    current_year += 1
+        
+        elif recurrence_type == "personnalisee":
+            # Récurrence personnalisée
+            current_date = date_debut
+            
+            if recurrence_frequence == "jours":
+                delta = timedelta(days=recurrence_intervalle)
+            elif recurrence_frequence == "semaines":
+                delta = timedelta(weeks=recurrence_intervalle)
+            else:
+                # Pour mois et ans, on gérera différemment
+                delta = None
+            
+            if delta:
+                while current_date <= date_fin:
+                    existing = await db.assignations.find_one({
+                        "user_id": user_id,
+                        "type_garde_id": type_garde_id,
+                        "date": current_date.strftime("%Y-%m-%d"),
+                        "tenant_id": tenant.id
+                    })
+                    
+                    if not existing:
+                        assignation_obj = Assignation(
+                            user_id=user_id,
+                            type_garde_id=type_garde_id,
+                            date=current_date.strftime("%Y-%m-%d"),
+                            assignation_type="manuel_avance",
+                            tenant_id=tenant.id
+                        )
+                        await db.assignations.insert_one(assignation_obj.dict())
+                        assignations_creees.append(assignation_obj.dict())
+                    
+                    current_date += delta
+            else:
+                # Pour mois et ans
+                current_date = date_debut
+                while current_date <= date_fin:
+                    existing = await db.assignations.find_one({
+                        "user_id": user_id,
+                        "type_garde_id": type_garde_id,
+                        "date": current_date.strftime("%Y-%m-%d"),
+                        "tenant_id": tenant.id
+                    })
+                    
+                    if not existing:
+                        assignation_obj = Assignation(
+                            user_id=user_id,
+                            type_garde_id=type_garde_id,
+                            date=current_date.strftime("%Y-%m-%d"),
+                            assignation_type="manuel_avance",
+                            tenant_id=tenant.id
+                        )
+                        await db.assignations.insert_one(assignation_obj.dict())
+                        assignations_creees.append(assignation_obj.dict())
+                    
+                    if recurrence_frequence == "mois":
+                        # Ajouter X mois
+                        month = current_date.month + recurrence_intervalle
+                        year = current_date.year
+                        while month > 12:
+                            month -= 12
+                            year += 1
+                        try:
+                            current_date = current_date.replace(year=year, month=month)
+                        except ValueError:
+                            # Jour invalide pour ce mois
+                            break
+                    elif recurrence_frequence == "ans":
+                        # Ajouter X ans
+                        try:
+                            current_date = current_date.replace(year=current_date.year + recurrence_intervalle)
+                        except ValueError:
+                            # Jour invalide (29 février)
+                            break
+        
         return {
             "message": "Assignation avancée créée avec succès",
             "assignations_creees": len(assignations_creees),
