@@ -16,6 +16,7 @@ const Parametres = ({ user, tenantSlug }) => {
   const [typesGarde, setTypesGarde] = useState([]);
   const [formations, setFormations] = useState([]);
   const [competences, setCompetences] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [users, setUsers] = useState([]);
   const [episTypes, setEpisTypes] = useState([]);
   const [selectedUserEpi, setSelectedUserEpi] = useState(null);
@@ -28,6 +29,8 @@ const Parametres = ({ user, tenantSlug }) => {
   const [showEditTypeModal, setShowEditTypeModal] = useState(false);
   const [showCreateFormationModal, setShowCreateFormationModal] = useState(false);
   const [showEditFormationModal, setShowEditFormationModal] = useState(false);
+  const [showCreateGradeModal, setShowCreateGradeModal] = useState(false);
+  const [showEditGradeModal, setShowEditGradeModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showEditAccessModal, setShowEditAccessModal] = useState(false);
   const [showEpiModal, setShowEpiModal] = useState(false);
@@ -77,6 +80,16 @@ const Parametres = ({ user, tenantSlug }) => {
     duree_heures: 8,
     validite_mois: 12,
     obligatoire: false
+  });
+
+  const [newGrade, setNewGrade] = useState({
+    nom: '',
+    niveau_hierarchique: 1
+  });
+
+  const [editGrade, setEditGrade] = useState({
+    nom: '',
+    niveau_hierarchique: 1
   });
 
   const [newUser, setNewUser] = useState({
