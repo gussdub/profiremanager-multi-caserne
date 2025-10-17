@@ -3410,6 +3410,7 @@ class ProFireManagerTester:
             
             # Test 4: Multiple Consecutive Logins (3-4 times) for Stability
             print("🔄 Test 4: Testing login stability with multiple consecutive attempts...")
+            user_email = test_user["email"]
             consecutive_login_data = {
                 "email": user_email,
                 "mot_de_passe": "Admin123!"  # Use original admin password
