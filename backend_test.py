@@ -3390,41 +3390,19 @@ class ProFireManagerTester:
                             "❌ CRITICAL: No users found in MongoDB Atlas - database appears empty")
                 return False
             
-            # Find a test user for password reset (avoid admin)
+            # Use the admin user for password reset testing (since we know it exists)
             test_user = None
             for user in users_list:
-                if user.get("role") == "employe" and "@" in user.get("email", ""):
+                if user.get("email") == "admin@firemanager.ca":
                     test_user = user
                     break
             
             if not test_user:
-                # Create a test user for password reset testing
-                print("👤 Creating test user for password reset testing...")
-                new_test_user = {
-                    "nom": "TestUser",
-                    "prenom": "MongoAtlas",
-                    "email": f"test.atlas.{uuid.uuid4().hex[:8]}@firemanager.ca",
-                    "telephone": "450-555-0123",
-                    "contact_urgence": "450-555-0124",
-                    "grade": "Pompier",
-                    "fonction_superieur": False,
-                    "type_emploi": "temps_plein",
-                    "heures_max_semaine": 40,
-                    "role": "employe",
-                    "numero_employe": f"ATL{uuid.uuid4().hex[:6].upper()}",
-                    "date_embauche": "2024-01-15",
-                    "formations": [],
-                    "mot_de_passe": "InitialPass123!"
-                }
-                
-                response = admin_session.post(f"{self.base_url}/{tenant_slug}/users", json=new_test_user)
-                if response.status_code != 200:
-                    self.log_test("MongoDB Atlas Final Connection", False, 
-                                f"❌ Failed to create test user: {response.status_code}")
-                    return False
-                
-                test_user = response.json()
-                print(f"✅ Test user created: {test_user.get('email')}")
+                self.log_test("MongoDB Atlas Final Connection", False, 
+                            "❌ Admin user not found in users list")
+                return False
+            
+            print(f"✅ Using admin user for testing: {test_user.get('email')}")
             
             # Test 3: Password Reset Functionality
             print("🔄 Test 3: Testing password reset functionality...")
