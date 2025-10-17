@@ -2560,6 +2560,7 @@ const Dashboard = () => {
 const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [users, setUsers] = useState([]);
   const [formations, setFormations] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
