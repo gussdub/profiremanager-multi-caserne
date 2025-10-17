@@ -1841,6 +1841,44 @@ async def change_user_password(
             raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
         
         logging.info(f"✅ Mot de passe changé avec succès pour {user_id}")
+        
+        # Si c'est un admin reset, envoyer un email au utilisateur
+        email_sent = False
+        if is_admin_reset:
+            user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
+            user_email = user_data.get('email')
+            
+            if user_email:
+                logging.info(f"📧 Envoi de l'email de réinitialisation à {user_email}")
+                email_sent = send_temporary_password_email(
+                    user_email=user_email,
+                    user_name=user_name,
+                    temp_password=new_password,
+                    tenant_slug=tenant_slug
+                )
+                
+                if email_sent:
+                    logging.info(f"✅ Email de réinitialisation envoyé avec succès à {user_email}")
+                    return {
+                        "message": "Mot de passe modifié avec succès",
+                        "email_sent": True,
+                        "email_address": user_email
+                    }
+                else:
+                    logging.warning(f"⚠️ Échec de l'envoi de l'email à {user_email}")
+                    return {
+                        "message": "Mot de passe modifié avec succès, mais l'email n'a pas pu être envoyé",
+                        "email_sent": False,
+                        "error": "L'envoi de l'email a échoué. Veuillez informer l'utilisateur manuellement."
+                    }
+            else:
+                logging.warning(f"⚠️ Aucun email trouvé pour l'utilisateur {user_id}")
+                return {
+                    "message": "Mot de passe modifié avec succès, mais aucun email configuré pour cet utilisateur",
+                    "email_sent": False,
+                    "error": "Aucune adresse email trouvée"
+                }
+        
         return {"message": "Mot de passe modifié avec succès"}
         
     except HTTPException:
