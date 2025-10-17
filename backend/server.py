@@ -1472,9 +1472,6 @@ async def login_legacy(user_login: UserLogin):
         
         logging.info(f"✅ Mot de passe vérifié avec succès (legacy) pour {user_login.email}")
         
-        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
-        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
-        
         user = User(**user_data)
         tenant_data = await db.tenants.find_one({"id": user.tenant_id})
         
