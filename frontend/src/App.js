@@ -3551,7 +3551,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="user-hire-date-input"
                       />
                     </div>
-                    </div>
                     <div className="form-field">
                       <Label>Taux horaire ($/h)</Label>
                       <Input
