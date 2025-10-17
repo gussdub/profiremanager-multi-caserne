@@ -1998,13 +1998,32 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                   <div className="form-field">
                     <Label>Mot de passe temporaire *</Label>
-                    <Input
-                      type="password"
-                      value={newUser.mot_de_passe}
-                      onChange={(e) => setNewUser({...newUser, mot_de_passe: e.target.value})}
-                      data-testid="new-user-password"
-                      placeholder="Minimum 8 caractères complexes"
-                    />
+                    <div style={{position: 'relative'}}>
+                      <Input
+                        type={showPasswordComptes ? "text" : "password"}
+                        value={newUser.mot_de_passe}
+                        onChange={(e) => setNewUser({...newUser, mot_de_passe: e.target.value})}
+                        data-testid="new-user-password"
+                        placeholder="Minimum 8 caractères complexes"
+                        style={{paddingRight: '40px'}}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordComptes(!showPasswordComptes)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '1.2rem'
+                        }}
+                      >
+                        {showPasswordComptes ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
                     <div className="password-requirements">
                       <small className="requirement-title">Exigences du mot de passe :</small>
                       <div className="requirements-list">
