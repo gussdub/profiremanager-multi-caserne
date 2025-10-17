@@ -3,95 +3,69 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-15T14:51:30.114892",
+    "timestamp": "2025-10-17T13:52:02.259273",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-15T14:51:30.913695",
+    "timestamp": "2025-10-17T13:52:02.574910",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-15T14:51:30.953008",
+    "timestamp": "2025-10-17T13:52:02.610906",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 31 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-15T14:51:30.988977",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 0 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-17T13:52:02.653758",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 31, revenus_mensuels: 620",
-    "timestamp": "2025-10-15T14:51:31.034321",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 0, revenus_mensuels: 0",
+    "timestamp": "2025-10-17T13:52:02.693053",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": false,
     "message": "Montreal 7/24 generation failed: 422",
-    "timestamp": "2025-10-15T14:51:31.954163",
+    "timestamp": "2025-10-17T13:52:04.051493",
     "details": {
-      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"327b7689-1bc2-4c95-9b27-dcbd2dd9a9e4\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"327b7689-1bc2-4c95-9b27-dcbd2dd9a9e4\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
+      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"b71ae4e6-3a25-40ed-be25-652ad4a4781f\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"b71ae4e6-3a25-40ed-be25-652ad4a4781f\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
     }
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser Corrected System",
     "success": false,
     "message": "Failed to login as Shefford admin: 401",
-    "timestamp": "2025-10-15T14:51:32.486397",
+    "timestamp": "2025-10-17T13:52:04.132772",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
   },
   {
-    "test": "Quebec 10/14 February 2026 Pattern - Vert",
-    "success": true,
-    "message": "\u2705 Perfect match: 13 indisponibilit\u00e9s on days [2, 3, 4, 5, 12, 13, 14, 20, 21, 22, 23, 24, 25]",
-    "timestamp": "2025-10-15T14:51:32.833789",
-    "details": {}
-  },
-  {
-    "test": "Quebec 10/14 February 2026 Pattern - Bleu",
-    "success": true,
-    "message": "\u2705 Perfect match: 13 indisponibilit\u00e9s on days [6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 26, 27, 28]",
-    "timestamp": "2025-10-15T14:51:32.868161",
-    "details": {}
-  },
-  {
-    "test": "Quebec 10/14 February 2026 Pattern - Jaune",
-    "success": true,
-    "message": "\u2705 Perfect match: 13 indisponibilit\u00e9s on days [1, 2, 3, 4, 9, 10, 11, 12, 19, 20, 21, 27, 28]",
-    "timestamp": "2025-10-15T14:51:32.904861",
-    "details": {}
-  },
-  {
-    "test": "Quebec 10/14 February 2026 Pattern - Rouge",
-    "success": true,
-    "message": "\u2705 Perfect match: 13 indisponibilit\u00e9s on days [5, 6, 7, 13, 14, 15, 16, 17, 18, 23, 24, 25, 26]",
-    "timestamp": "2025-10-15T14:51:32.941284",
-    "details": {}
-  },
-  {
-    "test": "Quebec 10/14 February 2026 Pattern - Overall",
-    "success": true,
-    "message": "\u2705 ALL 4 TEAMS PASSED - Quebec 10/14 pattern verified for February 2026. Each team generated exactly 13 indisponibilit\u00e9s on correct days with proper origine='quebec_10_14', statut='indisponible', heure_debut='00:00', heure_fin='23:59'",
-    "timestamp": "2025-10-15T14:51:32.950672",
-    "details": {}
+    "test": "Quebec 10/14 February 2026 Pattern",
+    "success": false,
+    "message": "Failed to login as employe@firemanager.ca: 401",
+    "timestamp": "2025-10-17T13:52:04.213002",
+    "details": {
+      "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
+    }
   },
   {
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-15T14:51:32.959985",
+    "timestamp": "2025-10-17T13:52:04.223845",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -101,7 +75,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-15T14:51:32.966742",
+    "timestamp": "2025-10-17T13:52:04.230783",
     "details": {}
   }
 ]
