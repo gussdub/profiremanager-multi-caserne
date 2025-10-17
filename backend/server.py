@@ -7643,6 +7643,50 @@ async def get_rapport_cout_total(
     }
 
 
+# ==================== TEMPORARY RESET PASSWORD ENDPOINT ====================
+# ⚠️ À SUPPRIMER APRÈS UTILISATION - ENDPOINT DE DEBUG UNIQUEMENT ⚠️
+
+@app.post("/api/emergency-reset-password")
+async def emergency_reset_password(email: str, new_password: str = "admin123"):
+    """
+    ⚠️ ENDPOINT TEMPORAIRE DE DEBUG - À SUPPRIMER APRÈS UTILISATION
+    Réinitialise le mot de passe d'un utilisateur sans authentification
+    """
+    try:
+        # Générer le hash bcrypt
+        password_bytes = new_password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        new_hash = hashed.decode('utf-8')
+        
+        # Mettre à jour l'utilisateur
+        result = await db.users.update_one(
+            {"email": email},
+            {"$set": {"mot_de_passe_hash": new_hash}}
+        )
+        
+        if result.modified_count == 0:
+            # Essayer de trouver l'utilisateur pour voir s'il existe
+            user = await db.users.find_one({"email": email})
+            if not user:
+                raise HTTPException(status_code=404, detail=f"Utilisateur {email} non trouvé")
+            else:
+                return {
+                    "success": True,
+                    "message": f"Mot de passe déjà à jour pour {email}",
+                    "user_found": True,
+                    "tenant_id": user.get('tenant_id')
+                }
+        
+        return {
+            "success": True,
+            "message": f"Mot de passe réinitialisé pour {email}",
+            "new_password": new_password,
+            "hash_type": "bcrypt"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
