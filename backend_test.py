@@ -29,6 +29,7 @@ class ProFireManagerTester:
         self.auth_token = None
         self.super_admin_token = None
         self.test_results = []
+        self.production_users = []  # Store real production users
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
