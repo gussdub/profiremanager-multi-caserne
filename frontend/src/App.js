@@ -4606,6 +4606,8 @@ const Planning = () => {
   });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [quickAssignSearchQuery, setQuickAssignSearchQuery] = useState('');
+  const [showQuickAssignDropdown, setShowQuickAssignDropdown] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedGardeDetails, setSelectedGardeDetails] = useState(null);
   const { toast } = useToast();
