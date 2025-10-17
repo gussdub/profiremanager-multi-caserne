@@ -1689,10 +1689,13 @@ async def change_user_password(
         logging.error(f"❌ Erreur inattendue lors du changement de mot de passe pour {user_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
-@api_router.put("/users/{user_id}/access", response_model=User)
-async def update_user_access(user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
+@api_router.put("/{tenant_slug}/users/{user_id}/access", response_model=User)
+async def update_user_access(tenant_slug: str, user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     # Validation des valeurs
     valid_roles = ["admin", "superviseur", "employe"]
@@ -1703,21 +1706,21 @@ async def update_user_access(user_id: str, role: str, statut: str, current_user:
     if statut not in valid_statuts:
         raise HTTPException(status_code=400, detail="Statut invalide")
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"id": user_id})
+    # Check if user exists in this tenant
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     # Update user access
     result = await db.users.update_one(
-        {"id": user_id}, 
+        {"id": user_id, "tenant_id": tenant.id}, 
         {"$set": {"role": role, "statut": statut}}
     )
     
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour l'accès")
     
-    updated_user = await db.users.find_one({"id": user_id})
+    updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
     return User(**updated_user)
 
