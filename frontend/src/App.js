@@ -5610,6 +5610,70 @@ const Planning = () => {
           </div>
         </div>
       )}
+
+      
+      {/* Modal Attribution Automatique */}
+      {showAutoAttributionModal && (
+        <div className="modal-overlay" onClick={() => setShowAutoAttributionModal(false)}>
+          <div className="modal-content medium-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>✨ Attribution Automatique</h2>
+              <Button variant="ghost" onClick={() => setShowAutoAttributionModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Période *</Label>
+                  <select 
+                    className="form-select"
+                    value={autoAttributionConfig.periode}
+                    onChange={e => setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: e.target.value,
+                      date: e.target.value === 'semaine' ? currentWeek : currentMonth
+                    })}
+                  >
+                    <option value="semaine">📅 Semaine</option>
+                    <option value="mois">📆 Mois</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>{autoAttributionConfig.periode === 'semaine' ? 'Semaine du' : 'Mois'} *</Label>
+                  {autoAttributionConfig.periode === 'semaine' ? (
+                    <Input 
+                      type="date"
+                      value={autoAttributionConfig.date}
+                      onChange={e => setAutoAttributionConfig({...autoAttributionConfig, date: e.target.value})}
+                    />
+                  ) : (
+                    <Input 
+                      type="month"
+                      value={autoAttributionConfig.date}
+                      onChange={e => setAutoAttributionConfig({...autoAttributionConfig, date: e.target.value})}
+                    />
+                  )}
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1.5rem', padding: '1rem', background: '#EFF6FF', borderRadius: '8px'}}>
+                <p style={{margin: 0, fontSize: '0.875rem', color: '#1E40AF'}}>
+                  💡 L'attribution automatique créera les assignations pour {autoAttributionConfig.periode === 'semaine' ? 'la semaine sélectionnée' : 'le mois sélectionné'} selon les règles configurées dans Paramètres.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowAutoAttributionModal(false)}>Annuler</Button>
+              <Button onClick={handleAttributionAuto}>
+                ✨ Lancer l'attribution
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
