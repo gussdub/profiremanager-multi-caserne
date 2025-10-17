@@ -3025,6 +3025,11 @@ class ProFireManagerTester:
             print("-" * 50)
             self.test_competences_crud_operations()
             
+            # Test 6.5.1: PASSWORD RESET FUNCTIONALITY (CURRENT REVIEW REQUEST)
+            print("\n🎯 CURRENT REVIEW REQUEST TEST: Password Reset Functionality with Email Sending")
+            print("-" * 50)
+            self.test_password_reset_functionality()
+            
             # Test 6.6: USER ACCESS MODIFICATION (CURRENT REVIEW REQUEST)
             print("\n🎯 CURRENT REVIEW REQUEST TEST: User Access Modification in Settings Module")
             print("-" * 50)
