@@ -4910,6 +4910,8 @@ const Planning = () => {
         recurrence_type: 'unique',
         jours_semaine: [],
         bi_hebdomadaire: false,
+        recurrence_intervalle: 1,
+        recurrence_frequence: 'jours',
         date_debut: '',
         date_fin: '',
         exceptions: []
