@@ -142,8 +142,9 @@ class FinalMongoDBAtlasTester:
                             "No users found - may not be connected to production database")
                 return False
             
+            tenant_summary = ', '.join([f"{t['nom']} ({t['users_count']} users)" for t in tenant_details])
             self.log_test("MongoDB Atlas Connection", True, 
-                        f"✅ REAL MongoDB Atlas connection verified - Found {len(tenants)} tenants with {total_users} total users. Production data confirmed: {', '.join([f'{t['nom']} ({t['users_count']} users)' for t in tenant_details])}")
+                        f"✅ REAL MongoDB Atlas connection verified - Found {len(tenants)} tenants with {total_users} total users. Production data confirmed: {tenant_summary}")
             
             # Print user details for verification
             print(f"📊 Utilisateurs trouvés pour les tests:")
