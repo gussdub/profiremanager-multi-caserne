@@ -5438,21 +5438,72 @@ const Planning = () => {
                 {/* Section 1: Sélection personnel */}
                 <div className="assign-section">
                   <h4>👥 Sélection du personnel</h4>
-                  <div className="form-field">
+                  <div className="form-field" style={{ position: 'relative' }}>
                     <Label>Pompier à assigner *</Label>
-                    <select
-                      value={advancedAssignConfig.user_id}
-                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, user_id: e.target.value})}
-                      className="form-select"
-                      data-testid="advanced-user-select"
-                    >
-                      <option value="">Sélectionner un pompier</option>
-                      {users.map(user => (
-                        <option key={user.id} value={user.id}>
-                          {user.prenom} {user.nom} ({user.grade} - {user.type_emploi === 'temps_plein' ? 'TP' : 'Part.'})
-                        </option>
-                      ))}
-                    </select>
+                    <Input
+                      type="text"
+                      placeholder="Tapez le nom du pompier..."
+                      value={userSearchQuery}
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        setShowUserDropdown(true);
+                      }}
+                      onFocus={() => setShowUserDropdown(true)}
+                      data-testid="advanced-user-search"
+                    />
+                    {showUserDropdown && userSearchQuery && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        background: 'white',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}>
+                        {users
+                          .filter(user => 
+                            `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                            user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                          )
+                          .map(user => (
+                            <div
+                              key={user.id}
+                              onClick={() => {
+                                setAdvancedAssignConfig({...advancedAssignConfig, user_id: user.id});
+                                setUserSearchQuery(`${user.prenom} ${user.nom}`);
+                                setShowUserDropdown(false);
+                              }}
+                              style={{
+                                padding: '0.75rem',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f1f5f9',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                            >
+                              <div style={{ fontWeight: '500' }}>{user.prenom} {user.nom}</div>
+                              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                {user.grade} - {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                              </div>
+                            </div>
+                          ))}
+                        {users.filter(user => 
+                          `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                          user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                            Aucun pompier trouvé
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
