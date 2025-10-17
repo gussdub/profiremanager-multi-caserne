@@ -301,6 +301,21 @@ backend:
         agent: "testing"
         comment: "✅ USER ACCESS MODIFICATION FULLY FUNCTIONAL - Comprehensive testing completed successfully with all 8 test steps passed: 1) ✅ Admin Authentication: Successfully logged in as Shefford admin using test.admin.access@firemanager.ca / TestAdmin123! credentials, 2) ✅ Test User Creation: Created test user with role 'employe' and status 'Actif', verified initial state, 3) ✅ Role Modification: Successfully modified user role from 'employe' to 'superviseur' using PUT /api/shefford/users/{user_id}/access?role=superviseur&statut=Actif, verified changes saved, 4) ✅ Status Modification: Successfully modified user status from 'Actif' to 'Inactif' using PUT /api/shefford/users/{user_id}/access?role=superviseur&statut=Inactif, verified changes saved, 5) ✅ Tenant Security: Verified user belongs to correct tenant (shefford), endpoint properly checks tenant_id, 6) ✅ Input Validation: Invalid role returns 400 error as expected, 7) ✅ Input Validation: Invalid status returns 400 error as expected, 8) ✅ Cleanup: Successfully deleted test user and verified deletion. The endpoint PUT /api/{tenant}/users/{user_id}/access is working correctly with proper tenant isolation, role/status validation, and security checks. System ready for production use."
 
+  - task: "Grades CRUD Operations"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Grades CRUD operations as requested in review. Testing all endpoints: 1) GET /api/shefford/grades (retrieve grades list), 2) POST /api/shefford/grades (create new grade 'Sergent'), 3) PUT /api/shefford/grades/{grade_id} (modify grade), 4) DELETE /api/shefford/grades/{grade_id} (delete grade), 5) DELETE protection test (attempt to delete grade in use). Using admin@firemanager.ca / admin123 credentials for tenant shefford."
+      - working: true
+        agent: "testing"
+        comment: "✅ GRADES CRUD OPERATIONS FULLY FUNCTIONAL - Comprehensive testing completed successfully with all 6 test scenarios passed: 1) ✅ GET /api/shefford/grades: Successfully retrieved 4 default grades (Pompier, Lieutenant, Capitaine, Directeur), 2) ✅ POST /api/shefford/grades: Successfully created new grade 'Sergent' with niveau_hierarchique=2, verified correct data structure, 3) ✅ PUT /api/shefford/grades/{grade_id}: Successfully updated 'Sergent' from niveau_hierarchique=2 to niveau_hierarchique=3, verified changes saved, 4) ✅ DELETE /api/shefford/grades/{grade_id}: Successfully deleted 'Sergent' grade, received proper success message 'Grade supprimé avec succès', 5) ✅ DELETE Protection Test: Attempted to delete 'Pompier' grade - properly blocked with message 'Impossible de supprimer ce grade. 3 employé(s) l'utilisent actuellement. Veuillez d'abord réassigner ces employés à un autre grade.', 6) ✅ Verification: Confirmed 'Sergent' was completely removed from grades list after deletion. Used Super Admin to create test admin user (test.grades.admin@firemanager.ca / GradesTest123!) for Shefford tenant. All CRUD operations working correctly with proper validation, error handling, and protection mechanisms. System ready for production use."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
