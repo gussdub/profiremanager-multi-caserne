@@ -1487,6 +1487,15 @@ const Parametres = ({ user, tenantSlug }) => {
                       <Button 
                         variant="ghost" 
                         size="sm" 
+                        onClick={() => handleResetPassword(user)}
+                        data-testid={`reset-password-${user.id}`}
+                        style={{ color: '#f59e0b' }}
+                      >
+                        🔑 Réinitialiser MDP
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
                         className="danger" 
                         onClick={() => handleRevokeUser(user.id, `${user.prenom} ${user.nom}`)}
                         data-testid={`revoke-access-${user.id}`}
