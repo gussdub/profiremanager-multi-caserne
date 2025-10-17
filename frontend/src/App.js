@@ -4597,6 +4597,7 @@ const Planning = () => {
     type_garde_id: '',
     recurrence_type: 'unique', // unique, hebdomadaire, mensuel
     jours_semaine: [], // pour récurrence hebdomadaire
+    bi_hebdomadaire: false, // une semaine sur deux
     date_debut: '',
     date_fin: '',
     exceptions: [] // dates d'exception
