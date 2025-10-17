@@ -612,6 +612,7 @@ class UserCreate(BaseModel):
     role: str
     numero_employe: str
     date_embauche: str
+    taux_horaire: float = 0.0
     formations: List[str] = []
     mot_de_passe: str
 
