@@ -5259,11 +5259,11 @@ const Planning = () => {
 
       {/* Assignment Modal */}
       {showAssignModal && selectedSlot && user.role !== 'employe' && (
-        <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="assign-modal">
             <div className="modal-header">
               <h3>Assigner une garde</h3>
-              <Button variant="ghost" onClick={() => setShowAssignModal(false)}>✕</Button>
+              <Button variant="ghost" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>✕</Button>
             </div>
             <div className="modal-body">
               <div className="assignment-details">
@@ -5273,43 +5273,99 @@ const Planning = () => {
               </div>
               
               <div className="user-selection">
-                <h4>Sélectionner un pompier:</h4>
-                <div className="user-list">
-                  {users
-                    .filter(userOption => {
-                      // Filtrer les utilisateurs déjà assignés à cette garde
-                      const dateStr = selectedSlot.date.toISOString().split('T')[0];
-                      const alreadyAssigned = assignations.some(a => 
-                        a.date === dateStr && 
-                        a.type_garde_id === selectedSlot.typeGarde.id && 
-                        a.user_id === userOption.id
-                      );
-                      return !alreadyAssigned;
-                    })
-                    .map(userOption => (
-                    <div 
-                      key={userOption.id} 
-                      className="user-option"
-                      onClick={() => handleAssignUser(userOption.id, selectedSlot.typeGarde.id, selectedSlot.date.toISOString().split('T')[0])}
-                      data-testid={`assign-user-${userOption.id}`}
-                    >
-                      <span className="user-name">{userOption.prenom} {userOption.nom}</span>
-                      <span className="user-grade">{userOption.grade}</span>
-                      <span className="user-status">{userOption.statut}</span>
+                <h4>Rechercher un pompier:</h4>
+                <div style={{ position: 'relative' }}>
+                  <Input
+                    type="text"
+                    placeholder="Tapez le nom ou prénom du pompier..."
+                    value={quickAssignSearchQuery}
+                    onChange={(e) => {
+                      setQuickAssignSearchQuery(e.target.value);
+                      setShowQuickAssignDropdown(true);
+                    }}
+                    onFocus={() => setShowQuickAssignDropdown(true)}
+                    style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+                    data-testid="quick-assign-search"
+                  />
+                  
+                  {showQuickAssignDropdown && quickAssignSearchQuery && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      background: 'white',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      marginTop: '4px',
+                      zIndex: 1000,
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    }}>
+                      {users
+                        .filter(userOption => {
+                          // Filtrer les utilisateurs déjà assignés
+                          const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                          const alreadyAssigned = assignations.some(a => 
+                            a.date === dateStr && 
+                            a.type_garde_id === selectedSlot.typeGarde.id && 
+                            a.user_id === userOption.id
+                          );
+                          
+                          // Filtrer par recherche
+                          const searchLower = quickAssignSearchQuery.toLowerCase();
+                          const matchesSearch = 
+                            `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
+                            userOption.grade.toLowerCase().includes(searchLower);
+                          
+                          return !alreadyAssigned && matchesSearch;
+                        })
+                        .map(userOption => (
+                          <div
+                            key={userOption.id}
+                            onClick={() => {
+                              handleAssignUser(userOption.id, selectedSlot.typeGarde.id, selectedSlot.date.toISOString().split('T')[0]);
+                              setQuickAssignSearchQuery('');
+                              setShowQuickAssignDropdown(false);
+                            }}
+                            style={{
+                              padding: '0.75rem',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f1f5f9',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                            data-testid={`quick-assign-user-${userOption.id}`}
+                          >
+                            <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>
+                              {userOption.prenom} {userOption.nom}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                              {userOption.grade} - {userOption.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {users.filter(userOption => {
+                        const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                        const alreadyAssigned = assignations.some(a => 
+                          a.date === dateStr && 
+                          a.type_garde_id === selectedSlot.typeGarde.id && 
+                          a.user_id === userOption.id
+                        );
+                        const searchLower = quickAssignSearchQuery.toLowerCase();
+                        const matchesSearch = 
+                          `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
+                          userOption.grade.toLowerCase().includes(searchLower);
+                        return !alreadyAssigned && matchesSearch;
+                      }).length === 0 && (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                          Aucun pompier trouvé
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  {users.filter(userOption => {
-                    const dateStr = selectedSlot.date.toISOString().split('T')[0];
-                    const alreadyAssigned = assignations.some(a => 
-                      a.date === dateStr && 
-                      a.type_garde_id === selectedSlot.typeGarde.id && 
-                      a.user_id === userOption.id
-                    );
-                    return !alreadyAssigned;
-                  }).length === 0 && (
-                    <p style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>
-                      Tous les pompiers sont déjà assignés à cette garde.
-                    </p>
                   )}
                 </div>
               </div>
