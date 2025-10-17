@@ -1289,17 +1289,10 @@ const ModuleEPI = ({ user }) => {
       )}
 
       {/* ONGLET RAPPORTS */}
-      {activeTab === 'rapports' && (
+      {activeTab === 'rapports' && rapportConformite && (
         <div className="epi-rapports">
-          {!rapportConformite ? (
-            <div style={{textAlign: 'center', padding: '3rem'}}>
-              <div className="loading-spinner"></div>
-              <p>Chargement des rapports...</p>
-            </div>
-          ) : (
-            <>
-              {/* Filtres et Exports */}
-              <div className="rapports-controls">
+          {/* Filtres et Exports */}
+          <div className="rapports-controls">
             <div className="filtres-section">
               <h3>🔍 Filtres</h3>
               <div className="filtres-grid">
@@ -1456,8 +1449,6 @@ const ModuleEPI = ({ user }) => {
                 ))}
               </div>
             </>
-          )}
-          </>
           )}
         </div>
       )}
@@ -2594,7 +2585,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     type_emploi: '',
     numero_employe: '',
     date_embauche: '',
-    taux_horaire: 0,
     formations: [],
     mot_de_passe: ''
   });
@@ -2676,7 +2666,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       type_emploi: '',
       numero_employe: '',
       date_embauche: new Date().toISOString().split('T')[0],
-      taux_horaire: 0,
       formations: [],
       mot_de_passe: ''
     });
@@ -3551,18 +3540,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="user-hire-date-input"
                       />
                     </div>
-                    <div className="form-field">
-                      <Label>Taux horaire ($/h)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={newUser.taux_horaire || ''}
-                        onChange={(e) => setNewUser({...newUser, taux_horaire: parseFloat(e.target.value) || 0})}
-                        placeholder="Ex: 25.50"
-                        data-testid="user-taux-horaire-input"
-                      />
-                    </div>
                   </div>
+                </div>
 
                 {/* Section 3: Compétences et formations - Version compacte */}
                 <div className="form-section">
@@ -3635,7 +3614,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         </div>
       )}
 
-      {/* View User Modal - Version modernisée */}
+      {/* View User Modal - Version modernisée */}}
       {showViewModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="view-user-modal">
@@ -3736,12 +3715,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                              selectedUser.role === 'superviseur' ? '🎖️ Superviseur' : '👤 Employé'}
                           </span>
                         </div>
-                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Taux horaire</span>
-                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
-                            {selectedUser.taux_horaire ? `${selectedUser.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
-                          </span>
-                        </div>
                       </div>
                     </div>
 
@@ -3764,7 +3737,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       )}
                     </div>
                   </div>
-
                 </div>
 
                 {/* Actions rapides */}
@@ -7307,8 +7279,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
-  const [parametresDisponibilites, setParametresDisponibilites] = useState(null);
-  const { toast } = useToast();
   
   // États pour le calendrier visuel mensuel
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(new Date().getMonth());
@@ -7373,20 +7343,20 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     heure_debut: '08:00',
     heure_fin: '16:00'
   });
+  
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDisponibilites = async () => {
       if (!tenantSlug) return;
       
       try {
-        const [dispoData, typesData, paramsData] = await Promise.all([
+        const [dispoData, typesData] = await Promise.all([
           apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
-          apiGet(tenantSlug, '/types-garde'),
-          apiGet(tenantSlug, '/parametres/disponibilites').catch(() => ({ jour_blocage_dispos: 15 }))
+          apiGet(tenantSlug, '/types-garde')
         ]);
         setUserDisponibilites(dispoData);
         setTypesGarde(typesData);
-        setParametresDisponibilites(paramsData);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
       } finally {
@@ -7422,64 +7392,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
 
-  // Vérifier si un mois est bloqué selon les paramètres
-  const estMoisBloque = (date) => {
-    if (!parametresDisponibilites) return false;
-    
-    // Exception pour admin/superviseur si paramètre activé
-    const exceptionsActives = parametresDisponibilites.exceptions_admin_superviseur !== false; // true par défaut
-    if (exceptionsActives && user?.role && (user.role === 'admin' || user.role === 'superviseur')) {
-      return false; // Admin/Superviseur jamais bloqués si exceptions activées
-    }
-    
-    const jourBlocage = parametresDisponibilites.jour_blocage_dispos || 15;
-    const dateObj = new Date(date);
-    const aujourd_hui = new Date();
-    
-    const moisDate = dateObj.getMonth();
-    const anDate = dateObj.getFullYear();
-    const moisActuel = aujourd_hui.getMonth();
-    const anActuel = aujourd_hui.getFullYear();
-    const jourActuel = aujourd_hui.getDate();
-    
-    // Si on est après le jour de blocage du mois actuel
-    // ET que la date est pour le mois suivant ou après
-    if (jourActuel >= jourBlocage) {
-      // Bloquer le mois suivant
-      const moisSuivant = (moisActuel + 1) % 12;
-      const anSuivant = moisActuel === 11 ? anActuel + 1 : anActuel;
-      
-      if (anDate === anSuivant && moisDate === moisSuivant) {
-        return true;
-      }
-      // Bloquer aussi les mois encore plus loin
-      if (anDate > anSuivant || (anDate === anSuivant && moisDate > moisSuivant)) {
-        return true;
-      }
-    }
-    
-    return false;
-  };
-
-
 
   const handleAddConfiguration = () => {
     if (selectedDates.length === 0) {
       toast({
         title: "Aucune date sélectionnée",
         description: "Veuillez sélectionner au moins une date",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Vérifier si certaines dates sont bloquées
-    const datesBloquees = selectedDates.filter(date => estMoisBloque(date));
-    if (datesBloquees.length > 0) {
-      const jourBlocage = parametresDisponibilites?.jour_blocage_dispos || 15;
-      toast({
-        title: "Dates bloquées",
-        description: `Impossible de modifier les disponibilités du mois suivant après le ${jourBlocage} du mois. ${datesBloquees.length} date(s) bloquée(s).`,
         variant: "destructive"
       });
       return;
@@ -7661,39 +7579,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         }
       }
       
-      // Filtrer les dates bloquées avant création
-      const disponibilitesNonBloquees = disponibilitesACreer.filter(dispo => {
-        return !estMoisBloque(dispo.date);
-      });
-      
-      const datesBloquees = disponibilitesACreer.length - disponibilitesNonBloquees.length;
-      
-      if (datesBloquees > 0) {
-        const jourBlocage = parametresDisponibilites?.jour_blocage_dispos || 15;
-        toast({
-          title: "Certaines dates bloquées",
-          description: `${datesBloquees} date(s) du mois suivant ignorée(s) (blocage au ${jourBlocage} du mois)`,
-          variant: "default"
-        });
-      }
-      
-      if (disponibilitesNonBloquees.length === 0) {
-        toast({
-          title: "Aucune disponibilité créée",
-          description: "Toutes les dates sont bloquées",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       // Envoyer les disponibilités au backend
-      for (const dispo of disponibilitesNonBloquees) {
+      for (const dispo of disponibilitesACreer) {
         await apiPost(tenantSlug, '/disponibilites', dispo);
       }
       
       toast({
         title: "Disponibilités enregistrées",
-        description: `${disponibilitesNonBloquees.length} disponibilité(s) ajoutée(s) avec succès`,
+        description: `${disponibilitesACreer.length} disponibilité(s) ajoutée(s) avec succès`,
         variant: "success"
       });
       
