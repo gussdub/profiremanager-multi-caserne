@@ -3506,7 +3506,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       >
                         <option value="">Sélectionner un grade</option>
                         {grades.map(grade => (
-                          <option key={grade} value={grade}>{grade}</option>
+                          <option key={grade.id} value={grade.nom}>{grade.nom}</option>
                         ))}
                       </select>
                     </div>
