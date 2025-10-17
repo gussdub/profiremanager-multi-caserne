@@ -4564,6 +4564,11 @@ const Planning = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showGardeDetailsModal, setShowGardeDetailsModal] = useState(false);
   const [showAdvancedAssignModal, setShowAdvancedAssignModal] = useState(false);
+  const [showAutoAttributionModal, setShowAutoAttributionModal] = useState(false);
+  const [autoAttributionConfig, setAutoAttributionConfig] = useState({
+    periode: 'semaine', // semaine ou mois
+    date: currentWeek
+  });
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
     user_id: '',
     type_garde_id: '',
