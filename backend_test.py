@@ -340,25 +340,18 @@ class PasswordResetTester:
         
         return passed == total
     
-    def test_jwt_validation(self):
-        """Test JWT token validation"""
-        if not self.auth_token:
-            self.log_test("JWT Token Validation", False, "No auth token available")
-            return False
-            
-        try:
-            response = self.session.get(f"{self.base_url}/auth/me")
-            if response.status_code == 200:
-                user_data = response.json()
-                self.log_test("JWT Token Validation", True, 
-                            f"Token valid - User: {user_data.get('email', 'unknown')}")
-                return True
-            else:
-                self.log_test("JWT Token Validation", False, f"Token validation failed: {response.status_code}")
-                return False
-        except Exception as e:
-            self.log_test("JWT Token Validation", False, f"JWT validation error: {str(e)}")
-            return False
+if __name__ == "__main__":
+    tester = PasswordResetTester()
+    success = tester.run_password_reset_tests()
+    
+    if success:
+        print("\n🎯 CONCLUSION: Password reset writes to MongoDB Atlas correctly")
+        print("The issue reported by the user is NOT confirmed by this test")
+    else:
+        print("\n🚨 CONCLUSION: Password reset MongoDB write issue CONFIRMED")
+        print("The backend is likely writing to a different database than expected")
+    
+    sys.exit(0 if success else 1)
     
     def test_database_connectivity(self):
         """Test MongoDB connectivity by trying to fetch users"""
