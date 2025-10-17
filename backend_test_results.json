@@ -3,51 +3,51 @@
     "test": "Server Health Check",
     "success": true,
     "message": "Server is running: ProFireManager API v2.0 - Multi-Tenant",
-    "timestamp": "2025-10-17T14:24:19.380363",
+    "timestamp": "2025-10-17T19:31:56.450284",
     "details": {}
   },
   {
     "test": "Super Admin Authentication",
     "success": true,
     "message": "Super Admin login successful for gussdub@icloud.com",
-    "timestamp": "2025-10-17T14:24:20.146708",
+    "timestamp": "2025-10-17T19:31:57.241216",
     "details": {}
   },
   {
     "test": "Super Admin /auth/me Endpoint",
     "success": true,
     "message": "\u2705 /api/admin/auth/me endpoint working correctly - Admin: gussdub@icloud.com, Role: super_admin",
-    "timestamp": "2025-10-17T14:24:20.180986",
+    "timestamp": "2025-10-17T19:31:57.282080",
     "details": {}
   },
   {
     "test": "Super Admin Tenants API (Modified)",
     "success": true,
-    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 5 employees, is_active: True, demonstration caserne properly deleted",
-    "timestamp": "2025-10-17T14:24:20.224173",
+    "message": "\u2705 Modified tenants API working correctly - Found Shefford tenant with 7 employees, is_active: True, demonstration caserne properly deleted",
+    "timestamp": "2025-10-17T19:31:57.324219",
     "details": {}
   },
   {
     "test": "Super Admin Stats API (Modified)",
     "success": true,
-    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 5, revenus_mensuels: 60",
-    "timestamp": "2025-10-17T14:24:20.265382",
+    "message": "\u2705 Modified stats API working correctly - casernes_actives: 1, casernes_inactives: 0, total_pompiers: 7, revenus_mensuels: 84",
+    "timestamp": "2025-10-17T19:31:57.364761",
     "details": {}
   },
   {
     "test": "Indisponibilit\u00e9s Generation System",
     "success": false,
-    "message": "Montreal 7/24 generation failed: 422",
-    "timestamp": "2025-10-17T14:24:21.091114",
+    "message": "Failed to login as tenant admin: 401",
+    "timestamp": "2025-10-17T19:31:57.942964",
     "details": {
-      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"date_debut\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"1dd66d5e-01bf-4807-a1e9-f9dc14880882\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"date_fin\"],\"msg\":\"Field required\",\"input\":{\"user_id\":\"1dd66d5e-01bf-4807-a1e9-f9dc14880882\",\"horaire_type\":\"montreal\",\"equipe\":\"Rouge\",\"annee\":2025,\"conserver_manuelles\":true},\"url\":\"https://errors.pydantic.dev/2.11/v/missing\"}]}"
+      "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
   },
   {
     "test": "Disponibilit\u00e9s R\u00e9initialiser Corrected System",
     "success": false,
     "message": "Failed to login as Shefford admin: 401",
-    "timestamp": "2025-10-17T14:24:21.620807",
+    "timestamp": "2025-10-17T19:31:58.470949",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
@@ -56,7 +56,7 @@
     "test": "Quebec 10/14 February 2026 Pattern",
     "success": false,
     "message": "Failed to login as employe@firemanager.ca: 401",
-    "timestamp": "2025-10-17T14:24:21.699454",
+    "timestamp": "2025-10-17T19:31:58.545585",
     "details": {
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
     }
@@ -65,7 +65,7 @@
     "test": "Admin Authentication",
     "success": false,
     "message": "Authentication failed - admin user may not exist",
-    "timestamp": "2025-10-17T14:24:21.706730",
+    "timestamp": "2025-10-17T19:31:58.567350",
     "details": {
       "status_code": 401,
       "response": "{\"detail\":\"Email ou mot de passe incorrect\"}"
@@ -75,7 +75,7 @@
     "test": "Admin User Creation",
     "success": false,
     "message": "Could not create admin user: 404",
-    "timestamp": "2025-10-17T14:24:21.712760",
+    "timestamp": "2025-10-17T19:31:58.575334",
     "details": {}
   }
 ]
