@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -14,6 +15,7 @@ import jwt
 import json
 import hashlib
 import re
+import bcrypt
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.units import inch
@@ -125,11 +127,68 @@ async def initialize_multi_tenant():
             if result.modified_count > 0:
                 print(f"✅ {result.modified_count} documents migrés dans {collection_name}")
 
+async def initialize_default_grades():
+    """Initialise les grades par défaut pour chaque tenant s'ils n'existent pas"""
+    try:
+        tenants = await db.tenants.find({}).to_list(1000)
+        
+        default_grades = [
+            {"nom": "Pompier", "niveau_hierarchique": 1},
+            {"nom": "Lieutenant", "niveau_hierarchique": 2},
+            {"nom": "Capitaine", "niveau_hierarchique": 3},
+            {"nom": "Directeur", "niveau_hierarchique": 4}
+        ]
+        
+        for tenant in tenants:
+            tenant_id = tenant.get('id')
+            if not tenant_id:
+                continue
+            
+            # Vérifier si des grades existent déjà pour ce tenant
+            existing_count = await db.grades.count_documents({"tenant_id": tenant_id})
+            
+            if existing_count == 0:
+                # Créer les grades par défaut
+                for grade_data in default_grades:
+                    grade = Grade(
+                        tenant_id=tenant_id,
+                        nom=grade_data["nom"],
+                        niveau_hierarchique=grade_data["niveau_hierarchique"]
+                    )
+                    grade_dict = grade.dict()
+                    grade_dict["created_at"] = grade.created_at.isoformat()
+                    grade_dict["updated_at"] = grade.updated_at.isoformat()
+                    await db.grades.insert_one(grade_dict)
+                
+                print(f"✅ {len(default_grades)} grades par défaut créés pour le tenant {tenant.get('nom', tenant_id)}")
+    except Exception as e:
+        print(f"⚠️ Erreur lors de l'initialisation des grades: {str(e)}")
+
 @app.on_event("startup")
 async def startup_event():
     """Événement de démarrage de l'application"""
     await initialize_multi_tenant()
+    
+    # Initialiser les grades par défaut
+    await initialize_default_grades()
+    
+    # Démarrer le job périodique pour vérifier les timeouts de remplacement
+    asyncio.create_task(job_verifier_timeouts_remplacements())
+    
     print("🚀 ProFireManager API Multi-Tenant démarré")
+
+async def job_verifier_timeouts_remplacements():
+    """
+    Job périodique qui vérifie les timeouts des demandes de remplacement
+    S'exécute toutes les minutes
+    """
+    while True:
+        try:
+            await asyncio.sleep(60)  # Attendre 60 secondes
+            await verifier_et_traiter_timeouts()
+        except Exception as e:
+            logging.error(f"❌ Erreur dans le job de vérification des timeouts: {e}", exc_info=True)
+            await asyncio.sleep(60)  # Attendre avant de réessayer même en cas d'erreur
 
 # JWT and Password configuration
 SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
@@ -215,7 +274,7 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
                 <div style="text-align: center; margin-bottom: 30px;">
                     <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
                          alt="ProFireManager" 
-                         style="width: 100px; height: 100px; margin-bottom: 15px;">
+                         style="width: 60px; height: 60px; margin-bottom: 15px;">
                     <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
                     <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
                 </div>
@@ -445,11 +504,76 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
         return False
 
-def verify_password(plain_password, hashed_password):
-    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+def get_password_hash(password: str) -> str:
+    """
+    Crée un hash bcrypt du mot de passe.
+    Utilise bcrypt pour tous les nouveaux mots de passe.
+    """
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
-def get_password_hash(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Vérifie un mot de passe contre son hash.
+    Supporte à la fois bcrypt (nouveau) et SHA256 (ancien - pour migration).
+    
+    Retourne True si le mot de passe correspond, False sinon.
+    """
+    try:
+        password_bytes = plain_password.encode('utf-8')
+        
+        # Tenter avec bcrypt d'abord (nouveau format)
+        # bcrypt hash commence par $2, $2a$, $2b$, $2x$, $2y$
+        if hashed_password.startswith('$2'):
+            logging.info(f"🔐 Vérification avec bcrypt")
+            try:
+                return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+            except Exception as bcrypt_error:
+                logging.error(f"❌ Erreur bcrypt: {bcrypt_error}")
+                return False
+        
+        # Sinon, tenter avec SHA256 (ancien format - migration)
+        logging.info(f"🔐 Vérification avec SHA256 (ancien format)")
+        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+        return sha256_hash == hashed_password
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la vérification du mot de passe: {e}")
+        return False
+
+async def migrate_password_if_needed(user_id: str, plain_password: str, current_hash: str, collection_name: str = "users"):
+    """
+    Migre automatiquement un mot de passe SHA256 vers bcrypt lors d'une connexion réussie.
+    
+    Args:
+        user_id: L'ID de l'utilisateur
+        plain_password: Le mot de passe en clair (vérifié)
+        current_hash: Le hash actuel dans la DB
+        collection_name: Nom de la collection MongoDB (users ou super_admins)
+    """
+    # Vérifier si c'est un ancien hash SHA256 qui nécessite migration
+    if not (current_hash.startswith('$2b$') or current_hash.startswith('$2a$') or current_hash.startswith('$2y$')):
+        try:
+            logging.info(f"🔄 Migration du mot de passe pour l'utilisateur {user_id} de SHA256 vers bcrypt")
+            new_hash = get_password_hash(plain_password)
+            
+            # Mettre à jour dans la base de données
+            collection = db[collection_name]
+            result = await collection.update_one(
+                {"id": user_id},
+                {"$set": {"mot_de_passe_hash": new_hash}}
+            )
+            
+            if result.modified_count > 0:
+                logging.info(f"✅ Migration du mot de passe réussie pour {user_id}")
+            else:
+                logging.warning(f"⚠️ Migration du mot de passe échouée pour {user_id} - aucun document modifié")
+                
+        except Exception as e:
+            logging.error(f"❌ Erreur lors de la migration du mot de passe pour {user_id}: {e}")
+            # Ne pas bloquer la connexion en cas d'erreur de migration
 
 security = HTTPBearer()
 
@@ -511,8 +635,9 @@ class User(BaseModel):
     heures_max_semaine: int = 40  # Heures max par semaine (pour temps partiel)
     role: str  # admin, superviseur, employe
     statut: str = "Actif"  # Actif, Inactif
-    numero_employe: str
-    date_embauche: str
+    numero_employe: str = ""
+    date_embauche: str = ""
+    taux_horaire: float = 0.0  # Taux horaire en $/h
     formations: List[str] = []
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -523,17 +648,18 @@ class UserCreate(BaseModel):
     prenom: str
     email: str
     telephone: str = ""
-    adresse: str = ""  # Adresse du pompier
+    adresse: str = ""
     contact_urgence: str = ""
-    grade: str
+    grade: str = "Pompier"
     fonction_superieur: bool = False
-    type_emploi: str
+    type_emploi: str = "temps_plein"
     heures_max_semaine: int = 40
-    role: str
-    numero_employe: str
-    date_embauche: str
+    role: str = "employe"
+    numero_employe: str = ""
+    date_embauche: str = ""
+    taux_horaire: float = 0.0
     formations: List[str] = []
-    mot_de_passe: str
+    mot_de_passe: str = "TempPass123!"
 
 class UserLogin(BaseModel):
     email: str
@@ -550,6 +676,7 @@ class TypeGarde(BaseModel):
     couleur: str
     jours_application: List[str] = []  # monday, tuesday, etc.
     officier_obligatoire: bool = False
+    competences_requises: List[str] = []  # Liste des formations/compétences requises pour cette garde
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TypeGardeCreate(BaseModel):
@@ -561,6 +688,7 @@ class TypeGardeCreate(BaseModel):
     couleur: str
     jours_application: List[str] = []
     officier_obligatoire: bool = False
+    competences_requises: List[str] = []
 
 class Planning(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -590,16 +718,30 @@ class AssignationCreate(BaseModel):
     date: str
     assignation_type: str = "manuel"
 
+class TentativeRemplacement(BaseModel):
+    """Historique des tentatives de remplacement"""
+    user_id: str
+    nom_complet: str
+    date_contact: datetime
+    statut: str  # contacted, accepted, refused, expired
+    date_reponse: Optional[datetime] = None
+
 class DemandeRemplacement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     demandeur_id: str
     type_garde_id: str
-    date: str
+    date: str  # Date de la garde à remplacer (format: YYYY-MM-DD)
     raison: str
-    statut: str = "en_cours"  # en_cours, approuve, refuse
+    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee
+    priorite: str = "normal"  # urgent (≤24h), normal (>24h) - calculé automatiquement
     remplacant_id: Optional[str] = None
+    tentatives_historique: List[Dict[str, Any]] = []  # Historique des personnes contactées
+    remplacants_contactes_ids: List[str] = []  # IDs des remplaçants actuellement en attente de réponse
+    date_prochaine_tentative: Optional[datetime] = None
+    nombre_tentatives: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DemandeRemplacementCreate(BaseModel):
     type_garde_id: str
@@ -607,22 +749,136 @@ class DemandeRemplacementCreate(BaseModel):
     raison: str
 
 class Formation(BaseModel):
+    """Formation planifiée avec gestion inscriptions NFPA 1500"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    competence_id: str = ""  # Optionnel pour rétrocompatibilité
+    description: str = ""
+    date_debut: str = ""
+    date_fin: str = ""
+    heure_debut: str = ""
+    heure_fin: str = ""
+    duree_heures: float = 0
+    lieu: str = ""
+    instructeur: str = ""
+    places_max: int = 20
+    places_restantes: int = 20
+    statut: str = "planifiee"
+    obligatoire: bool = False
+    annee: int = 0
+    validite_mois: int = 12  # Pour anciennes formations
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FormationCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    competence_id: str
+    description: str = ""
+    date_debut: str
+    date_fin: str
+    heure_debut: str
+    heure_fin: str
+    duree_heures: float
+    lieu: str = ""
+    instructeur: str = ""
+    places_max: int
+    obligatoire: bool = False
+    annee: int
+
+class FormationUpdate(BaseModel):
+    nom: Optional[str] = None
+    competence_id: Optional[str] = None
+    description: Optional[str] = None
+    date_debut: Optional[str] = None
+    date_fin: Optional[str] = None
+    heure_debut: Optional[str] = None
+    heure_fin: Optional[str] = None
+    duree_heures: Optional[float] = None
+    lieu: Optional[str] = None
+    instructeur: Optional[str] = None
+    places_max: Optional[int] = None
+    obligatoire: Optional[bool] = None
+    statut: Optional[str] = None
+
+class InscriptionFormation(BaseModel):
+    """Inscription d'un pompier à une formation"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    formation_id: str
+    user_id: str
+    date_inscription: str
+    statut: str = "inscrit"  # inscrit, en_attente, present, absent, complete
+    heures_creditees: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InscriptionFormationCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    formation_id: str
+    user_id: str
+
+class InscriptionFormationUpdate(BaseModel):
+    statut: Optional[str] = None
+    heures_creditees: Optional[float] = None
+    notes: Optional[str] = None
+
+class Competence(BaseModel):
+    """Compétence avec exigences NFPA 1500"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     nom: str
     description: str = ""
-    duree_heures: int = 0
-    validite_mois: int = 12  # 0 = Pas de renouvellement
+    heures_requises_annuelles: float = 0.0
     obligatoire: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class FormationCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
+class CompetenceCreate(BaseModel):
+    tenant_id: Optional[str] = None
     nom: str
     description: str = ""
-    duree_heures: int = 0
-    validite_mois: int = 12  # 0 = Pas de renouvellement
+    heures_requises_annuelles: float = 0.0
     obligatoire: bool = False
+
+class CompetenceUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    heures_requises_annuelles: Optional[float] = None
+    obligatoire: Optional[bool] = None
+
+class Grade(BaseModel):
+    """Grade hiérarchique pour les pompiers"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    niveau_hierarchique: int  # 1 = niveau le plus bas, 10 = niveau le plus haut
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GradeCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    niveau_hierarchique: int
+
+class GradeUpdate(BaseModel):
+    nom: Optional[str] = None
+    niveau_hierarchique: Optional[int] = None
+
+class ParametresFormations(BaseModel):
+    """Paramètres globaux formations pour NFPA 1500"""
+    tenant_id: str
+    heures_minimales_annuelles: float = 100.0
+    pourcentage_presence_minimum: float = 80.0
+    delai_notification_liste_attente: int = 7  # jours
+    email_notifications_actif: bool = True
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# Alias pour compatibilité avec anciennes routes
+SessionFormation = Formation
+SessionFormationCreate = FormationCreate
 
 class Disponibilite(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -650,7 +906,8 @@ class IndisponibiliteGenerate(BaseModel):
     user_id: str
     horaire_type: str  # "montreal" ou "quebec"
     equipe: str  # "Rouge", "Jaune", "Bleu", "Vert"
-    annee: int
+    date_debut: str  # Date de début (YYYY-MM-DD)
+    date_fin: str  # Date de fin (YYYY-MM-DD)
     date_jour_1: Optional[str] = None  # Pour Quebec 10/14, date du Jour 1 du cycle (YYYY-MM-DD)
     conserver_manuelles: bool = True  # Conserver les modifications manuelles lors de la régénération
 
@@ -756,24 +1013,50 @@ async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(se
 
 @api_router.post("/admin/auth/login")
 async def super_admin_login(login: SuperAdminLogin):
-    """Authentification du super admin"""
-    admin_data = await db.super_admins.find_one({"email": login.email})
-    
-    if not admin_data or not verify_password(login.mot_de_passe, admin_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    admin = SuperAdmin(**admin_data)
-    access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "admin": {
-            "id": admin.id,
-            "email": admin.email,
-            "nom": admin.nom
+    """Authentification du super admin avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion Super Admin: {login.email}")
+        
+        admin_data = await db.super_admins.find_one({"email": login.email})
+        
+        if not admin_data:
+            logging.warning(f"❌ Super Admin non trouvé: {login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Super Admin trouvé: {admin_data.get('nom')} (id: {admin_data.get('id')})")
+        
+        current_hash = admin_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        if not verify_password(login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect pour Super Admin {login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès pour Super Admin {login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(admin_data["id"], login.mot_de_passe, current_hash, "super_admins")
+        
+        admin = SuperAdmin(**admin_data)
+        access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
+        
+        logging.info(f"✅ Token JWT créé pour Super Admin {login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "admin": {
+                "id": admin.id,
+                "email": admin.email,
+                "nom": admin.nom
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login Super Admin pour {login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @api_router.get("/admin/auth/me")
 async def get_super_admin_me(admin: SuperAdmin = Depends(get_super_admin)):
@@ -1054,87 +1337,74 @@ async def delete_tenant_permanently(tenant_id: str, admin: SuperAdmin = Depends(
 
 # ==================== TENANT-SPECIFIC ROUTES ====================
 # Note: Tenant routes are defined after Super Admin routes to avoid conflicts
-async def login(tenant_slug: str, user_login: UserLogin):
-    """Login pour un tenant spécifique"""
-    # Vérifier que le tenant existe
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Chercher l'utilisateur dans ce tenant
-    user_data = await db.users.find_one({
-        "email": user_login.email,
-        "tenant_id": tenant.id
-    })
-    
-    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    user = User(**user_data)
-    
-    # Inclure tenant_id dans le token
-    access_token = create_access_token(data={
-        "sub": user.id,
-        "tenant_id": tenant.id,
-        "tenant_slug": tenant.slug
-    })
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "tenant": {
-            "id": tenant.id,
-            "slug": tenant.slug,
-            "nom": tenant.nom
-        },
-        "user": {
-            "id": user.id,
-            "nom": user.nom,
-            "prenom": user.prenom,
-            "email": user.email,
-            "role": user.role,
-            "grade": user.grade,
-            "type_emploi": user.type_emploi
-        }
-    }
 
 # Route de compatibilité (OLD - sans tenant dans URL)
 @api_router.post("/auth/login")
 async def login_legacy(user_login: UserLogin):
-    """Login legacy - redirige automatiquement vers le tenant de l'utilisateur"""
-    user_data = await db.users.find_one({"email": user_login.email})
-    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    user = User(**user_data)
-    tenant_data = await db.tenants.find_one({"id": user.tenant_id})
-    
-    if not tenant_data:
-        raise HTTPException(status_code=404, detail="Caserne non trouvée")
-    
-    tenant = Tenant(**tenant_data)
-    access_token = create_access_token(data={
-        "sub": user.id,
-        "tenant_id": tenant.id,
-        "tenant_slug": tenant.slug
-    })
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "tenant": {
-            "id": tenant.id,
-            "slug": tenant.slug,
-            "nom": tenant.nom
-        },
-        "user": {
-            "id": user.id,
-            "nom": user.nom,
-            "prenom": user.prenom,
-            "email": user.email,
-            "role": user.role,
-            "grade": user.grade,
-            "type_emploi": user.type_emploi
+    """Login legacy - redirige automatiquement vers le tenant de l'utilisateur avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion legacy pour {user_login.email}")
+        
+        user_data = await db.users.find_one({"email": user_login.email})
+        
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé (legacy): {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Utilisateur trouvé (legacy): {user_data.get('nom')} {user_data.get('prenom')} (id: {user_data.get('id')})")
+        
+        current_hash = user_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        if not verify_password(user_login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect (legacy) pour {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès (legacy) pour {user_login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
+        
+        user = User(**user_data)
+        tenant_data = await db.tenants.find_one({"id": user.tenant_id})
+        
+        if not tenant_data:
+            logging.error(f"❌ Tenant non trouvé pour l'utilisateur {user_login.email}")
+            raise HTTPException(status_code=404, detail="Caserne non trouvée")
+        
+        tenant = Tenant(**tenant_data)
+        access_token = create_access_token(data={
+            "sub": user.id,
+            "tenant_id": tenant.id,
+            "tenant_slug": tenant.slug
+        })
+        
+        logging.info(f"✅ Token JWT créé (legacy) pour {user_login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "tenant": {
+                "id": tenant.id,
+                "slug": tenant.slug,
+                "nom": tenant.nom
+            },
+            "user": {
+                "id": user.id,
+                "nom": user.nom,
+                "prenom": user.prenom,
+                "email": user.email,
+                "role": user.role,
+                "grade": user.grade,
+                "type_emploi": user.type_emploi
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login legacy pour {user_login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @api_router.get("/{tenant_slug}/auth/me")
 async def get_current_user_info(tenant_slug: str, current_user: User = Depends(get_current_user)):
@@ -1384,49 +1654,70 @@ async def change_user_password(
     current_user: User = Depends(get_current_user)
 ):
     """Changer le mot de passe d'un utilisateur (uniquement son propre mot de passe)"""
-    # Vérifier que l'utilisateur change son propre mot de passe
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
+    try:
+        logging.info(f"🔑 Demande de changement de mot de passe pour l'utilisateur {user_id}")
+        
+        # Vérifier que l'utilisateur change son propre mot de passe
+        if current_user.id != user_id:
+            logging.warning(f"❌ Tentative de changement de mot de passe non autorisée par {current_user.id} pour {user_id}")
+            raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
+        
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer l'utilisateur
+        user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé pour changement de mot de passe: {user_id}")
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        # Vérifier l'ancien mot de passe
+        if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
+            logging.warning(f"❌ Ancien mot de passe incorrect pour {user_id}")
+            raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
+        
+        logging.info(f"✅ Ancien mot de passe vérifié pour {user_id}")
+        
+        # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
+        new_password = password_data["new_password"]
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
+        if not any(c.isupper() for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins une majuscule")
+        if not any(c.isdigit() for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un chiffre")
+        if not any(c in '!@#$%^&*+-?()' for c in new_password):
+            raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*+-?())")
+        
+        # Hasher et mettre à jour le mot de passe (utilise bcrypt maintenant)
+        new_password_hash = get_password_hash(new_password)
+        logging.info(f"🔐 Nouveau mot de passe hashé avec bcrypt pour {user_id}")
+        
+        result = await db.users.update_one(
+            {"id": user_id, "tenant_id": tenant.id},
+            {"$set": {"mot_de_passe_hash": new_password_hash}}
+        )
+        
+        if result.modified_count == 0:
+            logging.error(f"❌ Impossible de mettre à jour le mot de passe pour {user_id}")
+            raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
+        
+        logging.info(f"✅ Mot de passe changé avec succès pour {user_id}")
+        return {"message": "Mot de passe modifié avec succès"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du changement de mot de passe pour {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
+@api_router.put("/{tenant_slug}/users/{user_id}/access", response_model=User)
+async def update_user_access(tenant_slug: str, user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Récupérer l'utilisateur
-    user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    if not user_data:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    # Vérifier l'ancien mot de passe
-    if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
-    
-    # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
-    new_password = password_data["new_password"]
-    if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
-    if not any(c.isupper() for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins une majuscule")
-    if not any(c.isdigit() for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un chiffre")
-    if not any(c in '!@#$%^&*+-?()' for c in new_password):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*+-?())")
-    
-    # Hasher et mettre à jour le mot de passe
-    new_password_hash = get_password_hash(new_password)
-    result = await db.users.update_one(
-        {"id": user_id, "tenant_id": tenant.id},
-        {"$set": {"mot_de_passe_hash": new_password_hash}}
-    )
-    
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour le mot de passe")
-    
-    return {"message": "Mot de passe modifié avec succès"}
-
-@api_router.put("/users/{user_id}/access", response_model=User)
-async def update_user_access(user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Validation des valeurs
     valid_roles = ["admin", "superviseur", "employe"]
@@ -1437,21 +1728,21 @@ async def update_user_access(user_id: str, role: str, statut: str, current_user:
     if statut not in valid_statuts:
         raise HTTPException(status_code=400, detail="Statut invalide")
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"id": user_id})
+    # Check if user exists in this tenant
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     # Update user access
     result = await db.users.update_one(
-        {"id": user_id}, 
+        {"id": user_id, "tenant_id": tenant.id}, 
         {"$set": {"role": role, "statut": statut}}
     )
     
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour l'accès")
     
-    updated_user = await db.users.find_one({"id": user_id})
+    updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
     return User(**updated_user)
 
@@ -1680,37 +1971,581 @@ async def get_assignations(tenant_slug: str, semaine_debut: str, current_user: U
     return [Assignation(**assignation) for assignation in cleaned_assignations]
 
 # Remplacements routes
+
+# ==================== SYSTÈME AUTOMATISÉ DE REMPLACEMENT ====================
+
+async def calculer_priorite_demande(date_garde: str) -> str:
+    """
+    Calcule la priorité d'une demande de remplacement
+    - urgent: Si la garde est dans 24h ou moins
+    - normal: Si la garde est dans plus de 24h
+    """
+    try:
+        date_garde_obj = datetime.strptime(date_garde, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        maintenant = datetime.now(timezone.utc)
+        delta = date_garde_obj - maintenant
+        
+        if delta.total_seconds() <= 86400:  # 24 heures en secondes
+            return "urgent"
+        return "normal"
+    except Exception as e:
+        logging.error(f"Erreur calcul priorité: {e}")
+        return "normal"
+
+async def trouver_remplacants_potentiels(
+    tenant_id: str,
+    type_garde_id: str,
+    date_garde: str,
+    demandeur_id: str,
+    exclus_ids: List[str] = []
+) -> List[Dict[str, Any]]:
+    """
+    Trouve les remplaçants potentiels selon les critères:
+    1. Compétences requises pour le type de garde
+    2. Grade équivalent ou supérieur (lieutenant peut remplacer pompier)
+    3. Pas d'indisponibilité pour cette date
+    4. Disponibilité déclarée (bonus de tri)
+    5. Ancienneté (date_embauche la plus ancienne)
+    
+    Retourne une liste triée de remplaçants par ordre de priorité
+    """
+    try:
+        # Récupérer le type de garde pour connaître les compétences requises
+        type_garde_data = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant_id})
+        if not type_garde_data:
+            logging.error(f"Type de garde non trouvé: {type_garde_id}")
+            return []
+        
+        competences_requises = type_garde_data.get("competences_requises", [])
+        officier_obligatoire = type_garde_data.get("officier_obligatoire", False)
+        
+        # Récupérer tous les utilisateurs du tenant (sauf demandeur et déjà exclus)
+        exclus_ids_set = set(exclus_ids + [demandeur_id])
+        
+        users_cursor = db.users.find({
+            "tenant_id": tenant_id,
+            "id": {"$nin": list(exclus_ids_set)},
+            "type_emploi": "temps_partiel"  # Seulement temps partiel pour remplacements
+        })
+        users_list = await users_cursor.to_list(length=None)
+        
+        remplacants_potentiels = []
+        
+        for user in users_list:
+            # 1. Vérifier les compétences/formations
+            user_formations = set(user.get("formations", []))
+            if competences_requises and not set(competences_requises).issubset(user_formations):
+                continue  # Ne possède pas toutes les compétences requises
+            
+            # 2. Vérifier le grade
+            user_grade = user.get("grade", "pompier")
+            grades_hierarchie = ["pompier", "lieutenant", "capitaine", "chef"]
+            
+            if officier_obligatoire:
+                # Pour officier obligatoire, il faut au moins lieutenant
+                if user_grade not in ["lieutenant", "capitaine", "chef"]:
+                    continue
+            
+            # 3. Vérifier qu'il n'a PAS d'indisponibilité pour cette date
+            indispo = await db.disponibilites.find_one({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": date_garde,
+                "statut": "indisponible"
+            })
+            
+            if indispo:
+                continue  # A une indisponibilité, on passe
+            
+            # 4. Vérifier s'il a une disponibilité déclarée (bonus)
+            dispo = await db.disponibilites.find_one({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": date_garde,
+                "statut": "disponible"
+            })
+            
+            has_disponibilite = dispo is not None
+            
+            # 5. Ancienneté (date_embauche)
+            date_embauche = user.get("date_embauche", "2999-12-31")  # Si pas de date, le plus récent
+            
+            remplacants_potentiels.append({
+                "user_id": user["id"],
+                "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "email": user.get("email", ""),
+                "grade": user_grade,
+                "date_embauche": date_embauche,
+                "has_disponibilite": has_disponibilite,
+                "formations": list(user_formations)
+            })
+        
+        # Trier par: 1. Disponibilité déclarée, 2. Ancienneté (date la plus ancienne)
+        remplacants_potentiels.sort(
+            key=lambda x: (
+                not x["has_disponibilite"],  # False (a dispo) avant True (pas de dispo)
+                x["date_embauche"]  # Date la plus ancienne en premier
+            )
+        )
+        
+        logging.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels pour demande {type_garde_id}")
+        return remplacants_potentiels
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la recherche de remplaçants: {e}", exc_info=True)
+        return []
+
+async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
+    """
+    Lance la recherche de remplaçant pour une demande
+    Contacte le(s) premier(s) remplaçant(s) selon le mode de notification
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            logging.error(f"Demande de remplacement non trouvée: {demande_id}")
+            return
+        
+        # Récupérer les paramètres de remplacement
+        parametres_data = await db.parametres.find_one({"tenant_id": tenant_id})
+        if not parametres_data:
+            # Paramètres par défaut
+            mode_notification = "un_par_un"
+            delai_attente_heures = 2
+            nombre_simultane = 1
+        else:
+            mode_notification = parametres_data.get("mode_notification", "un_par_un")
+            delai_attente_heures = parametres_data.get("delai_attente_heures", 2)
+            nombre_simultane = parametres_data.get("nombre_simultane", 3)
+        
+        # Trouver les remplaçants potentiels (excluant ceux déjà contactés)
+        exclus_ids = [t.get("user_id") for t in demande_data.get("tentatives_historique", [])]
+        
+        remplacants = await trouver_remplacants_potentiels(
+            tenant_id=tenant_id,
+            type_garde_id=demande_data["type_garde_id"],
+            date_garde=demande_data["date"],
+            demandeur_id=demande_data["demandeur_id"],
+            exclus_ids=exclus_ids
+        )
+        
+        if not remplacants:
+            # Aucun remplaçant trouvé, marquer comme expiree et notifier superviseur
+            logging.warning(f"⚠️ Aucun remplaçant trouvé pour la demande {demande_id}")
+            await db.demandes_remplacement.update_one(
+                {"id": demande_id},
+                {
+                    "$set": {
+                        "statut": "expiree",
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # Notifier superviseurs qu'aucun remplaçant n'a été trouvé
+            superviseurs = await db.users.find({
+                "tenant_id": tenant_id,
+                "role": {"$in": ["superviseur", "admin"]}
+            }).to_list(100)
+            
+            superviseur_ids = [s["id"] for s in superviseurs]
+            if superviseur_ids:
+                demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+                await send_push_notification_to_users(
+                    user_ids=superviseur_ids,
+                    title="❌ Aucun remplaçant trouvé",
+                    body=f"Aucun remplaçant disponible pour {demandeur.get('prenom', '')} {demandeur.get('nom', '')} le {demande_data['date']}",
+                    data={
+                        "type": "remplacement_expiree",
+                        "demande_id": demande_id
+                    }
+                )
+            return
+        
+        # Déterminer combien de remplaçants contacter
+        if mode_notification == "multiple":
+            nombre_a_contacter = min(nombre_simultane, len(remplacants))
+        else:  # un_par_un
+            nombre_a_contacter = 1
+        
+        remplacants_a_contacter = remplacants[:nombre_a_contacter]
+        
+        # Contacter les remplaçants
+        remplacant_ids = []
+        maintenant = datetime.now(timezone.utc)
+        
+        for remplacant in remplacants_a_contacter:
+            # Ajouter à l'historique
+            tentative = {
+                "user_id": remplacant["user_id"],
+                "nom_complet": remplacant["nom_complet"],
+                "date_contact": maintenant.isoformat(),
+                "statut": "contacted",
+                "date_reponse": None
+            }
+            
+            await db.demandes_remplacement.update_one(
+                {"id": demande_id},
+                {
+                    "$push": {"tentatives_historique": tentative},
+                    "$addToSet": {"remplacants_contactes_ids": remplacant["user_id"]}
+                }
+            )
+            
+            remplacant_ids.append(remplacant["user_id"])
+            
+            logging.info(f"📤 Contact remplaçant {remplacant['nom_complet']} pour demande {demande_id}")
+        
+        # Calculer la date de prochaine tentative (si timeout sans réponse)
+        date_prochaine = maintenant + timedelta(hours=delai_attente_heures)
+        
+        # Mettre à jour la demande
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "en_cours",
+                    "date_prochaine_tentative": date_prochaine,
+                    "updated_at": maintenant
+                },
+                "$inc": {"nombre_tentatives": 1}
+            }
+        )
+        
+        # Envoyer notifications push aux remplaçants
+        demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+        type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"]})
+        
+        await send_push_notification_to_users(
+            user_ids=remplacant_ids,
+            title="🚨 Demande de remplacement",
+            body=f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')} cherche un remplaçant pour {type_garde.get('nom', 'une garde')} le {demande_data['date']}",
+            data={
+                "type": "remplacement_proposition",
+                "demande_id": demande_id,
+                "lien": "/remplacements"
+            }
+        )
+        
+        logging.info(f"✅ Recherche lancée pour demande {demande_id}: {nombre_a_contacter} remplaçant(s) contacté(s)")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors du lancement de la recherche de remplaçant: {e}", exc_info=True)
+
+async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: str):
+    """
+    Traite l'acceptation d'un remplacement par un remplaçant
+    - Vérifie que le remplaçant est le plus ancien si plusieurs acceptations simultanées
+    - Met à jour le planning (assignations)
+    - Notifie le demandeur et les superviseurs
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande est toujours en cours
+        if demande_data["statut"] != "en_cours":
+            raise HTTPException(status_code=400, detail="Cette demande n'est plus disponible")
+        
+        # Vérifier que le remplaçant a bien été contacté
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à accepter cette demande")
+        
+        # Récupérer le remplaçant
+        remplacant = await db.users.find_one({"id": remplacant_id, "tenant_id": tenant_id})
+        if not remplacant:
+            raise HTTPException(status_code=404, detail="Remplaçant non trouvé")
+        
+        # Mettre à jour la demande
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "accepte",
+                    "remplacant_id": remplacant_id,
+                    "updated_at": maintenant
+                }
+            }
+        )
+        
+        # Mettre à jour l'historique des tentatives
+        await db.demandes_remplacement.update_one(
+            {
+                "id": demande_id,
+                "tentatives_historique.user_id": remplacant_id
+            },
+            {
+                "$set": {
+                    "tentatives_historique.$.statut": "accepted",
+                    "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                }
+            }
+        )
+        
+        # Mettre à jour le planning (assignations)
+        # Trouver l'assignation du demandeur pour cette date et ce type de garde
+        assignation = await db.assignations.find_one({
+            "tenant_id": tenant_id,
+            "user_id": demande_data["demandeur_id"],
+            "date": demande_data["date"],
+            "type_garde_id": demande_data["type_garde_id"]
+        })
+        
+        if assignation:
+            # Remplacer l'assignation par le remplaçant
+            await db.assignations.update_one(
+                {"id": assignation["id"]},
+                {
+                    "$set": {
+                        "user_id": remplacant_id,
+                        "est_remplacement": True,
+                        "demandeur_original_id": demande_data["demandeur_id"],
+                        "updated_at": maintenant
+                    }
+                }
+            )
+            logging.info(f"✅ Planning mis à jour: {remplacant['prenom']} {remplacant['nom']} remplace assignation {assignation['id']}")
+        else:
+            logging.warning(f"⚠️ Aucune assignation trouvée pour le demandeur {demande_data['demandeur_id']} le {demande_data['date']}")
+        
+        # Notifier le demandeur
+        demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+        await send_push_notification_to_users(
+            user_ids=[demande_data["demandeur_id"]],
+            title="✅ Remplacement trouvé!",
+            body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}",
+            data={
+                "type": "remplacement_accepte",
+                "demande_id": demande_id,
+                "remplacant_id": remplacant_id
+            }
+        )
+        
+        # Notifier les superviseurs
+        superviseurs = await db.users.find({
+            "tenant_id": tenant_id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
+        
+        superviseur_ids = [s["id"] for s in superviseurs]
+        if superviseur_ids:
+            await send_push_notification_to_users(
+                user_ids=superviseur_ids,
+                title="✅ Remplacement confirmé",
+                body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} remplace {demandeur.get('prenom', '')} {demandeur.get('nom', '')} le {demande_data['date']}",
+                data={
+                    "type": "remplacement_accepte",
+                    "demande_id": demande_id
+                }
+            )
+        
+        # Notifier les autres remplaçants contactés qu'ils ne sont plus nécessaires
+        autres_remplacants_ids = [
+            rid for rid in demande_data.get("remplacants_contactes_ids", [])
+            if rid != remplacant_id
+        ]
+        
+        if autres_remplacants_ids:
+            await send_push_notification_to_users(
+                user_ids=autres_remplacants_ids,
+                title="Remplacement pourvu",
+                body=f"Le remplacement du {demande_data['date']} a été pourvu par un autre pompier",
+                data={
+                    "type": "remplacement_pourvu",
+                    "demande_id": demande_id
+                }
+            )
+        
+        logging.info(f"✅ Remplacement accepté: demande {demande_id}, remplaçant {remplacant['nom_complet']}")
+        return True
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de l'acceptation du remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors de l'acceptation du remplacement")
+
+async def refuser_remplacement(demande_id: str, remplacant_id: str, tenant_id: str):
+    """
+    Traite le refus d'un remplacement par un remplaçant
+    - Met à jour l'historique
+    - Si tous les remplaçants contactés ont refusé, lance une nouvelle recherche
+    """
+    try:
+        # Récupérer la demande
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que le remplaçant a bien été contacté
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à refuser cette demande")
+        
+        # Mettre à jour l'historique
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {
+                "id": demande_id,
+                "tentatives_historique.user_id": remplacant_id
+            },
+            {
+                "$set": {
+                    "tentatives_historique.$.statut": "refused",
+                    "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                }
+            }
+        )
+        
+        # Retirer de la liste des remplaçants en attente
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$pull": {"remplacants_contactes_ids": remplacant_id},
+                "$set": {"updated_at": maintenant}
+            }
+        )
+        
+        # Vérifier s'il reste des remplaçants en attente
+        demande_updated = await db.demandes_remplacement.find_one({"id": demande_id})
+        if not demande_updated.get("remplacants_contactes_ids"):
+            # Plus personne en attente, relancer la recherche immédiatement
+            logging.info(f"🔄 Tous les remplaçants ont refusé, relance de la recherche pour demande {demande_id}")
+            await lancer_recherche_remplacant(demande_id, tenant_id)
+        
+        logging.info(f"❌ Remplacement refusé par remplaçant {remplacant_id} pour demande {demande_id}")
+        return True
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors du refus du remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors du refus du remplacement")
+
+async def verifier_et_traiter_timeouts():
+    """
+    Fonction appelée périodiquement pour vérifier les demandes en timeout
+    Relance la recherche si le délai d'attente est dépassé
+    """
+    try:
+        maintenant = datetime.now(timezone.utc)
+        
+        # Trouver toutes les demandes en_cours dont la date_prochaine_tentative est dépassée
+        demandes_cursor = db.demandes_remplacement.find({
+            "statut": "en_cours",
+            "date_prochaine_tentative": {"$lte": maintenant}
+        })
+        
+        demandes_timeout = await demandes_cursor.to_list(length=None)
+        
+        for demande in demandes_timeout:
+            logging.info(f"⏱️ Timeout atteint pour demande {demande['id']}, relance de la recherche")
+            
+            # Marquer les remplaçants contactés comme expirés dans l'historique
+            for remplacant_id in demande.get("remplacants_contactes_ids", []):
+                await db.demandes_remplacement.update_one(
+                    {
+                        "id": demande["id"],
+                        "tentatives_historique.user_id": remplacant_id,
+                        "tentatives_historique.statut": "contacted"
+                    },
+                    {
+                        "$set": {
+                            "tentatives_historique.$.statut": "expired",
+                            "tentatives_historique.$.date_reponse": maintenant.isoformat()
+                        }
+                    }
+                )
+            
+            # Vider la liste des remplaçants en attente
+            await db.demandes_remplacement.update_one(
+                {"id": demande["id"]},
+                {
+                    "$set": {
+                        "remplacants_contactes_ids": [],
+                        "updated_at": maintenant
+                    }
+                }
+            )
+            
+            # Relancer la recherche
+            await lancer_recherche_remplacant(demande["id"], demande["tenant_id"])
+        
+        if demandes_timeout:
+            logging.info(f"✅ Traité {len(demandes_timeout)} demande(s) en timeout")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la vérification des timeouts: {e}", exc_info=True)
+
+
 @api_router.post("/{tenant_slug}/remplacements", response_model=DemandeRemplacement)
 async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    demande_dict = demande.dict()
-    demande_dict["tenant_id"] = tenant.id
-    demande_dict["demandeur_id"] = current_user.id
-    demande_obj = DemandeRemplacement(**demande_dict)
-    await db.demandes_remplacement.insert_one(demande_obj.dict())
-    
-    # Créer notification pour les superviseurs/admins de ce tenant
-    superviseurs_admins = await db.users.find({
-        "tenant_id": tenant.id,
-        "role": {"$in": ["superviseur", "admin"]}
-    }).to_list(100)
-    
-    for user in superviseurs_admins:
-        await creer_notification(
-            tenant_id=tenant.id,
-            destinataire_id=user["id"],
-            type="remplacement_demande",
-            titre="Nouvelle demande de remplacement",
-            message=f"{current_user.prenom} {current_user.nom} demande un remplacement le {demande.date}",
-            lien="/remplacements",
-            data={"demande_id": demande_obj.id}
-        )
-    
-    # Clean the object before returning to avoid ObjectId serialization issues
-    cleaned_demande = clean_mongo_doc(demande_obj.dict())
-    return DemandeRemplacement(**cleaned_demande)
+    """
+    Créer une demande de remplacement et lancer automatiquement la recherche de remplaçant
+    """
+    try:
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Calculer la priorité automatiquement
+        priorite = await calculer_priorite_demande(demande.date)
+        
+        demande_dict = demande.dict()
+        demande_dict["tenant_id"] = tenant.id
+        demande_dict["demandeur_id"] = current_user.id
+        demande_dict["priorite"] = priorite
+        demande_dict["statut"] = "en_attente"  # Commence en attente
+        
+        demande_obj = DemandeRemplacement(**demande_dict)
+        await db.demandes_remplacement.insert_one(demande_obj.dict())
+        
+        logging.info(f"✅ Demande de remplacement créée: {demande_obj.id} (priorité: {priorite})")
+        
+        # Créer notification pour les superviseurs/admins (info seulement, pas de gestion manuelle)
+        superviseurs_admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
+        
+        superviseur_ids = []
+        for user in superviseurs_admins:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=user["id"],
+                type="remplacement_demande",
+                titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
+                message=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                lien="/remplacements",
+                data={"demande_id": demande_obj.id}
+            )
+            superviseur_ids.append(user["id"])
+        
+        # Envoyer notifications push aux superviseurs (pour info)
+        if superviseur_ids:
+            await send_push_notification_to_users(
+                user_ids=superviseur_ids,
+                title=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement",
+                body=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                data={
+                    "type": "remplacement_demande",
+                    "demande_id": demande_obj.id,
+                    "lien": "/remplacements"
+                }
+            )
+        
+        # 🚀 LANCER LA RECHERCHE AUTOMATIQUE DE REMPLAÇANT
+        await lancer_recherche_remplacant(demande_obj.id, tenant.id)
+        
+        # Clean the object before returning
+        cleaned_demande = clean_mongo_doc(demande_obj.dict())
+        return DemandeRemplacement(**cleaned_demande)
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la création de la demande de remplacement: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de la demande")
 
 @api_router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])
 async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
@@ -1728,120 +2563,700 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
     cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
     return [DemandeRemplacement(**demande) for demande in cleaned_demandes]
 
-# Formations routes
-@api_router.post("/{tenant_slug}/formations", response_model=Formation)
-async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+@api_router.get("/{tenant_slug}/remplacements/propositions")
+async def get_propositions_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """
+    Récupère les propositions de remplacement pour l'utilisateur connecté
+    (Les demandes où il a été contacté et doit répondre)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Trouver les demandes où l'utilisateur est dans remplacants_contactes_ids et statut = en_cours
+    demandes = await db.demandes_remplacement.find({
+        "tenant_id": tenant.id,
+        "statut": "en_cours",
+        "remplacants_contactes_ids": current_user.id
+    }).to_list(1000)
+    
+    # Enrichir avec les détails du demandeur et du type de garde
+    propositions = []
+    for demande in demandes:
+        demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
+        type_garde = await db.types_garde.find_one({"id": demande["type_garde_id"]})
+        
+        demande["demandeur"] = {
+            "nom": demandeur.get("nom", ""),
+            "prenom": demandeur.get("prenom", ""),
+            "email": demandeur.get("email", "")
+        } if demandeur else None
+        
+        demande["type_garde"] = {
+            "nom": type_garde.get("nom", ""),
+            "heure_debut": type_garde.get("heure_debut", ""),
+            "heure_fin": type_garde.get("heure_fin", "")
+        } if type_garde else None
+        
+        propositions.append(clean_mongo_doc(demande))
+    
+    return propositions
+
+@api_router.put("/{tenant_slug}/remplacements/{demande_id}/accepter")
+async def accepter_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Accepter une proposition de remplacement
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await accepter_remplacement(demande_id, current_user.id, tenant.id)
+    
+    return {
+        "message": "Remplacement accepté avec succès",
+        "demande_id": demande_id
+    }
+
+@api_router.put("/{tenant_slug}/remplacements/{demande_id}/refuser")
+async def refuser_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Refuser une proposition de remplacement
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await refuser_remplacement(demande_id, current_user.id, tenant.id)
+    
+    return {
+        "message": "Remplacement refusé",
+        "demande_id": demande_id
+    }
+
+@api_router.delete("/{tenant_slug}/remplacements/{demande_id}")
+async def annuler_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Annuler une demande de remplacement (seulement par le demandeur)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer la demande
+    demande = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Vérifier que c'est bien le demandeur
+    if demande["demandeur_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le demandeur peut annuler la demande")
+    
+    # Vérifier que la demande n'est pas déjà acceptée
+    if demande["statut"] == "accepte":
+        raise HTTPException(status_code=400, detail="Impossible d'annuler une demande déjà acceptée")
+    
+    # Marquer comme annulée
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "annulee",
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Notifier les remplaçants contactés que la demande est annulée
+    if demande.get("remplacants_contactes_ids"):
+        await send_push_notification_to_users(
+            user_ids=demande["remplacants_contactes_ids"],
+            title="Demande annulée",
+            body=f"La demande de remplacement du {demande['date']} a été annulée",
+            data={
+                "type": "remplacement_annulee",
+                "demande_id": demande_id
+            }
+        )
+    
+    logging.info(f"✅ Demande de remplacement annulée: {demande_id}")
+    
+    return {
+        "message": "Demande annulée avec succès",
+        "demande_id": demande_id
+    }
+
+# ==================== COMPÉTENCES ROUTES ====================
+
+@api_router.post("/{tenant_slug}/competences", response_model=Competence)
+async def create_competence(tenant_slug: str, competence: CompetenceCreate, current_user: User = Depends(get_current_user)):
+    """Crée une compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    competence_dict = competence.dict()
+    competence_dict["tenant_id"] = tenant.id
+    competence_obj = Competence(**competence_dict)
+    
+    comp_data = competence_obj.dict()
+    comp_data["created_at"] = competence_obj.created_at.isoformat()
+    
+    await db.competences.insert_one(comp_data)
+    return competence_obj
+
+@api_router.get("/{tenant_slug}/competences", response_model=List[Competence])
+async def get_competences(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère toutes les compétences"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
+    cleaned = [clean_mongo_doc(c) for c in competences]
+    
+    for c in cleaned:
+        if isinstance(c.get("created_at"), str):
+            c["created_at"] = datetime.fromisoformat(c["created_at"].replace('Z', '+00:00'))
+    
+    return [Competence(**c) for c in cleaned]
+
+@api_router.put("/{tenant_slug}/competences/{competence_id}", response_model=Competence)
+async def update_competence(
+    tenant_slug: str,
+    competence_id: str,
+    competence_update: CompetenceUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    update_data = {k: v for k, v in competence_update.dict().items() if v is not None}
+    
+    result = await db.competences.update_one(
+        {"id": competence_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Compétence non trouvée")
+    
+    updated = await db.competences.find_one({"id": competence_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
+    
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    
+    return Competence(**cleaned)
+
+@api_router.delete("/{tenant_slug}/competences/{competence_id}")
+async def delete_competence(tenant_slug: str, competence_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime une compétence"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.competences.delete_one({"id": competence_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Compétence non trouvée")
+    
+    return {"message": "Compétence supprimée"}
+
+# ==================== GRADES ROUTES ====================
+
+@api_router.post("/{tenant_slug}/grades", response_model=Grade)
+async def create_grade(tenant_slug: str, grade: GradeCreate, current_user: User = Depends(get_current_user)):
+    """Crée un grade"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si le grade existe déjà
+    existing = await db.grades.find_one({"nom": grade.nom, "tenant_id": tenant.id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce grade existe déjà")
+    
+    grade_dict = grade.dict()
+    grade_dict["tenant_id"] = tenant.id
+    grade_obj = Grade(**grade_dict)
+    
+    grade_data = grade_obj.dict()
+    grade_data["created_at"] = grade_obj.created_at.isoformat()
+    grade_data["updated_at"] = grade_obj.updated_at.isoformat()
+    
+    await db.grades.insert_one(grade_data)
+    return grade_obj
+
+@api_router.get("/{tenant_slug}/grades", response_model=List[Grade])
+async def get_grades(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les grades triés par niveau hiérarchique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    grades = await db.grades.find({"tenant_id": tenant.id}).sort("niveau_hierarchique", 1).to_list(1000)
+    cleaned = [clean_mongo_doc(g) for g in grades]
+    
+    for g in cleaned:
+        if isinstance(g.get("created_at"), str):
+            g["created_at"] = datetime.fromisoformat(g["created_at"].replace('Z', '+00:00'))
+        if isinstance(g.get("updated_at"), str):
+            g["updated_at"] = datetime.fromisoformat(g["updated_at"].replace('Z', '+00:00'))
+    
+    return [Grade(**g) for g in cleaned]
+
+@api_router.put("/{tenant_slug}/grades/{grade_id}", response_model=Grade)
+async def update_grade(
+    tenant_slug: str,
+    grade_id: str,
+    grade_update: GradeUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un grade"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    update_data = {k: v for k, v in grade_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.grades.update_one(
+        {"id": grade_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    updated = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
+    
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
+    
+    return Grade(**cleaned)
+
+@api_router.delete("/{tenant_slug}/grades/{grade_id}")
+async def delete_grade(tenant_slug: str, grade_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime un grade si aucun employé ne l'utilise"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si le grade existe
+    existing_grade = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})
+    if not existing_grade:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    # Vérifier si des employés utilisent ce grade
+    users_count = await db.users.count_documents({"grade": existing_grade["nom"], "tenant_id": tenant.id})
+    
+    if users_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer ce grade. {users_count} employé(s) l'utilisent actuellement. Veuillez d'abord réassigner ces employés à un autre grade."
+        )
+    
+    result = await db.grades.delete_one({"id": grade_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    return {"message": "Grade supprimé avec succès"}
+
+# ==================== FORMATIONS ROUTES NFPA 1500 ====================
+
+@api_router.post("/{tenant_slug}/formations", response_model=Formation)
+async def create_formation(tenant_slug: str, formation: FormationCreate, current_user: User = Depends(get_current_user)):
+    """Crée une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     formation_dict = formation.dict()
     formation_dict["tenant_id"] = tenant.id
+    formation_dict["places_restantes"] = formation.places_max
     formation_obj = Formation(**formation_dict)
-    await db.formations.insert_one(formation_obj.dict())
+    
+    form_data = formation_obj.dict()
+    form_data["created_at"] = formation_obj.created_at.isoformat()
+    form_data["updated_at"] = formation_obj.updated_at.isoformat()
+    
+    await db.formations.insert_one(form_data)
     return formation_obj
 
 @api_router.get("/{tenant_slug}/formations", response_model=List[Formation])
-async def get_formations(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
+async def get_formations(tenant_slug: str, annee: Optional[int] = None, current_user: User = Depends(get_current_user)):
+    """Récupère formations (filtre annee)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
-    cleaned_formations = [clean_mongo_doc(formation) for formation in formations]
-    return [Formation(**formation) for formation in cleaned_formations]
+    query = {"tenant_id": tenant.id}
+    if annee:
+        query["annee"] = annee
+    
+    formations = await db.formations.find(query).sort("date_debut", 1).to_list(1000)
+    cleaned = [clean_mongo_doc(f) for f in formations]
+    
+    for f in cleaned:
+        if isinstance(f.get("created_at"), str):
+            f["created_at"] = datetime.fromisoformat(f["created_at"].replace('Z', '+00:00'))
+        if isinstance(f.get("updated_at"), str):
+            f["updated_at"] = datetime.fromisoformat(f["updated_at"].replace('Z', '+00:00'))
+    
+    return [Formation(**f) for f in cleaned]
 
 @api_router.put("/{tenant_slug}/formations/{formation_id}", response_model=Formation)
-async def update_formation(tenant_slug: str, formation_id: str, formation_update: FormationCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+async def update_formation(
+    tenant_slug: str,
+    formation_id: str,
+    formation_update: FormationUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Check if formation exists dans ce tenant
-    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    if not existing_formation:
+    update_data = {k: v for k, v in formation_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.formations.update_one(
+        {"id": formation_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
-    # Update formation data
-    formation_dict = formation_update.dict()
-    formation_dict["id"] = formation_id
-    formation_dict["tenant_id"] = tenant.id
-    formation_dict["created_at"] = existing_formation.get("created_at")
+    updated = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    cleaned = clean_mongo_doc(updated)
     
-    result = await db.formations.replace_one({"id": formation_id, "tenant_id": tenant.id}, formation_dict)
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour la formation")
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
     
-    updated_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    updated_formation = clean_mongo_doc(updated_formation)
-    return Formation(**updated_formation)
+    return Formation(**cleaned)
 
 @api_router.delete("/{tenant_slug}/formations/{formation_id}")
 async def delete_formation(tenant_slug: str, formation_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    """Supprime une formation"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Check if formation exists dans ce tenant
-    existing_formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
-    if not existing_formation:
+    # Supprimer inscriptions
+    await db.inscriptions_formations.delete_many({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id
+    })
+    
+    result = await db.formations.delete_one({"id": formation_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
-    # Delete formation
-    result = await db.formations.delete_one({"id": formation_id, "tenant_id": tenant.id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de supprimer la formation")
+    return {"message": "Formation supprimée"}
+
+@api_router.post("/{tenant_slug}/formations/{formation_id}/inscription")
+async def inscrire_formation(
+    tenant_slug: str,
+    formation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Inscription à formation avec gestion liste d'attente"""
+    tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Remove from users' formations arrays (uniquement dans ce tenant)
-    await db.users.update_many(
-        {"formations": formation_id, "tenant_id": tenant.id},
-        {"$pull": {"formations": formation_id}}
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    
+    # Vérifier déjà inscrit
+    existing = await db.inscriptions_formations.find_one({
+        "formation_id": formation_id,
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Déjà inscrit")
+    
+    # Compter inscrits
+    nb_inscrits = await db.inscriptions_formations.count_documents({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id,
+        "statut": "inscrit"
+    })
+    
+    statut = "inscrit" if nb_inscrits < formation["places_max"] else "en_attente"
+    
+    inscription = InscriptionFormation(
+        tenant_id=tenant.id,
+        formation_id=formation_id,
+        user_id=current_user.id,
+        date_inscription=datetime.now(timezone.utc).date().isoformat(),
+        statut=statut
     )
     
-    return {"message": "Formation supprimée avec succès"}
+    insc_data = inscription.dict()
+    insc_data["created_at"] = inscription.created_at.isoformat()
+    insc_data["updated_at"] = inscription.updated_at.isoformat()
+    
+    await db.inscriptions_formations.insert_one(insc_data)
+    
+    # MAJ places
+    if statut == "inscrit":
+        await db.formations.update_one(
+            {"id": formation_id, "tenant_id": tenant.id},
+            {"$set": {"places_restantes": formation["places_max"] - nb_inscrits - 1}}
+        )
+    
+    # Notifier si liste attente
+    if statut == "en_attente":
+        superviseurs = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["admin", "superviseur"]}
+        }).to_list(100)
+        
+        for sup in superviseurs:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=sup["id"],
+                type="formation_liste_attente",
+                titre="Liste d'attente formation",
+                message=f"{formation['nom']}: {current_user.prenom} {current_user.nom} en liste d'attente",
+                lien="/formations"
+            )
+    
+    return {"message": "Inscription réussie", "statut": statut}
 
-class SessionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    titre: str
-    competence_id: str  # Lien vers Formation (compétence)
-    duree_heures: int
-    date_debut: str  # YYYY-MM-DD
-    heure_debut: str  # HH:MM
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
-    participants: List[str] = []  # IDs des utilisateurs inscrits
-    statut: str = "planifie"  # planifie, en_cours, termine, annule
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+@api_router.get("/{tenant_slug}/formations/{formation_id}/inscriptions")
+async def get_inscriptions(tenant_slug: str, formation_id: str, current_user: User = Depends(get_current_user)):
+    """Liste inscriptions formation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inscriptions = await db.inscriptions_formations.find({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    result = []
+    for insc in inscriptions:
+        user = await db.users.find_one({"id": insc["user_id"], "tenant_id": tenant.id})
+        if user:
+            cleaned = clean_mongo_doc(insc)
+            cleaned["user_nom"] = f"{user['prenom']} {user['nom']}"
+            cleaned["user_grade"] = user.get("grade", "")
+            result.append(cleaned)
+    
+    return result
 
-class SessionFormationCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    titre: str
-    competence_id: str
-    duree_heures: int
-    date_debut: str
-    heure_debut: str
-    lieu: str
-    formateur: str
-    descriptif: str
-    plan_cours: str = ""
-    places_max: int = 20
+@api_router.put("/{tenant_slug}/formations/{formation_id}/presence/{user_id}")
+async def valider_presence(
+    tenant_slug: str,
+    formation_id: str,
+    user_id: str,
+    presence: InscriptionFormationUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Valide présence et crédite heures"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    
+    heures = formation["duree_heures"] if presence.statut == "present" else 0
+    
+    await db.inscriptions_formations.update_one(
+        {"formation_id": formation_id, "user_id": user_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": presence.statut,
+            "heures_creditees": heures,
+            "notes": presence.notes or "",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Présence validée", "heures": heures}
 
-class InscriptionFormation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    session_id: str
-    user_id: str
-    date_inscription: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    statut: str = "inscrit"  # inscrit, present, absent, annule
+@api_router.get("/{tenant_slug}/formations/rapports/conformite")
+async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = Depends(get_current_user)):
+    """Rapport conformité NFPA 1500"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
+    heures_min = params.get("heures_minimales_annuelles", 100) if params else 100
+    pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
+    
+    aujourd_hui = datetime.now(timezone.utc).date()
+    
+    rapport = []
+    for pompier in pompiers:
+        # Toutes les inscriptions
+        toutes_inscriptions = await db.inscriptions_formations.find({
+            "user_id": pompier["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        
+        total_heures = 0
+        formations_passees = 0
+        presences = 0
+        
+        for insc in toutes_inscriptions:
+            formation = await db.formations.find_one({
+                "id": insc["formation_id"],
+                "annee": annee,
+                "tenant_id": tenant.id
+            })
+            
+            if formation:
+                date_fin = datetime.fromisoformat(formation["date_fin"]).date()
+                
+                # Heures créditées
+                if insc.get("statut") == "present":
+                    total_heures += insc.get("heures_creditees", 0)
+                
+                # Calcul taux de présence (formations passées seulement)
+                if date_fin < aujourd_hui:
+                    formations_passees += 1
+                    if insc.get("statut") == "present":
+                        presences += 1
+        
+        taux_presence = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
+        conforme_presence = taux_presence >= pourcentage_min
+        conforme_heures = total_heures >= heures_min
+        
+        pompier_data = clean_mongo_doc(pompier)
+        pompier_data["total_heures"] = total_heures
+        pompier_data["heures_requises"] = heures_min
+        pompier_data["conforme"] = conforme_heures and conforme_presence
+        pompier_data["pourcentage"] = round((total_heures / heures_min * 100) if heures_min > 0 else 0, 1)
+        pompier_data["taux_presence"] = taux_presence
+        pompier_data["formations_passees"] = formations_passees
+        pompier_data["presences"] = presences
+        rapport.append(pompier_data)
+    
+    rapport.sort(key=lambda x: (-int(x["conforme"]), -x["total_heures"]))
+    
+    return {
+        "annee": annee,
+        "heures_minimales": heures_min,
+        "total_pompiers": len(rapport),
+        "conformes": len([p for p in rapport if p["conforme"]]),
+        "pourcentage_conformite": round(len([p for p in rapport if p["conforme"]]) / len(rapport) * 100, 1) if len(rapport) > 0 else 0,
+        "pompiers": rapport
+    }
+
+@api_router.get("/{tenant_slug}/formations/rapports/dashboard")
+async def dashboard_formations(tenant_slug: str, annee: int, current_user: User = Depends(get_current_user)):
+    """Dashboard KPIs formations"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formations = await db.formations.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
+    heures_planifiees = sum([f.get("duree_heures", 0) for f in formations])
+    
+    inscriptions = await db.inscriptions_formations.find({
+        "tenant_id": tenant.id,
+        "statut": "present"
+    }).to_list(10000)
+    
+    heures_effectuees = sum([i.get("heures_creditees", 0) for i in inscriptions])
+    
+    total_pompiers = await db.users.count_documents({"tenant_id": tenant.id})
+    users_formes = len(set([i["user_id"] for i in inscriptions]))
+    
+    return {
+        "annee": annee,
+        "heures_planifiees": heures_planifiees,
+        "heures_effectuees": heures_effectuees,
+        "pourcentage_realisation": round((heures_effectuees / heures_planifiees * 100) if heures_planifiees > 0 else 0, 1),
+        "total_pompiers": total_pompiers,
+        "pompiers_formes": users_formes,
+        "pourcentage_pompiers": round((users_formes / total_pompiers * 100) if total_pompiers > 0 else 0, 1)
+    }
+
+
+@api_router.get("/{tenant_slug}/formations/mon-taux-presence")
+async def get_mon_taux_presence(
+    tenant_slug: str,
+    annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Calcule le taux de présence personnel (formations passées)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Date d'aujourd'hui
+    aujourd_hui = datetime.now(timezone.utc).date()
+    
+    # Récupérer mes inscriptions
+    mes_inscriptions = await db.inscriptions_formations.find({
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    formations_passees = 0
+    presences_validees = 0
+    
+    for insc in mes_inscriptions:
+        formation = await db.formations.find_one({
+            "id": insc["formation_id"],
+            "annee": annee,
+            "tenant_id": tenant.id
+        })
+        
+        if formation:
+            date_fin = datetime.fromisoformat(formation["date_fin"]).date()
+            
+            # Seulement les formations passées
+            if date_fin < aujourd_hui:
+                formations_passees += 1
+                if insc.get("statut") == "present":
+                    presences_validees += 1
+    
+    taux_presence = round((presences_validees / formations_passees * 100) if formations_passees > 0 else 0, 1)
+    
+    # Récupérer les paramètres pour savoir si conforme
+    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
+    pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
+    
+    conforme = taux_presence >= pourcentage_min
+    
+    return {
+        "formations_passees": formations_passees,
+        "presences_validees": presences_validees,
+        "absences": formations_passees - presences_validees,
+        "taux_presence": taux_presence,
+        "pourcentage_minimum": pourcentage_min,
+        "conforme": conforme
+    }
+
+
 
 class DemandeCongé(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -1904,46 +3319,238 @@ class ParametresRemplacements(BaseModel):
     priorite_competences: bool = True
 
 # EPI Models
-class EPIEmploye(BaseModel):
+# ==================== MODÈLES EPI NFPA 1851 ====================
+
+class EPI(BaseModel):
+    """Modèle complet d'un équipement de protection individuelle selon NFPA 1851"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
-    employe_id: str
-    type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, masque_scba
-    taille: str
-    date_attribution: str
-    etat: str = "Neuf"  # Neuf, Bon, À remplacer, Défectueux
-    date_expiration: str
-    date_prochaine_inspection: Optional[str] = None
-    historique_inspections: List[Dict[str, Any]] = []
-    notes: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    numero_serie: str  # Numéro de série interne (format libre)
+    type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, cagoule
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""  # ex: NFPA 1971, édition 2018
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None  # Affecté à quel pompier
+    statut: str = "En service"  # En service, En inspection, En réparation, Hors service, Retiré
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class EPIEmployeCreate(BaseModel):
-    tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
-    employe_id: str
+class EPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    numero_serie: str = ""  # Auto-généré si vide
     type_epi: str
-    taille: str
-    date_attribution: str
-    etat: str = "Neuf"
-    date_expiration: str
-    date_prochaine_inspection: Optional[str] = None
-    notes: Optional[str] = None
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None
+    statut: str = "En service"
+    notes: str = ""
 
-class EPIEmployeUpdate(BaseModel):
+class EPIUpdate(BaseModel):
+    numero_serie: Optional[str] = None
+    type_epi: Optional[str] = None
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    numero_serie_fabricant: Optional[str] = None
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: Optional[str] = None
+    norme_certification: Optional[str] = None
+    cout_achat: Optional[float] = None
+    couleur: Optional[str] = None
     taille: Optional[str] = None
-    etat: Optional[str] = None
-    date_expiration: Optional[str] = None
-    date_prochaine_inspection: Optional[str] = None
+    user_id: Optional[str] = None
+    statut: Optional[str] = None
     notes: Optional[str] = None
 
 class InspectionEPI(BaseModel):
+    """Modèle pour les 3 types d'inspections NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
+    epi_id: str
+    type_inspection: str  # apres_utilisation, routine_mensuelle, avancee_annuelle
     date_inspection: str
-    inspecteur_id: str
-    resultat: str  # Conforme, Non conforme, Remplacement nécessaire
-    observations: Optional[str] = None
-    photos: List[str] = []  # URLs des photos d'inspection
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None  # Si c'est un utilisateur du système
+    isp_id: Optional[str] = None  # Si inspection par ISP
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str  # conforme, non_conforme, necessite_reparation, hors_service
+    checklist: Dict[str, Any] = {}  # JSON avec tous les points de vérification
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""  # Pour inspection avancée
+    signature_numerique: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_inspection: str
+    date_inspection: str
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str
+    checklist: Dict[str, Any] = {}
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""
+    signature_numerique: str = ""
+
+class ISP(BaseModel):
+    """Fournisseur de Services Indépendant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ISPCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+
+class ISPUpdate(BaseModel):
+    nom: Optional[str] = None
+    contact: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    accreditations: Optional[str] = None
+    notes: Optional[str] = None
+
+# ==================== MODÈLES PHASE 2 : NETTOYAGE, RÉPARATIONS, RETRAIT ====================
+
+class NettoyageEPI(BaseModel):
+    """Suivi des nettoyages EPI selon NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    type_nettoyage: str  # routine, avance
+    date_nettoyage: str
+    methode: str  # laveuse_extractrice, manuel, externe
+    effectue_par: str  # Nom de la personne ou organisation
+    effectue_par_id: Optional[str] = None  # ID utilisateur si interne
+    isp_id: Optional[str] = None  # Si nettoyage externe
+    nombre_cycles: int = 1  # Pour suivi limite fabricant
+    temperature: str = ""  # Ex: "Eau tiède max 40°C"
+    produits_utilises: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NettoyageEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_nettoyage: str
+    date_nettoyage: str
+    methode: str
+    effectue_par: str
+    effectue_par_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    nombre_cycles: int = 1
+    temperature: str = ""
+    produits_utilises: str = ""
+    notes: str = ""
+
+class ReparationEPI(BaseModel):
+    """Gestion des réparations EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    statut: str  # demandee, en_cours, terminee, impossible
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_type: str  # interne, externe
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    pieces_remplacees: List[str] = []
+    cout_reparation: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReparationEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    statut: str = "demandee"
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    reparateur_type: str
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    notes: str = ""
+
+class ReparationEPIUpdate(BaseModel):
+    statut: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_nom: Optional[str] = None
+    isp_id: Optional[str] = None
+    pieces_remplacees: Optional[List[str]] = None
+    cout_reparation: Optional[float] = None
+    notes: Optional[str] = None
+
+class RetraitEPI(BaseModel):
+    """Enregistrement du retrait définitif d'un EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    date_retrait: str
+    raison: str  # age_limite, dommage_irreparable, echec_inspection, autre
+    description_raison: str
+    methode_disposition: str  # coupe_detruit, recyclage, don, autre
+    preuve_disposition: List[str] = []  # URLs photos
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RetraitEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    date_retrait: str
+    raison: str
+    description_raison: str
+    methode_disposition: str
+    preuve_disposition: List[str] = []
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
@@ -1980,46 +3587,75 @@ async def get_current_tenant(tenant_slug: str) -> Tenant:
 
 @api_router.post("/{tenant_slug}/auth/login")
 async def tenant_login(tenant_slug: str, user_login: UserLogin):
-    """Login pour un tenant spécifique"""
-    # Vérifier que le tenant existe et est actif
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Chercher l'utilisateur dans ce tenant
-    user_data = await db.users.find_one({
-        "email": user_login.email,
-        "tenant_id": tenant.id
-    })
-    
-    if not user_data or not verify_password(user_login.mot_de_passe, user_data["mot_de_passe_hash"]):
-        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    user = User(**user_data)
-    
-    # Inclure tenant_id dans le token
-    access_token = create_access_token(data={
-        "sub": user.id,
-        "tenant_id": tenant.id,
-        "tenant_slug": tenant.slug
-    })
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "tenant": {
-            "id": tenant.id,
-            "slug": tenant.slug,
-            "nom": tenant.nom
-        },
-        "user": {
-            "id": user.id,
-            "nom": user.nom,
-            "prenom": user.prenom,
-            "email": user.email,
-            "role": user.role,
-            "grade": user.grade,
-            "type_emploi": user.type_emploi
+    """Login pour un tenant spécifique avec migration automatique SHA256 -> bcrypt"""
+    try:
+        logging.info(f"🔑 Tentative de connexion pour {user_login.email} sur tenant {tenant_slug}")
+        
+        # Vérifier que le tenant existe et est actif
+        tenant = await get_tenant_from_slug(tenant_slug)
+        logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
+        
+        # Chercher l'utilisateur dans ce tenant
+        user_data = await db.users.find_one({
+            "email": user_login.email,
+            "tenant_id": tenant.id
+        })
+        
+        if not user_data:
+            logging.warning(f"❌ Utilisateur non trouvé: {user_login.email} dans tenant {tenant_slug}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Utilisateur trouvé: {user_data.get('nom')} {user_data.get('prenom')} (id: {user_data.get('id')})")
+        
+        current_hash = user_data.get("mot_de_passe_hash", "")
+        hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
+        logging.info(f"🔐 Type de hash détecté: {hash_type}")
+        
+        # Vérifier le mot de passe
+        if not verify_password(user_login.mot_de_passe, current_hash):
+            logging.warning(f"❌ Mot de passe incorrect pour {user_login.email}")
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        logging.info(f"✅ Mot de passe vérifié avec succès pour {user_login.email}")
+        
+        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
+        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
+        
+        user = User(**user_data)
+        
+        # Inclure tenant_id dans le token
+        access_token = create_access_token(data={
+            "sub": user.id,
+            "tenant_id": tenant.id,
+            "tenant_slug": tenant.slug
+        })
+        
+        logging.info(f"✅ Token JWT créé pour {user_login.email}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "tenant": {
+                "id": tenant.id,
+                "slug": tenant.slug,
+                "nom": tenant.nom
+            },
+            "user": {
+                "id": user.id,
+                "nom": user.nom,
+                "prenom": user.prenom,
+                "email": user.email,
+                "role": user.role,
+                "grade": user.grade,
+                "type_emploi": user.type_emploi
+            }
         }
-    }
+    except HTTPException:
+        # Re-lever les HTTPExceptions sans les logger à nouveau
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur inattendue lors du login pour {user_login.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 # ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
@@ -2825,60 +4461,80 @@ async def send_push_notification(
 
 # ==================== FONCTIONS HELPER POUR GÉNÉRATION D'INDISPONIBILITÉS ====================
 
-def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, annee: int) -> List[Dict]:
+def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
     """
     Génère les indisponibilités pour l'horaire Montreal 7/24
-    Cycle de 28 jours commençant toujours par lundi rouge
+    Cycle de 28 jours commençant le 27 janvier 2025 (premier lundi rouge = jour 1)
     
-    Pattern Montreal 7/24 (par équipe) :
-    - Rouge : jours 1-7 (Jour 07:00-17:00, Nuit 19:00-09:00, 24h 07:00-07:00)
-    - Jaune : jours 8-14
-    - Bleu : jours 15-21
-    - Vert : jours 22-28
+    Pattern RÉEL Montreal 7/24 (vérifié avec calendrier 2025):
+    Chaque équipe travaille exactement 7 jours spécifiques sur le cycle de 28 jours
+    
+    Équipes avec numéros et patterns:
+    - Vert (Équipe #1) : jours 2, 8, 11, 19, 21, 24, 27 du cycle
+    - Bleu (Équipe #2) : jours 3, 6, 9, 15, 18, 26, 28 du cycle
+    - Jaune (Équipe #3) : jours 5, 7, 10, 13, 16, 22, 25 du cycle
+    - Rouge (Équipe #4) : jours 1, 4, 12, 14, 17, 20, 23 du cycle
+    
+    Le jour 1 du cycle = 27 janvier 2025 (premier lundi rouge)
     
     On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
-    (car ils ne sont pas disponibles pour les gardes de pompiers ces jours-là)
     """
-    equipes_pattern = {
-        "Rouge": list(range(1, 8)),    # jours 1-7
-        "Jaune": list(range(8, 15)),   # jours 8-14
-        "Bleu": list(range(15, 22)),   # jours 15-21
-        "Vert": list(range(22, 29))    # jours 22-28
+    
+    # Mapping équipe -> numéro -> jours de travail dans le cycle de 28 jours
+    equipes_config = {
+        "Vert": {
+            "numero": 1,
+            "jours_cycle": [2, 8, 11, 19, 21, 24, 27]
+        },
+        "Bleu": {
+            "numero": 2,
+            "jours_cycle": [3, 6, 9, 15, 18, 26, 28]
+        },
+        "Jaune": {
+            "numero": 3,
+            "jours_cycle": [5, 7, 10, 13, 16, 22, 25]
+        },
+        "Rouge": {
+            "numero": 4,
+            "jours_cycle": [1, 4, 12, 14, 17, 20, 23]
+        }
     }
     
-    if equipe not in equipes_pattern:
-        raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
+    if equipe not in equipes_config:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Vert, Bleu, Jaune ou Rouge")
     
-    jours_travail = equipes_pattern[equipe]
+    config = equipes_config[equipe]
+    jours_travail_cycle = config["jours_cycle"]
+    
+    logging.info(f"Montreal 7/24 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
+    
+    # Le jour 1 du cycle = 27 janvier 2025
+    jour_1_cycle = datetime(2025, 1, 27).date()
+    
+    # Parser les dates de début et fin
+    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d").date()
+    
     indisponibilites = []
+    current_date = date_debut_obj
     
-    # Trouver le premier lundi rouge de l'année (premier lundi de janvier)
-    premiere_date = datetime(annee, 1, 1).date()
-    # Trouver le premier lundi
-    jours_jusqua_lundi = (7 - premiere_date.weekday()) % 7
-    if jours_jusqua_lundi == 0 and premiere_date.weekday() != 0:
-        jours_jusqua_lundi = 7
-    premier_lundi = premiere_date + timedelta(days=jours_jusqua_lundi)
-    
-    # Générer du 1er janvier au 31 décembre
-    date_debut = premiere_date
-    date_fin = datetime(annee, 12, 31).date()
-    
-    current_date = date_debut
-    while current_date <= date_fin:
+    while current_date <= date_fin_obj:
         # Calculer le jour dans le cycle (1-28)
-        jours_depuis_debut = (current_date - premier_lundi).days
-        jour_cycle = (jours_depuis_debut % 28) + 1
+        jours_depuis_jour1 = (current_date - jour_1_cycle).days
+        jour_cycle = (jours_depuis_jour1 % 28) + 1
         
-        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ (travail à l'emploi principal)
-        if jour_cycle in jours_travail:
-            # Générer indisponibilité pour toute la journée (24h)
+        # Si négatif (avant le 27 janvier 2025), calculer en arrière
+        if jours_depuis_jour1 < 0:
+            jour_cycle = 28 - ((-jours_depuis_jour1 - 1) % 28)
+        
+        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
+        if jour_cycle in jours_travail_cycle:
             indispo = {
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
                 "user_id": user_id,
                 "date": current_date.isoformat(),
-                "type_garde_id": None,  # Toutes les gardes
+                "type_garde_id": None,
                 "heure_debut": "00:00",
                 "heure_fin": "23:59",
                 "statut": "indisponible",
@@ -2889,63 +4545,81 @@ def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str,
         
         current_date += timedelta(days=1)
     
+    logging.info(f"✅ Montreal 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
-def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, annee: int, date_jour_1: str) -> List[Dict]:
+def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
     """
     Génère les indisponibilités pour l'horaire Quebec 10/14
-    Cycle de 28 jours avec pattern complexe
+    Cycle de 28 jours commençant le 1er février 2026 (jour 1 du cycle)
     
-    Pattern Quebec 10/14 (par équipe sur 28 jours) :
-    - Rouge : 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS (7-10) + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS (18-28)
-    - Total : 13 jours de travail par cycle
-    - Jaune : Décalé de 7 jours
-    - Bleu : Décalé de 14 jours
-    - Vert : Décalé de 21 jours
+    Pattern RÉEL Quebec 10/14 (basé sur février 2026):
+    Chaque équipe travaille selon un pattern spécifique sur 28 jours
+    
+    Équipes avec numéros et jours de travail:
+    - Vert (Équipe #1) : jours 2,3,4,5, 12,13,14, 20,21, 22, 23,24,25
+    - Bleu (Équipe #2) : jours 6,7, 8, 9,10,11, 16,17,18,19, 26,27,28
+    - Jaune (Équipe #3) : jours 1, 2,3,4, 9,10,11,12, 19,20,21, 27,28
+    - Rouge (Équipe #4) : jours 5,6,7, 13,14, 15, 16,17,18, 23,24,25,26
+    
+    Le jour 1 du cycle = 1er février 2026 (DATE FIXE CODÉE EN DUR)
+    Le cycle recommence tous les 28 jours (1er mars, 29 mars, 26 avril, etc.)
     
     On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
     (car ils ne sont pas disponibles pour les gardes de pompiers ces jours-là)
     
-    Horaires :
-    - Jour : 07:00-17:00
-    - Nuit : 19:00-09:00
+    Note: Pour les gardes de nuit (17h-7h), on marque seulement le jour de début comme indisponible
     """
-    equipes_offset = {
-        "Rouge": 0,
-        "Jaune": 7,
-        "Bleu": 14,
-        "Vert": 21
+    
+    # Mapping équipe -> numéro -> jours de travail dans le cycle de 28 jours
+    equipes_config = {
+        "Vert": {
+            "numero": 1,
+            "jours_cycle": [2, 3, 4, 5, 12, 13, 14, 20, 21, 22, 23, 24, 25]
+        },
+        "Bleu": {
+            "numero": 2,
+            "jours_cycle": [6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 26, 27, 28]
+        },
+        "Jaune": {
+            "numero": 3,
+            "jours_cycle": [1, 2, 3, 4, 9, 10, 11, 12, 19, 20, 21, 27, 28]
+        },
+        "Rouge": {
+            "numero": 4,
+            "jours_cycle": [5, 6, 7, 13, 14, 15, 16, 17, 18, 23, 24, 25, 26]
+        }
     }
     
-    if equipe not in equipes_offset:
-        raise ValueError(f"Équipe invalide: {equipe}. Doit être Rouge, Jaune, Bleu ou Vert")
+    if equipe not in equipes_config:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Vert, Bleu, Jaune ou Rouge")
     
-    # Pattern de base pour Rouge (jours de travail dans le cycle de 28 jours)
-    # 2 Jours (1-2) + 1×24h (3) + 3 Nuits (4-6) + REPOS + 4 Jours (11-14) + 3 Nuits (15-17) + REPOS
-    # Total : 13 jours de travail par cycle de 28 jours
-    jours_travail_rouge = [1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 17]
+    config = equipes_config[equipe]
+    jours_travail_cycle = config["jours_cycle"]
     
-    # Appliquer l'offset pour l'équipe sélectionnée
-    offset = equipes_offset[equipe]
-    jours_travail = [(j - 1 + offset) % 28 + 1 for j in jours_travail_rouge]
+    logging.info(f"Quebec 10/14 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
+    
+    # Le jour 1 du cycle = 1er février 2026 (DATE FIXE)
+    jour_1_cycle = datetime(2026, 2, 1).date()
+    
+    # Parser les dates de début et fin
+    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d").date()
     
     indisponibilites = []
+    current_date = date_debut_obj
     
-    # Parser la date du Jour 1
-    jour_1 = datetime.strptime(date_jour_1, "%Y-%m-%d").date()
-    
-    # Générer du 1er janvier au 31 décembre
-    date_debut = datetime(annee, 1, 1).date()
-    date_fin = datetime(annee, 12, 31).date()
-    
-    current_date = date_debut
-    while current_date <= date_fin:
+    while current_date <= date_fin_obj:
         # Calculer le jour dans le cycle (1-28)
-        jours_depuis_jour1 = (current_date - jour_1).days
+        jours_depuis_jour1 = (current_date - jour_1_cycle).days
         jour_cycle = (jours_depuis_jour1 % 28) + 1
         
-        # Si le jour EST dans les jours de travail, c'est une INDISPONIBILITÉ (travail à l'emploi principal)
-        if jour_cycle in jours_travail:
+        # Si négatif (avant le jour 1), calculer en arrière
+        if jours_depuis_jour1 < 0:
+            jour_cycle = 28 - ((-jours_depuis_jour1 - 1) % 28)
+        
+        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
+        if jour_cycle in jours_travail_cycle:
             indispo = {
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
@@ -2962,6 +4636,7 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, a
         
         current_date += timedelta(days=1)
     
+    logging.info(f"✅ Quebec 10/14 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
 # ==================== ROUTE DE GÉNÉRATION D'INDISPONIBILITÉS ====================
@@ -2985,10 +4660,14 @@ async def generer_indisponibilites(
     try:
         # Supprimer les anciennes disponibilités générées automatiquement si demandé
         if not generation_data.conserver_manuelles:
-            # Supprimer toutes les disponibilités de cet utilisateur
+            # Supprimer toutes les disponibilités de cet utilisateur pour la période
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
-                "tenant_id": tenant.id
+                "tenant_id": tenant.id,
+                "date": {
+                    "$gte": generation_data.date_debut,
+                    "$lte": generation_data.date_fin
+                }
             })
         else:
             # Supprimer uniquement les disponibilités générées automatiquement (préserver manuelles)
@@ -2996,7 +4675,11 @@ async def generer_indisponibilites(
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
                 "tenant_id": tenant.id,
-                "origine": origine_type
+                "origine": origine_type,
+                "date": {
+                    "$gte": generation_data.date_debut,
+                    "$lte": generation_data.date_fin
+                }
             })
         
         # Générer les nouvelles indisponibilités
@@ -3005,20 +4688,16 @@ async def generer_indisponibilites(
                 user_id=generation_data.user_id,
                 tenant_id=tenant.id,
                 equipe=generation_data.equipe,
-                annee=generation_data.annee
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin
             )
         elif generation_data.horaire_type == "quebec":
-            if not generation_data.date_jour_1:
-                raise HTTPException(
-                    status_code=400,
-                    detail="date_jour_1 est requis pour l'horaire Quebec 10/14"
-                )
             indispos = generer_indisponibilites_quebec(
                 user_id=generation_data.user_id,
                 tenant_id=tenant.id,
                 equipe=generation_data.equipe,
-                annee=generation_data.annee,
-                date_jour_1=generation_data.date_jour_1
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin
             )
         else:
             raise HTTPException(
@@ -3034,7 +4713,8 @@ async def generer_indisponibilites(
             "message": "Indisponibilités générées avec succès",
             "horaire_type": generation_data.horaire_type,
             "equipe": generation_data.equipe,
-            "annee": generation_data.annee,
+            "date_debut": generation_data.date_debut,
+            "date_fin": generation_data.date_fin,
             "nombre_indisponibilites": len(indispos),
             "conserver_manuelles": generation_data.conserver_manuelles
         }
@@ -3068,6 +4748,8 @@ async def assignation_manuelle_avancee(
         date_debut = datetime.strptime(assignation_data.get("date_debut"), "%Y-%m-%d").date()
         date_fin = datetime.strptime(assignation_data.get("date_fin", assignation_data.get("date_debut")), "%Y-%m-%d").date()
         jours_semaine = assignation_data.get("jours_semaine", [])
+        recurrence_intervalle = assignation_data.get("recurrence_intervalle", 1)
+        recurrence_frequence = assignation_data.get("recurrence_frequence", "jours")
         
         assignations_creees = []
         
@@ -3084,18 +4766,73 @@ async def assignation_manuelle_avancee(
             assignations_creees.append(assignation_obj.dict())
             
         elif recurrence_type == "hebdomadaire":
-            # Récurrence hebdomadaire
+            # Récurrence hebdomadaire (avec option bi-hebdomadaire)
             current_date = date_debut
             jours_semaine_index = {
                 'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
                 'friday': 4, 'saturday': 5, 'sunday': 6
             }
             
+            week_counter = 0
+            last_week_start = None
+            
             while current_date <= date_fin:
+                # Calculer le début de la semaine actuelle
+                week_start = current_date - timedelta(days=current_date.weekday())
+                
+                # Si on change de semaine, incrémenter le compteur
+                if last_week_start != week_start:
+                    if last_week_start is not None:
+                        week_counter += 1
+                    last_week_start = week_start
+                
                 day_name = current_date.strftime("%A").lower()
                 
+                # Vérifier si c'est un jour sélectionné
                 if day_name in jours_semaine:
-                    # Vérifier qu'il n'y a pas déjà une assignation
+                    # Si bi-hebdomadaire, vérifier qu'on est sur une semaine paire
+                    if not bi_hebdomadaire or week_counter % 2 == 0:
+                        # Vérifier qu'il n'y a pas déjà une assignation
+                        existing = await db.assignations.find_one({
+                            "user_id": user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": current_date.strftime("%Y-%m-%d"),
+                            "tenant_id": tenant.id
+                        })
+                        
+                        if not existing:
+                            assignation_obj = Assignation(
+                                user_id=user_id,
+                                type_garde_id=type_garde_id,
+                                date=current_date.strftime("%Y-%m-%d"),
+                                assignation_type="manuel_avance",
+                                tenant_id=tenant.id
+                            )
+                            await db.assignations.insert_one(assignation_obj.dict())
+                            assignations_creees.append(assignation_obj.dict())
+                
+                current_date += timedelta(days=1)
+        
+        elif recurrence_type == "bihebdomadaire":
+            # Récurrence bi-hebdomadaire (toutes les 2 semaines)
+            current_date = date_debut
+            week_counter = 0
+            last_week_start = None
+            
+            while current_date <= date_fin:
+                # Calculer le début de la semaine actuelle
+                week_start = current_date - timedelta(days=current_date.weekday())
+                
+                # Si on change de semaine, incrémenter le compteur
+                if last_week_start != week_start:
+                    if last_week_start is not None:
+                        week_counter += 1
+                    last_week_start = week_start
+                
+                day_name = current_date.strftime("%A").lower()
+                
+                # Vérifier si c'est un jour sélectionné et une semaine paire
+                if day_name in jours_semaine and week_counter % 2 == 0:
                     existing = await db.assignations.find_one({
                         "user_id": user_id,
                         "type_garde_id": type_garde_id,
@@ -3116,7 +4853,7 @@ async def assignation_manuelle_avancee(
                 
                 current_date += timedelta(days=1)
                 
-        elif recurrence_type == "mensuel":
+        elif recurrence_type == "mensuel" or recurrence_type == "mensuelle":
             # Récurrence mensuelle (même jour du mois)
             jour_mois = date_debut.day
             current_month = date_debut.replace(day=1)
@@ -3154,6 +4891,118 @@ async def assignation_manuelle_avancee(
                     current_month = current_month.replace(year=current_month.year + 1, month=1)
                 else:
                     current_month = current_month.replace(month=current_month.month + 1)
+        
+        elif recurrence_type == "annuelle":
+            # Récurrence annuelle (même jour et mois chaque année)
+            jour_mois = date_debut.day
+            mois = date_debut.month
+            current_year = date_debut.year
+            
+            while True:
+                try:
+                    target_date = date(current_year, mois, jour_mois)
+                    
+                    if target_date > date_fin:
+                        break
+                    
+                    if target_date >= date_debut:
+                        existing = await db.assignations.find_one({
+                            "user_id": user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": target_date.strftime("%Y-%m-%d"),
+                            "tenant_id": tenant.id
+                        })
+                        
+                        if not existing:
+                            assignation_obj = Assignation(
+                                user_id=user_id,
+                                type_garde_id=type_garde_id,
+                                date=target_date.strftime("%Y-%m-%d"),
+                                assignation_type="manuel_avance",
+                                tenant_id=tenant.id
+                            )
+                            await db.assignations.insert_one(assignation_obj.dict())
+                            assignations_creees.append(assignation_obj.dict())
+                    
+                    current_year += 1
+                except ValueError:
+                    # Jour n'existe pas (ex: 29 février dans une année non bissextile)
+                    current_year += 1
+        
+        elif recurrence_type == "personnalisee":
+            # Récurrence personnalisée
+            current_date = date_debut
+            
+            if recurrence_frequence == "jours":
+                delta = timedelta(days=recurrence_intervalle)
+            elif recurrence_frequence == "semaines":
+                delta = timedelta(weeks=recurrence_intervalle)
+            else:
+                # Pour mois et ans, on gérera différemment
+                delta = None
+            
+            if delta:
+                while current_date <= date_fin:
+                    existing = await db.assignations.find_one({
+                        "user_id": user_id,
+                        "type_garde_id": type_garde_id,
+                        "date": current_date.strftime("%Y-%m-%d"),
+                        "tenant_id": tenant.id
+                    })
+                    
+                    if not existing:
+                        assignation_obj = Assignation(
+                            user_id=user_id,
+                            type_garde_id=type_garde_id,
+                            date=current_date.strftime("%Y-%m-%d"),
+                            assignation_type="manuel_avance",
+                            tenant_id=tenant.id
+                        )
+                        await db.assignations.insert_one(assignation_obj.dict())
+                        assignations_creees.append(assignation_obj.dict())
+                    
+                    current_date += delta
+            else:
+                # Pour mois et ans
+                current_date = date_debut
+                while current_date <= date_fin:
+                    existing = await db.assignations.find_one({
+                        "user_id": user_id,
+                        "type_garde_id": type_garde_id,
+                        "date": current_date.strftime("%Y-%m-%d"),
+                        "tenant_id": tenant.id
+                    })
+                    
+                    if not existing:
+                        assignation_obj = Assignation(
+                            user_id=user_id,
+                            type_garde_id=type_garde_id,
+                            date=current_date.strftime("%Y-%m-%d"),
+                            assignation_type="manuel_avance",
+                            tenant_id=tenant.id
+                        )
+                        await db.assignations.insert_one(assignation_obj.dict())
+                        assignations_creees.append(assignation_obj.dict())
+                    
+                    if recurrence_frequence == "mois":
+                        # Ajouter X mois
+                        month = current_date.month + recurrence_intervalle
+                        year = current_date.year
+                        while month > 12:
+                            month -= 12
+                            year += 1
+                        try:
+                            current_date = current_date.replace(year=year, month=month)
+                        except ValueError:
+                            # Jour invalide pour ce mois
+                            break
+                    elif recurrence_frequence == "ans":
+                        # Ajouter X ans
+                        try:
+                            current_date = current_date.replace(year=current_date.year + recurrence_intervalle)
+                        except ValueError:
+                            # Jour invalide (29 février)
+                            break
         
         return {
             "message": "Assignation avancée créée avec succès",
@@ -4916,255 +6765,889 @@ async def update_parametres_remplacements(
     
     return {"message": "Paramètres mis à jour avec succès"}
 
-# ==================== EPI ROUTES ====================
 
-@api_router.post("/{tenant_slug}/epi", response_model=EPIEmploye)
-async def create_epi(tenant_slug: str, epi: EPIEmployeCreate, current_user: User = Depends(get_current_user)):
-    """Crée un nouvel EPI pour un employé (Admin/Superviseur)"""
+
+# ==================== PARAMÈTRES DISPONIBILITÉS ====================
+
+@api_router.get("/{tenant_slug}/parametres/disponibilites")
+async def get_parametres_disponibilites(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les paramètres disponibilités"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        # Créer paramètres par défaut
+        default_params = {
+            "tenant_id": tenant.id,
+            "jour_blocage_dispos": 15,
+            "exceptions_admin_superviseur": True,
+            "admin_peut_modifier_temps_partiel": True,
+            "notifications_dispos_actives": True,
+            "jours_avance_notification": 3
+        }
+        await db.parametres_disponibilites.insert_one(default_params)
+        return default_params
+    
+    return clean_mongo_doc(params)
+
+@api_router.put("/{tenant_slug}/parametres/disponibilites")
+async def update_parametres_disponibilites(
+    tenant_slug: str,
+    params: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres disponibilités"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier si l'employé existe dans ce tenant
-    employe = await db.users.find_one({"id": epi.employe_id, "tenant_id": tenant.id})
-    if not employe:
-        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    result = await db.parametres_disponibilites.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": params},
+        upsert=True
+    )
     
-    # Vérifier qu'il n'existe pas déjà un EPI de ce type pour cet employé
-    existing_epi = await db.epi_employes.find_one({
-        "employe_id": epi.employe_id,
-        "type_epi": epi.type_epi,
-        "tenant_id": tenant.id
-    })
+    return {"message": "Paramètres disponibilités mis à jour"}
+
+# ==================== EPI ROUTES NFPA 1851 ====================
+
+# ========== EPI CRUD ==========
+
+@api_router.post("/{tenant_slug}/epi", response_model=EPI)
+async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depends(get_current_user)):
+    """Crée un nouvel équipement EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if existing_epi:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Un EPI de type {epi.type_epi} existe déjà pour cet employé"
-        )
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     epi_dict = epi.dict()
     epi_dict["tenant_id"] = tenant.id
-    epi_obj = EPIEmploye(**epi_dict)
-    await db.epi_employes.insert_one(epi_obj.dict())
+    
+    # Générer numéro de série automatique si vide
+    if not epi_dict.get("numero_serie") or epi_dict["numero_serie"].strip() == "":
+        # Compter les EPI existants pour générer un numéro unique
+        count = await db.epis.count_documents({"tenant_id": tenant.id})
+        annee = datetime.now(timezone.utc).year
+        epi_dict["numero_serie"] = f"EPI-{annee}-{count + 1:04d}"
+    else:
+        # Vérifier que le numéro de série est unique
+        existing_epi = await db.epis.find_one({
+            "numero_serie": epi_dict["numero_serie"],
+            "tenant_id": tenant.id
+        })
+        
+        if existing_epi:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un EPI avec le numéro de série {epi_dict['numero_serie']} existe déjà"
+            )
+    
+    epi_obj = EPI(**epi_dict)
+    
+    # Préparer pour MongoDB (conversion datetime -> ISO string)
+    epi_data = epi_obj.dict()
+    epi_data["created_at"] = epi_obj.created_at.isoformat()
+    epi_data["updated_at"] = epi_obj.updated_at.isoformat()
+    
+    await db.epis.insert_one(epi_data)
     
     return epi_obj
 
-@api_router.get("/{tenant_slug}/epi/employe/{employe_id}", response_model=List[EPIEmploye])
-async def get_epi_employe(tenant_slug: str, employe_id: str, current_user: User = Depends(get_current_user)):
-    """Récupère tous les EPI d'un employé"""
-    # Admin et superviseur peuvent voir tous les EPI
-    # Employé peut voir seulement ses propres EPI
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != employe_id:
+@api_router.get("/{tenant_slug}/epi", response_model=List[EPI])
+async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les EPI du tenant (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    epis = await db.epi_employes.find({
-        "employe_id": employe_id,
-        "tenant_id": tenant.id
-    }).to_list(100)
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
     cleaned_epis = [clean_mongo_doc(epi) for epi in epis]
-    return [EPIEmploye(**epi) for epi in cleaned_epis]
+    
+    # Convertir les dates ISO string vers datetime
+    for epi in cleaned_epis:
+        if isinstance(epi.get("created_at"), str):
+            epi["created_at"] = datetime.fromisoformat(epi["created_at"].replace('Z', '+00:00'))
+        if isinstance(epi.get("updated_at"), str):
+            epi["updated_at"] = datetime.fromisoformat(epi["updated_at"].replace('Z', '+00:00'))
+    
+    return [EPI(**epi) for epi in cleaned_epis]
 
-@api_router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPIEmploye)
+@api_router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
 async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Récupère un EPI spécifique par son ID"""
-    # Vérifier le tenant
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
-    # Vérifier les permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != epi["employe_id"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     cleaned_epi = clean_mongo_doc(epi)
-    return EPIEmploye(**cleaned_epi)
+    
+    # Convertir les dates
+    if isinstance(cleaned_epi.get("created_at"), str):
+        cleaned_epi["created_at"] = datetime.fromisoformat(cleaned_epi["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned_epi.get("updated_at"), str):
+        cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
+    
+    return EPI(**cleaned_epi)
 
-@api_router.put("/{tenant_slug}/epi/{epi_id}", response_model=EPIEmploye)
+@api_router.put("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
 async def update_epi(
     tenant_slug: str,
     epi_id: str,
-    epi_update: EPIEmployeUpdate,
+    epi_update: EPIUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Met à jour un EPI
-    - Admin/Superviseur: peuvent modifier tous les champs
-    - Employé: peut modifier uniquement la taille
-    """
-    # Vérifier le tenant
+    """Met à jour un EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
-    
-    # Vérifier les permissions
-    is_owner = current_user.id == epi["employe_id"]
-    is_admin_or_supervisor = current_user.role in ["admin", "superviseur"]
-    
-    if not (is_owner or is_admin_or_supervisor):
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Si c'est un employé, il ne peut modifier que la taille
-    if not is_admin_or_supervisor:
-        if epi_update.etat or epi_update.date_expiration or epi_update.date_prochaine_inspection or epi_update.notes:
-            raise HTTPException(
-                status_code=403,
-                detail="Les employés peuvent modifier uniquement la taille"
-            )
     
     # Préparer les champs à mettre à jour
     update_data = {k: v for k, v in epi_update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
-    await db.epi_employes.update_one(
+    # Vérifier si changement d'affectation (user_id)
+    ancien_user_id = epi.get("user_id")
+    nouveau_user_id = update_data.get("user_id")
+    
+    await db.epis.update_one(
         {"id": epi_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
-    updated_epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
+    # Notifier si changement d'affectation
+    if nouveau_user_id and nouveau_user_id != ancien_user_id:
+        type_epi_nom = epi.get("type_epi", "EPI")
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=nouveau_user_id,
+            type="epi_nouvel_assignation",
+            titre="Nouvel EPI assigné",
+            message=f"Un {type_epi_nom} #{epi.get('numero_serie', '')} vous a été assigné",
+            lien="/epi"
+        )
+    
+    updated_epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     cleaned_epi = clean_mongo_doc(updated_epi)
-    return EPIEmploye(**cleaned_epi)
+    
+    # Convertir les dates
+    if isinstance(cleaned_epi.get("created_at"), str):
+        cleaned_epi["created_at"] = datetime.fromisoformat(cleaned_epi["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned_epi.get("updated_at"), str):
+        cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
+    
+    return EPI(**cleaned_epi)
 
 @api_router.delete("/{tenant_slug}/epi/{epi_id}")
 async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
-    """Supprime un EPI (Admin/Superviseur seulement)"""
+    """Supprime un EPI (Admin/Superviseur)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    result = await db.epi_employes.delete_one({"id": epi_id, "tenant_id": tenant.id})
+    result = await db.epis.delete_one({"id": epi_id, "tenant_id": tenant.id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
+    # Supprimer aussi toutes les inspections associées
+    await db.inspections_epi.delete_many({"epi_id": epi_id, "tenant_id": tenant.id})
+    
     return {"message": "EPI supprimé avec succès"}
 
-@api_router.post("/{tenant_slug}/epi/{epi_id}/inspection")
-async def add_inspection(
+# ========== INSPECTIONS EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/inspection", response_model=InspectionEPI)
+async def create_inspection(
     tenant_slug: str,
     epi_id: str,
-    inspection: InspectionEPI,
+    inspection: InspectionEPICreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Ajoute une inspection à un EPI"""
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    epi = await db.epi_employes.find_one({"id": epi_id, "tenant_id": tenant.id})
-    
-    if not epi:
-        raise HTTPException(status_code=404, detail="EPI non trouvé")
-    
-    # L'inspection peut être faite par l'employé lui-même ou par un admin/superviseur
-    if current_user.id != epi["employe_id"] and current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Ajouter l'inspection à l'historique
-    inspection_data = inspection.dict()
-    inspection_data["inspecteur_id"] = current_user.id
-    inspection_data["tenant_id"] = tenant.id
-    
-    await db.epi_employes.update_one(
-        {"id": epi_id, "tenant_id": tenant.id},
-        {
-            "$push": {"historique_inspections": inspection_data},
-            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
-        }
-    )
-    
-    # Si l'inspection indique un remplacement nécessaire, créer une notification
-    if inspection.resultat == "Remplacement nécessaire":
-        employe = await db.users.find_one({"id": epi["employe_id"], "tenant_id": tenant.id})
-        
-        # Notifier les admins et superviseurs de ce tenant
-        superviseurs_admins = await db.users.find({
-            "tenant_id": tenant.id,
-            "role": {"$in": ["superviseur", "admin"]}
-        }).to_list(100)
-        for superviseur in superviseurs_admins:
-            await creer_notification(
-                tenant_id=tenant.id,
-                destinataire_id=superviseur["id"],
-                type="epi_remplacement",
-                titre="Remplacement EPI nécessaire",
-                message=f"{employe['prenom']} {employe['nom']} signale que son {epi['type_epi']} nécessite un remplacement",
-                lien="/personnel",
-                data={"epi_id": epi_id, "employe_id": epi["employe_id"]}
-            )
-    
-    return {"message": "Inspection ajoutée avec succès"}
-
-@api_router.get("/epi/alertes/all", response_model=List[Dict[str, Any]])
-async def get_epi_alerts(current_user: User = Depends(get_current_user)):
-    """Récupère toutes les alertes EPI (expirations et inspections à venir)"""
+    """Crée une nouvelle inspection pour un EPI"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    inspection_dict = inspection.dict()
+    inspection_dict["tenant_id"] = tenant.id
+    inspection_dict["epi_id"] = epi_id
+    inspection_obj = InspectionEPI(**inspection_dict)
+    
+    # Préparer pour MongoDB
+    inspection_data = inspection_obj.dict()
+    inspection_data["created_at"] = inspection_obj.created_at.isoformat()
+    
+    await db.inspections_epi.insert_one(inspection_data)
+    
+    # Mettre à jour le statut de l'EPI si nécessaire
+    if inspection.statut_global == "hors_service":
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "Hors service"}}
+        )
+    elif inspection.statut_global == "necessite_reparation":
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "En réparation"}}
+        )
+    
+    # Notifier le pompier assigné
+    if epi.get("user_id"):
+        type_epi_nom = epi.get("type_epi", "EPI")
+        type_inspection_nom = {
+            'apres_utilisation': 'après utilisation',
+            'routine_mensuelle': 'de routine mensuelle',
+            'avancee_annuelle': 'avancée annuelle'
+        }.get(inspection.type_inspection, 'inspection')
+        
+        statut_msg = {
+            'conforme': 'est conforme',
+            'non_conforme': 'n\'est pas conforme',
+            'necessite_reparation': 'nécessite une réparation',
+            'hors_service': 'est hors service'
+        }.get(inspection.statut_global, 'a été inspecté')
+        
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=epi["user_id"],
+            type="epi_inspection",
+            titre=f"Inspection {type_inspection_nom}",
+            message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} {statut_msg}",
+            lien="/epi"
+        )
+    
+    return inspection_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/inspections", response_model=List[InspectionEPI])
+async def get_epi_inspections(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
+    """Récupère toutes les inspections d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspections = await db.inspections_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_inspection", -1).to_list(1000)
+    
+    cleaned_inspections = [clean_mongo_doc(insp) for insp in inspections]
+    
+    # Convertir les dates
+    for insp in cleaned_inspections:
+        if isinstance(insp.get("created_at"), str):
+            insp["created_at"] = datetime.fromisoformat(insp["created_at"].replace('Z', '+00:00'))
+    
+    return [InspectionEPI(**insp) for insp in cleaned_inspections]
+
+# ========== ISP (Fournisseurs) ==========
+
+@api_router.post("/{tenant_slug}/isp", response_model=ISP)
+async def create_isp(tenant_slug: str, isp: ISPCreate, current_user: User = Depends(get_current_user)):
+    """Crée un nouveau fournisseur de services indépendant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isp_dict = isp.dict()
+    isp_dict["tenant_id"] = tenant.id
+    isp_obj = ISP(**isp_dict)
+    
+    # Préparer pour MongoDB
+    isp_data = isp_obj.dict()
+    isp_data["created_at"] = isp_obj.created_at.isoformat()
+    
+    await db.isps.insert_one(isp_data)
+    
+    return isp_obj
+
+@api_router.get("/{tenant_slug}/isp", response_model=List[ISP])
+async def get_all_isps(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les ISP du tenant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isps = await db.isps.find({"tenant_id": tenant.id}).to_list(100)
+    cleaned_isps = [clean_mongo_doc(isp) for isp in isps]
+    
+    # Convertir les dates
+    for isp in cleaned_isps:
+        if isinstance(isp.get("created_at"), str):
+            isp["created_at"] = datetime.fromisoformat(isp["created_at"].replace('Z', '+00:00'))
+    
+    return [ISP(**isp) for isp in cleaned_isps]
+
+@api_router.put("/{tenant_slug}/isp/{isp_id}", response_model=ISP)
+async def update_isp(
+    tenant_slug: str,
+    isp_id: str,
+    isp_update: ISPUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un ISP"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    isp = await db.isps.find_one({"id": isp_id, "tenant_id": tenant.id})
+    if not isp:
+        raise HTTPException(status_code=404, detail="ISP non trouvé")
+    
+    update_data = {k: v for k, v in isp_update.dict().items() if v is not None}
+    
+    await db.isps.update_one(
+        {"id": isp_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    updated_isp = await db.isps.find_one({"id": isp_id, "tenant_id": tenant.id})
+    cleaned_isp = clean_mongo_doc(updated_isp)
+    
+    if isinstance(cleaned_isp.get("created_at"), str):
+        cleaned_isp["created_at"] = datetime.fromisoformat(cleaned_isp["created_at"].replace('Z', '+00:00'))
+    
+    return ISP(**cleaned_isp)
+
+@api_router.delete("/{tenant_slug}/isp/{isp_id}")
+async def delete_isp(tenant_slug: str, isp_id: str, current_user: User = Depends(get_current_user)):
+    """Supprime un ISP"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.isps.delete_one({"id": isp_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="ISP non trouvé")
+    
+    return {"message": "ISP supprimé avec succès"}
+
+# ========== RAPPORTS ==========
+
+@api_router.get("/{tenant_slug}/epi/rapports/conformite")
+async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Rapport de conformité générale avec code couleur"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     # Récupérer tous les EPI
-    all_epis = await db.epi_employes.find().to_list(1000)
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
     
-    alerts = []
-    today = datetime.now(timezone.utc)
+    rapport = {
+        "total": len(epis),
+        "en_service": 0,
+        "en_inspection": 0,
+        "en_reparation": 0,
+        "hors_service": 0,
+        "retire": 0,
+        "epis": []
+    }
     
-    for epi in all_epis:
-        # Récupérer l'info employé
-        employe = await db.users.find_one({"id": epi["employe_id"]})
-        if not employe:
+    for epi in epis:
+        statut = epi.get("statut", "En service")
+        
+        # Compter par statut
+        if statut == "En service":
+            rapport["en_service"] += 1
+        elif statut == "En inspection":
+            rapport["en_inspection"] += 1
+        elif statut == "En réparation":
+            rapport["en_reparation"] += 1
+        elif statut == "Hors service":
+            rapport["hors_service"] += 1
+        elif statut == "Retiré":
+            rapport["retire"] += 1
+        
+        # Récupérer la dernière inspection
+        derniere_inspection = await db.inspections_epi.find_one(
+            {"epi_id": epi["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        # Déterminer le code couleur
+        couleur = "vert"  # Par défaut
+        
+        if statut in ["Hors service", "Retiré"]:
+            couleur = "rouge"
+        elif statut == "En réparation":
+            couleur = "jaune"
+        elif derniere_inspection:
+            # Vérifier si l'inspection est récente
+            date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
+            jours_depuis_inspection = (datetime.now(timezone.utc) - date_inspection).days
+            
+            if jours_depuis_inspection > 365:  # Inspection avancée en retard
+                couleur = "rouge"
+            elif jours_depuis_inspection > 330:  # Inspection bientôt en retard (dans 35 jours)
+                couleur = "jaune"
+        else:
+            # Pas d'inspection du tout
+            couleur = "rouge"
+        
+        cleaned_epi = clean_mongo_doc(epi)
+        cleaned_epi["code_couleur"] = couleur
+        cleaned_epi["derniere_inspection"] = clean_mongo_doc(derniere_inspection) if derniere_inspection else None
+        
+        rapport["epis"].append(cleaned_epi)
+    
+    return rapport
+
+@api_router.get("/{tenant_slug}/epi/rapports/echeances")
+async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user: User = Depends(get_current_user)):
+    """Rapport des échéances d'inspection (dans X jours)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les EPI
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    echeances = []
+    aujourd_hui = datetime.now(timezone.utc)
+    
+    for epi in epis:
+        # Récupérer la dernière inspection
+        derniere_inspection = await db.inspections_epi.find_one(
+            {"epi_id": epi["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        if derniere_inspection:
+            date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
+            type_inspection = derniere_inspection["type_inspection"]
+            
+            # Calculer la prochaine échéance selon le type
+            if type_inspection == "avancee_annuelle":
+                prochaine_echeance = date_inspection + timedelta(days=365)
+            elif type_inspection == "routine_mensuelle":
+                prochaine_echeance = date_inspection + timedelta(days=30)
+            else:  # apres_utilisation
+                prochaine_echeance = date_inspection + timedelta(days=30)  # Routine dans 30 jours
+            
+            # Vérifier si dans la fenêtre de X jours
+            jours_restants = (prochaine_echeance - aujourd_hui).days
+            
+            if 0 <= jours_restants <= jours:
+                cleaned_epi = clean_mongo_doc(epi)
+                cleaned_epi["prochaine_echeance"] = prochaine_echeance.isoformat()
+                cleaned_epi["jours_restants"] = jours_restants
+                cleaned_epi["type_inspection_requise"] = "avancee_annuelle" if type_inspection == "avancee_annuelle" else "routine_mensuelle"
+                echeances.append(cleaned_epi)
+        else:
+            # Pas d'inspection = inspection immédiate requise
+            cleaned_epi = clean_mongo_doc(epi)
+            cleaned_epi["prochaine_echeance"] = aujourd_hui.isoformat()
+            cleaned_epi["jours_restants"] = 0
+            cleaned_epi["type_inspection_requise"] = "routine_mensuelle"
+            echeances.append(cleaned_epi)
+    
+    # Trier par jours restants
+    echeances.sort(key=lambda x: x["jours_restants"])
+    
+    return {
+        "total": len(echeances),
+        "echeances": echeances
+    }
+
+
+# ========== PHASE 2 : NETTOYAGE EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/nettoyage", response_model=NettoyageEPI)
+async def create_nettoyage(
+    tenant_slug: str,
+    epi_id: str,
+    nettoyage: NettoyageEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre un nettoyage EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    nettoyage_dict = nettoyage.dict()
+    nettoyage_dict["tenant_id"] = tenant.id
+    nettoyage_dict["epi_id"] = epi_id
+    nettoyage_obj = NettoyageEPI(**nettoyage_dict)
+    
+    nettoyage_data = nettoyage_obj.dict()
+    nettoyage_data["created_at"] = nettoyage_obj.created_at.isoformat()
+    
+    await db.nettoyages_epi.insert_one(nettoyage_data)
+    
+    return nettoyage_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/nettoyages", response_model=List[NettoyageEPI])
+async def get_nettoyages_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique de nettoyage d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    nettoyages = await db.nettoyages_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_nettoyage", -1).to_list(1000)
+    
+    cleaned_nettoyages = [clean_mongo_doc(n) for n in nettoyages]
+    
+    for n in cleaned_nettoyages:
+        if isinstance(n.get("created_at"), str):
+            n["created_at"] = datetime.fromisoformat(n["created_at"].replace('Z', '+00:00'))
+    
+    return [NettoyageEPI(**n) for n in cleaned_nettoyages]
+
+# ========== PHASE 2 : RÉPARATIONS EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/reparation", response_model=ReparationEPI)
+async def create_reparation(
+    tenant_slug: str,
+    epi_id: str,
+    reparation: ReparationEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée une demande de réparation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    reparation_dict = reparation.dict()
+    reparation_dict["tenant_id"] = tenant.id
+    reparation_dict["epi_id"] = epi_id
+    reparation_obj = ReparationEPI(**reparation_dict)
+    
+    reparation_data = reparation_obj.dict()
+    reparation_data["created_at"] = reparation_obj.created_at.isoformat()
+    reparation_data["updated_at"] = reparation_obj.updated_at.isoformat()
+    
+    await db.reparations_epi.insert_one(reparation_data)
+    
+    # Mettre à jour statut EPI
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "En réparation"}}
+    )
+    
+    return reparation_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/reparations", response_model=List[ReparationEPI])
+async def get_reparations_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique de réparations d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    reparations = await db.reparations_epi.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_demande", -1).to_list(1000)
+    
+    cleaned_reparations = [clean_mongo_doc(r) for r in reparations]
+    
+    for r in cleaned_reparations:
+        if isinstance(r.get("created_at"), str):
+            r["created_at"] = datetime.fromisoformat(r["created_at"].replace('Z', '+00:00'))
+        if isinstance(r.get("updated_at"), str):
+            r["updated_at"] = datetime.fromisoformat(r["updated_at"].replace('Z', '+00:00'))
+    
+    return [ReparationEPI(**r) for r in cleaned_reparations]
+
+@api_router.put("/{tenant_slug}/epi/{epi_id}/reparation/{reparation_id}", response_model=ReparationEPI)
+async def update_reparation(
+    tenant_slug: str,
+    epi_id: str,
+    reparation_id: str,
+    reparation_update: ReparationEPIUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une réparation"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    reparation = await db.reparations_epi.find_one({
+        "id": reparation_id,
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not reparation:
+        raise HTTPException(status_code=404, detail="Réparation non trouvée")
+    
+    update_data = {k: v for k, v in reparation_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.reparations_epi.update_one(
+        {"id": reparation_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    # Si réparation terminée, remettre EPI en service
+    if reparation_update.statut == "terminee":
+        epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+        
+        await db.epis.update_one(
+            {"id": epi_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "En service"}}
+        )
+        
+        # Notifier le pompier assigné que son EPI est de retour
+        if epi and epi.get("user_id"):
+            type_epi_nom = epi.get("type_epi", "EPI")
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=epi["user_id"],
+                type="epi_reparation_terminee",
+                titre="EPI de retour de réparation",
+                message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} est de retour et remis en service",
+                lien="/epi"
+            )
+    
+    updated_reparation = await db.reparations_epi.find_one({
+        "id": reparation_id,
+        "tenant_id": tenant.id
+    })
+    
+    cleaned = clean_mongo_doc(updated_reparation)
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    if isinstance(cleaned.get("updated_at"), str):
+        cleaned["updated_at"] = datetime.fromisoformat(cleaned["updated_at"].replace('Z', '+00:00'))
+    
+    return ReparationEPI(**cleaned)
+
+# ========== PHASE 2 : RETRAIT EPI ==========
+
+@api_router.post("/{tenant_slug}/epi/{epi_id}/retrait", response_model=RetraitEPI)
+async def create_retrait(
+    tenant_slug: str,
+    epi_id: str,
+    retrait: RetraitEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre le retrait définitif d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier EPI existe
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    retrait_dict = retrait.dict()
+    retrait_dict["tenant_id"] = tenant.id
+    retrait_dict["epi_id"] = epi_id
+    retrait_obj = RetraitEPI(**retrait_dict)
+    
+    retrait_data = retrait_obj.dict()
+    retrait_data["created_at"] = retrait_obj.created_at.isoformat()
+    
+    await db.retraits_epi.insert_one(retrait_data)
+    
+    # Mettre à jour statut EPI
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "Retiré"}}
+    )
+    
+    return retrait_obj
+
+@api_router.get("/{tenant_slug}/epi/{epi_id}/retrait", response_model=RetraitEPI)
+async def get_retrait_epi(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les informations de retrait d'un EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    retrait = await db.retraits_epi.find_one({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not retrait:
+        raise HTTPException(status_code=404, detail="Aucun retrait enregistré pour cet EPI")
+    
+    cleaned = clean_mongo_doc(retrait)
+    if isinstance(cleaned.get("created_at"), str):
+        cleaned["created_at"] = datetime.fromisoformat(cleaned["created_at"].replace('Z', '+00:00'))
+    
+    return RetraitEPI(**cleaned)
+
+# ========== RAPPORTS PHASE 2 ==========
+
+@api_router.get("/{tenant_slug}/epi/rapports/retraits-prevus")
+async def get_rapport_retraits_prevus(
+    tenant_slug: str,
+    mois: int = 12,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport des EPI approchant de leur limite de 10 ans"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    aujourd_hui = datetime.now(timezone.utc)
+    limite_jours = mois * 30
+    
+    retraits_prevus = []
+    
+    for epi in epis:
+        if epi.get("statut") == "Retiré":
             continue
         
-        # Vérifier expiration
-        if epi.get("date_expiration"):
-            date_exp = datetime.fromisoformat(epi["date_expiration"].replace('Z', '+00:00'))
-            days_until_expiration = (date_exp - today).days
-            
-            if days_until_expiration <= 30:
-                alerts.append({
-                    "type": "expiration",
-                    "epi_id": epi["id"],
-                    "employe_id": epi["employe_id"],
-                    "employe_nom": f"{employe['prenom']} {employe['nom']}",
-                    "type_epi": epi["type_epi"],
-                    "jours_restants": days_until_expiration,
-                    "date_expiration": epi["date_expiration"],
-                    "priorite": "haute" if days_until_expiration <= 7 else "moyenne"
-                })
+        date_mise_service = datetime.fromisoformat(epi["date_mise_en_service"])
+        age_jours = (aujourd_hui - date_mise_service).days
+        age_limite_jours = 365 * 10  # 10 ans
         
-        # Vérifier inspection
-        if epi.get("date_prochaine_inspection"):
-            date_insp = datetime.fromisoformat(epi["date_prochaine_inspection"].replace('Z', '+00:00'))
-            days_until_inspection = (date_insp - today).days
-            
-            if days_until_inspection <= 14:
-                alerts.append({
-                    "type": "inspection",
-                    "epi_id": epi["id"],
-                    "employe_id": epi["employe_id"],
-                    "employe_nom": f"{employe['prenom']} {employe['nom']}",
-                    "type_epi": epi["type_epi"],
-                    "jours_restants": days_until_inspection,
-                    "date_inspection": epi["date_prochaine_inspection"],
-                    "priorite": "haute" if days_until_inspection <= 3 else "moyenne"
-                })
+        jours_restants = age_limite_jours - age_jours
+        
+        if 0 <= jours_restants <= limite_jours:
+            cleaned_epi = clean_mongo_doc(epi)
+            cleaned_epi["age_annees"] = round(age_jours / 365, 1)
+            cleaned_epi["jours_avant_limite"] = jours_restants
+            cleaned_epi["date_limite_prevue"] = (date_mise_service + timedelta(days=age_limite_jours)).isoformat()
+            retraits_prevus.append(cleaned_epi)
     
-    return alerts
+    retraits_prevus.sort(key=lambda x: x["jours_avant_limite"])
+    
+    return {
+        "total": len(retraits_prevus),
+        "periode_mois": mois,
+        "epis": retraits_prevus
+    }
 
-# Health check endpoint (pour Render, Vercel, etc.)
+@api_router.get("/{tenant_slug}/epi/rapports/cout-total")
+async def get_rapport_cout_total(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport du coût total de possession (TCO) par EPI"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = []
+    
+    for epi in epis:
+        # Coût d'achat
+        cout_achat = epi.get("cout_achat", 0)
+        
+        # Coûts de nettoyage (fictif, à améliorer si prix stockés)
+        nettoyages = await db.nettoyages_epi.find({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        cout_nettoyages = len([n for n in nettoyages if n.get("type_nettoyage") == "avance"]) * 50  # Ex: 50$ par nettoyage avancé
+        
+        # Coûts de réparation
+        reparations = await db.reparations_epi.find({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        cout_reparations = sum([r.get("cout_reparation", 0) for r in reparations])
+        
+        # Coût de retrait
+        retrait = await db.retraits_epi.find_one({
+            "epi_id": epi["id"],
+            "tenant_id": tenant.id
+        })
+        cout_retrait = retrait.get("cout_disposition", 0) if retrait else 0
+        
+        cout_total = cout_achat + cout_nettoyages + cout_reparations + cout_retrait
+        
+        cleaned_epi = clean_mongo_doc(epi)
+        cleaned_epi["cout_achat"] = cout_achat
+        cleaned_epi["cout_nettoyages"] = cout_nettoyages
+        cleaned_epi["nombre_nettoyages"] = len(nettoyages)
+        cleaned_epi["cout_reparations"] = cout_reparations
+        cleaned_epi["nombre_reparations"] = len(reparations)
+        cleaned_epi["cout_retrait"] = cout_retrait
+        cleaned_epi["cout_total"] = cout_total
+        
+        rapport.append(cleaned_epi)
+    
+    # Trier par coût total décroissant
+    rapport.sort(key=lambda x: x["cout_total"], reverse=True)
+    
+    return {
+        "total_epis": len(rapport),
+        "cout_total_flotte": sum([e["cout_total"] for e in rapport]),
+        "cout_moyen_par_epi": sum([e["cout_total"] for e in rapport]) / len(rapport) if len(rapport) > 0 else 0,
+        "epis": rapport
+    }
+
+
+# ==================== HEALTH CHECK ====================
+
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint pour monitoring"""
+    """Health check endpoint"""
     try:
         # Test MongoDB connection
         await db.command('ping')
