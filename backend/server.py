@@ -633,23 +633,16 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Vérifie un mot de passe contre son hash bcrypt.
-    SIMPLE ET FIABLE - Uniquement bcrypt, pas de migration complexe.
+    Vérifie un mot de passe contre son hash.
+    Utilise SHA256 pour la simplicité et la fiabilité.
     
     Retourne True si le mot de passe correspond, False sinon.
     """
     try:
         password_bytes = plain_password.encode('utf-8')
-        
-        # S'assurer que hashed_password est en bytes
-        if isinstance(hashed_password, str):
-            hash_bytes = hashed_password.encode('utf-8')
-        else:
-            hash_bytes = hashed_password
-        
-        # Vérification bcrypt
-        result = bcrypt.checkpw(password_bytes, hash_bytes)
-        logging.info(f"🔐 Vérification mot de passe: {result}")
+        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+        result = sha256_hash == hashed_password
+        logging.info(f"🔐 Vérification mot de passe SHA256: {result}")
         return result
         
     except Exception as e:
