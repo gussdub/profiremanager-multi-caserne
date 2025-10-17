@@ -2041,63 +2041,62 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-field">
-                    <Label>Type d'emploi</Label>
-                    <select
-                      value={newUser.type_emploi}
-                      onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value})}
-                      className="form-select"
-                      data-testid="new-user-employment"
+                <div className="form-field">
+                  <Label>Type d'emploi</Label>
+                  <select
+                    value={newUser.type_emploi}
+                    onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value})}
+                    className="form-select"
+                    data-testid="new-user-employment"
+                  >
+                    <option value="temps_plein">Temps plein</option>
+                    <option value="temps_partiel">Temps partiel</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <Label>Mot de passe temporaire *</Label>
+                  <div style={{position: 'relative'}}>
+                    <Input
+                      type={showPasswordComptes ? "text" : "password"}
+                      value={newUser.mot_de_passe}
+                      onChange={(e) => setNewUser({...newUser, mot_de_passe: e.target.value})}
+                      data-testid="new-user-password"
+                      placeholder="Minimum 8 caractères complexes"
+                      style={{paddingRight: '40px'}}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordComptes(!showPasswordComptes)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '1.2rem'
+                      }}
                     >
-                      <option value="temps_plein">Temps plein</option>
-                      <option value="temps_partiel">Temps partiel</option>
-                    </select>
+                      {showPasswordComptes ? '👁️' : '👁️‍🗨️'}
+                    </button>
                   </div>
-                  <div className="form-field">
-                    <Label>Mot de passe temporaire *</Label>
-                    <div style={{position: 'relative'}}>
-                      <Input
-                        type={showPasswordComptes ? "text" : "password"}
-                        value={newUser.mot_de_passe}
-                        onChange={(e) => setNewUser({...newUser, mot_de_passe: e.target.value})}
-                        data-testid="new-user-password"
-                        placeholder="Minimum 8 caractères complexes"
-                        style={{paddingRight: '40px'}}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPasswordComptes(!showPasswordComptes)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '1.2rem'
-                        }}
-                      >
-                        {showPasswordComptes ? '👁️' : '👁️‍🗨️'}
-                      </button>
-                    </div>
-                    <div className="password-requirements">
-                      <small className="requirement-title">Exigences du mot de passe :</small>
-                      <div className="requirements-list">
-                        <span className={`requirement ${newUser.mot_de_passe.length >= 8 ? 'valid' : 'invalid'}`}>
-                          {newUser.mot_de_passe.length >= 8 ? '✅' : '❌'} 8 caractères minimum
-                        </span>
-                        <span className={`requirement ${/[A-Z]/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
-                          {/[A-Z]/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 majuscule
-                        </span>
-                        <span className={`requirement ${/\d/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
-                          {/\d/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 chiffre
-                        </span>
-                        <span className={`requirement ${/[!@#$%^&*+\-?()]/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
-                          {/[!@#$%^&*+\-?()]/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 caractère spécial (!@#$%^&*+-?())
-                        </span>
-                      </div>
+                  <div className="password-requirements">
+                    <small className="requirement-title">Exigences du mot de passe :</small>
+                    <div className="requirements-list">
+                      <span className={`requirement ${newUser.mot_de_passe.length >= 8 ? 'valid' : 'invalid'}`}>
+                        {newUser.mot_de_passe.length >= 8 ? '✅' : '❌'} 8 caractères minimum
+                      </span>
+                      <span className={`requirement ${/[A-Z]/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
+                        {/[A-Z]/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 majuscule
+                      </span>
+                      <span className={`requirement ${/\d/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
+                        {/\d/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 chiffre
+                      </span>
+                      <span className={`requirement ${/[!@#$%^&*+\-?()]/.test(newUser.mot_de_passe) ? 'valid' : 'invalid'}`}>
+                        {/[!@#$%^&*+\-?()]/.test(newUser.mot_de_passe) ? '✅' : '❌'} 1 caractère spécial (!@#$%^&*+-?())
+                      </span>
                     </div>
                   </div>
                 </div>
