@@ -91,7 +91,7 @@ def test_password_reset_functionality():
         print("🔐 Step 4: Shefford Admin Authentication")
         admin_login_data = {
             "email": "admin@firemanager.ca",
-            "mot_de_passe": "admin123"
+            "mot_de_passe": "Admin123!"
         }
         
         response = requests.post(f"{BASE_URL}/{tenant_slug}/auth/login", json=admin_login_data)
