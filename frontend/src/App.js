@@ -5608,10 +5608,14 @@ const Planning = () => {
                     <div className="summary-row">
                       <span className="summary-label">Récurrence :</span>
                       <span className="summary-value">
-                        {advancedAssignConfig.recurrence_type === 'unique' ? 'Assignation unique' :
+                        {advancedAssignConfig.recurrence_type === 'unique' ? '📅 Assignation unique' :
                          advancedAssignConfig.recurrence_type === 'hebdomadaire' ? 
-                           `${advancedAssignConfig.bi_hebdomadaire ? 'Toutes les 2 semaines' : 'Chaque semaine'} (${advancedAssignConfig.jours_semaine.length} jour(s))` :
-                         'Récurrence mensuelle'}
+                           `🔁 Chaque semaine (${advancedAssignConfig.jours_semaine.length} jour(s))` :
+                         advancedAssignConfig.recurrence_type === 'bihebdomadaire' ?
+                           `🔄 Toutes les 2 semaines (${advancedAssignConfig.jours_semaine.length} jour(s))` :
+                         advancedAssignConfig.recurrence_type === 'mensuelle' ? '📆 Tous les mois' :
+                         advancedAssignConfig.recurrence_type === 'annuelle' ? '🗓️ Tous les ans' :
+                         `⚙️ Tous les ${advancedAssignConfig.recurrence_intervalle} ${advancedAssignConfig.recurrence_frequence}`}
                       </span>
                     </div>
                     <div className="summary-row">
