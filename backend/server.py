@@ -3777,9 +3777,6 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         
         logging.info(f"✅ Mot de passe vérifié avec succès pour {user_login.email}")
         
-        # Migrer le mot de passe si nécessaire (SHA256 -> bcrypt)
-        await migrate_password_if_needed(user_data["id"], user_login.mot_de_passe, current_hash, "users")
-        
         user = User(**user_data)
         
         # Inclure tenant_id dans le token
