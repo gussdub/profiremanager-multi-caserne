@@ -3442,6 +3442,7 @@ class ProFireManagerTester:
             print("💾 Test 5: Verifying database write/read operations...")
             
             # Create a test disponibilité entry to verify write operations
+            user_id = test_user["id"]
             test_disponibilite = {
                 "user_id": user_id,
                 "date": "2025-01-15",
