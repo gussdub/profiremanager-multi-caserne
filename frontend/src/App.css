@@ -12488,6 +12488,8 @@ body {
   gap: 1rem;
   margin-bottom: 2rem;
   border-bottom: 2px solid #E5E7EB;
+  overflow-x: auto;
+  flex-wrap: nowrap;
 }
 
 .formations-tabs button {
@@ -12498,6 +12500,8 @@ body {
   cursor: pointer;
   font-weight: 600;
   color: #6B7280;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .formations-tabs button.active {
