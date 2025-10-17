@@ -1653,33 +1653,48 @@ async def change_user_password(
     password_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Changer le mot de passe d'un utilisateur (uniquement son propre mot de passe)"""
+    """Changer le mot de passe d'un utilisateur (propre mot de passe ou admin reset)"""
     try:
         logging.info(f"🔑 Demande de changement de mot de passe pour l'utilisateur {user_id}")
-        
-        # Vérifier que l'utilisateur change son propre mot de passe
-        if current_user.id != user_id:
-            logging.warning(f"❌ Tentative de changement de mot de passe non autorisée par {current_user.id} pour {user_id}")
-            raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
         
         # Vérifier le tenant
         tenant = await get_tenant_from_slug(tenant_slug)
         
-        # Récupérer l'utilisateur
+        # Récupérer l'utilisateur cible
         user_data = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
         if not user_data:
             logging.warning(f"❌ Utilisateur non trouvé pour changement de mot de passe: {user_id}")
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
         
-        # Vérifier l'ancien mot de passe
-        if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
-            logging.warning(f"❌ Ancien mot de passe incorrect pour {user_id}")
-            raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
+        # Cas 1: Admin qui réinitialise le mot de passe d'un autre utilisateur
+        is_admin_reset = current_user.role == "admin" and current_user.id != user_id
         
-        logging.info(f"✅ Ancien mot de passe vérifié pour {user_id}")
+        # Cas 2: Utilisateur qui change son propre mot de passe
+        is_self_change = current_user.id == user_id
+        
+        if not is_admin_reset and not is_self_change:
+            logging.warning(f"❌ Tentative de changement de mot de passe non autorisée par {current_user.id} pour {user_id}")
+            raise HTTPException(status_code=403, detail="Vous ne pouvez changer que votre propre mot de passe")
+        
+        # Si c'est un changement personnel, vérifier l'ancien mot de passe
+        if is_self_change and not is_admin_reset:
+            if "current_password" not in password_data:
+                raise HTTPException(status_code=400, detail="Le mot de passe actuel est requis")
+            
+            if not verify_password(password_data["current_password"], user_data["mot_de_passe_hash"]):
+                logging.warning(f"❌ Ancien mot de passe incorrect pour {user_id}")
+                raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
+            
+            logging.info(f"✅ Ancien mot de passe vérifié pour {user_id}")
+            new_password = password_data["new_password"]
+        else:
+            # Admin reset - pas besoin de l'ancien mot de passe
+            logging.info(f"👑 Reset administrateur du mot de passe pour {user_id} par {current_user.id}")
+            new_password = password_data.get("mot_de_passe") or password_data.get("new_password")
+            if not new_password:
+                raise HTTPException(status_code=400, detail="Le nouveau mot de passe est requis")
         
         # Valider le nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 spécial)
-        new_password = password_data["new_password"]
         if len(new_password) < 8:
             raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
         if not any(c.isupper() for c in new_password):
