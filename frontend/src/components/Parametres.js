@@ -2708,6 +2708,83 @@ const Parametres = ({ user, tenantSlug }) => {
         </div>
       )}
 
+      {/* Modal de mot de passe temporaire */}
+      {showResetPasswordModal && editingUser && (
+        <div className="modal-overlay" onClick={() => setShowResetPasswordModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="reset-password-modal" style={{ maxWidth: '500px' }}>
+            <div className="modal-header" style={{ background: '#fef3c7', borderBottom: '2px solid #f59e0b' }}>
+              <h3>🔑 Mot de passe temporaire généré</h3>
+              <Button variant="ghost" onClick={() => setShowResetPasswordModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="current-user-info" style={{ marginBottom: '1.5rem' }}>
+                <div className="user-summary">
+                  <div className="user-avatar">
+                    <span className="avatar-icon">👤</span>
+                  </div>
+                  <div className="user-details">
+                    <h4>{editingUser.prenom} {editingUser.nom}</h4>
+                    <p>{editingUser.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#fef3c7', padding: '1.5rem', borderRadius: '8px', border: '2px solid #f59e0b', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.9rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                  ⚠️ <strong>Important :</strong> Communiquez ce mot de passe à l'utilisateur de manière sécurisée.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ 
+                    flex: 1, 
+                    padding: '1rem', 
+                    background: 'white', 
+                    borderRadius: '6px', 
+                    border: '2px dashed #f59e0b',
+                    fontFamily: 'monospace',
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    color: '#92400e',
+                    letterSpacing: '2px'
+                  }}>
+                    {tempPassword}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(tempPassword);
+                      toast({
+                        title: "Copié !",
+                        description: "Le mot de passe a été copié dans le presse-papiers",
+                        variant: "success"
+                      });
+                    }}
+                    style={{ padding: '0.75rem 1rem' }}
+                  >
+                    📋 Copier
+                  </Button>
+                </div>
+              </div>
+
+              <div style={{ background: '#f0f9ff', padding: '1rem', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#0c4a6e', marginBottom: '0.5rem' }}>💡 Instructions pour l'utilisateur :</h4>
+                <ol style={{ fontSize: '0.85rem', color: '#0369a1', marginLeft: '1.25rem' }}>
+                  <li>Se connecter avec ce mot de passe temporaire</li>
+                  <li>Aller dans "Mon Profil" → "Changer le mot de passe"</li>
+                  <li>Définir un nouveau mot de passe personnel</li>
+                </ol>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: '1.5rem' }}>
+                <Button variant="default" onClick={() => setShowResetPasswordModal(false)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de gestion des EPI individuels sera dans le module Personnel */}
     </div>
   );
