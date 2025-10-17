@@ -529,7 +529,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         if hashed_password.startswith('$2'):
             logging.info(f"🔐 Vérification avec bcrypt")
             try:
-                return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+                # S'assurer que hashed_password est en bytes
+                if isinstance(hashed_password, str):
+                    hash_bytes = hashed_password.encode('utf-8')
+                else:
+                    hash_bytes = hashed_password
+                
+                result = bcrypt.checkpw(password_bytes, hash_bytes)
+                logging.info(f"✅ Résultat bcrypt.checkpw: {result}")
+                return result
             except Exception as bcrypt_error:
                 logging.error(f"❌ Erreur bcrypt: {bcrypt_error}")
                 return False
