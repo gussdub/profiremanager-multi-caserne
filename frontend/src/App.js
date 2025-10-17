@@ -2724,6 +2724,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       type_emploi: user.type_emploi,
       numero_employe: user.numero_employe,
       date_embauche: user.date_embauche,
+      taux_horaire: user.taux_horaire || 0,
       formations: user.formations || [],
       mot_de_passe: ''
     });
