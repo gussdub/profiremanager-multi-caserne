@@ -905,6 +905,13 @@ const Parametres = ({ user, tenantSlug }) => {
           📜 Compétences
         </button>
         <button
+          className={`tab-button ${activeTab === 'grades' ? 'active' : ''}`}
+          onClick={() => setActiveTab('grades')}
+          data-testid="tab-grades"
+        >
+          🎖️ Grades
+        </button>
+        <button
           className={`tab-button ${activeTab === 'attribution' ? 'active' : ''}`}
           onClick={() => setActiveTab('attribution')}
           data-testid="tab-attribution"
