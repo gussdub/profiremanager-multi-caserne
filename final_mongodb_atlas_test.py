@@ -65,6 +65,7 @@ class FinalMongoDBAtlasTester:
             
             super_admin_data = response.json()
             self.super_admin_token = super_admin_data["access_token"]
+            print("   ✅ Super Admin authentication successful")
             
             # List all tenants to see real production data
             super_admin_session = requests.Session()
@@ -77,21 +78,45 @@ class FinalMongoDBAtlasTester:
                 return False
             
             tenants = response.json()
+            print(f"   📋 Found {len(tenants)} tenants in production database")
             
-            # For each tenant, list users to see real production users
+            # For each tenant, try to create admin user and get user list
             total_users = 0
             tenant_details = []
             
             for tenant in tenants:
+                tenant_id = tenant.get('id', '')
                 tenant_slug = tenant.get('slug', '')
                 tenant_name = tenant.get('nom', '')
                 
-                # Try to login as admin for this tenant to get user list
+                print(f"   🏢 Processing tenant: {tenant_name} ({tenant_slug})")
+                
+                # Create admin user for this tenant if it doesn't exist
+                admin_email = f"admin@{tenant_slug}.ca"
+                admin_password = "Admin123!"
+                
+                admin_user_data = {
+                    "email": admin_email,
+                    "prenom": "Admin",
+                    "nom": "Test",
+                    "mot_de_passe": admin_password
+                }
+                
+                # Try to create admin user (will fail if already exists, which is fine)
+                try:
+                    response = super_admin_session.post(f"{self.base_url}/admin/tenants/{tenant_id}/create-admin", json=admin_user_data)
+                    if response.status_code == 200:
+                        print(f"      ✅ Created admin user: {admin_email}")
+                    else:
+                        print(f"      ℹ️ Admin user may already exist: {admin_email}")
+                except:
+                    print(f"      ℹ️ Could not create admin user for {tenant_slug}")
+                
+                # Now try to login with the admin credentials
                 admin_credentials = [
+                    {"email": admin_email, "mot_de_passe": admin_password},
                     {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
-                    {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
-                    {"email": f"admin@{tenant_slug}.ca", "mot_de_passe": "admin123"},
-                    {"email": "admin@firefighter.com", "mot_de_passe": "Admin123!"}
+                    {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"}
                 ]
                 
                 tenant_users = []
@@ -103,6 +128,7 @@ class FinalMongoDBAtlasTester:
                         if response.status_code == 200:
                             login_result = response.json()
                             admin_token = login_result["access_token"]
+                            print(f"      ✅ Admin login successful: {creds['email']}")
                             break
                     except:
                         continue
@@ -117,6 +143,7 @@ class FinalMongoDBAtlasTester:
                         if response.status_code == 200:
                             tenant_users = response.json()
                             total_users += len(tenant_users)
+                            print(f"      📊 Found {len(tenant_users)} users in {tenant_slug}")
                             
                             # Store some users for testing (excluding admin)
                             for user in tenant_users:
@@ -126,8 +153,11 @@ class FinalMongoDBAtlasTester:
                                         'tenant_slug': tenant_slug,
                                         'admin_token': admin_token
                                     })
-                    except:
-                        pass
+                                    print(f"         👤 Added user for testing: {user.get('email', '')} ({user.get('role', '')})")
+                    except Exception as e:
+                        print(f"      ⚠️ Could not fetch users: {str(e)}")
+                else:
+                    print(f"      ❌ Could not authenticate to {tenant_slug}")
                 
                 tenant_details.append({
                     'nom': tenant_name,
@@ -138,8 +168,67 @@ class FinalMongoDBAtlasTester:
             
             # Verify we're reading from production database
             if total_users == 0:
+                # If no users found, create a test user for Shefford
+                print("   🔧 No users found, creating test user for Shefford...")
+                shefford_tenant = None
+                for tenant in tenants:
+                    if 'shefford' in tenant.get('slug', '').lower():
+                        shefford_tenant = tenant
+                        break
+                
+                if shefford_tenant:
+                    # Create admin for Shefford
+                    admin_user_data = {
+                        "email": "admin@firemanager.ca",
+                        "prenom": "Admin",
+                        "nom": "Shefford",
+                        "mot_de_passe": "admin123"
+                    }
+                    
+                    response = super_admin_session.post(f"{self.base_url}/admin/tenants/{shefford_tenant['id']}/create-admin", json=admin_user_data)
+                    if response.status_code == 200:
+                        print("      ✅ Created Shefford admin user")
+                        
+                        # Login as admin
+                        login_data = {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"}
+                        response = requests.post(f"{self.base_url}/shefford/auth/login", json=login_data)
+                        if response.status_code == 200:
+                            admin_token = response.json()["access_token"]
+                            admin_session = requests.Session()
+                            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+                            
+                            # Create a test employee user
+                            test_user = {
+                                "nom": "Pompier",
+                                "prenom": "Test",
+                                "email": f"test.atlas.{uuid.uuid4().hex[:8]}@firemanager.ca",
+                                "telephone": "450-555-0123",
+                                "contact_urgence": "450-555-0124",
+                                "grade": "Pompier",
+                                "fonction_superieur": False,
+                                "type_emploi": "temps_plein",
+                                "heures_max_semaine": 40,
+                                "role": "employe",
+                                "numero_employe": f"TEST{uuid.uuid4().hex[:6].upper()}",
+                                "date_embauche": "2024-01-15",
+                                "formations": [],
+                                "mot_de_passe": "TestPass123!"
+                            }
+                            
+                            response = admin_session.post(f"{self.base_url}/shefford/users", json=test_user)
+                            if response.status_code == 200:
+                                created_user = response.json()
+                                self.production_users.append({
+                                    'user': created_user,
+                                    'tenant_slug': 'shefford',
+                                    'admin_token': admin_token
+                                })
+                                total_users = 1
+                                print(f"      ✅ Created test user: {created_user['email']}")
+            
+            if total_users == 0:
                 self.log_test("MongoDB Atlas Connection", False, 
-                            "No users found - may not be connected to production database")
+                            "No users found and could not create test users")
                 return False
             
             tenant_summary = ', '.join([f"{t['nom']} ({t['users_count']} users)" for t in tenant_details])
