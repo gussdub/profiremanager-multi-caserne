@@ -20,6 +20,8 @@ const Parametres = ({ user, tenantSlug }) => {
   const [episTypes, setEpisTypes] = useState([]);
   const [selectedUserEpi, setSelectedUserEpi] = useState(null);
   const [epiAlerts, setEpiAlerts] = useState([]);
+  const [showPasswordComptes, setShowPasswordComptes] = useState(false);
+
   
   // Modals states
   const [showCreateTypeModal, setShowCreateTypeModal] = useState(false);
