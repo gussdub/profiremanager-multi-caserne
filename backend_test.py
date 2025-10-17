@@ -2545,6 +2545,182 @@ class ProFireManagerTester:
             self.log_test("User Access Modification", False, f"User access modification error: {str(e)}")
             return False
 
+    def test_grades_crud_operations(self):
+        """Test Grades CRUD operations as requested in review"""
+        try:
+            tenant_slug = "shefford"
+            
+            # Login as Shefford admin using the correct credentials
+            login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = requests.post(f"{self.base_url}/{tenant_slug}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try with legacy login
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data)
+                if response.status_code != 200:
+                    self.log_test("Grades CRUD Operations", False, 
+                                f"Failed to login as Shefford admin: {response.status_code}", 
+                                {"response": response.text})
+                    return False
+            
+            login_result = response.json()
+            admin_token = login_result["access_token"]
+            
+            # Create a new session with admin token
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Test 1: GET /api/shefford/grades - Retrieve grades list
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/grades")
+            if response.status_code != 200:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Failed to retrieve grades: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            grades_list = response.json()
+            
+            # Verify default grades exist (Pompier, Lieutenant, Capitaine, Directeur)
+            expected_grades = ["Pompier", "Lieutenant", "Capitaine", "Directeur"]
+            found_grades = [grade.get("nom") for grade in grades_list]
+            
+            missing_grades = []
+            for expected_grade in expected_grades:
+                if expected_grade not in found_grades:
+                    missing_grades.append(expected_grade)
+            
+            if missing_grades:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Missing expected default grades: {', '.join(missing_grades)}", 
+                            {"found_grades": found_grades})
+                return False
+            
+            # Test 2: POST /api/shefford/grades - Create new grade "Sergent" with niveau_hierarchique=2
+            test_grade = {
+                "nom": "Sergent",
+                "niveau_hierarchique": 2
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{tenant_slug}/grades", json=test_grade)
+            if response.status_code != 200:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Failed to create grade 'Sergent': {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            created_grade = response.json()
+            sergent_id = created_grade["id"]
+            
+            # Verify created grade has correct data
+            if created_grade.get("nom") != "Sergent":
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Created grade name mismatch: expected 'Sergent', got '{created_grade.get('nom')}'")
+                return False
+            
+            if created_grade.get("niveau_hierarchique") != 2:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Created grade level mismatch: expected 2, got {created_grade.get('niveau_hierarchique')}")
+                return False
+            
+            # Test 3: PUT /api/shefford/grades/{grade_id} - Modify "Sergent" to niveau_hierarchique=3
+            update_data = {
+                "niveau_hierarchique": 3
+            }
+            
+            response = admin_session.put(f"{self.base_url}/{tenant_slug}/grades/{sergent_id}", json=update_data)
+            if response.status_code != 200:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Failed to update grade 'Sergent': {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            updated_grade = response.json()
+            
+            # Verify the update was successful
+            if updated_grade.get("niveau_hierarchique") != 3:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Updated grade level mismatch: expected 3, got {updated_grade.get('niveau_hierarchique')}")
+                return False
+            
+            # Test 4: DELETE /api/shefford/grades/{grade_id} - Delete "Sergent" (should succeed)
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/grades/{sergent_id}")
+            if response.status_code != 200:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Failed to delete grade 'Sergent': {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            delete_result = response.json()
+            
+            # Verify delete response
+            if "message" not in delete_result:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Delete response format incorrect: {delete_result}")
+                return False
+            
+            # Test 5: Try to delete "Pompier" grade (should fail if employees use it)
+            pompier_grade = None
+            for grade in grades_list:
+                if grade.get("nom") == "Pompier":
+                    pompier_grade = grade
+                    break
+            
+            if not pompier_grade:
+                self.log_test("Grades CRUD Operations", False, 
+                            "Pompier grade not found for deletion test")
+                return False
+            
+            pompier_id = pompier_grade["id"]
+            
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/grades/{pompier_id}")
+            
+            # This should either succeed (if no employees use it) or fail with appropriate error
+            if response.status_code == 200:
+                # Deletion succeeded - no employees were using this grade
+                delete_result = response.json()
+                protection_test_result = "✅ Deletion succeeded (no employees using grade)"
+            elif response.status_code == 400 or response.status_code == 409:
+                # Deletion failed due to protection - employees are using this grade
+                error_result = response.json()
+                protection_test_result = f"✅ Deletion properly blocked (employees using grade): {error_result.get('detail', 'Protection active')}"
+            else:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Unexpected response when trying to delete Pompier grade: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            # Verify the Sergent grade was actually deleted from the list
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/grades")
+            if response.status_code != 200:
+                self.log_test("Grades CRUD Operations", False, 
+                            f"Failed to retrieve grades after deletion: {response.status_code}")
+                return False
+            
+            grades_after_delete = response.json()
+            
+            # Verify Sergent is no longer in the list
+            sergent_still_exists = False
+            for grade in grades_after_delete:
+                if grade.get("id") == sergent_id:
+                    sergent_still_exists = True
+                    break
+            
+            if sergent_still_exists:
+                self.log_test("Grades CRUD Operations", False, 
+                            "Deleted grade 'Sergent' still found in grades list")
+                return False
+            
+            self.log_test("Grades CRUD Operations", True, 
+                        f"✅ All grades CRUD operations successful - 1) Retrieved default grades (Pompier, Lieutenant, Capitaine, Directeur), 2) Created 'Sergent' with niveau_hierarchique=2, 3) Updated 'Sergent' to niveau_hierarchique=3, 4) Successfully deleted 'Sergent', 5) {protection_test_result}. Used tenant '{tenant_slug}' with admin@firemanager.ca / admin123 credentials.")
+            return True
+            
+        except Exception as e:
+            self.log_test("Grades CRUD Operations", False, f"Grades CRUD error: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests"""
         print("\n🔥 ProFireManager Backend API Testing Suite")
