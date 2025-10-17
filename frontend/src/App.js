@@ -5573,6 +5573,24 @@ const Planning = () => {
                         </label>
                       ))}
                     </div>
+
+                    {/* Option bi-hebdomadaire */}
+                    <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={advancedAssignConfig.bi_hebdomadaire}
+                          onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, bi_hebdomadaire: e.target.checked})}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>🔄 Une semaine sur deux (bi-hebdomadaire)</div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
+                            L'assignation sera répétée toutes les 2 semaines au lieu de chaque semaine
+                          </div>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 )}
 
