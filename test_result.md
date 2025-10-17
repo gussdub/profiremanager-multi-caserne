@@ -369,7 +369,7 @@ test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "competences_completed"
+  test_priority: "simplified_auth_completed"
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
