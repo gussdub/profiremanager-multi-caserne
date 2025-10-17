@@ -274,6 +274,21 @@ backend:
         agent: "testing"
         comment: "✅ COMPÉTENCES CRUD FULLY FUNCTIONAL - Comprehensive testing completed successfully: 1) CREATE: Successfully created 'Test Compétence' with nom='Test Compétence', description='Test description', heures_requises_annuelles=10, obligatoire=false via POST /api/shefford/competences ✅, 2) READ: Successfully retrieved competences list via GET /api/shefford/competences, found created competence in list ✅, 3) UPDATE: Successfully modified competence via PUT /api/shefford/competences/{id}, changed nom='Test Modifié' and heures_requises_annuelles=20, verified changes saved ✅, 4) DELETE: Successfully deleted competence via DELETE /api/shefford/competences/{id}, received proper 'Compétence supprimée' message ✅, 5) VERIFICATION: Confirmed competence removed from list after deletion ✅. Used tenant 'shefford' with admin@firemanager.ca / admin123 credentials as requested. All CRUD operations working correctly, modification functionality specifically verified as working (was previously problematic). Super Admin created Shefford admin user successfully. All endpoints responding with correct data structures and status codes."
 
+  - task: "Système d'authentification hybride bcrypt/SHA256"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Système d'authentification hybride bcrypt/SHA256 comme demandé dans la critique. Tests à effectuer: 1) Login utilisateur existant (admin Shefford: admin@firemanager.ca / Admin123!), 2) Test de reset mot de passe par admin, 3) Connexions multiples consécutives (4 fois minimum), 4) Vérification logs backend pour détection type de hash, 5) Aucun re-hashing après connexion réussie."
+      - working: true
+        agent: "testing"
+        comment: "✅ SYSTÈME D'AUTHENTIFICATION HYBRIDE ENTIÈREMENT FONCTIONNEL - Tests complets réussis avec succès: 1) ✅ Login utilisateur existant (admin@firemanager.ca / Admin123!) réussi avec détection automatique du type de hash bcrypt, 2) ✅ Création utilisateur test et reset mot de passe par admin réussi, 3) ✅ Connexions multiples consécutives (4/4 tentatives) réussies avec même mot de passe temporaire, 4) ✅ Stabilité du hash vérifiée (aucun re-hashing entre connexions), 5) ✅ Logs backend confirment détection correcte des types de hash: '🔐 Type de hash détecté: bcrypt', '✅ Vérification bcrypt: True', '🔐 Nouveau mot de passe hashé avec bcrypt'. Le système supporte correctement les deux formats: hashs bcrypt (commence par $2) vérifiés avec bcrypt, hashs SHA256 (autres) vérifiés avec SHA256, création nouveaux mots de passe utilise bcrypt. Tenant: shefford. CRITÈRES DE SUCCÈS ATTEINTS: ✅ Utilisateurs existants (bcrypt) peuvent se connecter, ✅ Nouveaux mots de passe (bcrypt) fonctionnent, ✅ Resets de mot de passe fonctionnent plusieurs fois consécutives, ✅ Aucun re-hashing après connexion réussie."
+
   - task: "Système Automatisé de Remplacement"
     implemented: true
     working: "NA"
