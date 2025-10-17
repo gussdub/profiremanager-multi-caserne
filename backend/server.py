@@ -4848,8 +4848,48 @@ async def assignation_manuelle_avancee(
                             assignations_creees.append(assignation_obj.dict())
                 
                 current_date += timedelta(days=1)
+        
+        elif recurrence_type == "bihebdomadaire":
+            # Récurrence bi-hebdomadaire (toutes les 2 semaines)
+            current_date = date_debut
+            week_counter = 0
+            last_week_start = None
+            
+            while current_date <= date_fin:
+                # Calculer le début de la semaine actuelle
+                week_start = current_date - timedelta(days=current_date.weekday())
                 
-        elif recurrence_type == "mensuel":
+                # Si on change de semaine, incrémenter le compteur
+                if last_week_start != week_start:
+                    if last_week_start is not None:
+                        week_counter += 1
+                    last_week_start = week_start
+                
+                day_name = current_date.strftime("%A").lower()
+                
+                # Vérifier si c'est un jour sélectionné et une semaine paire
+                if day_name in jours_semaine and week_counter % 2 == 0:
+                    existing = await db.assignations.find_one({
+                        "user_id": user_id,
+                        "type_garde_id": type_garde_id,
+                        "date": current_date.strftime("%Y-%m-%d"),
+                        "tenant_id": tenant.id
+                    })
+                    
+                    if not existing:
+                        assignation_obj = Assignation(
+                            user_id=user_id,
+                            type_garde_id=type_garde_id,
+                            date=current_date.strftime("%Y-%m-%d"),
+                            assignation_type="manuel_avance",
+                            tenant_id=tenant.id
+                        )
+                        await db.assignations.insert_one(assignation_obj.dict())
+                        assignations_creees.append(assignation_obj.dict())
+                
+                current_date += timedelta(days=1)
+                
+        elif recurrence_type == "mensuel" or recurrence_type == "mensuelle":
             # Récurrence mensuelle (même jour du mois)
             jour_mois = date_debut.day
             current_month = date_debut.replace(day=1)
