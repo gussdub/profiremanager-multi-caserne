@@ -9480,6 +9480,8 @@ const MonProfil = () => {
           telephone: userData.telephone,
           adresse: userData.adresse || '',
           contact_urgence: userData.contact_urgence || '',
+          numero_employe: userData.numero_employe || '',
+          taux_horaire: userData.taux_horaire || 0,
           heures_max_semaine: userData.heures_max_semaine || 25
         });
 
