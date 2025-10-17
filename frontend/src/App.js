@@ -2619,12 +2619,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!tenantSlug) return;
       
       try {
-        const [usersData, formationsData] = await Promise.all([
+        const [usersData, competencesData] = await Promise.all([
           apiGet(tenantSlug, '/users'),
-          apiGet(tenantSlug, '/formations')
+          apiGet(tenantSlug, '/competences')
         ]);
         setUsers(usersData);
-        setFormations(formationsData);
+        setFormations(competencesData);
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       } finally {
