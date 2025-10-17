@@ -614,7 +614,7 @@ class UserCreate(BaseModel):
     date_embauche: str = ""
     taux_horaire: float = 0.0
     formations: List[str] = []
-    mot_de_passe: str = "motdepasse123"
+    mot_de_passe: str = "TempPass123!"
 
 class UserLogin(BaseModel):
     email: str
