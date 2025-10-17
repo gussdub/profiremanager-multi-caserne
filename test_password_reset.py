@@ -74,7 +74,7 @@ def test_password_reset_functionality():
             "email": "admin@firemanager.ca",
             "prenom": "Admin",
             "nom": "Shefford",
-            "mot_de_passe": "admin123"
+            "mot_de_passe": "Admin123!"
         }
         
         # Try to create admin user
