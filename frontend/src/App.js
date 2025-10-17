@@ -4978,7 +4978,13 @@ const Planning = () => {
             <Button 
               variant="default" 
               disabled={user.role === 'employe'}
-              onClick={handleAttributionAuto}
+              onClick={() => {
+                setAutoAttributionConfig({
+                  periode: viewMode,
+                  date: viewMode === 'semaine' ? currentWeek : currentMonth
+                });
+                setShowAutoAttributionModal(true);
+              }}
               data-testid="auto-assign-btn"
             >
               ✨ Attribution auto
