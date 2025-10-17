@@ -874,20 +874,34 @@ const Parametres = ({ user, tenantSlug }) => {
     const newTempPassword = generateTempPassword();
 
     try {
-      await axios.put(`${API}/users/${user.id}/password`, {
+      const response = await axios.put(`${API}/users/${user.id}/password`, {
         mot_de_passe: newTempPassword,
         ancien_mot_de_passe: '' // Admin bypass
       });
 
       setEditingUser(user);
-      setTempPassword(newTempPassword);
       setShowResetPasswordModal(true);
 
-      toast({
-        title: "Mot de passe réinitialisé",
-        description: `Le mot de passe temporaire pour ${user.prenom} ${user.nom} a été généré`,
-        variant: "success"
-      });
+      // Afficher la notification selon si l'email a été envoyé ou non
+      if (response.data.email_sent) {
+        toast({
+          title: "Mot de passe réinitialisé",
+          description: `Le mot de passe temporaire a été généré et envoyé par courriel à ${user.prenom} ${user.nom} (${response.data.email_address})`,
+          variant: "success"
+        });
+      } else if (response.data.error) {
+        toast({
+          title: "Mot de passe réinitialisé avec avertissement",
+          description: response.data.error,
+          variant: "warning"
+        });
+      } else {
+        toast({
+          title: "Mot de passe réinitialisé",
+          description: `Le mot de passe temporaire pour ${user.prenom} ${user.nom} a été généré`,
+          variant: "success"
+        });
+      }
     } catch (error) {
       toast({
         title: "Erreur",
