@@ -127,10 +127,50 @@ async def initialize_multi_tenant():
             if result.modified_count > 0:
                 print(f"✅ {result.modified_count} documents migrés dans {collection_name}")
 
+async def initialize_default_grades():
+    """Initialise les grades par défaut pour chaque tenant s'ils n'existent pas"""
+    try:
+        tenants = await db.tenants.find({}).to_list(1000)
+        
+        default_grades = [
+            {"nom": "Pompier", "niveau_hierarchique": 1},
+            {"nom": "Lieutenant", "niveau_hierarchique": 2},
+            {"nom": "Capitaine", "niveau_hierarchique": 3},
+            {"nom": "Directeur", "niveau_hierarchique": 4}
+        ]
+        
+        for tenant in tenants:
+            tenant_id = tenant.get('id')
+            if not tenant_id:
+                continue
+            
+            # Vérifier si des grades existent déjà pour ce tenant
+            existing_count = await db.grades.count_documents({"tenant_id": tenant_id})
+            
+            if existing_count == 0:
+                # Créer les grades par défaut
+                for grade_data in default_grades:
+                    grade = Grade(
+                        tenant_id=tenant_id,
+                        nom=grade_data["nom"],
+                        niveau_hierarchique=grade_data["niveau_hierarchique"]
+                    )
+                    grade_dict = grade.dict()
+                    grade_dict["created_at"] = grade.created_at.isoformat()
+                    grade_dict["updated_at"] = grade.updated_at.isoformat()
+                    await db.grades.insert_one(grade_dict)
+                
+                print(f"✅ {len(default_grades)} grades par défaut créés pour le tenant {tenant.get('nom', tenant_id)}")
+    except Exception as e:
+        print(f"⚠️ Erreur lors de l'initialisation des grades: {str(e)}")
+
 @app.on_event("startup")
 async def startup_event():
     """Événement de démarrage de l'application"""
     await initialize_multi_tenant()
+    
+    # Initialiser les grades par défaut
+    await initialize_default_grades()
     
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
