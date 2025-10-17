@@ -526,6 +526,94 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
+  // ========== GRADES CRUD FUNCTIONS ==========
+
+  const handleCreateGrade = async () => {
+    if (!newGrade.nom) {
+      toast({
+        title: "Champs requis",
+        description: "Le nom du grade est obligatoire",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/grades`, newGrade);
+      toast({
+        title: "Grade créé",
+        description: "Le nouveau grade a été ajouté avec succès",
+        variant: "success"
+      });
+      setShowCreateGradeModal(false);
+      resetNewGrade();
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de créer le grade",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditGrade = (grade) => {
+    setEditingItem(grade);
+    setEditGrade({
+      nom: grade.nom,
+      niveau_hierarchique: grade.niveau_hierarchique
+    });
+    setShowEditGradeModal(true);
+  };
+
+  const handleUpdateGrade = async () => {
+    try {
+      await axios.put(`${API}/grades/${editingItem.id}`, editGrade);
+      toast({
+        title: "Grade mis à jour",
+        description: "Les modifications ont été sauvegardées",
+        variant: "success"
+      });
+      setShowEditGradeModal(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le grade",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteGrade = async (gradeId) => {
+    if (!window.confirm("Supprimer ce grade ?")) return;
+    
+    try {
+      await axios.delete(`${API}/grades/${gradeId}`);
+      toast({
+        title: "Grade supprimé",
+        description: "Le grade a été supprimé avec succès",
+        variant: "success"
+      });
+      fetchData();
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || "Impossible de supprimer le grade";
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetNewGrade = () => {
+    setNewGrade({
+      nom: '',
+      niveau_hierarchique: 1
+    });
+  };
+
+  // ========== END GRADES CRUD FUNCTIONS ==========
 
   const resetNewFormation = () => {
     setNewFormation({
