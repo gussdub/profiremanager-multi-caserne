@@ -2722,12 +2722,12 @@ const Parametres = ({ user, tenantSlug }) => {
         </div>
       )}
 
-      {/* Modal de mot de passe temporaire */}
+      {/* Modal de confirmation d'envoi d'email */}
       {showResetPasswordModal && editingUser && (
         <div className="modal-overlay" onClick={() => setShowResetPasswordModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="reset-password-modal" style={{ maxWidth: '500px' }}>
-            <div className="modal-header" style={{ background: '#fef3c7', borderBottom: '2px solid #f59e0b' }}>
-              <h3>🔑 Mot de passe temporaire généré</h3>
+            <div className="modal-header" style={{ background: '#d1fae5', borderBottom: '2px solid #10b981' }}>
+              <h3>✅ Mot de passe réinitialisé</h3>
               <Button variant="ghost" onClick={() => setShowResetPasswordModal(false)}>✕</Button>
             </div>
             <div className="modal-body">
@@ -2743,49 +2743,32 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
               </div>
 
-              <div style={{ background: '#fef3c7', padding: '1.5rem', borderRadius: '8px', border: '2px solid #f59e0b', marginBottom: '1rem' }}>
-                <p style={{ fontSize: '0.9rem', color: '#92400e', marginBottom: '0.75rem' }}>
-                  ⚠️ <strong>Important :</strong> Communiquez ce mot de passe à l'utilisateur de manière sécurisée.
+              <div style={{ background: '#d1fae5', padding: '1.5rem', borderRadius: '8px', border: '2px solid #10b981', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '1rem', color: '#065f46', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📧</span>
+                  <strong>Le mot de passe temporaire a été envoyé par courriel à l'utilisateur</strong>
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ 
-                    flex: 1, 
-                    padding: '1rem', 
-                    background: 'white', 
-                    borderRadius: '6px', 
-                    border: '2px dashed #f59e0b',
-                    fontFamily: 'monospace',
-                    fontSize: '1.25rem',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    color: '#92400e',
-                    letterSpacing: '2px'
-                  }}>
-                    {tempPassword}
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(tempPassword);
-                      toast({
-                        title: "Copié !",
-                        description: "Le mot de passe a été copié dans le presse-papiers",
-                        variant: "success"
-                      });
-                    }}
-                    style={{ padding: '0.75rem 1rem' }}
-                  >
-                    📋 Copier
-                  </Button>
-                </div>
+                <p style={{ fontSize: '0.85rem', color: '#065f46', textAlign: 'center' }}>
+                  L'utilisateur recevra un courriel contenant son nouveau mot de passe temporaire et les instructions pour le changer.
+                </p>
+              </div>
+
+              <div style={{ background: '#fef3c7', padding: '1rem', borderRadius: '6px', border: '1px solid #fcd34d', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#92400e', marginBottom: '0.5rem' }}>
+                  ⚠️ <strong>Rappel de sécurité :</strong>
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#78350f' }}>
+                  L'utilisateur doit changer ce mot de passe temporaire dès sa première connexion pour assurer la sécurité de son compte.
+                </p>
               </div>
 
               <div style={{ background: '#f0f9ff', padding: '1rem', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
-                <h4 style={{ fontSize: '0.9rem', color: '#0c4a6e', marginBottom: '0.5rem' }}>💡 Instructions pour l'utilisateur :</h4>
+                <h4 style={{ fontSize: '0.9rem', color: '#0c4a6e', marginBottom: '0.5rem' }}>💡 Prochaines étapes pour l'utilisateur :</h4>
                 <ol style={{ fontSize: '0.85rem', color: '#0369a1', marginLeft: '1.25rem' }}>
-                  <li>Se connecter avec ce mot de passe temporaire</li>
-                  <li>Aller dans "Mon Profil" → "Changer le mot de passe"</li>
-                  <li>Définir un nouveau mot de passe personnel</li>
+                  <li>Vérifier sa boîte de réception (et le dossier spam si nécessaire)</li>
+                  <li>Se connecter avec le mot de passe temporaire reçu par courriel</li>
+                  <li>Aller dans "Mon Profil" → "Modifier le mot de passe"</li>
+                  <li>Définir un nouveau mot de passe personnel et sécurisé</li>
                 </ol>
               </div>
 
