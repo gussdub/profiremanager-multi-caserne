@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 import uuid
 
 # Configuration
-BASE_URL = "https://disponible-pro.preview.emergentagent.com/api"
+BASE_URL = "https://training-edit-1.preview.emergentagent.com/api"
 TENANT_SLUG = "shefford"
 ADMIN_EMAIL = "test.planning@shefford.ca"
 ADMIN_PASSWORD = "PlanningTest123!"
