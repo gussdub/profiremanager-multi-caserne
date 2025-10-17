@@ -4886,6 +4886,7 @@ const Planning = () => {
         date_debut: advancedAssignConfig.date_debut,
         date_fin: advancedAssignConfig.date_fin || advancedAssignConfig.date_debut,
         jours_semaine: advancedAssignConfig.jours_semaine,
+        bi_hebdomadaire: advancedAssignConfig.bi_hebdomadaire,
         assignation_type: "manuel_avance"
       };
 
@@ -4906,6 +4907,7 @@ const Planning = () => {
         type_garde_id: '',
         recurrence_type: 'unique',
         jours_semaine: [],
+        bi_hebdomadaire: false,
         date_debut: '',
         date_fin: '',
         exceptions: []
