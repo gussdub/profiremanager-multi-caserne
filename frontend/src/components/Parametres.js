@@ -1074,6 +1074,58 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
+        {activeTab === 'grades' && (
+          <div className="grades-tab">
+            <div className="tab-header">
+              <div>
+                <h2>Gestion des grades</h2>
+                <p>Définissez les grades hiérarchiques utilisés dans votre organisation</p>
+              </div>
+              <Button 
+                variant="default" 
+                onClick={() => setShowCreateGradeModal(true)}
+                data-testid="create-grade-btn"
+              >
+                + Nouveau Grade
+              </Button>
+            </div>
+
+            <div className="competences-grid">
+              {grades.map(grade => (
+                <div key={grade.id} className="competence-card" data-testid={`grade-${grade.id}`}>
+                  <div className="competence-header">
+                    <div className="competence-info">
+                      <h3>{grade.nom}</h3>
+                      <div className="competence-details">
+                        <span className="detail-item">📊 Niveau hiérarchique: {grade.niveau_hierarchique}</span>
+                      </div>
+                    </div>
+                    <div className="competence-actions">
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => handleEditGrade(grade)}
+                        data-testid={`edit-grade-${grade.id}`}
+                        title="Modifier ce grade"
+                      >
+                        ✏️ Modifier
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="danger" 
+                        onClick={() => handleDeleteGrade(grade.id)}
+                        data-testid={`delete-grade-${grade.id}`}
+                        title="Supprimer ce grade"
+                      >
+                        🗑️ Supprimer
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'attribution' && (
           <div className="attribution-tab">
             <div className="tab-header">
