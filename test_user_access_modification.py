@@ -205,7 +205,7 @@ def test_user_access_modification():
         print(f"✅ Test user successfully deleted")
         
         log_test("User Access Modification", True, 
-                f"✅ User access modification fully functional - All 8 test steps passed successfully. Endpoint PUT /api/{tenant_slug}/users/{{user_id}}/access working correctly with tenant '{tenant_slug}' using admin@firemanager.ca / admin123 credentials.")
+                f"✅ User access modification fully functional - All 8 test steps passed successfully. Endpoint PUT /api/{tenant_slug}/users/{{user_id}}/access working correctly with tenant '{tenant_slug}' using test.admin.access@firemanager.ca / TestAdmin123! credentials.")
         return True
         
     except Exception as e:
