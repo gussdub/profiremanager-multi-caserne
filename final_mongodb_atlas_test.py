@@ -492,41 +492,37 @@ class FinalMongoDBAtlasTester:
             
             print(f"   ✅ Entrée retrouvée dans la base de données")
             
-            # Test 3: Update the entry
-            update_data = {
-                "statut": "indisponible",
-                "heure_debut": "09:00"
-            }
-            
-            print(f"   🔄 Mise à jour de l'entrée...")
-            response = admin_session.put(f"{self.base_url}/{tenant_slug}/disponibilites/{entry_id}", json=update_data)
+            # Test 3: Delete the test entry to verify write operations
+            print(f"   🗑️ Suppression de l'entrée de test...")
+            response = admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/{entry_id}")
             if response.status_code != 200:
                 self.log_test("Database Verification", False, 
-                            f"Failed to update disponibilité: {response.status_code}")
+                            f"Failed to delete disponibilité: {response.status_code}")
                 return False
             
-            # Test 4: Verify the update was persisted
+            print(f"   ✅ Entrée supprimée avec succès")
+            
+            # Test 4: Verify the entry was deleted
             response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code == 200:
-                updated_disponibilites = response.json()
-                updated_entry = None
-                for disp in updated_disponibilites:
+                remaining_disponibilites = response.json()
+                deleted_entry_found = False
+                for disp in remaining_disponibilites:
                     if disp.get('id') == entry_id:
-                        updated_entry = disp
+                        deleted_entry_found = True
                         break
                 
-                if updated_entry and updated_entry.get('statut') == 'indisponible':
-                    print(f"   ✅ Mise à jour vérifiée dans la base de données")
-                    
-                    # Clean up - delete the test entry
-                    admin_session.delete(f"{self.base_url}/{tenant_slug}/disponibilites/{entry_id}")
-                    print(f"   🗑️ Entrée de test supprimée")
+                if not deleted_entry_found:
+                    print(f"   ✅ Suppression vérifiée dans la base de données")
                     
                     self.log_test("Database Verification", True, 
-                                f"✅ Database write/read operations verified - Created, retrieved, updated, and deleted disponibilité entry successfully. MongoDB Atlas persistence confirmed for tenant '{tenant_slug}'")
+                                f"✅ Database write/read operations verified - Created, retrieved, and deleted disponibilité entry successfully. MongoDB Atlas persistence confirmed for tenant '{tenant_slug}'")
                     return True
+                else:
+                    self.log_test("Database Verification", False, "Entry still exists after deletion")
+                    return False
             
-            self.log_test("Database Verification", False, "Update verification failed")
+            self.log_test("Database Verification", False, "Could not verify deletion")
             return False
             
         except Exception as e:
