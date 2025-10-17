@@ -5818,6 +5818,68 @@ const Planning = () => {
                   </div>
                 </div>
 
+                {/* Suggestion de prochain jour si nécessaire */}
+                {advancedAssignConfig.jour_specifique && advancedAssignConfig.date_debut && getSuggestedNextDay() && (
+                  <div className="assign-section" style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <h4>💡 Suggestion</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                      La date de début sélectionnée n'est pas un {getSuggestedNextDay()?.dayName}.
+                    </p>
+                    <Button
+                      variant="outline"
+                      style={{ background: 'white', border: '2px solid #f59e0b', color: '#92400e', fontWeight: '500' }}
+                      onClick={() => {
+                        const suggested = getSuggestedNextDay();
+                        if (suggested) {
+                          const dateStr = suggested.date.toISOString().split('T')[0];
+                          setAdvancedAssignConfig({...advancedAssignConfig, date_debut: dateStr});
+                          toast({
+                            title: "Date ajustée",
+                            description: `Date de début changée au prochain ${suggested.dayName}`,
+                            variant: "success"
+                          });
+                        }
+                      }}
+                    >
+                      📅 Utiliser le prochain {getSuggestedNextDay()?.dayName} : {getSuggestedNextDay()?.formatted}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Aperçu des dates de récurrence */}
+                {advancedAssignConfig.date_debut && advancedAssignConfig.recurrence_type !== 'unique' && advancedAssignConfig.jour_specifique && (
+                  <div className="assign-section" style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '2px solid #22c55e' }}>
+                    <h4>👁️ Aperçu des dates (10 premières)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', marginTop: '0.75rem' }}>
+                      {calculateRecurrenceDates().map((date, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            padding: '0.5rem',
+                            background: 'white',
+                            borderRadius: '6px',
+                            border: '1px solid #86efac',
+                            fontSize: '0.875rem',
+                            textAlign: 'center'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#166534' }}>
+                            {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                          </div>
+                          <div style={{ color: '#15803d' }}>
+                            {date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {calculateRecurrenceDates().length === 0 && (
+                      <p style={{ textAlign: 'center', color: '#166534', marginTop: '0.5rem' }}>
+                        Aucune date à afficher. Vérifiez votre configuration.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Section 5: Jours de semaine (si récurrence hebdomadaire ou bihebdomadaire) */}
                 {(advancedAssignConfig.recurrence_type === 'hebdomadaire' || advancedAssignConfig.recurrence_type === 'bihebdomadaire') && (
                   <div className="assign-section">
