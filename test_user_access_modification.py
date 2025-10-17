@@ -26,8 +26,8 @@ def test_user_access_modification():
         
         # Step 1: Login as Shefford admin using the correct credentials
         login_data = {
-            "email": "admin@firemanager.ca",
-            "mot_de_passe": "admin123"
+            "email": "test.admin.access@firemanager.ca",
+            "mot_de_passe": "TestAdmin123!"
         }
         
         print(f"🔐 Step 1: Logging in as Shefford admin...")
