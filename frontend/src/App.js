@@ -5619,7 +5619,8 @@ const Planning = () => {
                       <span className="summary-label">Récurrence :</span>
                       <span className="summary-value">
                         {advancedAssignConfig.recurrence_type === 'unique' ? 'Assignation unique' :
-                         advancedAssignConfig.recurrence_type === 'hebdomadaire' ? `Chaque semaine (${advancedAssignConfig.jours_semaine.length} jour(s))` :
+                         advancedAssignConfig.recurrence_type === 'hebdomadaire' ? 
+                           `${advancedAssignConfig.bi_hebdomadaire ? 'Toutes les 2 semaines' : 'Chaque semaine'} (${advancedAssignConfig.jours_semaine.length} jour(s))` :
                          'Récurrence mensuelle'}
                       </span>
                     </div>
