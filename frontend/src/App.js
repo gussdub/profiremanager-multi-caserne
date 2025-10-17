@@ -5753,14 +5753,28 @@ const Planning = () => {
                           : 'Non sélectionné'}
                       </span>
                     </div>
+                    {advancedAssignConfig.jour_specifique && (
+                      <div className="summary-row" style={{ background: '#fffbeb', padding: '0.5rem', borderRadius: '4px', border: '1px solid #fbbf24' }}>
+                        <span className="summary-label">📆 Jour spécifique :</span>
+                        <span className="summary-value" style={{ fontWeight: '600', color: '#92400e' }}>
+                          {advancedAssignConfig.jour_specifique === 'monday' ? 'Lundi' :
+                           advancedAssignConfig.jour_specifique === 'tuesday' ? 'Mardi' :
+                           advancedAssignConfig.jour_specifique === 'wednesday' ? 'Mercredi' :
+                           advancedAssignConfig.jour_specifique === 'thursday' ? 'Jeudi' :
+                           advancedAssignConfig.jour_specifique === 'friday' ? 'Vendredi' :
+                           advancedAssignConfig.jour_specifique === 'saturday' ? 'Samedi' :
+                           advancedAssignConfig.jour_specifique === 'sunday' ? 'Dimanche' : ''}
+                        </span>
+                      </div>
+                    )}
                     <div className="summary-row">
                       <span className="summary-label">Récurrence :</span>
                       <span className="summary-value">
                         {advancedAssignConfig.recurrence_type === 'unique' ? '📅 Assignation unique' :
                          advancedAssignConfig.recurrence_type === 'hebdomadaire' ? 
-                           `🔁 Chaque semaine (${advancedAssignConfig.jours_semaine.length} jour(s))` :
+                           `🔁 Chaque semaine${advancedAssignConfig.jour_specifique ? ' (jour spécifique)' : ` (${advancedAssignConfig.jours_semaine.length} jour(s))`}` :
                          advancedAssignConfig.recurrence_type === 'bihebdomadaire' ?
-                           `🔄 Toutes les 2 semaines (${advancedAssignConfig.jours_semaine.length} jour(s))` :
+                           `🔄 Toutes les 2 semaines${advancedAssignConfig.jour_specifique ? ' (jour spécifique)' : ` (${advancedAssignConfig.jours_semaine.length} jour(s))`}` :
                          advancedAssignConfig.recurrence_type === 'mensuelle' ? '📆 Tous les mois' :
                          advancedAssignConfig.recurrence_type === 'annuelle' ? '🗓️ Tous les ans' :
                          `⚙️ Tous les ${advancedAssignConfig.recurrence_intervalle} ${advancedAssignConfig.recurrence_frequence}`}
