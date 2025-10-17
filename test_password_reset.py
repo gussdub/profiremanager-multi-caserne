@@ -323,7 +323,7 @@ def test_password_reset_functionality():
         
         print(f"\n🎉 ALL TESTS PASSED - Password reset functionality is working correctly!")
         print(f"📍 Endpoint tested: PUT /api/{tenant_slug}/users/{{user_id}}/password")
-        print(f"🔑 Admin credentials used: admin@firemanager.ca / admin123")
+        print(f"🔑 Admin credentials used: admin@firemanager.ca / Admin123!")
         print(f"🏢 Tenant: {tenant_slug}")
         
         return True
