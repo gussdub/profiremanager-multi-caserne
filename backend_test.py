@@ -3510,7 +3510,7 @@ class ProFireManagerTester:
                 final_response = requests.post(f"{self.base_url}/auth/login", json=consecutive_login_data)
             
             if final_response.status_code == 200:
-                print("✅ Final login successful - Password changes are persistent in MongoDB Atlas")
+                print("✅ Final login successful - Data persistence verified in MongoDB Atlas")
             else:
                 self.log_test("MongoDB Atlas Final Connection", False, 
                             "❌ Final persistence check failed")
