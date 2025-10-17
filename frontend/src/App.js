@@ -3549,6 +3549,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="user-hire-date-input"
                       />
                     </div>
+                    </div>
+                    <div className="form-field">
+                      <Label>Taux horaire ($/h)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={newUser.taux_horaire || ''}
+                        onChange={(e) => setNewUser({...newUser, taux_horaire: parseFloat(e.target.value) || 0})}
+                        placeholder="Ex: 25.50"
+                        data-testid="user-taux-horaire-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+
                   </div>
                 </div>
 
