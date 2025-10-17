@@ -4391,7 +4391,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="edit-user-grade-select"
                       >
                         {grades.map(grade => (
-                          <option key={grade} value={grade}>{grade}</option>
+                          <option key={grade.id} value={grade.nom}>{grade.nom}</option>
                         ))}
                       </select>
                     </div>
