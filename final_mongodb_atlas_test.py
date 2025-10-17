@@ -506,7 +506,7 @@ class FinalMongoDBAtlasTester:
                 return False
             
             # Test 4: Verify the update was persisted
-            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites")
+            response = admin_session.get(f"{self.base_url}/{tenant_slug}/disponibilites/{user_id}")
             if response.status_code == 200:
                 updated_disponibilites = response.json()
                 updated_entry = None
