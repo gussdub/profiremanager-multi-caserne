@@ -20,14 +20,16 @@ TENANT_SLUG = "shefford"
 ADMIN_EMAIL = "admin@firemanager.ca"
 ADMIN_PASSWORD = "admin123"
 
-class ProFireManagerTester:
+class PasswordResetTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
         self.auth_token = None
-        self.super_admin_token = None
         self.test_results = []
-        self.production_users = []  # Store real production users
+        self.test_user_id = None
+        self.test_user_email = None
+        self.original_hash = None
+        self.new_hash = None
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
