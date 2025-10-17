@@ -603,18 +603,18 @@ class UserCreate(BaseModel):
     prenom: str
     email: str
     telephone: str = ""
-    adresse: str = ""  # Adresse du pompier
+    adresse: str = ""
     contact_urgence: str = ""
-    grade: str
+    grade: str = "Pompier"
     fonction_superieur: bool = False
-    type_emploi: str
+    type_emploi: str = "temps_plein"
     heures_max_semaine: int = 40
-    role: str
-    numero_employe: str
-    date_embauche: str
+    role: str = "employe"
+    numero_employe: str = ""
+    date_embauche: str = ""
     taux_horaire: float = 0.0
     formations: List[str] = []
-    mot_de_passe: str
+    mot_de_passe: str = "motdepasse123"
 
 class UserLogin(BaseModel):
     email: str
