@@ -399,7 +399,7 @@ test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "hybrid_auth_completed"
+  test_priority: "mongodb_atlas_production_verified"
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
