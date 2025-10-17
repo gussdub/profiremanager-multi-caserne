@@ -2613,8 +2613,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
 
-  const grades = ['Directeur', 'Capitaine', 'Lieutenant', 'Pompier'];
-
   useEffect(() => {
     const fetchData = async () => {
       if (!tenantSlug) return;
