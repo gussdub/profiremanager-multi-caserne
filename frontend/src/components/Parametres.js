@@ -941,7 +941,7 @@ const Parametres = ({ user, tenantSlug }) => {
                     <div className="competence-actions">
                       <Button 
                         variant="ghost" 
-                        onClick={() => handleEditFormation(competence)}
+                        onClick={() => handleEditCompetence(competence)}
                         data-testid={`edit-competence-${competence.id}`}
                         title="Modifier cette compétence"
                       >
@@ -950,7 +950,7 @@ const Parametres = ({ user, tenantSlug }) => {
                       <Button 
                         variant="ghost" 
                         className="danger" 
-                        onClick={() => handleDeleteFormation(competence.id)}
+                        onClick={() => handleDeleteCompetence(competence.id)}
                         data-testid={`delete-competence-${competence.id}`}
                         title="Supprimer cette compétence"
                       >
