@@ -3736,14 +3736,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                              selectedUser.role === 'superviseur' ? '🎖️ Superviseur' : '👤 Employé'}
                           </span>
                         </div>
-                        </div>
                         <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Taux horaire</span>
                           <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
                             {selectedUser.taux_horaire ? `${selectedUser.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
                           </span>
                         </div>
-
                       </div>
                     </div>
 
