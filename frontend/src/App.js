@@ -3563,10 +3563,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       />
                     </div>
                   </div>
-                  <div className="form-row">
-
-                  </div>
-                </div>
 
                 {/* Section 3: Compétences et formations - Version compacte */}
                 <div className="form-section">
