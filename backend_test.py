@@ -419,24 +419,6 @@ class RapportsExportTester:
         self.analyze_rapports_export_results()
         
         return passed >= 4  # Consider success if most tests pass
-                
-                if results["is_pdf"] and results["content_length"] > 0:
-                    success = True
-                    message = f"✅ Competences PDF export working - Generated {results['content_length']} bytes PDF file"
-                else:
-                    success = False
-                    message = f"❌ Competences PDF export failed - Invalid content type or empty file"
-            else:
-                success = False
-                message = f"❌ Export competences PDF failed with status {response.status_code}"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            
-            self.log_test("Export Competences PDF", success, message, results)
-            return success
-                
-        except Exception as e:
-            self.log_test("Export Competences PDF", False, f"Export competences PDF test error: {str(e)}")
-            return False
 
     def test_export_competences_excel_with_user(self):
         """Test GET /api/{tenant_slug}/formations/rapports/export-competences with Excel format and user_id"""
