@@ -7069,6 +7069,12 @@ const Formations = () => {
     if (tenantSlug) loadData();
   }, [tenantSlug, anneeSelectionnee]);
   
+  useEffect(() => {
+    if (tenantSlug && activeTab === 'rapports' && rapportTab === 'competences') {
+      loadRapportCompetences();
+    }
+  }, [tenantSlug, activeTab, rapportTab, anneeSelectionnee, filtrePersonne]);
+  
   const loadData = async () => {
     setLoading(true);
     try {
@@ -7082,16 +7088,19 @@ const Formations = () => {
         setCompetences(competencesData || []);
         setMonTauxPresence(tauxData);
       } else {
-        const [formationsData, competencesData, dashData, rapportData] = await Promise.all([
+        const [formationsData, competencesData, dashData, rapportData, personnelData] = await Promise.all([
           apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
           apiGet(tenantSlug, '/competences'),
           apiGet(tenantSlug, `/formations/rapports/dashboard?annee=${anneeSelectionnee}`),
-          apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`)
+          apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/users')
         ]);
         setFormations(formationsData || []);
         setCompetences(competencesData || []);
         setDashboardData(dashData);
         setRapportConformite(rapportData);
+        setPersonnel(personnelData || []);
+      }
       }
     } catch (error) {
       console.error('Erreur:', error);
