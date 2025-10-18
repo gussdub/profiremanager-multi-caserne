@@ -51,59 +51,53 @@ class EPIEndpointTester:
         if details and not success:
             print(f"   Details: {details}")
     
-    def test_guillaume_login_and_get_real_userid(self):
-        """Test login as Guillaume Dubeau to get the REAL userId from API response"""
+    def test_admin_authentication(self):
+        """Test admin authentication for Shefford tenant"""
         try:
-            for password in DIAGNOSTIC_PASSWORDS:
-                login_data = {
-                    "email": DIAGNOSTIC_USER_EMAIL,
-                    "mot_de_passe": password
-                }
-                
-                print(f"🔑 Trying login with password: {password}")
+            # Try different admin credentials
+            admin_credentials = [
+                {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
+                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
+                {"email": "admin@shefford.ca", "mot_de_passe": "Admin123!"}
+            ]
+            
+            for creds in admin_credentials:
+                print(f"🔑 Trying admin login with: {creds['email']}")
                 
                 # Try tenant-specific login first
-                response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
+                response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=creds)
                 if response.status_code != 200:
                     # Try legacy login
-                    response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+                    response = self.session.post(f"{self.base_url}/auth/login", json=creds)
                 
                 if response.status_code == 200:
                     data = response.json()
                     if "access_token" in data:
-                        self.guillaume_token = data["access_token"]
+                        self.admin_token = data["access_token"]
                         user_info = data.get("user", {})
-                        self.guillaume_real_id = user_info.get("id")
+                        self.admin_user_id = user_info.get("id")
                         
-                        # Compare with console ID
-                        id_match = self.guillaume_real_id == DIAGNOSTIC_USER_ID_CONSOLE
-                        
-                        self.log_test("Guillaume Login & Real UserID", True, 
-                                    f"✅ Login successful for {DIAGNOSTIC_USER_EMAIL} with password '{password}'. " +
-                                    f"Real ID from API: {self.guillaume_real_id}. " +
-                                    f"Console ID: {DIAGNOSTIC_USER_ID_CONSOLE}. " +
-                                    f"IDs Match: {id_match}", 
+                        self.log_test("Admin Authentication", True, 
+                                    f"✅ Admin login successful for {creds['email']}", 
                                     {
-                                        "real_user_id": self.guillaume_real_id,
-                                        "console_user_id": DIAGNOSTIC_USER_ID_CONSOLE,
-                                        "ids_match": id_match,
+                                        "admin_user_id": self.admin_user_id,
                                         "user_info": user_info,
-                                        "successful_password": password
+                                        "successful_credentials": creds['email']
                                     })
                         return True
                     else:
-                        print(f"    ❌ No access token in response for password: {password}")
+                        print(f"    ❌ No access token in response for: {creds['email']}")
                 else:
-                    print(f"    ❌ Login failed with password '{password}': {response.status_code}")
+                    print(f"    ❌ Login failed for '{creds['email']}': {response.status_code}")
             
-            # If we get here, all passwords failed
-            self.log_test("Guillaume Login & Real UserID", False, 
-                        f"❌ All login attempts failed for {DIAGNOSTIC_USER_EMAIL}", 
-                        {"tried_passwords": DIAGNOSTIC_PASSWORDS})
+            # If we get here, all credentials failed
+            self.log_test("Admin Authentication", False, 
+                        f"❌ All admin login attempts failed", 
+                        {"tried_credentials": [c['email'] for c in admin_credentials]})
             return False
                 
         except Exception as e:
-            self.log_test("Guillaume Login & Real UserID", False, f"Login error: {str(e)}")
+            self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
     def test_search_guillaume_in_mongodb(self):
