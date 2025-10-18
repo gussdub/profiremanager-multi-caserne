@@ -7297,51 +7297,86 @@ const Formations = () => {
                     </div>
                   </div>
                 </div>
-                <div className="formation-actions" style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
-                  {/* Boutons d'inscription pour TOUS */}
+                <div className="formation-actions" style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem 1.5rem'}}>
+                  {/* Bouton principal pour TOUS */}
                   {f.user_inscrit ? (
-                    <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleDesinscrire(f.id)}
+                      style={{width: '100%', fontSize: '0.95rem', padding: '0.75rem'}}
+                    >
                       ❌ Je me désinscris
                     </Button>
                   ) : (
-                    <Button onClick={() => handleInscrire(f.id)} disabled={f.places_restantes === 0}>
-                      {f.places_restantes === 0 ? '🔒 Complet' : '✅ Je m\'inscris'}
+                    <Button 
+                      onClick={() => handleInscrire(f.id)} 
+                      disabled={f.places_restantes === 0}
+                      style={{width: '100%', fontSize: '0.95rem', padding: '0.75rem'}}
+                    >
+                      {f.places_restantes === 0 ? '🔒 Formation complète' : '✅ Je m\'inscris'}
                     </Button>
                   )}
                   
-                  {/* Boutons de gestion uniquement pour admin/superviseur */}
+                  {/* Boutons de gestion pour admin/superviseur */}
                   {user?.role !== 'employe' && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowInscriptionsModal(true); }}>
+                    <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={async () => { 
+                          setSelectedFormation(f); 
+                          await loadInscriptions(f.id); 
+                          setShowInscriptionsModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
                         👥 Inscrits ({f.places_max - f.places_restantes})
                       </Button>
-                      <Button size="sm" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowValidationModal(true); }}>
+                      <Button 
+                        size="sm" 
+                        onClick={async () => { 
+                          setSelectedFormation(f); 
+                          await loadInscriptions(f.id); 
+                          setShowValidationModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
                         ✅ Présences
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => { 
-                        setSelectedFormation(f); 
-                        setFormationForm({
-                          nom: f.nom,
-                          competence_id: f.competence_id,
-                          description: f.description,
-                          date_debut: f.date_debut,
-                          heure_debut: f.heure_debut,
-                          heure_fin: f.heure_fin,
-                          duree_heures: f.duree_heures,
-                          lieu: f.lieu,
-                          instructeur: f.instructeur,
-                          places_max: f.places_max,
-                          obligatoire: f.obligatoire,
-                          annee: f.annee
-                        }); 
-                        setShowFormationModal(true); 
-                      }}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => { 
+                          setSelectedFormation(f); 
+                          setFormationForm({
+                            nom: f.nom,
+                            competence_id: f.competence_id,
+                            description: f.description,
+                            date_debut: f.date_debut,
+                            heure_debut: f.heure_debut,
+                            heure_fin: f.heure_fin,
+                            duree_heures: f.duree_heures,
+                            lieu: f.lieu,
+                            instructeur: f.instructeur,
+                            places_max: f.places_max,
+                            obligatoire: f.obligatoire,
+                            annee: f.annee
+                          }); 
+                          setShowFormationModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
                         ✏️ Modifier
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDeleteFormation(f.id)}>
-                        🗑️
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => handleDeleteFormation(f.id)}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
+                        🗑️ Supprimer
                       </Button>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
