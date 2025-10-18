@@ -419,8 +419,8 @@ class RapportsExportTester:
         self.analyze_rapports_export_results()
         
         return passed >= 4  # Consider success if most tests pass
-
-    def test_export_competences_excel_with_user(self):
+    
+    def analyze_rapports_export_results(self):
         """Test GET /api/{tenant_slug}/formations/rapports/export-competences with Excel format and user_id"""
         try:
             if not self.admin_token:
