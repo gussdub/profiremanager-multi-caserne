@@ -10136,9 +10136,9 @@ const MonProfil = () => {
               {userProfile?.formations?.length || 0}
             </span>
           </div>
-          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem'}}>
+          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem 0.5rem 1.5rem'}}>
             {userProfile?.formations?.length > 0 ? (
-              <div className="formations-compact" style={{gap: '0.5rem'}}>
+              <div className="formations-compact">
                 {userProfile.formations.map((formationId, index) => (
                   <span key={index} className="formation-badge-compact">
                     {getFormationName(formationId)} ✅
@@ -10146,7 +10146,7 @@ const MonProfil = () => {
                 ))}
               </div>
             ) : (
-              <div style={{padding: '0.5rem 0', textAlign: 'center'}}>
+              <div style={{padding: '0', textAlign: 'center'}}>
                 <p style={{margin: 0, fontSize: '14px', color: '#6B7280'}}>Aucune formation • Contactez votre superviseur</p>
               </div>
             )}
