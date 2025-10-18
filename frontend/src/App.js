@@ -7326,7 +7326,7 @@ const Formations = () => {
                   <p><strong>Durée:</strong> {f.duree_heures}h</p>
                   <p><strong>Places:</strong> {f.places_restantes}/{f.places_max}</p>
                 </div>
-                <div className="formation-actions">
+                <div className="formation-actions" style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
                   {user?.role === 'employe' ? (
                     <Button onClick={() => handleInscrire(f.id)}>✅ S'inscrire</Button>
                   ) : (
@@ -7344,7 +7344,6 @@ const Formations = () => {
                           competence_id: f.competence_id,
                           description: f.description,
                           date_debut: f.date_debut,
-                          date_fin: f.date_fin,
                           heure_debut: f.heure_debut,
                           heure_fin: f.heure_fin,
                           duree_heures: f.duree_heures,
