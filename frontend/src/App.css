@@ -12652,7 +12652,7 @@ body {
 
 .formations-tabs button.active {
   color: #1F2937;
-  border-bottom-color: #3B82F6;
+  border-bottom-color: #EF4444;
 }
 
 .formations-actions {
@@ -12677,7 +12677,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
   color: white;
 }
 
@@ -12702,8 +12702,8 @@ body {
 }
 
 .statut-badge.planifiee {
-  background: #DBEAFE;
-  color: #1E40AF;
+  background: #FEE2E2;
+  color: #991B1B;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -12711,8 +12711,8 @@ body {
 }
 
 .statut-badge.terminee {
-  background: #D1FAE5;
-  color: #065F46;
+  background: #FEF2F2;
+  color: #7F1D1D;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
