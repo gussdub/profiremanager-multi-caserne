@@ -4830,6 +4830,403 @@ async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur calcul statistiques: {str(e)}")
 
+
+# ====================================================================
+# MODULE RAPPORTS AVANCÉS - INTERNES ET EXTERNES
+# ====================================================================
+
+# Modèles pour les nouvelles données
+
+class Budget(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    annee: int
+    categorie: str  # salaires, formations, equipements, carburant, entretien, autres
+    budget_alloue: float
+    budget_consomme: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BudgetCreate(BaseModel):
+    annee: int
+    categorie: str
+    budget_alloue: float
+    notes: str = ""
+
+class Immobilisation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    type_immobilisation: str  # vehicule, equipement_majeur
+    nom: str
+    date_acquisition: str  # YYYY-MM-DD
+    cout_acquisition: float
+    cout_entretien_annuel: float = 0.0
+    etat: str = "bon"  # bon, moyen, mauvais
+    date_remplacement_prevue: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ImmobilisationCreate(BaseModel):
+    type_immobilisation: str
+    nom: str
+    date_acquisition: str
+    cout_acquisition: float
+    cout_entretien_annuel: float = 0.0
+    etat: str = "bon"
+    date_remplacement_prevue: Optional[str] = None
+    notes: str = ""
+
+class ProjetTriennal(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    description: str
+    type_projet: str  # acquisition, renovation, recrutement
+    annee_prevue: int
+    cout_estime: float
+    statut: str = "prevu"  # prevu, en_cours, termine, annule
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ProjetTriennalCreate(BaseModel):
+    nom: str
+    description: str
+    type_projet: str
+    annee_prevue: int
+    cout_estime: float
+    statut: str = "prevu"
+
+class Intervention(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    date_intervention: str
+    type_intervention: str  # incendie, medical, sauvetage, autre
+    duree_minutes: int
+    nombre_pompiers: int
+    temps_reponse_minutes: Optional[int] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InterventionCreate(BaseModel):
+    date_intervention: str
+    type_intervention: str
+    duree_minutes: int
+    nombre_pompiers: int
+    temps_reponse_minutes: Optional[int] = None
+    notes: str = ""
+
+
+# ====== ENDPOINTS CRUD POUR LES NOUVELLES DONNÉES ======
+
+# BUDGETS
+@api_router.post("/{tenant_slug}/rapports/budgets")
+async def create_budget(tenant_slug: str, budget: BudgetCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    budget_dict = budget.dict()
+    budget_dict["tenant_id"] = tenant.id
+    budget_obj = Budget(**budget_dict)
+    await db.budgets.insert_one(budget_obj.dict())
+    return clean_mongo_doc(budget_obj.dict())
+
+@api_router.get("/{tenant_slug}/rapports/budgets")
+async def get_budgets(tenant_slug: str, annee: Optional[int] = None, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    query = {"tenant_id": tenant.id}
+    if annee:
+        query["annee"] = annee
+    
+    budgets = await db.budgets.find(query).to_list(1000)
+    return [clean_mongo_doc(b) for b in budgets]
+
+@api_router.put("/{tenant_slug}/rapports/budgets/{budget_id}")
+async def update_budget(tenant_slug: str, budget_id: str, budget: BudgetCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    budget_dict = budget.dict()
+    budget_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.budgets.update_one(
+        {"id": budget_id, "tenant_id": tenant.id},
+        {"$set": budget_dict}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Budget non trouvé")
+    
+    return {"message": "Budget mis à jour"}
+
+@api_router.delete("/{tenant_slug}/rapports/budgets/{budget_id}")
+async def delete_budget(tenant_slug: str, budget_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    result = await db.budgets.delete_one({"id": budget_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Budget non trouvé")
+    
+    return {"message": "Budget supprimé"}
+
+# IMMOBILISATIONS
+@api_router.post("/{tenant_slug}/rapports/immobilisations")
+async def create_immobilisation(tenant_slug: str, immobilisation: ImmobilisationCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    immob_dict = immobilisation.dict()
+    immob_dict["tenant_id"] = tenant.id
+    immob_obj = Immobilisation(**immob_dict)
+    await db.immobilisations.insert_one(immob_obj.dict())
+    return clean_mongo_doc(immob_obj.dict())
+
+@api_router.get("/{tenant_slug}/rapports/immobilisations")
+async def get_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    immobilisations = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(i) for i in immobilisations]
+
+@api_router.delete("/{tenant_slug}/rapports/immobilisations/{immob_id}")
+async def delete_immobilisation(tenant_slug: str, immob_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    result = await db.immobilisations.delete_one({"id": immob_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Immobilisation non trouvée")
+    
+    return {"message": "Immobilisation supprimée"}
+
+# PROJETS TRIENNAUX
+@api_router.post("/{tenant_slug}/rapports/projets-triennaux")
+async def create_projet_triennal(tenant_slug: str, projet: ProjetTriennalCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    projet_dict = projet.dict()
+    projet_dict["tenant_id"] = tenant.id
+    projet_obj = ProjetTriennal(**projet_dict)
+    await db.projets_triennaux.insert_one(projet_obj.dict())
+    return clean_mongo_doc(projet_obj.dict())
+
+@api_router.get("/{tenant_slug}/rapports/projets-triennaux")
+async def get_projets_triennaux(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    projets = await db.projets_triennaux.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(p) for p in projets]
+
+@api_router.delete("/{tenant_slug}/rapports/projets-triennaux/{projet_id}")
+async def delete_projet_triennal(tenant_slug: str, projet_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    result = await db.projets_triennaux.delete_one({"id": projet_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    return {"message": "Projet supprimé"}
+
+# INTERVENTIONS
+@api_router.post("/{tenant_slug}/rapports/interventions")
+async def create_intervention(tenant_slug: str, intervention: InterventionCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    intervention_dict = intervention.dict()
+    intervention_dict["tenant_id"] = tenant.id
+    intervention_obj = Intervention(**intervention_dict)
+    await db.interventions.insert_one(intervention_obj.dict())
+    return clean_mongo_doc(intervention_obj.dict())
+
+@api_router.get("/{tenant_slug}/rapports/interventions")
+async def get_interventions(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    interventions = await db.interventions.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(i) for i in interventions]
+
+
+# ====== RAPPORTS INTERNES ======
+
+@api_router.get("/{tenant_slug}/rapports/dashboard-interne")
+async def get_dashboard_interne(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Dashboard interne avec KPIs clés"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Date du mois en cours
+    today = datetime.now(timezone.utc)
+    debut_mois = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Récupérer les données
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Calculer heures travaillées ce mois
+    heures_mois = 0
+    for assignation in assignations:
+        if "date" in assignation:
+            try:
+                date_assignation = datetime.fromisoformat(assignation["date"])
+                if date_assignation >= debut_mois:
+                    # Estimer 8h par assignation
+                    heures_mois += 8
+            except:
+                pass
+    
+    # Calculer coûts salariaux du mois
+    cout_salarial_mois = 0
+    for user in users:
+        taux_horaire = user.get("taux_horaire", 0)
+        user_assignations = [a for a in assignations if a["user_id"] == user["id"]]
+        user_heures = len(user_assignations) * 8
+        cout_salarial_mois += user_heures * taux_horaire
+    
+    # Pompiers disponibles actuellement
+    pompiers_disponibles = len([u for u in users if u.get("statut") == "Actif" and u.get("type_emploi") == "temps_plein"])
+    
+    return {
+        "heures_travaillees_mois": heures_mois,
+        "cout_salarial_mois": round(cout_salarial_mois, 2),
+        "pompiers_disponibles": pompiers_disponibles,
+        "total_pompiers": len(users),
+        "periode": debut_mois.strftime("%B %Y")
+    }
+
+
+@api_router.get("/{tenant_slug}/rapports/couts-salariaux")
+async def get_rapport_couts_salariaux(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    caserne: Optional[str] = None,
+    type_personnel: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport détaillé des coûts salariaux"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Convertir dates
+    date_debut_dt = datetime.fromisoformat(date_debut)
+    date_fin_dt = datetime.fromisoformat(date_fin)
+    
+    # Récupérer les données
+    query_users = {"tenant_id": tenant.id}
+    if type_personnel:
+        query_users["type_emploi"] = type_personnel
+    
+    users = await db.users.find(query_users).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
+    
+    rapport = []
+    cout_total = 0
+    
+    for user in users:
+        # Filtrer assignations par période
+        user_assignations = []
+        for assignation in assignations:
+            if assignation["user_id"] == user["id"] and "date" in assignation:
+                try:
+                    date_assign = datetime.fromisoformat(assignation["date"])
+                    if date_debut_dt <= date_assign <= date_fin_dt:
+                        user_assignations.append(assignation)
+                except:
+                    pass
+        
+        if len(user_assignations) > 0:
+            heures_travaillees = len(user_assignations) * 8  # Estimation
+            taux_horaire = user.get("taux_horaire", 0)
+            cout_individuel = heures_travaillees * taux_horaire
+            cout_total += cout_individuel
+            
+            rapport.append({
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "matricule": user.get("numero_employe", "N/A"),
+                "type_emploi": user.get("type_emploi", "N/A"),
+                "heures_travaillees": heures_travaillees,
+                "heures_supplementaires": 0,  # À implémenter
+                "taux_horaire": taux_horaire,
+                "cout_total": round(cout_individuel, 2)
+            })
+    
+    return {
+        "periode": {"debut": date_debut, "fin": date_fin},
+        "employes": rapport,
+        "cout_total": round(cout_total, 2),
+        "nombre_employes": len(rapport)
+    }
+
+
+# ====== RAPPORTS EXTERNES ======
+
+@api_router.get("/{tenant_slug}/rapports/tableau-bord-budgetaire")
+async def get_tableau_bord_budgetaire(tenant_slug: str, annee: int, current_user: User = Depends(get_current_user)):
+    """Tableau de bord budgétaire pour rapports externes"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les budgets de l'année
+    budgets = await db.budgets.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
+    
+    rapport_budgetaire = []
+    total_alloue = 0
+    total_consomme = 0
+    
+    for budget in budgets:
+        alloue = budget.get("budget_alloue", 0)
+        consomme = budget.get("budget_consomme", 0)
+        total_alloue += alloue
+        total_consomme += consomme
+        
+        rapport_budgetaire.append({
+            "categorie": budget.get("categorie"),
+            "budget_alloue": alloue,
+            "budget_consomme": consomme,
+            "pourcentage_utilise": round((consomme / alloue * 100) if alloue > 0 else 0, 1),
+            "restant": alloue - consomme
+        })
+    
+    return {
+        "annee": annee,
+        "budget_total_alloue": total_alloue,
+        "budget_total_consomme": total_consomme,
+        "pourcentage_global": round((total_consomme / total_alloue * 100) if total_alloue > 0 else 0, 1),
+        "par_categorie": rapport_budgetaire
+    }
+
+
 # Sessions de formation routes
 @api_router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
 async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
