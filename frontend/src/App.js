@@ -7277,10 +7277,10 @@ const Formations = () => {
                   {user?.role === 'employe' ? (
                     <>
                       {f.user_inscrit ? (
-                        <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>❌ Se désinscrire</Button>
+                        <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>❌ Je me désinscris</Button>
                       ) : (
                         <Button onClick={() => handleInscrire(f.id)} disabled={f.places_restantes === 0}>
-                          {f.places_restantes === 0 ? '🔒 Complet' : '✅ S\'inscrire'}
+                          {f.places_restantes === 0 ? '🔒 Complet' : '✅ Je m\'inscris'}
                         </Button>
                       )}
                     </>
