@@ -7202,6 +7202,28 @@ const Formations = () => {
     }
   };
   
+  const handleDeleteFormation = async (formationId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.")) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/formations/${formationId}`);
+      toast({ 
+        title: "Succès", 
+        description: "Formation supprimée avec succès",
+        variant: "success"
+      });
+      loadData();
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: error.response?.data?.detail || "Impossible de supprimer la formation", 
+        variant: "destructive" 
+      });
+    }
+  };
+  
   const loadInscriptions = async (formationId) => {
     try {
       const data = await apiGet(tenantSlug, `/formations/${formationId}/inscriptions`);
