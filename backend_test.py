@@ -221,69 +221,84 @@ class GuillaumeDiagnosticTester:
             self.log_test("Search Guillaume in MongoDB", False, f"MongoDB search error: {str(e)}")
             return False
 
-    def test_user_exists_in_database(self):
-        """Test if user exists by searching all users in Shefford tenant"""
-        if not self.auth_token:
-            self.log_test("User Exists in Database", False, "No admin authentication token")
+    def test_get_endpoint_with_both_ids(self):
+        """Test GET /api/shefford/users/{user_id} with both real ID and console ID"""
+        if not self.guillaume_token:
+            self.log_test("GET Endpoint Test", False, "No Guillaume authentication token")
             return False
             
         try:
-            # Get all users in Shefford tenant
-            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("User Exists in Database", False, f"Failed to fetch users: {response.status_code}", 
-                            {"response": response.text})
-                return False
+            # Create session with Guillaume's token
+            guillaume_session = requests.Session()
+            guillaume_session.headers.update({"Authorization": f"Bearer {self.guillaume_token}"})
             
-            users = response.json()
+            results = {}
             
-            # Search for the diagnostic user by ID and email
-            user_found_by_id = None
-            user_found_by_email = None
+            # Test 1: GET with real ID (from login response)
+            if self.guillaume_real_id:
+                print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{self.guillaume_real_id} (real ID)")
+                response = guillaume_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{self.guillaume_real_id}")
+                results["real_id_test"] = {
+                    "user_id": self.guillaume_real_id,
+                    "status_code": response.status_code,
+                    "response_text": response.text[:500] if response.text else "No response",
+                    "success": response.status_code == 200
+                }
+                
+                if response.status_code == 200:
+                    user_data = response.json()
+                    results["real_id_test"]["user_data"] = {
+                        "id": user_data.get("id"),
+                        "email": user_data.get("email"),
+                        "nom": user_data.get("nom"),
+                        "prenom": user_data.get("prenom"),
+                        "date_embauche": user_data.get("date_embauche"),
+                        "taux_horaire": user_data.get("taux_horaire"),
+                        "numero_employe": user_data.get("numero_employe"),
+                        "grade": user_data.get("grade")
+                    }
             
-            for user in users:
-                if user.get("id") == DIAGNOSTIC_USER_ID:
-                    user_found_by_id = user
-                if user.get("email") == DIAGNOSTIC_USER_EMAIL:
-                    user_found_by_email = user
+            # Test 2: GET with console ID (from frontend console)
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE} (console ID)")
+            response = guillaume_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE}")
+            results["console_id_test"] = {
+                "user_id": DIAGNOSTIC_USER_ID_CONSOLE,
+                "status_code": response.status_code,
+                "response_text": response.text[:500] if response.text else "No response",
+                "success": response.status_code == 200
+            }
             
-            # Log findings
-            if user_found_by_id:
-                self.log_test("User Exists in Database", True, 
-                            f"✅ User found by ID: {user_found_by_id.get('prenom', '')} {user_found_by_id.get('nom', '')} ({user_found_by_id.get('email', '')})", 
-                            {
-                                "user_id": user_found_by_id.get("id"),
-                                "email": user_found_by_id.get("email"),
-                                "tenant_id": user_found_by_id.get("tenant_id"),
-                                "nom": user_found_by_id.get("nom"),
-                                "prenom": user_found_by_id.get("prenom"),
-                                "grade": user_found_by_id.get("grade"),
-                                "taux_horaire": user_found_by_id.get("taux_horaire")
-                            })
-                return True
-            elif user_found_by_email:
-                self.log_test("User Exists in Database", False, 
-                            f"❌ User found by EMAIL but DIFFERENT ID: Expected ID {DIAGNOSTIC_USER_ID}, Found ID {user_found_by_email.get('id')}", 
-                            {
-                                "expected_id": DIAGNOSTIC_USER_ID,
-                                "found_id": user_found_by_email.get("id"),
-                                "email": user_found_by_email.get("email"),
-                                "tenant_id": user_found_by_email.get("tenant_id")
-                            })
-                return False
+            if response.status_code == 200:
+                user_data = response.json()
+                results["console_id_test"]["user_data"] = {
+                    "id": user_data.get("id"),
+                    "email": user_data.get("email"),
+                    "nom": user_data.get("nom"),
+                    "prenom": user_data.get("prenom")
+                }
+            
+            # Analyze results
+            real_id_works = results.get("real_id_test", {}).get("success", False)
+            console_id_works = results.get("console_id_test", {}).get("success", False)
+            
+            if real_id_works and not console_id_works:
+                message = f"✅ DIAGNOSIS FOUND: Real ID works ({self.guillaume_real_id}), Console ID fails ({DIAGNOSTIC_USER_ID_CONSOLE}). Frontend is using wrong ID!"
+                success = True
+            elif console_id_works and not real_id_works:
+                message = f"❌ UNEXPECTED: Console ID works ({DIAGNOSTIC_USER_ID_CONSOLE}), Real ID fails ({self.guillaume_real_id})"
+                success = False
+            elif real_id_works and console_id_works:
+                message = f"✅ Both IDs work - no 404 issue found"
+                success = True
             else:
-                self.log_test("User Exists in Database", False, 
-                            f"❌ User NOT FOUND: Neither ID {DIAGNOSTIC_USER_ID} nor email {DIAGNOSTIC_USER_EMAIL} found in {len(users)} users", 
-                            {
-                                "total_users": len(users),
-                                "searched_id": DIAGNOSTIC_USER_ID,
-                                "searched_email": DIAGNOSTIC_USER_EMAIL,
-                                "sample_user_ids": [u.get("id") for u in users[:5]]
-                            })
-                return False
+                message = f"❌ BOTH IDs return 404 - deeper issue with endpoint or user data"
+                success = False
+            
+            self.log_test("GET Endpoint Test", success, message, results)
+            return success
                 
         except Exception as e:
-            self.log_test("User Exists in Database", False, f"Database search error: {str(e)}")
+            self.log_test("GET Endpoint Test", False, f"Endpoint test error: {str(e)}")
             return False
 
     def test_shefford_tenant_verification(self):
