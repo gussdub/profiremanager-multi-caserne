@@ -9940,14 +9940,14 @@ const MonProfil = () => {
         </div>
 
         {/* Formations */}
-        <div className="formation-card">
-          <div className="formation-header">
-            <h3>📚 Formations et compétences</h3>
-            <span className="statut-badge planifiee" style={{fontSize: '12px', background: '#FEE2E2', color: '#991B1B'}}>
+        <div className="formation-card" style={{marginBottom: '1.5rem'}}>
+          <div className="formation-header" style={{padding: '1rem 1.5rem'}}>
+            <h3 style={{fontSize: '1rem', margin: 0}}>📚 Formations et compétences</h3>
+            <span className="statut-badge planifiee" style={{fontSize: '11px', padding: '0.25rem 0.6rem', background: '#FEE2E2', color: '#991B1B'}}>
               {userProfile?.formations?.length || 0} compétence(s)
             </span>
           </div>
-          <div className="formations-list" data-testid="profile-formations">
+          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem 1rem 1.5rem'}}>
             {userProfile?.formations?.length > 0 ? (
               <div className="formations-compact">
                 {userProfile.formations.map((formationId, index) => (
@@ -9957,9 +9957,9 @@ const MonProfil = () => {
                 ))}
               </div>
             ) : (
-              <div className="empty-state">
-                <p>Aucune formation enregistrée</p>
-                <p style={{fontSize: '14px', color: '#6B7280'}}>Contactez votre superviseur pour l'inscription aux formations</p>
+              <div className="empty-state" style={{padding: '1rem'}}>
+                <p style={{margin: '0 0 0.5rem 0', fontSize: '14px'}}>Aucune formation enregistrée</p>
+                <p style={{fontSize: '13px', color: '#6B7280', margin: 0}}>Contactez votre superviseur</p>
               </div>
             )}
           </div>
