@@ -319,6 +319,21 @@ backend:
         agent: "main"
         comment: "NEW FEATURE - Système complet de remplacement automatisé implémenté. Fonctionnalités: 1) TypeGarde enrichi avec 'competences_requises' pour définir les formations/compétences nécessaires, 2) DemandeRemplacement enrichi avec: statut (en_attente, en_cours, accepte, expiree, annulee), priorite (urgent ≤24h, normal >24h calculée auto), remplacant_id, tentatives_historique (historique complet des contacts), remplacants_contactes_ids (liste active), date_prochaine_tentative, nombre_tentatives. 3) Algorithme de recherche trouver_remplacants_potentiels() avec filtres: compétences requises, grade équivalent/supérieur, pas d'indisponibilité, bonus disponibilité déclarée, tri par ancienneté (date_embauche). 4) Système de gestion: lancer_recherche_remplacant() contacte remplaçant(s) selon mode_notification (un_par_un/multiple), respecte delai_attente_heures, gère nombre_simultane, envoie notifications push ciblées. 5) Fonctions accepter_remplacement() et refuser_remplacement() avec: vérification ancienneté si acceptations multiples, mise à jour automatique planning (assignations), notifications demandeur/superviseurs/autres remplaçants. 6) Job périodique verifier_et_traiter_timeouts() qui s'exécute toutes les minutes, marque tentatives expirées, relance recherche automatiquement. 7) Endpoints: POST /remplacements (crée + lance recherche auto), GET /remplacements/propositions (liste pour remplaçant), PUT /remplacements/{id}/accepter, PUT /remplacements/{id}/refuser, DELETE /remplacements/{id} (annuler). 8) Mise à jour planning automatique: change user_id dans assignations, ajoute est_remplacement=true et demandeur_original_id. Le système gère le flux complet de A à Z sans intervention manuelle, respecte tous les critères et délais, notifie toutes les parties concernées. NEEDS COMPREHENSIVE BACKEND TESTING."
 
+  - task: "Diagnostic GET /users/{user_id} - Mon Profil Fields"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "DIAGNOSTIC REQUEST - Vérification de l'endpoint GET /users/{user_id} pour 'Mon Profil'. Problème rapporté: Les champs (date_embauche, taux_horaire, numero_employe, grade) s'affichent dans Personnel mais PAS dans Mon Profil. Test avec tenant shefford, user admin@firemanager.ca / Admin123!"
+      - working: true
+        agent: "testing"
+        comment: "✅ DIAGNOSTIC COMPLET - BACKEND FONCTIONNE CORRECTEMENT! Test exhaustif effectué: 1) ✅ Authentification admin réussie (admin@firemanager.ca créé via Super Admin), 2) ✅ GET /api/shefford/users/{user_id} retourne TOUS les champs requis: date_embauche (2025-10-18), taux_horaire (0.0), numero_employe (ADMIN-A27C7E24), grade (Directeur), adresse, telephone, contact_urgence, 3) ✅ Comparaison avec GET /api/shefford/users (Personnel) - IDENTIQUE, tous les champs présents, 4) ✅ Réponse JSON complète vérifiée et validée. CONCLUSION: Le problème N'EST PAS dans le backend - l'API retourne correctement tous les champs. Le problème vient du FRONTEND qui n'affiche pas ces champs dans le module 'Mon Profil'. L'endpoint individuel /users/{user_id} et l'endpoint liste /users retournent exactement les mêmes données."
+
   - task: "Planning Module Comprehensive Testing"
     implemented: true
     working: true
