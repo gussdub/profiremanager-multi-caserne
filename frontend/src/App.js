@@ -3218,7 +3218,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             <div className="header-cell">CONTACT</div>
             <div className="header-cell">STATUT</div>
             <div className="header-cell">TYPE D'EMPLOI</div>
-            <div className="header-cell">FORMATIONS</div>
             <div className="header-cell">ACTIONS</div>
           </div>
 
