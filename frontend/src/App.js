@@ -10702,25 +10702,75 @@ const Rapports = () => {
       
       let url = '';
       if (typeRapport === 'dashboard') {
-        // Export Dashboard (à implémenter côté backend)
-        toast({ title: "Info", description: "Export PDF Dashboard en développement" });
-        return;
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-dashboard-pdf`;
       } else if (typeRapport === 'salaires') {
-        // Export Coûts Salariaux (à implémenter côté backend)
-        toast({ title: "Info", description: "Export PDF Salaires en développement" });
-        return;
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-salaires-pdf?date_debut=${dateDebut}&date_fin=${dateFin}`;
       } else if (typeRapport === 'budgetaire') {
-        // Export Budgétaire (à implémenter côté backend)
         toast({ title: "Info", description: "Export PDF Budgétaire en développement" });
         return;
       }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_${typeRapport}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport PDF téléchargé` });
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible d'exporter le PDF", variant: "destructive" });
     }
   };
 
   const handleExportExcel = async (typeRapport) => {
-    toast({ title: "Info", description: "Export Excel en développement" });
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      let url = '';
+      if (typeRapport === 'salaires') {
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-salaires-excel?date_debut=${dateDebut}&date_fin=${dateFin}`;
+      } else {
+        toast({ title: "Info", description: "Export Excel en développement pour ce rapport" });
+        return;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_${typeRapport}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport Excel téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter l'Excel", variant: "destructive" });
+    }
   };
 
   if (user?.role !== 'admin') {
