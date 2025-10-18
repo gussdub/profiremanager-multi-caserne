@@ -100,7 +100,7 @@ class EPIEndpointTester:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def test_search_guillaume_in_mongodb(self):
+    def test_employee_authentication(self):
         """Search for Guillaume in MongoDB by both ID and email"""
         try:
             # First get Super Admin access to search all users
