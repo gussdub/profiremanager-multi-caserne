@@ -224,44 +224,101 @@ class GuillaumeDiagnosticTester:
 
     def test_get_endpoint_with_both_ids(self):
         """Test GET /api/shefford/users/{user_id} with both real ID and console ID"""
-        if not self.guillaume_token:
-            self.log_test("GET Endpoint Test", False, "No Guillaume authentication token")
-            return False
-            
         try:
-            # Create session with Guillaume's token
-            guillaume_session = requests.Session()
-            guillaume_session.headers.update({"Authorization": f"Bearer {self.guillaume_token}"})
+            # Use Super Admin to test both IDs since Guillaume login might fail
+            super_admin_login_data = {
+                "email": "gussdub@icloud.com",
+                "mot_de_passe": "230685Juin+"
+            }
+            
+            super_admin_session = requests.Session()
+            response = super_admin_session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login_data)
+            
+            if response.status_code != 200:
+                self.log_test("GET Endpoint Test", False, f"Failed to login as Super Admin: {response.status_code}")
+                return False
+            
+            data = response.json()
+            super_admin_token = data["access_token"]
+            
+            # Create admin user for Shefford to test endpoints
+            admin_create_data = {
+                "email": "test.diagnostic@firemanager.ca",
+                "prenom": "Test",
+                "nom": "Diagnostic",
+                "mot_de_passe": "TestDiag123!"
+            }
+            
+            super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
+            
+            # Get Shefford tenant ID
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_test("GET Endpoint Test", False, "Failed to get tenants")
+                return False
+            
+            tenants = response.json()
+            shefford_tenant = None
+            for tenant in tenants:
+                if tenant.get("slug") == TENANT_SLUG:
+                    shefford_tenant = tenant
+                    self.shefford_tenant_id = tenant.get("id")
+                    break
+            
+            if not shefford_tenant:
+                self.log_test("GET Endpoint Test", False, "Shefford tenant not found")
+                return False
+            
+            # Create admin user
+            response = super_admin_session.post(f"{self.base_url}/admin/tenants/{self.shefford_tenant_id}/create-admin", json=admin_create_data)
+            if response.status_code != 200:
+                # Admin might already exist, try to login
+                pass
+            
+            # Login as admin
+            admin_session = requests.Session()
+            admin_login_data = {
+                "email": "test.diagnostic@firemanager.ca",
+                "mot_de_passe": "TestDiag123!"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
+            if response.status_code != 200:
+                self.log_test("GET Endpoint Test", False, f"Failed to login as test admin: {response.status_code}")
+                return False
+            
+            data = response.json()
+            admin_token = data["access_token"]
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
             
             results = {}
             
-            # Test 1: GET with real ID (from login response)
-            if self.guillaume_real_id:
-                print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{self.guillaume_real_id} (real ID)")
-                response = guillaume_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{self.guillaume_real_id}")
-                results["real_id_test"] = {
-                    "user_id": self.guillaume_real_id,
-                    "status_code": response.status_code,
-                    "response_text": response.text[:500] if response.text else "No response",
-                    "success": response.status_code == 200
+            # Test 1: GET with real ID (from logs)
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_REAL} (real ID from logs)")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_REAL}")
+            results["real_id_test"] = {
+                "user_id": DIAGNOSTIC_USER_ID_REAL,
+                "status_code": response.status_code,
+                "response_text": response.text[:500] if response.text else "No response",
+                "success": response.status_code == 200
+            }
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                results["real_id_test"]["user_data"] = {
+                    "id": user_data.get("id"),
+                    "email": user_data.get("email"),
+                    "nom": user_data.get("nom"),
+                    "prenom": user_data.get("prenom"),
+                    "date_embauche": user_data.get("date_embauche"),
+                    "taux_horaire": user_data.get("taux_horaire"),
+                    "numero_employe": user_data.get("numero_employe"),
+                    "grade": user_data.get("grade")
                 }
-                
-                if response.status_code == 200:
-                    user_data = response.json()
-                    results["real_id_test"]["user_data"] = {
-                        "id": user_data.get("id"),
-                        "email": user_data.get("email"),
-                        "nom": user_data.get("nom"),
-                        "prenom": user_data.get("prenom"),
-                        "date_embauche": user_data.get("date_embauche"),
-                        "taux_horaire": user_data.get("taux_horaire"),
-                        "numero_employe": user_data.get("numero_employe"),
-                        "grade": user_data.get("grade")
-                    }
             
             # Test 2: GET with console ID (from frontend console)
             print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE} (console ID)")
-            response = guillaume_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE}")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE}")
             results["console_id_test"] = {
                 "user_id": DIAGNOSTIC_USER_ID_CONSOLE,
                 "status_code": response.status_code,
@@ -283,10 +340,10 @@ class GuillaumeDiagnosticTester:
             console_id_works = results.get("console_id_test", {}).get("success", False)
             
             if real_id_works and not console_id_works:
-                message = f"✅ DIAGNOSIS FOUND: Real ID works ({self.guillaume_real_id}), Console ID fails ({DIAGNOSTIC_USER_ID_CONSOLE}). Frontend is using wrong ID!"
+                message = f"✅ DIAGNOSIS CONFIRMED: Real ID works ({DIAGNOSTIC_USER_ID_REAL}), Console ID fails ({DIAGNOSTIC_USER_ID_CONSOLE}). Frontend is using wrong ID!"
                 success = True
             elif console_id_works and not real_id_works:
-                message = f"❌ UNEXPECTED: Console ID works ({DIAGNOSTIC_USER_ID_CONSOLE}), Real ID fails ({self.guillaume_real_id})"
+                message = f"❌ UNEXPECTED: Console ID works ({DIAGNOSTIC_USER_ID_CONSOLE}), Real ID fails ({DIAGNOSTIC_USER_ID_REAL})"
                 success = False
             elif real_id_works and console_id_works:
                 message = f"✅ Both IDs work - no 404 issue found"
