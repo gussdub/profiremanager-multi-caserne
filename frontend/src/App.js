@@ -7971,10 +7971,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   const handleDayClick = (dayNumber) => {
     const clickedDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
-    const dateStr = clickedDate.toISOString().split('T')[0];
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
     
-    const disponibilites = userDisponibilites.filter(d => d.date === dateStr && d.statut === 'disponible');
-    const indisponibilites = userDisponibilites.filter(d => d.date === dateStr && d.statut === 'indisponible');
+    const disponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'disponible');
+    const indisponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'indisponible');
     
     setSelectedDayForDetail(clickedDate);
     setDayDetailData({ disponibilites, indisponibilites });
