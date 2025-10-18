@@ -3809,21 +3809,47 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             <div className="modal-body">
               <div className="disponibilites-view">
                 {userDisponibilites.length > 0 ? (
-                  userDisponibilites.map(dispo => (
-                    <div key={dispo.id} className="disponibilite-item">
-                      <div className="dispo-day">
-                        <strong>{dispo.date.split('T')[0].split('-').reverse().join('/')}</strong>
+                  (() => {
+                    // Filtrer et trier les disponibilités (30 derniers jours + futures)
+                    const today = new Date();
+                    const thirtyDaysAgo = new Date(today);
+                    thirtyDaysAgo.setDate(today.getDate() - 30);
+                    
+                    const filteredDispos = userDisponibilites
+                      .filter(dispo => {
+                        const dispoDate = new Date(dispo.date.split('T')[0]);
+                        return dispoDate >= thirtyDaysAgo;
+                      })
+                      .sort((a, b) => {
+                        const dateA = new Date(a.date.split('T')[0]);
+                        const dateB = new Date(b.date.split('T')[0]);
+                        return dateA - dateB;
+                      });
+                    
+                    if (filteredDispos.length === 0) {
+                      return (
+                        <div className="no-disponibilites">
+                          <p>Aucune disponibilité récente ou future</p>
+                        </div>
+                      );
+                    }
+                    
+                    return filteredDispos.map(dispo => (
+                      <div key={dispo.id} className="disponibilite-item">
+                        <div className="dispo-day">
+                          <strong>{dispo.date.split('T')[0].split('-').reverse().join('/')}</strong>
+                        </div>
+                        <div className="dispo-time">
+                          {dispo.heure_debut} - {dispo.heure_fin}
+                        </div>
+                        <div className="dispo-status">
+                          <span className={`status ${dispo.statut}`}>
+                            {dispo.statut === 'disponible' ? '✅ Disponible' : '❌ Indisponible'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="dispo-time">
-                        {dispo.heure_debut} - {dispo.heure_fin}
-                      </div>
-                      <div className="dispo-status">
-                        <span className={`status ${dispo.statut}`}>
-                          {dispo.statut === 'disponible' ? '✅ Disponible' : '❌ Indisponible'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                    ));
+                  })()
                 ) : (
                   <div className="no-disponibilites">
                     <p>Aucune disponibilité renseignée</p>
