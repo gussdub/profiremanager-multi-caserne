@@ -5623,6 +5623,101 @@ body {
 }
 
 .empty-formations p {
+
+/* Layout 2 colonnes Mon Profil */
+.profil-grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.profil-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profil-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Infos emploi compactes */
+.locked-info-compact {
+  padding: 1rem 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row .info-label {
+  font-size: 0.813rem;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.info-row .info-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1F2937;
+  text-align: right;
+}
+
+.fonction-sup-compact {
+  font-size: 0.75rem;
+  color: #EF4444;
+  font-weight: 500;
+}
+
+/* Formations liste compacte */
+.formations-list-compact {
+  padding: 0.5rem 1.5rem 1rem 1.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.formation-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.formation-item-compact:last-child {
+  border-bottom: none;
+}
+
+.formation-check {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.formation-name-compact {
+  font-size: 0.875rem;
+  color: #1F2937;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .profil-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
   margin: 0;
   font-size: 14px;
   color: #6B7280;
