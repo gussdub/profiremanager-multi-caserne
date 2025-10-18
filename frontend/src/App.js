@@ -2793,30 +2793,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
-  const handleViewDisponibilites = async (user) => {
-    if (user.type_emploi !== 'temps_partiel') {
-      toast({
-        title: "Information",
-        description: "Les disponibilités ne concernent que les employés à temps partiel",
-        variant: "default"
-      });
-      return;
-    }
-
-    try {
-      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${user.id}`);
-      setUserDisponibilites(disponibilitesData);
-      setSelectedUser(user);
-      setShowDisponibilitesModal(true);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les disponibilités",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleManageDisponibilites = async (user) => {
     if (user.type_emploi !== 'temps_partiel') {
       toast({
