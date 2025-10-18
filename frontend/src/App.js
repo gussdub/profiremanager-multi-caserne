@@ -8339,10 +8339,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const handleDateClick = (date) => {
-    // Normaliser la date en UTC pour éviter les problèmes de fuseau horaire
-    const normalizedDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dateStr = normalizedDate.toISOString().split('T')[0];
-    const dispos = userDisponibilites.filter(d => d.date === dateStr);
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const dispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
     
     console.log('Date cliquée:', dateStr, 'Disponibilités trouvées:', dispos.length);
     
