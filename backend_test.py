@@ -522,7 +522,7 @@ class GuillaumeDiagnosticTester:
         login_success = any(r["success"] for r in self.test_results if "Login" in r["test"])
         
         # Check if IDs match
-        id_mismatch = self.guillaume_real_id != DIAGNOSTIC_USER_ID_CONSOLE if self.guillaume_real_id else True
+        id_mismatch = DIAGNOSTIC_USER_ID_REAL != DIAGNOSTIC_USER_ID_CONSOLE
         
         # Check if user found in database
         found_in_db = any(r["success"] for r in self.test_results if "MongoDB" in r["test"])
