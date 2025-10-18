@@ -9451,7 +9451,21 @@ const MonProfil = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!tenantSlug) return;
+      if (!tenantSlug) {
+        console.log('❌ Mon Profil - tenantSlug manquant');
+        return;
+      }
+      
+      if (!user?.id) {
+        console.log('❌ Mon Profil - user.id manquant');
+        return;
+      }
+      
+      console.log('🔍 Mon Profil - Début chargement:', {
+        tenantSlug,
+        userId: user.id,
+        token: localStorage.getItem('token') ? 'Présent' : 'Absent'
+      });
       
       try {
         const [userData, formationsData, statsData, episData] = await Promise.all([
