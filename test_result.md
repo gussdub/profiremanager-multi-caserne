@@ -319,6 +319,21 @@ backend:
         agent: "main"
         comment: "NEW FEATURE - Système complet de remplacement automatisé implémenté. Fonctionnalités: 1) TypeGarde enrichi avec 'competences_requises' pour définir les formations/compétences nécessaires, 2) DemandeRemplacement enrichi avec: statut (en_attente, en_cours, accepte, expiree, annulee), priorite (urgent ≤24h, normal >24h calculée auto), remplacant_id, tentatives_historique (historique complet des contacts), remplacants_contactes_ids (liste active), date_prochaine_tentative, nombre_tentatives. 3) Algorithme de recherche trouver_remplacants_potentiels() avec filtres: compétences requises, grade équivalent/supérieur, pas d'indisponibilité, bonus disponibilité déclarée, tri par ancienneté (date_embauche). 4) Système de gestion: lancer_recherche_remplacant() contacte remplaçant(s) selon mode_notification (un_par_un/multiple), respecte delai_attente_heures, gère nombre_simultane, envoie notifications push ciblées. 5) Fonctions accepter_remplacement() et refuser_remplacement() avec: vérification ancienneté si acceptations multiples, mise à jour automatique planning (assignations), notifications demandeur/superviseurs/autres remplaçants. 6) Job périodique verifier_et_traiter_timeouts() qui s'exécute toutes les minutes, marque tentatives expirées, relance recherche automatiquement. 7) Endpoints: POST /remplacements (crée + lance recherche auto), GET /remplacements/propositions (liste pour remplaçant), PUT /remplacements/{id}/accepter, PUT /remplacements/{id}/refuser, DELETE /remplacements/{id} (annuler). 8) Mise à jour planning automatique: change user_id dans assignations, ajoute est_remplacement=true et demandeur_original_id. Le système gère le flux complet de A à Z sans intervention manuelle, respecte tous les critères et délais, notifie toutes les parties concernées. NEEDS COMPREHENSIVE BACKEND TESTING."
 
+  - task: "Diagnostic Guillaume Dubeau - Mon Profil 404 Error"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "DIAGNOSTIC REQUEST - Investigation of Guillaume Dubeau (gussdub@gmail.com) getting 404 error when accessing 'Mon Profil'. User ID shown in console: 4d2c4f86-972c-4d76-9b17-c267ebd04c1e. Testing login, MongoDB search, endpoint access, and tenant verification."
+      - working: false
+        agent: "testing"
+        comment: "❌ FRONTEND BUG IDENTIFIED - Guillaume Dubeau 404 diagnostic completed successfully. PROBLEM FOUND: Frontend is using WRONG USER ID! Real ID from login API: 426c0f86-91f2-48fb-9e77-c762f0e9e7dc, Console ID (incorrect): 4d2c4f86-972c-4d76-9b17-c267ebd04c1e. Backend testing confirmed: 1) ✅ Guillaume can login successfully with password '230685Juin+', 2) ✅ GET /api/shefford/users/426c0f86-91f2-48fb-9e77-c762f0e9e7dc returns 200 OK with all profile data, 3) ❌ GET /api/shefford/users/4d2c4f86-972c-4d76-9b17-c267ebd04c1e returns 404 Not Found. ROOT CAUSE: Frontend is displaying/using an incorrect user ID in console and API calls. SOLUTION: Fix frontend to use the correct user ID from login response. Backend is working correctly - this is a frontend issue."
+
   - task: "Diagnostic GET /users/{user_id} - Mon Profil Fields"
     implemented: true
     working: true
