@@ -52,14 +52,13 @@ class RapportsExportTester:
             print(f"   Details: {details}")
     
     def test_admin_authentication(self):
-        """Test admin authentication for Shefford tenant"""
+        """Test admin authentication for Shefford tenant with specified credentials"""
         try:
-            # Try different admin credentials as specified in review request
+            # Use the specific credentials from review request: gussdub@gmail.com / 230685Juin+ (admin)
             admin_credentials = [
-                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
-                {"email": "admin@firefighter.com", "mot_de_passe": "admin123"},
+                {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"},
                 {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
-                {"email": "admin@shefford.ca", "mot_de_passe": "Admin123!"}
+                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"}
             ]
             
             for creds in admin_credentials:
