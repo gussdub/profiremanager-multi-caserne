@@ -2565,9 +2565,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDisponibilitesModal, setShowDisponibilitesModal] = useState(false);
-  const [viewCalendarMonth, setViewCalendarMonth] = useState(new Date().getMonth());
-  const [viewCalendarYear, setViewCalendarYear] = useState(new Date().getFullYear());
   const [showManageDisponibilitesModal, setShowManageDisponibilitesModal] = useState(false);
   const [showEPIModal, setShowEPIModal] = useState(false);
   const [showAddEPIModal, setShowAddEPIModal] = useState(false);
