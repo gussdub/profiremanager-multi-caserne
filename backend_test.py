@@ -537,9 +537,9 @@ class GuillaumeDiagnosticTester:
         
         print(f"\n🎯 CONCLUSION:")
         
-        if login_success and id_mismatch and found_in_db:
+        if id_mismatch and found_in_db:
             print("❌ PROBLEM IDENTIFIED: Frontend is using WRONG USER ID!")
-            print(f"   Real ID from login: {self.guillaume_real_id}")
+            print(f"   Real ID from logs: {DIAGNOSTIC_USER_ID_REAL}")
             print(f"   Console ID (wrong): {DIAGNOSTIC_USER_ID_CONSOLE}")
             print("   The 404 error occurs because the frontend displays/uses an incorrect user ID.")
             print("   SOLUTION: Fix frontend to use the correct user ID from login response.")
