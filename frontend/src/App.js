@@ -10599,7 +10599,10 @@ const MonProfil = () => {
   );
 };
 
-// Rapports Component optimisé - Analytics et exports avancés
+// ====================================================================
+// MODULE RAPPORTS AVANCÉS - INTERNES ET EXTERNES
+// ====================================================================
+
 const Rapports = () => {
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
