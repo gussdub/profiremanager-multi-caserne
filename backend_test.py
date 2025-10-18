@@ -24,7 +24,7 @@ DIAGNOSTIC_USER_ID_CONSOLE = "4d2c4f86-972c-4d76-9b17-c267ebd04c1e"  # ID shown 
 DIAGNOSTIC_USER_ID_REAL = "426c0f86-91f2-48fb-9e77-c762f0e9e7dc"  # Real ID from logs
 DIAGNOSTIC_PASSWORDS = ["230685Juin+", "Admin123!", "admin123"]  # Passwords to try
 
-class GuillaumeDiagnosticTester:
+class EPIEndpointTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
