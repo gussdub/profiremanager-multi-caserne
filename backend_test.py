@@ -489,35 +489,6 @@ class RapportsExportTester:
             print("❌ CRITICAL ISSUES: Authentication failed")
             print("   Check credentials: gussdub@gmail.com / 230685Juin+")
             print("   Check MongoDB Atlas connection and user permissions")
-                "annee": 2025,
-                "user_id": test_user_id
-            }
-            
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-competences with params: {params}")
-            
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-competences", params=params)
-            
-            results = {
-                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-competences",
-                "params": params,
-                "test_user_email": test_user.get("email"),
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content_length": len(response.content) if response.content else 0
-            }
-            
-            if response.status_code == 200:
-                # Check if it's an Excel file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
-                
-                results["content_type"] = content_type
-                results["content_disposition"] = content_disposition
-                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type
-                results["has_filename"] = 'filename=' in content_disposition
-                
-                if results["is_excel"] and results["content_length"] > 0:
-                    success = True
                     message = f"✅ Competences Excel export with user working - Generated {results['content_length']} bytes Excel file for {test_user.get('email')}"
                 else:
                     success = False
