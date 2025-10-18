@@ -9461,6 +9461,15 @@ const MonProfil = () => {
           apiGet(tenantSlug, `/epi/employe/${user.id}`)
         ]);
         
+        console.log('📊 Mon Profil - userData chargé:', userData);
+        console.log('🔍 Champs critiques:', {
+          numero_employe: userData?.numero_employe,
+          taux_horaire: userData?.taux_horaire,
+          grade: userData?.grade,
+          date_embauche: userData?.date_embauche,
+          adresse: userData?.adresse
+        });
+        
         setUserProfile(userData);
         setFormations(formationsData);
         setMonthlyStats(statsData);
