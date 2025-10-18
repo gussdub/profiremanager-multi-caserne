@@ -33,9 +33,7 @@ class RapportsExportTester:
         self.auth_token = None
         self.test_results = []
         self.admin_token = None
-        self.employee_token = None
         self.admin_user_id = None
-        self.employee_user_id = None
         self.shefford_tenant_id = None
         
     def log_test(self, test_name, success, message, details=None):
