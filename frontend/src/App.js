@@ -9761,15 +9761,15 @@ const MonProfil = () => {
       {monthlyStats && (
         <div className="formations-dashboard">
           <div className="kpi-grid">
-            <div className="kpi-card">
+            <div className="kpi-card" style={{background: '#FEF2F2', borderLeft: '3px solid #EF4444'}}>
               <h3>🏆 {monthlyStats.gardes_ce_mois}</h3>
               <p>Gardes ce mois</p>
             </div>
-            <div className="kpi-card" style={{background: '#D1FAE5'}}>
+            <div className="kpi-card" style={{background: '#FEE2E2', borderLeft: '3px solid #DC2626'}}>
               <h3>⏱️ {monthlyStats.heures_travaillees}h</h3>
               <p>Heures travaillées</p>
             </div>
-            <div className="kpi-card" style={{background: '#DBEAFE'}}>
+            <div className="kpi-card" style={{background: '#FECACA', borderLeft: '3px solid #B91C1C'}}>
               <h3>📜 {monthlyStats.certifications}</h3>
               <p>Certifications</p>
             </div>
