@@ -3812,7 +3812,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   userDisponibilites.map(dispo => (
                     <div key={dispo.id} className="disponibilite-item">
                       <div className="dispo-day">
-                        <strong>{new Date(dispo.date).toLocaleDateString('fr-FR')}</strong>
+                        <strong>{dispo.date.split('T')[0].split('-').reverse().join('/')}</strong>
                       </div>
                       <div className="dispo-time">
                         {dispo.heure_debut} - {dispo.heure_fin}
