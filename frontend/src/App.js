@@ -10036,16 +10036,16 @@ const MonProfil = () => {
         </div>
 
         {/* Formations */}
-        <div className="formation-card" style={{marginBottom: '1.5rem'}}>
+        <div className="formation-card formation-card-compact" style={{marginBottom: '1.5rem'}}>
           <div className="formation-header" style={{padding: '1rem 1.5rem', minHeight: 'auto'}}>
             <h3 style={{margin: 0}}>📚 Formations et compétences</h3>
             <span className="statut-badge planifiee" style={{background: '#FEE2E2', color: '#991B1B'}}>
               {userProfile?.formations?.length || 0}
             </span>
           </div>
-          <div style={{padding: '0.75rem 1.5rem', margin: 0}}>
+          <div className="formations-content-compact">
             {userProfile?.formations?.length > 0 ? (
-              <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', margin: 0, padding: 0}}>
+              <div className="formations-badges-wrapper">
                 {userProfile.formations.map((formationId, index) => (
                   <span key={index} className="formation-badge-compact">
                     {getFormationName(formationId)} ✅
@@ -10053,8 +10053,8 @@ const MonProfil = () => {
                 ))}
               </div>
             ) : (
-              <div style={{padding: '0', textAlign: 'center', margin: 0}}>
-                <p style={{margin: 0, fontSize: '14px', color: '#6B7280'}}>Aucune formation • Contactez votre superviseur</p>
+              <div className="empty-formations">
+                <p>Aucune formation • Contactez votre superviseur</p>
               </div>
             )}
           </div>
