@@ -13,7 +13,7 @@ import uuid
 import time
 
 # Configuration - REAL PRODUCTION URLs
-BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
+BASE_URL = "https://competence-profile.preview.emergentagent.com/api"
 
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"

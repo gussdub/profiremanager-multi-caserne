@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
+BASE_URL = "https://competence-profile.preview.emergentagent.com/api"
 SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
 SUPER_ADMIN_PASSWORD = "230685Juin+"
 
