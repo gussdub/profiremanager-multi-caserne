@@ -662,8 +662,8 @@ class EPIEndpointTester:
             print("   Check MongoDB Atlas connection and credentials")
 
 if __name__ == "__main__":
-    tester = GuillaumeDiagnosticTester()
-    success = tester.run_guillaume_diagnostic()
+    tester = EPIEndpointTester()
+    success = tester.run_epi_endpoint_tests()
     
     sys.exit(0 if success else 1)
     
