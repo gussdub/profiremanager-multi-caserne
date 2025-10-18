@@ -7046,6 +7046,28 @@ async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_curren
     
     return [EPI(**epi) for epi in cleaned_epis]
 
+@api_router.get("/{tenant_slug}/epi/employe/{user_id}", response_model=List[EPI])
+async def get_epis_by_employe(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les EPI d'un employé spécifique"""
+    # Un employé peut voir ses propres EPIs, admin/superviseur peuvent voir tous les EPIs
+    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les EPIs assignés à cet employé
+    epis = await db.epis.find({"tenant_id": tenant.id, "user_id": user_id}).to_list(1000)
+    cleaned_epis = [clean_mongo_doc(epi) for epi in epis]
+    
+    # Convertir les dates ISO string vers datetime
+    for epi in cleaned_epis:
+        if isinstance(epi.get("created_at"), str):
+            epi["created_at"] = datetime.fromisoformat(epi["created_at"].replace('Z', '+00:00'))
+        if isinstance(epi.get("updated_at"), str):
+            epi["updated_at"] = datetime.fromisoformat(epi["updated_at"].replace('Z', '+00:00'))
+    
+    return [EPI(**epi) for epi in cleaned_epis]
+
 @api_router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
 async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Récupère un EPI spécifique par son ID"""
