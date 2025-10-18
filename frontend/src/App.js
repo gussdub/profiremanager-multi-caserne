@@ -9749,286 +9749,281 @@ const MonProfil = () => {
   }
 
   return (
-    <div className="mon-profil">
-      <div className="profile-header">
-        <h1 data-testid="profile-title">Mon profil</h1>
-        <p>Gérez vos informations personnelles et paramètres de compte</p>
+    <div className="module-epi-nfpa">
+      <div className="module-header">
+        <div>
+          <h1>👤 Mon Profil</h1>
+          <p>Gérez vos informations personnelles et paramètres de compte</p>
+        </div>
+      </div>
+
+      {/* Statistiques personnelles en haut */}
+      {monthlyStats && (
+        <div className="formations-dashboard">
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <h3>🏆 {monthlyStats.gardes_ce_mois}</h3>
+              <p>Gardes ce mois</p>
+            </div>
+            <div className="kpi-card" style={{background: '#D1FAE5'}}>
+              <h3>⏱️ {monthlyStats.heures_travaillees}h</h3>
+              <p>Heures travaillées</p>
+            </div>
+            <div className="kpi-card" style={{background: '#DBEAFE'}}>
+              <h3>📜 {monthlyStats.certifications}</h3>
+              <p>Certifications</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onglets */}
+      <div className="epi-tabs">
+        <button className="active">
+          📝 Informations
+        </button>
+        <button className="active" style={{marginLeft: 'auto', background: 'transparent', color: '#6B7280'}}>
+          {user?.role === 'admin' ? 'Administrateur' : user?.role === 'superviseur' ? 'Superviseur' : 'Employé'} • {userProfile?.grade}
+        </button>
       </div>
 
       <div className="profile-content">
-        <div className="profile-main">
-          {/* Informations personnelles - Modifiables par tous */}
-          <div className="profile-section">
-            <div className="section-header">
-              <h2>Informations personnelles</h2>
-              <Button
-                onClick={() => setIsEditing(!isEditing)}
-                variant={isEditing ? "secondary" : "default"}
-                data-testid="edit-profile-btn"
-              >
-                {isEditing ? 'Annuler' : 'Modifier'}
-              </Button>
-            </div>
+        {/* Informations personnelles - Modifiables par tous */}
+        <div className="formation-card">
+          <div className="formation-header">
+            <h3>📋 Informations personnelles</h3>
+            <Button
+              onClick={() => setIsEditing(!isEditing)}
+              variant={isEditing ? "outline" : "default"}
+              data-testid="edit-profile-btn"
+            >
+              {isEditing ? 'Annuler' : '✏️ Modifier'}
+            </Button>
+          </div>
 
-            <div className="profile-form">
-              <div className="form-row">
-                <div className="form-field">
-                  <Label>Prénom</Label>
-                  <Input
-                    value={profileData.prenom || ''}
-                    onChange={(e) => setProfileData({...profileData, prenom: e.target.value})}
-                    disabled={!isEditing}
-                    data-testid="profile-prenom-input"
-                  />
-                </div>
-                <div className="form-field">
-                  <Label>Nom</Label>
-                  <Input
-                    value={profileData.nom || ''}
-                    onChange={(e) => setProfileData({...profileData, nom: e.target.value})}
-                    disabled={!isEditing}
-                    data-testid="profile-nom-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <Label>Email</Label>
-                  <Input
-                    value={profileData.email || ''}
-                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                    disabled={!isEditing}
-                    data-testid="profile-email-input"
-                  />
-                </div>
-                <div className="form-field">
-                  <Label>Téléphone</Label>
-                  <Input
-                    value={profileData.telephone || ''}
-                    onChange={(e) => setProfileData({...profileData, telephone: e.target.value})}
-                    disabled={!isEditing}
-                    data-testid="profile-phone-input"
-                  />
-                </div>
-              </div>
-
+          <div className="profile-form">
+            <div className="form-row">
               <div className="form-field">
-                <Label>Adresse</Label>
+                <Label>Prénom</Label>
                 <Input
-                  value={profileData.adresse || ''}
-                  onChange={(e) => setProfileData({...profileData, adresse: e.target.value})}
+                  value={profileData.prenom || ''}
+                  onChange={(e) => setProfileData({...profileData, prenom: e.target.value})}
                   disabled={!isEditing}
-                  placeholder="123 Rue Principale, Ville, Province"
-                  data-testid="profile-address-input"
+                  data-testid="profile-prenom-input"
                 />
               </div>
-
               <div className="form-field">
-                <Label>Contact d'urgence</Label>
+                <Label>Nom</Label>
                 <Input
-                  value={profileData.contact_urgence || ''}
-                  onChange={(e) => setProfileData({...profileData, contact_urgence: e.target.value})}
+                  value={profileData.nom || ''}
+                  onChange={(e) => setProfileData({...profileData, nom: e.target.value})}
                   disabled={!isEditing}
-                  placeholder="Nom et téléphone du contact d'urgence"
-                  data-testid="profile-emergency-input"
+                  data-testid="profile-nom-input"
                 />
               </div>
+            </div>
 
-              {/* Heures max pour temps partiel */}
-              {userProfile?.type_emploi === 'temps_partiel' && (
-                <div className="form-field">
-                  <Label>Heures maximum par semaine</Label>
-                  <div className="heures-max-input">
-                    <Input
-                      type="number"
-                      min="5"
-                      max="168"
-                      value={profileData.heures_max_semaine || userProfile?.heures_max_semaine || 25}
-                      onChange={(e) => setProfileData({...profileData, heures_max_semaine: parseInt(e.target.value)})}
-                      disabled={!isEditing}
-                      data-testid="profile-heures-max-input"
-                    />
-                    <span className="heures-max-unit">heures/semaine</span>
-                  </div>
-                  <small className="heures-max-help">
-                    Indiquez le nombre maximum d'heures que vous souhaitez travailler par semaine (5-168h). Cette limite sera respectée lors de l'attribution automatique des gardes.
-                  </small>
+            <div className="form-row">
+              <div className="form-field">
+                <Label>Email</Label>
+                <Input
+                  value={profileData.email || ''}
+                  onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                  disabled={!isEditing}
+                  data-testid="profile-email-input"
+                />
+              </div>
+              <div className="form-field">
+                <Label>Téléphone</Label>
+                <Input
+                  value={profileData.telephone || ''}
+                  onChange={(e) => setProfileData({...profileData, telephone: e.target.value})}
+                  disabled={!isEditing}
+                  data-testid="profile-phone-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <Label>Adresse</Label>
+              <Input
+                value={profileData.adresse || ''}
+                onChange={(e) => setProfileData({...profileData, adresse: e.target.value})}
+                disabled={!isEditing}
+                placeholder="123 Rue Principale, Ville, Province"
+                data-testid="profile-address-input"
+              />
+            </div>
+
+            <div className="form-field">
+              <Label>Contact d'urgence</Label>
+              <Input
+                value={profileData.contact_urgence || ''}
+                onChange={(e) => setProfileData({...profileData, contact_urgence: e.target.value})}
+                disabled={!isEditing}
+                placeholder="Nom et téléphone du contact d'urgence"
+                data-testid="profile-emergency-input"
+              />
+            </div>
+
+            {/* Heures max pour temps partiel */}
+            {userProfile?.type_emploi === 'temps_partiel' && (
+              <div className="form-field">
+                <Label>Heures maximum par semaine</Label>
+                <div className="heures-max-input">
+                  <Input
+                    type="number"
+                    min="5"
+                    max="168"
+                    value={profileData.heures_max_semaine || userProfile?.heures_max_semaine || 25}
+                    onChange={(e) => setProfileData({...profileData, heures_max_semaine: parseInt(e.target.value)})}
+                    disabled={!isEditing}
+                    data-testid="profile-heures-max-input"
+                  />
+                  <span className="heures-max-unit">heures/semaine</span>
                 </div>
-              )}
-
-              {isEditing && (
-                <div className="form-actions">
-                  <Button onClick={handleSaveProfile} data-testid="save-profile-btn">
-                    Sauvegarder les modifications
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Informations verrouillées */}
-          <div className="profile-section">
-            <h2>Informations d'emploi</h2>
-            <div className="locked-info">
-              <div className="info-item">
-                <span className="info-label">Numéro d'employé:</span>
-                <span className="info-value locked" data-testid="profile-employee-id">
-                  {userProfile?.numero_employe} 🔒
-                </span>
+                <small className="heures-max-help">
+                  Indiquez le nombre maximum d'heures que vous souhaitez travailler par semaine (5-168h). Cette limite sera respectée lors de l'attribution automatique des gardes.
+                </small>
               </div>
-              <div className="info-item">
-                <span className="info-label">Grade:</span>
-                <span className="info-value locked" data-testid="profile-grade">
-                  {userProfile?.grade} 🔒
-                  {userProfile?.fonction_superieur && <span className="fonction-sup-profile"> + Fonction supérieur</span>}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Type d'emploi:</span>
-                <span className="info-value locked" data-testid="profile-employment-type">
-                  {userProfile?.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'} 🔒
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Date d'embauche:</span>
-                <span className="info-value locked" data-testid="profile-hire-date">
-                  {userProfile?.date_embauche} 🔒
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Taux horaire:</span>
-                <span className="info-value locked" data-testid="profile-taux-horaire">
-                  {userProfile?.taux_horaire ? `${userProfile.taux_horaire.toFixed(2)} $/h` : 'Non défini'} 🔒
-                </span>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Formations */}
-          <div className="profile-section">
-            <h2>Formations et certifications</h2>
-            <div className="formations-list" data-testid="profile-formations">
-              {userProfile?.formations?.length > 0 ? (
-                <div className="formations-grid">
-                  {userProfile.formations.map((formationId, index) => (
-                    <div key={index} className="formation-item">
-                      <span className="formation-name">{getFormationName(formationId)}</span>
-                      <span className="formation-status">Certifié ✅</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-formations">
-                  <p>Aucune formation enregistrée</p>
-                  <p className="text-muted">Contactez votre superviseur pour l'inscription aux formations</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Mes Tailles EPI */}
-          <div className="profile-section">
-            <div className="section-header">
-              <h2>🛡️ Mes Tailles EPI</h2>
-              <Button
-                onClick={() => setIsEditingEPI(!isEditingEPI)}
-                variant={isEditingEPI ? "secondary" : "default"}
-                data-testid="edit-epi-tailles-btn"
-              >
-                {isEditingEPI ? 'Annuler' : 'Modifier'}
-              </Button>
-            </div>
-
-            <p className="section-description" style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
-              Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.
-            </p>
-
-            <div className="epi-tailles-grid">
-              {getAllEPITypes().map(epiType => {
-                const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
-                return (
-                  <div key={epiType.id} className="epi-taille-item">
-                    <span className="epi-taille-icon">{epiType.icone}</span>
-                    <div className="epi-taille-info">
-                      <Label>{epiType.nom}</Label>
-                      <Input
-                        value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
-                        onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
-                        disabled={!isEditingEPI}
-                        placeholder="Saisir la taille"
-                        className="epi-taille-input"
-                        data-testid={`epi-taille-${epiType.id}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {isEditingEPI && (
+            {isEditing && (
               <div className="form-actions">
-                <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
-                  💾 Sauvegarder les tailles
+                <Button onClick={handleSaveProfile} data-testid="save-profile-btn">
+                  💾 Sauvegarder les modifications
                 </Button>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Sécurité du compte */}
-          <div className="profile-section">
-            <h2>Sécurité du compte</h2>
-            <div className="security-options">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPasswordModal(true)}
-                data-testid="change-password-btn"
-              >
-                🔒 Changer le mot de passe
-              </Button>
+        {/* Informations verrouillées */}
+        <div className="formation-card">
+          <div className="formation-header">
+            <h3>💼 Informations d'emploi</h3>
+            <span className="statut-badge planifiee" style={{fontSize: '12px'}}>🔒 Verrouillé</span>
+          </div>
+          <div className="locked-info">
+            <div className="info-item">
+              <span className="info-label">Numéro d'employé:</span>
+              <span className="info-value" data-testid="profile-employee-id">
+                {userProfile?.numero_employe}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Grade:</span>
+              <span className="info-value" data-testid="profile-grade">
+                {userProfile?.grade}
+                {userProfile?.fonction_superieur && <span className="fonction-sup-profile"> + Fonction supérieur</span>}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Type d'emploi:</span>
+              <span className="info-value" data-testid="profile-employment-type">
+                {userProfile?.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Date d'embauche:</span>
+              <span className="info-value" data-testid="profile-hire-date">
+                {userProfile?.date_embauche}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Taux horaire:</span>
+              <span className="info-value" data-testid="profile-taux-horaire">
+                {userProfile?.taux_horaire ? `${userProfile.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Sidebar avec statistiques personnelles */}
-        <div className="profile-sidebar">
-          <div className="profile-card">
-            <div className="profile-avatar">
-              <span className="avatar-large">👤</span>
-            </div>
-            <h3 data-testid="profile-fullname">{userProfile?.prenom} {userProfile?.nom}</h3>
-            <p className="profile-role">
-              {user?.role === 'admin' ? 'Administrateur' : 
-               user?.role === 'superviseur' ? 'Superviseur' : 'Employé'}
-            </p>
-            <p className="profile-grade">{userProfile?.grade}</p>
+        {/* Formations */}
+        <div className="formation-card">
+          <div className="formation-header">
+            <h3>📚 Formations et compétences</h3>
+          </div>
+          <div className="formations-list" data-testid="profile-formations">
+            {userProfile?.formations?.length > 0 ? (
+              <div className="formations-grid">
+                {userProfile.formations.map((formationId, index) => (
+                  <div key={index} className="formation-badge">
+                    <span className="formation-name">{getFormationName(formationId)}</span>
+                    <span className="formation-status">✅</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>Aucune formation enregistrée</p>
+                <p style={{fontSize: '14px', color: '#6B7280'}}>Contactez votre superviseur pour l'inscription aux formations</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mes Tailles EPI */}
+        <div className="formation-card">
+          <div className="formation-header">
+            <h3>🛡️ Mes Tailles EPI</h3>
+            <Button
+              onClick={() => setIsEditingEPI(!isEditingEPI)}
+              variant={isEditingEPI ? "outline" : "default"}
+              data-testid="edit-epi-tailles-btn"
+            >
+              {isEditingEPI ? 'Annuler' : '✏️ Modifier'}
+            </Button>
           </div>
 
-          <div className="profile-stats">
-            <h3>Statistiques personnelles</h3>
-            <div className="stats-list">
-              <div className="stat-item">
-                <span className="stat-icon">🏆</span>
-                <div className="stat-content">
-                  <span className="stat-value">{monthlyStats.gardes_ce_mois}</span>
-                  <span className="stat-label">Gardes ce mois</span>
+          <p style={{ marginBottom: '20px', fontSize: '14px', color: '#6B7280', paddingLeft: '20px', paddingRight: '20px' }}>
+            Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.
+          </p>
+
+          <div className="epi-tailles-grid-profile">
+            {getAllEPITypes().map(epiType => {
+              const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+              return (
+                <div key={epiType.id} className="epi-taille-item-profile">
+                  <span className="epi-taille-icon-profile">{epiType.icone}</span>
+                  <div className="epi-taille-info-profile">
+                    <Label>{epiType.nom}</Label>
+                    <Input
+                      value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
+                      onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
+                      disabled={!isEditingEPI}
+                      placeholder="Saisir la taille"
+                      className="epi-taille-input"
+                      data-testid={`epi-taille-${epiType.id}`}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="stat-item">
-                <span className="stat-icon">⏱️</span>
-                <div className="stat-content">
-                  <span className="stat-value">{monthlyStats.heures_travaillees}h</span>
-                  <span className="stat-label">Heures travaillées</span>
-                </div>
-              </div>
-              <div className="stat-item">
-                <span className="stat-icon">📜</span>
-                <div className="stat-content">
-                  <span className="stat-value">{monthlyStats.certifications}</span>
-                  <span className="stat-label">Certifications</span>
-                </div>
-              </div>
+              );
+            })}
+          </div>
+
+          {isEditingEPI && (
+            <div className="form-actions">
+              <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
+                💾 Sauvegarder les tailles
+              </Button>
             </div>
+          )}
+        </div>
+
+        {/* Sécurité du compte */}
+        <div className="formation-card">
+          <div className="formation-header">
+            <h3>🔒 Sécurité du compte</h3>
+          </div>
+          <div className="security-options" style={{padding: '20px'}}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPasswordModal(true)}
+              data-testid="change-password-btn"
+            >
+              🔑 Changer le mot de passe
+            </Button>
           </div>
         </div>
       </div>
