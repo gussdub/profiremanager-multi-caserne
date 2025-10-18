@@ -7192,6 +7192,23 @@ const Formations = () => {
     }
   };
   
+  const handleDesinscrire = async (formationId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir vous désinscrire de cette formation?")) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/formations/${formationId}/inscription`);
+      toast({
+        title: "Succès",
+        description: "Désinscription réussie"
+      });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
   const handleValiderPresence = async (userId, statut) => {
     try {
       await apiPut(tenantSlug, `/formations/${selectedFormation.id}/presence/${userId}`, { statut, notes: '' });
