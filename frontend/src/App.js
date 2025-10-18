@@ -2333,14 +2333,16 @@ const Dashboard = () => {
       if (!tenantSlug) return;
       
       try {
-        const [statsData, rapportsData, usersData] = await Promise.all([
+        const [statsData, rapportsData, usersData, personalStatsData] = await Promise.all([
           apiGet(tenantSlug, '/statistiques'),
           user.role === 'admin' ? apiGet(tenantSlug, '/rapports/statistiques-avancees') : Promise.resolve(null),
-          user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([])
+          user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([]),
+          apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`)
         ]);
         
         setStats(statsData);
         setStatistiquesDetaillees(rapportsData);
+        setMonthlyStats(personalStatsData);
         
         // Générer activité récente dynamique
         const users = usersData || [];
