@@ -44,6 +44,7 @@ class DiagnosticTester:
     def authenticate_admin(self):
         """Authenticate as admin and get user ID"""
         try:
+            # First try to authenticate with the expected admin credentials
             login_data = {
                 "email": ADMIN_EMAIL,
                 "mot_de_passe": ADMIN_PASSWORD
@@ -68,12 +69,64 @@ class DiagnosticTester:
                     self.log_result(f"✅ Authentification réussie pour {user_info.get('email', 'admin')}")
                     self.log_result(f"📋 ID utilisateur admin: {self.admin_user_id}")
                     return True
-                else:
-                    self.log_result("❌ Pas de token d'accès dans la réponse", data)
-                    return False
+            
+            # If admin doesn't exist, try to create it using Super Admin
+            self.log_result(f"⚠️ Admin {ADMIN_EMAIL} n'existe pas, tentative de création via Super Admin")
+            
+            # Authenticate as Super Admin
+            super_admin_login = {
+                "email": SUPER_ADMIN_EMAIL,
+                "mot_de_passe": SUPER_ADMIN_PASSWORD
+            }
+            
+            response = self.session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login)
+            if response.status_code != 200:
+                self.log_result(f"❌ Échec connexion Super Admin: {response.status_code}")
+                return False
+            
+            super_admin_data = response.json()
+            super_admin_token = super_admin_data["access_token"]
+            
+            # Create admin user for Shefford tenant
+            # First get Shefford tenant ID
+            super_admin_session = requests.Session()
+            super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
+            
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_result(f"❌ Échec récupération tenants: {response.status_code}")
+                return False
+            
+            tenants = response.json()
+            shefford_tenant = None
+            for tenant in tenants:
+                if tenant.get("slug") == TENANT_SLUG:
+                    shefford_tenant = tenant
+                    break
+            
+            if not shefford_tenant:
+                self.log_result(f"❌ Tenant {TENANT_SLUG} non trouvé")
+                return False
+            
+            # Create admin user
+            admin_user_data = {
+                "email": ADMIN_EMAIL,
+                "prenom": "Admin",
+                "nom": "Shefford",
+                "mot_de_passe": ADMIN_PASSWORD
+            }
+            
+            response = super_admin_session.post(
+                f"{self.base_url}/admin/tenants/{shefford_tenant['id']}/create-admin", 
+                json=admin_user_data
+            )
+            
+            if response.status_code == 200:
+                self.log_result(f"✅ Admin {ADMIN_EMAIL} créé avec succès")
+                # Now try to authenticate again
+                return self.authenticate_admin()
             else:
-                self.log_result(f"❌ Échec de connexion avec statut {response.status_code}", 
-                              {"response": response.text})
+                self.log_result(f"❌ Échec création admin: {response.status_code}", {"response": response.text})
                 return False
                 
         except Exception as e:
