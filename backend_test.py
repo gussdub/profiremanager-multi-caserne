@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - FORMATION REPORTING ENDPOINTS
-Tests for the new formation reporting endpoints with PDF/Excel export functionality:
-1. GET /api/{tenant_slug}/formations/rapports/export-presence
-2. GET /api/{tenant_slug}/formations/rapports/competences  
-3. GET /api/{tenant_slug}/formations/rapports/export-competences
+ProFireManager Backend API Testing Suite - RAPPORTS PDF/EXCEL EXPORT ENDPOINTS
+Tests for the new PDF/Excel export endpoints for reports:
+1. GET /api/{tenant_slug}/rapports/export-dashboard-pdf
+2. GET /api/{tenant_slug}/rapports/export-salaires-pdf
+3. GET /api/{tenant_slug}/rapports/export-salaires-excel
 
-Focus: Authentication, endpoint functionality, PDF/Excel generation, and data validation.
+Focus: Authentication, endpoint functionality, PDF/Excel generation, headers validation, and file integrity.
 """
 
 import requests
