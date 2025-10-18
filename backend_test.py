@@ -179,140 +179,81 @@ class EPIEndpointTester:
             return False
 
     def test_epi_endpoint_admin_access(self):
-        """Test GET /api/shefford/users/{user_id} with both real ID and console ID"""
+        """Test EPI endpoint with admin access - should be able to see any employee's EPIs"""
         try:
-            # Use Super Admin to test both IDs since Guillaume login might fail
-            super_admin_login_data = {
-                "email": "gussdub@icloud.com",
-                "mot_de_passe": "230685Juin+"
-            }
-            
-            super_admin_session = requests.Session()
-            response = super_admin_session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login_data)
-            
-            if response.status_code != 200:
-                self.log_test("GET Endpoint Test", False, f"Failed to login as Super Admin: {response.status_code}")
+            if not self.admin_token:
+                self.log_test("EPI Endpoint Admin Access", False, "No admin token available")
                 return False
             
-            data = response.json()
-            super_admin_token = data["access_token"]
-            
-            # Create admin user for Shefford to test endpoints
-            admin_create_data = {
-                "email": "test.diagnostic@firemanager.ca",
-                "prenom": "Test",
-                "nom": "Diagnostic",
-                "mot_de_passe": "TestDiag123!"
-            }
-            
-            super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
-            
-            # Get Shefford tenant ID
-            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
-            if response.status_code != 200:
-                self.log_test("GET Endpoint Test", False, "Failed to get tenants")
-                return False
-            
-            tenants = response.json()
-            shefford_tenant = None
-            for tenant in tenants:
-                if tenant.get("slug") == TENANT_SLUG:
-                    shefford_tenant = tenant
-                    self.shefford_tenant_id = tenant.get("id")
-                    break
-            
-            if not shefford_tenant:
-                self.log_test("GET Endpoint Test", False, "Shefford tenant not found")
-                return False
-            
-            # Create admin user
-            response = super_admin_session.post(f"{self.base_url}/admin/tenants/{self.shefford_tenant_id}/create-admin", json=admin_create_data)
-            if response.status_code != 200:
-                # Admin might already exist, try to login
-                pass
-            
-            # Login as admin
             admin_session = requests.Session()
-            admin_login_data = {
-                "email": "test.diagnostic@firemanager.ca",
-                "mot_de_passe": "TestDiag123!"
-            }
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
+            # Get all users to find a test user
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
             if response.status_code != 200:
-                self.log_test("GET Endpoint Test", False, f"Failed to login as test admin: {response.status_code}")
+                self.log_test("EPI Endpoint Admin Access", False, 
+                            f"Failed to get users: {response.status_code}")
                 return False
             
-            data = response.json()
-            admin_token = data["access_token"]
-            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            users = response.json()
+            if not users:
+                self.log_test("EPI Endpoint Admin Access", False, "No users found in Shefford")
+                return False
             
-            results = {}
+            # Test with first available user
+            test_user = users[0]
+            test_user_id = test_user.get("id")
             
-            # Test 1: GET with real ID (from logs)
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_REAL} (real ID from logs)")
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_REAL}")
-            results["real_id_test"] = {
-                "user_id": DIAGNOSTIC_USER_ID_REAL,
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/epi/employe/{test_user_id} (admin access)")
+            
+            # Test the EPI endpoint
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{test_user_id}")
+            
+            results = {
+                "test_user_id": test_user_id,
+                "test_user_email": test_user.get("email"),
+                "test_user_name": f"{test_user.get('prenom', '')} {test_user.get('nom', '')}",
                 "status_code": response.status_code,
-                "response_text": response.text[:500] if response.text else "No response",
-                "success": response.status_code == 200
+                "response_text": response.text[:500] if response.text else "No response"
             }
             
             if response.status_code == 200:
-                user_data = response.json()
-                results["real_id_test"]["user_data"] = {
-                    "id": user_data.get("id"),
-                    "email": user_data.get("email"),
-                    "nom": user_data.get("nom"),
-                    "prenom": user_data.get("prenom"),
-                    "date_embauche": user_data.get("date_embauche"),
-                    "taux_horaire": user_data.get("taux_horaire"),
-                    "numero_employe": user_data.get("numero_employe"),
-                    "grade": user_data.get("grade")
-                }
-            
-            # Test 2: GET with console ID (from frontend console)
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE} (console ID)")
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID_CONSOLE}")
-            results["console_id_test"] = {
-                "user_id": DIAGNOSTIC_USER_ID_CONSOLE,
-                "status_code": response.status_code,
-                "response_text": response.text[:500] if response.text else "No response",
-                "success": response.status_code == 200
-            }
-            
-            if response.status_code == 200:
-                user_data = response.json()
-                results["console_id_test"]["user_data"] = {
-                    "id": user_data.get("id"),
-                    "email": user_data.get("email"),
-                    "nom": user_data.get("nom"),
-                    "prenom": user_data.get("prenom")
-                }
-            
-            # Analyze results
-            real_id_works = results.get("real_id_test", {}).get("success", False)
-            console_id_works = results.get("console_id_test", {}).get("success", False)
-            
-            if real_id_works and not console_id_works:
-                message = f"✅ DIAGNOSIS CONFIRMED: Real ID works ({DIAGNOSTIC_USER_ID_REAL}), Console ID fails ({DIAGNOSTIC_USER_ID_CONSOLE}). Frontend is using wrong ID!"
+                epis = response.json()
+                results["epis_count"] = len(epis)
+                results["epis_data"] = epis[:3] if epis else []  # Show first 3 EPIs
+                
+                # Verify response structure
+                if epis:
+                    first_epi = epis[0]
+                    required_fields = ["id", "type_epi", "taille", "user_id", "statut"]
+                    missing_fields = []
+                    
+                    for field in required_fields:
+                        if field not in first_epi:
+                            missing_fields.append(field)
+                    
+                    results["structure_valid"] = len(missing_fields) == 0
+                    results["missing_fields"] = missing_fields
+                    results["available_fields"] = list(first_epi.keys())
+                else:
+                    results["structure_valid"] = True  # Empty list is valid
+                    results["missing_fields"] = []
+                    results["available_fields"] = []
+                
                 success = True
-            elif console_id_works and not real_id_works:
-                message = f"❌ UNEXPECTED: Console ID works ({DIAGNOSTIC_USER_ID_CONSOLE}), Real ID fails ({DIAGNOSTIC_USER_ID_REAL})"
+                message = f"✅ Admin can access EPI endpoint - Found {len(epis)} EPIs for user {test_user.get('email')}"
+            elif response.status_code == 403:
                 success = False
-            elif real_id_works and console_id_works:
-                message = f"✅ Both IDs work - no 404 issue found"
-                success = True
+                message = f"❌ Admin access denied (403) - This should not happen"
             else:
-                message = f"❌ BOTH IDs return 404 - deeper issue with endpoint or user data"
                 success = False
+                message = f"❌ EPI endpoint failed with status {response.status_code}"
             
-            self.log_test("GET Endpoint Test", success, message, results)
+            self.log_test("EPI Endpoint Admin Access", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("GET Endpoint Test", False, f"Endpoint test error: {str(e)}")
+            self.log_test("EPI Endpoint Admin Access", False, f"EPI endpoint admin test error: {str(e)}")
             return False
 
     def test_tenant_id_verification(self):
