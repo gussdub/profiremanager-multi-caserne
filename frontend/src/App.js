@@ -7274,17 +7274,19 @@ const Formations = () => {
                   </div>
                 </div>
                 <div className="formation-actions" style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
-                  {user?.role === 'employe' ? (
-                    <>
-                      {f.user_inscrit ? (
-                        <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>❌ Je me désinscris</Button>
-                      ) : (
-                        <Button onClick={() => handleInscrire(f.id)} disabled={f.places_restantes === 0}>
-                          {f.places_restantes === 0 ? '🔒 Complet' : '✅ Je m\'inscris'}
-                        </Button>
-                      )}
-                    </>
+                  {/* Boutons d'inscription pour TOUS */}
+                  {f.user_inscrit ? (
+                    <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>
+                      ❌ Je me désinscris
+                    </Button>
                   ) : (
+                    <Button onClick={() => handleInscrire(f.id)} disabled={f.places_restantes === 0}>
+                      {f.places_restantes === 0 ? '🔒 Complet' : '✅ Je m\'inscris'}
+                    </Button>
+                  )}
+                  
+                  {/* Boutons de gestion uniquement pour admin/superviseur */}
+                  {user?.role !== 'employe' && (
                     <>
                       <Button size="sm" variant="outline" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowInscriptionsModal(true); }}>
                         👥 Inscrits ({f.places_max - f.places_restantes})
