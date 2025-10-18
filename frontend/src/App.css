@@ -2301,6 +2301,172 @@ body {
   color: #374151;
 }
 
+
+/* Modal Formation moderne */
+.formation-modal-modern .modal-header-modern {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  padding: 1.75rem 2rem;
+  border-radius: 12px 12px 0 0;
+}
+
+.formation-modal-modern .modal-header-modern h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-body-modern {
+  padding: 2rem;
+}
+
+.form-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.form-row-full {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-field-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field-modern label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.form-select-modern {
+  padding: 0.625rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.form-select-modern:focus {
+  outline: none;
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-textarea-modern {
+  padding: 0.75rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  resize: vertical;
+}
+
+.form-textarea-modern:focus {
+  outline: none;
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.modal-actions-modern {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: #F9FAFB;
+  border-radius: 0 0 12px 12px;
+}
+
+
+/* Modal Formation moderne */
+.formation-modal-modern .modal-header-modern {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  padding: 1.75rem 2rem;
+  border-radius: 12px 12px 0 0;
+}
+
+.formation-modal-modern .modal-header-modern h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-body-modern {
+  padding: 2rem;
+}
+
+.form-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.form-row-full {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-field-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field-modern label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.form-select-modern {
+  padding: 0.625rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.form-select-modern:focus {
+  outline: none;
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-textarea-modern {
+  padding: 0.75rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  resize: vertical;
+}
+
+.form-textarea-modern:focus {
+  outline: none;
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.modal-actions-modern {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: #F9FAFB;
+  border-radius: 0 0 12px 12px;
+}
+
 .user-selection {
   margin-top: 1.5rem;
 }
