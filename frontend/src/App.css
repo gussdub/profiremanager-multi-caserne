@@ -5735,6 +5735,7 @@ body {
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0;
+  margin: 0;
 }
 
 .formation-badge-compact {
@@ -5750,6 +5751,7 @@ body {
   color: #991B1B;
   transition: all 0.2s ease;
   line-height: 1.4;
+  margin: 0;
 }
 
 .formation-badge-compact:hover {
