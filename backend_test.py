@@ -690,80 +690,75 @@ class RapportsExportTester:
         
         return passed >= 4  # Consider success if most tests pass
     
-    def analyze_formation_reporting_results(self):
-        """Analyze all Formation Reporting test results and provide conclusion"""
-        print(f"\n🔍 FORMATION REPORTING ANALYSIS:")
+    def analyze_rapports_export_results(self):
+        """Analyze all Rapports Export test results and provide conclusion"""
+        print(f"\n🔍 RAPPORTS PDF/EXCEL EXPORT ANALYSIS:")
         print("=" * 50)
         
         # Check authentication
         admin_auth = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
-        employee_auth = any(r["success"] for r in self.test_results if "Employee Authentication" in r["test"])
         
         # Check export functionality
-        pdf_presence = any(r["success"] for r in self.test_results if "Export Presence PDF" in r["test"])
-        excel_presence = any(r["success"] for r in self.test_results if "Export Presence Excel" in r["test"])
+        dashboard_pdf = any(r["success"] for r in self.test_results if "Export Dashboard PDF" in r["test"])
+        salaires_pdf = any(r["success"] for r in self.test_results if "Export Salaires PDF" in r["test"])
+        salaires_excel = any(r["success"] for r in self.test_results if "Export Salaires Excel" in r["test"])
         
-        # Check competences reporting
-        competences_general = any(r["success"] for r in self.test_results if "Rapport Competences General" in r["test"])
-        competences_specific = any(r["success"] for r in self.test_results if "Rapport Competences Specific User" in r["test"])
+        # Check headers validation
+        headers_valid = any(r["success"] for r in self.test_results if "Headers Validation" in r["test"])
         
-        # Check competences export
-        pdf_competences = any(r["success"] for r in self.test_results if "Export Competences PDF" in r["test"])
-        excel_competences = any(r["success"] for r in self.test_results if "Export Competences Excel" in r["test"])
+        print(f"✅ Admin authentication (gussdub@gmail.com): {admin_auth}")
+        print(f"✅ Dashboard PDF export: {dashboard_pdf}")
+        print(f"✅ Salaires PDF export: {salaires_pdf}")
+        print(f"✅ Salaires Excel export: {salaires_excel}")
+        print(f"✅ Headers validation: {headers_valid}")
         
-        # Check libraries
-        libraries_work = any(r["success"] for r in self.test_results if "Libraries and Dependencies" in r["test"])
-        
-        print(f"✅ Admin authentication: {admin_auth}")
-        print(f"⚠️  Employee authentication: {employee_auth}")
-        print(f"✅ PDF presence export: {pdf_presence}")
-        print(f"✅ Excel presence export: {excel_presence}")
-        print(f"✅ General competences report: {competences_general}")
-        print(f"✅ Specific user competences report: {competences_specific}")
-        print(f"✅ PDF competences export: {pdf_competences}")
-        print(f"✅ Excel competences export: {excel_competences}")
-        print(f"✅ Libraries (reportlab, openpyxl, matplotlib): {libraries_work}")
-        
-        print(f"\n🎯 FORMATION REPORTING CONCLUSION:")
+        print(f"\n🎯 RAPPORTS EXPORT CONCLUSION:")
         
         # Count successful core features
-        core_features = [pdf_presence, excel_presence, competences_general, competences_specific, pdf_competences, excel_competences]
+        core_features = [dashboard_pdf, salaires_pdf, salaires_excel]
         successful_features = sum(core_features)
         
-        if admin_auth and successful_features >= 5:
-            print("✅ FORMATION REPORTING ENDPOINTS FULLY FUNCTIONAL!")
-            print("   ✓ Authentication working with Shefford tenant")
-            print("   ✓ PDF/Excel export functionality working")
-            print("   ✓ Competences reporting (general and specific user)")
-            print("   ✓ All required libraries (reportlab, openpyxl, matplotlib) working")
+        if admin_auth and successful_features == 3 and headers_valid:
+            print("✅ RAPPORTS PDF/EXCEL EXPORT ENDPOINTS FULLY FUNCTIONAL!")
+            print("   ✓ Authentication working with specified credentials (gussdub@gmail.com / 230685Juin+)")
+            print("   ✓ All 3 export endpoints working correctly")
+            print("   ✓ PDF/Excel files generated with correct Content-Type and Content-Disposition headers")
+            print("   ✓ File sizes > 0 (no empty files)")
+            print("   ✓ Correct filenames in download headers")
             
             print("\n📋 REVIEW REQUEST OBJECTIVES ACHIEVED:")
-            print("   1. ✅ GET /api/shefford/formations/rapports/export-presence")
-            print("      - ✅ PDF format with type_formation=toutes, annee=2025")
-            print("      - ✅ Excel format with type_formation=obligatoires, annee=2025")
-            print("   2. ✅ GET /api/shefford/formations/rapports/competences")
-            print("      - ✅ General report (without user_id)")
-            print("      - ✅ Specific user report (with user_id)")
-            print("   3. ✅ GET /api/shefford/formations/rapports/export-competences")
-            print("      - ✅ PDF format without user_id")
-            print("      - ✅ Excel format with user_id")
-            print("   4. ✅ Authentication with admin@firemanager.ca / admin123")
-            print("   5. ✅ PDF/Excel files generated correctly with proper headers")
-            print("   6. ✅ No library errors (reportlab, openpyxl, matplotlib)")
+            print("   1. ✅ GET /api/shefford/rapports/export-dashboard-pdf")
+            print("      - ✅ Returns PDF with internal dashboard KPIs")
+            print("      - ✅ Correct Content-Type: application/pdf")
+            print("      - ✅ Correct filename: dashboard_interne_YYYYMM.pdf")
+            print("   2. ✅ GET /api/shefford/rapports/export-salaires-pdf")
+            print("      - ✅ Returns PDF with detailed salary cost report")
+            print("      - ✅ Parameters: date_debut=2025-01-01, date_fin=2025-09-30")
+            print("      - ✅ Correct Content-Type: application/pdf")
+            print("      - ✅ Correct filename: rapport_salaires_2025-01-01_2025-09-30.pdf")
+            print("   3. ✅ GET /api/shefford/rapports/export-salaires-excel")
+            print("      - ✅ Returns Excel file (.xlsx)")
+            print("      - ✅ Parameters: date_debut=2025-01-01, date_fin=2025-09-30")
+            print("      - ✅ Correct Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            print("      - ✅ Correct filename: rapport_salaires_2025-01-01_2025-09-30.xlsx")
+            print("   4. ✅ Authentication with gussdub@gmail.com / 230685Juin+ (admin)")
+            print("   5. ✅ No 403 errors (access granted)")
+            print("   6. ✅ All files generated correctly with size > 0")
             
-        elif admin_auth and successful_features >= 3:
-            print("✅ FORMATION REPORTING PARTIALLY WORKING")
-            print(f"   ✓ {successful_features}/6 core features working")
+        elif admin_auth and successful_features >= 2:
+            print("✅ RAPPORTS EXPORT PARTIALLY WORKING")
+            print(f"   ✓ {successful_features}/3 core endpoints working")
             print("   ⚠️ Some export functionality needs attention")
             
         elif admin_auth:
-            print("❌ FORMATION REPORTING ISSUES DETECTED")
+            print("❌ RAPPORTS EXPORT ISSUES DETECTED")
             print("   ✓ Authentication working")
             print("   ❌ Export functionality problems")
             
         else:
-            print("❌ CRITICAL ISSUES: Authentication or endpoints completely broken")
-            print("   Check MongoDB Atlas connection and credentials")
+            print("❌ CRITICAL ISSUES: Authentication failed")
+            print("   Check credentials: gussdub@gmail.com / 230685Juin+")
+            print("   Check MongoDB Atlas connection and user permissions")
 
 if __name__ == "__main__":
     tester = FormationReportingTester()
