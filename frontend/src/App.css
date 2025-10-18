@@ -927,6 +927,8 @@ body {
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+  min-width: 0;
+  justify-content: flex-start;
 }
 
 .action-btn {
