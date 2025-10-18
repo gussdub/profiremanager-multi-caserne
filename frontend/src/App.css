@@ -3627,7 +3627,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0;
+  margin-top: 0.5rem;
 }
 
 .formations-list .formation-badge {
