@@ -55,10 +55,11 @@ class FormationReportingTester:
     def test_admin_authentication(self):
         """Test admin authentication for Shefford tenant"""
         try:
-            # Try different admin credentials
+            # Try different admin credentials as specified in review request
             admin_credentials = [
-                {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
                 {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
+                {"email": "admin@firefighter.com", "mot_de_passe": "admin123"},
+                {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
                 {"email": "admin@shefford.ca", "mot_de_passe": "Admin123!"}
             ]
             
