@@ -84,6 +84,291 @@ class UserDiagnosticTester:
         except Exception as e:
             self.log_test("Admin Authentication", False, f"Authentication error: {str(e)}")
             return False
+
+    def test_diagnostic_user_login(self):
+        """Test login as gussdub@gmail.com to get their token"""
+        try:
+            login_data = {
+                "email": DIAGNOSTIC_USER_EMAIL,
+                "mot_de_passe": "230685Juin+"  # Password from review request
+            }
+            
+            # Try tenant-specific login first
+            response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
+            if response.status_code != 200:
+                # Try legacy login
+                response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "access_token" in data:
+                    self.diagnostic_user_token = data["access_token"]
+                    user_info = data.get("user", {})
+                    self.log_test("Diagnostic User Login", True, 
+                                f"Login successful for {DIAGNOSTIC_USER_EMAIL} (ID: {user_info.get('id', 'unknown')})")
+                    return True
+                else:
+                    self.log_test("Diagnostic User Login", False, "No access token in response", data)
+                    return False
+            else:
+                self.log_test("Diagnostic User Login", False, f"Login failed with status {response.status_code}", 
+                            {"response": response.text})
+                return False
+                
+        except Exception as e:
+            self.log_test("Diagnostic User Login", False, f"Login error: {str(e)}")
+            return False
+
+    def test_user_exists_in_database(self):
+        """Test if user exists by searching all users in Shefford tenant"""
+        if not self.auth_token:
+            self.log_test("User Exists in Database", False, "No admin authentication token")
+            return False
+            
+        try:
+            # Get all users in Shefford tenant
+            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("User Exists in Database", False, f"Failed to fetch users: {response.status_code}", 
+                            {"response": response.text})
+                return False
+            
+            users = response.json()
+            
+            # Search for the diagnostic user by ID and email
+            user_found_by_id = None
+            user_found_by_email = None
+            
+            for user in users:
+                if user.get("id") == DIAGNOSTIC_USER_ID:
+                    user_found_by_id = user
+                if user.get("email") == DIAGNOSTIC_USER_EMAIL:
+                    user_found_by_email = user
+            
+            # Log findings
+            if user_found_by_id:
+                self.log_test("User Exists in Database", True, 
+                            f"✅ User found by ID: {user_found_by_id.get('prenom', '')} {user_found_by_id.get('nom', '')} ({user_found_by_id.get('email', '')})", 
+                            {
+                                "user_id": user_found_by_id.get("id"),
+                                "email": user_found_by_id.get("email"),
+                                "tenant_id": user_found_by_id.get("tenant_id"),
+                                "nom": user_found_by_id.get("nom"),
+                                "prenom": user_found_by_id.get("prenom"),
+                                "grade": user_found_by_id.get("grade"),
+                                "taux_horaire": user_found_by_id.get("taux_horaire")
+                            })
+                return True
+            elif user_found_by_email:
+                self.log_test("User Exists in Database", False, 
+                            f"❌ User found by EMAIL but DIFFERENT ID: Expected ID {DIAGNOSTIC_USER_ID}, Found ID {user_found_by_email.get('id')}", 
+                            {
+                                "expected_id": DIAGNOSTIC_USER_ID,
+                                "found_id": user_found_by_email.get("id"),
+                                "email": user_found_by_email.get("email"),
+                                "tenant_id": user_found_by_email.get("tenant_id")
+                            })
+                return False
+            else:
+                self.log_test("User Exists in Database", False, 
+                            f"❌ User NOT FOUND: Neither ID {DIAGNOSTIC_USER_ID} nor email {DIAGNOSTIC_USER_EMAIL} found in {len(users)} users", 
+                            {
+                                "total_users": len(users),
+                                "searched_id": DIAGNOSTIC_USER_ID,
+                                "searched_email": DIAGNOSTIC_USER_EMAIL,
+                                "sample_user_ids": [u.get("id") for u in users[:5]]
+                            })
+                return False
+                
+        except Exception as e:
+            self.log_test("User Exists in Database", False, f"Database search error: {str(e)}")
+            return False
+
+    def test_shefford_tenant_verification(self):
+        """Verify Shefford tenant exists and get its ID"""
+        if not self.auth_token:
+            self.log_test("Shefford Tenant Verification", False, "No admin authentication token")
+            return False
+            
+        try:
+            # Try to get tenant info via Super Admin if possible
+            # First try to login as Super Admin
+            super_admin_login_data = {
+                "email": "gussdub@icloud.com",
+                "mot_de_passe": "230685Juin+"
+            }
+            
+            super_admin_session = requests.Session()
+            response = super_admin_session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                super_admin_token = data["access_token"]
+                super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
+                
+                # Get all tenants
+                response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+                if response.status_code == 200:
+                    tenants = response.json()
+                    
+                    shefford_tenant = None
+                    for tenant in tenants:
+                        if tenant.get("slug") == TENANT_SLUG:
+                            shefford_tenant = tenant
+                            break
+                    
+                    if shefford_tenant:
+                        self.log_test("Shefford Tenant Verification", True, 
+                                    f"✅ Shefford tenant found: {shefford_tenant.get('nom')} (ID: {shefford_tenant.get('id')})", 
+                                    {
+                                        "tenant_id": shefford_tenant.get("id"),
+                                        "tenant_name": shefford_tenant.get("nom"),
+                                        "tenant_slug": shefford_tenant.get("slug"),
+                                        "is_active": shefford_tenant.get("is_active", shefford_tenant.get("actif")),
+                                        "nombre_employes": shefford_tenant.get("nombre_employes")
+                                    })
+                        return True
+                    else:
+                        self.log_test("Shefford Tenant Verification", False, 
+                                    f"❌ Shefford tenant not found in {len(tenants)} tenants", 
+                                    {"available_tenants": [t.get("slug") for t in tenants]})
+                        return False
+                else:
+                    self.log_test("Shefford Tenant Verification", False, 
+                                f"Failed to get tenants via Super Admin: {response.status_code}")
+                    return False
+            else:
+                self.log_test("Shefford Tenant Verification", False, 
+                            f"Failed to login as Super Admin: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Shefford Tenant Verification", False, f"Tenant verification error: {str(e)}")
+            return False
+
+    def test_direct_user_endpoint_access(self):
+        """Test direct access to GET /api/shefford/users/{user_id} endpoint"""
+        if not self.auth_token:
+            self.log_test("Direct User Endpoint Access", False, "No admin authentication token")
+            return False
+            
+        try:
+            # Test with admin token
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} with admin token...")
+            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID}")
+            
+            admin_result = {
+                "status_code": response.status_code,
+                "response_text": response.text[:500] if response.text else "No response text"
+            }
+            
+            # Test with diagnostic user's own token if available
+            diagnostic_result = None
+            if hasattr(self, 'diagnostic_user_token') and self.diagnostic_user_token:
+                print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} with user's own token...")
+                diagnostic_session = requests.Session()
+                diagnostic_session.headers.update({"Authorization": f"Bearer {self.diagnostic_user_token}"})
+                
+                diagnostic_response = diagnostic_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID}")
+                diagnostic_result = {
+                    "status_code": diagnostic_response.status_code,
+                    "response_text": diagnostic_response.text[:500] if diagnostic_response.text else "No response text"
+                }
+            
+            # Analyze results
+            if response.status_code == 200:
+                user_data = response.json()
+                self.log_test("Direct User Endpoint Access", True, 
+                            f"✅ Endpoint works with admin token - User found: {user_data.get('prenom', '')} {user_data.get('nom', '')}", 
+                            {
+                                "admin_access": admin_result,
+                                "diagnostic_user_access": diagnostic_result,
+                                "user_data": user_data
+                            })
+                return True
+            elif response.status_code == 404:
+                self.log_test("Direct User Endpoint Access", False, 
+                            f"❌ CONFIRMED 404 ERROR: GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} returns 404", 
+                            {
+                                "admin_access": admin_result,
+                                "diagnostic_user_access": diagnostic_result,
+                                "issue_confirmed": "User endpoint returns 404 as reported"
+                            })
+                return False
+            else:
+                self.log_test("Direct User Endpoint Access", False, 
+                            f"❌ Unexpected status code: {response.status_code}", 
+                            {
+                                "admin_access": admin_result,
+                                "diagnostic_user_access": diagnostic_result
+                            })
+                return False
+                
+        except Exception as e:
+            self.log_test("Direct User Endpoint Access", False, f"Endpoint access error: {str(e)}")
+            return False
+
+    def test_compare_with_working_user(self):
+        """Compare diagnostic user with a working user from Personnel module"""
+        if not self.auth_token:
+            self.log_test("Compare with Working User", False, "No admin authentication token")
+            return False
+            
+        try:
+            # Get all users to find a working one
+            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("Compare with Working User", False, f"Failed to fetch users: {response.status_code}")
+                return False
+            
+            users = response.json()
+            
+            if not users:
+                self.log_test("Compare with Working User", False, "No users found in Shefford tenant")
+                return False
+            
+            # Pick the first user as comparison
+            working_user = users[0]
+            working_user_id = working_user.get("id")
+            
+            # Test access to working user's endpoint
+            print(f"🔍 Testing working user endpoint: GET /api/{TENANT_SLUG}/users/{working_user_id}")
+            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users/{working_user_id}")
+            
+            if response.status_code == 200:
+                working_user_data = response.json()
+                
+                # Compare structure
+                comparison = {
+                    "working_user": {
+                        "id": working_user_data.get("id"),
+                        "email": working_user_data.get("email"),
+                        "tenant_id": working_user_data.get("tenant_id"),
+                        "nom": working_user_data.get("nom"),
+                        "prenom": working_user_data.get("prenom"),
+                        "grade": working_user_data.get("grade"),
+                        "role": working_user_data.get("role"),
+                        "statut": working_user_data.get("statut")
+                    },
+                    "diagnostic_user_expected": {
+                        "id": DIAGNOSTIC_USER_ID,
+                        "email": DIAGNOSTIC_USER_EMAIL,
+                        "expected_in_tenant": TENANT_SLUG
+                    }
+                }
+                
+                self.log_test("Compare with Working User", True, 
+                            f"✅ Working user endpoint accessible: {working_user_data.get('prenom', '')} {working_user_data.get('nom', '')} (ID: {working_user_id})", 
+                            comparison)
+                return True
+            else:
+                self.log_test("Compare with Working User", False, 
+                            f"❌ Even working user endpoint failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Compare with Working User", False, f"Comparison error: {str(e)}")
+            return False
     
     def create_test_user(self):
         """Create a test user (NOT admin) for password reset testing"""
