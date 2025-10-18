@@ -761,8 +761,8 @@ class RapportsExportTester:
             print("   Check MongoDB Atlas connection and user permissions")
 
 if __name__ == "__main__":
-    tester = FormationReportingTester()
-    success = tester.run_formation_reporting_tests()
+    tester = RapportsExportTester()
+    success = tester.run_rapports_export_tests()
     
     sys.exit(0 if success else 1)
     
