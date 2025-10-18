@@ -9943,15 +9943,17 @@ const MonProfil = () => {
         <div className="formation-card">
           <div className="formation-header">
             <h3>📚 Formations et compétences</h3>
+            <span className="statut-badge planifiee" style={{fontSize: '12px', background: '#FEE2E2', color: '#991B1B'}}>
+              {userProfile?.formations?.length || 0} compétence(s)
+            </span>
           </div>
           <div className="formations-list" data-testid="profile-formations">
             {userProfile?.formations?.length > 0 ? (
-              <div className="formations-grid">
+              <div className="formations-compact">
                 {userProfile.formations.map((formationId, index) => (
-                  <div key={index} className="formation-badge">
-                    <span className="formation-name">{getFormationName(formationId)}</span>
-                    <span className="formation-status">✅</span>
-                  </div>
+                  <span key={index} className="formation-badge-compact">
+                    {getFormationName(formationId)} ✅
+                  </span>
                 ))}
               </div>
             ) : (
