@@ -10129,14 +10129,14 @@ const MonProfil = () => {
         </div>
 
         {/* Formations */}
-        <div className="formation-card" style={{marginBottom: '1.5rem'}}>
+        <div className="formation-card" style={{marginBottom: '1.5rem', padding: 0, overflow: 'hidden'}}>
           <div className="formation-header" style={{padding: '1rem 1.5rem', minHeight: 'auto'}}>
             <h3 style={{margin: 0}}>📚 Formations et compétences</h3>
             <span className="statut-badge planifiee" style={{background: '#FEE2E2', color: '#991B1B'}}>
               {userProfile?.formations?.length || 0}
             </span>
           </div>
-          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem 0.75rem 1.5rem'}}>
+          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem 0.75rem 1.5rem', margin: 0}}>
             {userProfile?.formations?.length > 0 ? (
               <div className="formations-compact" style={{marginBottom: 0}}>
                 {userProfile.formations.map((formationId, index) => (
