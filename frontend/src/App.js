@@ -7038,6 +7038,13 @@ const Formations = () => {
   const [filtreNom, setFiltreNom] = useState('');
   const [triPresence, setTriPresence] = useState('desc');
   
+  // États pour les rapports avancés
+  const [rapportTab, setRapportTab] = useState('presence');  // 'presence' ou 'competences'
+  const [typeFormation, setTypeFormation] = useState('toutes');  // 'obligatoires' ou 'toutes'
+  const [rapportCompetences, setRapportCompetences] = useState(null);
+  const [filtrePersonne, setFiltrePersonne] = useState('');  // ID de la personne ou vide pour tous
+  const [personnel, setPersonnel] = useState([]);
+  
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [showInscriptionsModal, setShowInscriptionsModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
