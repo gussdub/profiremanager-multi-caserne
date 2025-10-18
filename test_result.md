@@ -417,7 +417,7 @@ test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "mongodb_atlas_production_verified"
+  test_priority: "diagnostic_complete"
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
