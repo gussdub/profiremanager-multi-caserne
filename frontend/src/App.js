@@ -7480,10 +7480,73 @@ const Formations = () => {
       {showInscriptionsModal && selectedFormation && (
         <div className="modal-overlay" onClick={() => setShowInscriptionsModal(false)}>
           <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h2>👥 Inscrits - {selectedFormation.nom}</h2><Button variant="ghost" onClick={() => setShowInscriptionsModal(false)}>✕</Button></div>
+            <div className="modal-header">
+              <h2>👥 Inscrits - {selectedFormation.nom}</h2>
+              <Button variant="ghost" onClick={() => setShowInscriptionsModal(false)}>✕</Button>
+            </div>
             <div className="modal-body">
-              <div className="inscriptions-stats"><p><strong>Inscrits:</strong> {inscriptions.filter(i => i.statut === 'inscrit').length}</p><p><strong>Attente:</strong> {inscriptions.filter(i => i.statut === 'en_attente').length}</p></div>
-              <div className="inscriptions-list">{inscriptions.map(insc => <div key={insc.id} className="inscription-item"><span>{insc.user_nom}</span><span className={`badge-${insc.statut}`}>{insc.statut === 'inscrit' ? '✅ Inscrit' : insc.statut === 'en_attente' ? '⏳ Attente' : insc.statut === 'present' ? '✅ Présent' : '❌ Absent'}</span></div>)}</div>
+              <div style={{marginBottom: '1.5rem', padding: '1rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                <div style={{display: 'flex', gap: '2rem', justifyContent: 'center'}}>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#10B981'}}>
+                      {inscriptions.filter(i => i.statut === 'inscrit').length}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>Inscrits confirmés</div>
+                  </div>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#F59E0B'}}>
+                      {inscriptions.filter(i => i.statut === 'en_attente').length}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>En attente</div>
+                  </div>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#6B7280'}}>
+                      {selectedFormation.places_restantes}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>Places restantes</div>
+                  </div>
+                </div>
+              </div>
+
+              {inscriptions.length > 0 ? (
+                <div className="inscriptions-list" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                  {inscriptions.map(insc => (
+                    <div key={insc.id} className="inscription-item" style={{
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '1rem',
+                      borderBottom: '1px solid #E5E7EB',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div>
+                        <div style={{fontWeight: '600', fontSize: '0.95rem'}}>{insc.user_nom}</div>
+                        <div style={{fontSize: '0.813rem', color: '#6B7280', marginTop: '0.25rem'}}>
+                          Inscrit le {new Date(insc.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <span className={`badge-${insc.statut}`} style={{
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '6px',
+                        fontSize: '0.813rem',
+                        fontWeight: '600'
+                      }}>
+                        {insc.statut === 'inscrit' ? '✅ Inscrit' : 
+                         insc.statut === 'en_attente' ? '⏳ En attente' : 
+                         insc.statut === 'present' ? '✅ Présent' : '❌ Absent'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{textAlign: 'center', padding: '3rem', color: '#9CA3AF'}}>
+                  <div style={{fontSize: '3rem', marginBottom: '1rem'}}>👥</div>
+                  <p style={{fontSize: '1rem'}}>Aucun inscrit pour cette formation</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
