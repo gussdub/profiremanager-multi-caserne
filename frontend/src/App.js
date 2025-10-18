@@ -10614,6 +10614,8 @@ const Rapports = () => {
   
   // États pour les données
   const [dashboardData, setDashboardData] = useState(null);
+  const [rapportSalaires, setRapportSalaires] = useState(null);
+  const [rapportBudgetaire, setRapportBudgetaire] = useState(null);
   const [budgets, setBudgets] = useState([]);
   const [immobilisations, setImmobilisations] = useState([]);
   
@@ -10630,7 +10632,7 @@ const Rapports = () => {
     if (user?.role === 'admin' && tenantSlug) {
       loadData();
     }
-  }, [user, tenantSlug, activeTab, activeRapport]);
+  }, [user, tenantSlug, activeTab, activeRapport, anneeSelectionnee]);
 
   const loadData = async () => {
     setLoading(true);
@@ -10639,6 +10641,8 @@ const Rapports = () => {
         if (activeRapport === 'dashboard') {
           const dashData = await apiGet(tenantSlug, '/rapports/dashboard-interne');
           setDashboardData(dashData);
+        } else if (activeRapport === 'salaires') {
+          // Ne pas charger automatiquement, attendre que l'utilisateur clique sur "Générer"
         }
       } else if (activeTab === 'externes') {
         if (activeRapport === 'budgetaire') {
@@ -10646,6 +10650,17 @@ const Rapports = () => {
             apiGet(tenantSlug, `/rapports/budgets?annee=${anneeSelectionnee}`)
           ]);
           setBudgets(budgetsData || []);
+          
+          // Charger aussi le rapport budgétaire agrégé
+          try {
+            const rapportBudg = await apiGet(tenantSlug, `/rapports/tableau-bord-budgetaire?annee=${anneeSelectionnee}`);
+            setRapportBudgetaire(rapportBudg);
+          } catch (e) {
+            console.log('Pas de données budgétaires agrégées');
+          }
+        } else if (activeRapport === 'immobilisations') {
+          const immobData = await apiGet(tenantSlug, '/rapports/immobilisations');
+          setImmobilisations(immobData || []);
         }
       }
     } catch (error) {
