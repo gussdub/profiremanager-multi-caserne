@@ -22,10 +22,11 @@ BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"
 
-# Formation Reporting Testing Configuration
+# Rapports Export Testing Configuration
 # Using existing users in MongoDB Atlas production database for tenant "shefford"
+# Authentication: gussdub@gmail.com / 230685Juin+ (admin)
 
-class FormationReportingTester:
+class RapportsExportTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
