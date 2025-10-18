@@ -803,6 +803,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 0;
 }
 
 .user-avatar {
