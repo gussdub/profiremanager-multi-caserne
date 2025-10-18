@@ -5227,6 +5227,321 @@ async def get_tableau_bord_budgetaire(tenant_slug: str, annee: int, current_user
     }
 
 
+# ====== EXPORTS PDF/EXCEL POUR LES RAPPORTS ======
+
+@api_router.get("/{tenant_slug}/rapports/export-dashboard-pdf")
+async def export_dashboard_pdf(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Export PDF du Dashboard interne"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données du dashboard
+    today = datetime.now(timezone.utc)
+    debut_mois = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    heures_mois = 0
+    for assignation in assignations:
+        if "date" in assignation:
+            try:
+                date_assignation = datetime.fromisoformat(assignation["date"])
+                if date_assignation >= debut_mois:
+                    heures_mois += 8
+            except:
+                pass
+    
+    cout_salarial_mois = 0
+    for user in users:
+        taux_horaire = user.get("taux_horaire", 0)
+        user_assignations = [a for a in assignations if a["user_id"] == user["id"]]
+        user_heures = len(user_assignations) * 8
+        cout_salarial_mois += user_heures * taux_horaire
+    
+    pompiers_disponibles = len([u for u in users if u.get("statut") == "Actif" and u.get("type_emploi") == "temps_plein"])
+    
+    # Générer le PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    story.append(Paragraph("Dashboard Interne ProFireManager", title_style))
+    story.append(Paragraph(f"Période: {debut_mois.strftime('%B %Y')}", styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # KPIs
+    kpi_data = [
+        ["Indicateur", "Valeur"],
+        ["Heures travaillées ce mois", f"{heures_mois}h"],
+        ["Coût salarial du mois", f"${cout_salarial_mois:,.2f}"],
+        ["Pompiers disponibles", str(pompiers_disponibles)],
+        ["Total pompiers", str(len(users))]
+    ]
+    
+    kpi_table = Table(kpi_data, colWidths=[3*inch, 2*inch])
+    kpi_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(kpi_table)
+    doc.build(story)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=dashboard_interne_{debut_mois.strftime('%Y%m')}.pdf"}
+    )
+
+
+@api_router.get("/{tenant_slug}/rapports/export-salaires-pdf")
+async def export_salaires_pdf(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Export PDF du rapport coûts salariaux"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données
+    date_debut_dt = datetime.fromisoformat(date_debut)
+    date_fin_dt = datetime.fromisoformat(date_fin)
+    
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
+    
+    rapport = []
+    cout_total = 0
+    
+    for user in users:
+        user_assignations = []
+        for assignation in assignations:
+            if assignation["user_id"] == user["id"] and "date" in assignation:
+                try:
+                    date_assign = datetime.fromisoformat(assignation["date"])
+                    if date_debut_dt <= date_assign <= date_fin_dt:
+                        user_assignations.append(assignation)
+                except:
+                    pass
+        
+        if len(user_assignations) > 0:
+            heures_travaillees = len(user_assignations) * 8
+            taux_horaire = user.get("taux_horaire", 0)
+            cout_individuel = heures_travaillees * taux_horaire
+            cout_total += cout_individuel
+            
+            rapport.append({
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "matricule": user.get("numero_employe", "N/A"),
+                "type_emploi": user.get("type_emploi", "N/A"),
+                "heures_travaillees": heures_travaillees,
+                "taux_horaire": taux_horaire,
+                "cout_total": cout_individuel
+            })
+    
+    # Générer PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    story.append(Paragraph("Rapport de Coûts Salariaux Détaillés", title_style))
+    story.append(Paragraph(f"Période: {date_debut} au {date_fin}", styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Résumé
+    summary_data = [
+        ["Résumé", ""],
+        ["Coût total", f"${cout_total:,.2f}"],
+        ["Nombre d'employés", str(len(rapport))],
+        ["Total heures", f"{sum([r['heures_travaillees'] for r in rapport])}h"]
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[2.5*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(summary_table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Tableau détaillé
+    table_data = [["Nom", "Matricule", "Type", "Heures", "Taux/h", "Coût"]]
+    for emp in rapport:
+        table_data.append([
+            emp["nom"],
+            emp["matricule"],
+            "TP" if emp["type_emploi"] == "temps_plein" else "TPa",
+            f"{emp['heures_travaillees']}h",
+            f"${emp['taux_horaire']}",
+            f"${emp['cout_total']:,.2f}"
+        ])
+    
+    detail_table = Table(table_data, colWidths=[1.8*inch, 1*inch, 0.7*inch, 0.8*inch, 0.8*inch, 1.2*inch])
+    detail_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+    ]))
+    
+    story.append(detail_table)
+    doc.build(story)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=rapport_salaires_{date_debut}_{date_fin}.pdf"}
+    )
+
+
+@api_router.get("/{tenant_slug}/rapports/export-salaires-excel")
+async def export_salaires_excel(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Export Excel du rapport coûts salariaux"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données (même logique que PDF)
+    date_debut_dt = datetime.fromisoformat(date_debut)
+    date_fin_dt = datetime.fromisoformat(date_fin)
+    
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
+    
+    rapport = []
+    cout_total = 0
+    
+    for user in users:
+        user_assignations = []
+        for assignation in assignations:
+            if assignation["user_id"] == user["id"] and "date" in assignation:
+                try:
+                    date_assign = datetime.fromisoformat(assignation["date"])
+                    if date_debut_dt <= date_assign <= date_fin_dt:
+                        user_assignations.append(assignation)
+                except:
+                    pass
+        
+        if len(user_assignations) > 0:
+            heures_travaillees = len(user_assignations) * 8
+            taux_horaire = user.get("taux_horaire", 0)
+            cout_individuel = heures_travaillees * taux_horaire
+            cout_total += cout_individuel
+            
+            rapport.append({
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "matricule": user.get("numero_employe", "N/A"),
+                "type_emploi": user.get("type_emploi", "N/A"),
+                "heures_travaillees": heures_travaillees,
+                "taux_horaire": taux_horaire,
+                "cout_total": cout_individuel
+            })
+    
+    # Générer Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Coûts Salariaux"
+    
+    # En-tête
+    ws['A1'] = f"Rapport de Coûts Salariaux - {date_debut} au {date_fin}"
+    ws['A1'].font = Font(size=14, bold=True, color="DC2626")
+    ws.merge_cells('A1:F1')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Résumé
+    ws['A3'] = "Coût Total"
+    ws['B3'] = f"${cout_total:,.2f}"
+    ws['C3'] = "Employés"
+    ws['D3'] = len(rapport)
+    ws['E3'] = "Total Heures"
+    ws['F3'] = f"{sum([r['heures_travaillees'] for r in rapport])}h"
+    
+    # Tableau
+    headers = ["Nom", "Matricule", "Type", "Heures", "Taux/h", "Coût Total"]
+    row = 5
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    for emp in rapport:
+        row += 1
+        ws.cell(row=row, column=1, value=emp["nom"])
+        ws.cell(row=row, column=2, value=emp["matricule"])
+        ws.cell(row=row, column=3, value=emp["type_emploi"])
+        ws.cell(row=row, column=4, value=emp["heures_travaillees"])
+        ws.cell(row=row, column=5, value=emp["taux_horaire"])
+        ws.cell(row=row, column=6, value=emp["cout_total"])
+    
+    # Ajuster largeurs
+    for col in ['A', 'B', 'C', 'D', 'E', 'F']:
+        ws.column_dimensions[col].width = 18
+    
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=rapport_salaires_{date_debut}_{date_fin}.xlsx"}
+    )
+
+
 # Sessions de formation routes
 @api_router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
 async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
