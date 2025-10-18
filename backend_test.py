@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - GUILLAUME DUBEAU 404 DIAGNOSTIC
-Tests to diagnose why user Guillaume Dubeau (gussdub@gmail.com) returns 404 when accessing GET /api/shefford/users/{user_id}
-Focus: Login verification, MongoDB search, tenant_id matching, and endpoint testing.
+ProFireManager Backend API Testing Suite - EPI ENDPOINT TESTING
+Tests for the new endpoint GET /api/{tenant_slug}/epi/employe/{user_id} to retrieve EPIs for a specific employee.
+Focus: Authentication, endpoint functionality, security validation, and data structure verification.
 """
 
 import requests
