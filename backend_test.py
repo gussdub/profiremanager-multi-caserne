@@ -256,7 +256,7 @@ class EPIEndpointTester:
             self.log_test("EPI Endpoint Admin Access", False, f"EPI endpoint admin test error: {str(e)}")
             return False
 
-    def test_tenant_id_verification(self):
+    def test_epi_endpoint_employee_security(self):
         """Verify Guillaume's tenant_id matches Shefford tenant_id"""
         if not self.shefford_tenant_id or not self.guillaume_real_id:
             self.log_test("Tenant ID Verification", False, "Missing tenant ID or Guillaume ID")
