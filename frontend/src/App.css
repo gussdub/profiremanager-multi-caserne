@@ -13668,3 +13668,59 @@ body {
   font-size: 0.95rem;
 }
 
+.salaires-table,
+.immobilisations-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+  background: #FCA5A5;
+  padding: 1rem;
+  font-weight: bold;
+  color: white;
+}
+
+.header-cell {
+  padding: 0.5rem;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #E5E7EB;
+  transition: background 0.2s ease;
+}
+
+.table-row:hover {
+  background: #F9FAFB;
+}
+
+.table-cell {
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.badge.temps_plein {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.badge.temps_partiel {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
