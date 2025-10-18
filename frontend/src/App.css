@@ -13081,12 +13081,13 @@ body {
 }
 
 .formation-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .formation-body p {
-  margin: 0.5rem 0;
+  margin: 0.6rem 0;
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .formation-actions {
