@@ -9572,33 +9572,72 @@ const MonProfil = () => {
 
   const handleSaveEPITailles = async () => {
     try {
-      // Mettre à jour chaque EPI avec sa nouvelle taille
-      const updatePromises = myEPIs.map(epi => {
-        if (epiTailles[epi.type_epi] && epiTailles[epi.type_epi] !== epi.taille) {
-          return apiPut(tenantSlug, `/epi/${epi.id}`, {
-            taille: epiTailles[epi.type_epi]
-          });
+      const allEPITypes = getAllEPITypes();
+      const updatePromises = [];
+      const createPromises = [];
+      
+      // Pour chaque type d'EPI
+      for (const epiType of allEPITypes) {
+        const taille = epiTailles[epiType.id];
+        const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+        
+        // Si une taille est saisie
+        if (taille && taille.trim() !== '') {
+          if (existingEPI) {
+            // Mettre à jour l'EPI existant si la taille a changé
+            if (taille !== existingEPI.taille) {
+              updatePromises.push(
+                apiPut(tenantSlug, `/epi/${existingEPI.id}`, {
+                  taille: taille
+                })
+              );
+            }
+          } else {
+            // Créer un nouvel EPI
+            createPromises.push(
+              apiPost(tenantSlug, '/epi', {
+                user_id: user.id,
+                type_epi: epiType.id,
+                taille: taille,
+                numero_serie: `${epiType.id.toUpperCase()}-${user.id.substring(0, 8)}`,
+                date_attribution: new Date().toISOString().split('T')[0],
+                statut: 'En service',
+                etat: 'Neuf',
+                date_prochaine_inspection: '',
+                date_expiration: '',
+                notes: ''
+              })
+            );
+          }
         }
-        return Promise.resolve();
-      });
+      }
 
-      await Promise.all(updatePromises);
+      // Exécuter toutes les mises à jour et créations
+      await Promise.all([...updatePromises, ...createPromises]);
 
       // Recharger les EPI
       const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
       setMyEPIs(episData);
+      
+      // Mettre à jour l'objet de tailles
+      const tailles = {};
+      episData.forEach(epi => {
+        tailles[epi.type_epi] = epi.taille;
+      });
+      setEpiTailles(tailles);
 
       toast({
         title: "Tailles mises à jour",
-        description: "Vos tailles d'EPI ont été sauvegardées",
+        description: "Vos tailles d'EPI ont été sauvegardées et sont maintenant visibles dans le module Personnel",
         variant: "success"
       });
 
       setIsEditingEPI(false);
     } catch (error) {
+      console.error('Erreur sauvegarde EPI:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder les tailles",
+        description: error.response?.data?.detail || "Impossible de sauvegarder les tailles",
         variant: "destructive"
       });
     }
