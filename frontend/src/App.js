@@ -9690,6 +9690,24 @@ const MonProfil = () => {
   };
 
   if (loading) return <div className="loading" data-testid="profile-loading">Chargement du profil...</div>;
+  
+  // Debug : Vérifier si user est chargé
+  if (!user || !user.id) {
+    return (
+      <div className="mon-profil">
+        <div className="profile-header">
+          <h1>Erreur</h1>
+          <p style={{color: 'red'}}>
+            ❌ Impossible de charger le profil utilisateur. user.id manquant.
+            <br/>
+            Debug: user = {JSON.stringify(user)}
+            <br/>
+            tenantSlug = {tenantSlug}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mon-profil">
