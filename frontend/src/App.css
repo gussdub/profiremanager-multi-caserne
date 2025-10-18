@@ -13453,3 +13453,218 @@ body {
   }
 }
 
+/* ====================================================================
+   MODULE RAPPORTS AVANCÉS - STYLES
+   ==================================================================== */
+
+.module-rapports-nfpa {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.rapports-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.rapports-tabs button {
+  padding: 1rem 2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #6B7280;
+  transition: all 0.3s ease;
+}
+
+.rapports-tabs button.active {
+  color: #DC2626;
+  border-bottom-color: #FCA5A5;
+  background: #FEF2F2;
+}
+
+.rapports-tabs button:hover {
+  color: #DC2626;
+  background: #FEF2F2;
+}
+
+.rapports-sub-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  padding: 0.5rem;
+  background: #F9FAFB;
+  border-radius: 12px;
+}
+
+.rapports-sub-nav button {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  color: #6B7280;
+}
+
+.rapports-sub-nav button.active {
+  background: #FCA5A5;
+  color: white;
+  border-color: #FCA5A5;
+  font-weight: 600;
+}
+
+.rapports-sub-nav button:hover {
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+.dashboard-interne,
+.rapport-salaires,
+.rapport-budgetaire,
+.rapport-immobilisations {
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.budgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.budget-card {
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.budget-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+}
+
+.budget-montants {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.budget-label {
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin-bottom: 0.25rem;
+}
+
+.budget-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1F2937;
+}
+
+.budget-bar {
+  width: 100%;
+  height: 10px;
+  background: #E5E7EB;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.budget-progress {
+  height: 100%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.filtres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #6B7280;
+  background: #F9FAFB;
+  border-radius: 12px;
+  border: 2px dashed #E5E7EB;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #E5E7EB;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
