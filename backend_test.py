@@ -489,23 +489,8 @@ class RapportsExportTester:
             print("❌ CRITICAL ISSUES: Authentication failed")
             print("   Check credentials: gussdub@gmail.com / 230685Juin+")
             print("   Check MongoDB Atlas connection and user permissions")
-                    message = f"✅ Competences Excel export with user working - Generated {results['content_length']} bytes Excel file for {test_user.get('email')}"
-                else:
-                    success = False
-                    message = f"❌ Competences Excel export with user failed - Invalid content type or empty file"
-            else:
-                success = False
-                message = f"❌ Export competences Excel with user failed with status {response.status_code}"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            
-            self.log_test("Export Competences Excel with User", success, message, results)
-            return success
-                
-        except Exception as e:
-            self.log_test("Export Competences Excel with User", False, f"Export competences Excel with user test error: {str(e)}")
-            return False
 
-    def test_libraries_and_dependencies(self):
+if __name__ == "__main__":
         """Test that required libraries (reportlab, openpyxl, matplotlib) are working"""
         try:
             if not self.admin_token:
