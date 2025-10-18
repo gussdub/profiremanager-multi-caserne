@@ -10154,16 +10154,17 @@ const MonProfil = () => {
                 {userProfile?.formations?.length || 0}
               </span>
             </div>
-            <div className="formations-list-compact">
+            <div style={{padding: '0.75rem 1.5rem'}}>
               {userProfile?.formations?.length > 0 ? (
-                userProfile.formations.map((formationId, index) => (
-                  <div key={index} className="formation-item-compact">
-                    <span className="formation-check">✅</span>
-                    <span className="formation-name-compact">{getFormationName(formationId)}</span>
-                  </div>
-                ))
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+                  {userProfile.formations.map((formationId, index) => (
+                    <span key={index} className="formation-badge-compact">
+                      {getFormationName(formationId)} ✅
+                    </span>
+                  ))}
+                </div>
               ) : (
-                <p style={{textAlign: 'center', color: '#9CA3AF', fontSize: '14px', padding: '1rem'}}>
+                <p style={{textAlign: 'center', color: '#9CA3AF', fontSize: '14px', margin: 0}}>
                   Aucune compétence
                 </p>
               )}
