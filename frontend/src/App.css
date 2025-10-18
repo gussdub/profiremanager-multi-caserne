@@ -5650,29 +5650,32 @@ body {
   padding: 1rem 1.5rem;
 }
 
-.info-row {
+.locked-info-compact .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
   border-bottom: 1px solid #F3F4F6;
+  gap: 1rem;
 }
 
-.info-row:last-child {
+.locked-info-compact .info-row:last-child {
   border-bottom: none;
 }
 
-.info-row .info-label {
+.locked-info-compact .info-label {
   font-size: 0.813rem;
   font-weight: 500;
   color: #6B7280;
+  flex-shrink: 0;
 }
 
-.info-row .info-value {
+.locked-info-compact .info-value {
   font-size: 0.875rem;
   font-weight: 600;
   color: #1F2937;
   text-align: right;
+  flex-grow: 1;
 }
 
 .fonction-sup-compact {
