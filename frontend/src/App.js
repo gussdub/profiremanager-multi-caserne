@@ -10818,13 +10818,69 @@ const Rapports = () => {
                   <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
                 </div>
                 <div style={{display: 'flex', alignItems: 'end'}}>
-                  <Button onClick={loadData}>Générer le rapport</Button>
+                  <Button onClick={handleGenererRapportSalaires}>Générer le rapport</Button>
                 </div>
               </div>
 
-              <div className="empty-state">
-                <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
-              </div>
+              {rapportSalaires ? (
+                <div>
+                  {/* Résumé */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportSalaires.cout_total.toLocaleString()}</h3>
+                      <p>Coût Total</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportSalaires.nombre_employes}</h3>
+                      <p>Employés</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>
+                        {rapportSalaires.employes.reduce((sum, e) => sum + e.heures_travaillees, 0)}h
+                      </h3>
+                      <p>Total Heures</p>
+                    </div>
+                  </div>
+
+                  {/* Tableau détaillé */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Nom</div>
+                      <div className="header-cell">Matricule</div>
+                      <div className="header-cell">Type</div>
+                      <div className="header-cell">Heures</div>
+                      <div className="header-cell">Taux/h</div>
+                      <div className="header-cell">Coût Total</div>
+                    </div>
+                    {rapportSalaires.employes.map((emp, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{emp.nom}</div>
+                        <div className="table-cell">{emp.matricule}</div>
+                        <div className="table-cell">
+                          <span className={`badge ${emp.type_emploi}`}>
+                            {emp.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                          </span>
+                        </div>
+                        <div className="table-cell">{emp.heures_travaillees}h</div>
+                        <div className="table-cell">${emp.taux_horaire}/h</div>
+                        <div className="table-cell" style={{fontWeight: 'bold', color: '#DC2626'}}>
+                          ${emp.cout_total.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Exports */}
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('salaires')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('salaires')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
             </div>
           )}
         </div>
