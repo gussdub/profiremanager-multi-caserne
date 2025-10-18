@@ -569,21 +569,21 @@ class EPIEndpointTester:
     
     # Removed unused password reset methods - focusing on Guillaume diagnostic
     
-    def run_guillaume_diagnostic(self):
-        """Run the complete Guillaume Dubeau diagnostic test suite"""
-        print("🚀 Starting Guillaume Dubeau 404 Diagnostic Tests")
+    def run_epi_endpoint_tests(self):
+        """Run the complete EPI endpoint test suite"""
+        print("🚀 Starting EPI Endpoint Testing Suite")
         print("=" * 70)
-        print(f"👤 User: {DIAGNOSTIC_USER_EMAIL}")
-        print(f"🆔 Console ID: {DIAGNOSTIC_USER_ID_CONSOLE}")
         print(f"🏢 Tenant: {TENANT_SLUG}")
+        print(f"🔗 Endpoint: GET /api/{TENANT_SLUG}/epi/employe/{{user_id}}")
         print("=" * 70)
         
         tests = [
-            ("Guillaume Login & Get Real UserID", self.test_guillaume_login_and_get_real_userid),
-            ("Search Guillaume in MongoDB", self.test_search_guillaume_in_mongodb),
-            ("GET Endpoint Test (Both IDs)", self.test_get_endpoint_with_both_ids),
-            ("Tenant ID Verification", self.test_tenant_id_verification),
-            ("List All Shefford Users", self.test_list_all_shefford_users),
+            ("Admin Authentication", self.test_admin_authentication),
+            ("Employee Authentication", self.test_employee_authentication),
+            ("EPI Endpoint Admin Access", self.test_epi_endpoint_admin_access),
+            ("EPI Endpoint Employee Security", self.test_epi_endpoint_employee_security),
+            ("EPI Endpoint Empty Response", self.test_epi_endpoint_empty_response),
+            ("EPI Endpoint Data Structure", self.test_epi_endpoint_data_structure),
         ]
         
         passed = 0
@@ -601,9 +601,9 @@ class EPIEndpointTester:
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
         # Analyze results and provide conclusion
-        self.analyze_diagnostic_results()
+        self.analyze_epi_test_results()
         
-        return passed >= 3  # Consider success if most tests pass
+        return passed >= 4  # Consider success if most tests pass
     
     def analyze_diagnostic_results(self):
         """Analyze all test results and provide diagnostic conclusion"""
