@@ -3798,63 +3798,107 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         </div>
       )}
 
-      {/* Disponibilités Modal - Lecture seule */}
+      {/* Disponibilités Modal - Vue calendrier en lecture seule */}
       {showDisponibilitesModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowDisponibilitesModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="disponibilites-modal">
             <div className="modal-header">
-              <h3>Disponibilités - {selectedUser.prenom} {selectedUser.nom}</h3>
+              <h3>📅 Disponibilités - {selectedUser.prenom} {selectedUser.nom}</h3>
               <Button variant="ghost" onClick={() => setShowDisponibilitesModal(false)}>✕</Button>
             </div>
-            <div className="modal-body">
-              <div className="disponibilites-view">
-                {userDisponibilites.length > 0 ? (
-                  (() => {
-                    // Filtrer et trier les disponibilités (30 derniers jours + futures)
+            <div className="modal-body" style={{padding: '1.5rem'}}>
+              {/* Navigation mois */}
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    const newDate = new Date(viewCalendarYear, viewCalendarMonth - 1, 1);
+                    setViewCalendarMonth(newDate.getMonth());
+                    setViewCalendarYear(newDate.getFullYear());
+                  }}
+                >
+                  ← Mois précédent
+                </Button>
+                <h3 style={{margin: 0, fontSize: '1.25rem', fontWeight: '600'}}>
+                  {new Date(viewCalendarYear, viewCalendarMonth).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                </h3>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const newDate = new Date(viewCalendarYear, viewCalendarMonth + 1, 1);
+                    setViewCalendarMonth(newDate.getMonth());
+                    setViewCalendarYear(newDate.getFullYear());
+                  }}
+                >
+                  Mois suivant →
+                </Button>
+              </div>
+
+              {/* Calendrier */}
+              <div className="calendar-view-grid">
+                {/* Jours de la semaine */}
+                <div className="calendar-weekdays">
+                  {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
+                    <div key={day} className="calendar-weekday-header">{day}</div>
+                  ))}
+                </div>
+
+                {/* Jours du mois */}
+                <div className="calendar-days-grid">
+                  {/* Espaces vides pour aligner le premier jour */}
+                  {Array.from({ length: new Date(viewCalendarYear, viewCalendarMonth, 1).getDay() }).map((_, i) => (
+                    <div key={`empty-${i}`} className="calendar-day-cell empty"></div>
+                  ))}
+                  
+                  {/* Jours du mois */}
+                  {Array.from({ length: getDaysInMonth(viewCalendarMonth, viewCalendarYear) }).map((_, dayIndex) => {
+                    const dayNumber = dayIndex + 1;
+                    const dateStr = `${viewCalendarYear}-${String(viewCalendarMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
                     const today = new Date();
-                    const thirtyDaysAgo = new Date(today);
-                    thirtyDaysAgo.setDate(today.getDate() - 30);
+                    const currentDate = new Date(viewCalendarYear, viewCalendarMonth, dayNumber);
+                    const isToday = currentDate.toDateString() === today.toDateString();
                     
-                    const filteredDispos = userDisponibilites
-                      .filter(dispo => {
-                        const dispoDate = new Date(dispo.date.split('T')[0]);
-                        return dispoDate >= thirtyDaysAgo;
-                      })
-                      .sort((a, b) => {
-                        const dateA = new Date(a.date.split('T')[0]);
-                        const dateB = new Date(b.date.split('T')[0]);
-                        return dateA - dateB;
-                      });
-                    
-                    if (filteredDispos.length === 0) {
-                      return (
-                        <div className="no-disponibilites">
-                          <p>Aucune disponibilité récente ou future</p>
-                        </div>
-                      );
-                    }
-                    
-                    return filteredDispos.map(dispo => (
-                      <div key={dispo.id} className="disponibilite-item">
-                        <div className="dispo-day">
-                          <strong>{dispo.date.split('T')[0].split('-').reverse().join('/')}</strong>
-                        </div>
-                        <div className="dispo-time">
-                          {dispo.heure_debut} - {dispo.heure_fin}
-                        </div>
-                        <div className="dispo-status">
-                          <span className={`status ${dispo.statut}`}>
-                            {dispo.statut === 'disponible' ? '✅ Disponible' : '❌ Indisponible'}
-                          </span>
+                    const dayDispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
+                    const disponibilites = dayDispos.filter(d => d.statut === 'disponible');
+                    const hasIndisponibilite = dayDispos.some(d => d.statut === 'indisponible');
+
+                    return (
+                      <div 
+                        key={dayNumber} 
+                        className={`calendar-day-cell ${isToday ? 'today' : ''}`}
+                      >
+                        <div className="day-number">{dayNumber}</div>
+                        <div className="day-dispos-view">
+                          {disponibilites.slice(0, 2).map((dispo, i) => (
+                            <div key={i} className="dispo-indicator disponible" title={`${dispo.heure_debut} - ${dispo.heure_fin}`}>
+                              {dispo.heure_debut}-{dispo.heure_fin}
+                            </div>
+                          ))}
+                          {hasIndisponibilite && (
+                            <div className="dispo-indicator indisponible" title="Indisponible">
+                              ❌
+                            </div>
+                          )}
+                          {disponibilites.length > 2 && (
+                            <div className="more-dispos">+{disponibilites.length - 2}</div>
+                          )}
                         </div>
                       </div>
-                    ));
-                  })()
-                ) : (
-                  <div className="no-disponibilites">
-                    <p>Aucune disponibilité renseignée</p>
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Légende */}
+              <div style={{marginTop: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', display: 'flex', gap: '2rem', justifyContent: 'center'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                  <div style={{width: '20px', height: '20px', background: '#10B981', borderRadius: '4px'}}></div>
+                  <span>Disponible</span>
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                  <div style={{width: '20px', height: '20px', background: '#EF4444', borderRadius: '4px'}}></div>
+                  <span>Indisponible</span>
+                </div>
               </div>
             </div>
           </div>
