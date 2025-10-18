@@ -921,7 +921,9 @@ body {
 /* Actions Cell */
 .actions-cell {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .action-btn {
