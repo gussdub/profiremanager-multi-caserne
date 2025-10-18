@@ -9987,24 +9987,24 @@ const MonProfil = () => {
 
         {/* Formations */}
         <div className="formation-card" style={{marginBottom: '1.5rem'}}>
-          <div className="formation-header" style={{padding: '0.75rem 1.25rem', minHeight: 'auto'}}>
-            <h3 style={{fontSize: '0.95rem', margin: 0}}>📚 Formations et compétences</h3>
-            <span className="statut-badge planifiee" style={{fontSize: '10px', padding: '0.2rem 0.5rem', background: '#FEE2E2', color: '#991B1B'}}>
+          <div className="formation-header" style={{padding: '1rem 1.5rem', minHeight: 'auto'}}>
+            <h3 style={{margin: 0}}>📚 Formations et compétences</h3>
+            <span className="statut-badge planifiee" style={{background: '#FEE2E2', color: '#991B1B'}}>
               {userProfile?.formations?.length || 0}
             </span>
           </div>
-          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.5rem 1.25rem'}}>
+          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem'}}>
             {userProfile?.formations?.length > 0 ? (
-              <div className="formations-compact" style={{gap: '0.35rem'}}>
+              <div className="formations-compact" style={{gap: '0.5rem'}}>
                 {userProfile.formations.map((formationId, index) => (
-                  <span key={index} className="formation-badge-compact" style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}>
+                  <span key={index} className="formation-badge-compact">
                     {getFormationName(formationId)} ✅
                   </span>
                 ))}
               </div>
             ) : (
               <div style={{padding: '0.5rem 0', textAlign: 'center'}}>
-                <p style={{margin: 0, fontSize: '13px', color: '#6B7280'}}>Aucune formation • Contactez votre superviseur</p>
+                <p style={{margin: 0, fontSize: '14px', color: '#6B7280'}}>Aucune formation • Contactez votre superviseur</p>
               </div>
             )}
           </div>
