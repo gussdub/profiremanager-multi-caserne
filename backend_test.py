@@ -415,67 +415,7 @@ class GuillaumeDiagnosticTester:
             self.log_test("List All Shefford Users", False, f"User list error: {str(e)}")
             return False
 
-    def test_compare_with_working_user(self):
-        """Compare diagnostic user with a working user from Personnel module"""
-        if not self.auth_token:
-            self.log_test("Compare with Working User", False, "No admin authentication token")
-            return False
-            
-        try:
-            # Get all users to find a working one
-            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("Compare with Working User", False, f"Failed to fetch users: {response.status_code}")
-                return False
-            
-            users = response.json()
-            
-            if not users:
-                self.log_test("Compare with Working User", False, "No users found in Shefford tenant")
-                return False
-            
-            # Pick the first user as comparison
-            working_user = users[0]
-            working_user_id = working_user.get("id")
-            
-            # Test access to working user's endpoint
-            print(f"🔍 Testing working user endpoint: GET /api/{TENANT_SLUG}/users/{working_user_id}")
-            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users/{working_user_id}")
-            
-            if response.status_code == 200:
-                working_user_data = response.json()
-                
-                # Compare structure
-                comparison = {
-                    "working_user": {
-                        "id": working_user_data.get("id"),
-                        "email": working_user_data.get("email"),
-                        "tenant_id": working_user_data.get("tenant_id"),
-                        "nom": working_user_data.get("nom"),
-                        "prenom": working_user_data.get("prenom"),
-                        "grade": working_user_data.get("grade"),
-                        "role": working_user_data.get("role"),
-                        "statut": working_user_data.get("statut")
-                    },
-                    "diagnostic_user_expected": {
-                        "id": DIAGNOSTIC_USER_ID,
-                        "email": DIAGNOSTIC_USER_EMAIL,
-                        "expected_in_tenant": TENANT_SLUG
-                    }
-                }
-                
-                self.log_test("Compare with Working User", True, 
-                            f"✅ Working user endpoint accessible: {working_user_data.get('prenom', '')} {working_user_data.get('nom', '')} (ID: {working_user_id})", 
-                            comparison)
-                return True
-            else:
-                self.log_test("Compare with Working User", False, 
-                            f"❌ Even working user endpoint failed: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Compare with Working User", False, f"Comparison error: {str(e)}")
-            return False
+    # Removed unused methods - focusing on Guillaume diagnostic
     
     def create_test_user(self):
         """Create a test user (NOT admin) for password reset testing"""
