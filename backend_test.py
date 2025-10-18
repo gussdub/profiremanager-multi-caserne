@@ -24,7 +24,7 @@ ADMIN_PASSWORD = "admin123"
 DIAGNOSTIC_USER_EMAIL = "gussdub@gmail.com"
 DIAGNOSTIC_USER_ID = "4f8cf098-3f78-48f0-ab77-cf3bf8defb2c"
 
-class PasswordResetTester:
+class UserDiagnosticTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
