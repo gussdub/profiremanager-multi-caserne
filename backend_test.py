@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - PASSWORD RESET MONGODB WRITE VERIFICATION
-Tests password reset functionality to verify MongoDB Atlas write operations work correctly.
-Focus: Verify that password resets actually write to MongoDB Atlas and allow subsequent logins.
+ProFireManager Backend API Testing Suite - USER 404 DIAGNOSTIC
+Tests to diagnose why user gussdub@gmail.com returns 404 when accessing GET /api/shefford/users/{user_id}
+Focus: Verify user exists in MongoDB, check tenant_id matching, and test endpoint directly.
 """
 
 import requests
@@ -19,6 +19,10 @@ BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
 TENANT_SLUG = "shefford"
 ADMIN_EMAIL = "admin@firemanager.ca"
 ADMIN_PASSWORD = "admin123"
+
+# Diagnostic Configuration - User from review request
+DIAGNOSTIC_USER_EMAIL = "gussdub@gmail.com"
+DIAGNOSTIC_USER_ID = "4f8cf098-3f78-48f0-ab77-cf3bf8defb2c"
 
 class PasswordResetTester:
     def __init__(self):
