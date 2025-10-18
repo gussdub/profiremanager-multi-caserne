@@ -429,10 +429,10 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: ["Système Automatisé de Remplacement"]
   stuck_tasks: []
   test_all: false
-  test_priority: "diagnostic_complete"
+  test_priority: "high_first"
 
   - task: "Indisponibilités Generation System - Hardcoded Reference Dates"
     implemented: true
