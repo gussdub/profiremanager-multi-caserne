@@ -736,16 +736,87 @@ class GuillaumeDiagnosticTester:
         
         return passed == total
     
-if __name__ == "__main__":
-    tester = PasswordResetTester()
-    success = tester.run_password_reset_tests()
+    def run_guillaume_diagnostic(self):
+        """Run the complete Guillaume Dubeau diagnostic test suite"""
+        print("🚀 Starting Guillaume Dubeau 404 Diagnostic Tests")
+        print("=" * 70)
+        print(f"👤 User: {DIAGNOSTIC_USER_EMAIL}")
+        print(f"🆔 Console ID: {DIAGNOSTIC_USER_ID_CONSOLE}")
+        print(f"🏢 Tenant: {TENANT_SLUG}")
+        print("=" * 70)
+        
+        tests = [
+            ("Guillaume Login & Get Real UserID", self.test_guillaume_login_and_get_real_userid),
+            ("Search Guillaume in MongoDB", self.test_search_guillaume_in_mongodb),
+            ("GET Endpoint Test (Both IDs)", self.test_get_endpoint_with_both_ids),
+            ("Tenant ID Verification", self.test_tenant_id_verification),
+            ("List All Shefford Users", self.test_list_all_shefford_users),
+        ]
+        
+        passed = 0
+        total = len(tests)
+        
+        for test_name, test_func in tests:
+            print(f"\n🧪 Running: {test_name}")
+            if test_func():
+                passed += 1
+            else:
+                print(f"❌ Test failed: {test_name}")
+                # Continue with other tests to get full picture
+        
+        print(f"\n" + "=" * 70)
+        print(f"📊 Test Results: {passed}/{total} tests passed")
+        
+        # Analyze results and provide conclusion
+        self.analyze_diagnostic_results()
+        
+        return passed >= 3  # Consider success if most tests pass
     
-    if success:
-        print("\n🎯 CONCLUSION: Password reset writes to MongoDB Atlas correctly")
-        print("The issue reported by the user is NOT confirmed by this test")
-    else:
-        print("\n🚨 CONCLUSION: Password reset MongoDB write issue CONFIRMED")
-        print("The backend is likely writing to a different database than expected")
+    def analyze_diagnostic_results(self):
+        """Analyze all test results and provide diagnostic conclusion"""
+        print(f"\n🔍 DIAGNOSTIC ANALYSIS:")
+        print("=" * 50)
+        
+        # Check if Guillaume can login
+        login_success = any(r["success"] for r in self.test_results if "Login" in r["test"])
+        
+        # Check if IDs match
+        id_mismatch = self.guillaume_real_id != DIAGNOSTIC_USER_ID_CONSOLE if self.guillaume_real_id else True
+        
+        # Check if user found in database
+        found_in_db = any(r["success"] for r in self.test_results if "MongoDB" in r["test"])
+        
+        # Check if GET endpoint works
+        endpoint_works = any(r["success"] for r in self.test_results if "GET Endpoint" in r["test"])
+        
+        print(f"✅ Guillaume can login: {login_success}")
+        print(f"⚠️  ID mismatch (Real vs Console): {id_mismatch}")
+        print(f"✅ Found in MongoDB: {found_in_db}")
+        print(f"✅ GET endpoint works: {endpoint_works}")
+        
+        print(f"\n🎯 CONCLUSION:")
+        
+        if login_success and id_mismatch and found_in_db:
+            print("❌ PROBLEM IDENTIFIED: Frontend is using WRONG USER ID!")
+            print(f"   Real ID from login: {self.guillaume_real_id}")
+            print(f"   Console ID (wrong): {DIAGNOSTIC_USER_ID_CONSOLE}")
+            print("   The 404 error occurs because the frontend displays/uses an incorrect user ID.")
+            print("   SOLUTION: Fix frontend to use the correct user ID from login response.")
+        elif login_success and not id_mismatch and endpoint_works:
+            print("✅ NO PROBLEM FOUND: User exists, IDs match, endpoint works.")
+            print("   The reported 404 issue may be intermittent or already resolved.")
+        elif login_success and found_in_db and not endpoint_works:
+            print("❌ BACKEND ISSUE: User exists in DB but GET endpoint fails.")
+            print("   This indicates a problem with the user retrieval endpoint logic.")
+        elif not login_success:
+            print("❌ AUTHENTICATION ISSUE: Guillaume cannot login.")
+            print("   Check password or account status.")
+        else:
+            print("❓ UNCLEAR ISSUE: Mixed results require further investigation.")
+
+if __name__ == "__main__":
+    tester = GuillaumeDiagnosticTester()
+    success = tester.run_guillaume_diagnostic()
     
     sys.exit(0 if success else 1)
     
