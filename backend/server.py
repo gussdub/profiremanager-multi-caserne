@@ -7101,16 +7101,26 @@ async def update_epi(
     epi_update: EPIUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Met à jour un EPI (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
+    """Met à jour un EPI (Admin/Superviseur/Employé pour sa taille uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    # Les admins/superviseurs peuvent tout modifier
+    # Les employés peuvent modifier uniquement la taille de leurs propres EPIs
+    if current_user.role not in ["admin", "superviseur"]:
+        if epi.get("user_id") != current_user.id:
+            raise HTTPException(status_code=403, detail="Vous ne pouvez modifier que vos propres EPIs")
+        
+        # Restreindre les modifications aux champs autorisés pour un employé
+        allowed_fields = ["taille"]
+        update_data_dict = epi_update.dict()
+        for key in list(update_data_dict.keys()):
+            if key not in allowed_fields and update_data_dict[key] is not None:
+                raise HTTPException(status_code=403, detail=f"Vous ne pouvez modifier que la taille de vos EPIs")
     
     # Préparer les champs à mettre à jour
     update_data = {k: v for k, v in epi_update.dict().items() if v is not None}
