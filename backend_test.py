@@ -103,38 +103,122 @@ class GuillaumeDiagnosticTester:
             self.log_test("Guillaume Login & Real UserID", False, f"Login error: {str(e)}")
             return False
 
-    def test_diagnostic_user_login(self):
-        """Test login as gussdub@gmail.com to get their token"""
+    def test_search_guillaume_in_mongodb(self):
+        """Search for Guillaume in MongoDB by both ID and email"""
         try:
-            login_data = {
-                "email": DIAGNOSTIC_USER_EMAIL,
-                "mot_de_passe": "230685Juin+"  # Password from review request
+            # First get Super Admin access to search all users
+            super_admin_login_data = {
+                "email": "gussdub@icloud.com",
+                "mot_de_passe": "230685Juin+"
             }
             
-            # Try tenant-specific login first
-            response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
-            if response.status_code != 200:
-                # Try legacy login
-                response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
+            super_admin_session = requests.Session()
+            response = super_admin_session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login_data)
             
+            if response.status_code != 200:
+                self.log_test("Search Guillaume in MongoDB", False, 
+                            f"Failed to login as Super Admin: {response.status_code}")
+                return False
+            
+            data = response.json()
+            super_admin_token = data["access_token"]
+            super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
+            
+            # Get Shefford tenant ID first
+            response = super_admin_session.get(f"{self.base_url}/admin/tenants")
+            if response.status_code != 200:
+                self.log_test("Search Guillaume in MongoDB", False, 
+                            f"Failed to get tenants: {response.status_code}")
+                return False
+            
+            tenants = response.json()
+            shefford_tenant = None
+            for tenant in tenants:
+                if tenant.get("slug") == TENANT_SLUG:
+                    shefford_tenant = tenant
+                    self.shefford_tenant_id = tenant.get("id")
+                    break
+            
+            if not shefford_tenant:
+                self.log_test("Search Guillaume in MongoDB", False, "Shefford tenant not found")
+                return False
+            
+            # Now search for Guillaume in Shefford users
+            # Use admin session to get all users
+            admin_session = requests.Session()
+            admin_login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
+            }
+            
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
             if response.status_code == 200:
                 data = response.json()
-                if "access_token" in data:
-                    self.diagnostic_user_token = data["access_token"]
-                    user_info = data.get("user", {})
-                    self.log_test("Diagnostic User Login", True, 
-                                f"Login successful for {DIAGNOSTIC_USER_EMAIL} (ID: {user_info.get('id', 'unknown')})")
-                    return True
+                admin_token = data["access_token"]
+                admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+                
+                # Get all users in Shefford
+                response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+                if response.status_code == 200:
+                    users = response.json()
+                    
+                    # Search by both IDs and email
+                    found_by_real_id = None
+                    found_by_console_id = None
+                    found_by_email = None
+                    
+                    for user in users:
+                        if user.get("id") == self.guillaume_real_id:
+                            found_by_real_id = user
+                        if user.get("id") == DIAGNOSTIC_USER_ID_CONSOLE:
+                            found_by_console_id = user
+                        if user.get("email") == DIAGNOSTIC_USER_EMAIL:
+                            found_by_email = user
+                    
+                    # Analyze results
+                    results = {
+                        "total_users_in_shefford": len(users),
+                        "shefford_tenant_id": self.shefford_tenant_id,
+                        "search_results": {
+                            "found_by_real_id": found_by_real_id is not None,
+                            "found_by_console_id": found_by_console_id is not None,
+                            "found_by_email": found_by_email is not None
+                        }
+                    }
+                    
+                    if found_by_real_id:
+                        results["user_found_by_real_id"] = {
+                            "id": found_by_real_id.get("id"),
+                            "email": found_by_real_id.get("email"),
+                            "nom": found_by_real_id.get("nom"),
+                            "prenom": found_by_real_id.get("prenom"),
+                            "tenant_id": found_by_real_id.get("tenant_id"),
+                            "tenant_matches": found_by_real_id.get("tenant_id") == self.shefford_tenant_id
+                        }
+                    
+                    if found_by_email and found_by_email != found_by_real_id:
+                        results["user_found_by_email"] = {
+                            "id": found_by_email.get("id"),
+                            "email": found_by_email.get("email"),
+                            "tenant_id": found_by_email.get("tenant_id")
+                        }
+                    
+                    success = found_by_real_id is not None
+                    message = f"✅ Guillaume found by real ID: {self.guillaume_real_id}" if success else f"❌ Guillaume NOT found by real ID: {self.guillaume_real_id}"
+                    
+                    self.log_test("Search Guillaume in MongoDB", success, message, results)
+                    return success
                 else:
-                    self.log_test("Diagnostic User Login", False, "No access token in response", data)
+                    self.log_test("Search Guillaume in MongoDB", False, 
+                                f"Failed to get Shefford users: {response.status_code}")
                     return False
             else:
-                self.log_test("Diagnostic User Login", False, f"Login failed with status {response.status_code}", 
-                            {"response": response.text})
+                self.log_test("Search Guillaume in MongoDB", False, 
+                            f"Failed to login as Shefford admin: {response.status_code}")
                 return False
                 
         except Exception as e:
-            self.log_test("Diagnostic User Login", False, f"Login error: {str(e)}")
+            self.log_test("Search Guillaume in MongoDB", False, f"MongoDB search error: {str(e)}")
             return False
 
     def test_user_exists_in_database(self):
