@@ -379,7 +379,9 @@ class RapportsExportTester:
 
     # Old test methods removed - now focusing on rapports export endpoints
     
-    def test_export_competences_pdf(self):
+    # Removed old test methods - focusing on rapports export endpoints
+    
+    def run_rapports_export_tests(self):
         """Test GET /api/{tenant_slug}/formations/rapports/export-competences with PDF format"""
         try:
             if not self.admin_token:
