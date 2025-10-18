@@ -237,100 +237,61 @@ class FormationReportingTester:
             self.log_test("Export Presence PDF", False, f"Export presence PDF test error: {str(e)}")
             return False
 
-    def test_epi_endpoint_employee_security(self):
-        """Test EPI endpoint security - employee should only see their own EPIs"""
+    def test_export_presence_excel(self):
+        """Test GET /api/{tenant_slug}/formations/rapports/export-presence with Excel format"""
         try:
             if not self.admin_token:
-                self.log_test("EPI Endpoint Employee Security", False, "No admin token available")
+                self.log_test("Export Presence Excel", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Get all users to find two different users
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("EPI Endpoint Employee Security", False, 
-                            f"Failed to get users: {response.status_code}")
-                return False
+            # Test parameters as specified in review request
+            params = {
+                "format": "excel",
+                "type_formation": "obligatoires",
+                "annee": 2025
+            }
             
-            users = response.json()
-            if len(users) < 2:
-                self.log_test("EPI Endpoint Employee Security", False, "Need at least 2 users for security test")
-                return False
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-presence with params: {params}")
             
-            # Find two different users
-            user1 = users[0]
-            user2 = users[1]
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
             
-            # If we have employee token, use it; otherwise use admin token to simulate employee
-            if self.employee_token:
-                employee_session = requests.Session()
-                employee_session.headers.update({"Authorization": f"Bearer {self.employee_token}"})
-                test_user_id = self.employee_user_id
-                other_user_id = user1.get("id") if user1.get("id") != test_user_id else user2.get("id")
-            else:
-                # Use admin token but test the security logic
-                employee_session = admin_session
-                test_user_id = user1.get("id")
-                other_user_id = user2.get("id")
-            
-            results = {}
-            
-            # Test 1: Access own EPIs (should work)
-            print(f"🔍 Testing employee access to own EPIs: {test_user_id}")
-            response = employee_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{test_user_id}")
-            
-            results["own_epis_test"] = {
-                "user_id": test_user_id,
+            results = {
+                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-presence",
+                "params": params,
                 "status_code": response.status_code,
-                "success": response.status_code == 200
+                "headers": dict(response.headers),
+                "content_length": len(response.content) if response.content else 0
             }
             
             if response.status_code == 200:
-                epis = response.json()
-                results["own_epis_test"]["epis_count"] = len(epis)
-            
-            # Test 2: Access other user's EPIs (should fail if not admin)
-            print(f"🔍 Testing employee access to other user's EPIs: {other_user_id}")
-            response = employee_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{other_user_id}")
-            
-            results["other_epis_test"] = {
-                "user_id": other_user_id,
-                "status_code": response.status_code,
-                "success": response.status_code == 200,
-                "should_be_forbidden": not self.employee_token  # If using admin token, should work
-            }
-            
-            # Analyze security
-            own_access_works = results["own_epis_test"]["success"]
-            other_access_works = results["other_epis_test"]["success"]
-            
-            if self.employee_token:
-                # Real employee test
-                if own_access_works and not other_access_works:
+                # Check if it's an Excel file
+                content_type = response.headers.get('content-type', '')
+                content_disposition = response.headers.get('content-disposition', '')
+                
+                results["content_type"] = content_type
+                results["content_disposition"] = content_disposition
+                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type
+                results["has_filename"] = 'filename=' in content_disposition
+                
+                if results["is_excel"] and results["content_length"] > 0:
                     success = True
-                    message = "✅ Employee security working correctly - can access own EPIs but not others"
-                elif own_access_works and other_access_works:
-                    success = False
-                    message = "❌ Security breach - employee can access other users' EPIs"
+                    message = f"✅ Excel export working - Generated {results['content_length']} bytes Excel file"
                 else:
                     success = False
-                    message = "❌ Employee cannot access own EPIs"
+                    message = f"❌ Excel export failed - Invalid content type or empty file"
             else:
-                # Admin test (should access both)
-                if own_access_works and other_access_works:
-                    success = True
-                    message = "✅ Admin can access all EPIs as expected"
-                else:
-                    success = False
-                    message = "❌ Admin access issues detected"
+                success = False
+                message = f"❌ Export presence Excel failed with status {response.status_code}"
+                results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("EPI Endpoint Employee Security", success, message, results)
+            self.log_test("Export Presence Excel", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("EPI Endpoint Employee Security", False, f"EPI security test error: {str(e)}")
+            self.log_test("Export Presence Excel", False, f"Export presence Excel test error: {str(e)}")
             return False
 
     def test_epi_endpoint_empty_response(self):
