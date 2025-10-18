@@ -3215,6 +3215,54 @@ async def inscrire_formation(
     
     return {"message": "Inscription réussie", "statut": statut}
 
+@api_router.delete("/{tenant_slug}/formations/{formation_id}/inscription")
+async def desinscrire_formation(
+    tenant_slug: str,
+    formation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Désinscription d'une formation"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation non trouvée")
+    
+    # Vérifier si inscrit
+    existing = await db.inscriptions_formations.find_one({
+        "formation_id": formation_id,
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=400, detail="Vous n'êtes pas inscrit à cette formation")
+    
+    # Empêcher la désinscription si présence déjà validée
+    if existing.get("statut") in ["present", "absent"]:
+        raise HTTPException(status_code=400, detail="Impossible de se désinscrire, la présence a déjà été validée")
+    
+    # Supprimer l'inscription
+    await db.inscriptions_formations.delete_one({
+        "formation_id": formation_id,
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    })
+    
+    # Recalculer les places restantes
+    nb_inscrits = await db.inscriptions_formations.count_documents({
+        "formation_id": formation_id,
+        "tenant_id": tenant.id,
+        "statut": "inscrit"
+    })
+    
+    await db.formations.update_one(
+        {"id": formation_id, "tenant_id": tenant.id},
+        {"$set": {"places_restantes": formation["places_max"] - nb_inscrits}}
+    )
+    
+    return {"message": "Désinscription réussie"}
+
 @api_router.get("/{tenant_slug}/formations/{formation_id}/inscriptions")
 async def get_inscriptions(tenant_slug: str, formation_id: str, current_user: User = Depends(get_current_user)):
     """Liste inscriptions formation"""
