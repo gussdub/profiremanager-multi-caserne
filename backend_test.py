@@ -462,23 +462,213 @@ class FormationReportingTester:
             self.log_test("Rapport Competences Specific User", False, f"Rapport competences specific user test error: {str(e)}")
             return False
     
-    # Removed unused password reset methods - focusing on Guillaume diagnostic
+    def test_export_competences_pdf(self):
+        """Test GET /api/{tenant_slug}/formations/rapports/export-competences with PDF format"""
+        try:
+            if not self.admin_token:
+                self.log_test("Export Competences PDF", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Test parameters as specified in review request
+            params = {
+                "format": "pdf",
+                "annee": 2025
+            }
+            
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-competences with params: {params}")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-competences", params=params)
+            
+            results = {
+                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-competences",
+                "params": params,
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "content_length": len(response.content) if response.content else 0
+            }
+            
+            if response.status_code == 200:
+                # Check if it's a PDF file
+                content_type = response.headers.get('content-type', '')
+                content_disposition = response.headers.get('content-disposition', '')
+                
+                results["content_type"] = content_type
+                results["content_disposition"] = content_disposition
+                results["is_pdf"] = 'application/pdf' in content_type
+                results["has_filename"] = 'filename=' in content_disposition
+                
+                if results["is_pdf"] and results["content_length"] > 0:
+                    success = True
+                    message = f"✅ Competences PDF export working - Generated {results['content_length']} bytes PDF file"
+                else:
+                    success = False
+                    message = f"❌ Competences PDF export failed - Invalid content type or empty file"
+            else:
+                success = False
+                message = f"❌ Export competences PDF failed with status {response.status_code}"
+                results["response_text"] = response.text[:500] if response.text else "No response"
+            
+            self.log_test("Export Competences PDF", success, message, results)
+            return success
+                
+        except Exception as e:
+            self.log_test("Export Competences PDF", False, f"Export competences PDF test error: {str(e)}")
+            return False
+
+    def test_export_competences_excel_with_user(self):
+        """Test GET /api/{tenant_slug}/formations/rapports/export-competences with Excel format and user_id"""
+        try:
+            if not self.admin_token:
+                self.log_test("Export Competences Excel with User", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Get a user to test with
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("Export Competences Excel with User", False, 
+                            f"Failed to get users: {response.status_code}")
+                return False
+            
+            users = response.json()
+            if not users:
+                self.log_test("Export Competences Excel with User", False, "No users found in Shefford")
+                return False
+            
+            test_user = users[0]
+            test_user_id = test_user.get("id")
+            
+            # Test parameters as specified in review request
+            params = {
+                "format": "excel",
+                "annee": 2025,
+                "user_id": test_user_id
+            }
+            
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-competences with params: {params}")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-competences", params=params)
+            
+            results = {
+                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-competences",
+                "params": params,
+                "test_user_email": test_user.get("email"),
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "content_length": len(response.content) if response.content else 0
+            }
+            
+            if response.status_code == 200:
+                # Check if it's an Excel file
+                content_type = response.headers.get('content-type', '')
+                content_disposition = response.headers.get('content-disposition', '')
+                
+                results["content_type"] = content_type
+                results["content_disposition"] = content_disposition
+                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type
+                results["has_filename"] = 'filename=' in content_disposition
+                
+                if results["is_excel"] and results["content_length"] > 0:
+                    success = True
+                    message = f"✅ Competences Excel export with user working - Generated {results['content_length']} bytes Excel file for {test_user.get('email')}"
+                else:
+                    success = False
+                    message = f"❌ Competences Excel export with user failed - Invalid content type or empty file"
+            else:
+                success = False
+                message = f"❌ Export competences Excel with user failed with status {response.status_code}"
+                results["response_text"] = response.text[:500] if response.text else "No response"
+            
+            self.log_test("Export Competences Excel with User", success, message, results)
+            return success
+                
+        except Exception as e:
+            self.log_test("Export Competences Excel with User", False, f"Export competences Excel with user test error: {str(e)}")
+            return False
+
+    def test_libraries_and_dependencies(self):
+        """Test that required libraries (reportlab, openpyxl, matplotlib) are working"""
+        try:
+            if not self.admin_token:
+                self.log_test("Libraries and Dependencies", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Test a simple PDF export to verify reportlab
+            params = {
+                "format": "pdf",
+                "type_formation": "toutes",
+                "annee": 2025
+            }
+            
+            print(f"🔍 Testing libraries by attempting PDF generation")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
+            
+            results = {
+                "pdf_generation_status": response.status_code,
+                "pdf_content_length": len(response.content) if response.content else 0
+            }
+            
+            # Test Excel export to verify openpyxl
+            params["format"] = "excel"
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
+            
+            results["excel_generation_status"] = response.status_code
+            results["excel_content_length"] = len(response.content) if response.content else 0
+            
+            # Analyze results
+            pdf_works = results["pdf_generation_status"] == 200 and results["pdf_content_length"] > 0
+            excel_works = results["excel_generation_status"] == 200 and results["excel_content_length"] > 0
+            
+            if pdf_works and excel_works:
+                success = True
+                message = f"✅ All libraries working - PDF: {results['pdf_content_length']} bytes, Excel: {results['excel_content_length']} bytes"
+            elif pdf_works:
+                success = False
+                message = f"❌ Excel generation failed - PDF works but Excel library issue"
+            elif excel_works:
+                success = False
+                message = f"❌ PDF generation failed - Excel works but reportlab library issue"
+            else:
+                success = False
+                message = f"❌ Both PDF and Excel generation failed - Library issues detected"
+            
+            self.log_test("Libraries and Dependencies", success, message, results)
+            return success
+                
+        except Exception as e:
+            self.log_test("Libraries and Dependencies", False, f"Libraries test error: {str(e)}")
+            return False
     
-    def run_epi_endpoint_tests(self):
-        """Run the complete EPI endpoint test suite"""
-        print("🚀 Starting EPI Endpoint Testing Suite")
+    def run_formation_reporting_tests(self):
+        """Run the complete Formation Reporting test suite"""
+        print("🚀 Starting Formation Reporting Testing Suite")
         print("=" * 70)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"🔗 Endpoint: GET /api/{TENANT_SLUG}/epi/employe/{{user_id}}")
+        print(f"🔗 Endpoints:")
+        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/export-presence")
+        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/competences")
+        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/export-competences")
         print("=" * 70)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
             ("Employee Authentication", self.test_employee_authentication),
-            ("EPI Endpoint Admin Access", self.test_epi_endpoint_admin_access),
-            ("EPI Endpoint Employee Security", self.test_epi_endpoint_employee_security),
-            ("EPI Endpoint Empty Response", self.test_epi_endpoint_empty_response),
-            ("EPI Endpoint Data Structure", self.test_epi_endpoint_data_structure),
+            ("Export Presence PDF", self.test_export_presence_pdf),
+            ("Export Presence Excel", self.test_export_presence_excel),
+            ("Rapport Competences General", self.test_rapport_competences_general),
+            ("Rapport Competences Specific User", self.test_rapport_competences_specific_user),
+            ("Export Competences PDF", self.test_export_competences_pdf),
+            ("Export Competences Excel with User", self.test_export_competences_excel_with_user),
+            ("Libraries and Dependencies", self.test_libraries_and_dependencies),
         ]
         
         passed = 0
@@ -496,9 +686,9 @@ class FormationReportingTester:
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
         # Analyze results and provide conclusion
-        self.analyze_epi_test_results()
+        self.analyze_formation_reporting_results()
         
-        return passed >= 4  # Consider success if most tests pass
+        return passed >= 6  # Consider success if most tests pass
     
     def analyze_epi_test_results(self):
         """Analyze all EPI test results and provide conclusion"""
