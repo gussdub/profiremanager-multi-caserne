@@ -352,7 +352,7 @@ class EPIEndpointTester:
             self.log_test("EPI Endpoint Employee Security", False, f"EPI security test error: {str(e)}")
             return False
 
-    def test_list_all_shefford_users(self):
+    def test_epi_endpoint_empty_response(self):
         """List all users in Shefford tenant to see if Guillaume is there"""
         try:
             # Get admin access
