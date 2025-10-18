@@ -11015,9 +11015,61 @@ const Rapports = () => {
                     })}
                   </div>
                   
+                  {/* Graphique Budget Global */}
+                  {rapportBudgetaire && (
+                    <div style={{marginTop: '2rem', background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                      <h3 style={{marginBottom: '1rem'}}>Vue d'ensemble Budgétaire - {anneeSelectionnee}</h3>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem'}}>
+                        <div>
+                          <Chart
+                            options={{
+                              chart: { type: 'donut' },
+                              labels: rapportBudgetaire.par_categorie.map(b => b.categorie),
+                              colors: ['#FCA5A5', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'],
+                              legend: { position: 'bottom' },
+                              plotOptions: {
+                                pie: {
+                                  donut: {
+                                    labels: {
+                                      show: true,
+                                      total: {
+                                        show: true,
+                                        label: 'Total Alloué',
+                                        formatter: () => `$${(rapportBudgetaire.budget_total_alloue/1000).toFixed(0)}k`
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                            series={rapportBudgetaire.par_categorie.map(b => b.budget_alloue)}
+                            type="donut"
+                            height={300}
+                          />
+                        </div>
+                        <div>
+                          <div className="kpi-grid" style={{gridTemplateColumns: '1fr 1fr'}}>
+                            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                              <h3>${rapportBudgetaire.budget_total_alloue.toLocaleString()}</h3>
+                              <p>Budget Alloué</p>
+                            </div>
+                            <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                              <h3>${rapportBudgetaire.budget_total_consomme.toLocaleString()}</h3>
+                              <p>Budget Consommé</p>
+                            </div>
+                            <div className="kpi-card" style={{background: '#D1FAE5', gridColumn: 'span 2'}}>
+                              <h3>{rapportBudgetaire.pourcentage_global}%</h3>
+                              <p>Taux d'utilisation global</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
                     <Button onClick={() => handleExportPDF('budgetaire')}>📄 Export PDF</Button>
-                    <Button variant="outline">📊 Export Excel</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('budgetaire')}>📊 Export Excel</Button>
                   </div>
                 </div>
               ) : (
