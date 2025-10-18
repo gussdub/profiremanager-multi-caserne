@@ -161,11 +161,11 @@ class RapportsExportTester:
             self.log_test("Export Dashboard PDF", False, f"Export dashboard PDF test error: {str(e)}")
             return False
 
-    def test_export_presence_pdf(self):
-        """Test GET /api/{tenant_slug}/formations/rapports/export-presence with PDF format"""
+    def test_export_salaires_pdf(self):
+        """Test GET /api/{tenant_slug}/rapports/export-salaires-pdf with date parameters"""
         try:
             if not self.admin_token:
-                self.log_test("Export Presence PDF", False, "No admin token available")
+                self.log_test("Export Salaires PDF", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
@@ -173,17 +173,16 @@ class RapportsExportTester:
             
             # Test parameters as specified in review request
             params = {
-                "format": "pdf",
-                "type_formation": "toutes",
-                "annee": 2025
+                "date_debut": "2025-01-01",
+                "date_fin": "2025-09-30"
             }
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-presence with params: {params}")
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-salaires-pdf with params: {params}")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-pdf", params=params)
             
             results = {
-                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-presence",
+                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-salaires-pdf",
                 "params": params,
                 "status_code": response.status_code,
                 "headers": dict(response.headers),
@@ -199,23 +198,35 @@ class RapportsExportTester:
                 results["content_disposition"] = content_disposition
                 results["is_pdf"] = 'application/pdf' in content_type
                 results["has_filename"] = 'filename=' in content_disposition
+                results["filename_correct"] = 'rapport_salaires_2025-01-01_2025-09-30.pdf' in content_disposition
                 
-                if results["is_pdf"] and results["content_length"] > 0:
+                if results["is_pdf"] and results["content_length"] > 0 and results["has_filename"]:
                     success = True
-                    message = f"✅ PDF export working - Generated {results['content_length']} bytes PDF file"
+                    message = f"✅ Salaires PDF export working - Generated {results['content_length']} bytes PDF file with correct headers"
                 else:
                     success = False
-                    message = f"❌ PDF export failed - Invalid content type or empty file"
+                    issues = []
+                    if not results["is_pdf"]:
+                        issues.append("Invalid content-type")
+                    if results["content_length"] == 0:
+                        issues.append("Empty file")
+                    if not results["has_filename"]:
+                        issues.append("Missing filename in headers")
+                    message = f"❌ Salaires PDF export failed - {'; '.join(issues)}"
+            elif response.status_code == 403:
+                success = False
+                message = f"❌ Access denied (403) - Check admin permissions"
+                results["response_text"] = response.text[:500] if response.text else "No response"
             else:
                 success = False
-                message = f"❌ Export presence PDF failed with status {response.status_code}"
+                message = f"❌ Export salaires PDF failed with status {response.status_code}"
                 results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("Export Presence PDF", success, message, results)
+            self.log_test("Export Salaires PDF", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("Export Presence PDF", False, f"Export presence PDF test error: {str(e)}")
+            self.log_test("Export Salaires PDF", False, f"Export salaires PDF test error: {str(e)}")
             return False
 
     def test_export_presence_excel(self):
