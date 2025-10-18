@@ -7323,12 +7323,42 @@ const Formations = () => {
                 <div className="formation-body">
                   <p><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
                   <p><strong>Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR')} {f.heure_debut && f.heure_fin ? `(${f.heure_debut} - ${f.heure_fin})` : ''}</p>
-                  <p><strong>Durée:</strong> {f.duree_heures}h</p>
-                  <p><strong>Places:</strong> {f.places_restantes}/{f.places_max}</p>
+                  
+                  {/* Barre visuelle des places */}
+                  <div style={{marginTop: '0.75rem'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem'}}>
+                      <span><strong>Places:</strong></span>
+                      <span style={{color: f.places_restantes === 0 ? '#DC2626' : '#059669'}}>
+                        {f.places_max - f.places_restantes}/{f.places_max}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '100%', 
+                      height: '8px', 
+                      background: '#F3F4F6', 
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${((f.places_max - f.places_restantes) / f.places_max) * 100}%`,
+                        height: '100%',
+                        background: f.places_restantes === 0 ? '#DC2626' : '#10B981',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
                 </div>
                 <div className="formation-actions" style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
                   {user?.role === 'employe' ? (
-                    <Button onClick={() => handleInscrire(f.id)}>✅ S'inscrire</Button>
+                    <>
+                      {f.user_inscrit ? (
+                        <Button variant="outline" onClick={() => handleDesinscrire(f.id)}>❌ Se désinscrire</Button>
+                      ) : (
+                        <Button onClick={() => handleInscrire(f.id)} disabled={f.places_restantes === 0}>
+                          {f.places_restantes === 0 ? '🔒 Complet' : '✅ S\'inscrire'}
+                        </Button>
+                      )}
+                    </>
                   ) : (
                     <>
                       <Button size="sm" variant="outline" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowInscriptionsModal(true); }}>
