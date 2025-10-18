@@ -3284,17 +3284,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 )}
               </div>
 
-              <div className="formations-cell">
-                {user.formations?.map((formationId, index) => (
-                  <span key={index} className="formation-badge">
-                    {getFormationName(formationId)}
-                  </span>
-                ))}
-                {user.formations?.length > 0 && (
-                  <p className="formations-count">+{user.formations.length} certifications</p>
-                )}
-              </div>
-
               <div className="actions-cell">
                 <Button 
                   variant="ghost" 
