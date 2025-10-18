@@ -178,7 +178,7 @@ class EPIEndpointTester:
             self.log_test("Employee Authentication", False, f"Employee authentication error: {str(e)}")
             return False
 
-    def test_get_endpoint_with_both_ids(self):
+    def test_epi_endpoint_admin_access(self):
         """Test GET /api/shefford/users/{user_id} with both real ID and console ID"""
         try:
             # Use Super Admin to test both IDs since Guillaume login might fail
