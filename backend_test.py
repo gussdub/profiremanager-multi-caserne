@@ -294,86 +294,84 @@ class FormationReportingTester:
             self.log_test("Export Presence Excel", False, f"Export presence Excel test error: {str(e)}")
             return False
 
-    def test_epi_endpoint_empty_response(self):
-        """Test EPI endpoint returns empty list for users without EPIs"""
+    def test_rapport_competences_general(self):
+        """Test GET /api/{tenant_slug}/formations/rapports/competences without user_id (general report)"""
         try:
             if not self.admin_token:
-                self.log_test("EPI Endpoint Empty Response", False, "No admin token available")
+                self.log_test("Rapport Competences General", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Get all users
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("EPI Endpoint Empty Response", False, 
-                            f"Failed to get users: {response.status_code}")
-                return False
+            # Test parameters as specified in review request
+            params = {
+                "annee": 2025
+            }
             
-            users = response.json()
-            if not users:
-                self.log_test("EPI Endpoint Empty Response", False, "No users found in Shefford")
-                return False
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/competences with params: {params}")
             
-            # Test multiple users to find one without EPIs
-            users_tested = 0
-            empty_response_found = False
-            results = []
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/competences", params=params)
             
-            for user in users[:5]:  # Test first 5 users
-                user_id = user.get("id")
-                user_email = user.get("email")
-                
-                print(f"🔍 Testing EPIs for user: {user_email} ({user_id})")
-                
-                response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{user_id}")
-                
-                test_result = {
-                    "user_id": user_id,
-                    "user_email": user_email,
-                    "status_code": response.status_code,
-                    "success": response.status_code == 200
+            results = {
+                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/competences",
+                "params": params,
+                "status_code": response.status_code,
+                "response_text": response.text[:500] if response.text else "No response"
+            }
+            
+            if response.status_code == 200:
+                data = response.json()
+                results["response_structure"] = {
+                    "has_annee": "annee" in data,
+                    "has_user_id": "user_id" in data,
+                    "has_competences": "competences" in data,
+                    "competences_count": len(data.get("competences", [])) if isinstance(data.get("competences"), list) else 0
                 }
                 
-                if response.status_code == 200:
-                    epis = response.json()
-                    test_result["epis_count"] = len(epis)
-                    test_result["is_empty"] = len(epis) == 0
-                    test_result["is_list"] = isinstance(epis, list)
-                    
-                    if len(epis) == 0:
-                        empty_response_found = True
-                        test_result["empty_response_valid"] = True
-                    
-                    users_tested += 1
-                else:
-                    test_result["epis_count"] = None
-                    test_result["is_empty"] = None
-                    test_result["is_list"] = None
+                # Verify response structure
+                required_fields = ["annee", "user_id", "competences"]
+                missing_fields = []
                 
-                results.append(test_result)
-            
-            # Analyze results
-            if users_tested > 0:
-                success = True
-                if empty_response_found:
-                    message = f"✅ EPI endpoint correctly returns empty list for users without EPIs (tested {users_tested} users)"
+                for field in required_fields:
+                    if field not in data:
+                        missing_fields.append(field)
+                
+                results["missing_fields"] = missing_fields
+                results["user_id_is_null"] = data.get("user_id") is None
+                
+                # Check competences structure if available
+                if data.get("competences") and len(data["competences"]) > 0:
+                    first_comp = data["competences"][0]
+                    comp_required_fields = ["competence_id", "competence_nom", "total_formations", "total_heures_planifiees", "total_inscrits", "presences", "taux_presence"]
+                    comp_missing_fields = []
+                    
+                    for field in comp_required_fields:
+                        if field not in first_comp:
+                            comp_missing_fields.append(field)
+                    
+                    results["competence_structure_valid"] = len(comp_missing_fields) == 0
+                    results["competence_missing_fields"] = comp_missing_fields
+                    results["sample_competence"] = first_comp
                 else:
-                    message = f"✅ EPI endpoint working - all tested users have EPIs (tested {users_tested} users)"
+                    results["competence_structure_valid"] = True  # Empty list is valid
+                    results["competence_missing_fields"] = []
+                
+                if len(missing_fields) == 0 and results["user_id_is_null"]:
+                    success = True
+                    message = f"✅ General competences report working - Found {results['response_structure']['competences_count']} competences for year 2025"
+                else:
+                    success = False
+                    message = f"❌ Competences report structure invalid - Missing fields: {missing_fields}"
             else:
                 success = False
-                message = f"❌ Could not test any users successfully"
+                message = f"❌ Rapport competences failed with status {response.status_code}"
             
-            self.log_test("EPI Endpoint Empty Response", success, message, {
-                "users_tested": users_tested,
-                "empty_response_found": empty_response_found,
-                "test_results": results
-            })
+            self.log_test("Rapport Competences General", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("EPI Endpoint Empty Response", False, f"EPI empty response test error: {str(e)}")
+            self.log_test("Rapport Competences General", False, f"Rapport competences general test error: {str(e)}")
             return False
 
     def test_epi_endpoint_data_structure(self):
