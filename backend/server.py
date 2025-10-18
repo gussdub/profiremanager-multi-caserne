@@ -894,6 +894,7 @@ class Formation(BaseModel):
     obligatoire: bool = False
     annee: int = 0
     validite_mois: int = 12  # Pour anciennes formations
+    user_inscrit: bool = False  # Si l'utilisateur actuel est inscrit
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
