@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - USER 404 DIAGNOSTIC
-Tests to diagnose why user gussdub@gmail.com returns 404 when accessing GET /api/shefford/users/{user_id}
-Focus: Verify user exists in MongoDB, check tenant_id matching, and test endpoint directly.
+ProFireManager Backend API Testing Suite - GUILLAUME DUBEAU 404 DIAGNOSTIC
+Tests to diagnose why user Guillaume Dubeau (gussdub@gmail.com) returns 404 when accessing GET /api/shefford/users/{user_id}
+Focus: Login verification, MongoDB search, tenant_id matching, and endpoint testing.
 """
 
 import requests
@@ -17,12 +17,11 @@ BASE_URL = "https://ems-commander.preview.emergentagent.com/api"
 
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"
-ADMIN_EMAIL = "admin@firemanager.ca"
-ADMIN_PASSWORD = "admin123"
 
-# Diagnostic Configuration - User from review request
+# Diagnostic Configuration - Guillaume Dubeau from review request
 DIAGNOSTIC_USER_EMAIL = "gussdub@gmail.com"
-DIAGNOSTIC_USER_ID = "4f8cf098-3f78-48f0-ab77-cf3bf8defb2c"
+DIAGNOSTIC_USER_ID_CONSOLE = "4d2c4f86-972c-4d76-9b17-c267ebd04c1e"  # ID shown in console
+DIAGNOSTIC_PASSWORDS = ["Admin123!", "admin123"]  # Passwords to try
 
 class UserDiagnosticTester:
     def __init__(self):
