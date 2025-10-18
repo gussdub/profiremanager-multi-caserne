@@ -9470,7 +9470,7 @@ const MonProfil = () => {
       try {
         const [userData, formationsData, statsData, episData] = await Promise.all([
           apiGet(tenantSlug, `/users/${user.id}`),
-          apiGet(tenantSlug, '/formations'),
+          apiGet(tenantSlug, '/competences'),
           apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`),
           apiGet(tenantSlug, `/epi/employe/${user.id}`)
         ]);
