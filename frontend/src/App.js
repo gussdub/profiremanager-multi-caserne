@@ -10606,117 +10606,68 @@ const MonProfil = () => {
 const Rapports = () => {
   const { user } = useAuth();
   const { tenantSlug } = useTenant();
-  const [statistiques, setStatistiques] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('vue-ensemble');
-  const [selectedEmployee, setSelectedEmployee] = useState('');
   const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('internes'); // 'internes' ou 'externes'
+  const [activeRapport, setActiveRapport] = useState('dashboard'); // Type de rapport actif
+  
+  // États pour les données
+  const [dashboardData, setDashboardData] = useState(null);
+  const [budgets, setBudgets] = useState([]);
+  const [immobilisations, setImmobilisations] = useState([]);
+  
+  // États pour les filtres
+  const [dateDebut, setDateDebut] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [dateFin, setDateFin] = useState(new Date().toISOString().split('T')[0]);
+  const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
+  
+  // États pour les modals de saisie
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
 
   useEffect(() => {
-    if (user?.role === 'admin') {
-      fetchStatistiques();
+    if (user?.role === 'admin' && tenantSlug) {
+      loadData();
     }
-  }, [user, tenantSlug]);
+  }, [user, tenantSlug, activeTab, activeRapport]);
 
-  const fetchStatistiques = async () => {
-    if (!tenantSlug) return;
-    
+  const loadData = async () => {
     setLoading(true);
     try {
-      const statsData = await apiGet(tenantSlug, '/rapports/statistiques-avancees');
-      setStatistiques(statsData);
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les statistiques",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getEPINom = (typeEpi) => {
-    const noms = {
-      'casque': 'Casque',
-      'bottes': 'Bottes',
-      'veste_bunker': 'Veste Bunker',
-      'pantalon_bunker': 'Pantalon Bunker',
-      'gants': 'Gants',
-      'masque_apria': 'Facial APRIA',
-      'cagoule': 'Cagoule Anti-Particules'
-    };
-    return noms[typeEpi] || typeEpi;
-  };
-
-  const handleExportPDF = async (typeRapport = "general", userId = null) => {
-    try {
-      const params = new URLSearchParams({ type_rapport: typeRapport });
-      if (userId) params.append('user_id', userId);
-      
-      const responseData = await apiGet(tenantSlug, `/rapports/export-pdf?${params}`);
-      
-      // Décoder le base64 et créer le téléchargement
-      const binaryString = atob(responseData.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (activeTab === 'internes') {
+        if (activeRapport === 'dashboard') {
+          const dashData = await apiGet(tenantSlug, '/rapports/dashboard-interne');
+          setDashboardData(dashData);
+        }
+      } else if (activeTab === 'externes') {
+        if (activeRapport === 'budgetaire') {
+          const [budgetsData] = await Promise.all([
+            apiGet(tenantSlug, `/rapports/budgets?annee=${anneeSelectionnee}`)
+          ]);
+          setBudgets(budgetsData || []);
+        }
       }
-      
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = responseData.filename;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Export PDF réussi",
-        description: `Rapport ${typeRapport} téléchargé`,
-        variant: "success"
-      });
     } catch (error) {
-      toast({
-        title: "Erreur export PDF",
-        description: "Impossible de générer le rapport PDF",
-        variant: "destructive"
-      });
+      console.error('Erreur chargement données:', error);
+      toast({ title: "Erreur", description: "Impossible de charger les données", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleSaveBudget = async () => {
+    try {
+      await apiPost(tenantSlug, '/rapports/budgets', budgetForm);
+      toast({ title: "Succès", description: "Budget ajouté" });
+      setShowBudgetModal(false);
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter le budget", variant: "destructive" });
     }
   };
 
-  const handleExportExcel = async (typeRapport = "general") => {
-    try {
-      const responseData = await apiGet(tenantSlug, `/rapports/export-excel?type_rapport=${typeRapport}`);
-      
-      // Décoder le base64 et créer le téléchargement
-      const binaryString = atob(responseData.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = responseData.filename;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Export Excel réussi",
-        description: `Rapport ${typeRapport} téléchargé`,
-        variant: "success"
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur export Excel",
-        description: "Impossible de générer le rapport Excel",
-        variant: "destructive"
-      });
-    }
+  const handleExportPDF = async (typeRapport) => {
+    toast({ title: "Export", description: "Fonctionnalité en développement" });
   };
 
   if (user?.role !== 'admin') {
@@ -10728,310 +10679,240 @@ const Rapports = () => {
     );
   }
 
-  if (loading) return <div className="loading" data-testid="rapports-loading">Chargement des rapports...</div>;
+  if (loading) return <div className="loading">Chargement des rapports...</div>;
 
   return (
-    <div className="rapports-optimized">
-      <div className="rapports-header">
+    <div className="module-rapports-nfpa">
+      <div className="module-header">
         <div>
-          <h1 data-testid="rapports-title">Rapports et analyses</h1>
-          <p>Statistiques détaillées, indicateurs de performance et exports</p>
-        </div>
-        <div className="export-actions-header">
-          <Button 
-            variant="default" 
-            onClick={() => handleExportPDF('general')}
-            data-testid="export-pdf-general-btn"
-          >
-            📄 Export PDF
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => handleExportExcel('general')}
-            data-testid="export-excel-general-btn"
-          >
-            📊 Export Excel
-          </Button>
+          <h1>📈 Rapports et Analyses</h1>
+          <p>Rapports internes et externes pour la gestion et la communication</p>
         </div>
       </div>
 
-      {/* Navigation sections */}
-      <div className="rapports-sections">
-        <button
-          className={`section-button ${activeSection === 'vue-ensemble' ? 'active' : ''}`}
-          onClick={() => setActiveSection('vue-ensemble')}
-          data-testid="section-vue-ensemble"
+      {/* Onglets principaux */}
+      <div className="rapports-tabs">
+        <button 
+          className={activeTab === 'internes' ? 'active' : ''} 
+          onClick={() => { setActiveTab('internes'); setActiveRapport('dashboard'); }}
         >
-          📊 Vue d'ensemble
+          📊 Rapports Internes
         </button>
-        <button
-          className={`section-button ${activeSection === 'par-role' ? 'active' : ''}`}
-          onClick={() => setActiveSection('par-role')}
-          data-testid="section-par-role"
+        <button 
+          className={activeTab === 'externes' ? 'active' : ''} 
+          onClick={() => { setActiveTab('externes'); setActiveRapport('budgetaire'); }}
         >
-          👥 Par rôle
-        </button>
-        <button
-          className={`section-button ${activeSection === 'par-employe' ? 'active' : ''}`}
-          onClick={() => setActiveSection('par-employe')}
-          data-testid="section-par-employe"
-        >
-          👤 Par employé
-        </button>
-        <button
-          className={`section-button ${activeSection === 'analytics' ? 'active' : ''}`}
-          onClick={() => setActiveSection('analytics')}
-          data-testid="section-analytics"
-        >
-          📈 Analytics
+          📈 Rapports Externes
         </button>
       </div>
 
-      {/* Contenu des sections */}
-      <div className="rapports-content">
-        {activeSection === 'vue-ensemble' && statistiques && (
-          <div className="vue-ensemble">
-            <h2>📊 Vue d'ensemble générale</h2>
-            
-            {/* KPI Cards */}
-            <div className="kpi-grid">
-              <div className="kpi-card personnel">
-                <div className="kpi-icon">👥</div>
-                <div className="kpi-content">
-                  <span className="kpi-value">{statistiques.statistiques_generales.personnel_actif}</span>
-                  <span className="kpi-label">Personnel actif</span>
-                  <span className="kpi-detail">sur {statistiques.statistiques_generales.personnel_total} total</span>
-                </div>
-              </div>
-
-              <div className="kpi-card assignations">
-                <div className="kpi-icon">📅</div>
-                <div className="kpi-content">
-                  <span className="kpi-value">{statistiques.statistiques_generales.assignations_mois}</span>
-                  <span className="kpi-label">Assignations ce mois</span>
-                  <span className="kpi-detail">Septembre 2025</span>
-                </div>
-              </div>
-
-              <div className="kpi-card couverture">
-                <div className="kpi-icon">📊</div>
-                <div className="kpi-content">
-                  <span className="kpi-value">{statistiques.statistiques_generales.taux_couverture}%</span>
-                  <span className="kpi-label">Taux de couverture</span>
-                  <span className="kpi-detail">Efficacité planning</span>
-                </div>
-              </div>
-
-              <div className="kpi-card formations">
-                <div className="kpi-icon">📚</div>
-                <div className="kpi-content">
-                  <span className="kpi-value">{statistiques.statistiques_generales.formations_disponibles}</span>
-                  <span className="kpi-label">Formations disponibles</span>
-                  <span className="kpi-detail">Compétences actives</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Export options */}
-            <div className="export-section">
-              <h3>📤 Options d'export</h3>
-              <div className="export-grid">
-                <div className="export-option">
-                  <h4>📄 Rapport PDF</h4>
-                  <p>Rapport complet avec graphiques et analyses</p>
-                  <Button onClick={() => handleExportPDF('general')} data-testid="export-pdf-vue-ensemble">
-                    Télécharger PDF
-                  </Button>
-                </div>
-                <div className="export-option">
-                  <h4>📊 Rapport Excel</h4>
-                  <p>Données détaillées pour analyse personnalisée</p>
-                  <Button onClick={() => handleExportExcel('general')} data-testid="export-excel-vue-ensemble">
-                    Télécharger Excel
-                  </Button>
-                </div>
-              </div>
-            </div>
+      {/* SECTION RAPPORTS INTERNES */}
+      {activeTab === 'internes' && (
+        <div className="rapports-internes">
+          {/* Sous-navigation */}
+          <div className="rapports-sub-nav">
+            <button className={activeRapport === 'dashboard' ? 'active' : ''} onClick={() => setActiveRapport('dashboard')}>
+              📊 Dashboard
+            </button>
+            <button className={activeRapport === 'salaires' ? 'active' : ''} onClick={() => setActiveRapport('salaires')}>
+              💰 Coûts Salariaux
+            </button>
           </div>
-        )}
 
-        {activeSection === 'par-role' && statistiques && (
-          <div className="par-role">
-            <h2>👥 Statistiques par rôle</h2>
-            
-            <div className="roles-grid">
-              {Object.entries(statistiques.statistiques_par_role).map(([role, stats]) => (
-                <div key={role} className={`role-card ${role}`}>
-                  <div className="role-header">
-                    <h3>
-                      {role === 'admin' ? '👑 Administrateurs' : 
-                       role === 'superviseur' ? '🎖️ Superviseurs' : '👤 Employés'}
-                    </h3>
-                    <span className="role-count">{stats.nombre_utilisateurs}</span>
-                  </div>
-                  <div className="role-stats">
-                    <div className="role-stat">
-                      <span className="stat-label">Assignations</span>
-                      <span className="stat-value">{stats.assignations_totales}</span>
-                    </div>
-                    <div className="role-stat">
-                      <span className="stat-label">Heures moy.</span>
-                      <span className="stat-value">{stats.heures_moyennes}h</span>
-                    </div>
-                    <div className="role-stat">
-                      <span className="stat-label">Formations</span>
-                      <span className="stat-value">{stats.formations_completees}</span>
-                    </div>
-                  </div>
-                  <div className="role-actions">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleExportPDF('role', role)}
-                      data-testid={`export-role-${role}`}
-                    >
-                      📄 Export {role}
-                    </Button>
-                  </div>
+          {/* Dashboard Interne */}
+          {activeRapport === 'dashboard' && dashboardData && (
+            <div className="dashboard-interne">
+              <h2>📊 Dashboard Interne - {dashboardData.periode}</h2>
+              
+              <div className="kpi-grid">
+                <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                  <h3>{dashboardData.heures_travaillees_mois}h</h3>
+                  <p>Heures travaillées ce mois</p>
                 </div>
-              ))}
+                <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                  <h3>${dashboardData.cout_salarial_mois.toLocaleString()}</h3>
+                  <p>Coût salarial du mois</p>
+                </div>
+                <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                  <h3>{dashboardData.pompiers_disponibles}</h3>
+                  <p>Pompiers disponibles</p>
+                </div>
+                <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                  <h3>{dashboardData.total_pompiers}</h3>
+                  <p>Total pompiers</p>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                <Button onClick={() => handleExportPDF('dashboard')}>📄 Export PDF</Button>
+                <Button variant="outline">📊 Export Excel</Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeSection === 'par-employe' && statistiques && (
-          <div className="par-employe">
-            <h2>👤 Statistiques par employé</h2>
-            
-            <div className="employee-selector">
-              <Label>Sélectionner un employé pour export individuel :</Label>
-              <select
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                className="form-select"
-                data-testid="employee-select"
-              >
-                <option value="">Choisir un employé...</option>
-                {statistiques.statistiques_par_employe.map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nom} ({emp.grade} - {emp.role})
-                  </option>
-                ))}
-              </select>
-              {selectedEmployee && (
-                <div className="individual-export">
-                  <Button 
-                    variant="default"
-                    onClick={() => handleExportPDF('employe', selectedEmployee)}
-                    data-testid="export-individual-pdf"
+          {/* Rapport Coûts Salariaux */}
+          {activeRapport === 'salaires' && (
+            <div className="rapport-salaires">
+              <h2>💰 Rapport de Coûts Salariaux Détaillés</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Date début</Label>
+                  <Input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Date fin</Label>
+                  <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={loadData}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              <div className="empty-state">
+                <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SECTION RAPPORTS EXTERNES */}
+      {activeTab === 'externes' && (
+        <div className="rapports-externes">
+          {/* Sous-navigation */}
+          <div className="rapports-sub-nav">
+            <button className={activeRapport === 'budgetaire' ? 'active' : ''} onClick={() => setActiveRapport('budgetaire')}>
+              💰 Tableau Budgétaire
+            </button>
+            <button className={activeRapport === 'immobilisations' ? 'active' : ''} onClick={() => setActiveRapport('immobilisations')}>
+              🚒 Immobilisations
+            </button>
+          </div>
+
+          {/* Tableau de Bord Budgétaire */}
+          {activeRapport === 'budgetaire' && (
+            <div className="rapport-budgetaire">
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                <h2>💰 Tableau de Bord Budgétaire - {anneeSelectionnee}</h2>
+                <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+                  <select 
+                    className="form-select" 
+                    value={anneeSelectionnee} 
+                    onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}
                   >
-                    📄 Export PDF individuel
-                  </Button>
+                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <Button onClick={() => setShowBudgetModal(true)}>➕ Ajouter Budget</Button>
+                </div>
+              </div>
+
+              {budgets.length > 0 ? (
+                <div>
+                  <div className="budgets-grid">
+                    {budgets.map(budget => {
+                      const pourcentage = budget.budget_alloue > 0 ? (budget.budget_consomme / budget.budget_alloue * 100) : 0;
+                      return (
+                        <div key={budget.id} className="budget-card">
+                          <h3>{budget.categorie}</h3>
+                          <div className="budget-montants">
+                            <div>
+                              <p className="budget-label">Alloué</p>
+                              <p className="budget-value">${budget.budget_alloue.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="budget-label">Consommé</p>
+                              <p className="budget-value">${budget.budget_consomme.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="budget-bar">
+                            <div 
+                              className="budget-progress" 
+                              style={{
+                                width: `${Math.min(pourcentage, 100)}%`,
+                                background: pourcentage > 90 ? '#EF4444' : pourcentage > 75 ? '#F59E0B' : '#10B981'
+                              }}
+                            />
+                          </div>
+                          <p style={{fontSize: '0.9rem', color: '#6B7280', marginTop: '0.5rem'}}>
+                            {pourcentage.toFixed(1)}% utilisé
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('budgetaire')}>📄 Export PDF</Button>
+                    <Button variant="outline">📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Aucun budget pour {anneeSelectionnee}. Cliquez sur "Ajouter Budget" pour commencer.</p>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Tableau employés */}
-            <div className="employees-table">
-              <div className="table-header">
-                <div className="header-cell">EMPLOYÉ</div>
-                <div className="header-cell">RÔLE</div>
-                <div className="header-cell">ASSIGNATIONS</div>
-                <div className="header-cell">DISPONIBILITÉS</div>
-                <div className="header-cell">FORMATIONS</div>
-                <div className="header-cell">HEURES</div>
-                <div className="header-cell">ACTIONS</div>
+          {/* Immobilisations */}
+          {activeRapport === 'immobilisations' && (
+            <div className="rapport-immobilisations">
+              <h2>🚒 Rapport sur les Immobilisations</h2>
+              <div className="empty-state">
+                <p>Fonctionnalité en cours de développement</p>
               </div>
-              
-              {statistiques.statistiques_par_employe.map(emp => (
-                <div key={emp.id} className="employee-row" data-testid={`employee-${emp.id}`}>
-                  <div className="employee-cell">
-                    <span className="employee-name">{emp.nom}</span>
-                    <span className="employee-grade">{emp.grade}</span>
-                  </div>
-                  <div className="role-cell">
-                    <span className={`role-badge ${emp.role}`}>
-                      {emp.role === 'admin' ? '👑' : emp.role === 'superviseur' ? '🎖️' : '👤'}
-                    </span>
-                  </div>
-                  <div className="stat-cell">
-                    <span className="stat-number">{emp.assignations_count}</span>
-                  </div>
-                  <div className="stat-cell">
-                    <span className="stat-number">{emp.disponibilites_count}</span>
-                  </div>
-                  <div className="stat-cell">
-                    <span className="stat-number">{emp.formations_count}</span>
-                  </div>
-                  <div className="stat-cell">
-                    <span className="stat-number">{emp.heures_estimees}h</span>
-                  </div>
-                  <div className="actions-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleExportPDF('employe', emp.id)}
-                      data-testid={`export-employee-${emp.id}`}
-                    >
-                      📄
-                    </Button>
-                  </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal Budget */}
+      {showBudgetModal && (
+        <div className="modal-overlay" onClick={() => setShowBudgetModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Ajouter un Budget</h2>
+              <Button variant="ghost" onClick={() => setShowBudgetModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Année</Label>
+                  <Input type="number" value={budgetForm.annee} onChange={e => setBudgetForm({...budgetForm, annee: parseInt(e.target.value)})} />
                 </div>
-              ))}
+                <div>
+                  <Label>Catégorie</Label>
+                  <select 
+                    className="form-select" 
+                    value={budgetForm.categorie} 
+                    onChange={e => setBudgetForm({...budgetForm, categorie: e.target.value})}
+                  >
+                    <option value="salaires">Salaires</option>
+                    <option value="formations">Formations</option>
+                    <option value="equipements">Équipements</option>
+                    <option value="carburant">Carburant</option>
+                    <option value="entretien">Entretien</option>
+                    <option value="autres">Autres</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Budget Alloué ($)</Label>
+                  <Input type="number" value={budgetForm.budget_alloue} onChange={e => setBudgetForm({...budgetForm, budget_alloue: parseFloat(e.target.value)})} />
+                </div>
+                <div>
+                  <Label>Notes</Label>
+                  <Input value={budgetForm.notes} onChange={e => setBudgetForm({...budgetForm, notes: e.target.value})} />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowBudgetModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveBudget}>Enregistrer</Button>
             </div>
           </div>
-        )}
-
-        {activeSection === 'analytics' && (
-          <div className="analytics">
-            <h2>📈 Analytics avancées</h2>
-            
-            <div className="charts-section">
-              <div className="chart-container">
-                <h3>Évolution des assignations</h3>
-                <div className="chart-placeholder">
-                  <div className="chart-mock">
-                    <div className="chart-bar" style={{height: '60%'}}>Jan</div>
-                    <div className="chart-bar" style={{height: '75%'}}>Fév</div>
-                    <div className="chart-bar" style={{height: '85%'}}>Mar</div>
-                    <div className="chart-bar" style={{height: '90%'}}>Avr</div>
-                    <div className="chart-bar" style={{height: '95%'}}>Sep</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="chart-container">
-                <h3>Distribution par grade</h3>
-                <div className="pie-chart-mock">
-                  <div className="pie-segment directeur">Directeur 35%</div>
-                  <div className="pie-segment capitaine">Capitaine 28%</div>
-                  <div className="pie-segment lieutenant">Lieutenant 22%</div>
-                  <div className="pie-segment pompier">Pompier 15%</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="analytics-exports">
-              <Button 
-                variant="outline"
-                onClick={() => handleExportPDF('analytics')}
-                data-testid="export-analytics-pdf"
-              >
-                📄 Export Analytics PDF
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => handleExportExcel('analytics')}
-                data-testid="export-analytics-excel"
-              >
-                📊 Export Analytics Excel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Section EPI */}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
