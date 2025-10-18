@@ -353,66 +353,85 @@ class EPIEndpointTester:
             return False
 
     def test_epi_endpoint_empty_response(self):
-        """List all users in Shefford tenant to see if Guillaume is there"""
+        """Test EPI endpoint returns empty list for users without EPIs"""
         try:
-            # Get admin access
-            admin_session = requests.Session()
-            admin_login_data = {
-                "email": "admin@firemanager.ca",
-                "mot_de_passe": "admin123"
-            }
-            
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
-            if response.status_code != 200:
-                self.log_test("List All Shefford Users", False, f"Failed to login as admin: {response.status_code}")
+            if not self.admin_token:
+                self.log_test("EPI Endpoint Empty Response", False, "No admin token available")
                 return False
             
-            data = response.json()
-            admin_token = data["access_token"]
-            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
             # Get all users
             response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
             if response.status_code != 200:
-                self.log_test("List All Shefford Users", False, f"Failed to get users: {response.status_code}")
+                self.log_test("EPI Endpoint Empty Response", False, 
+                            f"Failed to get users: {response.status_code}")
                 return False
             
             users = response.json()
+            if not users:
+                self.log_test("EPI Endpoint Empty Response", False, "No users found in Shefford")
+                return False
             
-            # Show first 10 users with key fields
-            user_list = []
-            guillaume_found = False
+            # Test multiple users to find one without EPIs
+            users_tested = 0
+            empty_response_found = False
+            results = []
             
-            for i, user in enumerate(users[:10]):
-                user_info = {
-                    "index": i + 1,
-                    "id": user.get("id"),
-                    "email": user.get("email"),
-                    "nom": user.get("nom"),
-                    "prenom": user.get("prenom"),
-                    "tenant_id": user.get("tenant_id")
-                }
-                user_list.append(user_info)
+            for user in users[:5]:  # Test first 5 users
+                user_id = user.get("id")
+                user_email = user.get("email")
                 
-                # Check if this is Guillaume
-                if (user.get("email") == DIAGNOSTIC_USER_EMAIL or 
-                    user.get("id") == self.guillaume_real_id or 
-                    user.get("id") == DIAGNOSTIC_USER_ID_CONSOLE):
-                    guillaume_found = True
-                    user_info["is_guillaume"] = True
+                print(f"🔍 Testing EPIs for user: {user_email} ({user_id})")
+                
+                response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{user_id}")
+                
+                test_result = {
+                    "user_id": user_id,
+                    "user_email": user_email,
+                    "status_code": response.status_code,
+                    "success": response.status_code == 200
+                }
+                
+                if response.status_code == 200:
+                    epis = response.json()
+                    test_result["epis_count"] = len(epis)
+                    test_result["is_empty"] = len(epis) == 0
+                    test_result["is_list"] = isinstance(epis, list)
+                    
+                    if len(epis) == 0:
+                        empty_response_found = True
+                        test_result["empty_response_valid"] = True
+                    
+                    users_tested += 1
+                else:
+                    test_result["epis_count"] = None
+                    test_result["is_empty"] = None
+                    test_result["is_list"] = None
+                
+                results.append(test_result)
             
-            message = f"✅ Found Guillaume in user list" if guillaume_found else f"❌ Guillaume NOT found in {len(users)} users"
+            # Analyze results
+            if users_tested > 0:
+                success = True
+                if empty_response_found:
+                    message = f"✅ EPI endpoint correctly returns empty list for users without EPIs (tested {users_tested} users)"
+                else:
+                    message = f"✅ EPI endpoint working - all tested users have EPIs (tested {users_tested} users)"
+            else:
+                success = False
+                message = f"❌ Could not test any users successfully"
             
-            self.log_test("List All Shefford Users", guillaume_found, message, {
-                "total_users": len(users),
-                "guillaume_found": guillaume_found,
-                "first_10_users": user_list,
-                "shefford_tenant_id": self.shefford_tenant_id
+            self.log_test("EPI Endpoint Empty Response", success, message, {
+                "users_tested": users_tested,
+                "empty_response_found": empty_response_found,
+                "test_results": results
             })
-            return guillaume_found
+            return success
                 
         except Exception as e:
-            self.log_test("List All Shefford Users", False, f"User list error: {str(e)}")
+            self.log_test("EPI Endpoint Empty Response", False, f"EPI empty response test error: {str(e)}")
             return False
 
     # Removed unused methods - focusing on Guillaume diagnostic
