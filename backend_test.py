@@ -18,11 +18,8 @@ BASE_URL = "https://competence-profile.preview.emergentagent.com/api"
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"
 
-# Diagnostic Configuration - Guillaume Dubeau from review request
-DIAGNOSTIC_USER_EMAIL = "gussdub@gmail.com"
-DIAGNOSTIC_USER_ID_CONSOLE = "4d2c4f86-972c-4d76-9b17-c267ebd04c1e"  # ID shown in console
-DIAGNOSTIC_USER_ID_REAL = "426c0f86-91f2-48fb-9e77-c762f0e9e7dc"  # Real ID from logs
-DIAGNOSTIC_PASSWORDS = ["230685Juin+", "Admin123!", "admin123"]  # Passwords to try
+# EPI Testing Configuration
+# Using existing users in MongoDB Atlas production database for tenant "shefford"
 
 class EPIEndpointTester:
     def __init__(self):
