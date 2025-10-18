@@ -933,9 +933,9 @@ body {
 /* Actions Cell */
 .actions-cell {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0;
+  align-items: flex-start;
   min-width: 0;
   justify-content: flex-start;
 }
