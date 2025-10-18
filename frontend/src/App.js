@@ -9987,25 +9987,24 @@ const MonProfil = () => {
 
         {/* Formations */}
         <div className="formation-card" style={{marginBottom: '1.5rem'}}>
-          <div className="formation-header" style={{padding: '1rem 1.5rem'}}>
-            <h3 style={{fontSize: '1rem', margin: 0}}>📚 Formations et compétences</h3>
-            <span className="statut-badge planifiee" style={{fontSize: '11px', padding: '0.25rem 0.6rem', background: '#FEE2E2', color: '#991B1B'}}>
-              {userProfile?.formations?.length || 0} compétence(s)
+          <div className="formation-header" style={{padding: '0.75rem 1.25rem', minHeight: 'auto'}}>
+            <h3 style={{fontSize: '0.95rem', margin: 0}}>📚 Formations et compétences</h3>
+            <span className="statut-badge planifiee" style={{fontSize: '10px', padding: '0.2rem 0.5rem', background: '#FEE2E2', color: '#991B1B'}}>
+              {userProfile?.formations?.length || 0}
             </span>
           </div>
-          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.75rem 1.5rem 1rem 1.5rem'}}>
+          <div className="formations-list" data-testid="profile-formations" style={{padding: '0.5rem 1.25rem'}}>
             {userProfile?.formations?.length > 0 ? (
-              <div className="formations-compact">
+              <div className="formations-compact" style={{gap: '0.35rem'}}>
                 {userProfile.formations.map((formationId, index) => (
-                  <span key={index} className="formation-badge-compact">
+                  <span key={index} className="formation-badge-compact" style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}>
                     {getFormationName(formationId)} ✅
                   </span>
                 ))}
               </div>
             ) : (
-              <div className="empty-state" style={{padding: '1rem'}}>
-                <p style={{margin: '0 0 0.5rem 0', fontSize: '14px'}}>Aucune formation enregistrée</p>
-                <p style={{fontSize: '13px', color: '#6B7280', margin: 0}}>Contactez votre superviseur</p>
+              <div style={{padding: '0.5rem 0', textAlign: 'center'}}>
+                <p style={{margin: 0, fontSize: '13px', color: '#6B7280'}}>Aucune formation • Contactez votre superviseur</p>
               </div>
             )}
           </div>
