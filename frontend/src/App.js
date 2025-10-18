@@ -7322,7 +7322,7 @@ const Formations = () => {
                 </div>
                 <div className="formation-body">
                   <p><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
-                  <p><strong>Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR')} {f.heure_debut && f.heure_fin ? `(${f.heure_debut} - ${f.heure_fin})` : ''}</p>
                   <p><strong>Durée:</strong> {f.duree_heures}h</p>
                   <p><strong>Places:</strong> {f.places_restantes}/{f.places_max}</p>
                 </div>
