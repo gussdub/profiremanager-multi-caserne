@@ -5501,6 +5501,114 @@ body {
   font-weight: 600;
 }
 
+/* Mon Profil - Design harmonisé avec EPI et Formations */
+.epi-tailles-grid-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 0 20px 20px 20px;
+}
+
+.epi-taille-item-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.epi-taille-item-profile:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.epi-taille-icon-profile {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.epi-taille-info-profile {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epi-taille-info-profile label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.formation-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.formation-badge:hover {
+  background: #dcfce7;
+  transform: translateX(4px);
+}
+
+.formation-badge .formation-name {
+  font-weight: 500;
+  color: #166534;
+}
+
+.formation-badge .formation-status {
+  font-size: 1.2rem;
+}
+
+.locked-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 20px;
+}
+
+.locked-info .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #94a3b8;
+}
+
+.locked-info .info-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.locked-info .info-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 
 /* EPI Accordion dans Modals Personnel */
 .section-accordion-header {
