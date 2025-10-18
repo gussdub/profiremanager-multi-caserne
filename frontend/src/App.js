@@ -9509,7 +9509,12 @@ const MonProfil = () => {
         });
 
       } catch (error) {
-        console.error('Erreur lors du chargement du profil:', error);
+        console.error('❌ Mon Profil - Erreur chargement:', {
+          error: error.message,
+          stack: error.stack,
+          tenantSlug,
+          userId: user?.id
+        });
       } finally {
         setLoading(false);
       }
