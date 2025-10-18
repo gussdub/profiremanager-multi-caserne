@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://competence-profile.preview.emergentagent.com/api"
+BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
 
 def log_test(test_name, success, message, details=None):
     """Log test results"""

@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "https://competence-profile.preview.emergentagent.com/api"
+BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
 
 def main():
     # Login with the test admin we just created
