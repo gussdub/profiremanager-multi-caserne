@@ -9978,39 +9978,41 @@ const MonProfil = () => {
             </Button>
           </div>
 
-          <p style={{ marginBottom: '20px', fontSize: '14px', color: '#6B7280', paddingLeft: '20px', paddingRight: '20px' }}>
-            Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.
-          </p>
+          <div className="epi-content-wrapper">
+            <p style={{ marginBottom: '15px', fontSize: '14px', color: '#6B7280' }}>
+              Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.
+            </p>
 
-          <div className="epi-tailles-grid-profile">
-            {getAllEPITypes().map(epiType => {
-              const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
-              return (
-                <div key={epiType.id} className="epi-taille-item-profile">
-                  <span className="epi-taille-icon-profile">{epiType.icone}</span>
-                  <div className="epi-taille-info-profile">
-                    <Label>{epiType.nom}</Label>
-                    <Input
-                      value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
-                      onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
-                      disabled={!isEditingEPI}
-                      placeholder="Saisir la taille"
-                      className="epi-taille-input"
-                      data-testid={`epi-taille-${epiType.id}`}
-                    />
+            <div className="epi-tailles-grid-profile">
+              {getAllEPITypes().map(epiType => {
+                const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+                return (
+                  <div key={epiType.id} className="epi-taille-item-profile">
+                    <span className="epi-taille-icon-profile">{epiType.icone}</span>
+                    <div className="epi-taille-info-profile">
+                      <Label style={{fontSize: '13px'}}>{epiType.nom}</Label>
+                      <Input
+                        value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
+                        onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
+                        disabled={!isEditingEPI}
+                        placeholder="Taille"
+                        className="epi-taille-input-compact"
+                        data-testid={`epi-taille-${epiType.id}`}
+                      />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {isEditingEPI && (
-            <div className="form-actions">
-              <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
-                💾 Sauvegarder les tailles
-              </Button>
+                );
+              })}
             </div>
-          )}
+
+            {isEditingEPI && (
+              <div className="form-actions" style={{marginTop: '15px'}}>
+                <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
+                  💾 Sauvegarder les tailles
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sécurité du compte */}
