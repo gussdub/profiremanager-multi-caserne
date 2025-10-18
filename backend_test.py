@@ -651,27 +651,24 @@ class RapportsExportTester:
             self.log_test("Libraries and Dependencies", False, f"Libraries test error: {str(e)}")
             return False
     
-    def run_formation_reporting_tests(self):
-        """Run the complete Formation Reporting test suite"""
-        print("🚀 Starting Formation Reporting Testing Suite")
+    def run_rapports_export_tests(self):
+        """Run the complete Rapports Export test suite"""
+        print("🚀 Starting Rapports PDF/Excel Export Testing Suite")
         print("=" * 70)
         print(f"🏢 Tenant: {TENANT_SLUG}")
         print(f"🔗 Endpoints:")
-        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/export-presence")
-        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/competences")
-        print(f"   - GET /api/{TENANT_SLUG}/formations/rapports/export-competences")
+        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-dashboard-pdf")
+        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-salaires-pdf")
+        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-salaires-excel")
+        print(f"🔑 Authentication: gussdub@gmail.com / 230685Juin+ (admin)")
         print("=" * 70)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Employee Authentication", self.test_employee_authentication),
-            ("Export Presence PDF", self.test_export_presence_pdf),
-            ("Export Presence Excel", self.test_export_presence_excel),
-            ("Rapport Competences General", self.test_rapport_competences_general),
-            ("Rapport Competences Specific User", self.test_rapport_competences_specific_user),
-            ("Export Competences PDF", self.test_export_competences_pdf),
-            ("Export Competences Excel with User", self.test_export_competences_excel_with_user),
-            ("Libraries and Dependencies", self.test_libraries_and_dependencies),
+            ("Export Dashboard PDF", self.test_export_dashboard_pdf),
+            ("Export Salaires PDF", self.test_export_salaires_pdf),
+            ("Export Salaires Excel", self.test_export_salaires_excel),
+            ("Headers Validation", self.test_headers_validation),
         ]
         
         passed = 0
@@ -689,9 +686,9 @@ class RapportsExportTester:
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
         # Analyze results and provide conclusion
-        self.analyze_formation_reporting_results()
+        self.analyze_rapports_export_results()
         
-        return passed >= 6  # Consider success if most tests pass
+        return passed >= 4  # Consider success if most tests pass
     
     def analyze_formation_reporting_results(self):
         """Analyze all Formation Reporting test results and provide conclusion"""
