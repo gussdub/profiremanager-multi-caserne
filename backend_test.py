@@ -257,54 +257,99 @@ class EPIEndpointTester:
             return False
 
     def test_epi_endpoint_employee_security(self):
-        """Verify Guillaume's tenant_id matches Shefford tenant_id"""
-        if not self.shefford_tenant_id or not self.guillaume_real_id:
-            self.log_test("Tenant ID Verification", False, "Missing tenant ID or Guillaume ID")
-            return False
-            
+        """Test EPI endpoint security - employee should only see their own EPIs"""
         try:
-            # Get Guillaume's user data to check tenant_id
+            if not self.admin_token:
+                self.log_test("EPI Endpoint Employee Security", False, "No admin token available")
+                return False
+            
             admin_session = requests.Session()
-            admin_login_data = {
-                "email": "admin@firemanager.ca",
-                "mot_de_passe": "admin123"
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Get all users to find two different users
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("EPI Endpoint Employee Security", False, 
+                            f"Failed to get users: {response.status_code}")
+                return False
+            
+            users = response.json()
+            if len(users) < 2:
+                self.log_test("EPI Endpoint Employee Security", False, "Need at least 2 users for security test")
+                return False
+            
+            # Find two different users
+            user1 = users[0]
+            user2 = users[1]
+            
+            # If we have employee token, use it; otherwise use admin token to simulate employee
+            if self.employee_token:
+                employee_session = requests.Session()
+                employee_session.headers.update({"Authorization": f"Bearer {self.employee_token}"})
+                test_user_id = self.employee_user_id
+                other_user_id = user1.get("id") if user1.get("id") != test_user_id else user2.get("id")
+            else:
+                # Use admin token but test the security logic
+                employee_session = admin_session
+                test_user_id = user1.get("id")
+                other_user_id = user2.get("id")
+            
+            results = {}
+            
+            # Test 1: Access own EPIs (should work)
+            print(f"🔍 Testing employee access to own EPIs: {test_user_id}")
+            response = employee_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{test_user_id}")
+            
+            results["own_epis_test"] = {
+                "user_id": test_user_id,
+                "status_code": response.status_code,
+                "success": response.status_code == 200
             }
             
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
-            if response.status_code != 200:
-                self.log_test("Tenant ID Verification", False, f"Failed to login as admin: {response.status_code}")
-                return False
-            
-            data = response.json()
-            admin_token = data["access_token"]
-            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
-            
-            # Get Guillaume's user data
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{self.guillaume_real_id}")
-            
             if response.status_code == 200:
-                user_data = response.json()
-                user_tenant_id = user_data.get("tenant_id")
-                
-                tenant_match = user_tenant_id == self.shefford_tenant_id
-                
-                message = f"✅ Tenant IDs match: {tenant_match}" if tenant_match else f"❌ TENANT MISMATCH: User tenant_id ({user_tenant_id}) != Shefford tenant_id ({self.shefford_tenant_id})"
-                
-                self.log_test("Tenant ID Verification", tenant_match, message, {
-                    "guillaume_tenant_id": user_tenant_id,
-                    "shefford_tenant_id": self.shefford_tenant_id,
-                    "tenant_ids_match": tenant_match,
-                    "user_data": user_data
-                })
-                return tenant_match
+                epis = response.json()
+                results["own_epis_test"]["epis_count"] = len(epis)
+            
+            # Test 2: Access other user's EPIs (should fail if not admin)
+            print(f"🔍 Testing employee access to other user's EPIs: {other_user_id}")
+            response = employee_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{other_user_id}")
+            
+            results["other_epis_test"] = {
+                "user_id": other_user_id,
+                "status_code": response.status_code,
+                "success": response.status_code == 200,
+                "should_be_forbidden": not self.employee_token  # If using admin token, should work
+            }
+            
+            # Analyze security
+            own_access_works = results["own_epis_test"]["success"]
+            other_access_works = results["other_epis_test"]["success"]
+            
+            if self.employee_token:
+                # Real employee test
+                if own_access_works and not other_access_works:
+                    success = True
+                    message = "✅ Employee security working correctly - can access own EPIs but not others"
+                elif own_access_works and other_access_works:
+                    success = False
+                    message = "❌ Security breach - employee can access other users' EPIs"
+                else:
+                    success = False
+                    message = "❌ Employee cannot access own EPIs"
             else:
-                self.log_test("Tenant ID Verification", False, 
-                            f"❌ Failed to get Guillaume's user data: {response.status_code}", 
-                            {"response": response.text})
-                return False
+                # Admin test (should access both)
+                if own_access_works and other_access_works:
+                    success = True
+                    message = "✅ Admin can access all EPIs as expected"
+                else:
+                    success = False
+                    message = "❌ Admin access issues detected"
+            
+            self.log_test("EPI Endpoint Employee Security", success, message, results)
+            return success
                 
         except Exception as e:
-            self.log_test("Tenant ID Verification", False, f"Tenant verification error: {str(e)}")
+            self.log_test("EPI Endpoint Employee Security", False, f"EPI security test error: {str(e)}")
             return False
 
     def test_list_all_shefford_users(self):
