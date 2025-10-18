@@ -3365,10 +3365,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     {user.type_emploi === 'temps_plein' ? 'Temps plein' : `Temps partiel (${user.heures_max_semaine}h/sem)`}
                   </span>
                 </div>
-                <div className="detail-row-mobile">
-                  <span className="detail-label">🎓</span>
-                  <span className="detail-value">{user.formations?.length || 0} formation(s)</span>
-                </div>
               </div>
 
               <div className="card-actions-mobile">
