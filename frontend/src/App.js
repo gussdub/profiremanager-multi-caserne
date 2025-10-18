@@ -3251,44 +3251,48 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="actions-cell">
-                <Button 
-                  variant="ghost" 
-                  className="action-btn" 
-                  onClick={() => handleViewUser(user)}
-                  data-testid={`view-user-${user.id}`}
-                  title="Visualiser"
-                >
-                  👁️
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="action-btn" 
-                  onClick={() => handleEditUser(user)}
-                  data-testid={`edit-user-${user.id}`}
-                  title="Modifier"
-                >
-                  ✏️
-                </Button>
-                {user.type_emploi === 'temps_partiel' && (
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
                   <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleManageDisponibilites(user)}
-                    data-testid={`manage-availability-${user.id}`}
-                    style={{fontSize: '0.75rem', padding: '0.25rem 0.5rem'}}
+                    variant="ghost" 
+                    className="action-btn" 
+                    onClick={() => handleViewUser(user)}
+                    data-testid={`view-user-${user.id}`}
+                    title="Visualiser"
                   >
-                    Gérer dispo
+                    👁️
                   </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="action-btn" 
+                    onClick={() => handleEditUser(user)}
+                    data-testid={`edit-user-${user.id}`}
+                    title="Modifier"
+                  >
+                    ✏️
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="action-btn danger" 
+                    onClick={() => handleDeleteUser(user.id)}
+                    data-testid={`delete-user-${user.id}`}
+                    title="Supprimer"
+                  >
+                    ❌
+                  </Button>
+                </div>
+                {user.type_emploi === 'temps_partiel' && (
+                  <div style={{marginTop: '0.5rem'}}>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManageDisponibilites(user)}
+                      data-testid={`manage-availability-${user.id}`}
+                      style={{fontSize: '0.75rem', padding: '0.25rem 0.5rem', width: '100%'}}
+                    >
+                      📅 Gérer dispo
+                    </Button>
+                  </div>
                 )}
-                <Button 
-                  variant="ghost" 
-                  className="action-btn danger" 
-                  onClick={() => handleDeleteUser(user.id)}
-                  data-testid={`delete-user-${user.id}`}
-                  title="Supprimer"
-                >
-                  ❌
-                </Button>
               </div>
             </div>
           ))}
