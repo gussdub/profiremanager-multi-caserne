@@ -2914,10 +2914,6 @@ body {
   color: #1e293b;
 }
 
-.actions-cell {
-  text-align: center;
-}
-
 /* Analytics */
 .analytics {
   display: flex;
