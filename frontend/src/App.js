@@ -7315,6 +7315,30 @@ const Formations = () => {
                       <Button size="sm" onClick={async () => { setSelectedFormation(f); await loadInscriptions(f.id); setShowValidationModal(true); }}>
                         ✅ Présences
                       </Button>
+                      <Button size="sm" variant="outline" onClick={() => { 
+                        setSelectedFormation(f); 
+                        setFormationForm({
+                          nom: f.nom,
+                          competence_id: f.competence_id,
+                          description: f.description,
+                          date_debut: f.date_debut,
+                          date_fin: f.date_fin,
+                          heure_debut: f.heure_debut,
+                          heure_fin: f.heure_fin,
+                          duree_heures: f.duree_heures,
+                          lieu: f.lieu,
+                          instructeur: f.instructeur,
+                          places_max: f.places_max,
+                          obligatoire: f.obligatoire,
+                          annee: f.annee
+                        }); 
+                        setShowFormationModal(true); 
+                      }}>
+                        ✏️ Modifier
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteFormation(f.id)}>
+                        🗑️
+                      </Button>
                     </>
                   )}
                 </div>
