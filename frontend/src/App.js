@@ -7101,11 +7101,85 @@ const Formations = () => {
         setRapportConformite(rapportData);
         setPersonnel(personnelData || []);
       }
-      }
     } catch (error) {
       console.error('Erreur:', error);
     }
     setLoading(false);
+  };
+  
+  const loadRapportCompetences = async () => {
+    try {
+      const params = filtrePersonne ? `?annee=${anneeSelectionnee}&user_id=${filtrePersonne}` : `?annee=${anneeSelectionnee}`;
+      const data = await apiGet(tenantSlug, `/formations/rapports/competences${params}`);
+      setRapportCompetences(data);
+    } catch (error) {
+      console.error('Erreur chargement rapport compétences:', error);
+    }
+  };
+  
+  const handleExportPresence = async (format) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-presence?format=${format}&type_formation=${typeFormation}&annee=${anneeSelectionnee}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_presence_${typeFormation}_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de télécharger le rapport", variant: "destructive" });
+    }
+  };
+  
+  const handleExportCompetences = async (format) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const userParam = filtrePersonne ? `&user_id=${filtrePersonne}` : '';
+      const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-competences?format=${format}&annee=${anneeSelectionnee}${userParam}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_competences_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de télécharger le rapport", variant: "destructive" });
+    }
   };
   
   const handleSaveFormation = async () => {
