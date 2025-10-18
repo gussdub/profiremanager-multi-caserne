@@ -7243,8 +7243,11 @@ const Formations = () => {
                   <span className={`statut-badge ${f.statut}`}>{f.statut}</span>
                 </div>
                 <div className="formation-body">
-                  <p><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
-                  <p><strong>Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR')} {f.heure_debut && f.heure_fin ? `(${f.heure_debut} - ${f.heure_fin})` : ''}</p>
+                  <p><strong>📅 Date:</strong> {new Date(f.date_debut).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <p><strong>🕐 Horaire:</strong> {f.heure_debut && f.heure_fin ? `${f.heure_debut} - ${f.heure_fin}` : 'Non précisé'}</p>
+                  <p><strong>📍 Lieu:</strong> {f.lieu || 'Non précisé'}</p>
+                  <p><strong>👨‍🏫 Instructeur:</strong> {f.instructeur || 'Non précisé'}</p>
+                  <p style={{fontSize: '0.9rem', color: '#6B7280'}}><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
                   
                   {/* Barre visuelle des places */}
                   <div style={{marginTop: '0.75rem'}}>
