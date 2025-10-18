@@ -861,6 +861,15 @@ body {
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  overflow: hidden;
+}
+
+.contact-cell .user-email,
+.contact-cell .user-phone,
+.contact-cell .user-emergency {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-email {
