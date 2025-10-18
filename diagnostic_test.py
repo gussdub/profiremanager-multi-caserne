@@ -24,6 +24,10 @@ TENANT_SLUG = "shefford"
 ADMIN_EMAIL = "admin@firemanager.ca"
 ADMIN_PASSWORD = "Admin123!"
 
+# Super Admin credentials (fallback)
+SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
+SUPER_ADMIN_PASSWORD = "230685Juin+"
+
 class DiagnosticTester:
     def __init__(self):
         self.base_url = BASE_URL
