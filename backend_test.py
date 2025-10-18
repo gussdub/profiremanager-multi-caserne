@@ -100,82 +100,65 @@ class RapportsExportTester:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def test_employee_authentication(self):
-        """Test employee authentication for Shefford tenant"""
+    def test_export_dashboard_pdf(self):
+        """Test GET /api/{tenant_slug}/rapports/export-dashboard-pdf"""
         try:
-            # Get existing users from admin session first
             if not self.admin_token:
-                self.log_test("Employee Authentication", False, "No admin token available")
+                self.log_test("Export Dashboard PDF", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Get all users in Shefford to find an employee
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("Employee Authentication", False, 
-                            f"Failed to get Shefford users: {response.status_code}")
-                return False
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-dashboard-pdf")
             
-            users = response.json()
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-dashboard-pdf")
             
-            # Find an employee (non-admin user)
-            employee_user = None
-            for user in users:
-                if user.get("role") == "employe" and user.get("email"):
-                    employee_user = user
-                    break
+            results = {
+                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-dashboard-pdf",
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "content_length": len(response.content) if response.content else 0
+            }
             
-            if not employee_user:
-                self.log_test("Employee Authentication", False, "No employee user found in Shefford")
-                return False
-            
-            # Try to authenticate as employee with common passwords
-            employee_passwords = ["employe123", "Employe123!", "password123", "Password123!"]
-            
-            for password in employee_passwords:
-                login_data = {
-                    "email": employee_user["email"],
-                    "mot_de_passe": password
-                }
+            if response.status_code == 200:
+                # Check if it's a PDF file
+                content_type = response.headers.get('content-type', '')
+                content_disposition = response.headers.get('content-disposition', '')
                 
-                print(f"🔑 Trying employee login: {employee_user['email']} with password: {password}")
+                results["content_type"] = content_type
+                results["content_disposition"] = content_disposition
+                results["is_pdf"] = 'application/pdf' in content_type
+                results["has_filename"] = 'filename=' in content_disposition
+                results["filename_correct"] = 'dashboard_interne_' in content_disposition
                 
-                # Try tenant-specific login first
-                response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=login_data)
-                if response.status_code != 200:
-                    # Try legacy login
-                    response = self.session.post(f"{self.base_url}/auth/login", json=login_data)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "access_token" in data:
-                        self.employee_token = data["access_token"]
-                        user_info = data.get("user", {})
-                        self.employee_user_id = user_info.get("id")
-                        
-                        self.log_test("Employee Authentication", True, 
-                                    f"✅ Employee login successful for {employee_user['email']}", 
-                                    {
-                                        "employee_user_id": self.employee_user_id,
-                                        "user_info": user_info,
-                                        "successful_password": password
-                                    })
-                        return True
-                    else:
-                        print(f"    ❌ No access token in response for password: {password}")
+                if results["is_pdf"] and results["content_length"] > 0 and results["has_filename"]:
+                    success = True
+                    message = f"✅ Dashboard PDF export working - Generated {results['content_length']} bytes PDF file with correct headers"
                 else:
-                    print(f"    ❌ Employee login failed with password '{password}': {response.status_code}")
+                    success = False
+                    issues = []
+                    if not results["is_pdf"]:
+                        issues.append("Invalid content-type")
+                    if results["content_length"] == 0:
+                        issues.append("Empty file")
+                    if not results["has_filename"]:
+                        issues.append("Missing filename in headers")
+                    message = f"❌ Dashboard PDF export failed - {'; '.join(issues)}"
+            elif response.status_code == 403:
+                success = False
+                message = f"❌ Access denied (403) - Check admin permissions"
+                results["response_text"] = response.text[:500] if response.text else "No response"
+            else:
+                success = False
+                message = f"❌ Export dashboard PDF failed with status {response.status_code}"
+                results["response_text"] = response.text[:500] if response.text else "No response"
             
-            # If authentication fails, we'll create a test employee
-            self.log_test("Employee Authentication", False, 
-                        f"❌ Employee authentication failed, will use admin for testing", 
-                        {"available_employee": employee_user["email"] if employee_user else "None"})
-            return False
+            self.log_test("Export Dashboard PDF", success, message, results)
+            return success
                 
         except Exception as e:
-            self.log_test("Employee Authentication", False, f"Employee authentication error: {str(e)}")
+            self.log_test("Export Dashboard PDF", False, f"Export dashboard PDF test error: {str(e)}")
             return False
 
     def test_export_presence_pdf(self):
