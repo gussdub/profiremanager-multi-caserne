@@ -297,84 +297,84 @@ class RapportsExportTester:
             self.log_test("Export Salaires Excel", False, f"Export salaires Excel test error: {str(e)}")
             return False
 
-    def test_rapport_competences_general(self):
-        """Test GET /api/{tenant_slug}/formations/rapports/competences without user_id (general report)"""
+    def test_headers_validation(self):
+        """Test that all endpoints return correct Content-Type and Content-Disposition headers"""
         try:
             if not self.admin_token:
-                self.log_test("Rapport Competences General", False, "No admin token available")
+                self.log_test("Headers Validation", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Test parameters as specified in review request
-            params = {
-                "annee": 2025
-            }
+            # Test all three endpoints
+            endpoints_to_test = [
+                {
+                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-dashboard-pdf",
+                    "params": {},
+                    "expected_content_type": "application/pdf",
+                    "expected_filename_pattern": "dashboard_interne_"
+                },
+                {
+                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-pdf",
+                    "params": {"date_debut": "2025-01-01", "date_fin": "2025-09-30"},
+                    "expected_content_type": "application/pdf",
+                    "expected_filename_pattern": "rapport_salaires_2025-01-01_2025-09-30.pdf"
+                },
+                {
+                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-excel",
+                    "params": {"date_debut": "2025-01-01", "date_fin": "2025-09-30"},
+                    "expected_content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "expected_filename_pattern": "rapport_salaires_2025-01-01_2025-09-30.xlsx"
+                }
+            ]
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/competences with params: {params}")
+            all_headers_valid = True
+            results = []
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/competences", params=params)
-            
-            results = {
-                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/competences",
-                "params": params,
-                "status_code": response.status_code,
-                "response_text": response.text[:500] if response.text else "No response"
-            }
-            
-            if response.status_code == 200:
-                data = response.json()
-                results["response_structure"] = {
-                    "has_annee": "annee" in data,
-                    "has_user_id": "user_id" in data,
-                    "has_competences": "competences" in data,
-                    "competences_count": len(data.get("competences", [])) if isinstance(data.get("competences"), list) else 0
+            for endpoint in endpoints_to_test:
+                print(f"🔍 Testing headers for {endpoint['url']}")
+                
+                response = admin_session.get(endpoint["url"], params=endpoint["params"])
+                
+                endpoint_result = {
+                    "url": endpoint["url"],
+                    "status_code": response.status_code,
+                    "content_type": response.headers.get('content-type', ''),
+                    "content_disposition": response.headers.get('content-disposition', ''),
+                    "content_length": len(response.content) if response.content else 0
                 }
                 
-                # Verify response structure
-                required_fields = ["annee", "user_id", "competences"]
-                missing_fields = []
+                # Validate headers
+                content_type_valid = endpoint["expected_content_type"] in endpoint_result["content_type"]
+                filename_valid = endpoint["expected_filename_pattern"] in endpoint_result["content_disposition"]
+                has_attachment = "attachment" in endpoint_result["content_disposition"]
+                file_size_valid = endpoint_result["content_length"] > 0
                 
-                for field in required_fields:
-                    if field not in data:
-                        missing_fields.append(field)
+                endpoint_result["content_type_valid"] = content_type_valid
+                endpoint_result["filename_valid"] = filename_valid
+                endpoint_result["has_attachment"] = has_attachment
+                endpoint_result["file_size_valid"] = file_size_valid
+                endpoint_result["all_valid"] = content_type_valid and filename_valid and has_attachment and file_size_valid
                 
-                results["missing_fields"] = missing_fields
-                results["user_id_is_null"] = data.get("user_id") is None
+                if not endpoint_result["all_valid"]:
+                    all_headers_valid = False
                 
-                # Check competences structure if available
-                if data.get("competences") and len(data["competences"]) > 0:
-                    first_comp = data["competences"][0]
-                    comp_required_fields = ["competence_id", "competence_nom", "total_formations", "total_heures_planifiees", "total_inscrits", "presences", "taux_presence"]
-                    comp_missing_fields = []
-                    
-                    for field in comp_required_fields:
-                        if field not in first_comp:
-                            comp_missing_fields.append(field)
-                    
-                    results["competence_structure_valid"] = len(comp_missing_fields) == 0
-                    results["competence_missing_fields"] = comp_missing_fields
-                    results["sample_competence"] = first_comp
-                else:
-                    results["competence_structure_valid"] = True  # Empty list is valid
-                    results["competence_missing_fields"] = []
-                
-                if len(missing_fields) == 0 and results["user_id_is_null"]:
-                    success = True
-                    message = f"✅ General competences report working - Found {results['response_structure']['competences_count']} competences for year 2025"
-                else:
-                    success = False
-                    message = f"❌ Competences report structure invalid - Missing fields: {missing_fields}"
+                results.append(endpoint_result)
+            
+            if all_headers_valid:
+                success = True
+                message = f"✅ All headers validation passed - All 3 endpoints return correct Content-Type and Content-Disposition headers"
             else:
                 success = False
-                message = f"❌ Rapport competences failed with status {response.status_code}"
+                failed_endpoints = [r["url"] for r in results if not r["all_valid"]]
+                message = f"❌ Headers validation failed for: {', '.join(failed_endpoints)}"
             
-            self.log_test("Rapport Competences General", success, message, results)
+            self.log_test("Headers Validation", success, message, {"endpoints_tested": results})
             return success
                 
         except Exception as e:
-            self.log_test("Rapport Competences General", False, f"Rapport competences general test error: {str(e)}")
+            self.log_test("Headers Validation", False, f"Headers validation test error: {str(e)}")
             return False
 
     def test_rapport_competences_specific_user(self):
