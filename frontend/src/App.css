@@ -765,7 +765,7 @@ body {
 
 .table-header {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr 1fr 1fr 1.5fr 1fr;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1fr 1fr 1.5fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background-color: #f8fafc;
