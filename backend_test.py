@@ -537,18 +537,19 @@ class GuillaumeDiagnosticTester:
         
         print(f"\n🎯 CONCLUSION:")
         
-        if id_mismatch and found_in_db:
+        if login_success and id_mismatch and endpoint_works:
             print("❌ PROBLEM IDENTIFIED: Frontend is using WRONG USER ID!")
-            print(f"   Real ID from logs: {DIAGNOSTIC_USER_ID_REAL}")
+            print(f"   Real ID from API: {DIAGNOSTIC_USER_ID_REAL}")
             print(f"   Console ID (wrong): {DIAGNOSTIC_USER_ID_CONSOLE}")
             print("   The 404 error occurs because the frontend displays/uses an incorrect user ID.")
             print("   SOLUTION: Fix frontend to use the correct user ID from login response.")
+            print("   STATUS: This explains the 'Mon Profil' 404 error reported by Guillaume Dubeau.")
         elif login_success and not id_mismatch and endpoint_works:
             print("✅ NO PROBLEM FOUND: User exists, IDs match, endpoint works.")
             print("   The reported 404 issue may be intermittent or already resolved.")
-        elif login_success and found_in_db and not endpoint_works:
-            print("❌ BACKEND ISSUE: User exists in DB but GET endpoint fails.")
-            print("   This indicates a problem with the user retrieval endpoint logic.")
+        elif login_success and endpoint_works and not found_in_db:
+            print("❌ PARTIAL ISSUE: Login works, endpoint works, but database search had issues.")
+            print("   This might be due to admin authentication problems, not the core issue.")
         elif not login_success:
             print("❌ AUTHENTICATION ISSUE: Guillaume cannot login.")
             print("   Check password or account status.")
