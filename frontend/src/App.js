@@ -2322,6 +2322,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [activiteRecente, setActiviteRecente] = useState([]);
   const [statistiquesDetaillees, setStatistiquesDetaillees] = useState(null);
+  const [monthlyStats, setMonthlyStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
