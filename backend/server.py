@@ -6987,11 +6987,14 @@ async def update_parametres_disponibilites(
 
 @api_router.post("/{tenant_slug}/epi", response_model=EPI)
 async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depends(get_current_user)):
-    """Crée un nouvel équipement EPI (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
+    """Crée un nouvel équipement EPI (Admin/Superviseur/Employé pour lui-même)"""
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Les admins/superviseurs peuvent créer pour n'importe qui
+    # Les employés peuvent créer uniquement pour eux-mêmes
+    if current_user.role not in ["admin", "superviseur"]:
+        if epi.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Vous ne pouvez créer des EPI que pour vous-même")
     
     epi_dict = epi.dict()
     epi_dict["tenant_id"] = tenant.id
