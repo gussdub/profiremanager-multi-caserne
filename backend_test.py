@@ -352,66 +352,67 @@ class GuillaumeDiagnosticTester:
             self.log_test("Tenant ID Verification", False, f"Tenant verification error: {str(e)}")
             return False
 
-    def test_direct_user_endpoint_access(self):
-        """Test direct access to GET /api/shefford/users/{user_id} endpoint"""
-        if not self.auth_token:
-            self.log_test("Direct User Endpoint Access", False, "No admin authentication token")
-            return False
-            
+    def test_list_all_shefford_users(self):
+        """List all users in Shefford tenant to see if Guillaume is there"""
         try:
-            # Test with admin token
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} with admin token...")
-            response = self.session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID}")
-            
-            admin_result = {
-                "status_code": response.status_code,
-                "response_text": response.text[:500] if response.text else "No response text"
+            # Get admin access
+            admin_session = requests.Session()
+            admin_login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
             }
             
-            # Test with diagnostic user's own token if available
-            diagnostic_result = None
-            if hasattr(self, 'diagnostic_user_token') and self.diagnostic_user_token:
-                print(f"🔍 Testing GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} with user's own token...")
-                diagnostic_session = requests.Session()
-                diagnostic_session.headers.update({"Authorization": f"Bearer {self.diagnostic_user_token}"})
-                
-                diagnostic_response = diagnostic_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID}")
-                diagnostic_result = {
-                    "status_code": diagnostic_response.status_code,
-                    "response_text": diagnostic_response.text[:500] if diagnostic_response.text else "No response text"
-                }
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
+            if response.status_code != 200:
+                self.log_test("List All Shefford Users", False, f"Failed to login as admin: {response.status_code}")
+                return False
             
-            # Analyze results
-            if response.status_code == 200:
-                user_data = response.json()
-                self.log_test("Direct User Endpoint Access", True, 
-                            f"✅ Endpoint works with admin token - User found: {user_data.get('prenom', '')} {user_data.get('nom', '')}", 
-                            {
-                                "admin_access": admin_result,
-                                "diagnostic_user_access": diagnostic_result,
-                                "user_data": user_data
-                            })
-                return True
-            elif response.status_code == 404:
-                self.log_test("Direct User Endpoint Access", False, 
-                            f"❌ CONFIRMED 404 ERROR: GET /api/{TENANT_SLUG}/users/{DIAGNOSTIC_USER_ID} returns 404", 
-                            {
-                                "admin_access": admin_result,
-                                "diagnostic_user_access": diagnostic_result,
-                                "issue_confirmed": "User endpoint returns 404 as reported"
-                            })
+            data = response.json()
+            admin_token = data["access_token"]
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Get all users
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("List All Shefford Users", False, f"Failed to get users: {response.status_code}")
                 return False
-            else:
-                self.log_test("Direct User Endpoint Access", False, 
-                            f"❌ Unexpected status code: {response.status_code}", 
-                            {
-                                "admin_access": admin_result,
-                                "diagnostic_user_access": diagnostic_result
-                            })
-                return False
+            
+            users = response.json()
+            
+            # Show first 10 users with key fields
+            user_list = []
+            guillaume_found = False
+            
+            for i, user in enumerate(users[:10]):
+                user_info = {
+                    "index": i + 1,
+                    "id": user.get("id"),
+                    "email": user.get("email"),
+                    "nom": user.get("nom"),
+                    "prenom": user.get("prenom"),
+                    "tenant_id": user.get("tenant_id")
+                }
+                user_list.append(user_info)
+                
+                # Check if this is Guillaume
+                if (user.get("email") == DIAGNOSTIC_USER_EMAIL or 
+                    user.get("id") == self.guillaume_real_id or 
+                    user.get("id") == DIAGNOSTIC_USER_ID_CONSOLE):
+                    guillaume_found = True
+                    user_info["is_guillaume"] = True
+            
+            message = f"✅ Found Guillaume in user list" if guillaume_found else f"❌ Guillaume NOT found in {len(users)} users"
+            
+            self.log_test("List All Shefford Users", guillaume_found, message, {
+                "total_users": len(users),
+                "guillaume_found": guillaume_found,
+                "first_10_users": user_list,
+                "shefford_tenant_id": self.shefford_tenant_id
+            })
+            return guillaume_found
                 
         except Exception as e:
-            self.log_test("Direct User Endpoint Access", False, f"Endpoint access error: {str(e)}")
+            self.log_test("List All Shefford Users", False, f"User list error: {str(e)}")
             return False
 
     def test_compare_with_working_user(self):
