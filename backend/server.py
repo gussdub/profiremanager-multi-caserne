@@ -3085,6 +3085,14 @@ async def get_formations(tenant_slug: str, annee: Optional[int] = None, current_
             f["created_at"] = datetime.fromisoformat(f["created_at"].replace('Z', '+00:00'))
         if isinstance(f.get("updated_at"), str):
             f["updated_at"] = datetime.fromisoformat(f["updated_at"].replace('Z', '+00:00'))
+        
+        # Ajouter info d'inscription pour l'utilisateur actuel
+        inscription = await db.inscriptions_formations.find_one({
+            "formation_id": f["id"],
+            "user_id": current_user.id,
+            "tenant_id": tenant.id
+        })
+        f["user_inscrit"] = inscription is not None
     
     return [Formation(**f) for f in cleaned]
 
