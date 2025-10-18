@@ -10670,11 +10670,25 @@ const Rapports = () => {
     setLoading(false);
   };
 
+  const handleGenererRapportSalaires = async () => {
+    setLoading(true);
+    try {
+      const params = `date_debut=${dateDebut}&date_fin=${dateFin}`;
+      const rapport = await apiGet(tenantSlug, `/rapports/couts-salariaux?${params}`);
+      setRapportSalaires(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
   const handleSaveBudget = async () => {
     try {
       await apiPost(tenantSlug, '/rapports/budgets', budgetForm);
       toast({ title: "Succès", description: "Budget ajouté" });
       setShowBudgetModal(false);
+      setBudgetForm({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
       loadData();
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible d'ajouter le budget", variant: "destructive" });
@@ -10682,7 +10696,31 @@ const Rapports = () => {
   };
 
   const handleExportPDF = async (typeRapport) => {
-    toast({ title: "Export", description: "Fonctionnalité en développement" });
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      let url = '';
+      if (typeRapport === 'dashboard') {
+        // Export Dashboard (à implémenter côté backend)
+        toast({ title: "Info", description: "Export PDF Dashboard en développement" });
+        return;
+      } else if (typeRapport === 'salaires') {
+        // Export Coûts Salariaux (à implémenter côté backend)
+        toast({ title: "Info", description: "Export PDF Salaires en développement" });
+        return;
+      } else if (typeRapport === 'budgetaire') {
+        // Export Budgétaire (à implémenter côté backend)
+        toast({ title: "Info", description: "Export PDF Budgétaire en développement" });
+        return;
+      }
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter le PDF", variant: "destructive" });
+    }
+  };
+
+  const handleExportExcel = async (typeRapport) => {
+    toast({ title: "Info", description: "Export Excel en développement" });
   };
 
   if (user?.role !== 'admin') {
