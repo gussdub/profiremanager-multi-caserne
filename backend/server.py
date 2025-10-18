@@ -3487,6 +3487,543 @@ async def get_mon_taux_presence(
     }
 
 
+# ====================================================================
+# RAPPORTS AVANCÉS - EXPORTS PDF/EXCEL ET RAPPORTS PAR COMPÉTENCES
+# ====================================================================
+
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+from reportlab.platypus.charts import Drawing, PieChart
+from reportlab.graphics.shapes import String
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.charts.piecharts import Pie
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.chart import PieChart as ExcelPieChart, BarChart as ExcelBarChart, Reference
+import io
+from fastapi.responses import StreamingResponse
+import matplotlib
+matplotlib.use('Agg')  # Backend non-GUI
+import matplotlib.pyplot as plt
+
+
+@api_router.get("/{tenant_slug}/formations/rapports/export-presence")
+async def export_rapport_presence(
+    tenant_slug: str,
+    format: str,
+    type_formation: str,  # "obligatoires" ou "toutes"
+    annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Export des taux de présence en PDF ou Excel
+    - format: "pdf" ou "excel"
+    - type_formation: "obligatoires" ou "toutes"
+    - annee: année concernée
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données
+    pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
+    pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
+    
+    aujourd_hui = datetime.now(timezone.utc).date()
+    
+    rapport_data = []
+    for pompier in pompiers:
+        # Toutes les inscriptions
+        mes_inscriptions = await db.inscriptions_formations.find({
+            "user_id": pompier["id"],
+            "tenant_id": tenant.id
+        }).to_list(1000)
+        
+        formations_passees = 0
+        presences = 0
+        
+        for insc in mes_inscriptions:
+            formation = await db.formations.find_one({
+                "id": insc["formation_id"],
+                "annee": annee,
+                "tenant_id": tenant.id
+            })
+            
+            if formation:
+                # Filtre selon type_formation
+                if type_formation == "obligatoires" and not formation.get("obligatoire", False):
+                    continue
+                
+                date_fin = datetime.fromisoformat(formation["date_fin"]).date()
+                
+                if date_fin < aujourd_hui:
+                    formations_passees += 1
+                    if insc.get("statut") == "present":
+                        presences += 1
+        
+        taux_presence = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
+        conforme = taux_presence >= pourcentage_min
+        
+        rapport_data.append({
+            "nom": f"{pompier.get('prenom', '')} {pompier.get('nom', '')}",
+            "grade": pompier.get("grade", "N/A"),
+            "formations_passees": formations_passees,
+            "presences": presences,
+            "absences": formations_passees - presences,
+            "taux_presence": taux_presence,
+            "conforme": conforme
+        })
+    
+    # Tri par taux de présence décroissant
+    rapport_data.sort(key=lambda x: -x["taux_presence"])
+    
+    # Statistiques globales
+    total_pompiers = len(rapport_data)
+    pompiers_conformes = len([p for p in rapport_data if p["conforme"]])
+    taux_conformite = round((pompiers_conformes / total_pompiers * 100) if total_pompiers > 0 else 0, 1)
+    
+    # Génération selon le format
+    if format == "pdf":
+        return await generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min)
+    elif format == "excel":
+        return await generer_excel_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min)
+    else:
+        raise HTTPException(status_code=400, detail="Format non supporté")
+
+
+async def generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min):
+    """Génère un PDF professionnel avec graphiques"""
+    buffer = io.BytesIO()
+    
+    # Configuration du document
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Style personnalisé pour le titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    # Titre
+    type_texte = "Formations Obligatoires" if type_formation == "obligatoires" else "Toutes les Formations"
+    story.append(Paragraph(f"Rapport de Présence - {type_texte}", title_style))
+    story.append(Paragraph(f"ProFireManager - Année {annee}", styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Statistiques globales
+    stats_data = [
+        ["Statistiques Globales", ""],
+        ["Total pompiers", str(total_pompiers)],
+        ["Pompiers conformes", f"{pompiers_conformes} ({taux_conformite}%)"],
+        ["Taux minimum requis", f"{pourcentage_min}%"]
+    ]
+    
+    stats_table = Table(stats_data, colWidths=[3*inch, 2*inch])
+    stats_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(stats_table)
+    story.append(Spacer(1, 0.4*inch))
+    
+    # Tableau des données
+    story.append(Paragraph("Détail par Pompier", styles['Heading2']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    table_data = [["Nom", "Grade", "Formations", "Présences", "Absences", "Taux %", "Conforme"]]
+    
+    for p in rapport_data:
+        table_data.append([
+            p["nom"],
+            p["grade"],
+            str(p["formations_passees"]),
+            str(p["presences"]),
+            str(p["absences"]),
+            f"{p['taux_presence']}%",
+            "✓" if p["conforme"] else "✗"
+        ])
+    
+    detail_table = Table(table_data, colWidths=[1.5*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.7*inch, 0.7*inch])
+    detail_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+    ]))
+    
+    story.append(detail_table)
+    
+    # Construction du PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    filename = f"rapport_presence_{type_formation}_{annee}.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+async def generer_excel_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min):
+    """Génère un fichier Excel avec données et graphiques"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rapport Présence"
+    
+    # En-tête
+    type_texte = "Formations Obligatoires" if type_formation == "obligatoires" else "Toutes les Formations"
+    ws['A1'] = f"Rapport de Présence - {type_texte} - Année {annee}"
+    ws['A1'].font = Font(size=16, bold=True, color="DC2626")
+    ws.merge_cells('A1:G1')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Statistiques
+    ws['A3'] = "Statistiques Globales"
+    ws['A3'].font = Font(bold=True, size=12)
+    ws['A4'] = "Total pompiers"
+    ws['B4'] = total_pompiers
+    ws['A5'] = "Pompiers conformes"
+    ws['B5'] = f"{pompiers_conformes} ({taux_conformite}%)"
+    ws['A6'] = "Taux minimum requis"
+    ws['B6'] = f"{pourcentage_min}%"
+    
+    # Tableau des données
+    headers = ["Nom", "Grade", "Formations", "Présences", "Absences", "Taux %", "Conforme"]
+    row = 8
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Données
+    for p in rapport_data:
+        row += 1
+        ws.cell(row=row, column=1, value=p["nom"])
+        ws.cell(row=row, column=2, value=p["grade"])
+        ws.cell(row=row, column=3, value=p["formations_passees"])
+        ws.cell(row=row, column=4, value=p["presences"])
+        ws.cell(row=row, column=5, value=p["absences"])
+        ws.cell(row=row, column=6, value=p["taux_presence"])
+        ws.cell(row=row, column=7, value="Oui" if p["conforme"] else "Non")
+    
+    # Ajuster les largeurs de colonnes
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
+        ws.column_dimensions[col].width = 15
+    
+    # Sauvegarder dans un buffer
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"rapport_presence_{type_formation}_{annee}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@api_router.get("/{tenant_slug}/formations/rapports/competences")
+async def rapport_par_competences(
+    tenant_slug: str,
+    annee: int,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rapport par compétences
+    - Si user_id fourni: rapport pour cette personne uniquement
+    - Sinon: rapport général pour toute l'organisation
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer toutes les compétences
+    competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = []
+    
+    for comp in competences:
+        # Récupérer toutes les formations pour cette compétence
+        formations = await db.formations.find({
+            "tenant_id": tenant.id,
+            "competence_id": comp["id"],
+            "annee": annee
+        }).to_list(1000)
+        
+        total_formations = len(formations)
+        total_heures_planifiees = sum([f.get("duree_heures", 0) for f in formations])
+        
+        # Récupérer les inscriptions
+        formation_ids = [f["id"] for f in formations]
+        
+        query_inscriptions = {
+            "tenant_id": tenant.id,
+            "formation_id": {"$in": formation_ids}
+        }
+        
+        # Filtre par user si demandé
+        if user_id:
+            query_inscriptions["user_id"] = user_id
+        
+        inscriptions = await db.inscriptions_formations.find(query_inscriptions).to_list(10000)
+        
+        total_inscrits = len(set([i["user_id"] for i in inscriptions]))
+        presences = len([i for i in inscriptions if i.get("statut") == "present"])
+        absences = len([i for i in inscriptions if i.get("statut") == "absent"])
+        total_inscriptions = len(inscriptions)
+        
+        taux_presence = round((presences / total_inscriptions * 100) if total_inscriptions > 0 else 0, 1)
+        
+        heures_effectuees = sum([i.get("heures_creditees", 0) for i in inscriptions if i.get("statut") == "present"])
+        
+        rapport.append({
+            "competence_id": comp["id"],
+            "competence_nom": comp["nom"],
+            "total_formations": total_formations,
+            "total_heures_planifiees": total_heures_planifiees,
+            "total_inscrits": total_inscrits,
+            "total_inscriptions": total_inscriptions,
+            "presences": presences,
+            "absences": absences,
+            "taux_presence": taux_presence,
+            "heures_effectuees": heures_effectuees,
+            "taux_realisation": round((heures_effectuees / total_heures_planifiees * 100) if total_heures_planifiees > 0 else 0, 1)
+        })
+    
+    # Tri par nombre de formations décroissant
+    rapport.sort(key=lambda x: -x["total_formations"])
+    
+    return {
+        "annee": annee,
+        "user_id": user_id,
+        "competences": rapport
+    }
+
+
+@api_router.get("/{tenant_slug}/formations/rapports/export-competences")
+async def export_rapport_competences(
+    tenant_slug: str,
+    format: str,
+    annee: int,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Export du rapport par compétences en PDF ou Excel
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer les données
+    rapport_response = await rapport_par_competences(tenant_slug, annee, user_id, current_user)
+    rapport_data = rapport_response["competences"]
+    
+    # Récupérer le nom de l'utilisateur si filtré
+    user_nom = None
+    if user_id:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+        if user:
+            user_nom = f"{user.get('prenom', '')} {user.get('nom', '')}"
+    
+    # Génération selon le format
+    if format == "pdf":
+        return await generer_pdf_competences(rapport_data, annee, user_nom)
+    elif format == "excel":
+        return await generer_excel_competences(rapport_data, annee, user_nom)
+    else:
+        raise HTTPException(status_code=400, detail="Format non supporté")
+
+
+async def generer_pdf_competences(rapport_data, annee, user_nom):
+    """Génère un PDF pour le rapport par compétences"""
+    buffer = io.BytesIO()
+    
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    # Titre
+    titre = f"Rapport par Compétences - {user_nom}" if user_nom else "Rapport par Compétences"
+    story.append(Paragraph(titre, title_style))
+    story.append(Paragraph(f"ProFireManager - Année {annee}", styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Statistiques globales
+    total_formations = sum([c["total_formations"] for c in rapport_data])
+    total_heures = sum([c["total_heures_planifiees"] for c in rapport_data])
+    total_presences = sum([c["presences"] for c in rapport_data])
+    total_inscriptions = sum([c["total_inscriptions"] for c in rapport_data])
+    taux_presence_global = round((total_presences / total_inscriptions * 100) if total_inscriptions > 0 else 0, 1)
+    
+    stats_data = [
+        ["Statistiques Globales", ""],
+        ["Total compétences", str(len(rapport_data))],
+        ["Total formations", str(total_formations)],
+        ["Total heures planifiées", f"{total_heures}h"],
+        ["Taux de présence moyen", f"{taux_presence_global}%"]
+    ]
+    
+    stats_table = Table(stats_data, colWidths=[3*inch, 2*inch])
+    stats_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(stats_table)
+    story.append(Spacer(1, 0.4*inch))
+    
+    # Tableau des compétences
+    story.append(Paragraph("Détail par Compétence", styles['Heading2']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    table_data = [["Compétence", "Formations", "Heures", "Inscrits", "Présences", "Taux %"]]
+    
+    for c in rapport_data:
+        table_data.append([
+            c["competence_nom"],
+            str(c["total_formations"]),
+            f"{c['total_heures_planifiees']}h",
+            str(c["total_inscrits"]),
+            f"{c['presences']}/{c['total_inscriptions']}",
+            f"{c['taux_presence']}%"
+        ])
+    
+    detail_table = Table(table_data, colWidths=[2*inch, 1*inch, 1*inch, 1*inch, 1.2*inch, 0.8*inch])
+    detail_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+    ]))
+    
+    story.append(detail_table)
+    
+    doc.build(story)
+    buffer.seek(0)
+    
+    filename = f"rapport_competences_{annee}.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+async def generer_excel_competences(rapport_data, annee, user_nom):
+    """Génère un fichier Excel pour le rapport par compétences"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rapport Compétences"
+    
+    # En-tête
+    titre = f"Rapport par Compétences - {user_nom}" if user_nom else "Rapport par Compétences"
+    ws['A1'] = f"{titre} - Année {annee}"
+    ws['A1'].font = Font(size=16, bold=True, color="DC2626")
+    ws.merge_cells('A1:F1')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Statistiques globales
+    total_formations = sum([c["total_formations"] for c in rapport_data])
+    total_heures = sum([c["total_heures_planifiees"] for c in rapport_data])
+    total_presences = sum([c["presences"] for c in rapport_data])
+    total_inscriptions = sum([c["total_inscriptions"] for c in rapport_data])
+    taux_presence_global = round((total_presences / total_inscriptions * 100) if total_inscriptions > 0 else 0, 1)
+    
+    ws['A3'] = "Statistiques Globales"
+    ws['A3'].font = Font(bold=True, size=12)
+    ws['A4'] = "Total compétences"
+    ws['B4'] = len(rapport_data)
+    ws['A5'] = "Total formations"
+    ws['B5'] = total_formations
+    ws['A6'] = "Total heures planifiées"
+    ws['B6'] = f"{total_heures}h"
+    ws['A7'] = "Taux de présence moyen"
+    ws['B7'] = f"{taux_presence_global}%"
+    
+    # Tableau des données
+    headers = ["Compétence", "Formations", "Heures", "Inscrits", "Présences", "Taux %"]
+    row = 9
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Données
+    for c in rapport_data:
+        row += 1
+        ws.cell(row=row, column=1, value=c["competence_nom"])
+        ws.cell(row=row, column=2, value=c["total_formations"])
+        ws.cell(row=row, column=3, value=f"{c['total_heures_planifiees']}h")
+        ws.cell(row=row, column=4, value=c["total_inscrits"])
+        ws.cell(row=row, column=5, value=f"{c['presences']}/{c['total_inscriptions']}")
+        ws.cell(row=row, column=6, value=c["taux_presence"])
+    
+    # Ajuster les largeurs
+    for col in ['A', 'B', 'C', 'D', 'E', 'F']:
+        ws.column_dimensions[col].width = 18
+    
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"rapport_competences_{annee}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 
 class DemandeCongé(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
