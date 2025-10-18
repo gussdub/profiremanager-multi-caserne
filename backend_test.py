@@ -229,11 +229,11 @@ class RapportsExportTester:
             self.log_test("Export Salaires PDF", False, f"Export salaires PDF test error: {str(e)}")
             return False
 
-    def test_export_presence_excel(self):
-        """Test GET /api/{tenant_slug}/formations/rapports/export-presence with Excel format"""
+    def test_export_salaires_excel(self):
+        """Test GET /api/{tenant_slug}/rapports/export-salaires-excel with date parameters"""
         try:
             if not self.admin_token:
-                self.log_test("Export Presence Excel", False, "No admin token available")
+                self.log_test("Export Salaires Excel", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
@@ -241,17 +241,16 @@ class RapportsExportTester:
             
             # Test parameters as specified in review request
             params = {
-                "format": "excel",
-                "type_formation": "obligatoires",
-                "annee": 2025
+                "date_debut": "2025-01-01",
+                "date_fin": "2025-09-30"
             }
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-presence with params: {params}")
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-salaires-excel with params: {params}")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-excel", params=params)
             
             results = {
-                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-presence",
+                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-salaires-excel",
                 "params": params,
                 "status_code": response.status_code,
                 "headers": dict(response.headers),
@@ -265,25 +264,37 @@ class RapportsExportTester:
                 
                 results["content_type"] = content_type
                 results["content_disposition"] = content_disposition
-                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type
+                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type or 'vnd.openxmlformats' in content_type
                 results["has_filename"] = 'filename=' in content_disposition
+                results["filename_correct"] = 'rapport_salaires_2025-01-01_2025-09-30.xlsx' in content_disposition
                 
-                if results["is_excel"] and results["content_length"] > 0:
+                if results["is_excel"] and results["content_length"] > 0 and results["has_filename"]:
                     success = True
-                    message = f"✅ Excel export working - Generated {results['content_length']} bytes Excel file"
+                    message = f"✅ Salaires Excel export working - Generated {results['content_length']} bytes Excel file with correct headers"
                 else:
                     success = False
-                    message = f"❌ Excel export failed - Invalid content type or empty file"
+                    issues = []
+                    if not results["is_excel"]:
+                        issues.append("Invalid content-type")
+                    if results["content_length"] == 0:
+                        issues.append("Empty file")
+                    if not results["has_filename"]:
+                        issues.append("Missing filename in headers")
+                    message = f"❌ Salaires Excel export failed - {'; '.join(issues)}"
+            elif response.status_code == 403:
+                success = False
+                message = f"❌ Access denied (403) - Check admin permissions"
+                results["response_text"] = response.text[:500] if response.text else "No response"
             else:
                 success = False
-                message = f"❌ Export presence Excel failed with status {response.status_code}"
+                message = f"❌ Export salaires Excel failed with status {response.status_code}"
                 results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("Export Presence Excel", success, message, results)
+            self.log_test("Export Salaires Excel", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("Export Presence Excel", False, f"Export presence Excel test error: {str(e)}")
+            self.log_test("Export Salaires Excel", False, f"Export salaires Excel test error: {str(e)}")
             return False
 
     def test_rapport_competences_general(self):
