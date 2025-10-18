@@ -8333,8 +8333,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const getDisponibiliteForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return userDisponibilites.find(d => d.date === dateStr);
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return userDisponibilites.find(d => d.date === dateStr || d.date.startsWith(dateStr));
   };
 
   const handleDateClick = (date) => {
