@@ -2378,6 +2378,91 @@ body {
   padding: 0.75rem;
   border: 1px solid #D1D5DB;
   border-radius: 6px;
+
+/* Calendrier vue seule (modal Voir dispo) */
+.calendar-view-grid {
+  width: 100%;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-weekday-header {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #64748b;
+  padding: 0.5rem;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.calendar-day-cell {
+  min-height: 80px;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.calendar-day-cell.empty {
+  background: #f8fafc;
+  border-color: transparent;
+}
+
+.calendar-day-cell.today {
+  border: 2px solid #EF4444;
+  background: #FEF2F2;
+}
+
+.calendar-day-cell .day-number {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  color: #1e293b;
+}
+
+.day-dispos-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dispo-indicator {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.dispo-indicator.disponible {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.dispo-indicator.indisponible {
+  background: #FEE2E2;
+  color: #991B1B;
+  text-align: center;
+}
+
+.more-dispos {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: center;
+  font-weight: 500;
+}
+
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.2s;
