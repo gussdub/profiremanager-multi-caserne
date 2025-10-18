@@ -7478,33 +7478,254 @@ const Formations = () => {
       
       {activeTab === 'rapports' && rapportConformite && (
         <div className="formations-rapports">
-          <h2>📊 Conformité NFPA 1500 - {anneeSelectionnee}</h2>
-          <div className="conformite-stats">
-            <div className="stat-card"><h3>{rapportConformite.total_pompiers}</h3><p>Total</p></div>
-            <div className="stat-card" style={{background: '#D1FAE5'}}><h3>{rapportConformite.conformes}</h3><p>Conformes</p></div>
-            <div className="stat-card" style={{background: '#DBEAFE'}}><h3>{rapportConformite.pourcentage_conformite}%</h3><p>% Conformité</p></div>
+          {/* Sous-onglets Rapports */}
+          <div className="rapports-sub-tabs" style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid #E5E7EB'}}>
+            <button 
+              className={rapportTab === 'presence' ? 'active-sub-tab' : 'sub-tab'} 
+              onClick={() => setRapportTab('presence')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: rapportTab === 'presence' ? '#FCA5A5' : 'transparent',
+                color: rapportTab === 'presence' ? 'white' : '#6B7280',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                fontWeight: rapportTab === 'presence' ? 'bold' : 'normal',
+                fontSize: '1rem'
+              }}
+            >
+              📊 Taux de Présence
+            </button>
+            <button 
+              className={rapportTab === 'competences' ? 'active-sub-tab' : 'sub-tab'} 
+              onClick={() => setRapportTab('competences')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: rapportTab === 'competences' ? '#FCA5A5' : 'transparent',
+                color: rapportTab === 'competences' ? 'white' : '#6B7280',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                fontWeight: rapportTab === 'competences' ? 'bold' : 'normal',
+                fontSize: '1rem'
+              }}
+            >
+              📈 Par Compétences
+            </button>
           </div>
-          <div className="rapports-controls" style={{marginTop: '2rem'}}>
-            <div className="filtres-grid">
-              <div><Label>Rechercher</Label><Input placeholder="Nom..." value={filtreNom} onChange={e => setFiltreNom(e.target.value)} /></div>
-              <div><Label>Tri</Label><select className="form-select" value={triPresence} onChange={e => setTriPresence(e.target.value)}><option value="desc">Meilleur en premier</option><option value="asc">Faible en premier</option></select></div>
-            </div>
-          </div>
-          <div className="pompiers-list">
-            {getPompiersFiltreTri().map(p => (
-              <div key={p.id} className={`pompier-card ${p.conforme ? 'conforme' : 'non-conforme'}`}>
-                <div className="pompier-info"><h4>{p.prenom} {p.nom}</h4><p>{p.grade}</p></div>
-                <div className="pompier-heures">
-                  <div className="heures-bar"><div className="heures-progress" style={{width: `${Math.min(p.pourcentage, 100)}%`, background: p.conforme ? '#10B981' : '#EF4444'}} /></div>
-                  <p><strong>{p.total_heures}h</strong> / {p.heures_requises}h ({p.pourcentage}%)</p>
-                  <p style={{fontSize: '0.85rem', color: '#666'}}>Présence: {p.taux_presence}%</p>
+          
+          {/* TAB TAUX DE PRÉSENCE */}
+          {rapportTab === 'presence' && (
+            <div>
+              <h2>📊 Conformité NFPA 1500 - {anneeSelectionnee}</h2>
+              
+              {/* Boutons d'export */}
+              <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <Label style={{minWidth: '120px'}}>Type formations:</Label>
+                  <select 
+                    className="form-select" 
+                    value={typeFormation} 
+                    onChange={e => setTypeFormation(e.target.value)}
+                    style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB'}}
+                  >
+                    <option value="toutes">Toutes</option>
+                    <option value="obligatoires">Obligatoires uniquement</option>
+                  </select>
                 </div>
-                <div className="pompier-statut">
-                  {p.conforme ? <span className="badge-conforme">✅ Conforme</span> : <span className="badge-non-conforme">❌ Non conforme</span>}
+                <div style={{display: 'flex', gap: '0.5rem', marginLeft: 'auto'}}>
+                  <Button onClick={() => handleExportPresence('pdf')} variant="outline" style={{background: '#EF4444', color: 'white'}}>
+                    📄 Export PDF
+                  </Button>
+                  <Button onClick={() => handleExportPresence('excel')} variant="outline" style={{background: '#10B981', color: 'white'}}>
+                    📊 Export Excel
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
+              
+              <div className="conformite-stats">
+                <div className="stat-card"><h3>{rapportConformite.total_pompiers}</h3><p>Total</p></div>
+                <div className="stat-card" style={{background: '#D1FAE5'}}><h3>{rapportConformite.conformes}</h3><p>Conformes</p></div>
+                <div className="stat-card" style={{background: '#DBEAFE'}}><h3>{rapportConformite.pourcentage_conformite}%</h3><p>% Conformité</p></div>
+              </div>
+              
+              <div className="rapports-controls" style={{marginTop: '2rem'}}>
+                <div className="filtres-grid">
+                  <div><Label>Rechercher</Label><Input placeholder="Nom..." value={filtreNom} onChange={e => setFiltreNom(e.target.value)} /></div>
+                  <div><Label>Tri</Label><select className="form-select" value={triPresence} onChange={e => setTriPresence(e.target.value)}><option value="desc">Meilleur en premier</option><option value="asc">Faible en premier</option></select></div>
+                </div>
+              </div>
+              
+              <div className="pompiers-list">
+                {getPompiersFiltreTri().map(p => (
+                  <div key={p.id} className={`pompier-card ${p.conforme ? 'conforme' : 'non-conforme'}`}>
+                    <div className="pompier-info"><h4>{p.prenom} {p.nom}</h4><p>{p.grade}</p></div>
+                    <div className="pompier-heures">
+                      <div className="heures-bar"><div className="heures-progress" style={{width: `${Math.min(p.pourcentage, 100)}%`, background: p.conforme ? '#10B981' : '#EF4444'}} /></div>
+                      <p><strong>{p.total_heures}h</strong> / {p.heures_requises}h ({p.pourcentage}%)</p>
+                      <p style={{fontSize: '0.85rem', color: '#666'}}>Présence: {p.taux_presence}%</p>
+                    </div>
+                    <div className="pompier-statut">
+                      {p.conforme ? <span className="badge-conforme">✅ Conforme</span> : <span className="badge-non-conforme">❌ Non conforme</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* TAB RAPPORTS PAR COMPÉTENCES */}
+          {rapportTab === 'competences' && (
+            <div>
+              <h2>📈 Rapports par Compétences - {anneeSelectionnee}</h2>
+              
+              {/* Filtres et exports */}
+              <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <Label style={{minWidth: '120px'}}>Filtrer par personne:</Label>
+                  <select 
+                    className="form-select" 
+                    value={filtrePersonne} 
+                    onChange={e => setFiltrePersonne(e.target.value)}
+                    style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB', minWidth: '200px'}}
+                  >
+                    <option value="">Tous les pompiers</option>
+                    {personnel.map(p => (
+                      <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{display: 'flex', gap: '0.5rem', marginLeft: 'auto'}}>
+                  <Button onClick={() => handleExportCompetences('pdf')} variant="outline" style={{background: '#EF4444', color: 'white'}}>
+                    📄 Export PDF
+                  </Button>
+                  <Button onClick={() => handleExportCompetences('excel')} variant="outline" style={{background: '#10B981', color: 'white'}}>
+                    📊 Export Excel
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Statistiques globales */}
+              {rapportCompetences && (
+                <>
+                  <div className="conformite-stats" style={{marginBottom: '2rem'}}>
+                    <div className="stat-card">
+                      <h3>{rapportCompetences.competences.length}</h3>
+                      <p>Compétences</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportCompetences.competences.reduce((sum, c) => sum + c.total_formations, 0)}</h3>
+                      <p>Formations</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#DBEAFE'}}>
+                      <h3>{rapportCompetences.competences.reduce((sum, c) => sum + c.total_heures_planifiees, 0)}h</h3>
+                      <p>Heures totales</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#FEF3C7'}}>
+                      <h3>
+                        {rapportCompetences.competences.reduce((sum, c) => sum + c.total_inscriptions, 0) > 0
+                          ? Math.round(
+                              (rapportCompetences.competences.reduce((sum, c) => sum + c.presences, 0) /
+                                rapportCompetences.competences.reduce((sum, c) => sum + c.total_inscriptions, 0)) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </h3>
+                      <p>Taux présence moyen</p>
+                    </div>
+                  </div>
+                  
+                  {/* Liste des compétences */}
+                  <div className="competences-rapport-list">
+                    {rapportCompetences.competences.map(comp => (
+                      <div key={comp.competence_id} className="competence-rapport-card" style={{
+                        background: 'white',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '12px',
+                        padding: '1.5rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                      }}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem'}}>
+                          <div>
+                            <h3 style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#1F2937', marginBottom: '0.5rem'}}>
+                              {comp.competence_nom}
+                            </h3>
+                            <p style={{color: '#6B7280', fontSize: '0.9rem'}}>
+                              {comp.total_formations} formation{comp.total_formations > 1 ? 's' : ''} • {comp.total_heures_planifiees}h planifiées
+                            </p>
+                          </div>
+                          <div style={{textAlign: 'right'}}>
+                            <div style={{
+                              fontSize: '1.5rem',
+                              fontWeight: 'bold',
+                              color: comp.taux_presence >= 80 ? '#10B981' : '#EF4444'
+                            }}>
+                              {comp.taux_presence}%
+                            </div>
+                            <p style={{fontSize: '0.8rem', color: '#6B7280'}}>Taux présence</p>
+                          </div>
+                        </div>
+                        
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                          gap: '1rem',
+                          marginTop: '1rem'
+                        }}>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Inscrits</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#1F2937'}}>{comp.total_inscrits}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Présences</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#10B981'}}>{comp.presences}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Absences</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#EF4444'}}>{comp.absences}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Heures effectuées</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#3B82F6'}}>{comp.heures_effectuees}h</p>
+                          </div>
+                        </div>
+                        
+                        {/* Barre de progression */}
+                        <div style={{marginTop: '1rem'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>
+                            <span>Réalisation</span>
+                            <span>{comp.taux_realisation}%</span>
+                          </div>
+                          <div style={{
+                            width: '100%',
+                            height: '8px',
+                            background: '#E5E7EB',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${Math.min(comp.taux_realisation, 100)}%`,
+                              height: '100%',
+                              background: comp.taux_realisation >= 80 ? '#10B981' : comp.taux_realisation >= 50 ? '#F59E0B' : '#EF4444',
+                              transition: 'width 0.3s ease'
+                            }} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {rapportCompetences.competences.length === 0 && (
+                    <div className="empty-state">
+                      <p>Aucune donnée de compétence pour {anneeSelectionnee}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
       
