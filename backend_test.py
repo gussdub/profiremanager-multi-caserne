@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - EPI ENDPOINT TESTING
-Tests for the new endpoint GET /api/{tenant_slug}/epi/employe/{user_id} to retrieve EPIs for a specific employee.
-Focus: Authentication, endpoint functionality, security validation, and data structure verification.
+ProFireManager Backend API Testing Suite - FORMATION REPORTING ENDPOINTS
+Tests for the new formation reporting endpoints with PDF/Excel export functionality:
+1. GET /api/{tenant_slug}/formations/rapports/export-presence
+2. GET /api/{tenant_slug}/formations/rapports/competences  
+3. GET /api/{tenant_slug}/formations/rapports/export-competences
+
+Focus: Authentication, endpoint functionality, PDF/Excel generation, and data validation.
 """
 
 import requests
@@ -18,10 +22,10 @@ BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"
 
-# EPI Testing Configuration
+# Formation Reporting Testing Configuration
 # Using existing users in MongoDB Atlas production database for tenant "shefford"
 
-class EPIEndpointTester:
+class FormationReportingTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
