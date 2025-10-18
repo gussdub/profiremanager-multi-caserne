@@ -301,66 +301,55 @@ class GuillaumeDiagnosticTester:
             self.log_test("GET Endpoint Test", False, f"Endpoint test error: {str(e)}")
             return False
 
-    def test_shefford_tenant_verification(self):
-        """Verify Shefford tenant exists and get its ID"""
-        if not self.auth_token:
-            self.log_test("Shefford Tenant Verification", False, "No admin authentication token")
+    def test_tenant_id_verification(self):
+        """Verify Guillaume's tenant_id matches Shefford tenant_id"""
+        if not self.shefford_tenant_id or not self.guillaume_real_id:
+            self.log_test("Tenant ID Verification", False, "Missing tenant ID or Guillaume ID")
             return False
             
         try:
-            # Try to get tenant info via Super Admin if possible
-            # First try to login as Super Admin
-            super_admin_login_data = {
-                "email": "gussdub@icloud.com",
-                "mot_de_passe": "230685Juin+"
+            # Get Guillaume's user data to check tenant_id
+            admin_session = requests.Session()
+            admin_login_data = {
+                "email": "admin@firemanager.ca",
+                "mot_de_passe": "admin123"
             }
             
-            super_admin_session = requests.Session()
-            response = super_admin_session.post(f"{self.base_url}/admin/auth/login", json=super_admin_login_data)
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_login_data)
+            if response.status_code != 200:
+                self.log_test("Tenant ID Verification", False, f"Failed to login as admin: {response.status_code}")
+                return False
+            
+            data = response.json()
+            admin_token = data["access_token"]
+            admin_session.headers.update({"Authorization": f"Bearer {admin_token}"})
+            
+            # Get Guillaume's user data
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users/{self.guillaume_real_id}")
             
             if response.status_code == 200:
-                data = response.json()
-                super_admin_token = data["access_token"]
-                super_admin_session.headers.update({"Authorization": f"Bearer {super_admin_token}"})
+                user_data = response.json()
+                user_tenant_id = user_data.get("tenant_id")
                 
-                # Get all tenants
-                response = super_admin_session.get(f"{self.base_url}/admin/tenants")
-                if response.status_code == 200:
-                    tenants = response.json()
-                    
-                    shefford_tenant = None
-                    for tenant in tenants:
-                        if tenant.get("slug") == TENANT_SLUG:
-                            shefford_tenant = tenant
-                            break
-                    
-                    if shefford_tenant:
-                        self.log_test("Shefford Tenant Verification", True, 
-                                    f"✅ Shefford tenant found: {shefford_tenant.get('nom')} (ID: {shefford_tenant.get('id')})", 
-                                    {
-                                        "tenant_id": shefford_tenant.get("id"),
-                                        "tenant_name": shefford_tenant.get("nom"),
-                                        "tenant_slug": shefford_tenant.get("slug"),
-                                        "is_active": shefford_tenant.get("is_active", shefford_tenant.get("actif")),
-                                        "nombre_employes": shefford_tenant.get("nombre_employes")
-                                    })
-                        return True
-                    else:
-                        self.log_test("Shefford Tenant Verification", False, 
-                                    f"❌ Shefford tenant not found in {len(tenants)} tenants", 
-                                    {"available_tenants": [t.get("slug") for t in tenants]})
-                        return False
-                else:
-                    self.log_test("Shefford Tenant Verification", False, 
-                                f"Failed to get tenants via Super Admin: {response.status_code}")
-                    return False
+                tenant_match = user_tenant_id == self.shefford_tenant_id
+                
+                message = f"✅ Tenant IDs match: {tenant_match}" if tenant_match else f"❌ TENANT MISMATCH: User tenant_id ({user_tenant_id}) != Shefford tenant_id ({self.shefford_tenant_id})"
+                
+                self.log_test("Tenant ID Verification", tenant_match, message, {
+                    "guillaume_tenant_id": user_tenant_id,
+                    "shefford_tenant_id": self.shefford_tenant_id,
+                    "tenant_ids_match": tenant_match,
+                    "user_data": user_data
+                })
+                return tenant_match
             else:
-                self.log_test("Shefford Tenant Verification", False, 
-                            f"Failed to login as Super Admin: {response.status_code}")
+                self.log_test("Tenant ID Verification", False, 
+                            f"❌ Failed to get Guillaume's user data: {response.status_code}", 
+                            {"response": response.text})
                 return False
                 
         except Exception as e:
-            self.log_test("Shefford Tenant Verification", False, f"Tenant verification error: {str(e)}")
+            self.log_test("Tenant ID Verification", False, f"Tenant verification error: {str(e)}")
             return False
 
     def test_direct_user_endpoint_access(self):
