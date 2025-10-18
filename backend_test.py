@@ -23,16 +23,15 @@ DIAGNOSTIC_USER_EMAIL = "gussdub@gmail.com"
 DIAGNOSTIC_USER_ID_CONSOLE = "4d2c4f86-972c-4d76-9b17-c267ebd04c1e"  # ID shown in console
 DIAGNOSTIC_PASSWORDS = ["Admin123!", "admin123"]  # Passwords to try
 
-class UserDiagnosticTester:
+class GuillaumeDiagnosticTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
         self.auth_token = None
         self.test_results = []
-        self.test_user_id = None
-        self.test_user_email = None
-        self.original_hash = None
-        self.new_hash = None
+        self.guillaume_token = None
+        self.guillaume_real_id = None
+        self.shefford_tenant_id = None
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
