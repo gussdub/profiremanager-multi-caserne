@@ -434,7 +434,138 @@ class EPIEndpointTester:
             self.log_test("EPI Endpoint Empty Response", False, f"EPI empty response test error: {str(e)}")
             return False
 
-    # Removed unused methods - focusing on Guillaume diagnostic
+    def test_epi_endpoint_data_structure(self):
+        """Test EPI endpoint returns correct data structure with required fields"""
+        try:
+            if not self.admin_token:
+                self.log_test("EPI Endpoint Data Structure", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Get all users
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            if response.status_code != 200:
+                self.log_test("EPI Endpoint Data Structure", False, 
+                            f"Failed to get users: {response.status_code}")
+                return False
+            
+            users = response.json()
+            if not users:
+                self.log_test("EPI Endpoint Data Structure", False, "No users found in Shefford")
+                return False
+            
+            # Test data structure with first user
+            test_user = users[0]
+            test_user_id = test_user.get("id")
+            
+            print(f"🔍 Testing EPI data structure for user: {test_user.get('email')}")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{test_user_id}")
+            
+            if response.status_code != 200:
+                self.log_test("EPI Endpoint Data Structure", False, 
+                            f"EPI endpoint failed: {response.status_code}")
+                return False
+            
+            epis = response.json()
+            
+            # Verify response is a list
+            if not isinstance(epis, list):
+                self.log_test("EPI Endpoint Data Structure", False, 
+                            f"Response should be a list, got: {type(epis).__name__}")
+                return False
+            
+            results = {
+                "is_list": True,
+                "epis_count": len(epis),
+                "structure_valid": True,
+                "missing_fields": [],
+                "extra_fields": [],
+                "field_types": {}
+            }
+            
+            # If EPIs exist, validate structure
+            if epis:
+                first_epi = epis[0]
+                
+                # Required fields according to review request
+                required_fields = ["id", "type_epi", "taille", "user_id", "statut"]
+                
+                # Additional expected fields from model
+                expected_fields = [
+                    "id", "tenant_id", "numero_serie", "type_epi", "marque", "modele",
+                    "numero_serie_fabricant", "date_fabrication", "date_mise_en_service",
+                    "norme_certification", "cout_achat", "couleur", "taille", "user_id",
+                    "statut", "notes", "created_at", "updated_at"
+                ]
+                
+                # Check required fields
+                for field in required_fields:
+                    if field not in first_epi:
+                        results["missing_fields"].append(field)
+                        results["structure_valid"] = False
+                    else:
+                        results["field_types"][field] = type(first_epi[field]).__name__
+                
+                # Check all available fields
+                results["available_fields"] = list(first_epi.keys())
+                
+                # Validate specific field types
+                type_validations = []
+                
+                if "id" in first_epi and not isinstance(first_epi["id"], str):
+                    type_validations.append("id should be string")
+                
+                if "type_epi" in first_epi and not isinstance(first_epi["type_epi"], str):
+                    type_validations.append("type_epi should be string")
+                
+                if "user_id" in first_epi and first_epi["user_id"] is not None and not isinstance(first_epi["user_id"], str):
+                    type_validations.append("user_id should be string or null")
+                
+                if "statut" in first_epi and not isinstance(first_epi["statut"], str):
+                    type_validations.append("statut should be string")
+                
+                results["type_validations"] = type_validations
+                
+                if type_validations:
+                    results["structure_valid"] = False
+                
+                # Sample EPI data for verification
+                results["sample_epi"] = {
+                    "id": first_epi.get("id"),
+                    "type_epi": first_epi.get("type_epi"),
+                    "taille": first_epi.get("taille"),
+                    "user_id": first_epi.get("user_id"),
+                    "statut": first_epi.get("statut"),
+                    "marque": first_epi.get("marque"),
+                    "modele": first_epi.get("modele")
+                }
+            
+            # Determine success
+            if results["structure_valid"]:
+                if epis:
+                    message = f"✅ EPI data structure valid - Found {len(epis)} EPIs with all required fields"
+                else:
+                    message = f"✅ EPI endpoint returns valid empty list structure"
+                success = True
+            else:
+                issues = []
+                if results["missing_fields"]:
+                    issues.append(f"Missing fields: {', '.join(results['missing_fields'])}")
+                if results.get("type_validations"):
+                    issues.append(f"Type issues: {'; '.join(results['type_validations'])}")
+                
+                message = f"❌ EPI data structure invalid - {'; '.join(issues)}"
+                success = False
+            
+            self.log_test("EPI Endpoint Data Structure", success, message, results)
+            return success
+                
+        except Exception as e:
+            self.log_test("EPI Endpoint Data Structure", False, f"EPI data structure test error: {str(e)}")
+            return False
     
     # Removed unused password reset methods - focusing on Guillaume diagnostic
     
