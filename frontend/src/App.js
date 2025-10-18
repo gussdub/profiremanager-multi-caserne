@@ -7451,24 +7451,120 @@ const Formations = () => {
       
       {showFormationModal && (
         <div className="modal-overlay" onClick={() => setShowFormationModal(false)}>
-          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h2>{selectedFormation ? 'Modifier la Formation' : 'Nouvelle Formation'}</h2><Button variant="ghost" onClick={() => setShowFormationModal(false)}>✕</Button></div>
-            <div className="modal-body">
-              <div className="form-grid">
-                <div><Label>Nom *</Label><Input value={formationForm.nom} onChange={e => setFormationForm({...formationForm, nom: e.target.value})} /></div>
-                <div><Label>Compétence *</Label><select className="form-select" value={formationForm.competence_id} onChange={e => setFormationForm({...formationForm, competence_id: e.target.value})}><option value="">Sélectionner...</option>{competences.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}</select></div>
-                <div><Label>Date *</Label><Input type="date" value={formationForm.date_debut} onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})} /></div>
-                <div><Label>Heure début</Label><Input type="time" value={formationForm.heure_debut} onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})} /></div>
-                <div><Label>Heure fin</Label><Input type="time" value={formationForm.heure_fin} onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})} /></div>
-                <div><Label>Durée (h) *</Label><Input type="number" value={formationForm.duree_heures} onChange={e => setFormationForm({...formationForm, duree_heures: parseFloat(e.target.value) || 0})} /></div>
-                <div><Label>Places max *</Label><Input type="number" value={formationForm.places_max} onChange={e => setFormationForm({...formationForm, places_max: parseInt(e.target.value) || 20})} /></div>
-                <div><Label>Lieu</Label><Input value={formationForm.lieu} onChange={e => setFormationForm({...formationForm, lieu: e.target.value})} /></div>
-                <div><Label>Instructeur</Label><Input value={formationForm.instructeur} onChange={e => setFormationForm({...formationForm, instructeur: e.target.value})} /></div>
-                <div style={{gridColumn: '1 / -1'}}><label style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><input type="checkbox" checked={formationForm.obligatoire} onChange={e => setFormationForm({...formationForm, obligatoire: e.target.checked})} style={{width: '20px', height: '20px'}} /><strong>Formation obligatoire</strong></label></div>
-              </div>
-              <div style={{marginTop: '1rem'}}><Label>Description</Label><textarea className="form-textarea" rows="3" value={formationForm.description} onChange={e => setFormationForm({...formationForm, description: e.target.value})} /></div>
+          <div className="modal-content large-modal formation-modal-modern" onClick={e => e.stopPropagation()}>
+            <div className="modal-header modal-header-modern">
+              <h2 style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                {selectedFormation ? '✏️ Modifier la Formation' : '➕ Nouvelle Formation'}
+              </h2>
+              <Button variant="ghost" onClick={() => setShowFormationModal(false)} style={{fontSize: '1.5rem'}}>✕</Button>
             </div>
-            <div className="modal-actions"><Button variant="outline" onClick={() => setShowFormationModal(false)}>Annuler</Button><Button onClick={handleSaveFormation}>{selectedFormation ? 'Sauvegarder' : 'Créer'}</Button></div>
+            <div className="modal-body modal-body-modern">
+              <div className="form-grid form-grid-modern">
+                <div className="form-field-modern">
+                  <Label>Nom de la formation *</Label>
+                  <Input 
+                    value={formationForm.nom} 
+                    onChange={e => setFormationForm({...formationForm, nom: e.target.value})} 
+                    placeholder="Ex: Formation incendie niveau 1"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Compétence associée *</Label>
+                  <select 
+                    className="form-select form-select-modern" 
+                    value={formationForm.competence_id} 
+                    onChange={e => setFormationForm({...formationForm, competence_id: e.target.value})}
+                  >
+                    <option value="">Sélectionner une compétence...</option>
+                    {competences.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
+                </div>
+                
+                <div className="form-row-full">
+                  <div className="form-field-modern">
+                    <Label>Date de la formation *</Label>
+                    <Input 
+                      type="date" 
+                      value={formationForm.date_debut} 
+                      onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})} 
+                    />
+                  </div>
+                  <div className="form-field-modern">
+                    <Label>Heure de début</Label>
+                    <Input 
+                      type="time" 
+                      value={formationForm.heure_debut} 
+                      onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})} 
+                    />
+                  </div>
+                  <div className="form-field-modern">
+                    <Label>Heure de fin</Label>
+                    <Input 
+                      type="time" 
+                      value={formationForm.heure_fin} 
+                      onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-field-modern">
+                  <Label>Nombre de places *</Label>
+                  <Input 
+                    type="number" 
+                    value={formationForm.places_max} 
+                    onChange={e => setFormationForm({...formationForm, places_max: parseInt(e.target.value) || 20})} 
+                    min="1"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Lieu</Label>
+                  <Input 
+                    value={formationForm.lieu} 
+                    onChange={e => setFormationForm({...formationForm, lieu: e.target.value})} 
+                    placeholder="Ex: Caserne principale"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Instructeur</Label>
+                  <Input 
+                    value={formationForm.instructeur} 
+                    onChange={e => setFormationForm({...formationForm, instructeur: e.target.value})} 
+                    placeholder="Nom de l'instructeur"
+                  />
+                </div>
+                
+                <div style={{gridColumn: '1 / -1'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#FEF2F2', borderRadius: '8px', cursor: 'pointer'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={formationForm.obligatoire} 
+                      onChange={e => setFormationForm({...formationForm, obligatoire: e.target.checked})} 
+                      style={{width: '20px', height: '20px', cursor: 'pointer'}} 
+                    />
+                    <strong style={{color: '#991B1B'}}>Formation obligatoire (NFPA 1500)</strong>
+                  </label>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1.5rem'}}>
+                <Label>Description</Label>
+                <textarea 
+                  className="form-textarea form-textarea-modern" 
+                  rows="4" 
+                  value={formationForm.description} 
+                  onChange={e => setFormationForm({...formationForm, description: e.target.value})} 
+                  placeholder="Décrivez le contenu et les objectifs de la formation..."
+                />
+              </div>
+            </div>
+            <div className="modal-actions modal-actions-modern">
+              <Button variant="outline" onClick={() => setShowFormationModal(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveFormation} style={{background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: 'white'}}>
+                {selectedFormation ? '💾 Sauvegarder' : '✅ Créer la formation'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
