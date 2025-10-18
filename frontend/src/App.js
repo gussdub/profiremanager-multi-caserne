@@ -8475,11 +8475,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             {Array.from({ length: getDaysInMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, dayIndex) => {
               const dayNumber = dayIndex + 1;
               const currentDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
-              const dateStr = currentDate.toISOString().split('T')[0];
+              // Format YYYY-MM-DD sans conversion UTC
+              const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
               const today = new Date();
               const isToday = currentDate.toDateString() === today.toDateString();
               
-              const dayDispos = userDisponibilites.filter(d => d.date === dateStr);
+              const dayDispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
               const disponibilites = dayDispos.filter(d => d.statut === 'disponible');
               const hasIndisponibilite = dayDispos.some(d => d.statut === 'indisponible');
 
