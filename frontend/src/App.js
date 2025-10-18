@@ -3271,15 +3271,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <span className="heures-max-label">Max :</span>
                       <span className="heures-max-value">{user.heures_max_semaine || 40}h/sem</span>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleViewDisponibilites(user)}
-                      className="mt-1"
-                      data-testid={`view-availability-${user.id}`}
-                    >
-                      📅 Disponibilités
-                    </Button>
                   </div>
                 )}
               </div>
