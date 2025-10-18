@@ -3297,26 +3297,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   ✏️
                 </Button>
                 {user.type_emploi === 'temps_partiel' && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewDisponibilites(user)}
-                      data-testid={`view-availability-${user.id}`}
-                      style={{fontSize: '0.75rem', padding: '0.25rem 0.5rem'}}
-                    >
-                      Voir dispo
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleManageDisponibilites(user)}
-                      data-testid={`manage-availability-${user.id}`}
-                      style={{fontSize: '0.75rem', padding: '0.25rem 0.5rem'}}
-                    >
-                      Gérer dispo
-                    </Button>
-                  </>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleManageDisponibilites(user)}
+                    data-testid={`manage-availability-${user.id}`}
+                    style={{fontSize: '0.75rem', padding: '0.25rem 0.5rem'}}
+                  >
+                    Gérer dispo
+                  </Button>
                 )}
                 <Button 
                   variant="ghost" 
