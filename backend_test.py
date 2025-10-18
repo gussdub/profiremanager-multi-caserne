@@ -180,82 +180,61 @@ class FormationReportingTester:
             self.log_test("Employee Authentication", False, f"Employee authentication error: {str(e)}")
             return False
 
-    def test_epi_endpoint_admin_access(self):
-        """Test EPI endpoint with admin access - should be able to see any employee's EPIs"""
+    def test_export_presence_pdf(self):
+        """Test GET /api/{tenant_slug}/formations/rapports/export-presence with PDF format"""
         try:
             if not self.admin_token:
-                self.log_test("EPI Endpoint Admin Access", False, "No admin token available")
+                self.log_test("Export Presence PDF", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Get all users to find a test user
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            if response.status_code != 200:
-                self.log_test("EPI Endpoint Admin Access", False, 
-                            f"Failed to get users: {response.status_code}")
-                return False
+            # Test parameters as specified in review request
+            params = {
+                "format": "pdf",
+                "type_formation": "toutes",
+                "annee": 2025
+            }
             
-            users = response.json()
-            if not users:
-                self.log_test("EPI Endpoint Admin Access", False, "No users found in Shefford")
-                return False
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/formations/rapports/export-presence with params: {params}")
             
-            # Test with first available user
-            test_user = users[0]
-            test_user_id = test_user.get("id")
-            
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/epi/employe/{test_user_id} (admin access)")
-            
-            # Test the EPI endpoint
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/epi/employe/{test_user_id}")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
             
             results = {
-                "test_user_id": test_user_id,
-                "test_user_email": test_user.get("email"),
-                "test_user_name": f"{test_user.get('prenom', '')} {test_user.get('nom', '')}",
+                "endpoint": f"/api/{TENANT_SLUG}/formations/rapports/export-presence",
+                "params": params,
                 "status_code": response.status_code,
-                "response_text": response.text[:500] if response.text else "No response"
+                "headers": dict(response.headers),
+                "content_length": len(response.content) if response.content else 0
             }
             
             if response.status_code == 200:
-                epis = response.json()
-                results["epis_count"] = len(epis)
-                results["epis_data"] = epis[:3] if epis else []  # Show first 3 EPIs
+                # Check if it's a PDF file
+                content_type = response.headers.get('content-type', '')
+                content_disposition = response.headers.get('content-disposition', '')
                 
-                # Verify response structure
-                if epis:
-                    first_epi = epis[0]
-                    required_fields = ["id", "type_epi", "taille", "user_id", "statut"]
-                    missing_fields = []
-                    
-                    for field in required_fields:
-                        if field not in first_epi:
-                            missing_fields.append(field)
-                    
-                    results["structure_valid"] = len(missing_fields) == 0
-                    results["missing_fields"] = missing_fields
-                    results["available_fields"] = list(first_epi.keys())
+                results["content_type"] = content_type
+                results["content_disposition"] = content_disposition
+                results["is_pdf"] = 'application/pdf' in content_type
+                results["has_filename"] = 'filename=' in content_disposition
+                
+                if results["is_pdf"] and results["content_length"] > 0:
+                    success = True
+                    message = f"✅ PDF export working - Generated {results['content_length']} bytes PDF file"
                 else:
-                    results["structure_valid"] = True  # Empty list is valid
-                    results["missing_fields"] = []
-                    results["available_fields"] = []
-                
-                success = True
-                message = f"✅ Admin can access EPI endpoint - Found {len(epis)} EPIs for user {test_user.get('email')}"
-            elif response.status_code == 403:
-                success = False
-                message = f"❌ Admin access denied (403) - This should not happen"
+                    success = False
+                    message = f"❌ PDF export failed - Invalid content type or empty file"
             else:
                 success = False
-                message = f"❌ EPI endpoint failed with status {response.status_code}"
+                message = f"❌ Export presence PDF failed with status {response.status_code}"
+                results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("EPI Endpoint Admin Access", success, message, results)
+            self.log_test("Export Presence PDF", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("EPI Endpoint Admin Access", False, f"EPI endpoint admin test error: {str(e)}")
+            self.log_test("Export Presence PDF", False, f"Export presence PDF test error: {str(e)}")
             return False
 
     def test_epi_endpoint_employee_security(self):
