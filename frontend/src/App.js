@@ -10796,9 +10796,73 @@ const Rapports = () => {
                 </div>
               </div>
               
+              {/* Graphiques */}
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginTop: '2rem'}}>
+                {/* Graphique Donut - Disponibilité */}
+                <div style={{background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                  <h3 style={{marginBottom: '1rem'}}>Disponibilité du Personnel</h3>
+                  <Chart
+                    options={{
+                      chart: { type: 'donut' },
+                      labels: ['Disponibles', 'Non disponibles'],
+                      colors: ['#10B981', '#EF4444'],
+                      legend: { position: 'bottom' },
+                      dataLabels: { enabled: true },
+                      plotOptions: {
+                        pie: {
+                          donut: {
+                            labels: {
+                              show: true,
+                              total: {
+                                show: true,
+                                label: 'Total',
+                                formatter: () => dashboardData.total_pompiers
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    series={[dashboardData.pompiers_disponibles, dashboardData.total_pompiers - dashboardData.pompiers_disponibles]}
+                    type="donut"
+                    height={300}
+                  />
+                </div>
+
+                {/* Graphique Barres - Coûts */}
+                <div style={{background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                  <h3 style={{marginBottom: '1rem'}}>Évolution Coûts Mensuels</h3>
+                  <Chart
+                    options={{
+                      chart: { type: 'bar' },
+                      xaxis: { categories: ['Janv', 'Févr', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil', 'Août', 'Sept'] },
+                      colors: ['#FCA5A5'],
+                      plotOptions: {
+                        bar: {
+                          borderRadius: 8,
+                          dataLabels: { position: 'top' }
+                        }
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        formatter: (val) => `$${Math.round(val/1000)}k`,
+                        offsetY: -20,
+                        style: { fontSize: '12px', colors: ['#6B7280'] }
+                      }
+                    }}
+                    series={[{
+                      name: 'Coûts',
+                      data: [25000, 28000, 30000, 27000, 29000, 31000, 32000, 30000, dashboardData.cout_salarial_mois]
+                    }]}
+                    type="bar"
+                    height={300}
+                  />
+                </div>
+              </div>
+              
               <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
                 <Button onClick={() => handleExportPDF('dashboard')}>📄 Export PDF</Button>
-                <Button variant="outline">📊 Export Excel</Button>
+                <Button variant="outline" onClick={() => handleExportExcel('dashboard')}>📊 Export Excel</Button>
               </div>
             </div>
           )}
