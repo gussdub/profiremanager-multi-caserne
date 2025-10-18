@@ -11942,7 +11942,7 @@ body {
 
 .epi-tabs button.active {
   color: #1F2937;
-  border-bottom-color: #3B82F6;
+  border-bottom-color: #EF4444;
 }
 
 .epi-tabs button:hover {
@@ -11978,7 +11978,7 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
   color: white;
 }
 
