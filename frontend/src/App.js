@@ -2489,6 +2489,27 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Statistiques personnelles pour tous */}
+      {monthlyStats && (
+        <div style={{marginBottom: '2rem'}}>
+          <h2 style={{marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600'}}>📊 Mes Statistiques du Mois</h2>
+          <div className="kpi-grid">
+            <div className="kpi-card" style={{background: '#FEF2F2', borderLeft: '3px solid #EF4444'}}>
+              <h3>🏆 {monthlyStats.gardes_ce_mois}</h3>
+              <p>Mes gardes ce mois</p>
+            </div>
+            <div className="kpi-card" style={{background: '#FEE2E2', borderLeft: '3px solid #DC2626'}}>
+              <h3>⏱️ {monthlyStats.heures_travaillees}h</h3>
+              <p>Heures travaillées</p>
+            </div>
+            <div className="kpi-card" style={{background: '#FECACA', borderLeft: '3px solid #B91C1C'}}>
+              <h3>📜 {monthlyStats.certifications}</h3>
+              <p>Certifications</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Activité récente dynamique */}
       <div className="activity-section">
         <h2>Activité Récente</h2>
