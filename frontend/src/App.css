@@ -14114,12 +14114,14 @@ body {
 
 /* Troncature des emails longs avec tooltip */
 .email-truncated {
-  max-width: 250px;
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: inline-block;
+  display: block;
   cursor: help;
+  position: relative;
+  z-index: 1;
 }
 
 .badge-status {
