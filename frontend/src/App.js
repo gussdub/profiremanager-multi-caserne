@@ -4678,100 +4678,95 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 Que souhaitez-vous exporter ?
               </p>
               
-              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                <Button 
-                  onClick={() => handleConfirmExport('all')}
-                  style={{
-                    padding: '1.5rem',
-                    justifyContent: 'flex-start',
-                    gap: '1rem',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <span style={{fontSize: '1.5rem'}}>📋</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{fontWeight: '600'}}>Tout le personnel</div>
-                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                      Exporter la liste complète ({users.length} pompier{users.length > 1 ? 's' : ''})
-                    </div>
+              {/* Choix : Tout le personnel */}
+              <label 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  padding: '1.5rem',
+                  border: exportScope === 'all' ? '2px solid #FCA5A5' : '2px solid #E5E7EB',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '1rem',
+                  background: exportScope === 'all' ? '#FEF2F2' : 'white',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="exportScope"
+                  value="all"
+                  checked={exportScope === 'all'}
+                  onChange={(e) => setExportScope(e.target.value)}
+                  style={{width: '20px', height: '20px', cursor: 'pointer'}}
+                />
+                <span style={{fontSize: '1.5rem'}}>📋</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: '600', fontSize: '1rem'}}>Tout le personnel</div>
+                  <div style={{fontSize: '0.875rem', color: '#64748b'}}>
+                    Exporter la liste complète ({users.length} pompier{users.length > 1 ? 's' : ''})
                   </div>
+                </div>
+              </label>
+
+              {/* Choix : Une personne spécifique */}
+              <label 
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                  padding: '1.5rem',
+                  border: exportScope === 'individual' ? '2px solid #FCA5A5' : '2px solid #E5E7EB',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  background: exportScope === 'individual' ? '#FEF2F2' : 'white',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="exportScope"
+                  value="individual"
+                  checked={exportScope === 'individual'}
+                  onChange={(e) => setExportScope(e.target.value)}
+                  style={{width: '20px', height: '20px', cursor: 'pointer', marginTop: '0.25rem'}}
+                />
+                <span style={{fontSize: '1.5rem'}}>👤</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem'}}>
+                    Une personne spécifique
+                  </div>
+                  {exportScope === 'individual' && (
+                    <select
+                      value={selectedPersonForExport}
+                      onChange={(e) => setSelectedPersonForExport(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '6px',
+                        border: '1px solid #E5E7EB',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">-- Sélectionner une personne --</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.prenom} {user.nom} - {user.grade}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+
+              <div style={{marginTop: '1.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end'}}>
+                <Button variant="outline" onClick={() => setShowExportModal(false)}>
+                  Annuler
                 </Button>
-
-                {exportTarget && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleConfirmExport('individual')}
-                    style={{
-                      padding: '1.5rem',
-                      justifyContent: 'flex-start',
-                      gap: '1rem',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    <span style={{fontSize: '1.5rem'}}>👤</span>
-                    <div style={{textAlign: 'left'}}>
-                      <div style={{fontWeight: '600'}}>Fiche individuelle</div>
-                      <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                        Exporter uniquement cette personne
-                      </div>
-                    </div>
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Export Individuel - Choix du format (PDF ou Excel) */}
-      {showIndividualExportModal && selectedUserForExport && (
-        <div className="modal-overlay" onClick={() => setShowIndividualExportModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
-            <div className="modal-header">
-              <h3>📤 Exporter la fiche de {selectedUserForExport.prenom} {selectedUserForExport.nom}</h3>
-              <Button variant="ghost" onClick={() => setShowIndividualExportModal(false)}>✕</Button>
-            </div>
-            <div className="modal-body" style={{padding: '2rem'}}>
-              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
-                Choisissez le format d'export :
-              </p>
-              
-              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                <Button 
-                  onClick={() => handleIndividualExport('pdf')}
-                  style={{
-                    padding: '1.5rem',
-                    justifyContent: 'flex-start',
-                    gap: '1rem',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <span style={{fontSize: '1.5rem'}}>📄</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{fontWeight: '600'}}>Format PDF</div>
-                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                      Document portable, idéal pour l'impression
-                    </div>
-                  </div>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  onClick={() => handleIndividualExport('excel')}
-                  style={{
-                    padding: '1.5rem',
-                    justifyContent: 'flex-start',
-                    gap: '1rem',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <span style={{fontSize: '1.5rem'}}>📊</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{fontWeight: '600'}}>Format Excel</div>
-                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                      Tableau modifiable pour analyse
-                    </div>
-                  </div>
+                <Button onClick={handleConfirmExport}>
+                  {exportType === 'pdf' ? '📄' : '📊'} Exporter
                 </Button>
               </div>
             </div>
