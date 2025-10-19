@@ -14282,3 +14282,109 @@ body {
   }
 }
 
+
+/* ===== Planning Refonte - Harmonisation ===== */
+
+.planning-refonte {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Indicateur pour "Mes Quarts" */
+.jour-garde-card.my-shift {
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  transform: scale(1.02);
+}
+
+.garde-mois-item.my-shift {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Vue Liste Planning */
+.planning-liste {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.planning-liste .formations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.planning-liste .formation-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.planning-liste .formation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Toggle Views */
+.view-toggle {
+  display: flex;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.view-toggle button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.view-toggle button.active {
+  background: white;
+  color: #FCA5A5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.view-toggle button:hover:not(.active) {
+  background: #E5E7EB;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .planning-liste .formations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .planning-refonte {
+    padding: 1rem;
+  }
+  
+  .planning-liste .formations-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .personnel-controls {
+    flex-direction: column;
+  }
+  
+  .personnel-controls > div {
+    width: 100%;
+  }
+}
+
