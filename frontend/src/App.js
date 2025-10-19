@@ -6895,42 +6895,174 @@ const Remplacements = () => {
 
   if (loading) return <div className="loading" data-testid="replacements-loading">Chargement...</div>;
 
+  // Calculer les KPIs
+  const totalDemandes = demandes.length;
+  const enAttente = demandes.filter(d => d.statut === 'en_cours').length;
+  const acceptees = demandes.filter(d => d.statut === 'approuve').length;
+  const refusees = demandes.filter(d => d.statut === 'refuse').length;
+  const remplacementsTrouves = demandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length;
+  const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
+  const congesDuMois = demandesConge.length;
+
+  // Filtrer les demandes selon le rôle et le filtre
+  const getFilteredDemandes = () => {
+    let filtered = user.role === 'employe' 
+      ? demandes.filter(d => d.demandeur_id === user.id)
+      : demandes;
+    
+    if (filterStatut !== 'tous') {
+      const statutMap = {
+        'en_attente': 'en_cours',
+        'accepte': 'approuve',
+        'refuse': 'refuse'
+      };
+      filtered = filtered.filter(d => d.statut === statutMap[filterStatut]);
+    }
+    
+    return filtered;
+  };
+
+  const filteredDemandes = getFilteredDemandes();
+
   return (
-    <div className="remplacements-optimized">
-      <div className="remplacements-header">
+    <div className="remplacements-refonte">
+      {/* Header Moderne */}
+      <div className="module-header">
         <div>
-          <h1 data-testid="replacements-title">Gestion des remplacements et congés</h1>
-          <p>Demandes de remplacement avec recherche automatique et gestion des congés</p>
-        </div>
-        <div className="header-actions">
-          <Button 
-            variant="default" 
-            onClick={() => setShowCreateRemplacementModal(true)}
-            data-testid="create-replacement-btn"
-          >
-            🔄 Demande de remplacement
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowCreateCongeModal(true)}
-            data-testid="create-conge-btn"
-          >
-            🏖️ Demande de congé
-          </Button>
+          <h1 data-testid="replacements-title">🔄 Remplacements & Congés</h1>
+          <p>Gestion des demandes de remplacement avec recherche automatique et suivi des congés</p>
         </div>
       </div>
 
-      {/* Onglets Remplacements / Congés */}
-      <div className="replacement-tabs">
+      {/* KPIs */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{totalDemandes}</h3>
+          <p>Total Demandes</p>
+        </div>
+        <div className="kpi-card" style={{background: '#FEF3C7'}}>
+          <h3>{enAttente} / {acceptees} / {refusees}</h3>
+          <p>En Attente / Acceptées / Refusées</p>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{remplacementsTrouves}</h3>
+          <p>Remplacements Trouvés</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{tauxSucces}%</h3>
+          <p>Taux de Succès</p>
+        </div>
+        <div className="kpi-card" style={{background: '#E9D5FF'}}>
+          <h3>{congesDuMois}</h3>
+          <p>Congés du Mois</p>
+        </div>
+      </div>
+
+      {/* Barre de Contrôles */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+          {/* Boutons d'action */}
+          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center'}}>
+            <Button 
+              variant="default" 
+              onClick={() => setShowCreateRemplacementModal(true)}
+              data-testid="create-replacement-btn"
+            >
+              🔄 Demande de Remplacement
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateCongeModal(true)}
+              data-testid="create-conge-btn"
+            >
+              🏖️ Demande de Congé
+            </Button>
+            
+            {/* Filtre par statut */}
+            <select 
+              value={filterStatut}
+              onChange={(e) => setFilterStatut(e.target.value)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="tous">📋 Tous les statuts</option>
+              <option value="en_attente">⏳ En attente</option>
+              <option value="accepte">✅ Acceptées</option>
+              <option value="refuse">❌ Refusées</option>
+            </select>
+
+            {/* Toggle Vue Liste/Cartes */}
+            <div className="view-toggle">
+              <button 
+                className={viewMode === 'liste' ? 'active' : ''}
+                onClick={() => setViewMode('liste')}
+                title="Vue Liste"
+              >
+                ☰
+              </button>
+              <button 
+                className={viewMode === 'cartes' ? 'active' : ''}
+                onClick={() => setViewMode('cartes')}
+                title="Vue Cartes"
+              >
+                ⊞
+              </button>
+            </div>
+          </div>
+
+          {/* Exports */}
+          <div style={{display: 'flex', gap: '1rem'}}>
+            <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
+              📄 Export PDF
+            </Button>
+            <Button variant="outline" onClick={() => { setExportType('excel'); setShowExportModal(true); }}>
+              📊 Export Excel
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Onglets Remplacements / Congés - Harmonisés */}
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '2rem',
+        borderBottom: '2px solid #E5E7EB',
+        paddingBottom: '0.5rem'
+      }}>
         <button
-          className={`tab-button ${activeTab === 'remplacements' ? 'active' : ''}`}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'remplacements' ? '#FCA5A5' : 'transparent',
+            color: activeTab === 'remplacements' ? 'white' : '#6B7280',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'remplacements' ? 'bold' : 'normal',
+            fontSize: '1rem',
+            transition: 'all 0.2s ease'
+          }}
           onClick={() => setActiveTab('remplacements')}
           data-testid="tab-remplacements"
         >
           🔄 Remplacements ({demandes.length})
         </button>
         <button
-          className={`tab-button ${activeTab === 'conges' ? 'active' : ''}`}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'conges' ? '#FCA5A5' : 'transparent',
+            color: activeTab === 'conges' ? 'white' : '#6B7280',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'conges' ? 'bold' : 'normal',
+            fontSize: '1rem',
+            transition: 'all 0.2s ease'
+          }}
           onClick={() => setActiveTab('conges')}
           data-testid="tab-conges"
         >
@@ -6942,42 +7074,6 @@ const Remplacements = () => {
       <div className="tab-content">
         {activeTab === 'remplacements' && (
           <div className="remplacements-content">
-            {/* Statistics Cards pour remplacements */}
-            <div className="replacement-stats">
-              <div className="stat-card pending">
-                <div className="stat-icon">⏳</div>
-                <div className="stat-content">
-                  <h3>En cours</h3>
-                  <p className="stat-number">{demandes.filter(d => d.statut === 'en_cours').length}</p>
-                  <p className="stat-label">Demandes en attente</p>
-                </div>
-              </div>
-
-              <div className="stat-card approved">
-                <div className="stat-icon">✅</div>
-                <div className="stat-content">
-                  <h3>Approuvées</h3>
-                  <p className="stat-number">{demandes.filter(d => d.statut === 'approuve').length}</p>
-                  <p className="stat-label">Ce mois</p>
-                </div>
-              </div>
-
-              <div className="stat-card coverage">
-                <div className="stat-icon">📊</div>
-                <div className="stat-content">
-                  <h3>Taux de couverture</h3>
-                  <p className="stat-number">
-                    {demandes.length > 0 
-                      ? Math.round((demandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length / demandes.length) * 100)
-                      : 0}%
-                  </p>
-                  <p className="stat-label">Remplacements trouvés</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Aide contextuelle pour les admins/superviseurs */}
-            {user.role !== 'employe' && demandes.filter(d => d.statut === 'en_cours').length > 0 && (
               <div style={{ 
                 background: '#eff6ff', 
                 border: '1px solid #3b82f6', 
