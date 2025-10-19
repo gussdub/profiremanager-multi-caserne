@@ -2646,6 +2646,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
   const [exportTarget, setExportTarget] = useState(null); // null pour tout, user.id pour individuel
+  const [showIndividualExportModal, setShowIndividualExportModal] = useState(false);
+  const [selectedUserForExport, setSelectedUserForExport] = useState(null);
   
   const [newDisponibilite, setNewDisponibilite] = useState({
     date: new Date().toISOString().split('T')[0],
