@@ -14112,6 +14112,16 @@ body {
   color: #4B5563;
 }
 
+/* Troncature des emails longs avec tooltip */
+.email-truncated {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  cursor: help;
+}
+
 .badge-status {
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
