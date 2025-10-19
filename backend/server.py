@@ -5362,6 +5362,75 @@ async def get_tableau_bord_budgetaire(tenant_slug: str, annee: int, current_user
     }
 
 
+@api_router.get("/{tenant_slug}/rapports/rapport-immobilisations")
+async def get_rapport_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Rapport détaillé sur les immobilisations"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les immobilisations
+    immobilisations = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = {
+        "vehicules": [],
+        "equipements": [],
+        "statistiques": {
+            "nombre_vehicules": 0,
+            "nombre_equipements": 0,
+            "cout_acquisition_total": 0,
+            "cout_entretien_annuel_total": 0,
+            "age_moyen_vehicules": 0,
+            "age_moyen_equipements": 0
+        }
+    }
+    
+    today = datetime.now(timezone.utc).date()
+    ages_vehicules = []
+    ages_equipements = []
+    
+    for immob in immobilisations:
+        # Calculer l'âge
+        try:
+            date_acquisition = datetime.fromisoformat(immob["date_acquisition"]).date()
+            age_annees = (today - date_acquisition).days / 365.25
+        except:
+            age_annees = 0
+        
+        item = {
+            "id": immob["id"],
+            "nom": immob["nom"],
+            "date_acquisition": immob["date_acquisition"],
+            "age_annees": round(age_annees, 1),
+            "cout_acquisition": immob["cout_acquisition"],
+            "cout_entretien_annuel": immob["cout_entretien_annuel"],
+            "etat": immob["etat"],
+            "date_remplacement_prevue": immob.get("date_remplacement_prevue"),
+            "notes": immob.get("notes", "")
+        }
+        
+        if immob["type_immobilisation"] == "vehicule":
+            rapport["vehicules"].append(item)
+            rapport["statistiques"]["nombre_vehicules"] += 1
+            ages_vehicules.append(age_annees)
+        else:
+            rapport["equipements"].append(item)
+            rapport["statistiques"]["nombre_equipements"] += 1
+            ages_equipements.append(age_annees)
+        
+        rapport["statistiques"]["cout_acquisition_total"] += immob["cout_acquisition"]
+        rapport["statistiques"]["cout_entretien_annuel_total"] += immob["cout_entretien_annuel"]
+    
+    # Calculer âges moyens
+    if ages_vehicules:
+        rapport["statistiques"]["age_moyen_vehicules"] = round(sum(ages_vehicules) / len(ages_vehicules), 1)
+    if ages_equipements:
+        rapport["statistiques"]["age_moyen_equipements"] = round(sum(ages_equipements) / len(ages_equipements), 1)
+    
+    return rapport
+
+
 # ====== EXPORTS PDF/EXCEL POUR LES RAPPORTS ======
 
 @api_router.get("/{tenant_slug}/rapports/export-dashboard-pdf")
