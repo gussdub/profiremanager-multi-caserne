@@ -3502,6 +3502,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 {user.type_emploi === 'temps_partiel' && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
                 )}
+                <button onClick={() => handleOpenIndividualExportModal(user)} title="Exporter">📤</button>
               </div>
             </div>
           ))}
