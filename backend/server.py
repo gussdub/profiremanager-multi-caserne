@@ -7816,6 +7816,349 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
         raise HTTPException(status_code=500, detail=f"Erreur envoi notifications: {str(e)}")
 
 
+
+# Exports Planning PDF
+@api_router.get("/{tenant_slug}/planning/export-pdf")
+async def export_planning_pdf(
+    tenant_slug: str, 
+    periode: str,
+    type: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Export du planning en PDF"""
+    try:
+        from reportlab.lib.pagesizes import letter, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+        from io import BytesIO
+        
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Calculer la période
+        if type == 'semaine':
+            # periode est au format YYYY-MM-DD (lundi de la semaine)
+            date_debut = datetime.strptime(periode, '%Y-%m-%d')
+            date_fin = date_debut + timedelta(days=6)
+        else:  # mois
+            # periode est au format YYYY-MM
+            year, month = map(int, periode.split('-'))
+            date_debut = datetime(year, month, 1)
+            # Dernier jour du mois
+            if month == 12:
+                date_fin = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                date_fin = datetime(year, month + 1, 1) - timedelta(days=1)
+        
+        # Récupérer les données
+        assignations_list = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": date_debut.strftime('%Y-%m-%d'),
+                "$lte": date_fin.strftime('%Y-%m-%d')
+            }
+        }).to_list(length=None)
+        
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(length=None)
+        users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        # Maps pour accès rapide
+        types_map = {t['id']: t for t in types_garde_list}
+        users_map = {u['id']: u for u in users_list}
+        
+        # Créer le PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#EF4444'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        
+        titre = f"Planning des Gardes - {type.capitalize()}"
+        periode_str = f"Du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+        
+        elements.append(Paragraph(titre, title_style))
+        elements.append(Paragraph(periode_str, styles['Normal']))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Construire le tableau
+        if type == 'semaine':
+            # Vue semaine : colonnes = jours
+            jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+            dates = [(date_debut + timedelta(days=i)).strftime('%d/%m') for i in range(7)]
+            
+            table_data = [['Type de Garde'] + [f"{j}\n{d}" for j, d in zip(jours, dates)]]
+            
+            for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                row = [f"{type_garde['nom']}\n{type_garde.get('heure_debut', '')} - {type_garde.get('heure_fin', '')}"]
+                
+                for i in range(7):
+                    current_date = (date_debut + timedelta(days=i)).strftime('%Y-%m-%d')
+                    assignations_jour = [a for a in assignations_list if a['date'] == current_date and a['type_garde_id'] == type_garde['id']]
+                    
+                    if assignations_jour:
+                        noms = [f"{users_map[a['user_id']]['prenom'][0]}. {users_map[a['user_id']]['nom'][:10]}" 
+                               for a in assignations_jour if a['user_id'] in users_map]
+                        cell_text = '\n'.join(noms[:3])  # Max 3 noms
+                        if len(noms) > 3:
+                            cell_text += f"\n+{len(noms)-3}"
+                    else:
+                        cell_text = 'Vacant'
+                    
+                    row.append(cell_text)
+                
+                table_data.append(row)
+        else:
+            # Vue mois : résumé
+            table_data = [['Date', 'Type de Garde', 'Personnel Assigné', 'Statut']]
+            
+            current = date_debut
+            while current <= date_fin:
+                date_str = current.strftime('%Y-%m-%d')
+                
+                for type_garde in types_garde_list:
+                    assignations_jour = [a for a in assignations_list if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
+                    
+                    if assignations_jour or True:  # Afficher même les vacants
+                        noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
+                               for a in assignations_jour if a['user_id'] in users_map]
+                        
+                        personnel_str = ', '.join(noms) if noms else 'Aucun'
+                        statut = 'Complet' if len(noms) >= type_garde.get('personnel_requis', 1) else 'Partiel' if noms else 'Vacant'
+                        
+                        table_data.append([
+                            current.strftime('%d/%m/%Y'),
+                            type_garde['nom'],
+                            personnel_str[:50],  # Limiter la longueur
+                            statut
+                        ])
+                
+                current += timedelta(days=1)
+        
+        # Créer le tableau
+        table = Table(table_data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        elements.append(table)
+        
+        # Générer le PDF
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=planning_{type}_{periode}.pdf"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export PDF: {str(e)}")
+
+
+# Exports Planning Excel
+@api_router.get("/{tenant_slug}/planning/export-excel")
+async def export_planning_excel(
+    tenant_slug: str, 
+    periode: str,
+    type: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Export du planning en Excel"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from io import BytesIO
+        
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Calculer la période
+        if type == 'semaine':
+            date_debut = datetime.strptime(periode, '%Y-%m-%d')
+            date_fin = date_debut + timedelta(days=6)
+        else:
+            year, month = map(int, periode.split('-'))
+            date_debut = datetime(year, month, 1)
+            if month == 12:
+                date_fin = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                date_fin = datetime(year, month + 1, 1) - timedelta(days=1)
+        
+        # Récupérer les données
+        assignations_list = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": date_debut.strftime('%Y-%m-%d'),
+                "$lte": date_fin.strftime('%Y-%m-%d')
+            }
+        }).to_list(length=None)
+        
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(length=None)
+        users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        types_map = {t['id']: t for t in types_garde_list}
+        users_map = {u['id']: u for u in users_list}
+        
+        # Créer le workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"Planning {type}"
+        
+        # Styles
+        header_fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        center_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Titre
+        ws.merge_cells('A1:H1')
+        ws['A1'] = f"Planning des Gardes - {type.capitalize()}"
+        ws['A1'].font = Font(bold=True, size=16, color="EF4444")
+        ws['A1'].alignment = center_alignment
+        
+        ws.merge_cells('A2:H2')
+        ws['A2'] = f"Du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+        ws['A2'].alignment = center_alignment
+        
+        # En-têtes
+        row = 4
+        if type == 'semaine':
+            headers = ['Type de Garde', 'Horaires'] + [(date_debut + timedelta(days=i)).strftime('%a %d/%m') for i in range(7)]
+        else:
+            headers = ['Date', 'Jour', 'Type de Garde', 'Horaires', 'Personnel', 'Requis', 'Assignés', 'Statut']
+        
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_alignment
+            cell.border = border
+        
+        # Données
+        row += 1
+        
+        if type == 'semaine':
+            for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                ws.cell(row=row, column=1, value=type_garde['nom'])
+                ws.cell(row=row, column=2, value=f"{type_garde.get('heure_debut', '')} - {type_garde.get('heure_fin', '')}")
+                
+                for i in range(7):
+                    current_date = (date_debut + timedelta(days=i)).strftime('%Y-%m-%d')
+                    assignations_jour = [a for a in assignations_list if a['date'] == current_date and a['type_garde_id'] == type_garde['id']]
+                    
+                    noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
+                           for a in assignations_jour if a['user_id'] in users_map]
+                    
+                    cell_text = '\n'.join(noms) if noms else 'Vacant'
+                    cell = ws.cell(row=row, column=3+i, value=cell_text)
+                    cell.alignment = center_alignment
+                    cell.border = border
+                    
+                    # Couleur selon statut
+                    if len(noms) >= type_garde.get('personnel_requis', 1):
+                        cell.fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
+                    elif noms:
+                        cell.fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+                    else:
+                        cell.fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+                
+                row += 1
+        else:
+            current = date_debut
+            while current <= date_fin:
+                date_str = current.strftime('%Y-%m-%d')
+                jour_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][current.weekday()]
+                
+                for type_garde in types_garde_list:
+                    assignations_jour = [a for a in assignations_list if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
+                    
+                    noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
+                           for a in assignations_jour if a['user_id'] in users_map]
+                    
+                    personnel_str = ', '.join(noms) if noms else 'Aucun'
+                    requis = type_garde.get('personnel_requis', 1)
+                    assignes = len(noms)
+                    statut = 'Complet' if assignes >= requis else 'Partiel' if noms else 'Vacant'
+                    
+                    ws.cell(row=row, column=1, value=current.strftime('%d/%m/%Y'))
+                    ws.cell(row=row, column=2, value=jour_fr)
+                    ws.cell(row=row, column=3, value=type_garde['nom'])
+                    ws.cell(row=row, column=4, value=f"{type_garde.get('heure_debut', '')} - {type_garde.get('heure_fin', '')}")
+                    ws.cell(row=row, column=5, value=personnel_str)
+                    ws.cell(row=row, column=6, value=requis)
+                    ws.cell(row=row, column=7, value=assignes)
+                    status_cell = ws.cell(row=row, column=8, value=statut)
+                    
+                    # Couleur statut
+                    if statut == 'Complet':
+                        status_cell.fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
+                    elif statut == 'Partiel':
+                        status_cell.fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+                    else:
+                        status_cell.fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+                    
+                    for col in range(1, 9):
+                        ws.cell(row=row, column=col).border = border
+                        ws.cell(row=row, column=col).alignment = center_alignment
+                    
+                    row += 1
+                
+                current += timedelta(days=1)
+        
+        # Ajuster les largeurs de colonnes
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Sauvegarder dans un buffer
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=planning_{type}_{periode}.xlsx"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
+
+
+
 # Réparer tous les mots de passe démo
 @api_router.post("/repair-demo-passwords")
 async def repair_demo_passwords():
