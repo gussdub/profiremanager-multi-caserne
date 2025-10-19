@@ -10704,10 +10704,62 @@ const Rapports = () => {
     setLoading(false);
   };
 
+  const handleGenererRapportDisponibilite = async () => {
+    setLoading(true);
+    try {
+      const params = `date_debut=${dateDebut}&date_fin=${dateFin}`;
+      const rapport = await apiGet(tenantSlug, `/rapports/disponibilite?${params}`);
+      setRapportDisponibilite(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleGenererRapportFormations = async () => {
+    setLoading(true);
+    try {
+      const rapport = await apiGet(tenantSlug, `/rapports/couts-formations?annee=${anneeSelectionnee}`);
+      setRapportCoutsFormations(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
   const handleSaveBudget = async () => {
     try {
       await apiPost(tenantSlug, '/rapports/budgets', budgetForm);
       toast({ title: "Succès", description: "Budget ajouté" });
+      setShowBudgetModal(false);
+      setBudgetForm({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter le budget", variant: "destructive" });
+    }
+  };
+
+  const handleSaveImmobilisation = async () => {
+    try {
+      await apiPost(tenantSlug, '/rapports/immobilisations', immobilisationForm);
+      toast({ title: "Succès", description: "Immobilisation ajoutée" });
+      setShowImmobilisationModal(false);
+      setImmobilisationForm({ 
+        type_immobilisation: 'vehicule', 
+        nom: '', 
+        date_acquisition: new Date().toISOString().split('T')[0], 
+        cout_acquisition: 0, 
+        cout_entretien_annuel: 0, 
+        etat: 'bon', 
+        notes: '' 
+      });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter l'immobilisation", variant: "destructive" });
+    }
+  };
       setShowBudgetModal(false);
       setBudgetForm({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
       loadData();
