@@ -5343,58 +5343,144 @@ const Planning = () => {
   if (loading) return <div className="loading" data-testid="planning-loading">Chargement du planning...</div>;
 
   return (
-    <div className="planning">
-      <div className="planning-header">
+    <div className="planning-refonte">
+      {/* Header Moderne */}
+      <div className="module-header">
         <div>
-          <h1 data-testid="planning-title">Planning des gardes</h1>
-          <p>Affectation manuelle privilégiée et attribution automatique</p>
-        </div>
-        <div className="planning-controls">
-          <div className="view-controls">
-            <Button 
-              variant={viewMode === 'semaine' ? 'default' : 'outline'}
-              onClick={() => setViewMode('semaine')}
-              data-testid="week-view-btn"
-            >
-              📅 Vue semaine
-            </Button>
-            <Button 
-              variant={viewMode === 'mois' ? 'default' : 'outline'}
-              onClick={() => setViewMode('mois')}
-              data-testid="month-view-btn"
-            >
-              📊 Vue mois
-            </Button>
-          </div>
-          <div className="action-controls">
-            <Button 
-              variant="default" 
-              disabled={user.role === 'employe'}
-              onClick={() => {
-                setAutoAttributionConfig({
-                  periode: viewMode,
-                  date: viewMode === 'semaine' ? currentWeek : currentMonth
-                });
-                setShowAutoAttributionModal(true);
-              }}
-              data-testid="auto-assign-btn"
-            >
-              ✨ Attribution auto
-            </Button>
-            <Button 
-              variant="destructive" 
-              disabled={user.role === 'employe'}
-              onClick={() => setShowAdvancedAssignModal(true)}
-              data-testid="manual-assign-btn"
-            >
-              👤 Assignation manuelle avancée
-            </Button>
-          </div>
+          <h1>📅 Planning des Gardes</h1>
+          <p>Gestion des quarts de travail et assignations du personnel</p>
         </div>
       </div>
 
-      {/* Navigation temporelle */}
-      <div className="time-navigation">
+      {/* KPIs du Mois */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{kpis.totalQuarts}</h3>
+          <p>Total Quarts du Mois</p>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{kpis.quartsCouverts} / {kpis.quartsNonCouverts}</h3>
+          <p>Couverts / Non Couverts</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{kpis.heuresTotales}h</h3>
+          <p>Heures Totales Planifiées</p>
+        </div>
+        <div className="kpi-card" style={{background: '#FEF3C7'}}>
+          <h3>{kpis.tauxCouverture}%</h3>
+          <p>Taux de Couverture</p>
+        </div>
+      </div>
+
+      {/* Barre de Contrôles Harmonisée */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
+          {/* Recherche */}
+          <div style={{flex: 1, minWidth: '300px'}}>
+            <Input 
+              placeholder="🔍 Rechercher un pompier..."
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
+            />
+          </div>
+          
+          {/* Toggle Vue Semaine/Mois */}
+          <div className="view-toggle">
+            <button 
+              className={viewMode === 'semaine' ? 'active' : ''}
+              onClick={() => setViewMode('semaine')}
+              title="Vue Semaine"
+            >
+              📅 Semaine
+            </button>
+            <button 
+              className={viewMode === 'mois' ? 'active' : ''}
+              onClick={() => setViewMode('mois')}
+              title="Vue Mois"
+            >
+              📊 Mois
+            </button>
+          </div>
+
+          {/* Toggle Vue Calendrier/Liste */}
+          <div className="view-toggle">
+            <button 
+              className={displayMode === 'calendrier' ? 'active' : ''}
+              onClick={() => setDisplayMode('calendrier')}
+              title="Vue Calendrier"
+            >
+              📆
+            </button>
+            <button 
+              className={displayMode === 'liste' ? 'active' : ''}
+              onClick={() => setDisplayMode('liste')}
+              title="Vue Liste"
+            >
+              ☰
+            </button>
+          </div>
+
+          {/* Exports */}
+          <Button variant="outline">
+            📄 Export PDF
+          </Button>
+          <Button variant="outline">
+            📊 Export Excel
+          </Button>
+        </div>
+      </div>
+
+      {/* Boutons d'Assignation Mis en Évidence */}
+      {user.role !== 'employe' && (
+        <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center'}}>
+          <Button 
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+            }}
+            onClick={() => {
+              setAutoAttributionConfig({
+                periode: viewMode,
+                date: viewMode === 'semaine' ? currentWeek : currentMonth
+              });
+              setShowAutoAttributionModal(true);
+            }}
+            data-testid="auto-assign-btn"
+          >
+            ✨ Attribution Automatique
+          </Button>
+          <Button 
+            style={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(245, 87, 108, 0.4)'
+            }}
+            onClick={() => setShowAdvancedAssignModal(true)}
+            data-testid="manual-assign-btn"
+          >
+            👤 Assignation Manuelle Avancée
+          </Button>
+        </div>
+      )}
+
+      {/* Navigation Temporelle */}
+      <div className="time-navigation" style={{
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '2rem',
+        padding: '1rem',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
         <Button 
           variant="ghost" 
           onClick={() => viewMode === 'mois' ? navigateMonth(-1) : navigateWeek(-1)}
@@ -5402,7 +5488,7 @@ const Planning = () => {
         >
           ← {viewMode === 'mois' ? 'Mois précédent' : 'Semaine précédente'}
         </Button>
-        <h2 className="period-title">
+        <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
           {viewMode === 'mois' ? (
             new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
           ) : (
@@ -5418,45 +5504,78 @@ const Planning = () => {
         </Button>
       </div>
 
-      {/* Légende des couleurs */}
-      <div className="coverage-legend">
-        <h3>📊 Légende de couverture</h3>
-        <div className="legend-items">
-          <div className="legend-item">
-            <span className="legend-color complete"></span>
-            <span>Garde complète</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color partielle"></span>
-            <span>Garde partielle</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color vacante"></span>
-            <span>Garde vacante</span>
-          </div>
+      {/* Légende des Couleurs */}
+      <div style={{
+        display: 'flex',
+        gap: '2rem',
+        justifyContent: 'center',
+        marginBottom: '2rem',
+        padding: '1rem',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+          <span style={{width: '20px', height: '20px', background: '#10B981', borderRadius: '4px', display: 'inline-block'}}></span>
+          <span style={{fontSize: '0.9rem'}}>Complet</span>
         </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+          <span style={{width: '20px', height: '20px', background: '#F59E0B', borderRadius: '4px', display: 'inline-block'}}></span>
+          <span style={{fontSize: '0.9rem'}}>Partiel</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+          <span style={{width: '20px', height: '20px', background: '#EF4444', borderRadius: '4px', display: 'inline-block'}}></span>
+          <span style={{fontSize: '0.9rem'}}>Vacant</span>
+        </div>
+        {user.role === 'employe' && (
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+            <span style={{width: '20px', height: '20px', background: '#3B82F6', borderRadius: '4px', display: 'inline-block'}}></span>
+            <span style={{fontSize: '0.9rem'}}>Mes Quarts</span>
+          </div>
+        )}
       </div>
 
-      {/* Instructions for manual assignment */}
+      {/* Instructions (pour admins) */}
       {user.role !== 'employe' && (
-        <div className="planning-instructions">
-          <div className="instruction-card">
-            <span className="instruction-icon">👆</span>
-            <div className="instruction-text">
-              <strong>Assignation manuelle :</strong> Cliquez sur une cellule vide (garde vacante) pour assigner un pompier manuellement
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '1rem',
+          marginBottom: '2rem'
+        }}>
+          <div style={{
+            padding: '1rem',
+            background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+            borderRadius: '12px',
+            border: '2px solid #667eea',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center'
+          }}>
+            <span style={{fontSize: '2rem'}}>👆</span>
+            <div>
+              <strong>Assignation manuelle :</strong> Cliquez sur une garde pour voir/ajouter du personnel
             </div>
           </div>
-          <div className="instruction-card">
-            <span className="instruction-icon">🤖</span>
-            <div className="instruction-text">
-              <strong>Attribution automatique :</strong> Utilise l'intelligence artificielle selon les priorités configurées
+          <div style={{
+            padding: '1rem',
+            background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+            borderRadius: '12px',
+            border: '2px solid #764ba2',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center'
+          }}>
+            <span style={{fontSize: '2rem'}}>🤖</span>
+            <div>
+              <strong>Attribution auto :</strong> Algorithme intelligent selon les disponibilités
             </div>
           </div>
         </div>
       )}
 
-      {/* Planning moderne avec code couleur */}
-      {viewMode === 'semaine' ? (
+      {/* Vue Calendrier ou Liste */}
+      {displayMode === 'calendrier' ? (
         <div className="planning-moderne">
           {typesGarde
             .filter(typeGarde => {
