@@ -4714,6 +4714,62 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Export Individuel - Choix du format (PDF ou Excel) */}
+      {showIndividualExportModal && selectedUserForExport && (
+        <div className="modal-overlay" onClick={() => setShowIndividualExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📤 Exporter la fiche de {selectedUserForExport.prenom} {selectedUserForExport.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowIndividualExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Choisissez le format d'export :
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={() => handleIndividualExport('pdf')}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📄</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Format PDF</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Document portable, idéal pour l'impression
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => handleIndividualExport('excel')}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📊</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Format Excel</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Tableau modifiable pour analyse
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
