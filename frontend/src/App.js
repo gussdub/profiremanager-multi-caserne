@@ -7766,6 +7766,35 @@ const Remplacements = () => {
           </div>
         </div>
       )}
+      {/* Modal Export - Remplacements */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Export Remplacements {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Cette fonctionnalité sera disponible prochainement.
+              </p>
+              <p style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                Vous pourrez bientôt exporter :
+              </p>
+              <ul style={{fontSize: '0.875rem', color: '#6B7280', marginTop: '0.5rem'}}>
+                <li>📋 Toutes les demandes de remplacement</li>
+                <li>👤 Les demandes d'une personne spécifique</li>
+                <li>🗓️ Par période (mois, trimestre, année)</li>
+              </ul>
+              <div style={{marginTop: '1.5rem', textAlign: 'right'}}>
+                <Button onClick={() => setShowExportModal(false)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
