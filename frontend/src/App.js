@@ -8610,6 +8610,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   // Déterminer quel utilisateur on gère (soi-même ou un autre)
   const targetUser = managingUser || user;
   const [userDisponibilites, setUserDisponibilites] = useState([]);
+  const [users, setUsers] = useState([]); // Liste de tous les utilisateurs pour les KPIs
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
