@@ -2874,6 +2874,62 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     setShowExportModal(true);
   };
 
+  // Ouvrir le modal pour choisir le format d'export individuel
+  const handleOpenIndividualExportModal = (user) => {
+    setSelectedUserForExport(user);
+    setShowIndividualExportModal(true);
+  };
+
+  // Exporter un utilisateur individuel dans le format choisi
+  const handleIndividualExport = async (format) => {
+    if (!selectedUserForExport) return;
+    
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const endpoint = format === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}?user_id=${selectedUserForExport.id}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const extension = format === 'pdf' ? '.pdf' : '.xlsx';
+      link.download = `fiche_${selectedUserForExport.prenom}_${selectedUserForExport.nom}${extension}`;
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: `Fiche de ${selectedUserForExport.prenom} ${selectedUserForExport.nom} téléchargée`,
+        variant: "success"
+      });
+      
+      setShowIndividualExportModal(false);
+      setSelectedUserForExport(null);
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter la fiche`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
   // Confirmer l'export après sélection dans le modal
   const handleConfirmExport = async (scope) => {
     const userId = scope === 'individual' ? exportTarget : null;
