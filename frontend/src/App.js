@@ -5278,6 +5278,68 @@ const Planning = () => {
     setCurrentMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`);
   };
 
+  // Calcul des KPIs pour le mois en cours
+  const calculateKPIs = () => {
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Filtrer les assignations du mois en cours
+    const monthAssignations = assignations.filter(a => {
+      const assignDate = new Date(a.date);
+      return assignDate >= currentMonthStart && assignDate <= currentMonthEnd;
+    });
+    
+    // Compter les gardes uniques du mois
+    const uniqueGardes = new Set();
+    monthAssignations.forEach(a => {
+      uniqueGardes.add(`${a.date}-${a.type_garde_id}`);
+    });
+    
+    // Calculer le total de gardes théoriques du mois
+    const daysInMonth = currentMonthEnd.getDate();
+    const totalGardesTheoriques = daysInMonth * typesGarde.length;
+    
+    // Calculer les gardes couvertes et non couvertes
+    const gardesCouvertes = Array.from(uniqueGardes).filter(gardeKey => {
+      const [date, typeGardeId] = gardeKey.split('-');
+      const gardeAssignations = monthAssignations.filter(a => 
+        a.date === date && a.type_garde_id === typeGardeId
+      );
+      const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+      return gardeAssignations.length >= (typeGarde?.personnel_requis || 1);
+    }).length;
+    
+    const gardesNonCouvertes = totalGardesTheoriques - gardesCouvertes;
+    
+    // Calculer les heures totales planifiées
+    const heuresTotales = monthAssignations.reduce((total, assignation) => {
+      const typeGarde = typesGarde.find(t => t.id === assignation.type_garde_id);
+      if (typeGarde && typeGarde.heure_debut && typeGarde.heure_fin) {
+        const [heureDebut] = typeGarde.heure_debut.split(':').map(Number);
+        const [heureFin] = typeGarde.heure_fin.split(':').map(Number);
+        const duree = heureFin > heureDebut ? heureFin - heureDebut : (24 - heureDebut) + heureFin;
+        return total + duree;
+      }
+      return total + 12; // Durée par défaut si non spécifiée
+    }, 0);
+    
+    // Calculer le taux de couverture
+    const tauxCouverture = totalGardesTheoriques > 0 
+      ? Math.round((gardesCouvertes / totalGardesTheoriques) * 100) 
+      : 0;
+    
+    return {
+      totalQuarts: totalGardesTheoriques,
+      quartsCouverts: gardesCouvertes,
+      quartsNonCouverts: gardesNonCouvertes,
+      heuresTotales,
+      tauxCouverture
+    };
+  };
+
+  const kpis = calculateKPIs();
+
   if (loading) return <div className="loading" data-testid="planning-loading">Chargement du planning...</div>;
 
   return (
