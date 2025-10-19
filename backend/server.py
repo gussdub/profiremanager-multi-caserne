@@ -5187,6 +5187,141 @@ async def get_rapport_couts_salariaux(
     }
 
 
+@api_router.get("/{tenant_slug}/rapports/disponibilite")
+async def get_rapport_disponibilite(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport de disponibilité/indisponibilité des pompiers"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Convertir dates
+    date_debut_dt = datetime.fromisoformat(date_debut)
+    date_fin_dt = datetime.fromisoformat(date_fin)
+    
+    # Récupérer les données
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    disponibilites = await db.disponibilites.find({"tenant_id": tenant.id}).to_list(10000)
+    
+    rapport = []
+    total_jours_disponibles = 0
+    total_jours_indisponibles = 0
+    
+    for user in users:
+        # Filtrer disponibilités par période
+        user_disponibilites = []
+        for dispo in disponibilites:
+            if dispo["user_id"] == user["id"] and "date" in dispo:
+                try:
+                    date_dispo = datetime.fromisoformat(dispo["date"]).date()
+                    if date_debut_dt.date() <= date_dispo <= date_fin_dt.date():
+                        user_disponibilites.append(dispo)
+                except:
+                    pass
+        
+        jours_disponibles = len([d for d in user_disponibilites if d.get("disponible") == True])
+        jours_indisponibles = len([d for d in user_disponibilites if d.get("disponible") == False])
+        
+        # Analyser motifs d'indisponibilité
+        motifs = {}
+        for dispo in user_disponibilites:
+            if not dispo.get("disponible"):
+                motif = dispo.get("motif", "non_specifie")
+                motifs[motif] = motifs.get(motif, 0) + 1
+        
+        total_jours = jours_disponibles + jours_indisponibles
+        taux_disponibilite = round((jours_disponibles / total_jours * 100) if total_jours > 0 else 0, 1)
+        
+        total_jours_disponibles += jours_disponibles
+        total_jours_indisponibles += jours_indisponibles
+        
+        rapport.append({
+            "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+            "grade": user.get("grade", "N/A"),
+            "jours_disponibles": jours_disponibles,
+            "jours_indisponibles": jours_indisponibles,
+            "taux_disponibilite": taux_disponibilite,
+            "motifs_indisponibilite": motifs
+        })
+    
+    # Calculer statistiques globales
+    total_jours = total_jours_disponibles + total_jours_indisponibles
+    taux_global = round((total_jours_disponibles / total_jours * 100) if total_jours > 0 else 0, 1)
+    
+    return {
+        "periode": {"debut": date_debut, "fin": date_fin},
+        "employes": rapport,
+        "total_jours_disponibles": total_jours_disponibles,
+        "total_jours_indisponibles": total_jours_indisponibles,
+        "taux_disponibilite_global": taux_global,
+        "nombre_employes": len(rapport)
+    }
+
+
+@api_router.get("/{tenant_slug}/rapports/couts-formations")
+async def get_rapport_couts_formations(
+    tenant_slug: str,
+    annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport détaillé des coûts de formation"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données
+    formations = await db.formations.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
+    inscriptions = await db.inscriptions_formations.find({"tenant_id": tenant.id}).to_list(10000)
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    rapport = []
+    cout_total = 0
+    
+    for formation in formations:
+        # Récupérer inscriptions pour cette formation
+        formation_inscriptions = [i for i in inscriptions if i["formation_id"] == formation["id"]]
+        
+        # Coût de la formation (formateur, matériel, etc.)
+        cout_formation = formation.get("cout_formation", 0)
+        
+        # Coût salarial des participants
+        cout_salarial = 0
+        for inscription in formation_inscriptions:
+            user = next((u for u in users if u["id"] == inscription["user_id"]), None)
+            if user:
+                taux_horaire = user.get("taux_horaire", 0)
+                heures_formation = formation.get("duree_heures", 0)
+                cout_salarial += taux_horaire * heures_formation
+        
+        cout_total_formation = cout_formation + cout_salarial
+        cout_total += cout_total_formation
+        
+        rapport.append({
+            "nom_formation": formation.get("nom", "N/A"),
+            "date": formation.get("date_debut", "N/A"),
+            "duree_heures": formation.get("duree_heures", 0),
+            "nombre_participants": len(formation_inscriptions),
+            "cout_formation": cout_formation,
+            "cout_salarial": round(cout_salarial, 2),
+            "cout_total": round(cout_total_formation, 2)
+        })
+    
+    return {
+        "annee": annee,
+        "formations": rapport,
+        "cout_total": round(cout_total, 2),
+        "nombre_formations": len(rapport),
+        "nombre_total_participants": sum([f["nombre_participants"] for f in rapport]),
+        "heures_totales": sum([f["duree_heures"] for f in rapport])
+    }
+
+
 # ====== RAPPORTS EXTERNES ======
 
 @api_router.get("/{tenant_slug}/rapports/tableau-bord-budgetaire")
