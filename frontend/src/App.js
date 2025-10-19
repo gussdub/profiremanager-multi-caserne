@@ -2639,6 +2639,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
+  
+  // Nouveaux états pour la refonte
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'cards'
+  
   const [newDisponibilite, setNewDisponibilite] = useState({
     date: new Date().toISOString().split('T')[0],
     heure_debut: '08:00',
