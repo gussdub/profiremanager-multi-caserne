@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 
 # Configuration
-BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
+BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
 
 def test_corrected_reinitialiser():
     """Test CORRECTED Réinitialiser functionality with new type_entree filter"""

@@ -13,7 +13,7 @@ import uuid
 import time
 
 # Configuration - REAL PRODUCTION URLs
-BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
+BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
 
 # REAL MongoDB Atlas Connection Testing
 # The backend is now connected to: mongodb+srv://profiremanager_admin:BsqKibVAy6FTiTxg@profiremanager-prod.crqjvsp.mongodb.net/profiremanager

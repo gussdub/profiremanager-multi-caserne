@@ -19,7 +19,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
+BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
 TENANT_SLUG = "shefford"
 ADMIN_EMAIL = "admin@firemanager.ca"
 ADMIN_PASSWORD = "Admin123!"

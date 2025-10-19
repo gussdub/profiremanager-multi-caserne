@@ -10,7 +10,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BASE_URL = "https://epi-profile.preview.emergentagent.com/api"
+BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
 
 def test_simplified_authentication_system():
     """Test COMPLET du système d'authentification simplifié - Reset mot de passe et connexions multiples"""
