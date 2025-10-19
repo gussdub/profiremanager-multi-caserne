@@ -14055,7 +14055,7 @@ body {
 
 .table-header-modern {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 2fr 1fr 1.2fr 2fr;
+  grid-template-columns: 2fr 1.5fr minmax(200px, 2fr) 1fr 1.2fr 1.8fr;
   background: #FCA5A5;
   color: white;
   padding: 1rem;
@@ -14066,7 +14066,7 @@ body {
 
 .table-row-modern {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 2fr 1fr 1.2fr 2fr;
+  grid-template-columns: 2fr 1.5fr minmax(200px, 2fr) 1fr 1.2fr 1.8fr;
   padding: 1rem;
   border-bottom: 1px solid #E5E7EB;
   align-items: center;
