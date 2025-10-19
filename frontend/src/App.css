@@ -14496,6 +14496,39 @@ body {
     padding: 1rem;
   }
   
+
+/* ===== Remplacements Refonte - Harmonisation ===== */
+
+.remplacements-refonte {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.remplacements-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .remplacements-refonte {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .remplacements-refonte {
+    padding: 0.5rem;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
   .calendar-day-cell {
     min-height: 100px;
   }
