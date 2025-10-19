@@ -9398,7 +9398,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   if (loading) return <div className="loading" data-testid="disponibilites-loading">Chargement...</div>;
 
   return (
-    <div className="mes-disponibilites">
+    <div className="disponibilites-refonte">
       {/* Bouton retour si on gère un autre utilisateur */}
       {managingUser && (
         <div style={{ marginBottom: '20px' }}>
