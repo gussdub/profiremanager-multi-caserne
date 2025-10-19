@@ -9414,46 +9414,21 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
       )}
 
-      {/* Module Disponibilités - Design Visuel avec Grand Calendrier */}
-      <div className="disponibilites-visual-container">
-        {/* Header avec titre et actions */}
-        <div className="disponibilites-visual-header">
-          <div>
-            <h1 data-testid="disponibilites-title">
-              {managingUser 
-                ? `Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
-                : 'Mes disponibilités'}
-            </h1>
-            <p>
-              {managingUser 
-                ? `Calendrier visuel et interactif de ${targetUser.prenom} ${targetUser.nom}`
-                : 'Calendrier visuel et interactif de vos disponibilités'}
-            </p>
-          </div>
-          <div className="disponibilites-actions">
-            <Button 
-              variant="default" 
-              onClick={() => setShowCalendarModal(true)}
-              data-testid="configure-availability-btn"
-            >
-              ✅ Gérer disponibilités
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowGenerationModal(true)}
-              data-testid="generate-indisponibilites-btn"
-            >
-              ❌ Gérer indisponibilités
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => setShowReinitModal(true)}
-              data-testid="reinit-disponibilites-btn"
-            >
-              🗑️ Réinitialiser
-            </Button>
-          </div>
+      {/* Header Moderne */}
+      <div className="module-header">
+        <div>
+          <h1 data-testid="disponibilites-title">
+            {managingUser 
+              ? `📅 Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
+              : '📅 Mes Disponibilités'}
+          </h1>
+          <p>
+            {managingUser 
+              ? `Gérez les disponibilités de ${targetUser.prenom} ${targetUser.nom} pour les quarts de travail`
+              : 'Gérez vos disponibilités pour les quarts de travail temps partiel'}
+          </p>
         </div>
+      </div>
 
         {/* Barre de navigation du mois */}
         <div className="calendar-navigation-bar">
