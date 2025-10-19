@@ -14382,6 +14382,151 @@ body {
   .personnel-controls {
     flex-direction: column;
   }
+
+/* ===== Disponibilités Refonte - Harmonisation ===== */
+
+.disponibilites-refonte {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.disponibilites-visual-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Calendrier - Harmonisation */
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekday {
+  background: #FCA5A5;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-day-cell {
+  min-height: 120px;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 0.75rem;
+  position: relative;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.calendar-day-cell:not(.empty):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #FCA5A5;
+}
+
+.calendar-day-cell.empty {
+  background: #F9FAFB;
+  border: 1px dashed #E5E7EB;
+}
+
+.calendar-day-number {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #1F2937;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-day-cell.today {
+  border-color: #3B82F6;
+  border-width: 3px;
+  background: #EFF6FF;
+}
+
+.calendar-day-cell.today .calendar-day-number {
+  color: #3B82F6;
+}
+
+/* Disponibilités dans le calendrier */
+.calendar-day-disponibilites {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calendar-dispo-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.calendar-dispo-badge.disponible {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.calendar-dispo-badge.indisponible {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.calendar-dispo-badge.conge {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .disponibilites-refonte {
+    padding: 1rem;
+  }
+  
+  .calendar-day-cell {
+    min-height: 100px;
+  }
+  
+  .calendar-weekday {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-days-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  
+  .calendar-day-cell {
+    min-height: 80px;
+    padding: 0.5rem;
+  }
+  
+  .calendar-day-number {
+    font-size: 0.9rem;
+  }
+  
+  .calendar-dispo-badge {
+    font-size: 0.65rem;
+    padding: 2px 4px;
+  }
+}
+
   
   .personnel-controls > div {
     width: 100%;
