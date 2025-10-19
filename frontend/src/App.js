@@ -5340,6 +5340,89 @@ const Planning = () => {
 
   const kpis = calculateKPIs();
 
+  // Fonctions d'export Planning
+  const handleExportPDFPlanning = async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      const url = `${backendUrl}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `planning_${viewMode}_${periode}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: "Export PDF téléchargé",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible d'exporter le PDF", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleExportExcelPlanning = async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      const url = `${backendUrl}/api/${tenantSlug}/planning/export-excel?periode=${periode}&type=${viewMode}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `planning_${viewMode}_${periode}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: "Export Excel téléchargé",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible d'exporter l'Excel", 
+        variant: "destructive" 
+      });
+    }
+  };
+
   if (loading) return <div className="loading" data-testid="planning-loading">Chargement du planning...</div>;
 
   return (
