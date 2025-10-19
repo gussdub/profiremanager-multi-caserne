@@ -439,6 +439,21 @@ backend:
         agent: "testing"
         comment: "✅ FORMATION REPORTING ENDPOINTS FULLY FUNCTIONAL - Comprehensive testing completed successfully with 8/9 tests passed (100% core functionality): 1) ✅ Authentication: Successfully authenticated with admin@firemanager.ca / Admin123! credentials for Shefford tenant, 2) ✅ Export Presence PDF: Generated 5521 bytes PDF file with format=pdf, type_formation=toutes, annee=2025 - correct content-type and download headers, 3) ✅ Export Presence Excel: Generated 6526 bytes Excel file with format=excel, type_formation=obligatoires, annee=2025 - proper spreadsheet format, 4) ✅ Competences Report General: Retrieved 11 competences for year 2025 without user_id filter - correct JSON structure with annee, user_id (null), competences array, 5) ✅ Competences Report Specific User: Retrieved 11 competences for specific user (gussdub@gmail.com) with user_id parameter - proper filtering and data structure, 6) ✅ Export Competences PDF: Generated 2956 bytes PDF file for competences report without user_id - correct PDF format and headers, 7) ✅ Export Competences Excel with User: Generated 5644 bytes Excel file for specific user competences report - proper Excel format with user filtering, 8) ✅ Libraries Validation: All required libraries (reportlab, openpyxl, matplotlib) working correctly - no import errors or generation failures, 9) ⚠️ Employee Authentication: Could not authenticate with employee credentials but admin access sufficient for testing. ALL REVIEW REQUEST OBJECTIVES ACHIEVED: PDF/Excel exports working, type_formation filtering functional, competence statistics accurate, user_id filtering operational, download headers correct, no library errors detected. System ready for production use."
 
+  - task: "Rapports PDF/Excel Export Endpoints"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Rapports PDF/Excel export endpoints as requested in French review. Testing: 1) GET /api/{tenant_slug}/rapports/export-dashboard-pdf - Dashboard internal KPIs PDF export, 2) GET /api/{tenant_slug}/rapports/export-salaires-pdf - Detailed salary cost report PDF with date parameters, 3) GET /api/{tenant_slug}/rapports/export-salaires-excel - Salary cost report Excel export with date parameters. Authentication: gussdub@gmail.com / 230685Juin+ (admin). Critical points: file generation, Content-Type/Content-Disposition headers, file size > 0, no 403 errors, correct filenames."
+      - working: true
+        agent: "testing"
+        comment: "✅ RAPPORTS PDF/EXCEL EXPORT ENDPOINTS FULLY FUNCTIONAL - Comprehensive testing completed successfully with ALL 5/5 tests passed (100% success rate): 1) ✅ Admin Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials as specified in review request, 2) ✅ Export Dashboard PDF: Generated 2040 bytes PDF file with internal dashboard KPIs, correct Content-Type (application/pdf), correct filename (dashboard_interne_YYYYMM.pdf), 3) ✅ Export Salaires PDF: Generated 2203 bytes PDF file with detailed salary cost report, parameters date_debut=2025-01-01 & date_fin=2025-09-30, correct Content-Type (application/pdf), correct filename (rapport_salaires_2025-01-01_2025-09-30.pdf), 4) ✅ Export Salaires Excel: Generated 5188 bytes Excel file (.xlsx), same date parameters, correct Content-Type (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet), correct filename (rapport_salaires_2025-01-01_2025-09-30.xlsx), 5) ✅ Headers Validation: All 3 endpoints return correct Content-Type and Content-Disposition headers with proper attachment filenames. ALL REVIEW REQUEST OBJECTIVES ACHIEVED: Files generated correctly, proper headers, file sizes > 0, no 403 errors (access granted), correct filenames, authentication working with specified credentials. System ready for production use."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
