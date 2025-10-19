@@ -14110,6 +14110,8 @@ body {
 .cell-modern {
   font-size: 0.9rem;
   color: #4B5563;
+  position: relative;
+  overflow: visible;
 }
 
 /* Troncature des emails longs avec tooltip */
