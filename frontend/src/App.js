@@ -10760,13 +10760,6 @@ const Rapports = () => {
       toast({ title: "Erreur", description: "Impossible d'ajouter l'immobilisation", variant: "destructive" });
     }
   };
-      setShowBudgetModal(false);
-      setBudgetForm({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
-      loadData();
-    } catch (error) {
-      toast({ title: "Erreur", description: "Impossible d'ajouter le budget", variant: "destructive" });
-    }
-  };
 
   const handleExportPDF = async (typeRapport) => {
     try {
