@@ -4598,6 +4598,63 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           </div>
         </div>
       )}
+      {/* Modal Export - Choix entre tout ou individuel */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Options d'Export {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Que souhaitez-vous exporter ?
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={() => handleConfirmExport('all')}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📋</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Tout le personnel</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Exporter la liste complète ({users.length} pompier{users.length > 1 ? 's' : ''})
+                    </div>
+                  </div>
+                </Button>
+
+                {exportTarget && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleConfirmExport('individual')}
+                    style={{
+                      padding: '1.5rem',
+                      justifyContent: 'flex-start',
+                      gap: '1rem',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <span style={{fontSize: '1.5rem'}}>👤</span>
+                    <div style={{textAlign: 'left'}}>
+                      <div style={{fontWeight: '600'}}>Fiche individuelle</div>
+                      <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                        Exporter uniquement cette personne
+                      </div>
+                    </div>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
