@@ -8,7 +8,7 @@ import json
 import sys
 
 # Configuration
-BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
+BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
 SUPER_ADMIN_EMAIL = "admin@profiremanager.ca"
 SUPER_ADMIN_PASSWORD = "Admin123!"
 FALLBACK_SUPER_ADMIN_EMAIL = "gussdub@icloud.com"

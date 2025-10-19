@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
+BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
 SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
 SUPER_ADMIN_PASSWORD = "230685Juin+"
 TENANT_SLUG = "shefford"

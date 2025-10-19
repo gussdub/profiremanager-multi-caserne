@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
+BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
 
 def log_test(test_name, success, message, details=None):
     """Log test results"""

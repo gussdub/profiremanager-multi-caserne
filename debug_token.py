@@ -8,7 +8,7 @@ import jwt
 import json
 
 # Configuration
-BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
+BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
 SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
 SUPER_ADMIN_PASSWORD = "230685Juin+"
 SECRET_KEY = "your-secret-key-here"  # Default from server.py

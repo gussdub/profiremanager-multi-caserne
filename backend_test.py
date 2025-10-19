@@ -17,7 +17,7 @@ import uuid
 import time
 
 # Configuration - REAL PRODUCTION URLs
-BASE_URL = "https://emergency-portal.preview.emergentagent.com/api"
+BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
 
 # Test Configuration for Shefford tenant
 TENANT_SLUG = "shefford"

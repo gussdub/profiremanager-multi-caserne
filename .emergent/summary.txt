@@ -1,90 +1,86 @@
 <analysis>
-The AI engineer's work primarily focused on enhancing the Disponibilités module, addressing critical UI/UX issues, and implementing new features. Initial tasks involved fixing a major calendar rendering bug in Mes disponibilités caused by malformed CSS in , which led to an incorrect vertical list display instead of a grid. This was followed by resolving a login crash for part-time employees, which stemmed from unauthorized API calls to admin-specific routes (, ). The engineer then iteratively refined the sizing and centering of calendar modals (for Gérer disponibilités and Gérer indisponibilités), overcoming CSS specificity issues and Tailwind class conflicts in  through multiple adjustments and troubleshooting. A new Ajout Rapide modal was introduced for quick availability/unavailability entries. The générer undefined bug in the automated unavailability modal was fixed. Finally, the Québec 10/14 unavailability pattern was successfully implemented in the backend, and the user requested to remove the Date du premier jour du cycle field from the frontend for this pattern, hardcoding the reference dates.
+The AI engineer systematically enhanced the ProFireManager application, starting with UI/UX harmonization and crucial feature additions across multiple modules. The Personnel module was initially refined to correct layout issues and consolidate export functionalities into a single, comprehensive modal, integrating individual and bulk export options. Extensive documentation for marketing and user manuals was generated, adapting to environment constraints.
+
+Subsequently, the Planning module underwent significant design overhaul, incorporating KPIs, toggleable views, and styling consistent with the application's theme. A critical phase involved debugging and resolving complex backend API routing conflicts for Planning exports, successfully reordering routes to ensure correct functionality. This was followed by the design harmonization of Mes Disponibilités and Remplacements modules, strictly maintaining existing logic while integrating new KPIs, improved navigation, and fully functional PDF/Excel exports, addressing user feedback for clarity and completeness. The engineer is now poised to apply this harmonization process to the Paramètres module.
 </analysis>
 
 <product_requirements>
-ProFireManager, for Canadian fire departments, manages personnel, schedules, and automated replacements.
-**Core Requirements:**
-1.  **Authentication Stability**: Use bcrypt, ensure seamless migration. (Already addressed by previous AI analysis)
-2.  **Indisponibilités Feature**: Implement Montreal 7/24 (done) and Quebec 10/14 (partially done).
-3.  **UI/UX for Indisponibilités**: Display team numbers with colors, offer recurrence options, use date-range inputs.
-4.  **Disponibilités Feature**: Implement recurrence options for manual input.
-5.  **Automated Remplacement System**: Intelligent matching, push notifications, timeouts, status updates. (Addressed by previous AI analysis)
-6.  **Mobile App with Push Notifications**: Native FCM for iOS/Android, Remplacement disponible alerts. (Addressed by previous AI analysis)
-7.  **Mes disponibilités Module Redesign**: Visual, interactive calendar with navigation, legends, and detail modal.
-8.  **Deployment & Stability**: Address Vercel/frontend bugs. (Addressed by previous AI analysis)
-9.  **Planning Module Validation**: Ensure correct functionality. (Addressed by previous AI analysis)
-
-**New/Refined Requirements from Trajectory:**
-*   Fix Mes disponibilités calendar not displaying completely (days 1-18 only).
-*   Optimize Mes disponibilités for smartphone (croix rouge, gardes cut).
-*   Increase size/visibility of calendars in Gérer disponibilités and Gérer indisponibilités modals for web, keeping mobile perfect. Allow design changes.
-*   New, succinct Ajout Rapide modal on day click for adding availability/unavailability, pre-filled with date and essential fields. Keep bulk Gérer disponibilités modal. Show existing entries for day in detail modal.
-*   Fix générer undefined button text in automated unavailability modal.
-*   Implement Québec 10/14 unavailability pattern with specific 28-day cycle starting Feb 1, 2026, for four teams, including day and night shifts.
-*   Remove Date du premier jour du cycle from frontend for pattern generation, hardcoding start dates in backend.
+The overarching goal was to modernize and harmonize the ProFireManager application's UI/UX, enhance core functionalities, and improve reporting capabilities. Key product requirements addressed throughout the development trajectory include:
+1.  **UI Harmonization:** Consistent pale red theme and modern layout across Mon Profil, Formation, EPI, Rapports, Dashboard, Personnel, Planning, Mes Disponibilités, and Remplacements modules.
+2.  **Personnel Module Enhancements:** Fix long email alignment, remove per-line print buttons, implement a unified export modal (PDF/Excel) supporting all personnel and individual employee data, and resolve email/badge overlap.
+3.  **Documentation Generation:** Create professional marketing/promotion text for directors and a comprehensive user manual for firefighters, including conceptual screenshots, pricing, and support details.
+4.  **Planning Module Harmonization & Functionality:** Integrate KPIs (total shifts, covered/uncovered, total planned hours, coverage rate), introduce a toggleable list/calendar view, highlight auto/manual assignment, enable adding people by clicking date/shift, ensure clear visualization, and implement functional PDF/Excel exports with correct backend routing.
+5.  **Mes Disponibilités Module Harmonization:** Redesign UI (header, KPIs for admins/supervisors: availability rate, # people with availability vs part-time, avg dispos, styled navigation, modals) without altering calendar functional logic. Implement working PDF/Excel exports (per person or all).
+6.  **Remplacements Module Harmonization:** Redesign UI (header, KPIs, stylized tabs, list/card toggle, exports per person/all, filters by status, role-based access) without altering core functional logic. Implement working PDF/Excel exports.
+7.  **Paramètres Module Harmonization:** Redesign the UI (header, KPIs, organization, buttons, forms) without altering functional logic.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-Stack**: React (frontend), FastAPI (Python backend), MongoDB.
--   **UI/UX**: Shadcn UI, Tailwind CSS, React-Day-Picker (), .
--   **Authentication**: Bcrypt hashing, JWT.
--   **Mobile Integration**: Capacitor, Firebase Cloud Messaging (FCM).
--   **Asynchronous Processing**: .
--   **Data Modeling**: Pydantic models.
--   **Multi-Tenant**: Tenant-aware routing.
+-   **Full-stack Architecture:** React (frontend), FastAPI (backend), MongoDB (database).
+-   **API Design:**  prefix for backend, careful handling of dynamic path parameters vs. specific routes.
+-   **Component-Based UI:**  central, ,  for state and side effects.
+-   **Styling:**  for custom styles, ProFireManager branding (pale red), CSS for layout, email truncation, z-index.
+-   **Reporting:** ,  (backend for PDF/Excel).
+-   **Routing Priority:** FastAPI's route definition order for conflict resolution.
 </key_technical_concepts>
 
 <code_architecture>
 
 
--   ****: Main FastAPI application.
-    -   **Importance**: Centralized logic for auth, availabilities, replacements, notifications, and unavailability generation.
-    -   **Changes**:
-        -    function: Logic entirely replaced to implement the Québec 10/14 pattern based on a 28-day cycle starting Feb 1, 2026, for four teams (Vert, Bleu, Jaune, Rouge). The function signature was updated to use  and .
--   ****: Main React component.
-    -   **Importance**: Manages state, routing, core features, UI, and API calls.
-    -   **Changes**:
-        -   **CSS Bug Fix**: Corrected a login crash by adding role-based checks (, ) before fetching admin-specific data (, ) to prevent 403 errors for part-time employees.
-        -   **Mes disponibilités UI**: Introduced ,  states. Modified the day detail modal's Ajouter une disponibilité button to open the new quick add modal.
-        -   **Quick Add Modal**: Implemented a new modal for fast availability/unavailability entry (date pre-filled, essential fields, direct save).
-        -   **Générer undefined Fix**: Changed  to  in the automatic unavailability modal as  was deprecated.
-        -   **Modal Unification**: Changed  to  for the Gérer indisponibilités modal to match the Gérer disponibilités modal size.
--   ****: Global styles.
-    -   **Importance**: Defines application visual presentation.
-    -   **Changes**:
-        -   **Calendar Layout Fix**: Corrected unclosed CSS rules and orphaned properties (e.g., ) that caused the Mes disponibilités calendar grid to break.
-        -   **Modal Calendar Sizing**: Multiple iterative adjustments to , ,  with  to achieve larger, uniform calendar sizes (initially 100px, then 160px, then 120px, then 140px, finally 125px) within the Gérer disponibilités and Gérer indisponibilités modals for desktop, while maintaining mobile responsiveness. Also adjusted modal  (from 800px to 1400px then 1200px) and removed conflicting media queries.
-        -   **Mobile Layout Fix**: Adjusted CSS for , , ,  to prevent overflow and cropping of elements on mobile for Mes disponibilités.
-        -   **Centering Calendars**: Added CSS to center calendars within modals.
--   ****: React-Day-Picker component.
-    -   **Importance**: Provides the calendar UI.
-    -   **Changes**: Modified to override hardcoded Tailwind  classes with dynamic  Tailwind classes (e.g., , then , then ) based on an  prop to control calendar cell size directly, resolving conflicts with external CSS. Font sizes were also adjusted.
+-   ****:
+    -   **Summary**: Central FastAPI application for managing MongoDB models and API endpoints. It defines data models and handles authentication, CRUD operations, and complex data aggregations.
+    -   **Changes Made**:
+        -   **Planning Exports**: Added  endpoints (, ) for PDF/Excel reports of planning data. Critically, these were moved to appear *before* dynamic path routes (e.g., ) to resolve routing conflicts.
+        -   **Disponibilités Exports**: Added  endpoints (, ) for PDF/Excel exports of availability data.
+        -   **Remplacements Exports**: Added  endpoints (, ) for PDF/Excel exports of replacement requests, also with correct routing priority.
+        -   Ensured consistency in  handling and JSON serialization practices.
 
+-   ****:
+    -   **Summary**: The primary React application component, managing global state, rendering major functional modules, and orchestrating UI interactions and API calls.
+    -   **Changes Made**:
+        -   **Personnel**: Implemented email truncation with tooltips; removed per-line print buttons; integrated PDF/Excel exports into a single modal (supporting All personnel or Specific person via dropdown); resolved email/badge overlap; updated states (, , ) and export functions.
+        -   **Planning**: Major redesign for harmonization. Added states for KPIs and view toggles (, ). Refactored JSX for a harmonized header, KPIs (total shifts, coverage), and a toggleable calendar/list view. Implemented and connected  and  functions to new export buttons.
+        -   **Mes Disponibilités**: Design harmonization (header, role-based KPIs, styled calendar navigation, modals). Introduced states (, , ) and functions for exports. Fixed a bug by adding  and  to fetch  within the component for KPI calculations.
+        -   **Remplacements**: Design harmonization in progress. Added states (, , , , , , ) for view toggles and filters. Replaced header, converted statistics cards to harmonized KPIs, and integrated stylized tabs. Implemented export functions and a modal.
+        -   **General**: Implemented new modals for exports across Personnel, Disponibilités, and Remplacements modules.
+
+-   ****:
+    -   **Summary**: Contains global and component-specific CSS styles for layout, typography, and responsive design, ensuring a consistent application aesthetic.
+    -   **Changes Made**:
+        -   **Personnel**: Added styles for email truncation, tooltips, adjusted table cell widths, and z-index to correct alignment and overlap issues.
+        -   **Planning**: Added new classes and styles for the harmonized header, KPIs, view toggles, and improved calendar/list layouts. Updated the color of the Assignation Manuelle Avancée button.
+        -   **Mes Disponibilités**: Added styles for the new header, KPIs, and harmonized calendar navigation elements.
+        -   **Remplacements**: Added initial CSS for the harmonized header, KPIs, and stylized tabs.
+        -   General updates to align with the ProFireManager pale red branding.
+
+-   ****:
+    -   **Summary**: A newly created Markdown file containing marketing and promotional text for the ProFireManager software, targeting fire station directors. It outlines features, benefits, pricing tiers, and support information.
+
+-   ****:
+    -   **Summary**: A newly created Markdown file containing a comprehensive user manual for ProFireManager, targeted at firefighters. It provides detailed descriptions of each module and conceptual descriptions of functionalities, compensating for the lack of live screenshots during generation.
 </code_architecture>
 
 <pending_tasks>
--   Implement specific push notification sending logic in the backend for various Remplacement disponible events beyond initial creation.
--   Guide the user through Apple and Google developer account setup and mobile app publication.
--   Remove the Date du premier jour du cycle field from the frontend for unavailability pattern generation and hardcode the start dates in the backend.
+-   Harmonize the design of the Paramètres module (header, KPIs, organization, buttons, forms) to match the consistent style of other modules, strictly without modifying its functional logic.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary, the AI engineer was working on the Disponibilités module and the Québec 10/14 unavailability pattern.
+Immediately prior to this summary request, the AI engineer successfully completed the implementation of export functionalities for the Mes Disponibilités and Remplacements modules and finished a significant part of their design harmonization.
 
-The Disponibilités module (including Mes disponibilités, Gérer disponibilités, Gérer indisponibilités) has undergone significant UI/UX improvements:
-*   The main calendar on Mes disponibilités is now fully functional, visually complete, and responsive on mobile, addressing an initial rendering bug due to malformed CSS.
-*   A new Ajout Rapide modal has been implemented, providing a quick and contextual way to add availabilities or unavailabilities for a specific day clicked on the calendar, pre-filling the date and offering essential fields.
-*   The calendars within the Gérer disponibilités and Gérer indisponibilités modals have been uniformly resized to 125x125 pixels for desktop view (and maintain appropriate size for mobile), and are now perfectly centered within their modals, achieving the user's aesthetic and visibility requirements after several iterations of CSS and component-level (Tailwind) adjustments.
-*   The bug causing the login page to crash for part-time employees (due to 403 errors when attempting to access admin-only API routes for users and notifications) has been fixed by introducing role-based conditional API calls.
-*   The générer undefined bug in the automated unavailability modal was fixed by correctly referencing  instead of .
+For **Mes Disponibilités**:
+*   The module's UI was harmonized with a modern header and redesigned navigation.
+*   KPIs (availability rate, people with availability vs. part-time, average availabilities per part-time) were implemented to be displayed for administrators/supervisors.
+*   A critical bug where the  variable was undefined for KPI calculations was resolved by fetching user data directly within the  component using  and .
+*   A KPI label was clarified for better readability as per user feedback.
+*   Full PDF/Excel export capabilities were implemented, including new backend API endpoints (,  in ) and corresponding frontend functions (, ) with a dedicated export modal in .
 
-For the Indisponibilités feature, the Québec 10/14 pattern has been successfully implemented in the backend (), replacing the old logic with the new detailed shift schedule for four teams over a 28-day cycle, starting February 1, 2026. This implementation has been validated by backend tests.
+For **Remplacements**:
+*   Initial design harmonization involved adding new states for view toggles and filters, replacing the header with a harmonized version, converting statistics cards into KPIs, and integrating stylized tabs.
+*   Full PDF/Excel export capabilities were implemented, including new backend API endpoints (,  in ) and corresponding frontend functions (, ) with a dedicated export modal in .
 
-The user's last explicit request was to remove the Date de premier jour du cycle field from the frontend for unavailability pattern generation and hardcode the reference dates in the backend to prevent users from accidentally breaking the fixed patterns.
+The backend routing for all new export endpoints across Planning, Disponibilités, and Remplacements was carefully managed to prevent conflicts with existing dynamic routes. All frontend changes ensure that these modules now present a harmonized look and fully functional export options, completing the user's request for 100% functionality on exports.
 </current_work>
 
 <optional_next_step>
-Remove the Date du premier jour du cycle field from the frontend and hardcode the pattern start dates in the backend.
+Examine the current structure of the Paramètres module in  to begin its design harmonization.
 </optional_next_step>
-
