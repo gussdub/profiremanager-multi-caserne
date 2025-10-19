@@ -11076,6 +11076,178 @@ const Rapports = () => {
               )}
             </div>
           )}
+          {/* Rapport Disponibilité */}
+          {activeRapport === 'disponibilite' && (
+            <div className="rapport-disponibilite">
+              <h2>📅 Rapport de Disponibilité/Indisponibilité</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Date début</Label>
+                  <Input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Date fin</Label>
+                  <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={handleGenererRapportDisponibilite}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              {rapportDisponibilite ? (
+                <div>
+                  {/* Résumé avec graphique */}
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem'}}>
+                    <div>
+                      <div className="kpi-grid" style={{gridTemplateColumns: '1fr 1fr'}}>
+                        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                          <h3>{rapportDisponibilite.total_jours_disponibles}</h3>
+                          <p>Jours Disponibles</p>
+                        </div>
+                        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                          <h3>{rapportDisponibilite.total_jours_indisponibles}</h3>
+                          <p>Jours Indisponibles</p>
+                        </div>
+                        <div className="kpi-card" style={{background: '#DBEAFE', gridColumn: 'span 2'}}>
+                          <h3>{rapportDisponibilite.taux_disponibilite_global}%</h3>
+                          <p>Taux de Disponibilité Global</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                      <Chart
+                        options={{
+                          chart: { type: 'pie' },
+                          labels: ['Disponibles', 'Indisponibles'],
+                          colors: ['#10B981', '#EF4444'],
+                          legend: { position: 'bottom' }
+                        }}
+                        series={[rapportDisponibilite.total_jours_disponibles, rapportDisponibilite.total_jours_indisponibles]}
+                        type="pie"
+                        height={250}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tableau par employé */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Nom</div>
+                      <div className="header-cell">Grade</div>
+                      <div className="header-cell">Jours Dispo.</div>
+                      <div className="header-cell">Jours Indispo.</div>
+                      <div className="header-cell">Taux %</div>
+                      <div className="header-cell">Motifs</div>
+                    </div>
+                    {rapportDisponibilite.employes.map((emp, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{emp.nom}</div>
+                        <div className="table-cell">{emp.grade}</div>
+                        <div className="table-cell" style={{color: '#10B981', fontWeight: 'bold'}}>{emp.jours_disponibles}</div>
+                        <div className="table-cell" style={{color: '#EF4444', fontWeight: 'bold'}}>{emp.jours_indisponibles}</div>
+                        <div className="table-cell">{emp.taux_disponibilite}%</div>
+                        <div className="table-cell" style={{fontSize: '0.85rem'}}>
+                          {Object.entries(emp.motifs_indisponibilite).map(([motif, count]) => (
+                            <span key={motif} style={{display: 'block'}}>{motif}: {count}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('disponibilite')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('disponibilite')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rapport Coûts Formations */}
+          {activeRapport === 'formations' && (
+            <div className="rapport-formations">
+              <h2>🎓 Rapport de Coûts de Formation</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Année</Label>
+                  <select 
+                    className="form-select" 
+                    value={anneeSelectionnee} 
+                    onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}
+                  >
+                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={handleGenererRapportFormations}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              {rapportCoutsFormations ? (
+                <div>
+                  {/* KPIs */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportCoutsFormations.cout_total.toLocaleString()}</h3>
+                      <p>Coût Total</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportCoutsFormations.nombre_formations}</h3>
+                      <p>Formations</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>{rapportCoutsFormations.nombre_total_participants}</h3>
+                      <p>Participants</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                      <h3>{rapportCoutsFormations.heures_totales}h</h3>
+                      <p>Heures Totales</p>
+                    </div>
+                  </div>
+
+                  {/* Tableau formations */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Formation</div>
+                      <div className="header-cell">Date</div>
+                      <div className="header-cell">Durée</div>
+                      <div className="header-cell">Participants</div>
+                      <div className="header-cell">Coût Formation</div>
+                      <div className="header-cell">Coût Salarial</div>
+                    </div>
+                    {rapportCoutsFormations.formations.map((formation, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{formation.nom_formation}</div>
+                        <div className="table-cell">{new Date(formation.date).toLocaleDateString('fr-FR')}</div>
+                        <div className="table-cell">{formation.duree_heures}h</div>
+                        <div className="table-cell">{formation.nombre_participants}</div>
+                        <div className="table-cell">${formation.cout_formation.toLocaleString()}</div>
+                        <div className="table-cell" style={{fontWeight: 'bold', color: '#DC2626'}}>
+                          ${formation.cout_total.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('formations')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('formations')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une année et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
