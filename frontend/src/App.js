@@ -10893,6 +10893,12 @@ const Rapports = () => {
             <button className={activeRapport === 'salaires' ? 'active' : ''} onClick={() => setActiveRapport('salaires')}>
               💰 Coûts Salariaux
             </button>
+            <button className={activeRapport === 'disponibilite' ? 'active' : ''} onClick={() => setActiveRapport('disponibilite')}>
+              📅 Disponibilité
+            </button>
+            <button className={activeRapport === 'formations' ? 'active' : ''} onClick={() => setActiveRapport('formations')}>
+              🎓 Formations
+            </button>
           </div>
 
           {/* Dashboard Interne */}
