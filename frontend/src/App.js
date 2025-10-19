@@ -3317,47 +3317,211 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   if (loading) return <div className="loading" data-testid="personnel-loading">Chargement...</div>;
 
+  const filteredUsers = getFilteredUsers();
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.statut === 'Actif').length;
+  const tempsPlein = users.filter(u => u.type_emploi === 'temps_plein').length;
+  const tempsPartiel = users.filter(u => u.type_emploi === 'temps_partiel').length;
+
   return (
-    <div className="personnel">
-      <div className="personnel-header">
+    <div className="personnel-refonte">
+      {/* Header */}
+      <div className="module-header">
         <div>
-          <h1 data-testid="personnel-title">Gestion du personnel</h1>
-          <p>{users.length} pompier(s) enregistré(s)</p>
+          <h1>👥 Gestion du Personnel</h1>
+          <p>Liste complète des pompiers du service</p>
         </div>
         <Button 
-          className="add-btn" 
           onClick={() => setShowCreateModal(true)}
           data-testid="add-personnel-btn"
         >
-          + Nouveau pompier
+          ➕ Nouveau pompier
         </Button>
       </div>
 
-      <div className="personnel-table">
-        {/* Vue desktop */}
-        <div className="personnel-table-desktop">
-          <div className="table-header">
-            <div className="header-cell">POMPIER</div>
-            <div className="header-cell">GRADE / N° EMPLOYÉ</div>
-            <div className="header-cell">CONTACT</div>
-            <div className="header-cell">STATUT</div>
-            <div className="header-cell">TYPE D'EMPLOI</div>
-            <div className="header-cell">ACTIONS</div>
+      {/* KPIs */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{totalUsers}</h3>
+          <p>Total Personnel</p>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{activeUsers}</h3>
+          <p>Personnel Actif</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{tempsPlein}</h3>
+          <p>Temps Plein</p>
+        </div>
+        <div className="kpi-card" style={{background: '#FEF3C7'}}>
+          <h3>{tempsPartiel}</h3>
+          <p>Temps Partiel</p>
+        </div>
+      </div>
+
+      {/* Barre de contrôles */}
+      <div className="personnel-controls">
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
+          <div style={{flex: 1, minWidth: '300px'}}>
+            <Input 
+              placeholder="🔍 Rechercher par nom, email, grade..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {/* Toggle Vue */}
+          <div className="view-toggle">
+            <button 
+              className={viewMode === 'list' ? 'active' : ''}
+              onClick={() => setViewMode('list')}
+              title="Vue Liste"
+            >
+              ☰
+            </button>
+            <button 
+              className={viewMode === 'cards' ? 'active' : ''}
+              onClick={() => setViewMode('cards')}
+              title="Vue Cartes"
+            >
+              ⊞
+            </button>
           </div>
 
-          {users.map(user => (
-            <div key={user.id} className="table-row" data-testid={`user-row-${user.id}`}>
-              <div className="user-cell">
-                <div className="user-avatar">
-                  <span className="avatar-icon">👤</span>
-                </div>
+          {/* Exports */}
+          <Button variant="outline" onClick={() => handleExportPDF()}>
+            📄 Export PDF
+          </Button>
+          <Button variant="outline" onClick={() => handleExportExcel()}>
+            📊 Export Excel
+          </Button>
+        </div>
+      </div>
+
+      {/* Vue Liste */}
+      {viewMode === 'list' && (
+        <div className="personnel-table-modern">
+          <div className="table-header-modern">
+            <div>Pompier</div>
+            <div>Grade / N° Employé</div>
+            <div>Contact</div>
+            <div>Statut</div>
+            <div>Type Emploi</div>
+            <div>Actions</div>
+          </div>
+
+          {filteredUsers.map(user => (
+            <div key={user.id} className="table-row-modern" data-testid={`user-row-${user.id}`}>
+              <div className="user-cell-modern">
+                <div className="user-avatar-modern">👤</div>
                 <div>
-                  <p className="user-name">{user.prenom} {user.nom}</p>
-                  <p className="user-hire-date">Embauché le {user.date_embauche}</p>
+                  <p className="user-name-modern">{user.prenom} {user.nom}</p>
+                  <p className="user-detail-modern">Embauché le {user.date_embauche}</p>
                 </div>
               </div>
 
-              <div className="grade-cell">
+              <div className="cell-modern">
+                <p style={{fontWeight: '600'}}>{user.grade}</p>
+                <p className="user-detail-modern">N° {user.numero_employe}</p>
+              </div>
+
+              <div className="cell-modern">
+                <p>{user.email}</p>
+                <p className="user-detail-modern">{user.telephone}</p>
+              </div>
+
+              <div className="cell-modern">
+                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
+                  {user.statut}
+                </span>
+              </div>
+
+              <div className="cell-modern">
+                <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
+                  {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                </span>
+              </div>
+
+              <div className="actions-cell-modern">
+                <button onClick={() => { setSelectedUser(user); setShowViewModal(true); }} title="Voir">👁️</button>
+                <button onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }} title="Modifier">✏️</button>
+                <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
+                {user.type_emploi === 'temps_partiel' && (
+                  <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
+                )}
+                <button onClick={() => handleExportPDF(user.id)} title="Export PDF">📄</button>
+              </div>
+            </div>
+          ))}
+
+          {filteredUsers.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun pompier trouvé</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vue Cartes */}
+      {viewMode === 'cards' && (
+        <div className="personnel-cards-grid">
+          {filteredUsers.map(user => (
+            <div key={user.id} className="personnel-card" data-testid={`user-card-${user.id}`}>
+              <div className="card-header">
+                <div className="user-avatar-card">👤</div>
+                <div>
+                  <h3>{user.prenom} {user.nom}</h3>
+                  <p className="card-grade">{user.grade}</p>
+                </div>
+                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
+                  {user.statut}
+                </span>
+              </div>
+
+              <div className="card-body">
+                <div className="card-info-item">
+                  <span className="info-label">Email:</span>
+                  <span className="info-value">{user.email}</span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">Téléphone:</span>
+                  <span className="info-value">{user.telephone}</span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">Type emploi:</span>
+                  <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
+                    {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                  </span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">N° Employé:</span>
+                  <span className="info-value">{user.numero_employe}</span>
+                </div>
+              </div>
+
+              <div className="card-footer">
+                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setShowViewModal(true); }}>
+                  👁️ Voir
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }}>
+                  ✏️ Modifier
+                </Button>
+                {user.type_emploi === 'temps_partiel' && (
+                  <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
+                    📅 Dispo
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {filteredUsers.length === 0 && (
+            <div className="empty-state" style={{gridColumn: '1 / -1'}}>
+              <p>Aucun pompier trouvé</p>
+            </div>
+          )}
+        </div>
+      )}
                 <span className="grade" style={{ backgroundColor: getGradeColor(user.grade) }}>
                   {user.grade}
                   {user.fonction_superieur && <span className="fonction-sup">+</span>}
