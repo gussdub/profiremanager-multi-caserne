@@ -491,63 +491,10 @@ class RapportsExportTester:
             print("   Check MongoDB Atlas connection and user permissions")
 
 if __name__ == "__main__":
-        """Test that required libraries (reportlab, openpyxl, matplotlib) are working"""
-        try:
-            if not self.admin_token:
-                self.log_test("Libraries and Dependencies", False, "No admin token available")
-                return False
-            
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
-            
-            # Test a simple PDF export to verify reportlab
-            params = {
-                "format": "pdf",
-                "type_formation": "toutes",
-                "annee": 2025
-            }
-            
-            print(f"🔍 Testing libraries by attempting PDF generation")
-            
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
-            
-            results = {
-                "pdf_generation_status": response.status_code,
-                "pdf_content_length": len(response.content) if response.content else 0
-            }
-            
-            # Test Excel export to verify openpyxl
-            params["format"] = "excel"
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/export-presence", params=params)
-            
-            results["excel_generation_status"] = response.status_code
-            results["excel_content_length"] = len(response.content) if response.content else 0
-            
-            # Analyze results
-            pdf_works = results["pdf_generation_status"] == 200 and results["pdf_content_length"] > 0
-            excel_works = results["excel_generation_status"] == 200 and results["excel_content_length"] > 0
-            
-            if pdf_works and excel_works:
-                success = True
-                message = f"✅ All libraries working - PDF: {results['pdf_content_length']} bytes, Excel: {results['excel_content_length']} bytes"
-            elif pdf_works:
-                success = False
-                message = f"❌ Excel generation failed - PDF works but Excel library issue"
-            elif excel_works:
-                success = False
-                message = f"❌ PDF generation failed - Excel works but reportlab library issue"
-            else:
-                success = False
-                message = f"❌ Both PDF and Excel generation failed - Library issues detected"
-            
-            self.log_test("Libraries and Dependencies", success, message, results)
-            return success
-                
-        except Exception as e:
-            self.log_test("Libraries and Dependencies", False, f"Libraries test error: {str(e)}")
-            return False
+    tester = RapportsExportTester()
+    success = tester.run_rapports_export_tests()
     
-    def run_rapports_export_tests(self):
+    sys.exit(0 if success else 1)
         """Run the complete Rapports Export test suite"""
         print("🚀 Starting Rapports PDF/Excel Export Testing Suite")
         print("=" * 70)
