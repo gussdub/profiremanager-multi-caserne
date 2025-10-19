@@ -10656,6 +10656,10 @@ const Rapports = () => {
           setDashboardData(dashData);
         } else if (activeRapport === 'salaires') {
           // Ne pas charger automatiquement, attendre que l'utilisateur clique sur "Générer"
+        } else if (activeRapport === 'disponibilite') {
+          // Ne pas charger automatiquement
+        } else if (activeRapport === 'formations') {
+          // Ne pas charger automatiquement
         }
       } else if (activeTab === 'externes') {
         if (activeRapport === 'budgetaire') {
@@ -10672,8 +10676,12 @@ const Rapports = () => {
             console.log('Pas de données budgétaires agrégées');
           }
         } else if (activeRapport === 'immobilisations') {
-          const immobData = await apiGet(tenantSlug, '/rapports/immobilisations');
+          const [immobData, rapportImmob] = await Promise.all([
+            apiGet(tenantSlug, '/rapports/immobilisations'),
+            apiGet(tenantSlug, '/rapports/rapport-immobilisations')
+          ]);
           setImmobilisations(immobData || []);
+          setRapportImmobilisations(rapportImmob);
         }
       }
     } catch (error) {
