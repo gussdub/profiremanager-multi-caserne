@@ -2320,14 +2320,310 @@ const ModuleEPI = ({ user }) => {
 };
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [activiteRecente, setActiviteRecente] = useState([]);
-  const [statistiquesDetaillees, setStatistiquesDetaillees] = useState(null);
-  const [monthlyStats, setMonthlyStats] = useState(null);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
   const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showActivitesEtendues, setShowActivitesEtendues] = useState(false);
+  const [messageForm, setMessageForm] = useState({
+    titre: '',
+    contenu: '',
+    priorite: 'info',
+    date_expiration: ''
+  });
+
+  useEffect(() => {
+    if (tenantSlug) {
+      loadDashboardData();
+      loadMessages();
+    }
+  }, [tenantSlug]);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet(tenantSlug, '/dashboard/donnees-completes');
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error);
+      toast({ title: "Erreur", description: "Impossible de charger les données", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const loadMessages = async () => {
+    try {
+      const messagesData = await apiGet(tenantSlug, '/dashboard/messages');
+      setMessages(messagesData);
+    } catch (error) {
+      console.error('Erreur chargement messages:', error);
+    }
+  };
+
+  const handleCreateMessage = async () => {
+    try {
+      await apiPost(tenantSlug, '/dashboard/messages', messageForm);
+      toast({ title: "Succès", description: "Message publié" });
+      setShowMessageModal(false);
+      setMessageForm({ titre: '', contenu: '', priorite: 'info', date_expiration: '' });
+      loadMessages();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de publier le message", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await apiDelete(tenantSlug, `/dashboard/messages/${messageId}`);
+      toast({ title: "Succès", description: "Message supprimé" });
+      loadMessages();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de supprimer le message", variant: "destructive" });
+    }
+  };
+
+  if (loading) return <div className="loading">Chargement du dashboard...</div>;
+  if (!dashboardData) return <div className="error">Erreur de chargement des données</div>;
+
+  const { section_personnelle, section_generale, activites_recentes } = dashboardData;
+
+  return (
+    <div className="dashboard-refonte">
+      <div className="module-header">
+        <div>
+          <h1>📊 Tableau de Bord</h1>
+          <p>Vue d'ensemble de votre activité et du service</p>
+        </div>
+      </div>
+
+      {/* MESSAGES IMPORTANTS */}
+      {messages.length > 0 && (
+        <div className="messages-importants-section">
+          {messages.map(msg => (
+            <div key={msg.id} className={`message-banner priorite-${msg.priorite}`}>
+              <div className="message-icon">
+                {msg.priorite === 'urgent' && '🚨'}
+                {msg.priorite === 'important' && '⚠️'}
+                {msg.priorite === 'info' && 'ℹ️'}
+              </div>
+              <div className="message-content">
+                <h4>{msg.titre}</h4>
+                <p>{msg.contenu}</p>
+                <small>Par {msg.auteur_nom} • {new Date(msg.created_at).toLocaleDateString('fr-FR')}</small>
+              </div>
+              {user?.role !== 'employe' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleDeleteMessage(msg.id)}
+                  style={{marginLeft: 'auto'}}
+                >
+                  ✕
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* BOUTON CRÉER MESSAGE (Admin/Superviseur) */}
+      {user?.role !== 'employe' && (
+        <div style={{marginBottom: '2rem'}}>
+          <Button onClick={() => setShowMessageModal(true)}>
+            ➕ Publier un message important
+          </Button>
+        </div>
+      )}
+
+      {/* SECTION PERSONNELLE */}
+      <div className="dashboard-section">
+        <h2>👤 Ma Section Personnelle</h2>
+        <div className="kpi-grid">
+          <div className="kpi-card" style={{background: '#FEF3C7'}}>
+            <h3>{section_personnelle.heures_travaillees_mois}h</h3>
+            <p>Heures travaillées ce mois</p>
+          </div>
+          <div className="kpi-card" style={{background: '#FCA5A5'}}>
+            <h3>{section_personnelle.nombre_gardes_mois}</h3>
+            <p>Nombre de gardes</p>
+          </div>
+          <div className="kpi-card" style={{background: '#D1FAE5'}}>
+            <h3>{section_personnelle.pourcentage_presence_formations}%</h3>
+            <p>Présence formations</p>
+          </div>
+          <div className="kpi-card" style={{background: '#DBEAFE'}}>
+            <h3>{section_personnelle.formations_a_venir.length}</h3>
+            <p>Formations à venir</p>
+          </div>
+        </div>
+
+        {/* Formations à venir */}
+        {section_personnelle.formations_a_venir.length > 0 && (
+          <div className="formations-a-venir">
+            <h3>🎓 Formations à Venir</h3>
+            <div className="formations-list-compact">
+              {section_personnelle.formations_a_venir.map(formation => (
+                <div key={formation.id} className="formation-item-compact">
+                  <div className="formation-info">
+                    <h4>{formation.nom}</h4>
+                    <p>{new Date(formation.date_debut).toLocaleDateString('fr-FR')} - {new Date(formation.date_fin).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  {formation.est_inscrit ? (
+                    <span className="badge-inscrit">✓ Inscrit</span>
+                  ) : (
+                    <span className="badge-non-inscrit">Non inscrit</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION GÉNÉRALE (Admin/Superviseur uniquement) */}
+      {section_generale && (
+        <>
+          <div className="dashboard-section">
+            <h2>🏢 Vue Générale du Service</h2>
+            <div className="kpi-grid">
+              <div className="kpi-card" style={{background: '#E0E7FF'}}>
+                <h3>{section_generale.couverture_planning}%</h3>
+                <p>Couverture planning</p>
+              </div>
+              <div className="kpi-card" style={{background: section_generale.gardes_manquantes > 0 ? '#FEE2E2' : '#D1FAE5'}}>
+                <h3>{section_generale.gardes_manquantes}</h3>
+                <p>Gardes manquantes</p>
+              </div>
+              <div className="kpi-card" style={{background: '#FED7AA'}}>
+                <h3>{section_generale.demandes_conges_en_attente}</h3>
+                <p>Demandes à approuver</p>
+              </div>
+              <div className="kpi-card" style={{background: '#E9D5FF'}}>
+                <h3>{section_generale.statistiques_mois.total_assignations}</h3>
+                <p>Assignations ce mois</p>
+              </div>
+            </div>
+
+            {/* Statistiques mois */}
+            <div className="stats-mois-grid">
+              <div className="stat-item">
+                <span className="stat-label">Personnel actif</span>
+                <span className="stat-value">{section_generale.statistiques_mois.total_personnel_actif}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Formations ce mois</span>
+                <span className="stat-value">{section_generale.statistiques_mois.formations_ce_mois}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVITÉS RÉCENTES */}
+          <div className="dashboard-section">
+            <h2>📋 Actualité Récente du Service</h2>
+            <div className="activites-liste">
+              {activites_recentes.slice(0, showActivitesEtendues ? activites_recentes.length : 10).map((activite, idx) => (
+                <div key={idx} className="activite-item">
+                  <div className="activite-icon">
+                    {activite.type_activite === 'creation_personnel' && '👤'}
+                    {activite.type_activite === 'assignation' && '📅'}
+                    {activite.type_activite === 'formation' && '🎓'}
+                    {activite.type_activite === 'remplacement' && '🔄'}
+                    {!['creation_personnel', 'assignation', 'formation', 'remplacement'].includes(activite.type_activite) && '📌'}
+                  </div>
+                  <div className="activite-content">
+                    <p>{activite.description}</p>
+                    <small>{new Date(activite.created_at).toLocaleString('fr-FR')}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {activites_recentes.length > 10 && (
+              <div style={{textAlign: 'center', marginTop: '1rem'}}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowActivitesEtendues(!showActivitesEtendues)}
+                >
+                  {showActivitesEtendues ? '▲ Voir moins' : '▼ Voir plus'}
+                </Button>
+              </div>
+            )}
+            
+            {activites_recentes.length === 0 && (
+              <div className="empty-state">
+                <p>Aucune activité récente</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Modal Créer Message */}
+      {showMessageModal && (
+        <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📢 Publier un Message Important</h2>
+              <Button variant="ghost" onClick={() => setShowMessageModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Titre</Label>
+                  <Input 
+                    value={messageForm.titre} 
+                    onChange={e => setMessageForm({...messageForm, titre: e.target.value})}
+                    placeholder="Ex: Maintenance système prévue"
+                  />
+                </div>
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Contenu</Label>
+                  <textarea
+                    className="form-textarea"
+                    value={messageForm.contenu}
+                    onChange={e => setMessageForm({...messageForm, contenu: e.target.value})}
+                    placeholder="Détails du message..."
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label>Priorité</Label>
+                  <select 
+                    className="form-select" 
+                    value={messageForm.priorite} 
+                    onChange={e => setMessageForm({...messageForm, priorite: e.target.value})}
+                  >
+                    <option value="info">Information</option>
+                    <option value="important">Important</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Date d'expiration (optionnel)</Label>
+                  <Input 
+                    type="date"
+                    value={messageForm.date_expiration} 
+                    onChange={e => setMessageForm({...messageForm, date_expiration: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowMessageModal(false)}>Annuler</Button>
+              <Button onClick={handleCreateMessage}>Publier</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
