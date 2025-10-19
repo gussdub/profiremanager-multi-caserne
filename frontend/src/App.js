@@ -9497,23 +9497,32 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       {/* Module Disponibilités - Calendrier Visuel */}
       <div className="disponibilites-visual-container">
 
-        {/* Barre de navigation du mois */}
-        <div className="calendar-navigation-bar">
-          <button 
-            className="calendar-nav-button" 
+        {/* Barre de navigation du mois - Harmonisée */}
+        <div style={{
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '2rem',
+          padding: '1rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <Button 
+            variant="ghost" 
             onClick={() => navigateMonth('prev')}
           >
-            ◀
-          </button>
-          <div className="calendar-month-title">
+            ← Mois précédent
+          </Button>
+          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
             {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
-          </div>
-          <button 
-            className="calendar-nav-button" 
+          </h2>
+          <Button 
+            variant="ghost" 
             onClick={() => navigateMonth('next')}
           >
-            ▶
-          </button>
+            Mois suivant →
+          </Button>
         </div>
 
         {/* Grand Calendrier Visuel */}
