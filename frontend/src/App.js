@@ -10615,7 +10615,10 @@ const Rapports = () => {
   // États pour les données
   const [dashboardData, setDashboardData] = useState(null);
   const [rapportSalaires, setRapportSalaires] = useState(null);
+  const [rapportDisponibilite, setRapportDisponibilite] = useState(null);
+  const [rapportCoutsFormations, setRapportCoutsFormations] = useState(null);
   const [rapportBudgetaire, setRapportBudgetaire] = useState(null);
+  const [rapportImmobilisations, setRapportImmobilisations] = useState(null);
   const [budgets, setBudgets] = useState([]);
   const [immobilisations, setImmobilisations] = useState([]);
   
@@ -10626,7 +10629,17 @@ const Rapports = () => {
   
   // États pour les modals de saisie
   const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showImmobilisationModal, setShowImmobilisationModal] = useState(false);
   const [budgetForm, setBudgetForm] = useState({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
+  const [immobilisationForm, setImmobilisationForm] = useState({ 
+    type_immobilisation: 'vehicule', 
+    nom: '', 
+    date_acquisition: new Date().toISOString().split('T')[0], 
+    cout_acquisition: 0, 
+    cout_entretien_annuel: 0, 
+    etat: 'bon', 
+    notes: '' 
+  });
 
   useEffect(() => {
     if (user?.role === 'admin' && tenantSlug) {
