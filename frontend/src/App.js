@@ -6649,8 +6649,12 @@ const Remplacements = () => {
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('remplacements');
+  const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'cartes'
+  const [filterStatut, setFilterStatut] = useState('tous'); // 'tous', 'en_attente', 'accepte', 'refuse'
   const [showCreateRemplacementModal, setShowCreateRemplacementModal] = useState(false);
   const [showCreateCongeModal, setShowCreateCongeModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
   const [newDemande, setNewDemande] = useState({
     type_garde_id: '',
     date: '',
