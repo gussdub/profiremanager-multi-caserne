@@ -8688,12 +8688,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       if (!tenantSlug) return;
       
       try {
-        const [dispoData, typesData] = await Promise.all([
+        const [dispoData, typesData, usersData] = await Promise.all([
           apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
-          apiGet(tenantSlug, '/types-garde')
+          apiGet(tenantSlug, '/types-garde'),
+          apiGet(tenantSlug, '/users') // Récupérer tous les utilisateurs pour les KPIs
         ]);
         setUserDisponibilites(dispoData);
         setTypesGarde(typesData);
+        setUsers(usersData);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
       } finally {
