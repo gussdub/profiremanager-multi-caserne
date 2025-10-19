@@ -2643,6 +2643,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   // Nouveaux états pour la refonte
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' ou 'cards'
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  const [exportTarget, setExportTarget] = useState(null); // null pour tout, user.id pour individuel
   
   const [newDisponibilite, setNewDisponibilite] = useState({
     date: new Date().toISOString().split('T')[0],
