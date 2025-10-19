@@ -2623,9 +2623,8 @@ const Dashboard = () => {
   );
 };
 
+// Personnel Component complet
 const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
-
-  useEffect(() => {
     const fetchDashboardData = async () => {
       if (!tenantSlug) return;
       
