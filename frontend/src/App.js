@@ -3421,7 +3421,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="cell-modern">
-                <p>{user.email}</p>
+                <p className="email-truncated" title={user.email}>{user.email}</p>
                 <p className="user-detail-modern">{user.telephone}</p>
               </div>
 
