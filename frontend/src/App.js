@@ -5455,12 +5455,12 @@ const Planning = () => {
           </Button>
           <Button 
             style={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
               color: 'white',
               padding: '1rem 2rem',
               fontSize: '1.1rem',
               fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(245, 87, 108, 0.4)'
+              boxShadow: '0 4px 15px rgba(252, 165, 165, 0.4)'
             }}
             onClick={() => setShowAdvancedAssignModal(true)}
             data-testid="manual-assign-btn"
