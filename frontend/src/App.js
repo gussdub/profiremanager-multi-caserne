@@ -9441,16 +9441,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             <p>Taux de Disponibilité</p>
           </div>
           <div className="kpi-card" style={{background: '#D1FAE5'}}>
-            <h3>{users.filter(u => u.type_emploi === 'temps_partiel' && userDisponibilites.some(d => d.user_id === u.id)).length} / {users.filter(u => u.type_emploi === 'temps_partiel').length}</h3>
-            <p>Personnes avec Dispo / Temps Partiel</p>
+            <h3>{users.filter(u => u.type_emploi === 'temps_partiel' && userDisponibilites.some(d => d.user_id === u.id)).length}</h3>
+            <p>Temps Partiel avec Dispo</p>
+            <small style={{fontSize: '0.75rem', opacity: 0.8}}>sur {users.filter(u => u.type_emploi === 'temps_partiel').length} au total</small>
           </div>
           <div className="kpi-card" style={{background: '#DBEAFE'}}>
             <h3>{Math.round(userDisponibilites.length / (users.filter(u => u.type_emploi === 'temps_partiel').length || 1))}</h3>
-            <p>Moy. Dispo par Temps Partiel</p>
+            <p>Moy. Dispo par Personne</p>
           </div>
           <div className="kpi-card" style={{background: '#FEF3C7'}}>
             <h3>{userDisponibilites.length}</h3>
-            <p>Total Disponibilités</p>
+            <p>Total Disponibilités Saisies</p>
           </div>
         </div>
       )}
