@@ -14566,3 +14566,211 @@ body {
   }
 }
 
+
+
+/* ==================== PARAMÈTRES MODULE HARMONISÉ ==================== */
+
+.parametres-harmonized {
+  padding: 2rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Header harmonisé pour Paramètres */
+.parametres-harmonized .module-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.parametres-harmonized .module-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.parametres-harmonized .module-header p {
+  color: #64748b;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Navigation par onglets harmonisée */
+.parametres-tabs-harmonized {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #E5E7EB;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
+  padding-bottom: 0.5rem;
+}
+
+.parametres-tab-btn {
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.parametres-tab-btn:hover {
+  color: #1e293b;
+  background-color: #f8fafc;
+}
+
+.parametres-tab-btn.active {
+  color: #dc2626;
+  background-color: #FEF2F2;
+  border-bottom: 3px solid #dc2626;
+  font-weight: 700;
+}
+
+/* Contenu des onglets harmonisé */
+.parametres-harmonized .tab-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.parametres-harmonized .tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.parametres-harmonized .tab-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.parametres-harmonized .tab-header p {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Cartes harmonisées */
+.parametres-harmonized .type-garde-card,
+.parametres-harmonized .grade-card,
+.parametres-harmonized .competence-card,
+.parametres-harmonized .formation-card {
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: #FAFAFA;
+  transition: all 0.3s ease;
+}
+
+.parametres-harmonized .type-garde-card:hover,
+.parametres-harmonized .grade-card:hover,
+.parametres-harmonized .competence-card:hover,
+.parametres-harmonized .formation-card:hover {
+  border-color: #FCA5A5;
+  box-shadow: 0 4px 12px rgba(252, 165, 165, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Boutons harmonisés */
+.parametres-harmonized button[data-testid*="create"],
+.parametres-harmonized button[data-testid*="btn"] {
+  transition: all 0.2s ease;
+}
+
+.parametres-harmonized button[data-testid*="create"]:hover,
+.parametres-harmonized button[data-testid*="btn"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Grilles harmonisées */
+.parametres-harmonized .types-garde-grid,
+.parametres-harmonized .grades-grid,
+.parametres-harmonized .competences-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Formulaires harmonisés */
+.parametres-harmonized .form-section {
+  background: #FAFAFA;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.parametres-harmonized .form-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+/* Tables harmonisées */
+.parametres-harmonized table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.parametres-harmonized table thead {
+  background: #FEF2F2;
+}
+
+.parametres-harmonized table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 2px solid #FCA5A5;
+}
+
+.parametres-harmonized table td {
+  padding: 1rem;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.parametres-harmonized table tr:hover {
+  background-color: #FEF2F2;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .parametres-tabs-harmonized {
+    gap: 0.25rem;
+  }
+  
+  .parametres-tab-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .parametres-harmonized .types-garde-grid,
+  .parametres-harmonized .grades-grid,
+  .parametres-harmonized .competences-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
