@@ -9587,10 +9587,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           {/* Exports - Uniquement pour Admin/Superviseur */}
           {(user.role === 'admin' || user.role === 'superviseur') && (
             <div style={{display: 'flex', gap: '1rem'}}>
-              <Button variant="outline" onClick={() => alert('Export PDF - À implémenter')}>
+              <Button variant="outline" onClick={() => alert('Export Disponibilités PDF - Backend à implémenter')}>
                 📄 Export PDF
               </Button>
-              <Button variant="outline" onClick={() => alert('Export Excel - À implémenter')}>
+              <Button variant="outline" onClick={() => alert('Export Disponibilités Excel - Backend à implémenter')}>
                 📊 Export Excel
               </Button>
             </div>
