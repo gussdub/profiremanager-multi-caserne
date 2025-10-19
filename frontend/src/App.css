@@ -13999,3 +13999,272 @@ body {
   box-shadow: 0 0 0 3px rgba(252, 165, 165, 0.1);
 }
 
+/* ====================================================================
+   MODULE PERSONNEL REFONTE - STYLES
+   ==================================================================== */
+
+.personnel-refonte {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.personnel-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.view-toggle {
+  display: flex;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.view-toggle button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.2rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: #6B7280;
+}
+
+.view-toggle button.active {
+  background: #FCA5A5;
+  color: white;
+  font-weight: bold;
+}
+
+.view-toggle button:hover:not(.active) {
+  background: #E5E7EB;
+}
+
+/* Vue Liste Moderne */
+.personnel-table-modern {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.table-header-modern {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 2fr 1fr 1.2fr 2fr;
+  background: #FCA5A5;
+  color: white;
+  padding: 1rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.table-row-modern {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 2fr 1fr 1.2fr 2fr;
+  padding: 1rem;
+  border-bottom: 1px solid #E5E7EB;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.table-row-modern:hover {
+  background: #FEF2F2;
+}
+
+.user-cell-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar-modern {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.user-name-modern {
+  font-weight: 600;
+  color: #1F2937;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.user-detail-modern {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+}
+
+.cell-modern {
+  font-size: 0.9rem;
+  color: #4B5563;
+}
+
+.badge-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-status.actif {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.badge-status.inactif {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.badge-emploi {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-emploi.tp {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.badge-emploi.tpa {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.actions-cell-modern {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actions-cell-modern button {
+  background: none;
+  border: 1px solid #E5E7EB;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.actions-cell-modern button:hover {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  transform: scale(1.1);
+}
+
+/* Vue Cartes */
+.personnel-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.personnel-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.personnel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #FCA5A5;
+}
+
+.user-avatar-card {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #1F2937;
+  margin-bottom: 0.25rem;
+}
+
+.card-grade {
+  font-size: 0.9rem;
+  color: #6B7280;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.card-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #1F2937;
+}
+
+.card-footer {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .table-header-modern,
+  .table-row-modern {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .personnel-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-cell-modern {
+    justify-content: center;
+  }
+}
+
