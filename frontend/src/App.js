@@ -2862,6 +2862,83 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
+  const handleExportPDF = async (userId = null) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/personnel/export-pdf?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/personnel/export-pdf`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = userId ? `fiche_employe_${userId}.pdf` : 'liste_personnel.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Export PDF téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter le PDF", variant: "destructive" });
+    }
+  };
+
+  const handleExportExcel = async (userId = null) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/personnel/export-excel?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/personnel/export-excel`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = userId ? `fiche_employe_${userId}.xlsx` : 'liste_personnel.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Export Excel téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter l'Excel", variant: "destructive" });
+    }
+  };
+
+  const getFilteredUsers = () => {
+    if (!searchTerm) return users;
+    return users.filter(user => 
+      `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.grade?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   const handleManageDisponibilites = async (user) => {
     if (user.type_emploi !== 'temps_partiel') {
       toast({
