@@ -2867,28 +2867,34 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   // Ouvrir le modal d'export
-  const handleOpenExportModal = (type, userId = null) => {
+  const handleOpenExportModal = (type) => {
     setExportType(type);
-    setExportTarget(userId);
+    setExportScope('all'); // Par défaut, tout le personnel
+    setSelectedPersonForExport('');
     setShowExportModal(true);
   };
 
-  // Ouvrir le modal pour choisir le format d'export individuel
-  const handleOpenIndividualExportModal = (user) => {
-    setSelectedUserForExport(user);
-    setShowIndividualExportModal(true);
-  };
-
-  // Exporter un utilisateur individuel dans le format choisi
-  const handleIndividualExport = async (format) => {
-    if (!selectedUserForExport) return;
+  // Confirmer l'export après sélection dans le modal
+  const handleConfirmExport = async () => {
+    const userId = exportScope === 'individual' ? selectedPersonForExport : null;
+    
+    if (exportScope === 'individual' && !selectedPersonForExport) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner une personne à exporter",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
       const token = localStorage.getItem('token');
       
-      const endpoint = format === 'pdf' ? 'export-pdf' : 'export-excel';
-      const url = `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}?user_id=${selectedUserForExport.id}`;
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -2904,8 +2910,13 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       const link = document.createElement('a');
       link.href = downloadUrl;
       
-      const extension = format === 'pdf' ? '.pdf' : '.xlsx';
-      link.download = `fiche_${selectedUserForExport.prenom}_${selectedUserForExport.nom}${extension}`;
+      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
+      if (userId) {
+        const selectedUser = users.find(u => u.id === userId);
+        link.download = `fiche_${selectedUser?.prenom}_${selectedUser?.nom}${extension}`;
+      } else {
+        link.download = `liste_personnel${extension}`;
+      }
       
       document.body.appendChild(link);
       link.click();
@@ -2914,16 +2925,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       
       toast({ 
         title: "Succès", 
-        description: `Fiche de ${selectedUserForExport.prenom} ${selectedUserForExport.nom} téléchargée`,
+        description: `Export ${exportType.toUpperCase()} téléchargé`,
         variant: "success"
       });
       
-      setShowIndividualExportModal(false);
-      setSelectedUserForExport(null);
+      setShowExportModal(false);
     } catch (error) {
       toast({ 
         title: "Erreur", 
-        description: `Impossible d'exporter la fiche`, 
+        description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
         variant: "destructive" 
       });
     }
