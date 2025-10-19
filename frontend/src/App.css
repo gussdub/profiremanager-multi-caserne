@@ -14577,6 +14577,8 @@ body {
 .parametres-harmonized {
   padding: 2rem;
   animation: fadeIn 0.3s ease-out;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Header harmonisé pour Paramètres */
@@ -14584,6 +14586,7 @@ body {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #E5E7EB;
+  max-width: 100%;
 }
 
 .parametres-harmonized .module-header h1 {
@@ -14594,12 +14597,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .parametres-harmonized .module-header p {
   color: #64748b;
   font-size: 1rem;
   margin-top: 0.5rem;
+  word-wrap: break-word;
 }
 
 /* Navigation par onglets harmonisée */
@@ -14612,6 +14617,7 @@ body {
   flex-wrap: nowrap;
   scrollbar-width: thin;
   padding-bottom: 0.5rem;
+  max-width: 100%;
 }
 
 .parametres-tab-btn {
@@ -14647,6 +14653,8 @@ body {
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.3s ease-out;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .parametres-harmonized .tab-header {
@@ -14656,6 +14664,8 @@ body {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #E5E7EB;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .parametres-harmonized .tab-header h2 {
@@ -14681,6 +14691,8 @@ body {
   padding: 1.5rem;
   background: #FAFAFA;
   transition: all 0.3s ease;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .parametres-harmonized .type-garde-card:hover,
@@ -14711,6 +14723,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
+  max-width: 100%;
 }
 
 /* Formulaires harmonisés */
@@ -14720,6 +14733,8 @@ body {
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   border: 1px solid #E5E7EB;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .parametres-harmonized .form-section h3 {
@@ -14737,6 +14752,9 @@ body {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
 }
 
 .parametres-harmonized table thead {
@@ -14749,6 +14767,7 @@ body {
   font-weight: 600;
   color: #1e293b;
   border-bottom: 2px solid #FCA5A5;
+  white-space: nowrap;
 }
 
 .parametres-harmonized table td {
@@ -14762,6 +14781,10 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .parametres-harmonized {
+    padding: 1rem;
+  }
+
   .parametres-tabs-harmonized {
     gap: 0.25rem;
   }
@@ -14775,6 +14798,14 @@ body {
   .parametres-harmonized .grades-grid,
   .parametres-harmonized .competences-grid {
     grid-template-columns: 1fr;
+  }
+
+  .parametres-harmonized .tab-content {
+    padding: 1rem;
+  }
+
+  .parametres-harmonized .module-header h1 {
+    font-size: 1.5rem;
   }
 }
 
