@@ -3384,10 +3384,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           </div>
 
           {/* Exports */}
-          <Button variant="outline" onClick={() => handleExportPDF()}>
+          <Button variant="outline" onClick={() => handleOpenExportModal('pdf')}>
             📄 Export PDF
           </Button>
-          <Button variant="outline" onClick={() => handleExportExcel()}>
+          <Button variant="outline" onClick={() => handleOpenExportModal('excel')}>
             📊 Export Excel
           </Button>
         </div>
