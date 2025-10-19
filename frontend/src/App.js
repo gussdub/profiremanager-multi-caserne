@@ -7776,19 +7776,77 @@ const Remplacements = () => {
             </div>
             <div className="modal-body" style={{padding: '2rem'}}>
               <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
-                Cette fonctionnalité sera disponible prochainement.
+                Que souhaitez-vous exporter ?
               </p>
-              <p style={{fontSize: '0.875rem', color: '#6B7280'}}>
-                Vous pourrez bientôt exporter :
-              </p>
-              <ul style={{fontSize: '0.875rem', color: '#6B7280', marginTop: '0.5rem'}}>
-                <li>📋 Toutes les demandes de remplacement</li>
-                <li>👤 Les demandes d'une personne spécifique</li>
-                <li>🗓️ Par période (mois, trimestre, année)</li>
-              </ul>
-              <div style={{marginTop: '1.5rem', textAlign: 'right'}}>
-                <Button onClick={() => setShowExportModal(false)}>
-                  Fermer
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+                      const token = localStorage.getItem('token');
+                      
+                      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+                      const url = `${backendUrl}/api/${tenantSlug}/remplacements/${endpoint}`;
+                      
+                      const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      
+                      if (!response.ok) throw new Error('Erreur export');
+                      
+                      const blob = await response.blob();
+                      const downloadUrl = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = downloadUrl;
+                      link.download = `remplacements_tous.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`;
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                      window.URL.revokeObjectURL(downloadUrl);
+                      
+                      toast({ title: "Succès", description: `Export ${exportType.toUpperCase()} téléchargé` });
+                      setShowExportModal(false);
+                    } catch (error) {
+                      toast({ title: "Erreur", description: "Impossible d'exporter", variant: "destructive" });
+                    }
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📋</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Toutes les demandes</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Exporter toutes les demandes de remplacement ({demandes.length} demandes)
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({ title: "Info", description: "Sélectionnez un pompier depuis le module Personnel pour exporter ses demandes" });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>👤</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Une personne spécifique</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Disponible depuis le module Personnel
+                    </div>
+                  </div>
                 </Button>
               </div>
             </div>
