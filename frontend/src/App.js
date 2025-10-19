@@ -11517,6 +11517,89 @@ const Rapports = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Immobilisation */}
+      {showImmobilisationModal && (
+        <div className="modal-overlay" onClick={() => setShowImmobilisationModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Ajouter une Immobilisation</h2>
+              <Button variant="ghost" onClick={() => setShowImmobilisationModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type</Label>
+                  <select 
+                    className="form-select" 
+                    value={immobilisationForm.type_immobilisation} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, type_immobilisation: e.target.value})}
+                  >
+                    <option value="vehicule">Véhicule</option>
+                    <option value="equipement_majeur">Équipement Majeur</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Nom</Label>
+                  <Input 
+                    value={immobilisationForm.nom} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, nom: e.target.value})} 
+                    placeholder="Ex: Camion-citerne 2024"
+                  />
+                </div>
+                <div>
+                  <Label>Date d'acquisition</Label>
+                  <Input 
+                    type="date" 
+                    value={immobilisationForm.date_acquisition} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, date_acquisition: e.target.value})} 
+                  />
+                </div>
+                <div>
+                  <Label>Coût d'acquisition ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={immobilisationForm.cout_acquisition} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, cout_acquisition: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>Coût entretien annuel ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={immobilisationForm.cout_entretien_annuel} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, cout_entretien_annuel: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>État</Label>
+                  <select 
+                    className="form-select" 
+                    value={immobilisationForm.etat} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, etat: e.target.value})}
+                  >
+                    <option value="bon">Bon</option>
+                    <option value="moyen">Moyen</option>
+                    <option value="mauvais">Mauvais</option>
+                  </select>
+                </div>
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Notes</Label>
+                  <Input 
+                    value={immobilisationForm.notes} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, notes: e.target.value})} 
+                    placeholder="Notes additionnelles..."
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowImmobilisationModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveImmobilisation}>Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
