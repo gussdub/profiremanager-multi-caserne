@@ -4918,6 +4918,35 @@ class InterventionCreate(BaseModel):
     notes: str = ""
 
 
+# ====== MODÈLES POUR LE DASHBOARD ======
+
+class MessageImportant(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    titre: str
+    contenu: str
+    priorite: str  # info, important, urgent
+    date_expiration: Optional[str] = None
+    auteur_id: str
+    auteur_nom: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MessageImportantCreate(BaseModel):
+    titre: str
+    contenu: str
+    priorite: str = "info"
+    date_expiration: Optional[str] = None
+
+class Activite(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    type_activite: str  # creation_personnel, assignation, formation, remplacement, etc.
+    description: str
+    user_id: Optional[str] = None
+    user_nom: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 # ====== ENDPOINTS CRUD POUR LES NOUVELLES DONNÉES ======
 
 # BUDGETS
