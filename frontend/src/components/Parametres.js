@@ -939,74 +939,75 @@ const Parametres = ({ user, tenantSlug }) => {
   if (loading) return <div className="loading" data-testid="parametres-loading">Chargement...</div>;
 
   return (
-    <div className="parametres">
-      <div className="parametres-header">
+    <div className="parametres-harmonized">
+      {/* Header Harmonisé */}
+      <div className="module-header">
         <div>
-          <h1 data-testid="parametres-title">Paramètres du système</h1>
-          <p>Configuration complète de ProFireManager</p>
+          <h1 data-testid="parametres-title">⚙️ Paramètres du système</h1>
+          <p>Configuration complète de ProFireManager - Gérez tous les aspects de votre caserne</p>
         </div>
       </div>
 
-      {/* Navigation par onglets */}
-      <div className="settings-tabs">
+      {/* Navigation par onglets - Style Harmonisé */}
+      <div className="parametres-tabs-harmonized">
         <button
-          className={`tab-button ${activeTab === 'types-garde' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'types-garde' ? 'active' : ''}`}
           onClick={() => setActiveTab('types-garde')}
           data-testid="tab-types-garde"
         >
           🚒 Gardes
         </button>
         <button
-          className={`tab-button ${activeTab === 'competences' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'competences' ? 'active' : ''}`}
           onClick={() => setActiveTab('competences')}
           data-testid="tab-competences"
         >
           📜 Compétences
         </button>
         <button
-          className={`tab-button ${activeTab === 'grades' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'grades' ? 'active' : ''}`}
           onClick={() => setActiveTab('grades')}
           data-testid="tab-grades"
         >
           🎖️ Grades
         </button>
         <button
-          className={`tab-button ${activeTab === 'attribution' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'attribution' ? 'active' : ''}`}
           onClick={() => setActiveTab('attribution')}
           data-testid="tab-attribution"
         >
           📅 Planning
         </button>
         <button
-          className={`tab-button ${activeTab === 'comptes' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'comptes' ? 'active' : ''}`}
           onClick={() => setActiveTab('comptes')}
           data-testid="tab-comptes"
         >
           👥 Comptes
         </button>
         <button
-          className={`tab-button ${activeTab === 'remplacements' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'remplacements' ? 'active' : ''}`}
           onClick={() => setActiveTab('remplacements')}
           data-testid="tab-remplacements"
         >
           🔄 Remplacements
         </button>
         <button
-          className={`tab-button ${activeTab === 'disponibilites' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'disponibilites' ? 'active' : ''}`}
           onClick={() => setActiveTab('disponibilites')}
           data-testid="tab-disponibilites"
         >
           📅 Disponibilités
         </button>
         <button
-          className={`tab-button ${activeTab === 'epi' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'epi' ? 'active' : ''}`}
           onClick={() => setActiveTab('epi')}
           data-testid="tab-epi"
         >
           🛡️ EPI
         </button>
         <button
-          className={`tab-button ${activeTab === 'formations' ? 'active' : ''}`}
+          className={`parametres-tab-btn ${activeTab === 'formations' ? 'active' : ''}`}
           onClick={() => setActiveTab('formations')}
           data-testid="tab-formations"
         >
