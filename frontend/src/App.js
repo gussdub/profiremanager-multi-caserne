@@ -5576,6 +5576,9 @@ const Planning = () => {
 
       {/* Vue Calendrier ou Liste */}
       {displayMode === 'calendrier' ? (
+        // VUE CALENDRIER
+        viewMode === 'semaine' ? (
+          // Vue Semaine Calendrier
         <div className="planning-moderne">
           {typesGarde
             .filter(typeGarde => {
@@ -5611,13 +5614,17 @@ const Planning = () => {
                     const assignedCount = assignedUsers.length;
                     const requiredCount = typeGarde.personnel_requis;
 
+                    // Vérifier si c'est un quart de l'utilisateur actuel
+                    const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+
                     return (
                       <div
                         key={dayIndex}
-                        className={`jour-garde-card ${coverage}`}
+                        className={`jour-garde-card ${coverage} ${isMyShift ? 'my-shift' : ''}`}
                         style={{
-                          backgroundColor: getCoverageColor(coverage) + '20',
-                          borderColor: getCoverageColor(coverage)
+                          backgroundColor: isMyShift ? '#3B82F620' : getCoverageColor(coverage) + '20',
+                          borderColor: isMyShift ? '#3B82F6' : getCoverageColor(coverage),
+                          borderWidth: isMyShift ? '3px' : '2px'
                         }}
                         onClick={() => {
                           if (assignedUsers.length > 0) {
@@ -5637,10 +5644,10 @@ const Planning = () => {
                           {assignedUsers.length > 0 ? (
                             <div className="assigned-info">
                               {/* Afficher TOUS les noms - Liste compacte */}
-                              {assignedUsers.map((user, idx) => (
+                              {assignedUsers.map((u, idx) => (
                                 <div key={idx} className="assigned-name-item-compact">
-                                  <span className="assigned-name-compact">
-                                    {user.prenom.charAt(0)}. {user.nom.charAt(0)}. - {user.grade.substring(0, 6)}
+                                  <span className="assigned-name-compact" style={{fontWeight: u.id === user.id ? 'bold' : 'normal'}}>
+                                    {u.prenom.charAt(0)}. {u.nom.charAt(0)}. - {u.grade.substring(0, 6)}
                                   </span>
                                 </div>
                               ))}
@@ -5674,7 +5681,8 @@ const Planning = () => {
               </div>
             ))}
         </div>
-      ) : (
+        ) : (
+          // Vue Mois Calendrier
         <div className="planning-mois">
           <div className="mois-header">
             <h3>📅 Planning mensuel - {new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</h3>
@@ -5704,16 +5712,24 @@ const Planning = () => {
                   <div className="gardes-jour-list">
                     {gardesJour.map(typeGarde => {
                       const coverage = getGardeCoverage(date, typeGarde);
+                      const dateStr = date.toISOString().split('T')[0];
+                      const gardeAssignations = assignations.filter(a => 
+                        a.date === dateStr && a.type_garde_id === typeGarde.id
+                      );
+                      const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                      const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                      
                       return (
                         <div
                           key={typeGarde.id}
-                          className={`garde-mois-item ${coverage}`}
+                          className={`garde-mois-item ${coverage} ${isMyShift ? 'my-shift' : ''}`}
                           style={{
-                            backgroundColor: getCoverageColor(coverage),
+                            backgroundColor: isMyShift ? '#3B82F6' : getCoverageColor(coverage),
                             opacity: coverage === 'vacante' ? 0.7 : 1
                           }}
                           onClick={() => openGardeDetails(date, typeGarde)}
                           data-testid={`garde-mois-${date.getDate()}-${typeGarde.id}`}
+                          title={`${typeGarde.nom} - ${assignedUsers.length}/${typeGarde.personnel_requis}`}
                         >
                           <span className="garde-initiale">{typeGarde.nom.charAt(0)}</span>
                           <span className="coverage-icon">
@@ -5726,6 +5742,141 @@ const Planning = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+        )
+      ) : (
+        // VUE LISTE
+        <div className="planning-liste">
+          <h3 style={{marginBottom: '1.5rem', fontSize: '1.2rem'}}>📋 Liste des Gardes</h3>
+          
+          <div className="formations-grid">
+            {(viewMode === 'semaine' ? weekDates : monthDates.filter(d => d !== null))
+              .map(date => {
+                const dayIndex = date.getUTCDay() === 0 ? 6 : date.getUTCDay() - 1;
+                return typesGarde
+                  .filter(typeGarde => shouldShowTypeGardeForDay(typeGarde, dayIndex))
+                  .map(typeGarde => {
+                    const coverage = getGardeCoverage(date, typeGarde);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const gardeAssignations = assignations.filter(a => 
+                      a.date === dateStr && a.type_garde_id === typeGarde.id
+                    );
+                    const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                    const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                    
+                    return {
+                      date,
+                      typeGarde,
+                      coverage,
+                      assignedUsers,
+                      isMyShift,
+                      dateStr
+                    };
+                  });
+              })
+              .flat()
+              .filter(garde => {
+                if (!searchFilter) return true;
+                const searchLower = searchFilter.toLowerCase();
+                return (
+                  garde.typeGarde.nom.toLowerCase().includes(searchLower) ||
+                  garde.assignedUsers.some(u => 
+                    `${u.prenom} ${u.nom}`.toLowerCase().includes(searchLower)
+                  )
+                );
+              })
+              .map((garde, index) => (
+                <div 
+                  key={`${garde.dateStr}-${garde.typeGarde.id}`}
+                  className="formation-card"
+                  style={{
+                    border: garde.isMyShift ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    background: garde.isMyShift ? '#3B82F620' : 'white'
+                  }}
+                  onClick={() => openGardeDetails(garde.date, garde.typeGarde)}
+                >
+                  <div className="card-header" style={{
+                    background: getCoverageColor(garde.coverage),
+                    color: 'white',
+                    padding: '1rem',
+                    borderRadius: '12px 12px 0 0'
+                  }}>
+                    <h3 style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                      {garde.typeGarde.nom}
+                      {garde.isMyShift && <span>👤</span>}
+                    </h3>
+                  </div>
+                  
+                  <div className="card-body" style={{padding: '1rem'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                        <span>📅</span>
+                        <strong>{garde.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}</strong>
+                      </div>
+                      
+                      <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                        <span>⏰</span>
+                        <span>{garde.typeGarde.heure_debut} - {garde.typeGarde.heure_fin}</span>
+                      </div>
+                      
+                      <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                        <span>👥</span>
+                        <span>{garde.assignedUsers.length}/{garde.typeGarde.personnel_requis} pompiers assignés</span>
+                      </div>
+                      
+                      {garde.typeGarde.officier_obligatoire && (
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                          <span>🎖️</span>
+                          <span>Officier obligatoire</span>
+                        </div>
+                      )}
+                      
+                      {garde.assignedUsers.length > 0 ? (
+                        <div style={{marginTop: '0.5rem'}}>
+                          <strong>Personnel assigné :</strong>
+                          <ul style={{margin: '0.5rem 0 0 0', padding: '0 0 0 1.5rem'}}>
+                            {garde.assignedUsers.map((u, idx) => (
+                              <li key={idx} style={{fontWeight: u.id === user.id ? 'bold' : 'normal'}}>
+                                {u.prenom} {u.nom} - {u.grade}
+                                {u.id === user.id && ' (Vous)'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <div style={{
+                          padding: '0.75rem',
+                          background: '#FEE2E2',
+                          borderRadius: '8px',
+                          color: '#991B1B',
+                          fontWeight: '600'
+                        }}>
+                          ⚠️ Garde vacante - Aucun personnel assigné
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div style={{
+                      marginTop: '1rem',
+                      display: 'flex',
+                      gap: '0.5rem',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <span className={`badge-status ${garde.coverage}`} style={{
+                        background: garde.coverage === 'complete' ? '#10B981' : garde.coverage === 'partielle' ? '#F59E0B' : '#EF4444',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '20px',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {garde.coverage === 'complete' ? '✅ Complet' : garde.coverage === 'partielle' ? '⚠️ Partiel' : '❌ Vacant'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       )}
