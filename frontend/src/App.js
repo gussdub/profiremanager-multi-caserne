@@ -11384,10 +11384,88 @@ const Rapports = () => {
           {/* Immobilisations */}
           {activeRapport === 'immobilisations' && (
             <div className="rapport-immobilisations">
-              <h2>🚒 Rapport sur les Immobilisations</h2>
-              <div className="empty-state">
-                <p>Fonctionnalité en cours de développement</p>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                <h2>🚒 Rapport sur les Immobilisations</h2>
+                <Button onClick={() => setShowImmobilisationModal(true)}>➕ Ajouter Immobilisation</Button>
               </div>
+
+              {rapportImmobilisations ? (
+                <div>
+                  {/* Statistiques globales */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                      <h3>{rapportImmobilisations.statistiques.nombre_vehicules}</h3>
+                      <p>Véhicules</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportImmobilisations.statistiques.nombre_equipements}</h3>
+                      <p>Équipements</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportImmobilisations.statistiques.cout_acquisition_total.toLocaleString()}</h3>
+                      <p>Coût Acquisition</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>${rapportImmobilisations.statistiques.cout_entretien_annuel_total.toLocaleString()}</h3>
+                      <p>Entretien Annuel</p>
+                    </div>
+                  </div>
+
+                  {/* Véhicules */}
+                  {rapportImmobilisations.vehicules.length > 0 && (
+                    <div style={{marginBottom: '2rem'}}>
+                      <h3 style={{marginBottom: '1rem'}}>🚒 Véhicules (Âge moyen: {rapportImmobilisations.statistiques.age_moyen_vehicules} ans)</h3>
+                      <div className="immobilisations-grid">
+                        {rapportImmobilisations.vehicules.map(vehicule => (
+                          <div key={vehicule.id} className="immobilisation-card">
+                            <h4>{vehicule.nom}</h4>
+                            <div className="immobilisation-details">
+                              <p><strong>Acquisition:</strong> {new Date(vehicule.date_acquisition).toLocaleDateString('fr-FR')}</p>
+                              <p><strong>Âge:</strong> {vehicule.age_annees} ans</p>
+                              <p><strong>État:</strong> <span className={`badge ${vehicule.etat}`}>{vehicule.etat}</span></p>
+                              <p><strong>Coût:</strong> ${vehicule.cout_acquisition.toLocaleString()}</p>
+                              <p><strong>Entretien:</strong> ${vehicule.cout_entretien_annuel.toLocaleString()}/an</p>
+                              {vehicule.date_remplacement_prevue && (
+                                <p><strong>Remplacement prévu:</strong> {new Date(vehicule.date_remplacement_prevue).toLocaleDateString('fr-FR')}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Équipements */}
+                  {rapportImmobilisations.equipements.length > 0 && (
+                    <div>
+                      <h3 style={{marginBottom: '1rem'}}>🔧 Équipements (Âge moyen: {rapportImmobilisations.statistiques.age_moyen_equipements} ans)</h3>
+                      <div className="immobilisations-grid">
+                        {rapportImmobilisations.equipements.map(equip => (
+                          <div key={equip.id} className="immobilisation-card">
+                            <h4>{equip.nom}</h4>
+                            <div className="immobilisation-details">
+                              <p><strong>Acquisition:</strong> {new Date(equip.date_acquisition).toLocaleDateString('fr-FR')}</p>
+                              <p><strong>Âge:</strong> {equip.age_annees} ans</p>
+                              <p><strong>État:</strong> <span className={`badge ${equip.etat}`}>{equip.etat}</span></p>
+                              <p><strong>Coût:</strong> ${equip.cout_acquisition.toLocaleString()}</p>
+                              <p><strong>Entretien:</strong> ${equip.cout_entretien_annuel.toLocaleString()}/an</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('immobilisations')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('immobilisations')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Aucune immobilisation. Cliquez sur "Ajouter Immobilisation" pour commencer.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
