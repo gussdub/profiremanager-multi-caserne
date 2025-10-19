@@ -6675,6 +6675,253 @@ async def update_user_disponibilites(tenant_slug: str, user_id: str, disponibili
     
     return {"message": f"Disponibilités mises à jour avec succès ({len(disponibilites)} entrées)"}
 
+
+
+# ===== EXPORTS DISPONIBILITES =====
+
+@api_router.get("/{tenant_slug}/disponibilites/export-pdf")
+async def export_disponibilites_pdf(
+    tenant_slug: str,
+    user_id: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export des disponibilités en PDF"""
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+        from io import BytesIO
+        
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer les disponibilités
+        if user_id:
+            disponibilites_list = await db.disponibilites.find({
+                "tenant_id": tenant.id,
+                "user_id": user_id
+            }).to_list(length=None)
+            users_list = [await db.users.find_one({"id": user_id, "tenant_id": tenant.id})]
+        else:
+            disponibilites_list = await db.disponibilites.find({
+                "tenant_id": tenant.id
+            }).to_list(length=None)
+            users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        users_map = {u['id']: u for u in users_list}
+        
+        # Créer le PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#EF4444'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        
+        titre = "Disponibilités du Personnel Temps Partiel"
+        if user_id and user_id in users_map:
+            titre = f"Disponibilités de {users_map[user_id]['prenom']} {users_map[user_id]['nom']}"
+        
+        elements.append(Paragraph(titre, title_style))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Construire le tableau
+        table_data = [['Date', 'Heure Début', 'Heure Fin', 'Statut', 'Type Garde', 'Pompier']]
+        
+        for dispo in sorted(disponibilites_list, key=lambda x: x.get('date', '')):
+            user = users_map.get(dispo['user_id'], {})
+            pompier_nom = f"{user.get('prenom', '')} {user.get('nom', '')}" if user else "N/A"
+            
+            statut_fr = {
+                'disponible': 'Disponible',
+                'indisponible': 'Indisponible',
+                'conge': 'Congé'
+            }.get(dispo.get('statut', ''), dispo.get('statut', ''))
+            
+            table_data.append([
+                dispo.get('date', 'N/A'),
+                dispo.get('heure_debut', 'N/A'),
+                dispo.get('heure_fin', 'N/A'),
+                statut_fr,
+                dispo.get('type_garde_id', 'Tous') if dispo.get('type_garde_id') else 'Tous',
+                pompier_nom if not user_id else ''
+            ])
+        
+        # Si pas de user_id, afficher la colonne pompier, sinon la cacher
+        if user_id:
+            table_data = [[row[i] for i in range(5)] for row in table_data]
+        
+        table = Table(table_data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        buffer.seek(0)
+        
+        filename = f"disponibilites_{user_id if user_id else 'tous'}.pdf"
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export PDF: {str(e)}")
+
+
+@api_router.get("/{tenant_slug}/disponibilites/export-excel")
+async def export_disponibilites_excel(
+    tenant_slug: str,
+    user_id: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export des disponibilités en Excel"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from io import BytesIO
+        
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer les disponibilités
+        if user_id:
+            disponibilites_list = await db.disponibilites.find({
+                "tenant_id": tenant.id,
+                "user_id": user_id
+            }).to_list(length=None)
+            users_list = [await db.users.find_one({"id": user_id, "tenant_id": tenant.id})]
+        else:
+            disponibilites_list = await db.disponibilites.find({
+                "tenant_id": tenant.id
+            }).to_list(length=None)
+            users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        users_map = {u['id']: u for u in users_list}
+        
+        # Créer le workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Disponibilités"
+        
+        # Styles
+        header_fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Titre
+        ws.merge_cells('A1:F1')
+        titre = "Disponibilités du Personnel Temps Partiel"
+        if user_id and user_id in users_map:
+            titre = f"Disponibilités de {users_map[user_id]['prenom']} {users_map[user_id]['nom']}"
+        ws['A1'] = titre
+        ws['A1'].font = Font(bold=True, size=16, color="EF4444")
+        ws['A1'].alignment = center_alignment
+        
+        # En-têtes
+        row = 3
+        if user_id:
+            headers = ['Date', 'Heure Début', 'Heure Fin', 'Statut', 'Type Garde']
+        else:
+            headers = ['Date', 'Heure Début', 'Heure Fin', 'Statut', 'Type Garde', 'Pompier']
+        
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_alignment
+            cell.border = border
+        
+        # Données
+        row += 1
+        for dispo in sorted(disponibilites_list, key=lambda x: x.get('date', '')):
+            user = users_map.get(dispo['user_id'], {})
+            pompier_nom = f"{user.get('prenom', '')} {user.get('nom', '')}" if user else "N/A"
+            
+            statut_fr = {
+                'disponible': 'Disponible',
+                'indisponible': 'Indisponible',
+                'conge': 'Congé'
+            }.get(dispo.get('statut', ''), dispo.get('statut', ''))
+            
+            ws.cell(row=row, column=1, value=dispo.get('date', 'N/A'))
+            ws.cell(row=row, column=2, value=dispo.get('heure_debut', 'N/A'))
+            ws.cell(row=row, column=3, value=dispo.get('heure_fin', 'N/A'))
+            status_cell = ws.cell(row=row, column=4, value=statut_fr)
+            ws.cell(row=row, column=5, value=dispo.get('type_garde_id', 'Tous') if dispo.get('type_garde_id') else 'Tous')
+            
+            if not user_id:
+                ws.cell(row=row, column=6, value=pompier_nom)
+            
+            # Couleur statut
+            if dispo.get('statut') == 'disponible':
+                status_cell.fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
+            elif dispo.get('statut') == 'indisponible':
+                status_cell.fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+            else:
+                status_cell.fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+            
+            for col in range(1, len(headers) + 1):
+                ws.cell(row=row, column=col).border = border
+                ws.cell(row=row, column=col).alignment = center_alignment
+            
+            row += 1
+        
+        # Ajuster les largeurs de colonnes
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Sauvegarder dans un buffer
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        filename = f"disponibilites_{user_id if user_id else 'tous'}.xlsx"
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
+
+
 @api_router.delete("/{tenant_slug}/disponibilites/reinitialiser")
 async def reinitialiser_disponibilites(
     tenant_slug: str,
