@@ -13724,3 +13724,59 @@ body {
   color: #D97706;
 }
 
+.immobilisations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.immobilisation-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.immobilisation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.immobilisation-card h4 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #1F2937;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #FCA5A5;
+}
+
+.immobilisation-details p {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #6B7280;
+}
+
+.immobilisation-details strong {
+  color: #1F2937;
+  margin-right: 0.25rem;
+}
+
+.badge.bon {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.badge.moyen {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.badge.mauvais {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
