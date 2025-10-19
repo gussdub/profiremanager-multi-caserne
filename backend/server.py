@@ -5775,6 +5775,204 @@ async def export_salaires_excel(
     )
 
 
+# ====================================================================
+# DASHBOARD - MESSAGES IMPORTANTS ET ACTIVITÉS
+# ====================================================================
+
+# MESSAGES IMPORTANTS
+@api_router.post("/{tenant_slug}/dashboard/messages")
+async def create_message_important(tenant_slug: str, message: MessageImportantCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    message_dict = message.dict()
+    message_dict["tenant_id"] = tenant.id
+    message_dict["auteur_id"] = current_user.id
+    message_dict["auteur_nom"] = f"{current_user.prenom} {current_user.nom}"
+    message_obj = MessageImportant(**message_dict)
+    await db.messages_importants.insert_one(message_obj.dict())
+    return clean_mongo_doc(message_obj.dict())
+
+@api_router.get("/{tenant_slug}/dashboard/messages")
+async def get_messages_importants(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer messages non expirés
+    today = datetime.now(timezone.utc).date().isoformat()
+    messages = await db.messages_importants.find({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"date_expiration": None},
+            {"date_expiration": {"$gte": today}}
+        ]
+    }).sort("created_at", -1).to_list(100)
+    
+    return [clean_mongo_doc(m) for m in messages]
+
+@api_router.delete("/{tenant_slug}/dashboard/messages/{message_id}")
+async def delete_message_important(tenant_slug: str, message_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    result = await db.messages_importants.delete_one({"id": message_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Message non trouvé")
+    
+    return {"message": "Message supprimé"}
+
+
+# DASHBOARD DONNÉES COMPLÈTES
+@api_router.get("/{tenant_slug}/dashboard/donnees-completes")
+async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Endpoint central pour toutes les données du dashboard"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Date du mois en cours
+    today = datetime.now(timezone.utc)
+    debut_mois = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    fin_mois = (debut_mois + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    debut_mois_prochain = fin_mois + timedelta(days=1)
+    fin_mois_prochain = (debut_mois_prochain + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    # Récupérer toutes les données nécessaires
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
+    formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
+    inscriptions_formations = await db.inscriptions_formations.find({"tenant_id": tenant.id}).to_list(10000)
+    demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # ===== SECTION PERSONNELLE =====
+    # Heures travaillées ce mois
+    mes_assignations_mois = [a for a in assignations if a["user_id"] == current_user.id and "date" in a]
+    heures_mois = 0
+    nombre_gardes_mois = 0
+    for assignation in mes_assignations_mois:
+        try:
+            date_assign = datetime.fromisoformat(assignation["date"])
+            if debut_mois <= date_assign <= fin_mois:
+                heures_mois += 8  # Estimation 8h par garde
+                nombre_gardes_mois += 1
+        except:
+            pass
+    
+    # Présence aux formations
+    mes_inscriptions = [i for i in inscriptions_formations if i["user_id"] == current_user.id]
+    formations_passees = 0
+    presences = 0
+    for insc in mes_inscriptions:
+        formation = next((f for f in formations if f["id"] == insc["formation_id"]), None)
+        if formation:
+            try:
+                date_fin_formation = datetime.fromisoformat(formation["date_fin"]).date()
+                if date_fin_formation < today.date():
+                    formations_passees += 1
+                    if insc.get("statut") == "present":
+                        presences += 1
+            except:
+                pass
+    
+    pourcentage_presence_formations = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
+    
+    # Formations à venir (mois actuel + mois prochain)
+    formations_a_venir = []
+    for formation in formations:
+        try:
+            date_debut_formation = datetime.fromisoformat(formation["date_debut"]).date()
+            if debut_mois.date() <= date_debut_formation <= fin_mois_prochain.date():
+                # Vérifier si inscrit
+                est_inscrit = any(i for i in inscriptions_formations if i["formation_id"] == formation["id"] and i["user_id"] == current_user.id)
+                formations_a_venir.append({
+                    "id": formation["id"],
+                    "nom": formation["nom"],
+                    "date_debut": formation["date_debut"],
+                    "date_fin": formation["date_fin"],
+                    "est_inscrit": est_inscrit
+                })
+        except:
+            pass
+    
+    formations_a_venir.sort(key=lambda x: x["date_debut"])
+    
+    section_personnelle = {
+        "heures_travaillees_mois": heures_mois,
+        "nombre_gardes_mois": nombre_gardes_mois,
+        "pourcentage_presence_formations": pourcentage_presence_formations,
+        "formations_a_venir": formations_a_venir
+    }
+    
+    # ===== SECTION GÉNÉRALE (Admin/Superviseur uniquement) =====
+    section_generale = None
+    if current_user.role in ["admin", "superviseur"]:
+        # Couverture du planning (assignations ce mois)
+        assignations_mois = [a for a in assignations if "date" in a]
+        assignations_mois_valides = []
+        for a in assignations_mois:
+            try:
+                date_assign = datetime.fromisoformat(a["date"])
+                if debut_mois <= date_assign <= fin_mois:
+                    assignations_mois_valides.append(a)
+            except:
+                pass
+        
+        total_jours_mois = (fin_mois - debut_mois).days + 1
+        jours_assignes = len(set([a["date"] for a in assignations_mois_valides]))
+        couverture_planning = round((jours_assignes / total_jours_mois * 100), 1)
+        
+        # Gardes manquantes (postes non assignés dans les 7 prochains jours)
+        gardes_manquantes = 0
+        for i in range(7):
+            date_check = (today + timedelta(days=i)).date().isoformat()
+            assignations_jour = [a for a in assignations if a.get("date") == date_check]
+            # Supposons 3 postes par jour minimum
+            if len(assignations_jour) < 3:
+                gardes_manquantes += (3 - len(assignations_jour))
+        
+        # Demandes de congé à approuver
+        demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
+        
+        # Statistiques du mois
+        stats_mois = {
+            "total_assignations": len(assignations_mois_valides),
+            "total_personnel_actif": len([u for u in users if u.get("statut") == "Actif"]),
+            "formations_ce_mois": len([f for f in formations if debut_mois.date() <= datetime.fromisoformat(f["date_debut"]).date() <= fin_mois.date()])
+        }
+        
+        section_generale = {
+            "couverture_planning": couverture_planning,
+            "gardes_manquantes": gardes_manquantes,
+            "demandes_conges_en_attente": demandes_en_attente,
+            "statistiques_mois": stats_mois
+        }
+    
+    # ===== ACTIVITÉS RÉCENTES (Admin/Superviseur uniquement) =====
+    activites_recentes = []
+    if current_user.role in ["admin", "superviseur"]:
+        activites = await db.activites.find({"tenant_id": tenant.id}).sort("created_at", -1).limit(20).to_list(20)
+        activites_recentes = [clean_mongo_doc(a) for a in activites]
+    
+    return {
+        "section_personnelle": section_personnelle,
+        "section_generale": section_generale,
+        "activites_recentes": activites_recentes
+    }
+
+
+# Fonction helper pour créer des activités
+async def creer_activite(tenant_id: str, type_activite: str, description: str, user_id: Optional[str] = None, user_nom: Optional[str] = None):
+    """Helper pour créer une activité dans le système"""
+    activite = Activite(
+        tenant_id=tenant_id,
+        type_activite=type_activite,
+        description=description,
+        user_id=user_id,
+        user_nom=user_nom
+    )
+    await db.activites.insert_one(activite.dict())
+
+
 # Sessions de formation routes
 @api_router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
 async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
