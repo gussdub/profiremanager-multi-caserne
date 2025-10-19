@@ -9430,6 +9430,73 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
       </div>
 
+      {/* KPIs - Uniquement pour Admin/Superviseur */}
+      {(user.role === 'admin' || user.role === 'superviseur') && !managingUser && (
+        <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+          <div className="kpi-card" style={{background: '#FCA5A5'}}>
+            <h3>{Math.round((users.filter(u => u.type_emploi === 'temps_partiel' && userDisponibilites.some(d => d.user_id === u.id)).length / users.filter(u => u.type_emploi === 'temps_partiel').length) * 100) || 0}%</h3>
+            <p>Taux de Disponibilité</p>
+          </div>
+          <div className="kpi-card" style={{background: '#D1FAE5'}}>
+            <h3>{users.filter(u => u.type_emploi === 'temps_partiel' && userDisponibilites.some(d => d.user_id === u.id)).length} / {users.filter(u => u.type_emploi === 'temps_partiel').length}</h3>
+            <p>Personnes avec Dispo / Temps Partiel</p>
+          </div>
+          <div className="kpi-card" style={{background: '#DBEAFE'}}>
+            <h3>{Math.round(userDisponibilites.length / (users.filter(u => u.type_emploi === 'temps_partiel').length || 1))}</h3>
+            <p>Moy. Dispo par Temps Partiel</p>
+          </div>
+          <div className="kpi-card" style={{background: '#FEF3C7'}}>
+            <h3>{userDisponibilites.length}</h3>
+            <p>Total Disponibilités</p>
+          </div>
+        </div>
+      )}
+
+      {/* Barre de Contrôles */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+          {/* Boutons d'action */}
+          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+            <Button 
+              variant="default" 
+              onClick={() => setShowCalendarModal(true)}
+              data-testid="configure-availability-btn"
+            >
+              ✅ Mes Disponibilités
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGenerationModal(true)}
+              data-testid="generate-indisponibilites-btn"
+            >
+              ❌ Indisponibilités
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowReinitModal(true)}
+              data-testid="reinit-disponibilites-btn"
+            >
+              🗑️ Supprimer Tout
+            </Button>
+          </div>
+
+          {/* Exports - Uniquement pour Admin/Superviseur */}
+          {(user.role === 'admin' || user.role === 'superviseur') && (
+            <div style={{display: 'flex', gap: '1rem'}}>
+              <Button variant="outline" onClick={() => alert('Export PDF - À implémenter')}>
+                📄 Export PDF
+              </Button>
+              <Button variant="outline" onClick={() => alert('Export Excel - À implémenter')}>
+                📊 Export Excel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Module Disponibilités - Calendrier Visuel */}
+      <div className="disponibilites-visual-container">
+
         {/* Barre de navigation du mois */}
         <div className="calendar-navigation-bar">
           <button 
