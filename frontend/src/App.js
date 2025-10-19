@@ -3444,7 +3444,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 {user.type_emploi === 'temps_partiel' && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
                 )}
-                <button onClick={() => handleExportPDF(user.id)} title="Export PDF">📄</button>
               </div>
             </div>
           ))}
