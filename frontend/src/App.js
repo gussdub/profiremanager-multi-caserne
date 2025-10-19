@@ -5504,10 +5504,10 @@ const Planning = () => {
           </div>
 
           {/* Exports */}
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportPDFPlanning}>
             📄 Export PDF
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportExcelPlanning}>
             📊 Export Excel
           </Button>
         </div>
