@@ -5973,6 +5973,244 @@ async def creer_activite(tenant_id: str, type_activite: str, description: str, u
     await db.activites.insert_one(activite.dict())
 
 
+# ====================================================================
+# MODULE PERSONNEL - EXPORTS PDF/EXCEL
+# ====================================================================
+
+@api_router.get("/{tenant_slug}/personnel/export-pdf")
+async def export_personnel_pdf(
+    tenant_slug: str,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export PDF de la liste personnel ou d'un utilisateur individuel"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les utilisateurs
+    if user_id:
+        users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
+    else:
+        users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Générer PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    titre = "Fiche Employé" if user_id else "Liste du Personnel"
+    story.append(Paragraph(titre, title_style))
+    story.append(Paragraph("ProFireManager", styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    if not user_id:
+        # Statistiques globales
+        total = len(users_data)
+        actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+        temps_plein = len([u for u in users_data if u.get("type_emploi") == "temps_plein"])
+        temps_partiel = len([u for u in users_data if u.get("type_emploi") == "temps_partiel"])
+        
+        stats_data = [
+            ["Statistiques", ""],
+            ["Total personnel", str(total)],
+            ["Actifs", str(actifs)],
+            ["Temps plein", str(temps_plein)],
+            ["Temps partiel", str(temps_partiel)]
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[2.5*inch, 2*inch])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(stats_table)
+        story.append(Spacer(1, 0.3*inch))
+    
+    # Tableau ou fiche individuelle
+    if user_id and users_data:
+        # Fiche individuelle détaillée
+        user = users_data[0]
+        fiche_data = [
+            ["Nom complet", f"{user.get('prenom', '')} {user.get('nom', '')}"],
+            ["Email", user.get("email", "N/A")],
+            ["Téléphone", user.get("telephone", "N/A")],
+            ["Grade", user.get("grade", "N/A")],
+            ["Rôle", user.get("role", "N/A")],
+            ["Type emploi", user.get("type_emploi", "N/A")],
+            ["Statut", user.get("statut", "N/A")],
+            ["Taux horaire", f"${user.get('taux_horaire', 0)}/h"],
+            ["Adresse", user.get("adresse", "N/A")]
+        ]
+        
+        fiche_table = Table(fiche_data, colWidths=[2*inch, 4*inch])
+        fiche_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#FCA5A5')),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(fiche_table)
+    else:
+        # Liste complète
+        table_data = [["Nom", "Email", "Grade", "Rôle", "Type", "Statut"]]
+        
+        for user in users_data:
+            table_data.append([
+                f"{user.get('prenom', '')} {user.get('nom', '')}",
+                user.get("email", "N/A"),
+                user.get("grade", "N/A"),
+                user.get("role", "N/A"),
+                "TP" if user.get("type_emploi") == "temps_plein" else "TPa",
+                user.get("statut", "N/A")
+            ])
+        
+        detail_table = Table(table_data, colWidths=[1.5*inch, 1.5*inch, 1.2*inch, 1*inch, 0.6*inch, 0.8*inch])
+        detail_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+        ]))
+        
+        story.append(detail_table)
+    
+    doc.build(story)
+    buffer.seek(0)
+    
+    filename = f"fiche_employe_{user_id}.pdf" if user_id else "liste_personnel.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@api_router.get("/{tenant_slug}/personnel/export-excel")
+async def export_personnel_excel(
+    tenant_slug: str,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export Excel de la liste personnel ou d'un utilisateur individuel"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les utilisateurs
+    if user_id:
+        users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
+    else:
+        users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Générer Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Personnel"
+    
+    # En-tête
+    titre = "Fiche Employé" if user_id else "Liste du Personnel"
+    ws['A1'] = titre
+    ws['A1'].font = Font(size=14, bold=True, color="DC2626")
+    ws.merge_cells('A1:F1')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    if not user_id:
+        # Stats
+        total = len(users_data)
+        actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+        
+        ws['A3'] = "Total personnel"
+        ws['B3'] = total
+        ws['A4'] = "Personnel actif"
+        ws['B4'] = actifs
+        
+        # Tableau
+        headers = ["Nom", "Prénom", "Email", "Grade", "Rôle", "Type", "Statut", "Téléphone"]
+        row = 6
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="FCA5A5", end_color="FCA5A5", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        for user in users_data:
+            row += 1
+            ws.cell(row=row, column=1, value=user.get("nom", ""))
+            ws.cell(row=row, column=2, value=user.get("prenom", ""))
+            ws.cell(row=row, column=3, value=user.get("email", ""))
+            ws.cell(row=row, column=4, value=user.get("grade", ""))
+            ws.cell(row=row, column=5, value=user.get("role", ""))
+            ws.cell(row=row, column=6, value=user.get("type_emploi", ""))
+            ws.cell(row=row, column=7, value=user.get("statut", ""))
+            ws.cell(row=row, column=8, value=user.get("telephone", ""))
+    else:
+        # Fiche individuelle
+        if users_data:
+            user = users_data[0]
+            row = 3
+            fields = [
+                ("Nom", user.get("nom", "")),
+                ("Prénom", user.get("prenom", "")),
+                ("Email", user.get("email", "")),
+                ("Téléphone", user.get("telephone", "")),
+                ("Grade", user.get("grade", "")),
+                ("Rôle", user.get("role", "")),
+                ("Type emploi", user.get("type_emploi", "")),
+                ("Statut", user.get("statut", "")),
+                ("Adresse", user.get("adresse", ""))
+            ]
+            
+            for field, value in fields:
+                ws.cell(row=row, column=1, value=field).font = Font(bold=True)
+                ws.cell(row=row, column=2, value=value)
+                row += 1
+    
+    # Ajuster largeurs
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+        ws.column_dimensions[col].width = 18
+    
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"fiche_employe_{user_id}.xlsx" if user_id else "liste_personnel.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 # Sessions de formation routes
 @api_router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
 async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
