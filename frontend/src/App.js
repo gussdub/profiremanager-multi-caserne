@@ -9529,6 +9529,58 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     );
   }
 
+  // Fonctions d'export Disponibilités
+  const handleExportDisponibilites = async (userId = null) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
+      link.download = userId 
+        ? `disponibilites_${userId}${extension}` 
+        : `disponibilites_tous${extension}`;
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: `Export ${exportType.toUpperCase()} téléchargé`,
+        variant: "success"
+      });
+      
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
   if (loading) return <div className="loading" data-testid="disponibilites-loading">Chargement...</div>;
 
   return (
