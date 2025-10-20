@@ -6543,10 +6543,22 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
         
         # Statistiques du mois
+        # Compter les formations ce mois avec gestion d'erreur pour les dates invalides
+        formations_ce_mois_count = 0
+        for f in formations:
+            try:
+                if "date_debut" in f and f["date_debut"]:
+                    date_debut_formation = datetime.fromisoformat(f["date_debut"]).date()
+                    if debut_mois.date() <= date_debut_formation <= fin_mois.date():
+                        formations_ce_mois_count += 1
+            except (ValueError, TypeError, AttributeError):
+                # Ignorer les formations avec des dates invalides
+                pass
+        
         stats_mois = {
             "total_assignations": len(assignations_mois_valides),
             "total_personnel_actif": len([u for u in users if u.get("statut") == "Actif"]),
-            "formations_ce_mois": len([f for f in formations if debut_mois.date() <= datetime.fromisoformat(f["date_debut"]).date() <= fin_mois.date()])
+            "formations_ce_mois": formations_ce_mois_count
         }
         
         section_generale = {
