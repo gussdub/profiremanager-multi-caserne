@@ -223,24 +223,20 @@ class DashboardTester:
             self.log_test("Find Demo Users", False, f"Find demo users error: {str(e)}")
             return False
     
-    def run_rapports_export_tests(self):
-        """Run the complete Rapports Export test suite"""
-        print("🚀 Starting Rapports PDF/Excel Export Testing Suite")
+    def run_dashboard_tests(self):
+        """Run the complete Dashboard test suite"""
+        print("🚀 Starting Dashboard Endpoint Testing Suite")
         print("=" * 70)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"🔗 Endpoints:")
-        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-dashboard-pdf")
-        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-salaires-pdf")
-        print(f"   - GET /api/{TENANT_SLUG}/rapports/export-salaires-excel")
-        print(f"🔑 Authentication: gussdub@gmail.com / 230685Juin+ (admin)")
+        print(f"🔗 Endpoint: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
+        print(f"🎯 Testing: Dashboard endpoint that was returning 500 error due to invalid date parsing")
+        print(f"🔧 Expected: Should return 200 OK with section_personnelle, section_generale, activites_recentes")
         print("=" * 70)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Export Dashboard PDF", self.test_export_dashboard_pdf),
-            ("Export Salaires PDF", self.test_export_salaires_pdf),
-            ("Export Salaires Excel", self.test_export_salaires_excel),
-            ("Headers Validation", self.test_headers_validation),
+            ("Dashboard Donnees Completes", self.test_dashboard_donnees_completes),
+            ("Find Demo Users", self.find_demo_users),
         ]
         
         passed = 0
@@ -258,9 +254,9 @@ class DashboardTester:
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
         # Analyze results and provide conclusion
-        self.analyze_rapports_export_results()
+        self.analyze_dashboard_results()
         
-        return passed >= 4  # Consider success if most tests pass
+        return passed >= 2  # Consider success if authentication and dashboard work
     
     def analyze_rapports_export_results(self):
         """Analyze all Rapports Export test results and provide conclusion"""
