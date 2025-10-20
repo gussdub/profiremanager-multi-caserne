@@ -51,13 +51,15 @@ class DashboardTester:
             print(f"   Details: {details}")
     
     def test_admin_authentication(self):
-        """Test admin authentication for Shefford tenant with specified credentials"""
+        """Test admin authentication for Demo tenant with various credentials"""
         try:
-            # Use the specific credentials from review request: gussdub@gmail.com / 230685Juin+ (admin)
+            # Try various credentials that might work for demo tenant
             admin_credentials = [
-                {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"},
                 {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
-                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"}
+                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
+                {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"},
+                {"email": "demo@demo.ca", "mot_de_passe": "demo123"},
+                {"email": "admin@demo.ca", "mot_de_passe": "admin123"}
             ]
             
             for creds in admin_credentials:
