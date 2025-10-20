@@ -101,65 +101,81 @@ class DashboardTester:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def test_export_dashboard_pdf(self):
-        """Test GET /api/{tenant_slug}/rapports/export-dashboard-pdf"""
+    def test_dashboard_donnees_completes(self):
+        """Test GET /api/demo/dashboard/donnees-completes endpoint"""
         try:
             if not self.admin_token:
-                self.log_test("Export Dashboard PDF", False, "No admin token available")
+                self.log_test("Dashboard Donnees Completes", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-dashboard-pdf")
+            print(f"🔍 Testing GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-dashboard-pdf")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/dashboard/donnees-completes")
             
             results = {
-                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-dashboard-pdf",
+                "endpoint": f"/api/{TENANT_SLUG}/dashboard/donnees-completes",
                 "status_code": response.status_code,
                 "headers": dict(response.headers),
                 "content_length": len(response.content) if response.content else 0
             }
             
             if response.status_code == 200:
-                # Check if it's a PDF file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
-                
-                results["content_type"] = content_type
-                results["content_disposition"] = content_disposition
-                results["is_pdf"] = 'application/pdf' in content_type
-                results["has_filename"] = 'filename=' in content_disposition
-                results["filename_correct"] = 'dashboard_interne_' in content_disposition
-                
-                if results["is_pdf"] and results["content_length"] > 0 and results["has_filename"]:
-                    success = True
-                    message = f"✅ Dashboard PDF export working - Generated {results['content_length']} bytes PDF file with correct headers"
-                else:
+                # Check if it's valid JSON with expected fields
+                try:
+                    data = response.json()
+                    results["response_data"] = data
+                    
+                    # Check for expected fields
+                    has_section_personnelle = "section_personnelle" in data
+                    has_section_generale = "section_generale" in data
+                    has_activites_recentes = "activites_recentes" in data
+                    
+                    results["has_section_personnelle"] = has_section_personnelle
+                    results["has_section_generale"] = has_section_generale
+                    results["has_activites_recentes"] = has_activites_recentes
+                    
+                    if has_section_personnelle and has_section_generale and has_activites_recentes:
+                        success = True
+                        message = f"✅ Dashboard endpoint working - Returns 200 OK with all expected fields (section_personnelle, section_generale, activites_recentes)"
+                    else:
+                        success = False
+                        missing_fields = []
+                        if not has_section_personnelle:
+                            missing_fields.append("section_personnelle")
+                        if not has_section_generale:
+                            missing_fields.append("section_generale")
+                        if not has_activites_recentes:
+                            missing_fields.append("activites_recentes")
+                        message = f"❌ Dashboard endpoint missing fields: {', '.join(missing_fields)}"
+                        
+                except json.JSONDecodeError as e:
                     success = False
-                    issues = []
-                    if not results["is_pdf"]:
-                        issues.append("Invalid content-type")
-                    if results["content_length"] == 0:
-                        issues.append("Empty file")
-                    if not results["has_filename"]:
-                        issues.append("Missing filename in headers")
-                    message = f"❌ Dashboard PDF export failed - {'; '.join(issues)}"
+                    message = f"❌ Dashboard endpoint returned invalid JSON: {str(e)}"
+                    results["json_error"] = str(e)
+                    
+            elif response.status_code == 500:
+                success = False
+                message = f"❌ Dashboard endpoint returned 500 error (the bug we're testing for)"
+                results["response_text"] = response.text[:1000] if response.text else "No response"
+                
             elif response.status_code == 403:
                 success = False
-                message = f"❌ Access denied (403) - Check admin permissions"
+                message = f"❌ Access denied (403) - Check admin permissions for demo tenant"
                 results["response_text"] = response.text[:500] if response.text else "No response"
+                
             else:
                 success = False
-                message = f"❌ Export dashboard PDF failed with status {response.status_code}"
+                message = f"❌ Dashboard endpoint failed with status {response.status_code}"
                 results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("Export Dashboard PDF", success, message, results)
+            self.log_test("Dashboard Donnees Completes", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("Export Dashboard PDF", False, f"Export dashboard PDF test error: {str(e)}")
+            self.log_test("Dashboard Donnees Completes", False, f"Dashboard endpoint test error: {str(e)}")
             return False
 
     def test_export_salaires_pdf(self):
