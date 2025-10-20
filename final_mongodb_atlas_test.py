@@ -13,7 +13,7 @@ import uuid
 import time
 
 # Configuration - REAL PRODUCTION URLs
-BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
+BASE_URL = "https://demo-dashboard-1.preview.emergentagent.com/api"
 
 # REAL MongoDB Atlas Connection Testing
 # The backend is now connected to: mongodb+srv://profiremanager_admin:BsqKibVAy6FTiTxg@profiremanager-prod.crqjvsp.mongodb.net/profiremanager

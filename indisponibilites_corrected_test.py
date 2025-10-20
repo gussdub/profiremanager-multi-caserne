@@ -15,7 +15,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
+BASE_URL = "https://demo-dashboard-1.preview.emergentagent.com/api"
 TENANT_SLUG = "shefford"
 
 # Super Admin Configuration (from backend code)

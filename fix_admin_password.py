@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "https://firefighter-hub-6.preview.emergentagent.com/api"
+BASE_URL = "https://demo-dashboard-1.preview.emergentagent.com/api"
 
 def main():
     # Login with the test admin we just created
