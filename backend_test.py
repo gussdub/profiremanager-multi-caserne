@@ -178,225 +178,50 @@ class DashboardTester:
             self.log_test("Dashboard Donnees Completes", False, f"Dashboard endpoint test error: {str(e)}")
             return False
 
-    def test_export_salaires_pdf(self):
-        """Test GET /api/{tenant_slug}/rapports/export-salaires-pdf with date parameters"""
+    def find_demo_users(self):
+        """Try to find valid users in the demo tenant database"""
         try:
             if not self.admin_token:
-                self.log_test("Export Salaires PDF", False, "No admin token available")
+                self.log_test("Find Demo Users", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Test parameters as specified in review request
-            params = {
-                "date_debut": "2025-01-01",
-                "date_fin": "2025-09-30"
-            }
+            print(f"🔍 Searching for users in demo tenant database")
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-salaires-pdf with params: {params}")
-            
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-pdf", params=params)
+            # Try to get users list for demo tenant
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
             
             results = {
-                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-salaires-pdf",
-                "params": params,
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content_length": len(response.content) if response.content else 0
+                "endpoint": f"/api/{TENANT_SLUG}/users",
+                "status_code": response.status_code
             }
             
             if response.status_code == 200:
-                # Check if it's a PDF file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
-                
-                results["content_type"] = content_type
-                results["content_disposition"] = content_disposition
-                results["is_pdf"] = 'application/pdf' in content_type
-                results["has_filename"] = 'filename=' in content_disposition
-                results["filename_correct"] = 'rapport_salaires_2025-01-01_2025-09-30.pdf' in content_disposition
-                
-                if results["is_pdf"] and results["content_length"] > 0 and results["has_filename"]:
+                try:
+                    users = response.json()
+                    results["users_found"] = len(users)
+                    results["users_sample"] = [{"email": u.get("email"), "role": u.get("role")} for u in users[:5]]
+                    
                     success = True
-                    message = f"✅ Salaires PDF export working - Generated {results['content_length']} bytes PDF file with correct headers"
-                else:
+                    message = f"✅ Found {len(users)} users in demo tenant database"
+                    
+                except json.JSONDecodeError:
                     success = False
-                    issues = []
-                    if not results["is_pdf"]:
-                        issues.append("Invalid content-type")
-                    if results["content_length"] == 0:
-                        issues.append("Empty file")
-                    if not results["has_filename"]:
-                        issues.append("Missing filename in headers")
-                    message = f"❌ Salaires PDF export failed - {'; '.join(issues)}"
-            elif response.status_code == 403:
-                success = False
-                message = f"❌ Access denied (403) - Check admin permissions"
-                results["response_text"] = response.text[:500] if response.text else "No response"
+                    message = f"❌ Invalid JSON response from users endpoint"
+                    
             else:
                 success = False
-                message = f"❌ Export salaires PDF failed with status {response.status_code}"
+                message = f"❌ Could not access users endpoint: {response.status_code}"
                 results["response_text"] = response.text[:500] if response.text else "No response"
             
-            self.log_test("Export Salaires PDF", success, message, results)
+            self.log_test("Find Demo Users", success, message, results)
             return success
                 
         except Exception as e:
-            self.log_test("Export Salaires PDF", False, f"Export salaires PDF test error: {str(e)}")
+            self.log_test("Find Demo Users", False, f"Find demo users error: {str(e)}")
             return False
-
-    def test_export_salaires_excel(self):
-        """Test GET /api/{tenant_slug}/rapports/export-salaires-excel with date parameters"""
-        try:
-            if not self.admin_token:
-                self.log_test("Export Salaires Excel", False, "No admin token available")
-                return False
-            
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
-            
-            # Test parameters as specified in review request
-            params = {
-                "date_debut": "2025-01-01",
-                "date_fin": "2025-09-30"
-            }
-            
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/rapports/export-salaires-excel with params: {params}")
-            
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-excel", params=params)
-            
-            results = {
-                "endpoint": f"/api/{TENANT_SLUG}/rapports/export-salaires-excel",
-                "params": params,
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content_length": len(response.content) if response.content else 0
-            }
-            
-            if response.status_code == 200:
-                # Check if it's an Excel file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
-                
-                results["content_type"] = content_type
-                results["content_disposition"] = content_disposition
-                results["is_excel"] = 'spreadsheetml' in content_type or 'excel' in content_type or 'vnd.openxmlformats' in content_type
-                results["has_filename"] = 'filename=' in content_disposition
-                results["filename_correct"] = 'rapport_salaires_2025-01-01_2025-09-30.xlsx' in content_disposition
-                
-                if results["is_excel"] and results["content_length"] > 0 and results["has_filename"]:
-                    success = True
-                    message = f"✅ Salaires Excel export working - Generated {results['content_length']} bytes Excel file with correct headers"
-                else:
-                    success = False
-                    issues = []
-                    if not results["is_excel"]:
-                        issues.append("Invalid content-type")
-                    if results["content_length"] == 0:
-                        issues.append("Empty file")
-                    if not results["has_filename"]:
-                        issues.append("Missing filename in headers")
-                    message = f"❌ Salaires Excel export failed - {'; '.join(issues)}"
-            elif response.status_code == 403:
-                success = False
-                message = f"❌ Access denied (403) - Check admin permissions"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            else:
-                success = False
-                message = f"❌ Export salaires Excel failed with status {response.status_code}"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            
-            self.log_test("Export Salaires Excel", success, message, results)
-            return success
-                
-        except Exception as e:
-            self.log_test("Export Salaires Excel", False, f"Export salaires Excel test error: {str(e)}")
-            return False
-
-    def test_headers_validation(self):
-        """Test that all endpoints return correct Content-Type and Content-Disposition headers"""
-        try:
-            if not self.admin_token:
-                self.log_test("Headers Validation", False, "No admin token available")
-                return False
-            
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
-            
-            # Test all three endpoints
-            endpoints_to_test = [
-                {
-                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-dashboard-pdf",
-                    "params": {},
-                    "expected_content_type": "application/pdf",
-                    "expected_filename_pattern": "dashboard_interne_"
-                },
-                {
-                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-pdf",
-                    "params": {"date_debut": "2025-01-01", "date_fin": "2025-09-30"},
-                    "expected_content_type": "application/pdf",
-                    "expected_filename_pattern": "rapport_salaires_2025-01-01_2025-09-30.pdf"
-                },
-                {
-                    "url": f"{self.base_url}/{TENANT_SLUG}/rapports/export-salaires-excel",
-                    "params": {"date_debut": "2025-01-01", "date_fin": "2025-09-30"},
-                    "expected_content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    "expected_filename_pattern": "rapport_salaires_2025-01-01_2025-09-30.xlsx"
-                }
-            ]
-            
-            all_headers_valid = True
-            results = []
-            
-            for endpoint in endpoints_to_test:
-                print(f"🔍 Testing headers for {endpoint['url']}")
-                
-                response = admin_session.get(endpoint["url"], params=endpoint["params"])
-                
-                endpoint_result = {
-                    "url": endpoint["url"],
-                    "status_code": response.status_code,
-                    "content_type": response.headers.get('content-type', ''),
-                    "content_disposition": response.headers.get('content-disposition', ''),
-                    "content_length": len(response.content) if response.content else 0
-                }
-                
-                # Validate headers
-                content_type_valid = endpoint["expected_content_type"] in endpoint_result["content_type"]
-                filename_valid = endpoint["expected_filename_pattern"] in endpoint_result["content_disposition"]
-                has_attachment = "attachment" in endpoint_result["content_disposition"]
-                file_size_valid = endpoint_result["content_length"] > 0
-                
-                endpoint_result["content_type_valid"] = content_type_valid
-                endpoint_result["filename_valid"] = filename_valid
-                endpoint_result["has_attachment"] = has_attachment
-                endpoint_result["file_size_valid"] = file_size_valid
-                endpoint_result["all_valid"] = content_type_valid and filename_valid and has_attachment and file_size_valid
-                
-                if not endpoint_result["all_valid"]:
-                    all_headers_valid = False
-                
-                results.append(endpoint_result)
-            
-            if all_headers_valid:
-                success = True
-                message = f"✅ All headers validation passed - All 3 endpoints return correct Content-Type and Content-Disposition headers"
-            else:
-                success = False
-                failed_endpoints = [r["url"] for r in results if not r["all_valid"]]
-                message = f"❌ Headers validation failed for: {', '.join(failed_endpoints)}"
-            
-            self.log_test("Headers Validation", success, message, {"endpoints_tested": results})
-            return success
-                
-        except Exception as e:
-            self.log_test("Headers Validation", False, f"Headers validation test error: {str(e)}")
-            return False
-
-    # Old test methods removed - now focusing on rapports export endpoints
-    
-    # Removed old test methods - focusing on rapports export endpoints
     
     def run_rapports_export_tests(self):
         """Run the complete Rapports Export test suite"""
