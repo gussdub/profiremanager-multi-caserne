@@ -6940,9 +6940,21 @@ const Remplacements = () => {
           <h3>{totalDemandes}</h3>
           <p>Total Demandes</p>
         </div>
-        <div className="kpi-card" style={{background: '#FEF3C7'}}>
-          <h3 style={{color: '#1e293b', fontWeight: '700'}}>{enAttente} / {acceptees} / {refusees}</h3>
-          <p style={{color: '#374151', fontWeight: '600'}}>En Attente / Acceptées / Refusées</p>
+        <div className="kpi-card kpi-card-triple" style={{background: '#FEF3C7'}}>
+          <div className="kpi-triple-container">
+            <div className="kpi-triple-item">
+              <h3>{enAttente}</h3>
+              <p>En Attente</p>
+            </div>
+            <div className="kpi-triple-item">
+              <h3>{acceptees}</h3>
+              <p>Acceptées</p>
+            </div>
+            <div className="kpi-triple-item">
+              <h3>{refusees}</h3>
+              <p>Refusées</p>
+            </div>
+          </div>
         </div>
         <div className="kpi-card" style={{background: '#D1FAE5'}}>
           <h3>{remplacementsTrouves}</h3>
