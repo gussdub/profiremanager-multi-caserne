@@ -454,6 +454,21 @@ backend:
         agent: "testing"
         comment: "✅ RAPPORTS PDF/EXCEL EXPORT ENDPOINTS FULLY FUNCTIONAL - Comprehensive testing completed successfully with ALL 5/5 tests passed (100% success rate): 1) ✅ Admin Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials as specified in review request, 2) ✅ Export Dashboard PDF: Generated 2040 bytes PDF file with internal dashboard KPIs, correct Content-Type (application/pdf), correct filename (dashboard_interne_YYYYMM.pdf), 3) ✅ Export Salaires PDF: Generated 2203 bytes PDF file with detailed salary cost report, parameters date_debut=2025-01-01 & date_fin=2025-09-30, correct Content-Type (application/pdf), correct filename (rapport_salaires_2025-01-01_2025-09-30.pdf), 4) ✅ Export Salaires Excel: Generated 5188 bytes Excel file (.xlsx), same date parameters, correct Content-Type (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet), correct filename (rapport_salaires_2025-01-01_2025-09-30.xlsx), 5) ✅ Headers Validation: All 3 endpoints return correct Content-Type and Content-Disposition headers with proper attachment filenames. ALL REVIEW REQUEST OBJECTIVES ACHIEVED: Files generated correctly, proper headers, file sizes > 0, no 403 errors (access granted), correct filenames, authentication working with specified credentials. System ready for production use."
 
+  - task: "Demo Dashboard Endpoint Fix Verification"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Testing the dashboard endpoint that was failing for demo tenant. The /demo/dashboard page was showing blank with 'Erreur de chargement des données' because backend was returning 500 error due to invalid date parsing in formations at line 6549. Main agent fixed the date parsing to handle invalid dates gracefully. Need to verify the fix works for the 'demo' tenant specifically by testing GET /api/demo/dashboard/donnees-completes endpoint."
+      - working: true
+        agent: "testing"
+        comment: "✅ DEMO DASHBOARD ENDPOINT FIX VERIFIED - Comprehensive testing completed successfully with ALL 3/3 tests passed (100% success rate): 1) ✅ Admin Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials for demo tenant, 2) ✅ Dashboard Endpoint: GET /api/demo/dashboard/donnees-completes returns 200 OK instead of previous 500 error, response contains all expected fields (section_personnelle, section_generale, activites_recentes), 3) ✅ Demo Tenant Users: Found 15 users in demo tenant database confirming tenant exists and is accessible. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: Login to demo tenant successful, dashboard endpoint returns 200 OK with valid JSON data containing expected fields, no 500 errors detected, date parsing fix is working correctly. The dashboard should load successfully now without 'Erreur de chargement des données' error. Backend logs confirm 200 OK responses instead of previous 500 errors."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
