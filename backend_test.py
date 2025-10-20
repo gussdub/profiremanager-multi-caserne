@@ -258,75 +258,58 @@ class DashboardTester:
         
         return passed >= 2  # Consider success if authentication and dashboard work
     
-    def analyze_rapports_export_results(self):
-        """Analyze all Rapports Export test results and provide conclusion"""
-        print(f"\n🔍 RAPPORTS PDF/EXCEL EXPORT ANALYSIS:")
+    def analyze_dashboard_results(self):
+        """Analyze all Dashboard test results and provide conclusion"""
+        print(f"\n🔍 DASHBOARD ENDPOINT ANALYSIS:")
         print("=" * 50)
         
         # Check authentication
         admin_auth = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
         
-        # Check export functionality
-        dashboard_pdf = any(r["success"] for r in self.test_results if "Export Dashboard PDF" in r["test"])
-        salaires_pdf = any(r["success"] for r in self.test_results if "Export Salaires PDF" in r["test"])
-        salaires_excel = any(r["success"] for r in self.test_results if "Export Salaires Excel" in r["test"])
+        # Check dashboard functionality
+        dashboard_working = any(r["success"] for r in self.test_results if "Dashboard Donnees Completes" in r["test"])
         
-        # Check headers validation
-        headers_valid = any(r["success"] for r in self.test_results if "Headers Validation" in r["test"])
+        # Check if we found users
+        users_found = any(r["success"] for r in self.test_results if "Find Demo Users" in r["test"])
         
-        print(f"✅ Admin authentication (gussdub@gmail.com): {admin_auth}")
-        print(f"✅ Dashboard PDF export: {dashboard_pdf}")
-        print(f"✅ Salaires PDF export: {salaires_pdf}")
-        print(f"✅ Salaires Excel export: {salaires_excel}")
-        print(f"✅ Headers validation: {headers_valid}")
+        print(f"✅ Admin authentication for demo tenant: {admin_auth}")
+        print(f"✅ Dashboard donnees-completes endpoint: {dashboard_working}")
+        print(f"✅ Demo tenant users found: {users_found}")
         
-        print(f"\n🎯 RAPPORTS EXPORT CONCLUSION:")
+        print(f"\n🎯 DASHBOARD TEST CONCLUSION:")
         
-        # Count successful core features
-        core_features = [dashboard_pdf, salaires_pdf, salaires_excel]
-        successful_features = sum(core_features)
-        
-        if admin_auth and successful_features == 3 and headers_valid:
-            print("✅ RAPPORTS PDF/EXCEL EXPORT ENDPOINTS FULLY FUNCTIONAL!")
-            print("   ✓ Authentication working with specified credentials (gussdub@gmail.com / 230685Juin+)")
-            print("   ✓ All 3 export endpoints working correctly")
-            print("   ✓ PDF/Excel files generated with correct Content-Type and Content-Disposition headers")
-            print("   ✓ File sizes > 0 (no empty files)")
-            print("   ✓ Correct filenames in download headers")
+        if admin_auth and dashboard_working:
+            print("✅ DASHBOARD ENDPOINT FULLY FUNCTIONAL!")
+            print("   ✓ Authentication working for demo tenant")
+            print("   ✓ GET /api/demo/dashboard/donnees-completes returns 200 OK")
+            print("   ✓ Response contains expected fields: section_personnelle, section_generale, activites_recentes")
+            print("   ✓ No 500 errors - date parsing fix is working correctly")
             
             print("\n📋 REVIEW REQUEST OBJECTIVES ACHIEVED:")
-            print("   1. ✅ GET /api/shefford/rapports/export-dashboard-pdf")
-            print("      - ✅ Returns PDF with internal dashboard KPIs")
-            print("      - ✅ Correct Content-Type: application/pdf")
-            print("      - ✅ Correct filename: dashboard_interne_YYYYMM.pdf")
-            print("   2. ✅ GET /api/shefford/rapports/export-salaires-pdf")
-            print("      - ✅ Returns PDF with detailed salary cost report")
-            print("      - ✅ Parameters: date_debut=2025-01-01, date_fin=2025-09-30")
-            print("      - ✅ Correct Content-Type: application/pdf")
-            print("      - ✅ Correct filename: rapport_salaires_2025-01-01_2025-09-30.pdf")
-            print("   3. ✅ GET /api/shefford/rapports/export-salaires-excel")
-            print("      - ✅ Returns Excel file (.xlsx)")
-            print("      - ✅ Parameters: date_debut=2025-01-01, date_fin=2025-09-30")
-            print("      - ✅ Correct Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            print("      - ✅ Correct filename: rapport_salaires_2025-01-01_2025-09-30.xlsx")
-            print("   4. ✅ Authentication with gussdub@gmail.com / 230685Juin+ (admin)")
-            print("   5. ✅ No 403 errors (access granted)")
-            print("   6. ✅ All files generated correctly with size > 0")
+            print("   1. ✅ Login to 'demo' tenant successful")
+            print("   2. ✅ GET /api/demo/dashboard/donnees-completes returns 200 OK instead of 500 error")
+            print("   3. ✅ Response contains expected fields:")
+            print("      - ✅ section_personnelle")
+            print("      - ✅ section_generale") 
+            print("      - ✅ activites_recentes")
+            print("   4. ✅ Dashboard should load successfully now (no more 'Erreur de chargement des données')")
             
-        elif admin_auth and successful_features >= 2:
-            print("✅ RAPPORTS EXPORT PARTIALLY WORKING")
-            print(f"   ✓ {successful_features}/3 core endpoints working")
-            print("   ⚠️ Some export functionality needs attention")
+        elif admin_auth and not dashboard_working:
+            print("❌ DASHBOARD ENDPOINT STILL HAS ISSUES")
+            print("   ✓ Authentication working for demo tenant")
+            print("   ❌ Dashboard endpoint still returning errors")
+            print("   🔍 Check if the date parsing fix was applied correctly")
+            print("   🔍 Check backend logs for formation date parsing errors")
             
-        elif admin_auth:
-            print("❌ RAPPORTS EXPORT ISSUES DETECTED")
-            print("   ✓ Authentication working")
-            print("   ❌ Export functionality problems")
+        elif not admin_auth:
+            print("❌ AUTHENTICATION ISSUES FOR DEMO TENANT")
+            print("   ❌ Could not authenticate with any credentials for demo tenant")
+            print("   🔍 Check if demo tenant exists in database")
+            print("   🔍 Try creating a user for demo tenant or check existing users")
             
         else:
-            print("❌ CRITICAL ISSUES: Authentication failed")
-            print("   Check credentials: gussdub@gmail.com / 230685Juin+")
-            print("   Check MongoDB Atlas connection and user permissions")
+            print("❌ MIXED RESULTS - NEEDS INVESTIGATION")
+            print("   🔍 Check individual test results above for specific issues")
 
 if __name__ == "__main__":
     tester = RapportsExportTester()
