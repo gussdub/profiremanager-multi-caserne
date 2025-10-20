@@ -18,12 +18,12 @@ import time
 # Configuration - REAL PRODUCTION URLs
 BASE_URL = "https://demo-dashboard-1.preview.emergentagent.com/api"
 
-# Test Configuration for Shefford tenant
-TENANT_SLUG = "shefford"
+# Test Configuration for Demo tenant
+TENANT_SLUG = "demo"
 
-# Rapports Export Testing Configuration
-# Using existing users in MongoDB Atlas production database for tenant "shefford"
-# Authentication: gussdub@gmail.com / 230685Juin+ (admin)
+# Dashboard Testing Configuration
+# Using existing users in MongoDB Atlas production database for tenant "demo"
+# Authentication: admin@firemanager.ca or any valid credentials for demo tenant
 
 class RapportsExportTester:
     def __init__(self):
