@@ -312,7 +312,7 @@ class DashboardTester:
             print("   🔍 Check individual test results above for specific issues")
 
 if __name__ == "__main__":
-    tester = RapportsExportTester()
-    success = tester.run_rapports_export_tests()
+    tester = DashboardTester()
+    success = tester.run_dashboard_tests()
     
     sys.exit(0 if success else 1)
