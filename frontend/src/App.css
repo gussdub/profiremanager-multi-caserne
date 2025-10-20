@@ -14916,6 +14916,84 @@ body {
 
   .sidebar.mobile-open {
     width: 240px;
+
+
+/* KPI Card Triple - Pour afficher 3 valeurs dans une seule carte */
+.kpi-card-triple {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kpi-triple-container {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  align-items: center;
+  gap: 1rem;
+}
+
+.kpi-triple-item {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kpi-triple-item h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.kpi-triple-item p {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Séparateur visuel entre les items */
+.kpi-triple-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 1px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.kpi-triple-item {
+  position: relative;
+}
+
+/* Responsive pour KPI triple */
+@media (max-width: 768px) {
+  .kpi-triple-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .kpi-triple-item:not(:last-child)::after {
+    display: none;
+  }
+
+  .kpi-triple-item h3 {
+    font-size: 1.5rem;
+  }
+
+  .kpi-triple-item p {
+    font-size: 0.7rem;
+  }
+}
+
   }
 }
 
