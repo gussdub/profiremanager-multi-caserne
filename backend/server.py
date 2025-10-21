@@ -6485,22 +6485,25 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     
     pourcentage_presence_formations = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
     
-    # Formations à venir (mois actuel + mois prochain)
+    # Formations à venir (toutes les formations futures à partir d'aujourd'hui)
     formations_a_venir = []
     for formation in formations:
         try:
-            date_debut_formation = datetime.fromisoformat(formation["date_debut"]).date()
-            if debut_mois.date() <= date_debut_formation <= fin_mois_prochain.date():
-                # Vérifier si inscrit
-                est_inscrit = any(i for i in inscriptions_formations if i["formation_id"] == formation["id"] and i["user_id"] == current_user.id)
-                formations_a_venir.append({
-                    "id": formation["id"],
-                    "nom": formation["nom"],
-                    "date_debut": formation["date_debut"],
-                    "date_fin": formation["date_fin"],
-                    "est_inscrit": est_inscrit
-                })
-        except:
+            if "date_debut" in formation and formation["date_debut"]:
+                date_debut_formation = datetime.fromisoformat(formation["date_debut"].replace('Z', '+00:00'))
+                # Inclure toutes les formations qui commencent aujourd'hui ou dans le futur
+                if date_debut_formation.date() >= today.date():
+                    # Vérifier si inscrit
+                    est_inscrit = any(i for i in inscriptions_formations if i["formation_id"] == formation["id"] and i["user_id"] == current_user.id)
+                    formations_a_venir.append({
+                        "id": formation["id"],
+                        "nom": formation["nom"],
+                        "date_debut": formation["date_debut"],
+                        "date_fin": formation["date_fin"],
+                        "est_inscrit": est_inscrit
+                    })
+        except (ValueError, TypeError, AttributeError):
+            # Ignorer les formations avec des dates invalides
             pass
     
     formations_a_venir.sort(key=lambda x: x["date_debut"])
