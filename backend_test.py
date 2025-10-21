@@ -178,49 +178,232 @@ class DashboardDataDiagnostic:
             self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
             return False
 
-    def find_demo_users(self):
-        """Try to find valid users in the demo tenant database"""
+    def get_real_users_data(self):
+        """Get real users data from GET /api/demo/users"""
         try:
             if not self.admin_token:
-                self.log_test("Find Demo Users", False, "No admin token available")
+                self.log_test("Get Real Users Data", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"🔍 Searching for users in demo tenant database")
+            print(f"👥 Getting real users data from GET /api/{TENANT_SLUG}/users")
             
-            # Try to get users list for demo tenant
             response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
-            
-            results = {
-                "endpoint": f"/api/{TENANT_SLUG}/users",
-                "status_code": response.status_code
-            }
             
             if response.status_code == 200:
                 try:
                     users = response.json()
-                    results["users_found"] = len(users)
-                    results["users_sample"] = [{"email": u.get("email"), "role": u.get("role")} for u in users[:5]]
                     
-                    success = True
-                    message = f"✅ Found {len(users)} users in demo tenant database"
+                    # Count active personnel
+                    active_users = [u for u in users if u.get("statut", "").lower() == "actif"]
+                    
+                    self.real_data["users"] = {
+                        "total_users": len(users),
+                        "active_users": len(active_users),
+                        "users_list": users
+                    }
+                    
+                    self.log_test("Get Real Users Data", True, 
+                                f"✅ Retrieved {len(users)} users ({len(active_users)} active)", 
+                                {
+                                    "total_users": len(users),
+                                    "active_users": len(active_users),
+                                    "sample_users": [{"email": u.get("email"), "statut": u.get("statut")} for u in users[:3]]
+                                })
+                    return True
                     
                 except json.JSONDecodeError:
-                    success = False
-                    message = f"❌ Invalid JSON response from users endpoint"
+                    self.log_test("Get Real Users Data", False, f"❌ Invalid JSON response from users endpoint")
+                    return False
                     
             else:
-                success = False
-                message = f"❌ Could not access users endpoint: {response.status_code}"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            
-            self.log_test("Find Demo Users", success, message, results)
-            return success
+                self.log_test("Get Real Users Data", False, 
+                            f"❌ Could not access users endpoint: {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_test("Find Demo Users", False, f"Find demo users error: {str(e)}")
+            self.log_test("Get Real Users Data", False, f"Get real users data error: {str(e)}")
+            return False
+
+    def get_real_planning_data(self):
+        """Get real planning data from GET /api/demo/planning/assignations/{current_week}"""
+        try:
+            if not self.admin_token:
+                self.log_test("Get Real Planning Data", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            # Get current week (Monday of current week)
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            monday = today - timedelta(days=today.weekday())
+            current_week = monday.strftime("%Y-%m-%d")
+            
+            print(f"📅 Getting real planning data from GET /api/{TENANT_SLUG}/planning/assignations/{current_week}")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/planning/assignations/{current_week}")
+            
+            if response.status_code == 200:
+                try:
+                    assignations = response.json()
+                    
+                    # Count assignations for current month
+                    current_month = datetime.now().strftime("%Y-%m")
+                    monthly_assignations = []
+                    
+                    if isinstance(assignations, list):
+                        monthly_assignations = [a for a in assignations if a.get("date", "").startswith(current_month)]
+                    elif isinstance(assignations, dict):
+                        # Handle different response format
+                        for day_data in assignations.values():
+                            if isinstance(day_data, dict):
+                                for garde_data in day_data.values():
+                                    if isinstance(garde_data, list):
+                                        monthly_assignations.extend(garde_data)
+                    
+                    self.real_data["planning"] = {
+                        "current_week_assignations": assignations,
+                        "monthly_assignations_count": len(monthly_assignations),
+                        "current_week": current_week
+                    }
+                    
+                    self.log_test("Get Real Planning Data", True, 
+                                f"✅ Retrieved planning data for week {current_week}", 
+                                {
+                                    "current_week": current_week,
+                                    "monthly_assignations_count": len(monthly_assignations),
+                                    "assignations_type": type(assignations).__name__
+                                })
+                    return True
+                    
+                except json.JSONDecodeError:
+                    self.log_test("Get Real Planning Data", False, f"❌ Invalid JSON response from planning endpoint")
+                    return False
+                    
+            else:
+                self.log_test("Get Real Planning Data", False, 
+                            f"❌ Could not access planning endpoint: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Get Real Planning Data", False, f"Get real planning data error: {str(e)}")
+            return False
+
+    def get_real_formations_data(self):
+        """Get real formations data from GET /api/demo/formations"""
+        try:
+            if not self.admin_token:
+                self.log_test("Get Real Formations Data", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            print(f"📚 Getting real formations data from GET /api/{TENANT_SLUG}/formations")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
+            
+            if response.status_code == 200:
+                try:
+                    formations = response.json()
+                    
+                    # Count formations for current month
+                    current_month = datetime.now().strftime("%Y-%m")
+                    current_month_formations = []
+                    
+                    for formation in formations:
+                        date_debut = formation.get("date_debut", "")
+                        if date_debut.startswith(current_month):
+                            current_month_formations.append(formation)
+                    
+                    # Count upcoming formations for the admin user
+                    upcoming_formations = []
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    
+                    for formation in formations:
+                        date_debut = formation.get("date_debut", "")
+                        if date_debut >= today:
+                            upcoming_formations.append(formation)
+                    
+                    self.real_data["formations"] = {
+                        "total_formations": len(formations),
+                        "current_month_formations": len(current_month_formations),
+                        "upcoming_formations": len(upcoming_formations),
+                        "formations_list": formations
+                    }
+                    
+                    self.log_test("Get Real Formations Data", True, 
+                                f"✅ Retrieved {len(formations)} formations ({len(current_month_formations)} this month)", 
+                                {
+                                    "total_formations": len(formations),
+                                    "current_month_formations": len(current_month_formations),
+                                    "upcoming_formations": len(upcoming_formations)
+                                })
+                    return True
+                    
+                except json.JSONDecodeError:
+                    self.log_test("Get Real Formations Data", False, f"❌ Invalid JSON response from formations endpoint")
+                    return False
+                    
+            else:
+                self.log_test("Get Real Formations Data", False, 
+                            f"❌ Could not access formations endpoint: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Get Real Formations Data", False, f"Get real formations data error: {str(e)}")
+            return False
+
+    def get_real_remplacements_data(self):
+        """Get real remplacements data from GET /api/demo/remplacements"""
+        try:
+            if not self.admin_token:
+                self.log_test("Get Real Remplacements Data", False, "No admin token available")
+                return False
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            print(f"🔄 Getting real remplacements data from GET /api/{TENANT_SLUG}/remplacements")
+            
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/remplacements")
+            
+            if response.status_code == 200:
+                try:
+                    remplacements = response.json()
+                    
+                    # Count pending replacement requests
+                    pending_remplacements = [r for r in remplacements if r.get("statut", "").lower() == "en_attente"]
+                    
+                    self.real_data["remplacements"] = {
+                        "total_remplacements": len(remplacements),
+                        "pending_remplacements": len(pending_remplacements),
+                        "remplacements_list": remplacements
+                    }
+                    
+                    self.log_test("Get Real Remplacements Data", True, 
+                                f"✅ Retrieved {len(remplacements)} remplacements ({len(pending_remplacements)} pending)", 
+                                {
+                                    "total_remplacements": len(remplacements),
+                                    "pending_remplacements": len(pending_remplacements)
+                                })
+                    return True
+                    
+                except json.JSONDecodeError:
+                    self.log_test("Get Real Remplacements Data", False, f"❌ Invalid JSON response from remplacements endpoint")
+                    return False
+                    
+            else:
+                self.log_test("Get Real Remplacements Data", False, 
+                            f"❌ Could not access remplacements endpoint: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Get Real Remplacements Data", False, f"Get real remplacements data error: {str(e)}")
             return False
     
     def run_dashboard_tests(self):
