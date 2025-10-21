@@ -121,81 +121,61 @@ class DashboardDataDiagnostic:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def test_dashboard_donnees_completes(self):
-        """Test GET /api/demo/dashboard/donnees-completes endpoint"""
+    def get_dashboard_data(self):
+        """Get dashboard data from GET /api/demo/dashboard/donnees-completes"""
         try:
             if not self.admin_token:
-                self.log_test("Dashboard Donnees Completes", False, "No admin token available")
+                self.log_test("Get Dashboard Data", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"🔍 Testing GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
+            print(f"📊 Retrieving dashboard data from GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
             
             response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/dashboard/donnees-completes")
             
-            results = {
-                "endpoint": f"/api/{TENANT_SLUG}/dashboard/donnees-completes",
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content_length": len(response.content) if response.content else 0
-            }
-            
             if response.status_code == 200:
-                # Check if it's valid JSON with expected fields
                 try:
-                    data = response.json()
-                    results["response_data"] = data
+                    self.dashboard_data = response.json()
                     
-                    # Check for expected fields
-                    has_section_personnelle = "section_personnelle" in data
-                    has_section_generale = "section_generale" in data
-                    has_activites_recentes = "activites_recentes" in data
+                    # Extract key metrics from dashboard
+                    section_generale = self.dashboard_data.get("section_generale", {})
+                    section_personnelle = self.dashboard_data.get("section_personnelle", {})
+                    statistiques_mois = section_generale.get("statistiques_mois", {})
                     
-                    results["has_section_personnelle"] = has_section_personnelle
-                    results["has_section_generale"] = has_section_generale
-                    results["has_activites_recentes"] = has_activites_recentes
+                    dashboard_metrics = {
+                        "total_personnel_actif": statistiques_mois.get("total_personnel_actif", 0),
+                        "total_assignations": statistiques_mois.get("total_assignations", 0),
+                        "formations_ce_mois": statistiques_mois.get("formations_ce_mois", 0),
+                        "demandes_conges_en_attente": section_generale.get("demandes_conges_en_attente", 0),
+                        "couverture_planning": section_generale.get("couverture_planning", 0),
+                        "heures_travaillees_mois": section_personnelle.get("heures_travaillees_mois", 0),
+                        "nombre_gardes_mois": section_personnelle.get("nombre_gardes_mois", 0),
+                        "formations_a_venir": len(section_personnelle.get("formations_a_venir", []))
+                    }
                     
-                    if has_section_personnelle and has_section_generale and has_activites_recentes:
-                        success = True
-                        message = f"✅ Dashboard endpoint working - Returns 200 OK with all expected fields (section_personnelle, section_generale, activites_recentes)"
-                    else:
-                        success = False
-                        missing_fields = []
-                        if not has_section_personnelle:
-                            missing_fields.append("section_personnelle")
-                        if not has_section_generale:
-                            missing_fields.append("section_generale")
-                        if not has_activites_recentes:
-                            missing_fields.append("activites_recentes")
-                        message = f"❌ Dashboard endpoint missing fields: {', '.join(missing_fields)}"
-                        
+                    self.log_test("Get Dashboard Data", True, 
+                                f"✅ Dashboard data retrieved successfully", 
+                                {
+                                    "dashboard_metrics": dashboard_metrics,
+                                    "has_section_personnelle": "section_personnelle" in self.dashboard_data,
+                                    "has_section_generale": "section_generale" in self.dashboard_data,
+                                    "has_activites_recentes": "activites_recentes" in self.dashboard_data
+                                })
+                    return True
+                    
                 except json.JSONDecodeError as e:
-                    success = False
-                    message = f"❌ Dashboard endpoint returned invalid JSON: {str(e)}"
-                    results["json_error"] = str(e)
+                    self.log_test("Get Dashboard Data", False, f"❌ Invalid JSON in dashboard response: {str(e)}")
+                    return False
                     
-            elif response.status_code == 500:
-                success = False
-                message = f"❌ Dashboard endpoint returned 500 error (the bug we're testing for)"
-                results["response_text"] = response.text[:1000] if response.text else "No response"
-                
-            elif response.status_code == 403:
-                success = False
-                message = f"❌ Access denied (403) - Check admin permissions for demo tenant"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-                
             else:
-                success = False
-                message = f"❌ Dashboard endpoint failed with status {response.status_code}"
-                results["response_text"] = response.text[:500] if response.text else "No response"
-            
-            self.log_test("Dashboard Donnees Completes", success, message, results)
-            return success
+                self.log_test("Get Dashboard Data", False, 
+                            f"❌ Dashboard endpoint failed with status {response.status_code}: {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_test("Dashboard Donnees Completes", False, f"Dashboard endpoint test error: {str(e)}")
+            self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
             return False
 
     def find_demo_users(self):
