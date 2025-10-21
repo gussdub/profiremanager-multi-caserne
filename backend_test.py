@@ -54,7 +54,7 @@ TENANT_SLUG = "demo"
 # Using existing users in MongoDB Atlas production database for tenant "demo"
 # Authentication: admin@firemanager.ca or any valid credentials for demo tenant
 
-class DashboardDataDiagnostic:
+class DashboardCorrectionsVerification:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
