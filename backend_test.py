@@ -660,7 +660,7 @@ class DashboardCorrectionsVerification:
         print("=" * 80)
 
 if __name__ == "__main__":
-    diagnostic = DashboardDataDiagnostic()
-    success = diagnostic.run_dashboard_diagnostic()
+    verification = DashboardCorrectionsVerification()
+    success = verification.run_corrections_verification()
     
     sys.exit(0 if success else 1)
