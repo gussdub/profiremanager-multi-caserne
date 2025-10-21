@@ -1,11 +1,37 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - DASHBOARD ENDPOINT TESTING
-Tests for the dashboard endpoint that was failing:
-1. GET /api/demo/dashboard/donnees-completes
+ProFireManager Backend API Testing Suite - DASHBOARD DATA SYNCHRONIZATION DIAGNOSTIC
+Comprehensive diagnostic for dashboard data synchronization issues in "demo" tenant.
 
-Focus: Testing the specific dashboard endpoint for "demo" tenant that was returning 500 error
-due to invalid date parsing in formations. The fix should handle invalid dates gracefully.
+DIAGNOSTIC REQUEST:
+- Dashboard /demo shows incorrect information
+- Data not synchronized with rest of application
+- GET /api/demo/dashboard/donnees-completes returns 200 OK but data is false
+
+TESTS TO PERFORM:
+1. Login as admin for demo tenant (gussdub@gmail.com / 230685Juin+)
+2. Get dashboard data from GET /api/demo/dashboard/donnees-completes
+3. Compare with real data from:
+   - GET /api/demo/users (count active personnel)
+   - GET /api/demo/planning/assignations/{current_week} (verify assignments)
+   - GET /api/demo/formations (verify formations)
+   - GET /api/demo/remplacements (verify replacement requests)
+
+SPECIFIC VERIFICATIONS:
+- section_generale.statistiques_mois.total_personnel_actif vs real active users count
+- section_generale.statistiques_mois.total_assignations vs real assignments count for month
+- section_generale.statistiques_mois.formations_ce_mois vs real formations count for current month
+- section_generale.demandes_conges_en_attente vs real pending leave requests
+- section_generale.couverture_planning (logical percentage?)
+- section_personnelle.heures_travaillees_mois vs real assignments for this admin
+- section_personnelle.nombre_gardes_mois vs real guard count
+- section_personnelle.formations_a_venir vs real upcoming formations
+
+EXPECTED OUTPUT FORMAT:
+- Dashboard dit: X
+- Données réelles: Y
+- Écart identifié: Z
+- Cause probable: ...
 """
 
 import requests
