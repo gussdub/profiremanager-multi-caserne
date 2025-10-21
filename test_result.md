@@ -469,6 +469,21 @@ backend:
         agent: "testing"
         comment: "✅ DEMO DASHBOARD ENDPOINT FIX VERIFIED - Comprehensive testing completed successfully with ALL 3/3 tests passed (100% success rate): 1) ✅ Admin Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials for demo tenant, 2) ✅ Dashboard Endpoint: GET /api/demo/dashboard/donnees-completes returns 200 OK instead of previous 500 error, response contains all expected fields (section_personnelle, section_generale, activites_recentes), 3) ✅ Demo Tenant Users: Found 15 users in demo tenant database confirming tenant exists and is accessible. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: Login to demo tenant successful, dashboard endpoint returns 200 OK with valid JSON data containing expected fields, no 500 errors detected, date parsing fix is working correctly. The dashboard should load successfully now without 'Erreur de chargement des données' error. Backend logs confirm 200 OK responses instead of previous 500 errors."
 
+  - task: "Dashboard Data Synchronization Diagnostic - Demo Tenant"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW DIAGNOSTIC - Comprehensive dashboard data synchronization diagnostic for demo tenant as requested. User reports dashboard shows incorrect information not synchronized with rest of application. Testing: 1) Login as admin (gussdub@gmail.com / 230685Juin+), 2) Compare dashboard data from GET /api/demo/dashboard/donnees-completes with real data from users, planning, formations, and remplacements endpoints, 3) Identify specific discrepancies with format: Dashboard dit X, Données réelles Y, Écart Z, Cause probable."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL DATA SYNCHRONIZATION ISSUES IDENTIFIED - Comprehensive diagnostic completed successfully with 2 major discrepancies found: 1) ✅ Authentication: Successfully logged in as gussdub@gmail.com for demo tenant, 2) ✅ Data Collection: Retrieved dashboard data and real data from all endpoints (users: 15 active, formations: 8 total with 1 upcoming, planning: 82 assignations in October 2025, remplacements: 3 total with 0 pending), 3) ❌ DISCREPANCY #1 - total_assignations: Dashboard dit 0, Données réelles 82, Écart 22-82 (dashboard shows 0 but real data shows 82 assignations for October 2025), Cause probable: Calcul des assignations du mois incorrect - requête MongoDB défaillante ou filtre de date incorrect, 4) ❌ DISCREPANCY #2 - formations_a_venir: Dashboard dit 0, Données réelles 1, Écart 1 (dashboard shows 0 but real data shows 1 upcoming formation 'Désincarcération de 2 véhicules' on 2026-04-22), Cause probable: Filtrage des formations futures incorrect - critères de date ou requête utilisateur défaillante. BACKEND DASHBOARD CALCULATION BUGS CONFIRMED: The dashboard endpoint returns 200 OK but calculates incorrect statistics. Root cause: Dashboard aggregation queries in backend are not working correctly for assignations count and personal upcoming formations."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
