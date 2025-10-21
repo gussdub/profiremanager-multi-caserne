@@ -547,58 +547,101 @@ class DashboardDataDiagnostic:
         
         return passed >= 5  # Consider success if most tests pass
     
-    def analyze_dashboard_results(self):
-        """Analyze all Dashboard test results and provide conclusion"""
-        print(f"\n🔍 DASHBOARD ENDPOINT ANALYSIS:")
-        print("=" * 50)
+    def generate_diagnostic_report(self):
+        """Generate detailed diagnostic report in the requested format"""
+        print(f"\n" + "=" * 80)
+        print(f"📋 RAPPORT DE DIAGNOSTIC DÉTAILLÉ - DASHBOARD DEMO")
+        print("=" * 80)
         
-        # Check authentication
-        admin_auth = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
+        # Check if we have all necessary data
+        auth_success = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
+        dashboard_success = any(r["success"] for r in self.test_results if "Get Dashboard Data" in r["test"])
+        comparison_success = any(r["success"] for r in self.test_results if "Compare Dashboard Data" in r["test"])
         
-        # Check dashboard functionality
-        dashboard_working = any(r["success"] for r in self.test_results if "Dashboard Donnees Completes" in r["test"])
+        print(f"🔐 Authentification admin demo: {'✅ Réussie' if auth_success else '❌ Échouée'}")
+        print(f"📊 Récupération données dashboard: {'✅ Réussie' if dashboard_success else '❌ Échouée'}")
+        print(f"🔍 Comparaison avec données réelles: {'✅ Réussie' if comparison_success else '❌ Échouée'}")
         
-        # Check if we found users
-        users_found = any(r["success"] for r in self.test_results if "Find Demo Users" in r["test"])
+        if not auth_success:
+            print(f"\n❌ IMPOSSIBLE DE CONTINUER LE DIAGNOSTIC")
+            print(f"   Cause: Échec de l'authentification avec gussdub@gmail.com / 230685Juin+")
+            print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'demo'")
+            return
         
-        print(f"✅ Admin authentication for demo tenant: {admin_auth}")
-        print(f"✅ Dashboard donnees-completes endpoint: {dashboard_working}")
-        print(f"✅ Demo tenant users found: {users_found}")
+        if not dashboard_success:
+            print(f"\n❌ IMPOSSIBLE DE RÉCUPÉRER LES DONNÉES DU DASHBOARD")
+            print(f"   Cause: Endpoint GET /api/demo/dashboard/donnees-completes inaccessible")
+            print(f"   Action requise: Vérifier l'endpoint et les permissions")
+            return
         
-        print(f"\n🎯 DASHBOARD TEST CONCLUSION:")
+        print(f"\n📊 ANALYSE DES DISCORDANCES IDENTIFIÉES:")
+        print("-" * 60)
         
-        if admin_auth and dashboard_working:
-            print("✅ DASHBOARD ENDPOINT FULLY FUNCTIONAL!")
-            print("   ✓ Authentication working for demo tenant")
-            print("   ✓ GET /api/demo/dashboard/donnees-completes returns 200 OK")
-            print("   ✓ Response contains expected fields: section_personnelle, section_generale, activites_recentes")
-            print("   ✓ No 500 errors - date parsing fix is working correctly")
-            
-            print("\n📋 REVIEW REQUEST OBJECTIVES ACHIEVED:")
-            print("   1. ✅ Login to 'demo' tenant successful")
-            print("   2. ✅ GET /api/demo/dashboard/donnees-completes returns 200 OK instead of 500 error")
-            print("   3. ✅ Response contains expected fields:")
-            print("      - ✅ section_personnelle")
-            print("      - ✅ section_generale") 
-            print("      - ✅ activites_recentes")
-            print("   4. ✅ Dashboard should load successfully now (no more 'Erreur de chargement des données')")
-            
-        elif admin_auth and not dashboard_working:
-            print("❌ DASHBOARD ENDPOINT STILL HAS ISSUES")
-            print("   ✓ Authentication working for demo tenant")
-            print("   ❌ Dashboard endpoint still returning errors")
-            print("   🔍 Check if the date parsing fix was applied correctly")
-            print("   🔍 Check backend logs for formation date parsing errors")
-            
-        elif not admin_auth:
-            print("❌ AUTHENTICATION ISSUES FOR DEMO TENANT")
-            print("   ❌ Could not authenticate with any credentials for demo tenant")
-            print("   🔍 Check if demo tenant exists in database")
-            print("   🔍 Try creating a user for demo tenant or check existing users")
-            
+        if len(self.discrepancies) == 0:
+            print("✅ AUCUNE DISCORDANCE DÉTECTÉE!")
+            print("   Toutes les données du dashboard correspondent aux données réelles.")
+            print("   Le problème rapporté pourrait être résolu ou nécessiter une investigation plus approfondie.")
         else:
-            print("❌ MIXED RESULTS - NEEDS INVESTIGATION")
-            print("   🔍 Check individual test results above for specific issues")
+            print(f"❌ {len(self.discrepancies)} DISCORDANCES IDENTIFIÉES:")
+            print()
+            
+            for i, discrepancy in enumerate(self.discrepancies, 1):
+                print(f"🔍 DISCORDANCE #{i}: {discrepancy['metric']}")
+                print(f"   📊 Dashboard dit: {discrepancy['dashboard_dit']}")
+                print(f"   📈 Données réelles: {discrepancy['donnees_reelles']}")
+                print(f"   📏 Écart identifié: {discrepancy['ecart_identifie']}")
+                print(f"   🔍 Cause probable: {discrepancy['cause_probable']}")
+                print()
+        
+        # Summary of real data collected
+        print(f"📈 RÉSUMÉ DES DONNÉES RÉELLES COLLECTÉES:")
+        print("-" * 60)
+        
+        if "users" in self.real_data:
+            users_data = self.real_data["users"]
+            print(f"👥 Personnel: {users_data.get('total_users', 0)} total, {users_data.get('active_users', 0)} actifs")
+        
+        if "formations" in self.real_data:
+            formations_data = self.real_data["formations"]
+            print(f"📚 Formations: {formations_data.get('total_formations', 0)} total, {formations_data.get('current_month_formations', 0)} ce mois")
+        
+        if "planning" in self.real_data:
+            planning_data = self.real_data["planning"]
+            print(f"📅 Planning: {planning_data.get('monthly_assignations_count', 0)} assignations ce mois")
+        
+        if "remplacements" in self.real_data:
+            remplacements_data = self.real_data["remplacements"]
+            print(f"🔄 Remplacements: {remplacements_data.get('total_remplacements', 0)} total, {remplacements_data.get('pending_remplacements', 0)} en attente")
+        
+        print(f"\n🎯 CONCLUSION DU DIAGNOSTIC:")
+        print("-" * 60)
+        
+        if len(self.discrepancies) == 0:
+            print("✅ SYNCHRONISATION DES DONNÉES CORRECTE")
+            print("   Le dashboard affiche des données cohérentes avec les endpoints de données réelles.")
+            print("   Si l'utilisateur observe encore des problèmes, il pourrait s'agir:")
+            print("   - D'un problème de cache côté frontend")
+            print("   - D'une différence de timezone ou de période de calcul")
+            print("   - D'un problème spécifique à certaines données non testées")
+        else:
+            print("❌ PROBLÈMES DE SYNCHRONISATION DÉTECTÉS")
+            print(f"   {len(self.discrepancies)} discordances nécessitent une correction dans le backend.")
+            print("   Actions recommandées:")
+            print("   1. Vérifier les requêtes MongoDB dans l'endpoint dashboard")
+            print("   2. Contrôler les filtres de date et de statut")
+            print("   3. Valider les calculs d'agrégation")
+            print("   4. Tester avec des données de test contrôlées")
+        
+        print(f"\n📝 DONNÉES POUR LE RAPPORT:")
+        print("-" * 60)
+        for discrepancy in self.discrepancies:
+            print(f"• {discrepancy['metric']}:")
+            print(f"  - Dashboard dit: {discrepancy['dashboard_dit']}")
+            print(f"  - Données réelles: {discrepancy['donnees_reelles']}")
+            print(f"  - Écart identifié: {discrepancy['ecart_identifie']}")
+            print(f"  - Cause probable: {discrepancy['cause_probable']}")
+        
+        print("=" * 80)
 
 if __name__ == "__main__":
     tester = DashboardTester()
