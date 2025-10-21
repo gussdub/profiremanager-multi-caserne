@@ -406,20 +406,126 @@ class DashboardDataDiagnostic:
             self.log_test("Get Real Remplacements Data", False, f"Get real remplacements data error: {str(e)}")
             return False
     
-    def run_dashboard_tests(self):
-        """Run the complete Dashboard test suite"""
-        print("🚀 Starting Dashboard Endpoint Testing Suite")
-        print("=" * 70)
+    def compare_dashboard_with_real_data(self):
+        """Compare dashboard data with real data and identify discrepancies"""
+        try:
+            if not self.dashboard_data or not self.real_data:
+                self.log_test("Compare Dashboard Data", False, "Missing dashboard or real data for comparison")
+                return False
+            
+            print(f"🔍 Comparing dashboard data with real data...")
+            
+            # Extract dashboard metrics
+            section_generale = self.dashboard_data.get("section_generale", {})
+            section_personnelle = self.dashboard_data.get("section_personnelle", {})
+            statistiques_mois = section_generale.get("statistiques_mois", {})
+            
+            dashboard_metrics = {
+                "total_personnel_actif": statistiques_mois.get("total_personnel_actif", 0),
+                "total_assignations": statistiques_mois.get("total_assignations", 0),
+                "formations_ce_mois": statistiques_mois.get("formations_ce_mois", 0),
+                "demandes_conges_en_attente": section_generale.get("demandes_conges_en_attente", 0),
+                "couverture_planning": section_generale.get("couverture_planning", 0),
+                "heures_travaillees_mois": section_personnelle.get("heures_travaillees_mois", 0),
+                "nombre_gardes_mois": section_personnelle.get("nombre_gardes_mois", 0),
+                "formations_a_venir": len(section_personnelle.get("formations_a_venir", []))
+            }
+            
+            # Extract real data metrics
+            real_metrics = {
+                "total_personnel_actif": self.real_data.get("users", {}).get("active_users", 0),
+                "total_assignations": self.real_data.get("planning", {}).get("monthly_assignations_count", 0),
+                "formations_ce_mois": self.real_data.get("formations", {}).get("current_month_formations", 0),
+                "demandes_conges_en_attente": self.real_data.get("remplacements", {}).get("pending_remplacements", 0),
+                "formations_a_venir": self.real_data.get("formations", {}).get("upcoming_formations", 0)
+            }
+            
+            # Compare each metric and identify discrepancies
+            comparisons = []
+            
+            for metric, dashboard_value in dashboard_metrics.items():
+                real_value = real_metrics.get(metric, "N/A")
+                
+                if real_value != "N/A":
+                    if dashboard_value != real_value:
+                        discrepancy = {
+                            "metric": metric,
+                            "dashboard_dit": dashboard_value,
+                            "donnees_reelles": real_value,
+                            "ecart_identifie": abs(dashboard_value - real_value) if isinstance(real_value, (int, float)) else "Type mismatch",
+                            "cause_probable": self.analyze_discrepancy_cause(metric, dashboard_value, real_value)
+                        }
+                        self.discrepancies.append(discrepancy)
+                        comparisons.append(f"❌ {metric}: Dashboard={dashboard_value}, Réel={real_value} (Écart: {discrepancy['ecart_identifie']})")
+                    else:
+                        comparisons.append(f"✅ {metric}: Dashboard={dashboard_value}, Réel={real_value} (Correct)")
+                else:
+                    comparisons.append(f"⚠️ {metric}: Dashboard={dashboard_value}, Réel=N/A (Pas de données réelles)")
+            
+            success = len(self.discrepancies) == 0
+            message = f"{'✅ Aucune discordance détectée' if success else f'❌ {len(self.discrepancies)} discordances identifiées'}"
+            
+            self.log_test("Compare Dashboard Data", success, message, 
+                        {
+                            "dashboard_metrics": dashboard_metrics,
+                            "real_metrics": real_metrics,
+                            "comparisons": comparisons,
+                            "discrepancies_count": len(self.discrepancies)
+                        })
+            
+            return True
+                
+        except Exception as e:
+            self.log_test("Compare Dashboard Data", False, f"Comparison error: {str(e)}")
+            return False
+
+    def analyze_discrepancy_cause(self, metric, dashboard_value, real_value):
+        """Analyze the probable cause of a discrepancy"""
+        causes = {
+            "total_personnel_actif": "Possible filtrage différent des utilisateurs actifs ou requête incorrecte",
+            "total_assignations": "Calcul des assignations du mois incorrect ou période différente",
+            "formations_ce_mois": "Filtrage des formations par date incorrect ou format de date différent",
+            "demandes_conges_en_attente": "Confusion entre demandes de congé et demandes de remplacement",
+            "formations_a_venir": "Filtrage des formations futures incorrect ou critères différents",
+            "heures_travaillees_mois": "Calcul des heures basé sur assignations incorrect",
+            "nombre_gardes_mois": "Comptage des gardes du mois incorrect",
+            "couverture_planning": "Calcul du pourcentage de couverture incorrect"
+        }
+        
+        base_cause = causes.get(metric, "Cause inconnue - nécessite investigation approfondie")
+        
+        if dashboard_value == 0 and real_value > 0:
+            return f"{base_cause} - Dashboard retourne 0 alors que données réelles existent"
+        elif dashboard_value > real_value:
+            return f"{base_cause} - Dashboard surestime les données"
+        elif dashboard_value < real_value:
+            return f"{base_cause} - Dashboard sous-estime les données"
+        else:
+            return base_cause
+
+    def run_dashboard_diagnostic(self):
+        """Run the complete Dashboard Data Synchronization Diagnostic"""
+        print("🚀 Starting Dashboard Data Synchronization Diagnostic")
+        print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"🔗 Endpoint: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
-        print(f"🎯 Testing: Dashboard endpoint that was returning 500 error due to invalid date parsing")
-        print(f"🔧 Expected: Should return 200 OK with section_personnelle, section_generale, activites_recentes")
-        print("=" * 70)
+        print(f"👤 Admin: gussdub@gmail.com")
+        print(f"🎯 Objectif: Identifier les données incorrectes dans le dashboard")
+        print(f"📊 Endpoints à comparer:")
+        print(f"   - GET /api/{TENANT_SLUG}/dashboard/donnees-completes (Dashboard)")
+        print(f"   - GET /api/{TENANT_SLUG}/users (Personnel actif)")
+        print(f"   - GET /api/{TENANT_SLUG}/planning/assignations/{{semaine}} (Assignations)")
+        print(f"   - GET /api/{TENANT_SLUG}/formations (Formations)")
+        print(f"   - GET /api/{TENANT_SLUG}/remplacements (Remplacements)")
+        print("=" * 80)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Dashboard Donnees Completes", self.test_dashboard_donnees_completes),
-            ("Find Demo Users", self.find_demo_users),
+            ("Get Dashboard Data", self.get_dashboard_data),
+            ("Get Real Users Data", self.get_real_users_data),
+            ("Get Real Planning Data", self.get_real_planning_data),
+            ("Get Real Formations Data", self.get_real_formations_data),
+            ("Get Real Remplacements Data", self.get_real_remplacements_data),
+            ("Compare Dashboard Data", self.compare_dashboard_with_real_data),
         ]
         
         passed = 0
@@ -433,13 +539,13 @@ class DashboardDataDiagnostic:
                 print(f"❌ Test failed: {test_name}")
                 # Continue with other tests to get full picture
         
-        print(f"\n" + "=" * 70)
+        print(f"\n" + "=" * 80)
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
-        # Analyze results and provide conclusion
-        self.analyze_dashboard_results()
+        # Generate detailed diagnostic report
+        self.generate_diagnostic_report()
         
-        return passed >= 2  # Consider success if authentication and dashboard work
+        return passed >= 5  # Consider success if most tests pass
     
     def analyze_dashboard_results(self):
         """Analyze all Dashboard test results and provide conclusion"""
