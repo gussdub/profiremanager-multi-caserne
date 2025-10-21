@@ -80,51 +80,42 @@ class DashboardDataDiagnostic:
             print(f"   Details: {details}")
     
     def test_admin_authentication(self):
-        """Test admin authentication for Demo tenant with various credentials"""
+        """Test admin authentication for Demo tenant - specifically gussdub@gmail.com / 230685Juin+"""
         try:
-            # Try various credentials that might work for demo tenant
-            admin_credentials = [
-                {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
-                {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
-                {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"},
-                {"email": "demo@demo.ca", "mot_de_passe": "demo123"},
-                {"email": "admin@demo.ca", "mot_de_passe": "admin123"}
-            ]
+            # Use the specific credentials mentioned in the diagnostic request
+            admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
             
-            for creds in admin_credentials:
-                print(f"🔑 Trying admin login with: {creds['email']}")
-                
-                # Try tenant-specific login first
-                response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=creds)
-                if response.status_code != 200:
-                    # Try legacy login
-                    response = self.session.post(f"{self.base_url}/auth/login", json=creds)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "access_token" in data:
-                        self.admin_token = data["access_token"]
-                        user_info = data.get("user", {})
-                        self.admin_user_id = user_info.get("id")
-                        
-                        self.log_test("Admin Authentication", True, 
-                                    f"✅ Admin login successful for {creds['email']}", 
-                                    {
-                                        "admin_user_id": self.admin_user_id,
-                                        "user_info": user_info,
-                                        "successful_credentials": creds['email']
-                                    })
-                        return True
-                    else:
-                        print(f"    ❌ No access token in response for: {creds['email']}")
+            print(f"🔑 Authenticating as demo admin: {admin_credentials['email']}")
+            
+            # Try tenant-specific login first
+            response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_credentials)
+            if response.status_code != 200:
+                # Try legacy login
+                response = self.session.post(f"{self.base_url}/auth/login", json=admin_credentials)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "access_token" in data:
+                    self.admin_token = data["access_token"]
+                    user_info = data.get("user", {})
+                    self.admin_user_id = user_info.get("id")
+                    
+                    self.log_test("Admin Authentication", True, 
+                                f"✅ Demo admin login successful for {admin_credentials['email']}", 
+                                {
+                                    "admin_user_id": self.admin_user_id,
+                                    "user_info": user_info,
+                                    "tenant": user_info.get("tenant_slug", "unknown")
+                                })
+                    return True
                 else:
-                    print(f"    ❌ Login failed for '{creds['email']}': {response.status_code}")
-            
-            # If we get here, all credentials failed
-            self.log_test("Admin Authentication", False, 
-                        f"❌ All admin login attempts failed", 
-                        {"tried_credentials": [c['email'] for c in admin_credentials]})
-            return False
+                    self.log_test("Admin Authentication", False, 
+                                f"❌ No access token in response for: {admin_credentials['email']}")
+                    return False
+            else:
+                self.log_test("Admin Authentication", False, 
+                            f"❌ Login failed for '{admin_credentials['email']}': {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
