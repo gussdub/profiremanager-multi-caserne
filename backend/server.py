@@ -6520,10 +6520,21 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         assignations_mois_valides = []
         for a in assignations_mois:
             try:
-                date_assign = datetime.fromisoformat(a["date"])
-                if debut_mois <= date_assign <= fin_mois:
-                    assignations_mois_valides.append(a)
-            except:
+                # Parser la date - gérer les formats avec et sans heure
+                date_str = a["date"]
+                if isinstance(date_str, str):
+                    # Si la date contient un 'T', c'est un datetime, sinon c'est juste une date
+                    if 'T' in date_str:
+                        date_assign = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    else:
+                        # C'est juste une date (YYYY-MM-DD), la convertir en datetime pour comparaison
+                        date_assign = datetime.fromisoformat(date_str + "T00:00:00").replace(tzinfo=timezone.utc)
+                    
+                    # Comparer avec le mois en cours
+                    if debut_mois <= date_assign <= fin_mois.replace(hour=23, minute=59, second=59):
+                        assignations_mois_valides.append(a)
+            except (ValueError, TypeError, AttributeError) as e:
+                # Ignorer les dates invalides mais logger pour debug
                 pass
         
         total_jours_mois = (fin_mois - debut_mois).days + 1
