@@ -51,7 +51,7 @@ TENANT_SLUG = "demo"
 # Using existing users in MongoDB Atlas production database for tenant "demo"
 # Authentication: admin@firemanager.ca or any valid credentials for demo tenant
 
-class DashboardTester:
+class DashboardDataDiagnostic:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
@@ -59,7 +59,10 @@ class DashboardTester:
         self.test_results = []
         self.admin_token = None
         self.admin_user_id = None
-        self.shefford_tenant_id = None
+        self.demo_tenant_id = None
+        self.dashboard_data = None
+        self.real_data = {}
+        self.discrepancies = []
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
