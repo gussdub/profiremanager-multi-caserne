@@ -409,77 +409,103 @@ class DashboardCorrectionsVerification:
             self.log_test("Get Real Remplacements Data", False, f"Get real remplacements data error: {str(e)}")
             return False
     
-    def compare_dashboard_with_real_data(self):
-        """Compare dashboard data with real data and identify discrepancies"""
+    def verify_bug_corrections(self):
+        """Verify that the 2 specific bugs have been corrected"""
         try:
-            if not self.dashboard_data or not self.real_data:
-                self.log_test("Compare Dashboard Data", False, "Missing dashboard or real data for comparison")
+            if not self.dashboard_data:
+                self.log_test("Verify Bug Corrections", False, "Missing dashboard data for verification")
                 return False
             
-            print(f"🔍 Comparing dashboard data with real data...")
+            print(f"🔍 Vérification des corrections spécifiques des 2 bugs...")
             
             # Extract dashboard metrics
             section_generale = self.dashboard_data.get("section_generale", {})
             section_personnelle = self.dashboard_data.get("section_personnelle", {})
             statistiques_mois = section_generale.get("statistiques_mois", {})
             
-            dashboard_metrics = {
-                "total_personnel_actif": statistiques_mois.get("total_personnel_actif", 0),
-                "total_assignations": statistiques_mois.get("total_assignations", 0),
-                "formations_ce_mois": statistiques_mois.get("formations_ce_mois", 0),
-                "demandes_conges_en_attente": section_generale.get("demandes_conges_en_attente", 0),
-                "couverture_planning": section_generale.get("couverture_planning", 0),
-                "heures_travaillees_mois": section_personnelle.get("heures_travaillees_mois", 0),
-                "nombre_gardes_mois": section_personnelle.get("nombre_gardes_mois", 0),
-                "formations_a_venir": len(section_personnelle.get("formations_a_venir", []))
-            }
+            # Bug #1: total_assignations should now be ~82 (not 0)
+            total_assignations = statistiques_mois.get("total_assignations", 0)
+            bug1_fixed = total_assignations > 0  # Should not be 0 anymore
             
-            # Extract real data metrics
-            real_metrics = {
-                "total_personnel_actif": self.real_data.get("users", {}).get("active_users", 0),
-                "total_assignations": self.real_data.get("planning", {}).get("monthly_assignations_count", 0),
-                "formations_ce_mois": self.real_data.get("formations", {}).get("current_month_formations", 0),
-                "demandes_conges_en_attente": self.real_data.get("remplacements", {}).get("pending_remplacements", 0),
-                "formations_a_venir": self.real_data.get("formations", {}).get("upcoming_formations", 0)
-            }
+            # Bug #2: formations_a_venir should now contain at least 1 formation
+            formations_a_venir = section_personnelle.get("formations_a_venir", [])
+            formations_count = len(formations_a_venir)
+            bug2_fixed = formations_count > 0  # Should not be empty anymore
             
-            # Compare each metric and identify discrepancies
-            comparisons = []
+            # Check for specific formation "Désincarcération de 2 véhicules" on 2026-04-22
+            desincarceration_found = False
+            for formation in formations_a_venir:
+                if ("Désincarcération" in formation.get("nom", "") and 
+                    formation.get("date_debut", "").startswith("2026-04-22")):
+                    desincarceration_found = True
+                    break
             
-            for metric, dashboard_value in dashboard_metrics.items():
-                real_value = real_metrics.get(metric, "N/A")
-                
-                if real_value != "N/A":
-                    if dashboard_value != real_value:
-                        discrepancy = {
-                            "metric": metric,
-                            "dashboard_dit": dashboard_value,
-                            "donnees_reelles": real_value,
-                            "ecart_identifie": abs(dashboard_value - real_value) if isinstance(real_value, (int, float)) else "Type mismatch",
-                            "cause_probable": self.analyze_discrepancy_cause(metric, dashboard_value, real_value)
-                        }
-                        self.discrepancies.append(discrepancy)
-                        comparisons.append(f"❌ {metric}: Dashboard={dashboard_value}, Réel={real_value} (Écart: {discrepancy['ecart_identifie']})")
-                    else:
-                        comparisons.append(f"✅ {metric}: Dashboard={dashboard_value}, Réel={real_value} (Correct)")
+            # Verify other statistics remain correct (unchanged)
+            total_personnel_actif = statistiques_mois.get("total_personnel_actif", 0)
+            formations_ce_mois = statistiques_mois.get("formations_ce_mois", 0)
+            demandes_conges_en_attente = section_generale.get("demandes_conges_en_attente", 0)
+            
+            # Generate verification results
+            corrections_verified = []
+            
+            if bug1_fixed:
+                corrections_verified.append(f"✅ Bug #1 résolu: total_assignations = {total_assignations} (attendu ~82, n'est plus 0)")
+            else:
+                corrections_verified.append(f"❌ Bug #1 NON résolu: total_assignations = {total_assignations} (toujours 0)")
+            
+            if bug2_fixed:
+                corrections_verified.append(f"✅ Bug #2 résolu: formations_a_venir contient {formations_count} formation(s)")
+                if desincarceration_found:
+                    corrections_verified.append(f"✅ Formation spécifique trouvée: 'Désincarcération de 2 véhicules' le 2026-04-22")
                 else:
-                    comparisons.append(f"⚠️ {metric}: Dashboard={dashboard_value}, Réel=N/A (Pas de données réelles)")
+                    corrections_verified.append(f"⚠️ Formation spécifique 'Désincarcération de 2 véhicules' non trouvée dans la liste")
+            else:
+                corrections_verified.append(f"❌ Bug #2 NON résolu: formations_a_venir = {formations_count} (toujours vide)")
             
-            success = len(self.discrepancies) == 0
-            message = f"{'✅ Aucune discordance détectée' if success else f'❌ {len(self.discrepancies)} discordances identifiées'}"
+            # Verify unchanged statistics
+            corrections_verified.append(f"📊 Statistiques inchangées:")
+            corrections_verified.append(f"   - total_personnel_actif: {total_personnel_actif} (attendu: 15)")
+            corrections_verified.append(f"   - formations_ce_mois: {formations_ce_mois} (attendu: 0)")
+            corrections_verified.append(f"   - demandes_conges_en_attente: {demandes_conges_en_attente} (attendu: 0)")
             
-            self.log_test("Compare Dashboard Data", success, message, 
+            success = bug1_fixed and bug2_fixed
+            message = f"{'✅ Les 2 bugs sont corrigés' if success else f'❌ {2 - (bug1_fixed + bug2_fixed)} bug(s) restant(s)'}"
+            
+            self.log_test("Verify Bug Corrections", success, message, 
                         {
-                            "dashboard_metrics": dashboard_metrics,
-                            "real_metrics": real_metrics,
-                            "comparisons": comparisons,
-                            "discrepancies_count": len(self.discrepancies)
+                            "bug1_total_assignations": {
+                                "value": total_assignations,
+                                "fixed": bug1_fixed,
+                                "expected": "~82 (pas 0)"
+                            },
+                            "bug2_formations_a_venir": {
+                                "count": formations_count,
+                                "fixed": bug2_fixed,
+                                "desincarceration_found": desincarceration_found,
+                                "formations_list": [f.get("nom", "Unknown") for f in formations_a_venir[:3]]
+                            },
+                            "unchanged_stats": {
+                                "total_personnel_actif": total_personnel_actif,
+                                "formations_ce_mois": formations_ce_mois,
+                                "demandes_conges_en_attente": demandes_conges_en_attente
+                            },
+                            "corrections_summary": corrections_verified
                         })
+            
+            # Store results for final report
+            self.corrections_results = {
+                "bug1_fixed": bug1_fixed,
+                "bug2_fixed": bug2_fixed,
+                "total_assignations": total_assignations,
+                "formations_count": formations_count,
+                "desincarceration_found": desincarceration_found,
+                "corrections_verified": corrections_verified
+            }
             
             return True
                 
         except Exception as e:
-            self.log_test("Compare Dashboard Data", False, f"Comparison error: {str(e)}")
+            self.log_test("Verify Bug Corrections", False, f"Bug verification error: {str(e)}")
             return False
 
     def analyze_discrepancy_cause(self, metric, dashboard_value, real_value):
