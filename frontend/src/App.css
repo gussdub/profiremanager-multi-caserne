@@ -8803,6 +8803,29 @@ body {
   gap: 0.5rem;
 }
 
+/* Responsive design pour mobile - Cartes utilisateurs */
+@media (max-width: 768px) {
+  .user-access-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .user-access-info {
+    width: 100%;
+  }
+  
+  .user-access-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .user-access-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Input with actions */
 .input-with-actions {
   display: flex;
