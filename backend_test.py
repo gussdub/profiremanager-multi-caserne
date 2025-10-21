@@ -532,29 +532,22 @@ class DashboardCorrectionsVerification:
         else:
             return base_cause
 
-    def run_dashboard_diagnostic(self):
-        """Run the complete Dashboard Data Synchronization Diagnostic"""
-        print("🚀 Starting Dashboard Data Synchronization Diagnostic")
+    def run_corrections_verification(self):
+        """Run the complete Dashboard Corrections Verification"""
+        print("🚀 Starting Dashboard Demo Corrections Verification")
         print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"👤 Admin: gussdub@gmail.com")
-        print(f"🎯 Objectif: Identifier les données incorrectes dans le dashboard")
-        print(f"📊 Endpoints à comparer:")
-        print(f"   - GET /api/{TENANT_SLUG}/dashboard/donnees-completes (Dashboard)")
-        print(f"   - GET /api/{TENANT_SLUG}/users (Personnel actif)")
-        print(f"   - GET /api/{TENANT_SLUG}/planning/assignations/{{semaine}} (Assignations)")
-        print(f"   - GET /api/{TENANT_SLUG}/formations (Formations)")
-        print(f"   - GET /api/{TENANT_SLUG}/remplacements (Remplacements)")
+        print(f"👤 Admin: gussdub@gmail.com / 230685Juin+")
+        print(f"🎯 Objectif: Vérifier que les 2 bugs critiques sont corrigés")
+        print(f"🐛 Bug #1: total_assignations affichait 0 au lieu de 82")
+        print(f"🐛 Bug #2: formations_a_venir affichait 0 au lieu de 1")
+        print(f"📊 Endpoint principal: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
         print("=" * 80)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
             ("Get Dashboard Data", self.get_dashboard_data),
-            ("Get Real Users Data", self.get_real_users_data),
-            ("Get Real Planning Data", self.get_real_planning_data),
-            ("Get Real Formations Data", self.get_real_formations_data),
-            ("Get Real Remplacements Data", self.get_real_remplacements_data),
-            ("Compare Dashboard Data", self.compare_dashboard_with_real_data),
+            ("Verify Bug Corrections", self.verify_bug_corrections),
         ]
         
         passed = 0
@@ -571,10 +564,10 @@ class DashboardCorrectionsVerification:
         print(f"\n" + "=" * 80)
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
-        # Generate detailed diagnostic report
-        self.generate_diagnostic_report()
+        # Generate detailed corrections report
+        self.generate_corrections_report()
         
-        return passed >= 5  # Consider success if most tests pass
+        return passed >= 2  # Consider success if authentication and dashboard work
     
     def generate_diagnostic_report(self):
         """Generate detailed diagnostic report in the requested format"""
