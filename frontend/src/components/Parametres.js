@@ -1150,17 +1150,17 @@ const Parametres = ({ user, tenantSlug }) => {
               </Button>
             </div>
 
-            <div className="competences-grid">
+            <div className="grades-grid">
               {grades.map(grade => (
-                <div key={grade.id} className="competence-card" data-testid={`grade-${grade.id}`}>
-                  <div className="competence-header">
-                    <div className="competence-info">
+                <div key={grade.id} className="grade-card" data-testid={`grade-${grade.id}`}>
+                  <div className="grade-header">
+                    <div className="grade-info">
                       <h3>{grade.nom}</h3>
-                      <div className="competence-details">
+                      <div className="grade-details">
                         <span className="detail-item">📊 Niveau hiérarchique: {grade.niveau_hierarchique}</span>
                       </div>
                     </div>
-                    <div className="competence-actions">
+                    <div className="grade-actions">
                       <Button 
                         variant="ghost" 
                         onClick={() => handleEditGrade(grade)}
