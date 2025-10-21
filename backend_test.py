@@ -1,37 +1,40 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - DASHBOARD DATA SYNCHRONIZATION DIAGNOSTIC
-Comprehensive diagnostic for dashboard data synchronization issues in "demo" tenant.
+ProFireManager Backend API Testing Suite - DASHBOARD DEMO CORRECTIONS VERIFICATION
 
-DIAGNOSTIC REQUEST:
-- Dashboard /demo shows incorrect information
-- Data not synchronized with rest of application
-- GET /api/demo/dashboard/donnees-completes returns 200 OK but data is false
+CONTEXTE:
+- Corrections appliquées pour résoudre 2 bugs critiques:
+  1. total_assignations affichait 0 au lieu de 82 (parsing de dates amélioré)
+  2. formations_a_venir affichait 0 au lieu de 1 (filtre élargi pour toutes les formations futures)
 
-TESTS TO PERFORM:
-1. Login as admin for demo tenant (gussdub@gmail.com / 230685Juin+)
-2. Get dashboard data from GET /api/demo/dashboard/donnees-completes
-3. Compare with real data from:
-   - GET /api/demo/users (count active personnel)
-   - GET /api/demo/planning/assignations/{current_week} (verify assignments)
-   - GET /api/demo/formations (verify formations)
-   - GET /api/demo/remplacements (verify replacement requests)
+TESTS À EFFECTUER:
+1. Se connecter comme admin demo (gussdub@gmail.com / 230685Juin+)
+2. Tester GET /api/demo/dashboard/donnees-completes
+3. Vérifier spécifiquement les valeurs corrigées:
+   - section_generale.statistiques_mois.total_assignations DOIT maintenant afficher 82 (ou un nombre proche, pas 0)
+   - section_personnelle.formations_a_venir DOIT maintenant contenir au moins 1 formation (incluant "Désincarcération de 2 véhicules" le 2026-04-22)
 
-SPECIFIC VERIFICATIONS:
-- section_generale.statistiques_mois.total_personnel_actif vs real active users count
-- section_generale.statistiques_mois.total_assignations vs real assignments count for month
-- section_generale.statistiques_mois.formations_ce_mois vs real formations count for current month
-- section_generale.demandes_conges_en_attente vs real pending leave requests
-- section_generale.couverture_planning (logical percentage?)
-- section_personnelle.heures_travaillees_mois vs real assignments for this admin
-- section_personnelle.nombre_gardes_mois vs real guard count
-- section_personnelle.formations_a_venir vs real upcoming formations
+4. Comparer AVANT/APRÈS:
+   **AVANT (bug):**
+   - total_assignations: 0
+   - formations_a_venir: []
+   
+   **APRÈS (corrigé):**
+   - total_assignations: 82
+   - formations_a_venir: [{"id": "...", "nom": "Désincarcération de 2 véhicules", "date_debut": "2026-04-22", ...}]
 
-EXPECTED OUTPUT FORMAT:
-- Dashboard dit: X
-- Données réelles: Y
-- Écart identifié: Z
-- Cause probable: ...
+5. Vérifier que les autres statistiques restent correctes:
+   - total_personnel_actif: 15 (inchangé)
+   - formations_ce_mois: 0 (inchangé)
+   - demandes_conges_en_attente: 0 (inchangé)
+
+OBJECTIF:
+Confirmer que les 2 bugs sont maintenant résolus et que le dashboard affiche les données correctes synchronisées avec le reste de l'application.
+
+Format attendu:
+✅ Bug #1 résolu: total_assignations = X (attendu ~82)
+✅ Bug #2 résolu: formations_a_venir contient Y formations
+❌ ou liste des problèmes restants
 """
 
 import requests
