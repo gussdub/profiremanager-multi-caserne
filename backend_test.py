@@ -644,7 +644,7 @@ class DashboardDataDiagnostic:
         print("=" * 80)
 
 if __name__ == "__main__":
-    tester = DashboardTester()
-    success = tester.run_dashboard_tests()
+    diagnostic = DashboardDataDiagnostic()
+    success = diagnostic.run_dashboard_diagnostic()
     
     sys.exit(0 if success else 1)
