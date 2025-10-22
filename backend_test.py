@@ -182,55 +182,57 @@ class FormationDiagnosticTesting:
             self.log_test("Get All Formations", False, f"Formations retrieval error: {str(e)}")
             return False
 
-    def test_formation_creation_without_competence(self):
-        """Test formation creation WITHOUT competence - should fail with 400 Bad Request"""
+    def get_formations_with_year_filter(self):
+        """Get formations with year filter: GET /api/shefford/formations?annee=2025"""
         try:
             if not self.admin_token:
-                self.log_test("Formation Creation Without Competence", False, "No admin token available")
+                self.log_test("Get Formations With Year Filter", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"❌ Testing formation creation WITHOUT competence (should fail)")
+            print(f"🔍 Retrieving formations with year filter: GET /api/{TENANT_SLUG}/formations?annee=2025")
             
-            formation_data = {
-                "nom": "Test Formation Sans Competence",
-                "competence_id": "",  # Empty competence_id - should trigger validation error
-                "date_debut": "2025-12-01",
-                "date_fin": "2025-12-01",  
-                "heure_debut": "09:00",
-                "heure_fin": "17:00",
-                "duree_heures": 8,
-                "places_max": 20,
-                "annee": 2025
-            }
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations?annee=2025")
             
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
-            
-            # Should return 400 Bad Request
-            if response.status_code == 400:
-                response_text = response.text
-                if "compétence" in response_text.lower() and "obligatoire" in response_text.lower():
-                    self.log_test("Formation Creation Without Competence", True, 
-                                f"✅ Correctly rejected formation without competence: {response.status_code}", 
+            if response.status_code == 200:
+                try:
+                    self.formations_2025 = response.json()
+                    
+                    # Look for "PR test" formation in filtered results
+                    pr_test_in_2025 = False
+                    for formation in self.formations_2025:
+                        if "PR test" in formation.get("nom", ""):
+                            pr_test_in_2025 = True
+                            break
+                    
+                    # Compare with all formations
+                    total_formations = len(self.formations_all)
+                    filtered_formations = len(self.formations_2025)
+                    
+                    self.log_test("Get Formations With Year Filter", True, 
+                                f"✅ Retrieved {filtered_formations} formations for year 2025", 
                                 {
-                                    "status_code": response.status_code,
-                                    "response_message": response_text,
-                                    "validation_working": True
+                                    "total_formations": total_formations,
+                                    "filtered_formations_2025": filtered_formations,
+                                    "pr_test_in_2025": pr_test_in_2025,
+                                    "filter_difference": total_formations - filtered_formations,
+                                    "sample_filtered": [{"nom": f.get("nom"), "annee": f.get("annee")} for f in self.formations_2025[:5]]
                                 })
                     return True
-                else:
-                    self.log_test("Formation Creation Without Competence", False, 
-                                f"❌ Wrong error message for missing competence: {response_text}")
+                    
+                except json.JSONDecodeError as e:
+                    self.log_test("Get Formations With Year Filter", False, f"❌ Invalid JSON in filtered formations response: {str(e)}")
                     return False
+                    
             else:
-                self.log_test("Formation Creation Without Competence", False, 
-                            f"❌ Formation creation should have failed but got status {response.status_code}: {response.text}")
+                self.log_test("Get Formations With Year Filter", False, 
+                            f"❌ Filtered formations endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Formation Creation Without Competence", False, f"Formation creation test error: {str(e)}")
+            self.log_test("Get Formations With Year Filter", False, f"Filtered formations retrieval error: {str(e)}")
             return False
 
     def test_formation_creation_with_invalid_competence(self):
