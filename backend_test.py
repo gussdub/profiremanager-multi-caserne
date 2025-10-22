@@ -235,55 +235,59 @@ class FormationDiagnosticTesting:
             self.log_test("Get Formations With Year Filter", False, f"Filtered formations retrieval error: {str(e)}")
             return False
 
-    def test_formation_creation_with_invalid_competence(self):
-        """Test formation creation WITH invalid competence - should fail with 404"""
+    def get_dashboard_data(self):
+        """Get dashboard data: GET /api/shefford/dashboard/donnees-completes"""
         try:
             if not self.admin_token:
-                self.log_test("Formation Creation With Invalid Competence", False, "No admin token available")
+                self.log_test("Get Dashboard Data", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"❌ Testing formation creation WITH invalid competence (should fail)")
+            print(f"📊 Retrieving dashboard data: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
             
-            formation_data = {
-                "nom": "Test Formation Competence Invalide",
-                "competence_id": "fake-id-123",  # Invalid competence_id - should trigger 404 error
-                "date_debut": "2025-12-01",
-                "date_fin": "2025-12-01",  
-                "heure_debut": "09:00",
-                "heure_fin": "17:00",
-                "duree_heures": 8,
-                "places_max": 20,
-                "annee": 2025
-            }
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/dashboard/donnees-completes")
             
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
-            
-            # Should return 404 Not Found
-            if response.status_code == 404:
-                response_text = response.text
-                if "compétence" in response_text.lower() and ("trouvée" in response_text.lower() or "found" in response_text.lower()):
-                    self.log_test("Formation Creation With Invalid Competence", True, 
-                                f"✅ Correctly rejected formation with invalid competence: {response.status_code}", 
+            if response.status_code == 200:
+                try:
+                    self.dashboard_data = response.json()
+                    
+                    # Look for formations in dashboard data
+                    formations_a_venir = []
+                    section_personnelle = self.dashboard_data.get("section_personnelle", {})
+                    if "formations_a_venir" in section_personnelle:
+                        formations_a_venir = section_personnelle["formations_a_venir"]
+                    
+                    # Look for "PR test" in dashboard formations
+                    pr_test_in_dashboard = False
+                    for formation in formations_a_venir:
+                        if "PR test" in formation.get("nom", ""):
+                            pr_test_in_dashboard = True
+                            break
+                    
+                    self.log_test("Get Dashboard Data", True, 
+                                f"✅ Retrieved dashboard data successfully", 
                                 {
-                                    "status_code": response.status_code,
-                                    "response_message": response_text,
-                                    "validation_working": True
+                                    "dashboard_formations_count": len(formations_a_venir),
+                                    "pr_test_in_dashboard": pr_test_in_dashboard,
+                                    "formations_a_venir": formations_a_venir,
+                                    "section_personnelle_keys": list(section_personnelle.keys()),
+                                    "dashboard_structure": list(self.dashboard_data.keys())
                                 })
                     return True
-                else:
-                    self.log_test("Formation Creation With Invalid Competence", False, 
-                                f"❌ Wrong error message for invalid competence: {response_text}")
+                    
+                except json.JSONDecodeError as e:
+                    self.log_test("Get Dashboard Data", False, f"❌ Invalid JSON in dashboard response: {str(e)}")
                     return False
+                    
             else:
-                self.log_test("Formation Creation With Invalid Competence", False, 
-                            f"❌ Formation creation should have failed but got status {response.status_code}: {response.text}")
+                self.log_test("Get Dashboard Data", False, 
+                            f"❌ Dashboard endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Formation Creation With Invalid Competence", False, f"Formation creation test error: {str(e)}")
+            self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
             return False
 
     def test_formation_creation_with_valid_competence(self):
