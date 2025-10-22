@@ -51,7 +51,7 @@ TENANT_SLUG = "shefford"
 
 # Formation Diagnostic Configuration
 # Using existing users in MongoDB Atlas production database for tenant "shefford"
-# Authentication: admin@firemanager.ca / Admin123!
+# Authentication: admin@firemanager.ca / admin123
 
 class FormationDiagnosticTesting:
     def __init__(self):
