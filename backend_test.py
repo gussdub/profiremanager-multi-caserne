@@ -447,7 +447,7 @@ class FormationDiagnosticTesting:
         
         if not auth_success:
             print(f"\n❌ IMPOSSIBLE DE CONTINUER LE DIAGNOSTIC")
-            print(f"   Cause: Échec de l'authentification avec admin@firemanager.ca / Admin123!")
+            print(f"   Cause: Échec de l'authentification avec admin@firemanager.ca / admin123")
             print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'shefford'")
             return
         
