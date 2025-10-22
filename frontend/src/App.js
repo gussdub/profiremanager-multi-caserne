@@ -8077,6 +8077,21 @@ const Formations = () => {
       toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur lors de la sauvegarde", variant: "destructive" });
     }
   };
+
+  // Charger les compétences à l'ouverture du modal
+  useEffect(() => {
+    if (showFormationModal && tenantSlug) {
+      const refreshCompetences = async () => {
+        try {
+          const competencesData = await apiGet(tenantSlug, '/competences');
+          setCompetences(competencesData || []);
+        } catch (error) {
+          console.error('Erreur chargement compétences:', error);
+        }
+      };
+      refreshCompetences();
+    }
+  }, [showFormationModal, tenantSlug]);
   
   const handleInscrire = async (formationId) => {
     try {
