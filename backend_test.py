@@ -74,7 +74,7 @@ class FormationReportsEndpointTesting:
             print(f"   Details: {details}")
     
     def test_admin_authentication(self):
-        """Test admin authentication for Shefford tenant - specifically admin@firemanager.ca / Admin123!"""
+        """Test admin authentication for Shefford tenant - gussdub@gmail.com / 230685Juin+"""
         try:
             # Use the specific credentials mentioned in the review request
             admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
