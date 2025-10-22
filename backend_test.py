@@ -166,58 +166,56 @@ class FormationReportsEndpointTesting:
             self.log_test("Test Formations Endpoint", False, f"Formations endpoint error: {str(e)}")
             return False
 
-    def get_formations_with_year_filter(self):
-        """Get formations with year filter: GET /api/shefford/formations?annee=2025"""
+    def test_conformite_report_endpoint(self):
+        """Test GET /api/shefford/formations/rapports/conformite?annee=2025 - should return 200 OK (was 500)"""
         try:
             if not self.admin_token:
-                self.log_test("Get Formations With Year Filter", False, "No admin token available")
+                self.log_test("Test Conformité Report Endpoint", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"🔍 Retrieving formations with year filter: GET /api/{TENANT_SLUG}/formations?annee=2025")
+            print(f"📊 Testing conformité report endpoint: GET /api/{TENANT_SLUG}/formations/rapports/conformite?annee=2025")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations?annee=2025")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/conformite?annee=2025")
             
             if response.status_code == 200:
                 try:
-                    self.formations_2025 = response.json()
+                    rapport_data = response.json()
                     
-                    # Look for "PR test" or "test PR" formation in filtered results
-                    pr_test_in_2025 = False
-                    for formation in self.formations_2025:
-                        nom = formation.get("nom", "").lower()
-                        if "pr test" in nom or "test pr" in nom:
-                            pr_test_in_2025 = True
-                            break
+                    # Validate response structure
+                    required_fields = ["annee", "heures_minimales", "total_pompiers", "conformes", "pourcentage_conformite", "pompiers"]
+                    missing_fields = [field for field in required_fields if field not in rapport_data]
                     
-                    # Compare with all formations
-                    total_formations = len(self.formations_all)
-                    filtered_formations = len(self.formations_2025)
+                    if missing_fields:
+                        self.log_test("Test Conformité Report Endpoint", False, 
+                                    f"❌ Missing required fields in response: {missing_fields}")
+                        return False
                     
-                    self.log_test("Get Formations With Year Filter", True, 
-                                f"✅ Retrieved {filtered_formations} formations for year 2025", 
+                    self.log_test("Test Conformité Report Endpoint", True, 
+                                f"✅ Conformité report endpoint returned 200 OK (was 500 before fix)", 
                                 {
-                                    "total_formations": total_formations,
-                                    "filtered_formations_2025": filtered_formations,
-                                    "pr_test_in_2025": pr_test_in_2025,
-                                    "filter_difference": total_formations - filtered_formations,
-                                    "sample_filtered": [{"nom": f.get("nom"), "annee": f.get("annee")} for f in self.formations_2025[:5]]
+                                    "status_code": response.status_code,
+                                    "annee": rapport_data.get("annee"),
+                                    "total_pompiers": rapport_data.get("total_pompiers"),
+                                    "conformes": rapport_data.get("conformes"),
+                                    "pourcentage_conformite": rapport_data.get("pourcentage_conformite"),
+                                    "response_structure": list(rapport_data.keys())
                                 })
                     return True
                     
                 except json.JSONDecodeError as e:
-                    self.log_test("Get Formations With Year Filter", False, f"❌ Invalid JSON in filtered formations response: {str(e)}")
+                    self.log_test("Test Conformité Report Endpoint", False, f"❌ Invalid JSON in conformité report response: {str(e)}")
                     return False
                     
             else:
-                self.log_test("Get Formations With Year Filter", False, 
-                            f"❌ Filtered formations endpoint failed with status {response.status_code}: {response.text}")
+                self.log_test("Test Conformité Report Endpoint", False, 
+                            f"❌ Conformité report endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Formations With Year Filter", False, f"Filtered formations retrieval error: {str(e)}")
+            self.log_test("Test Conformité Report Endpoint", False, f"Conformité report endpoint error: {str(e)}")
             return False
 
     def get_dashboard_data(self):
