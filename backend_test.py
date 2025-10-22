@@ -408,46 +408,26 @@ class FormationValidationTesting:
             self.log_test("Cleanup Test Formation", False, f"Cleanup error: {str(e)}")
             return False
 
-    def analyze_discrepancy_cause(self, metric, dashboard_value, real_value):
-        """Analyze the probable cause of a discrepancy"""
-        causes = {
-            "total_personnel_actif": "Possible filtrage différent des utilisateurs actifs ou requête incorrecte",
-            "total_assignations": "Calcul des assignations du mois incorrect ou période différente",
-            "formations_ce_mois": "Filtrage des formations par date incorrect ou format de date différent",
-            "demandes_conges_en_attente": "Confusion entre demandes de congé et demandes de remplacement",
-            "formations_a_venir": "Filtrage des formations futures incorrect ou critères différents",
-            "heures_travaillees_mois": "Calcul des heures basé sur assignations incorrect",
-            "nombre_gardes_mois": "Comptage des gardes du mois incorrect",
-            "couverture_planning": "Calcul du pourcentage de couverture incorrect"
-        }
-        
-        base_cause = causes.get(metric, "Cause inconnue - nécessite investigation approfondie")
-        
-        if dashboard_value == 0 and real_value > 0:
-            return f"{base_cause} - Dashboard retourne 0 alors que données réelles existent"
-        elif dashboard_value > real_value:
-            return f"{base_cause} - Dashboard surestime les données"
-        elif dashboard_value < real_value:
-            return f"{base_cause} - Dashboard sous-estime les données"
-        else:
-            return base_cause
-
-    def run_corrections_verification(self):
-        """Run the complete Dashboard Corrections Verification"""
-        print("🚀 Starting Dashboard Demo Corrections Verification")
+    def run_formation_validation_tests(self):
+        """Run the complete Formation Validation Testing"""
+        print("🚀 Starting Formation Creation Validation Testing")
         print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
         print(f"👤 Admin: gussdub@gmail.com / 230685Juin+")
-        print(f"🎯 Objectif: Vérifier que les 2 bugs critiques sont corrigés")
-        print(f"🐛 Bug #1: total_assignations affichait 0 au lieu de 82")
-        print(f"🐛 Bug #2: formations_a_venir affichait 0 au lieu de 1")
-        print(f"📊 Endpoint principal: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
+        print(f"🎯 Objectif: Vérifier les validations de création de formation")
+        print(f"🔍 Test 1: Création SANS compétence (doit échouer)")
+        print(f"🔍 Test 2: Création AVEC compétence invalide (doit échouer)")
+        print(f"🔍 Test 3: Création AVEC compétence valide (doit réussir)")
         print("=" * 80)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Get Dashboard Data", self.get_dashboard_data),
-            ("Verify Bug Corrections", self.verify_bug_corrections),
+            ("Get Competences List", self.get_competences_list),
+            ("Formation Creation Without Competence", self.test_formation_creation_without_competence),
+            ("Formation Creation With Invalid Competence", self.test_formation_creation_with_invalid_competence),
+            ("Formation Creation With Valid Competence", self.test_formation_creation_with_valid_competence),
+            ("Verify Formation In List", self.verify_formation_in_list),
+            ("Cleanup Test Formation", self.cleanup_test_formation),
         ]
         
         passed = 0
@@ -464,10 +444,10 @@ class FormationValidationTesting:
         print(f"\n" + "=" * 80)
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
-        # Generate detailed corrections report
-        self.generate_corrections_report()
+        # Generate detailed validation report
+        self.generate_validation_report()
         
-        return passed >= 2  # Consider success if authentication and dashboard work
+        return passed >= 5  # Consider success if core validation tests pass
     
     def generate_corrections_report(self):
         """Generate detailed corrections verification report"""
