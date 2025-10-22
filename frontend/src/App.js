@@ -6293,33 +6293,61 @@ const Planning = () => {
                   </div>
                 </div>
 
-                {/* Section 2.5: Jour spécifique (pour récurrence) */}
-                <div className="assign-section" style={{ background: '#fffbeb', padding: '1rem', borderRadius: '8px', border: '2px solid #fbbf24' }}>
-                  <h4>📆 Jour spécifique pour la récurrence</h4>
-                  <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '1rem' }}>
-                    ⚠️ Important : Sélectionnez le jour de la semaine exact pour lequel vous voulez créer la récurrence.
-                    <br />
-                    <strong>Exemple :</strong> Si vous voulez uniquement les samedis, sélectionnez "Samedi" ci-dessous.
-                  </p>
-                  <div className="form-field">
-                    <Label>Jour de la semaine *</Label>
-                    <select
-                      value={advancedAssignConfig.jour_specifique || ''}
-                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, jour_specifique: e.target.value})}
-                      style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '2px solid #fbbf24', fontSize: '0.95rem', background: 'white' }}
-                      data-testid="jour-specifique-select"
-                    >
-                      <option value="">-- Tous les jours (assignation unique) --</option>
-                      <option value="monday">🗓️ Lundi</option>
-                      <option value="tuesday">🗓️ Mardi</option>
-                      <option value="wednesday">🗓️ Mercredi</option>
-                      <option value="thursday">🗓️ Jeudi</option>
-                      <option value="friday">🗓️ Vendredi</option>
-                      <option value="saturday">🗓️ Samedi</option>
-                      <option value="sunday">🗓️ Dimanche</option>
-                    </select>
+                {/* Section 2.5: Sélection des jours (conditionnel selon type récurrence) */}
+                {advancedAssignConfig.recurrence_type !== 'unique' && advancedAssignConfig.recurrence_type !== 'mensuelle' && advancedAssignConfig.recurrence_type !== 'annuelle' && advancedAssignConfig.recurrence_type !== 'personnalisee' && (
+                  <div className="assign-section" style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', border: '2px solid #3b82f6' }}>
+                    <h4>📋 Jours de la semaine pour la récurrence</h4>
+                    <p style={{ fontSize: '0.875rem', color: '#1e40af', marginBottom: '1rem' }}>
+                      ✅ Sélectionnez un ou plusieurs jours pour créer des assignations récurrentes.
+                      <br />
+                      <strong>Exemple :</strong> Cochez Lundi + Mercredi + Vendredi pour créer des gardes ces 3 jours chaque semaine.
+                    </p>
+                    <div className="jours-selection">
+                      {[
+                        { value: 'monday', label: 'Lundi' },
+                        { value: 'tuesday', label: 'Mardi' },
+                        { value: 'wednesday', label: 'Mercredi' },
+                        { value: 'thursday', label: 'Jeudi' },
+                        { value: 'friday', label: 'Vendredi' },
+                        { value: 'saturday', label: 'Samedi' },
+                        { value: 'sunday', label: 'Dimanche' }
+                      ].map(jour => (
+                        <label key={jour.value} className="jour-checkbox" style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.75rem 1rem',
+                          margin: '0.25rem',
+                          border: '2px solid',
+                          borderColor: advancedAssignConfig.jours_semaine.includes(jour.value) ? '#3b82f6' : '#cbd5e1',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          background: advancedAssignConfig.jours_semaine.includes(jour.value) ? '#dbeafe' : 'white',
+                          fontWeight: advancedAssignConfig.jours_semaine.includes(jour.value) ? '600' : '400',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={advancedAssignConfig.jours_semaine.includes(jour.value)}
+                            onChange={(e) => {
+                              const newJours = e.target.checked
+                                ? [...advancedAssignConfig.jours_semaine, jour.value]
+                                : advancedAssignConfig.jours_semaine.filter(j => j !== jour.value);
+                              setAdvancedAssignConfig({...advancedAssignConfig, jours_semaine: newJours});
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <span>{jour.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {advancedAssignConfig.jours_semaine.length > 0 && (
+                      <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#059669', fontWeight: '600' }}>
+                        ✅ {advancedAssignConfig.jours_semaine.length} jour(s) sélectionné(s)
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
 
                 {/* Section 3: Configuration récurrence */}
                 <div className="assign-section">
