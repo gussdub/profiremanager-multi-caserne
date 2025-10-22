@@ -124,52 +124,62 @@ class FormationDiagnosticTesting:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def get_competences_list(self):
-        """Get competences list from GET /api/demo/competences - should return at least 1 competence"""
+    def get_all_formations(self):
+        """Get ALL formations from GET /api/shefford/formations (without filter)"""
         try:
             if not self.admin_token:
-                self.log_test("Get Competences List", False, "No admin token available")
+                self.log_test("Get All Formations", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"📚 Retrieving competences from GET /api/{TENANT_SLUG}/competences")
+            print(f"📚 Retrieving ALL formations from GET /api/{TENANT_SLUG}/formations")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/competences")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
             
             if response.status_code == 200:
                 try:
-                    self.competences = response.json()
+                    self.formations_all = response.json()
                     
-                    if len(self.competences) > 0:
-                        # Store the first competence ID for valid tests
-                        self.valid_competence_id = self.competences[0].get("id")
-                        
-                        self.log_test("Get Competences List", True, 
-                                    f"✅ Retrieved {len(self.competences)} competences", 
-                                    {
-                                        "competences_count": len(self.competences),
-                                        "valid_competence_id": self.valid_competence_id,
-                                        "sample_competences": [{"id": c.get("id"), "nom": c.get("nom")} for c in self.competences[:3]]
-                                    })
-                        return True
-                    else:
-                        self.log_test("Get Competences List", False, 
-                                    f"❌ No competences found in demo tenant")
-                        return False
+                    # Look for "PR test" formation
+                    pr_test_found = False
+                    for formation in self.formations_all:
+                        if "PR test" in formation.get("nom", ""):
+                            self.pr_test_formation = formation
+                            pr_test_found = True
+                            break
+                    
+                    # Analyze year values
+                    year_analysis = {}
+                    for formation in self.formations_all:
+                        annee = formation.get("annee", "Non définie")
+                        if annee not in year_analysis:
+                            year_analysis[annee] = 0
+                        year_analysis[annee] += 1
+                    
+                    self.log_test("Get All Formations", True, 
+                                f"✅ Retrieved {len(self.formations_all)} formations total", 
+                                {
+                                    "total_formations": len(self.formations_all),
+                                    "pr_test_found": pr_test_found,
+                                    "pr_test_formation": self.pr_test_formation,
+                                    "year_analysis": year_analysis,
+                                    "sample_formations": [{"nom": f.get("nom"), "annee": f.get("annee")} for f in self.formations_all[:5]]
+                                })
+                    return True
                     
                 except json.JSONDecodeError as e:
-                    self.log_test("Get Competences List", False, f"❌ Invalid JSON in competences response: {str(e)}")
+                    self.log_test("Get All Formations", False, f"❌ Invalid JSON in formations response: {str(e)}")
                     return False
                     
             else:
-                self.log_test("Get Competences List", False, 
-                            f"❌ Competences endpoint failed with status {response.status_code}: {response.text}")
+                self.log_test("Get All Formations", False, 
+                            f"❌ Formations endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Competences List", False, f"Competences retrieval error: {str(e)}")
+            self.log_test("Get All Formations", False, f"Formations retrieval error: {str(e)}")
             return False
 
     def test_formation_creation_without_competence(self):
