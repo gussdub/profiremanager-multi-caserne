@@ -1,39 +1,30 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - FORMATION DIAGNOSTIC SHEFFORD
-
-DIAGNOSTIC: Formation visible dans Dashboard mais pas dans module Formation (tenant shefford)
+ProFireManager Backend API Testing Suite - FORMATION REPORTS ENDPOINTS TESTING
 
 CONTEXTE:
-- Formation "PR test" visible dans Dashboard
-- Aucune formation visible dans module Formation avec année 2025 sélectionnée
-- Besoin de comprendre pourquoi le filtre par année ne fonctionne pas
+- Problème identifié: endpoints /formations/rapports/conformite et /formations/rapports/dashboard retournaient 500
+- Cause: parsing de dates sans gestion d'erreur à la ligne 3990 (datetime.fromisoformat sans try/except)
+- Correction appliquée: ajout de try/except autour du parsing de date_fin avec gestion des valeurs None/invalides
 
 TESTS À EFFECTUER:
 1. Login admin shefford (gussdub@gmail.com / 230685Juin+)
 
-2. Récupérer TOUTES les formations sans filtre:
-   GET /api/shefford/formations
-   - Voir combien de formations existent
-   - Noter les valeurs du champ "annee" de chaque formation
-   - Identifier la formation "PR test"
+2. Tester l'endpoint conformité (qui crashait):
+   GET /api/shefford/formations/rapports/conformite?annee=2025
+   - AVANT: Retournait 500 error
+   - APRÈS: Devrait retourner 200 OK avec données du rapport
 
-3. Récupérer formations avec filtre année 2025:
+3. Tester l'endpoint dashboard formations:
+   GET /api/shefford/formations/rapports/dashboard?annee=2025
+   - Vérifier qu'il retourne 200 OK avec KPIs
+
+4. Tester l'endpoint formations principal:
    GET /api/shefford/formations?annee=2025
-   - Comparer avec le résultat sans filtre
-
-4. Vérifier les données du Dashboard:
-   GET /api/shefford/dashboard/donnees-completes
-   - Voir comment le Dashboard récupère les formations à venir
-   - Vérifier si "PR test" apparaît dans section_personnelle.formations_a_venir
-
-5. Analyser la différence:
-   - Le Dashboard ne filtre probablement PAS par année
-   - Le module Formation filtre par année
-   - Si la formation "PR test" a un champ "annee" différent de 2025, elle n'apparaîtra pas
+   - Vérifier qu'il retourne bien les 2 formations dont "test PR"
 
 OBJECTIF:
-Identifier pourquoi le filtre par année ne retourne pas la formation "PR test" et proposer une solution.
+Confirmer que les endpoints de rapports ne crashent plus et que le frontend pourra charger toutes les données sans erreur 500.
 """
 
 import requests
