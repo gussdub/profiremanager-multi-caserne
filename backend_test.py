@@ -449,93 +449,81 @@ class FormationValidationTesting:
         
         return passed >= 5  # Consider success if core validation tests pass
     
-    def generate_corrections_report(self):
-        """Generate detailed corrections verification report"""
+    def generate_validation_report(self):
+        """Generate detailed formation validation report"""
         print(f"\n" + "=" * 80)
-        print(f"📋 RAPPORT DE VÉRIFICATION DES CORRECTIONS - DASHBOARD DEMO")
+        print(f"📋 RAPPORT DE VALIDATION - CRÉATION DE FORMATION DEMO")
         print("=" * 80)
         
-        # Check if we have all necessary data
+        # Check test results
         auth_success = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
-        dashboard_success = any(r["success"] for r in self.test_results if "Get Dashboard Data" in r["test"])
-        corrections_success = any(r["success"] for r in self.test_results if "Verify Bug Corrections" in r["test"])
+        competences_success = any(r["success"] for r in self.test_results if "Get Competences List" in r["test"])
+        without_competence_success = any(r["success"] for r in self.test_results if "Formation Creation Without Competence" in r["test"])
+        invalid_competence_success = any(r["success"] for r in self.test_results if "Formation Creation With Invalid Competence" in r["test"])
+        valid_competence_success = any(r["success"] for r in self.test_results if "Formation Creation With Valid Competence" in r["test"])
+        verification_success = any(r["success"] for r in self.test_results if "Verify Formation In List" in r["test"])
         
         print(f"🔐 Authentification admin demo: {'✅ Réussie' if auth_success else '❌ Échouée'}")
-        print(f"📊 Récupération données dashboard: {'✅ Réussie' if dashboard_success else '❌ Échouée'}")
-        print(f"🔍 Vérification corrections bugs: {'✅ Réussie' if corrections_success else '❌ Échouée'}")
+        print(f"📚 Récupération compétences: {'✅ Réussie' if competences_success else '❌ Échouée'}")
+        print(f"❌ Test SANS compétence: {'✅ Rejetée correctement' if without_competence_success else '❌ Validation échouée'}")
+        print(f"❌ Test compétence INVALIDE: {'✅ Rejetée correctement' if invalid_competence_success else '❌ Validation échouée'}")
+        print(f"✅ Test compétence VALIDE: {'✅ Création réussie' if valid_competence_success else '❌ Création échouée'}")
+        print(f"🔍 Vérification dans liste: {'✅ Formation trouvée' if verification_success else '❌ Formation non trouvée'}")
         
         if not auth_success:
-            print(f"\n❌ IMPOSSIBLE DE CONTINUER LA VÉRIFICATION")
+            print(f"\n❌ IMPOSSIBLE DE CONTINUER LES TESTS")
             print(f"   Cause: Échec de l'authentification avec gussdub@gmail.com / 230685Juin+")
             print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'demo'")
             return
         
-        if not dashboard_success:
-            print(f"\n❌ IMPOSSIBLE DE RÉCUPÉRER LES DONNÉES DU DASHBOARD")
-            print(f"   Cause: Endpoint GET /api/demo/dashboard/donnees-completes inaccessible")
-            print(f"   Action requise: Vérifier l'endpoint et les permissions")
+        if not competences_success:
+            print(f"\n❌ IMPOSSIBLE DE RÉCUPÉRER LES COMPÉTENCES")
+            print(f"   Cause: Endpoint GET /api/demo/competences inaccessible ou vide")
+            print(f"   Action requise: Vérifier l'endpoint et créer des compétences si nécessaire")
             return
         
-        print(f"\n🐛 VÉRIFICATION DES CORRECTIONS SPÉCIFIQUES:")
+        print(f"\n🔍 RÉSULTATS DES VALIDATIONS:")
         print("-" * 60)
         
-        if hasattr(self, 'corrections_results'):
-            results = self.corrections_results
-            
-            # Bug #1 Status
-            if results['bug1_fixed']:
-                print(f"✅ Bug #1 résolu: total_assignations = {results['total_assignations']} (attendu ~82)")
-            else:
-                print(f"❌ Bug #1 NON résolu: total_assignations = {results['total_assignations']} (toujours 0)")
-            
-            # Bug #2 Status
-            if results['bug2_fixed']:
-                print(f"✅ Bug #2 résolu: formations_a_venir contient {results['formations_count']} formation(s)")
-                if results['desincarceration_found']:
-                    print(f"✅ Formation spécifique trouvée: 'Désincarcération de 2 véhicules' le 2026-04-22")
-                else:
-                    print(f"⚠️ Formation spécifique 'Désincarcération de 2 véhicules' non trouvée")
-            else:
-                print(f"❌ Bug #2 NON résolu: formations_a_venir = {results['formations_count']} (toujours vide)")
-            
-            print(f"\n📊 RÉSUMÉ DES CORRECTIONS:")
-            print("-" * 60)
-            for correction in results['corrections_verified']:
-                print(f"   {correction}")
-            
-        else:
-            print("❌ AUCUNE DONNÉE DE CORRECTION DISPONIBLE")
-            print("   La vérification des corrections n'a pas pu être effectuée")
+        # Validation results summary
+        validations_working = 0
+        total_validations = 3
         
-        print(f"\n🎯 CONCLUSION DE LA VÉRIFICATION:")
+        if without_competence_success:
+            print(f"✅ Validation #1: Formation SANS compétence correctement rejetée (400 Bad Request)")
+            validations_working += 1
+        else:
+            print(f"❌ Validation #1: Formation SANS compétence PAS rejetée (validation manquante)")
+        
+        if invalid_competence_success:
+            print(f"✅ Validation #2: Formation avec compétence INVALIDE correctement rejetée (404 Not Found)")
+            validations_working += 1
+        else:
+            print(f"❌ Validation #2: Formation avec compétence INVALIDE PAS rejetée (validation manquante)")
+        
+        if valid_competence_success:
+            print(f"✅ Validation #3: Formation avec compétence VALIDE correctement acceptée (200 OK)")
+            validations_working += 1
+        else:
+            print(f"❌ Validation #3: Formation avec compétence VALIDE PAS acceptée (erreur inattendue)")
+        
+        print(f"\n🎯 CONCLUSION DES VALIDATIONS:")
         print("-" * 60)
         
-        if hasattr(self, 'corrections_results'):
-            results = self.corrections_results
-            bugs_fixed = results['bug1_fixed'] + results['bug2_fixed']
-            
-            if bugs_fixed == 2:
-                print("🎉 TOUTES LES CORRECTIONS SONT RÉUSSIES!")
-                print("   ✅ Bug #1 (total_assignations) corrigé")
-                print("   ✅ Bug #2 (formations_a_venir) corrigé")
-                print("   Le dashboard affiche maintenant les données correctes.")
-            elif bugs_fixed == 1:
-                print("⚠️ CORRECTIONS PARTIELLES")
-                if results['bug1_fixed']:
-                    print("   ✅ Bug #1 (total_assignations) corrigé")
-                    print("   ❌ Bug #2 (formations_a_venir) NON corrigé")
-                else:
-                    print("   ❌ Bug #1 (total_assignations) NON corrigé")
-                    print("   ✅ Bug #2 (formations_a_venir) corrigé")
-                print("   Action requise: Corriger le bug restant")
-            else:
-                print("❌ AUCUNE CORRECTION DÉTECTÉE")
-                print("   ❌ Bug #1 (total_assignations) NON corrigé")
-                print("   ❌ Bug #2 (formations_a_venir) NON corrigé")
-                print("   Action requise: Vérifier l'implémentation des corrections")
+        if validations_working == total_validations:
+            print("🎉 TOUTES LES VALIDATIONS FONCTIONNENT CORRECTEMENT!")
+            print("   ✅ Validation frontend: competence_id obligatoire")
+            print("   ✅ Validation backend: compétence doit exister")
+            print("   ✅ Création réussie avec compétence valide")
+            print("   Les corrections sont entièrement fonctionnelles.")
+        elif validations_working >= 2:
+            print("⚠️ VALIDATIONS PARTIELLEMENT FONCTIONNELLES")
+            print(f"   {validations_working}/{total_validations} validations fonctionnent")
+            print("   Action requise: Corriger les validations manquantes")
         else:
-            print("❌ IMPOSSIBLE DE DÉTERMINER L'ÉTAT DES CORRECTIONS")
-            print("   La vérification n'a pas pu être complétée")
+            print("❌ VALIDATIONS NON FONCTIONNELLES")
+            print(f"   Seulement {validations_working}/{total_validations} validations fonctionnent")
+            print("   Action requise: Vérifier l'implémentation des validations")
         
         print("=" * 80)
 
