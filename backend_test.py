@@ -61,10 +61,11 @@ class FormationDiagnosticTesting:
         self.test_results = []
         self.admin_token = None
         self.admin_user_id = None
-        self.demo_tenant_id = None
-        self.competences = []
-        self.valid_competence_id = None
-        self.created_formation_id = None
+        self.shefford_tenant_id = None
+        self.formations_all = []
+        self.formations_2025 = []
+        self.dashboard_data = None
+        self.pr_test_formation = None
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
