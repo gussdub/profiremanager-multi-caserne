@@ -142,10 +142,11 @@ class FormationDiagnosticTesting:
                 try:
                     self.formations_all = response.json()
                     
-                    # Look for "PR test" formation
+                    # Look for "PR test" or "test PR" formation
                     pr_test_found = False
                     for formation in self.formations_all:
-                        if "PR test" in formation.get("nom", ""):
+                        nom = formation.get("nom", "").lower()
+                        if "pr test" in nom or "test pr" in nom:
                             self.pr_test_formation = formation
                             pr_test_found = True
                             break
