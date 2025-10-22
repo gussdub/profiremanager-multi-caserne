@@ -44,7 +44,7 @@ TENANT_SLUG = "shefford"
 # Using existing users in MongoDB Atlas production database for tenant "shefford"
 # Authentication: gussdub@gmail.com / 230685Juin+
 
-class FormationDiagnosticTesting:
+class FormationReportsEndpointTesting:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
