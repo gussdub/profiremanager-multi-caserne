@@ -262,69 +262,63 @@ class FormationValidationTesting:
             self.log_test("Formation Creation With Invalid Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
-    def get_real_formations_data(self):
-        """Get real formations data from GET /api/demo/formations"""
+    def test_formation_creation_with_valid_competence(self):
+        """Test formation creation WITH valid competence - should succeed with 200 OK"""
         try:
             if not self.admin_token:
-                self.log_test("Get Real Formations Data", False, "No admin token available")
+                self.log_test("Formation Creation With Valid Competence", False, "No admin token available")
+                return False
+            
+            if not self.valid_competence_id:
+                self.log_test("Formation Creation With Valid Competence", False, "No valid competence ID available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"📚 Getting real formations data from GET /api/{TENANT_SLUG}/formations")
+            print(f"✅ Testing formation creation WITH valid competence (should succeed)")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
+            formation_data = {
+                "nom": "Test Formation Competence Valide",
+                "competence_id": self.valid_competence_id,  # Valid competence_id - should succeed
+                "date_debut": "2025-12-01",
+                "date_fin": "2025-12-01",  
+                "heure_debut": "09:00",
+                "heure_fin": "17:00",
+                "duree_heures": 8,
+                "places_max": 20,
+                "annee": 2025
+            }
             
-            if response.status_code == 200:
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
+            
+            # Should return 200 OK or 201 Created
+            if response.status_code in [200, 201]:
                 try:
-                    formations = response.json()
+                    created_formation = response.json()
+                    self.created_formation_id = created_formation.get("id")
                     
-                    # Count formations for current month
-                    current_month = datetime.now().strftime("%Y-%m")
-                    current_month_formations = []
-                    
-                    for formation in formations:
-                        date_debut = formation.get("date_debut", "")
-                        if date_debut.startswith(current_month):
-                            current_month_formations.append(formation)
-                    
-                    # Count upcoming formations for the admin user
-                    upcoming_formations = []
-                    today = datetime.now().strftime("%Y-%m-%d")
-                    
-                    for formation in formations:
-                        date_debut = formation.get("date_debut", "")
-                        if date_debut >= today:
-                            upcoming_formations.append(formation)
-                    
-                    self.real_data["formations"] = {
-                        "total_formations": len(formations),
-                        "current_month_formations": len(current_month_formations),
-                        "upcoming_formations": len(upcoming_formations),
-                        "formations_list": formations
-                    }
-                    
-                    self.log_test("Get Real Formations Data", True, 
-                                f"✅ Retrieved {len(formations)} formations ({len(current_month_formations)} this month)", 
+                    self.log_test("Formation Creation With Valid Competence", True, 
+                                f"✅ Successfully created formation with valid competence: {response.status_code}", 
                                 {
-                                    "total_formations": len(formations),
-                                    "current_month_formations": len(current_month_formations),
-                                    "upcoming_formations": len(upcoming_formations)
+                                    "status_code": response.status_code,
+                                    "formation_id": self.created_formation_id,
+                                    "formation_name": created_formation.get("nom"),
+                                    "competence_id": created_formation.get("competence_id")
                                 })
                     return True
                     
                 except json.JSONDecodeError:
-                    self.log_test("Get Real Formations Data", False, f"❌ Invalid JSON response from formations endpoint")
+                    self.log_test("Formation Creation With Valid Competence", False, 
+                                f"❌ Invalid JSON response from formation creation")
                     return False
-                    
             else:
-                self.log_test("Get Real Formations Data", False, 
-                            f"❌ Could not access formations endpoint: {response.status_code} - {response.text}")
+                self.log_test("Formation Creation With Valid Competence", False, 
+                            f"❌ Formation creation failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Real Formations Data", False, f"Get real formations data error: {str(e)}")
+            self.log_test("Formation Creation With Valid Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
     def get_real_remplacements_data(self):
