@@ -1,28 +1,39 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - FORMATION CREATION VALIDATION TESTING
+ProFireManager Backend API Testing Suite - FORMATION DIAGNOSTIC SHEFFORD
+
+DIAGNOSTIC: Formation visible dans Dashboard mais pas dans module Formation (tenant shefford)
 
 CONTEXTE:
-- Deux bugs ont été corrigés pour la création de formation dans le tenant demo:
-  1. Validation frontend ajoutée pour vérifier que competence_id est renseigné
-  2. Validation backend ajoutée pour vérifier que la compétence existe avant de créer la formation
+- Formation "PR test" visible dans Dashboard
+- Aucune formation visible dans module Formation avec année 2025 sélectionnée
+- Besoin de comprendre pourquoi le filtre par année ne fonctionne pas
 
 TESTS À EFFECTUER:
-1. Login admin demo (gussdub@gmail.com / 230685Juin+)
-2. Vérifier que les compétences existent: GET /api/demo/competences
-3. Test création formation SANS compétence (doit échouer):
-   POST /api/demo/formations avec competence_id=""
-   - Devrait retourner 400 Bad Request avec message "La compétence associée est obligatoire"
-4. Test création formation AVEC compétence invalide (doit échouer):
-   POST /api/demo/formations avec competence_id="fake-id-123"
-   - Devrait retourner 404 avec message mentionnant "Compétence non trouvée"
-5. Test création formation AVEC compétence valide (doit réussir):
-   POST /api/demo/formations avec competence_id=<id d'une compétence existante>
-   - Devrait retourner 200 OK avec la formation créée
-   - Vérifier que la formation apparaît dans GET /api/demo/formations
+1. Login admin shefford (admin@firemanager.ca / Admin123!)
+
+2. Récupérer TOUTES les formations sans filtre:
+   GET /api/shefford/formations
+   - Voir combien de formations existent
+   - Noter les valeurs du champ "annee" de chaque formation
+   - Identifier la formation "PR test"
+
+3. Récupérer formations avec filtre année 2025:
+   GET /api/shefford/formations?annee=2025
+   - Comparer avec le résultat sans filtre
+
+4. Vérifier les données du Dashboard:
+   GET /api/shefford/dashboard/donnees-completes
+   - Voir comment le Dashboard récupère les formations à venir
+   - Vérifier si "PR test" apparaît dans section_personnelle.formations_a_venir
+
+5. Analyser la différence:
+   - Le Dashboard ne filtre probablement PAS par année
+   - Le module Formation filtre par année
+   - Si la formation "PR test" a un champ "annee" différent de 2025, elle n'apparaîtra pas
 
 OBJECTIF:
-Confirmer que les validations fonctionnent correctement et qu'on ne peut plus créer de formations sans compétence valide.
+Identifier pourquoi le filtre par année ne retourne pas la formation "PR test" et proposer une solution.
 """
 
 import requests
