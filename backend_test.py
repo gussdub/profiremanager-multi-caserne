@@ -218,60 +218,59 @@ class FormationReportsEndpointTesting:
             self.log_test("Test Conformité Report Endpoint", False, f"Conformité report endpoint error: {str(e)}")
             return False
 
-    def get_dashboard_data(self):
-        """Get dashboard data: GET /api/shefford/dashboard/donnees-completes"""
+    def test_dashboard_formations_endpoint(self):
+        """Test GET /api/shefford/formations/rapports/dashboard?annee=2025 - should return 200 OK with KPIs"""
         try:
             if not self.admin_token:
-                self.log_test("Get Dashboard Data", False, "No admin token available")
+                self.log_test("Test Dashboard Formations Endpoint", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"📊 Retrieving dashboard data: GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
+            print(f"📊 Testing dashboard formations endpoint: GET /api/{TENANT_SLUG}/formations/rapports/dashboard?annee=2025")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/dashboard/donnees-completes")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations/rapports/dashboard?annee=2025")
             
             if response.status_code == 200:
                 try:
-                    self.dashboard_data = response.json()
+                    dashboard_data = response.json()
                     
-                    # Look for formations in dashboard data
-                    formations_a_venir = []
-                    section_personnelle = self.dashboard_data.get("section_personnelle", {})
-                    if "formations_a_venir" in section_personnelle:
-                        formations_a_venir = section_personnelle["formations_a_venir"]
+                    # Validate response structure for KPIs
+                    required_fields = ["annee", "heures_planifiees", "heures_effectuees", "pourcentage_realisation", "total_pompiers", "pompiers_formes", "pourcentage_pompiers"]
+                    missing_fields = [field for field in required_fields if field not in dashboard_data]
                     
-                    # Look for "PR test" or "test PR" in dashboard formations
-                    pr_test_in_dashboard = False
-                    for formation in formations_a_venir:
-                        nom = formation.get("nom", "").lower()
-                        if "pr test" in nom or "test pr" in nom:
-                            pr_test_in_dashboard = True
-                            break
+                    if missing_fields:
+                        self.log_test("Test Dashboard Formations Endpoint", False, 
+                                    f"❌ Missing required KPI fields in response: {missing_fields}")
+                        return False
                     
-                    self.log_test("Get Dashboard Data", True, 
-                                f"✅ Retrieved dashboard data successfully", 
+                    self.log_test("Test Dashboard Formations Endpoint", True, 
+                                f"✅ Dashboard formations endpoint returned 200 OK with KPIs", 
                                 {
-                                    "dashboard_formations_count": len(formations_a_venir),
-                                    "pr_test_in_dashboard": pr_test_in_dashboard,
-                                    "formations_a_venir": formations_a_venir,
-                                    "section_personnelle_keys": list(section_personnelle.keys()),
-                                    "dashboard_structure": list(self.dashboard_data.keys())
+                                    "status_code": response.status_code,
+                                    "annee": dashboard_data.get("annee"),
+                                    "heures_planifiees": dashboard_data.get("heures_planifiees"),
+                                    "heures_effectuees": dashboard_data.get("heures_effectuees"),
+                                    "pourcentage_realisation": dashboard_data.get("pourcentage_realisation"),
+                                    "total_pompiers": dashboard_data.get("total_pompiers"),
+                                    "pompiers_formes": dashboard_data.get("pompiers_formes"),
+                                    "pourcentage_pompiers": dashboard_data.get("pourcentage_pompiers"),
+                                    "response_structure": list(dashboard_data.keys())
                                 })
                     return True
                     
                 except json.JSONDecodeError as e:
-                    self.log_test("Get Dashboard Data", False, f"❌ Invalid JSON in dashboard response: {str(e)}")
+                    self.log_test("Test Dashboard Formations Endpoint", False, f"❌ Invalid JSON in dashboard formations response: {str(e)}")
                     return False
                     
             else:
-                self.log_test("Get Dashboard Data", False, 
-                            f"❌ Dashboard endpoint failed with status {response.status_code}: {response.text}")
+                self.log_test("Test Dashboard Formations Endpoint", False, 
+                            f"❌ Dashboard formations endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
+            self.log_test("Test Dashboard Formations Endpoint", False, f"Dashboard formations endpoint error: {str(e)}")
             return False
 
     def analyze_formation_differences(self):
