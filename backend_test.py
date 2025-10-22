@@ -290,63 +290,65 @@ class FormationDiagnosticTesting:
             self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
             return False
 
-    def test_formation_creation_with_valid_competence(self):
-        """Test formation creation WITH valid competence - should succeed with 200 OK"""
+    def analyze_formation_differences(self):
+        """Analyze the differences between Dashboard and Formation module data"""
         try:
-            if not self.admin_token:
-                self.log_test("Formation Creation With Valid Competence", False, "No admin token available")
-                return False
+            print(f"🔍 Analyzing differences between Dashboard and Formation module")
             
-            if not self.valid_competence_id:
-                self.log_test("Formation Creation With Valid Competence", False, "No valid competence ID available")
-                return False
+            # Get PR test formation details
+            pr_test_details = None
+            if self.pr_test_formation:
+                pr_test_details = {
+                    "nom": self.pr_test_formation.get("nom"),
+                    "annee": self.pr_test_formation.get("annee"),
+                    "date_debut": self.pr_test_formation.get("date_debut"),
+                    "date_fin": self.pr_test_formation.get("date_fin")
+                }
             
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            # Check if PR test is in 2025 filtered results
+            pr_test_in_2025 = False
+            for formation in self.formations_2025:
+                if "PR test" in formation.get("nom", ""):
+                    pr_test_in_2025 = True
+                    break
             
-            print(f"✅ Testing formation creation WITH valid competence (should succeed)")
+            # Check if PR test is in dashboard
+            pr_test_in_dashboard = False
+            dashboard_formations = []
+            if self.dashboard_data:
+                section_personnelle = self.dashboard_data.get("section_personnelle", {})
+                dashboard_formations = section_personnelle.get("formations_a_venir", [])
+                for formation in dashboard_formations:
+                    if "PR test" in formation.get("nom", ""):
+                        pr_test_in_dashboard = True
+                        break
             
-            formation_data = {
-                "nom": "Test Formation Competence Valide",
-                "competence_id": self.valid_competence_id,  # Valid competence_id - should succeed
-                "date_debut": "2025-12-01",
-                "date_fin": "2025-12-01",  
-                "heure_debut": "09:00",
-                "heure_fin": "17:00",
-                "duree_heures": 8,
-                "places_max": 20,
-                "annee": 2025
+            # Analysis results
+            analysis = {
+                "total_formations": len(self.formations_all),
+                "formations_2025": len(self.formations_2025),
+                "dashboard_formations": len(dashboard_formations),
+                "pr_test_found_all": self.pr_test_formation is not None,
+                "pr_test_found_2025": pr_test_in_2025,
+                "pr_test_found_dashboard": pr_test_in_dashboard,
+                "pr_test_details": pr_test_details,
+                "issue_identified": False,
+                "issue_description": ""
             }
             
-            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
+            # Identify the issue
+            if self.pr_test_formation and not pr_test_in_2025 and pr_test_in_dashboard:
+                analysis["issue_identified"] = True
+                pr_test_year = self.pr_test_formation.get("annee")
+                analysis["issue_description"] = f"Formation 'PR test' has year '{pr_test_year}' but filter searches for 2025. Dashboard shows it because it doesn't filter by year."
             
-            # Should return 200 OK or 201 Created
-            if response.status_code in [200, 201]:
-                try:
-                    created_formation = response.json()
-                    self.created_formation_id = created_formation.get("id")
-                    
-                    self.log_test("Formation Creation With Valid Competence", True, 
-                                f"✅ Successfully created formation with valid competence: {response.status_code}", 
-                                {
-                                    "status_code": response.status_code,
-                                    "formation_id": self.created_formation_id,
-                                    "formation_name": created_formation.get("nom"),
-                                    "competence_id": created_formation.get("competence_id")
-                                })
-                    return True
-                    
-                except json.JSONDecodeError:
-                    self.log_test("Formation Creation With Valid Competence", False, 
-                                f"❌ Invalid JSON response from formation creation")
-                    return False
-            else:
-                self.log_test("Formation Creation With Valid Competence", False, 
-                            f"❌ Formation creation failed with status {response.status_code}: {response.text}")
-                return False
+            self.log_test("Analyze Formation Differences", True, 
+                        f"✅ Analysis completed - Issue identified: {analysis['issue_identified']}", 
+                        analysis)
+            return True
                 
         except Exception as e:
-            self.log_test("Formation Creation With Valid Competence", False, f"Formation creation test error: {str(e)}")
+            self.log_test("Analyze Formation Differences", False, f"Analysis error: {str(e)}")
             return False
 
     def verify_formation_in_list(self):
