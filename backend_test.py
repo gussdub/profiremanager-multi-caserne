@@ -261,10 +261,11 @@ class FormationDiagnosticTesting:
                     if "formations_a_venir" in section_personnelle:
                         formations_a_venir = section_personnelle["formations_a_venir"]
                     
-                    # Look for "PR test" in dashboard formations
+                    # Look for "PR test" or "test PR" in dashboard formations
                     pr_test_in_dashboard = False
                     for formation in formations_a_venir:
-                        if "PR test" in formation.get("nom", ""):
+                        nom = formation.get("nom", "").lower()
+                        if "pr test" in nom or "test pr" in nom:
                             pr_test_in_dashboard = True
                             break
                     
