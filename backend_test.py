@@ -73,7 +73,7 @@ class FormationValidationTesting:
     def test_admin_authentication(self):
         """Test admin authentication for Demo tenant - specifically gussdub@gmail.com / 230685Juin+"""
         try:
-            # Use the specific credentials mentioned in the diagnostic request
+            # Use the specific credentials mentioned in the review request
             admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
             
             print(f"🔑 Authenticating as demo admin: {admin_credentials['email']}")
