@@ -3987,17 +3987,27 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
             })
             
             if formation:
-                date_fin = datetime.fromisoformat(formation["date_fin"]).date()
-                
-                # Heures créditées
-                if insc.get("statut") == "present":
-                    total_heures += insc.get("heures_creditees", 0)
-                
-                # Calcul taux de présence (formations passées seulement)
-                if date_fin < aujourd_hui:
-                    formations_passees += 1
+                try:
+                    # Parser la date de fin avec gestion d'erreur
+                    if "date_fin" in formation and formation["date_fin"]:
+                        date_fin_str = formation["date_fin"]
+                        date_fin = datetime.fromisoformat(date_fin_str.replace('Z', '+00:00')).date()
+                    else:
+                        # Si pas de date_fin, ignorer cette formation
+                        continue
+                    
+                    # Heures créditées
                     if insc.get("statut") == "present":
-                        presences += 1
+                        total_heures += insc.get("heures_creditees", 0)
+                    
+                    # Calcul taux de présence (formations passées seulement)
+                    if date_fin < aujourd_hui:
+                        formations_passees += 1
+                        if insc.get("statut") == "present":
+                            presences += 1
+                except (ValueError, TypeError, AttributeError):
+                    # Ignorer les formations avec des dates invalides
+                    continue
         
         taux_presence = round((presences / formations_passees * 100) if formations_passees > 0 else 0, 1)
         conforme_presence = taux_presence >= pourcentage_min
