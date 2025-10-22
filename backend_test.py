@@ -112,61 +112,52 @@ class FormationValidationTesting:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def get_dashboard_data(self):
-        """Get dashboard data from GET /api/demo/dashboard/donnees-completes"""
+    def get_competences_list(self):
+        """Get competences list from GET /api/demo/competences - should return at least 1 competence"""
         try:
             if not self.admin_token:
-                self.log_test("Get Dashboard Data", False, "No admin token available")
+                self.log_test("Get Competences List", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"📊 Retrieving dashboard data from GET /api/{TENANT_SLUG}/dashboard/donnees-completes")
+            print(f"📚 Retrieving competences from GET /api/{TENANT_SLUG}/competences")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/dashboard/donnees-completes")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/competences")
             
             if response.status_code == 200:
                 try:
-                    self.dashboard_data = response.json()
+                    self.competences = response.json()
                     
-                    # Extract key metrics from dashboard
-                    section_generale = self.dashboard_data.get("section_generale", {})
-                    section_personnelle = self.dashboard_data.get("section_personnelle", {})
-                    statistiques_mois = section_generale.get("statistiques_mois", {})
-                    
-                    dashboard_metrics = {
-                        "total_personnel_actif": statistiques_mois.get("total_personnel_actif", 0),
-                        "total_assignations": statistiques_mois.get("total_assignations", 0),
-                        "formations_ce_mois": statistiques_mois.get("formations_ce_mois", 0),
-                        "demandes_conges_en_attente": section_generale.get("demandes_conges_en_attente", 0),
-                        "couverture_planning": section_generale.get("couverture_planning", 0),
-                        "heures_travaillees_mois": section_personnelle.get("heures_travaillees_mois", 0),
-                        "nombre_gardes_mois": section_personnelle.get("nombre_gardes_mois", 0),
-                        "formations_a_venir": len(section_personnelle.get("formations_a_venir", []))
-                    }
-                    
-                    self.log_test("Get Dashboard Data", True, 
-                                f"✅ Dashboard data retrieved successfully", 
-                                {
-                                    "dashboard_metrics": dashboard_metrics,
-                                    "has_section_personnelle": "section_personnelle" in self.dashboard_data,
-                                    "has_section_generale": "section_generale" in self.dashboard_data,
-                                    "has_activites_recentes": "activites_recentes" in self.dashboard_data
-                                })
-                    return True
+                    if len(self.competences) > 0:
+                        # Store the first competence ID for valid tests
+                        self.valid_competence_id = self.competences[0].get("id")
+                        
+                        self.log_test("Get Competences List", True, 
+                                    f"✅ Retrieved {len(self.competences)} competences", 
+                                    {
+                                        "competences_count": len(self.competences),
+                                        "valid_competence_id": self.valid_competence_id,
+                                        "sample_competences": [{"id": c.get("id"), "nom": c.get("nom")} for c in self.competences[:3]]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Get Competences List", False, 
+                                    f"❌ No competences found in demo tenant")
+                        return False
                     
                 except json.JSONDecodeError as e:
-                    self.log_test("Get Dashboard Data", False, f"❌ Invalid JSON in dashboard response: {str(e)}")
+                    self.log_test("Get Competences List", False, f"❌ Invalid JSON in competences response: {str(e)}")
                     return False
                     
             else:
-                self.log_test("Get Dashboard Data", False, 
-                            f"❌ Dashboard endpoint failed with status {response.status_code}: {response.text}")
+                self.log_test("Get Competences List", False, 
+                            f"❌ Competences endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Dashboard Data", False, f"Dashboard data retrieval error: {str(e)}")
+            self.log_test("Get Competences List", False, f"Competences retrieval error: {str(e)}")
             return False
 
     def get_real_users_data(self):
