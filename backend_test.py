@@ -311,7 +311,8 @@ class FormationDiagnosticTesting:
             # Check if PR test is in 2025 filtered results
             pr_test_in_2025 = False
             for formation in self.formations_2025:
-                if "PR test" in formation.get("nom", ""):
+                nom = formation.get("nom", "").lower()
+                if "pr test" in nom or "test pr" in nom:
                     pr_test_in_2025 = True
                     break
             
@@ -322,7 +323,8 @@ class FormationDiagnosticTesting:
                 section_personnelle = self.dashboard_data.get("section_personnelle", {})
                 dashboard_formations = section_personnelle.get("formations_a_venir", [])
                 for formation in dashboard_formations:
-                    if "PR test" in formation.get("nom", ""):
+                    nom = formation.get("nom", "").lower()
+                    if "pr test" in nom or "test pr" in nom:
                         pr_test_in_dashboard = True
                         break
             
