@@ -512,7 +512,7 @@ class FormationDiagnosticTesting:
         print("=" * 80)
 
 if __name__ == "__main__":
-    testing = FormationValidationTesting()
-    success = testing.run_formation_validation_tests()
+    testing = FormationDiagnosticTesting()
+    success = testing.run_formation_diagnostic_tests()
     
     sys.exit(0 if success else 1)
