@@ -5174,13 +5174,10 @@ const Planning = () => {
       const assignmentData = {
         user_id: advancedAssignConfig.user_id,
         type_garde_id: advancedAssignConfig.type_garde_id,
-        jour_specifique: advancedAssignConfig.jour_specifique,
         recurrence_type: advancedAssignConfig.recurrence_type,
         date_debut: advancedAssignConfig.date_debut,
         date_fin: advancedAssignConfig.date_fin || advancedAssignConfig.date_debut,
-        jours_semaine: advancedAssignConfig.jour_specifique 
-          ? [advancedAssignConfig.jour_specifique] 
-          : advancedAssignConfig.jours_semaine,
+        jours_semaine: advancedAssignConfig.jours_semaine,
         bi_hebdomadaire: advancedAssignConfig.bi_hebdomadaire,
         recurrence_intervalle: advancedAssignConfig.recurrence_intervalle,
         recurrence_frequence: advancedAssignConfig.recurrence_frequence,
