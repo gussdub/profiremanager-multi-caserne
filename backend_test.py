@@ -385,26 +385,26 @@ class FormationDiagnosticTesting:
             self.log_test("Generate Diagnostic Summary", False, f"Summary generation error: {str(e)}")
             return False
 
-    def run_formation_validation_tests(self):
-        """Run the complete Formation Validation Testing"""
-        print("🚀 Starting Formation Creation Validation Testing")
+    def run_formation_diagnostic_tests(self):
+        """Run the complete Formation Diagnostic Testing"""
+        print("🚀 Starting Formation Diagnostic Testing - Shefford Tenant")
         print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"👤 Admin: gussdub@gmail.com / 230685Juin+")
-        print(f"🎯 Objectif: Vérifier les validations de création de formation")
-        print(f"🔍 Test 1: Création SANS compétence (doit échouer)")
-        print(f"🔍 Test 2: Création AVEC compétence invalide (doit échouer)")
-        print(f"🔍 Test 3: Création AVEC compétence valide (doit réussir)")
+        print(f"👤 Admin: admin@firemanager.ca / Admin123!")
+        print(f"🎯 Objectif: Diagnostiquer pourquoi 'PR test' n'apparaît pas dans module Formation")
+        print(f"🔍 Test 1: Récupérer TOUTES les formations (sans filtre)")
+        print(f"🔍 Test 2: Récupérer formations avec filtre année 2025")
+        print(f"🔍 Test 3: Vérifier données Dashboard")
+        print(f"🔍 Test 4: Analyser les différences")
         print("=" * 80)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Get Competences List", self.get_competences_list),
-            ("Formation Creation Without Competence", self.test_formation_creation_without_competence),
-            ("Formation Creation With Invalid Competence", self.test_formation_creation_with_invalid_competence),
-            ("Formation Creation With Valid Competence", self.test_formation_creation_with_valid_competence),
-            ("Verify Formation In List", self.verify_formation_in_list),
-            ("Cleanup Test Formation", self.cleanup_test_formation),
+            ("Get All Formations", self.get_all_formations),
+            ("Get Formations With Year Filter", self.get_formations_with_year_filter),
+            ("Get Dashboard Data", self.get_dashboard_data),
+            ("Analyze Formation Differences", self.analyze_formation_differences),
+            ("Generate Diagnostic Summary", self.generate_diagnostic_summary),
         ]
         
         passed = 0
@@ -421,10 +421,10 @@ class FormationDiagnosticTesting:
         print(f"\n" + "=" * 80)
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
-        # Generate detailed validation report
-        self.generate_validation_report()
+        # Generate detailed diagnostic report
+        self.generate_diagnostic_report()
         
-        return passed >= 5  # Consider success if core validation tests pass
+        return passed >= 4  # Consider success if core diagnostic tests pass
     
     def generate_validation_report(self):
         """Generate detailed formation validation report"""
