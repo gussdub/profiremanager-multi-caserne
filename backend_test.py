@@ -381,87 +381,77 @@ class FormationReportsEndpointTesting:
         
         return passed >= 4  # Consider success if core tests pass
     
-    def generate_diagnostic_report(self):
-        """Generate detailed formation diagnostic report"""
+    def generate_test_report(self):
+        """Generate detailed formation reports endpoints test report"""
         print(f"\n" + "=" * 80)
-        print(f"📋 RAPPORT DIAGNOSTIC - FORMATION SHEFFORD")
+        print(f"📋 RAPPORT DE TEST - ENDPOINTS RAPPORTS FORMATIONS SHEFFORD")
         print("=" * 80)
         
         # Check test results
         auth_success = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
-        all_formations_success = any(r["success"] for r in self.test_results if "Get All Formations" in r["test"])
-        filtered_formations_success = any(r["success"] for r in self.test_results if "Get Formations With Year Filter" in r["test"])
-        dashboard_success = any(r["success"] for r in self.test_results if "Get Dashboard Data" in r["test"])
-        analysis_success = any(r["success"] for r in self.test_results if "Analyze Formation Differences" in r["test"])
+        formations_success = any(r["success"] for r in self.test_results if "Test Formations Endpoint" in r["test"])
+        conformite_success = any(r["success"] for r in self.test_results if "Test Conformité Report Endpoint" in r["test"])
+        dashboard_success = any(r["success"] for r in self.test_results if "Test Dashboard Formations Endpoint" in r["test"])
+        verification_success = any(r["success"] for r in self.test_results if "Verify Endpoints Fix" in r["test"])
         
         print(f"🔐 Authentification admin Shefford: {'✅ Réussie' if auth_success else '❌ Échouée'}")
-        print(f"📚 Récupération toutes formations: {'✅ Réussie' if all_formations_success else '❌ Échouée'}")
-        print(f"🔍 Récupération formations 2025: {'✅ Réussie' if filtered_formations_success else '❌ Échouée'}")
-        print(f"📊 Récupération données Dashboard: {'✅ Réussie' if dashboard_success else '❌ Échouée'}")
-        print(f"🔬 Analyse des différences: {'✅ Réussie' if analysis_success else '❌ Échouée'}")
+        print(f"📚 Endpoint formations principal: {'✅ Réussie' if formations_success else '❌ Échouée'}")
+        print(f"📊 Endpoint conformité (était 500): {'✅ Réussie (200 OK)' if conformite_success else '❌ Échouée'}")
+        print(f"📈 Endpoint dashboard formations: {'✅ Réussie' if dashboard_success else '❌ Échouée'}")
+        print(f"🔧 Vérification correction: {'✅ Réussie' if verification_success else '❌ Échouée'}")
         
         if not auth_success:
-            print(f"\n❌ IMPOSSIBLE DE CONTINUER LE DIAGNOSTIC")
+            print(f"\n❌ IMPOSSIBLE DE CONTINUER LES TESTS")
             print(f"   Cause: Échec de l'authentification avec gussdub@gmail.com / 230685Juin+")
             print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'shefford'")
             return
         
-        print(f"\n🔍 RÉSULTATS DU DIAGNOSTIC:")
+        print(f"\n🔍 RÉSULTATS DES TESTS:")
         print("-" * 60)
         
         # Get detailed results from test logs
-        total_formations = 0
-        formations_2025 = 0
-        pr_test_found = False
-        pr_test_year = None
-        pr_test_in_dashboard = False
+        formations_count = 0
+        test_pr_found = False
+        conformite_status = "Non testé"
+        dashboard_status = "Non testé"
         
         for result in self.test_results:
-            if "Get All Formations" in result["test"] and result["success"]:
+            if "Test Formations Endpoint" in result["test"] and result["success"]:
                 details = result.get("details", {})
-                total_formations = details.get("total_formations", 0)
-                pr_test_found = details.get("pr_test_found", False)
-                if details.get("pr_test_formation"):
-                    pr_test_year = details["pr_test_formation"].get("annee")
+                formations_count = details.get("total_formations", 0)
+                test_pr_found = details.get("test_pr_found", False)
             
-            if "Get Formations With Year Filter" in result["test"] and result["success"]:
-                details = result.get("details", {})
-                formations_2025 = details.get("filtered_formations_2025", 0)
+            if "Test Conformité Report Endpoint" in result["test"]:
+                conformite_status = "200 OK" if result["success"] else f"Erreur: {result.get('message', 'Inconnue')}"
             
-            if "Get Dashboard Data" in result["test"] and result["success"]:
-                details = result.get("details", {})
-                pr_test_in_dashboard = details.get("pr_test_in_dashboard", False)
+            if "Test Dashboard Formations Endpoint" in result["test"]:
+                dashboard_status = "200 OK" if result["success"] else f"Erreur: {result.get('message', 'Inconnue')}"
         
-        print(f"📊 Formations totales dans Shefford: {total_formations}")
-        print(f"📊 Formations avec filtre année 2025: {formations_2025}")
-        print(f"🔍 Formation 'PR test' trouvée: {'✅ Oui' if pr_test_found else '❌ Non'}")
-        if pr_test_found:
-            print(f"📅 Année de 'PR test': {pr_test_year}")
-        print(f"📊 'PR test' visible dans Dashboard: {'✅ Oui' if pr_test_in_dashboard else '❌ Non'}")
+        print(f"📊 Formations trouvées pour 2025: {formations_count}")
+        print(f"🔍 Formation 'test PR' trouvée: {'✅ Oui' if test_pr_found else '❌ Non'}")
+        print(f"📊 Endpoint conformité: {conformite_status}")
+        print(f"📈 Endpoint dashboard: {dashboard_status}")
         
-        print(f"\n🎯 DIAGNOSTIC FINAL:")
+        print(f"\n🎯 RÉSULTAT FINAL:")
         print("-" * 60)
         
-        if pr_test_found and pr_test_year != 2025 and pr_test_in_dashboard:
-            print("🎯 PROBLÈME IDENTIFIÉ!")
-            print(f"   ❌ Formation 'PR test' a l'année '{pr_test_year}' mais le module Formation filtre pour 2025")
-            print(f"   ✅ Dashboard l'affiche car il ne filtre PAS par année")
-            print(f"   ❌ Module Formation ne l'affiche PAS car il filtre par année")
-            print(f"\n💡 SOLUTIONS POSSIBLES:")
-            print(f"   1. Modifier l'année de 'PR test' de '{pr_test_year}' vers '2025'")
-            print(f"   2. Modifier le frontend pour afficher les formations de l'année '{pr_test_year}'")
-            print(f"   3. Modifier le filtre par défaut du module Formation")
-        elif not pr_test_found:
-            print("❌ FORMATION 'PR TEST' NON TROUVÉE")
-            print("   La formation n'existe pas dans la base de données")
-            print("   Vérifier le nom exact ou l'existence de la formation")
-        elif pr_test_found and pr_test_year == 2025:
-            print("⚠️ PROBLÈME DIFFÉRENT")
-            print("   Formation 'PR test' a bien l'année 2025")
-            print("   Le problème vient d'ailleurs (filtre frontend, logique backend, etc.)")
+        if conformite_success and dashboard_success and formations_success:
+            print("✅ CORRECTION RÉUSSIE!")
+            print(f"   ✅ Endpoint conformité: 200 OK (était 500 avant)")
+            print(f"   ✅ Endpoint dashboard: 200 OK avec KPIs")
+            print(f"   ✅ Endpoint formations: 200 OK avec {formations_count} formations")
+            print(f"   ✅ Parsing de dates corrigé avec try/catch")
+            print(f"\n💡 STATUT:")
+            print(f"   Le frontend pourra maintenant charger toutes les données sans erreur 500")
+            print(f"   Les rapports formations sont fonctionnels")
+        elif not conformite_success or not dashboard_success:
+            print("❌ CORRECTION INCOMPLÈTE")
+            print(f"   Endpoint conformité: {conformite_status}")
+            print(f"   Endpoint dashboard: {dashboard_status}")
+            print(f"   Des erreurs 500 peuvent encore survenir")
         else:
-            print("❓ DIAGNOSTIC INCOMPLET")
-            print("   Impossible de déterminer la cause exacte")
+            print("⚠️ TESTS PARTIELS")
+            print("   Certains tests ont échoué")
             print("   Vérifier les logs détaillés ci-dessus")
         
         print("=" * 80)
