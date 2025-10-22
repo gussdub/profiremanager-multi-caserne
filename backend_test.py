@@ -303,38 +303,41 @@ class FormationReportsEndpointTesting:
             self.log_test("Verify Endpoints Fix", False, f"Verification error: {str(e)}")
             return False
 
-    def generate_diagnostic_summary(self):
-        """Generate a comprehensive diagnostic summary"""
+    def generate_test_summary(self):
+        """Generate a comprehensive test summary"""
         try:
-            print(f"📋 Generating diagnostic summary")
+            print(f"📋 Generating test summary")
             
             # Collect key findings
             summary = {
                 "authentication_success": any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"]),
-                "total_formations": len(self.formations_all) if self.formations_all else 0,
-                "formations_2025": len(self.formations_2025) if self.formations_2025 else 0,
-                "pr_test_found": self.pr_test_formation is not None,
-                "pr_test_year": self.pr_test_formation.get("annee") if self.pr_test_formation else None,
-                "dashboard_working": self.dashboard_data is not None,
-                "issue_root_cause": None,
-                "recommended_solution": None
+                "formations_endpoint_success": any(r["success"] for r in self.test_results if "Test Formations Endpoint" in r["test"]),
+                "conformite_report_success": any(r["success"] for r in self.test_results if "Test Conformité Report Endpoint" in r["test"]),
+                "dashboard_formations_success": any(r["success"] for r in self.test_results if "Test Dashboard Formations Endpoint" in r["test"]),
+                "all_tests_passed": True,
+                "fix_status": "Date parsing fix successfully applied",
+                "endpoints_status": "All formation report endpoints working correctly"
             }
             
-            # Determine root cause and solution
-            if summary["pr_test_found"] and summary["pr_test_year"] != 2025:
-                summary["issue_root_cause"] = f"Formation 'PR test' has year '{summary['pr_test_year']}' but module filters for 2025"
-                summary["recommended_solution"] = f"Either update formation year to 2025 or modify frontend to show formations from year {summary['pr_test_year']}"
-            elif not summary["pr_test_found"]:
-                summary["issue_root_cause"] = "Formation 'PR test' not found in database"
-                summary["recommended_solution"] = "Verify formation exists or check formation name"
+            # Check if all tests passed
+            summary["all_tests_passed"] = (
+                summary["authentication_success"] and 
+                summary["formations_endpoint_success"] and 
+                summary["conformite_report_success"] and 
+                summary["dashboard_formations_success"]
+            )
             
-            self.log_test("Generate Diagnostic Summary", True, 
-                        f"✅ Diagnostic summary generated", 
+            if not summary["all_tests_passed"]:
+                summary["fix_status"] = "Some endpoints still failing - may need additional investigation"
+                summary["endpoints_status"] = "Not all endpoints working correctly"
+            
+            self.log_test("Generate Test Summary", True, 
+                        f"✅ Test summary generated - All tests passed: {summary['all_tests_passed']}", 
                         summary)
             return True
                 
         except Exception as e:
-            self.log_test("Generate Diagnostic Summary", False, f"Summary generation error: {str(e)}")
+            self.log_test("Generate Test Summary", False, f"Summary generation error: {str(e)}")
             return False
 
     def run_formation_diagnostic_tests(self):
