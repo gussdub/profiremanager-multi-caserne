@@ -3666,6 +3666,21 @@ async def create_formation(tenant_slug: str, formation: FormationCreate, current
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Validation: Vérifier que la compétence existe
+    if not formation.competence_id or not formation.competence_id.strip():
+        raise HTTPException(status_code=400, detail="La compétence associée est obligatoire")
+    
+    competence = await db.competences.find_one({
+        "id": formation.competence_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not competence:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Compétence non trouvée. Veuillez créer la compétence dans Paramètres > Compétences avant de créer la formation."
+        )
+    
     formation_dict = formation.dict()
     formation_dict["tenant_id"] = tenant.id
     formation_dict["places_restantes"] = formation.places_max
