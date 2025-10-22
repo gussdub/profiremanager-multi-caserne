@@ -86,7 +86,7 @@ class FormationDiagnosticTesting:
         """Test admin authentication for Shefford tenant - specifically admin@firemanager.ca / Admin123!"""
         try:
             # Use the specific credentials mentioned in the review request
-            admin_credentials = {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"}
+            admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
             
             print(f"🔑 Authenticating as Shefford admin: {admin_credentials['email']}")
             
