@@ -528,7 +528,7 @@ class FormationValidationTesting:
         print("=" * 80)
 
 if __name__ == "__main__":
-    verification = DashboardCorrectionsVerification()
-    success = verification.run_corrections_verification()
+    testing = FormationValidationTesting()
+    success = testing.run_formation_validation_tests()
     
     sys.exit(0 if success else 1)
