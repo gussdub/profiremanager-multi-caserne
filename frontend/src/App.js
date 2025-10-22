@@ -4762,9 +4762,8 @@ const Planning = () => {
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
     user_id: '',
     type_garde_id: '',
-    jour_specifique: '', // jour de la semaine spécifique pour la récurrence
     recurrence_type: 'unique', // unique, hebdomadaire, bihebdomadaire, mensuelle, annuelle, personnalisee
-    jours_semaine: [], // pour récurrence hebdomadaire
+    jours_semaine: [], // pour récurrence hebdomadaire/bihebdomadaire (sélection multiple)
     bi_hebdomadaire: false, // une semaine sur deux (obsolète, utilisé par bihebdomadaire maintenant)
     recurrence_intervalle: 1, // pour personnalisée
     recurrence_frequence: 'jours', // pour personnalisée: jours, semaines, mois, ans
