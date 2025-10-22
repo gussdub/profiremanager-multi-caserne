@@ -115,63 +115,55 @@ class FormationReportsEndpointTesting:
             self.log_test("Admin Authentication", False, f"Admin login error: {str(e)}")
             return False
 
-    def get_all_formations(self):
-        """Get ALL formations from GET /api/shefford/formations (without filter)"""
+    def test_formations_endpoint(self):
+        """Test GET /api/shefford/formations?annee=2025 - should return formations including 'test PR'"""
         try:
             if not self.admin_token:
-                self.log_test("Get All Formations", False, "No admin token available")
+                self.log_test("Test Formations Endpoint", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"📚 Retrieving ALL formations from GET /api/{TENANT_SLUG}/formations")
+            print(f"📚 Testing formations endpoint: GET /api/{TENANT_SLUG}/formations?annee=2025")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations?annee=2025")
             
             if response.status_code == 200:
                 try:
-                    self.formations_all = response.json()
+                    formations = response.json()
                     
-                    # Look for "PR test" or "test PR" formation
-                    pr_test_found = False
-                    for formation in self.formations_all:
+                    # Look for "test PR" formation
+                    test_pr_found = False
+                    test_pr_formation = None
+                    for formation in formations:
                         nom = formation.get("nom", "").lower()
-                        if "pr test" in nom or "test pr" in nom:
-                            self.pr_test_formation = formation
-                            pr_test_found = True
+                        if "test pr" in nom or "pr test" in nom:
+                            test_pr_found = True
+                            test_pr_formation = formation
                             break
                     
-                    # Analyze year values
-                    year_analysis = {}
-                    for formation in self.formations_all:
-                        annee = formation.get("annee", "Non définie")
-                        if annee not in year_analysis:
-                            year_analysis[annee] = 0
-                        year_analysis[annee] += 1
-                    
-                    self.log_test("Get All Formations", True, 
-                                f"✅ Retrieved {len(self.formations_all)} formations total", 
+                    self.log_test("Test Formations Endpoint", True, 
+                                f"✅ Formations endpoint returned {len(formations)} formations for 2025", 
                                 {
-                                    "total_formations": len(self.formations_all),
-                                    "pr_test_found": pr_test_found,
-                                    "pr_test_formation": self.pr_test_formation,
-                                    "year_analysis": year_analysis,
-                                    "sample_formations": [{"nom": f.get("nom"), "annee": f.get("annee")} for f in self.formations_all[:5]]
+                                    "total_formations": len(formations),
+                                    "test_pr_found": test_pr_found,
+                                    "test_pr_formation": test_pr_formation,
+                                    "formations_sample": [{"nom": f.get("nom"), "annee": f.get("annee")} for f in formations[:3]]
                                 })
                     return True
                     
                 except json.JSONDecodeError as e:
-                    self.log_test("Get All Formations", False, f"❌ Invalid JSON in formations response: {str(e)}")
+                    self.log_test("Test Formations Endpoint", False, f"❌ Invalid JSON in formations response: {str(e)}")
                     return False
                     
             else:
-                self.log_test("Get All Formations", False, 
+                self.log_test("Test Formations Endpoint", False, 
                             f"❌ Formations endpoint failed with status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get All Formations", False, f"Formations retrieval error: {str(e)}")
+            self.log_test("Test Formations Endpoint", False, f"Formations endpoint error: {str(e)}")
             return False
 
     def get_formations_with_year_filter(self):
