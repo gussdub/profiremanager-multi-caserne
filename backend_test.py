@@ -377,103 +377,35 @@ class FormationValidationTesting:
             self.log_test("Verify Formation In List", False, f"Formation verification error: {str(e)}")
             return False
     
-    def verify_bug_corrections(self):
-        """Verify that the 2 specific bugs have been corrected"""
+    def cleanup_test_formation(self):
+        """Clean up the test formation created during testing"""
         try:
-            if not self.dashboard_data:
-                self.log_test("Verify Bug Corrections", False, "Missing dashboard data for verification")
+            if not self.admin_token or not self.created_formation_id:
+                self.log_test("Cleanup Test Formation", True, "No formation to clean up")
+                return True
+            
+            admin_session = requests.Session()
+            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            
+            print(f"🧹 Cleaning up test formation: {self.created_formation_id}")
+            
+            response = admin_session.delete(f"{self.base_url}/{TENANT_SLUG}/formations/{self.created_formation_id}")
+            
+            if response.status_code in [200, 204]:
+                self.log_test("Cleanup Test Formation", True, 
+                            f"✅ Test formation cleaned up successfully", 
+                            {
+                                "formation_id": self.created_formation_id,
+                                "status_code": response.status_code
+                            })
+                return True
+            else:
+                self.log_test("Cleanup Test Formation", False, 
+                            f"⚠️ Could not clean up test formation: {response.status_code} - {response.text}")
                 return False
-            
-            print(f"🔍 Vérification des corrections spécifiques des 2 bugs...")
-            
-            # Extract dashboard metrics
-            section_generale = self.dashboard_data.get("section_generale", {})
-            section_personnelle = self.dashboard_data.get("section_personnelle", {})
-            statistiques_mois = section_generale.get("statistiques_mois", {})
-            
-            # Bug #1: total_assignations should now be ~82 (not 0)
-            total_assignations = statistiques_mois.get("total_assignations", 0)
-            bug1_fixed = total_assignations > 0  # Should not be 0 anymore
-            
-            # Bug #2: formations_a_venir should now contain at least 1 formation
-            formations_a_venir = section_personnelle.get("formations_a_venir", [])
-            formations_count = len(formations_a_venir)
-            bug2_fixed = formations_count > 0  # Should not be empty anymore
-            
-            # Check for specific formation "Désincarcération de 2 véhicules" on 2026-04-22
-            desincarceration_found = False
-            for formation in formations_a_venir:
-                if ("Désincarcération" in formation.get("nom", "") and 
-                    formation.get("date_debut", "").startswith("2026-04-22")):
-                    desincarceration_found = True
-                    break
-            
-            # Verify other statistics remain correct (unchanged)
-            total_personnel_actif = statistiques_mois.get("total_personnel_actif", 0)
-            formations_ce_mois = statistiques_mois.get("formations_ce_mois", 0)
-            demandes_conges_en_attente = section_generale.get("demandes_conges_en_attente", 0)
-            
-            # Generate verification results
-            corrections_verified = []
-            
-            if bug1_fixed:
-                corrections_verified.append(f"✅ Bug #1 résolu: total_assignations = {total_assignations} (attendu ~82, n'est plus 0)")
-            else:
-                corrections_verified.append(f"❌ Bug #1 NON résolu: total_assignations = {total_assignations} (toujours 0)")
-            
-            if bug2_fixed:
-                corrections_verified.append(f"✅ Bug #2 résolu: formations_a_venir contient {formations_count} formation(s)")
-                if desincarceration_found:
-                    corrections_verified.append(f"✅ Formation spécifique trouvée: 'Désincarcération de 2 véhicules' le 2026-04-22")
-                else:
-                    corrections_verified.append(f"⚠️ Formation spécifique 'Désincarcération de 2 véhicules' non trouvée dans la liste")
-            else:
-                corrections_verified.append(f"❌ Bug #2 NON résolu: formations_a_venir = {formations_count} (toujours vide)")
-            
-            # Verify unchanged statistics
-            corrections_verified.append(f"📊 Statistiques inchangées:")
-            corrections_verified.append(f"   - total_personnel_actif: {total_personnel_actif} (attendu: 15)")
-            corrections_verified.append(f"   - formations_ce_mois: {formations_ce_mois} (attendu: 0)")
-            corrections_verified.append(f"   - demandes_conges_en_attente: {demandes_conges_en_attente} (attendu: 0)")
-            
-            success = bug1_fixed and bug2_fixed
-            message = f"{'✅ Les 2 bugs sont corrigés' if success else f'❌ {2 - (bug1_fixed + bug2_fixed)} bug(s) restant(s)'}"
-            
-            self.log_test("Verify Bug Corrections", success, message, 
-                        {
-                            "bug1_total_assignations": {
-                                "value": total_assignations,
-                                "fixed": bug1_fixed,
-                                "expected": "~82 (pas 0)"
-                            },
-                            "bug2_formations_a_venir": {
-                                "count": formations_count,
-                                "fixed": bug2_fixed,
-                                "desincarceration_found": desincarceration_found,
-                                "formations_list": [f.get("nom", "Unknown") for f in formations_a_venir[:3]]
-                            },
-                            "unchanged_stats": {
-                                "total_personnel_actif": total_personnel_actif,
-                                "formations_ce_mois": formations_ce_mois,
-                                "demandes_conges_en_attente": demandes_conges_en_attente
-                            },
-                            "corrections_summary": corrections_verified
-                        })
-            
-            # Store results for final report
-            self.corrections_results = {
-                "bug1_fixed": bug1_fixed,
-                "bug2_fixed": bug2_fixed,
-                "total_assignations": total_assignations,
-                "formations_count": formations_count,
-                "desincarceration_found": desincarceration_found,
-                "corrections_verified": corrections_verified
-            }
-            
-            return True
                 
         except Exception as e:
-            self.log_test("Verify Bug Corrections", False, f"Bug verification error: {str(e)}")
+            self.log_test("Cleanup Test Formation", False, f"Cleanup error: {str(e)}")
             return False
 
     def analyze_discrepancy_cause(self, metric, dashboard_value, real_value):
