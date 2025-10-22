@@ -390,7 +390,7 @@ class FormationDiagnosticTesting:
         print("🚀 Starting Formation Diagnostic Testing - Shefford Tenant")
         print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
-        print(f"👤 Admin: admin@firemanager.ca / admin123")
+        print(f"👤 Admin: gussdub@gmail.com / 230685Juin+")
         print(f"🎯 Objectif: Diagnostiquer pourquoi 'PR test' n'apparaît pas dans module Formation")
         print(f"🔍 Test 1: Récupérer TOUTES les formations (sans filtre)")
         print(f"🔍 Test 2: Récupérer formations avec filtre année 2025")
