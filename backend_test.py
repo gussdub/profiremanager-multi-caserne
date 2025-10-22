@@ -1,40 +1,28 @@
 #!/usr/bin/env python3
 """
-ProFireManager Backend API Testing Suite - DASHBOARD DEMO CORRECTIONS VERIFICATION
+ProFireManager Backend API Testing Suite - FORMATION CREATION VALIDATION TESTING
 
 CONTEXTE:
-- Corrections appliquées pour résoudre 2 bugs critiques:
-  1. total_assignations affichait 0 au lieu de 82 (parsing de dates amélioré)
-  2. formations_a_venir affichait 0 au lieu de 1 (filtre élargi pour toutes les formations futures)
+- Deux bugs ont été corrigés pour la création de formation dans le tenant demo:
+  1. Validation frontend ajoutée pour vérifier que competence_id est renseigné
+  2. Validation backend ajoutée pour vérifier que la compétence existe avant de créer la formation
 
 TESTS À EFFECTUER:
-1. Se connecter comme admin demo (gussdub@gmail.com / 230685Juin+)
-2. Tester GET /api/demo/dashboard/donnees-completes
-3. Vérifier spécifiquement les valeurs corrigées:
-   - section_generale.statistiques_mois.total_assignations DOIT maintenant afficher 82 (ou un nombre proche, pas 0)
-   - section_personnelle.formations_a_venir DOIT maintenant contenir au moins 1 formation (incluant "Désincarcération de 2 véhicules" le 2026-04-22)
-
-4. Comparer AVANT/APRÈS:
-   **AVANT (bug):**
-   - total_assignations: 0
-   - formations_a_venir: []
-   
-   **APRÈS (corrigé):**
-   - total_assignations: 82
-   - formations_a_venir: [{"id": "...", "nom": "Désincarcération de 2 véhicules", "date_debut": "2026-04-22", ...}]
-
-5. Vérifier que les autres statistiques restent correctes:
-   - total_personnel_actif: 15 (inchangé)
-   - formations_ce_mois: 0 (inchangé)
-   - demandes_conges_en_attente: 0 (inchangé)
+1. Login admin demo (gussdub@gmail.com / 230685Juin+)
+2. Vérifier que les compétences existent: GET /api/demo/competences
+3. Test création formation SANS compétence (doit échouer):
+   POST /api/demo/formations avec competence_id=""
+   - Devrait retourner 400 Bad Request avec message "La compétence associée est obligatoire"
+4. Test création formation AVEC compétence invalide (doit échouer):
+   POST /api/demo/formations avec competence_id="fake-id-123"
+   - Devrait retourner 404 avec message mentionnant "Compétence non trouvée"
+5. Test création formation AVEC compétence valide (doit réussir):
+   POST /api/demo/formations avec competence_id=<id d'une compétence existante>
+   - Devrait retourner 200 OK avec la formation créée
+   - Vérifier que la formation apparaît dans GET /api/demo/formations
 
 OBJECTIF:
-Confirmer que les 2 bugs sont maintenant résolus et que le dashboard affiche les données correctes synchronisées avec le reste de l'application.
-
-Format attendu:
-✅ Bug #1 résolu: total_assignations = X (attendu ~82)
-✅ Bug #2 résolu: formations_a_venir contient Y formations
-❌ ou liste des problèmes restants
+Confirmer que les validations fonctionnent correctement et qu'on ne peut plus créer de formations sans compétence valide.
 """
 
 import requests
