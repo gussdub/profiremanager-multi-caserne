@@ -321,52 +321,60 @@ class FormationValidationTesting:
             self.log_test("Formation Creation With Valid Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
-    def get_real_remplacements_data(self):
-        """Get real remplacements data from GET /api/demo/remplacements"""
+    def verify_formation_in_list(self):
+        """Verify that the created formation appears in GET /api/demo/formations"""
         try:
             if not self.admin_token:
-                self.log_test("Get Real Remplacements Data", False, "No admin token available")
+                self.log_test("Verify Formation In List", False, "No admin token available")
+                return False
+            
+            if not self.created_formation_id:
+                self.log_test("Verify Formation In List", False, "No created formation ID to verify")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"🔄 Getting real remplacements data from GET /api/{TENANT_SLUG}/remplacements")
+            print(f"🔍 Verifying created formation appears in formations list")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/remplacements")
+            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
             
             if response.status_code == 200:
                 try:
-                    remplacements = response.json()
+                    formations = response.json()
                     
-                    # Count pending replacement requests
-                    pending_remplacements = [r for r in remplacements if r.get("statut", "").lower() == "en_attente"]
+                    # Look for our created formation
+                    created_formation_found = False
+                    for formation in formations:
+                        if formation.get("id") == self.created_formation_id:
+                            created_formation_found = True
+                            break
                     
-                    self.real_data["remplacements"] = {
-                        "total_remplacements": len(remplacements),
-                        "pending_remplacements": len(pending_remplacements),
-                        "remplacements_list": remplacements
-                    }
-                    
-                    self.log_test("Get Real Remplacements Data", True, 
-                                f"✅ Retrieved {len(remplacements)} remplacements ({len(pending_remplacements)} pending)", 
-                                {
-                                    "total_remplacements": len(remplacements),
-                                    "pending_remplacements": len(pending_remplacements)
-                                })
-                    return True
+                    if created_formation_found:
+                        self.log_test("Verify Formation In List", True, 
+                                    f"✅ Created formation found in formations list", 
+                                    {
+                                        "formation_id": self.created_formation_id,
+                                        "total_formations": len(formations),
+                                        "formation_found": True
+                                    })
+                        return True
+                    else:
+                        self.log_test("Verify Formation In List", False, 
+                                    f"❌ Created formation not found in formations list")
+                        return False
                     
                 except json.JSONDecodeError:
-                    self.log_test("Get Real Remplacements Data", False, f"❌ Invalid JSON response from remplacements endpoint")
+                    self.log_test("Verify Formation In List", False, f"❌ Invalid JSON response from formations endpoint")
                     return False
                     
             else:
-                self.log_test("Get Real Remplacements Data", False, 
-                            f"❌ Could not access remplacements endpoint: {response.status_code} - {response.text}")
+                self.log_test("Verify Formation In List", False, 
+                            f"❌ Could not access formations endpoint: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Real Remplacements Data", False, f"Get real remplacements data error: {str(e)}")
+            self.log_test("Verify Formation In List", False, f"Formation verification error: {str(e)}")
             return False
     
     def verify_bug_corrections(self):
