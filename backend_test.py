@@ -160,53 +160,55 @@ class FormationValidationTesting:
             self.log_test("Get Competences List", False, f"Competences retrieval error: {str(e)}")
             return False
 
-    def get_real_users_data(self):
-        """Get real users data from GET /api/demo/users"""
+    def test_formation_creation_without_competence(self):
+        """Test formation creation WITHOUT competence - should fail with 400 Bad Request"""
         try:
             if not self.admin_token:
-                self.log_test("Get Real Users Data", False, "No admin token available")
+                self.log_test("Formation Creation Without Competence", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            print(f"👥 Getting real users data from GET /api/{TENANT_SLUG}/users")
+            print(f"❌ Testing formation creation WITHOUT competence (should fail)")
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/users")
+            formation_data = {
+                "nom": "Test Formation Sans Competence",
+                "competence_id": "",  # Empty competence_id - should trigger validation error
+                "date_debut": "2025-12-01",
+                "date_fin": "2025-12-01",  
+                "heure_debut": "09:00",
+                "heure_fin": "17:00",
+                "duree_heures": 8,
+                "places_max": 20,
+                "annee": 2025
+            }
             
-            if response.status_code == 200:
-                try:
-                    users = response.json()
-                    
-                    # Count active personnel
-                    active_users = [u for u in users if u.get("statut", "").lower() == "actif"]
-                    
-                    self.real_data["users"] = {
-                        "total_users": len(users),
-                        "active_users": len(active_users),
-                        "users_list": users
-                    }
-                    
-                    self.log_test("Get Real Users Data", True, 
-                                f"✅ Retrieved {len(users)} users ({len(active_users)} active)", 
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
+            
+            # Should return 400 Bad Request
+            if response.status_code == 400:
+                response_text = response.text
+                if "compétence" in response_text.lower() and "obligatoire" in response_text.lower():
+                    self.log_test("Formation Creation Without Competence", True, 
+                                f"✅ Correctly rejected formation without competence: {response.status_code}", 
                                 {
-                                    "total_users": len(users),
-                                    "active_users": len(active_users),
-                                    "sample_users": [{"email": u.get("email"), "statut": u.get("statut")} for u in users[:3]]
+                                    "status_code": response.status_code,
+                                    "response_message": response_text,
+                                    "validation_working": True
                                 })
                     return True
-                    
-                except json.JSONDecodeError:
-                    self.log_test("Get Real Users Data", False, f"❌ Invalid JSON response from users endpoint")
+                else:
+                    self.log_test("Formation Creation Without Competence", False, 
+                                f"❌ Wrong error message for missing competence: {response_text}")
                     return False
-                    
             else:
-                self.log_test("Get Real Users Data", False, 
-                            f"❌ Could not access users endpoint: {response.status_code} - {response.text}")
+                self.log_test("Formation Creation Without Competence", False, 
+                            f"❌ Formation creation should have failed but got status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Real Users Data", False, f"Get real users data error: {str(e)}")
+            self.log_test("Formation Creation Without Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
     def get_real_planning_data(self):
