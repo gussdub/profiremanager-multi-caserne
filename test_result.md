@@ -319,6 +319,21 @@ backend:
         agent: "main"
         comment: "NEW FEATURE - Système complet de remplacement automatisé implémenté. Fonctionnalités: 1) TypeGarde enrichi avec 'competences_requises' pour définir les formations/compétences nécessaires, 2) DemandeRemplacement enrichi avec: statut (en_attente, en_cours, accepte, expiree, annulee), priorite (urgent ≤24h, normal >24h calculée auto), remplacant_id, tentatives_historique (historique complet des contacts), remplacants_contactes_ids (liste active), date_prochaine_tentative, nombre_tentatives. 3) Algorithme de recherche trouver_remplacants_potentiels() avec filtres: compétences requises, grade équivalent/supérieur, pas d'indisponibilité, bonus disponibilité déclarée, tri par ancienneté (date_embauche). 4) Système de gestion: lancer_recherche_remplacant() contacte remplaçant(s) selon mode_notification (un_par_un/multiple), respecte delai_attente_heures, gère nombre_simultane, envoie notifications push ciblées. 5) Fonctions accepter_remplacement() et refuser_remplacement() avec: vérification ancienneté si acceptations multiples, mise à jour automatique planning (assignations), notifications demandeur/superviseurs/autres remplaçants. 6) Job périodique verifier_et_traiter_timeouts() qui s'exécute toutes les minutes, marque tentatives expirées, relance recherche automatiquement. 7) Endpoints: POST /remplacements (crée + lance recherche auto), GET /remplacements/propositions (liste pour remplaçant), PUT /remplacements/{id}/accepter, PUT /remplacements/{id}/refuser, DELETE /remplacements/{id} (annuler). 8) Mise à jour planning automatique: change user_id dans assignations, ajoute est_remplacement=true et demandeur_original_id. Le système gère le flux complet de A à Z sans intervention manuelle, respecte tous les critères et délais, notifie toutes les parties concernées. NEEDS COMPREHENSIVE BACKEND TESTING."
 
+  - task: "Diagnostic Formation Shefford - Filtre Année 2025"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "DIAGNOSTIC REQUEST - Formation 'PR test' visible dans Dashboard mais pas dans module Formation (tenant shefford). Problème rapporté: Formation visible dans Dashboard mais aucune formation visible dans module Formation avec année 2025 sélectionnée. Tests à effectuer: 1) Login admin shefford (gussdub@gmail.com / 230685Juin+), 2) GET /api/shefford/formations (sans filtre), 3) GET /api/shefford/formations?annee=2025 (avec filtre), 4) GET /api/shefford/dashboard/donnees-completes (données Dashboard), 5) Analyser différences entre Dashboard et module Formation."
+      - working: true
+        agent: "testing"
+        comment: "✅ DIAGNOSTIC COMPLET - BACKEND FONCTIONNE CORRECTEMENT! Comprehensive diagnostic completed successfully with all 6/6 tests passed: 1) ✅ Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials for Shefford tenant, 2) ✅ All Formations: GET /api/shefford/formations returns 2 formations including 'test PR' (année: 2025), 3) ✅ Filtered Formations 2025: GET /api/shefford/formations?annee=2025 returns same 2 formations including 'test PR' (année: 2025), 4) ✅ Dashboard Data: GET /api/shefford/dashboard/donnees-completes shows 'test PR' in formations_a_venir, 5) ✅ Analysis: Formation 'test PR' found with correct year 2025, appears in both filtered and unfiltered results, 6) ✅ Backend Year Filter: Working correctly - both endpoints return identical results. CONCLUSION: Le problème N'EST PAS dans le backend. L'API /formations et /formations?annee=2025 retournent les mêmes formations. La formation 'test PR' existe avec année 2025 et est correctement filtrée. Le problème vient du FRONTEND - soit l'appel API incorrect, soit logique de filtrage frontend, soit bug d'affichage des résultats."
+
   - task: "Diagnostic Guillaume Dubeau - Mon Profil 404 Error"
     implemented: true
     working: false
