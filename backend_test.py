@@ -351,91 +351,38 @@ class FormationDiagnosticTesting:
             self.log_test("Analyze Formation Differences", False, f"Analysis error: {str(e)}")
             return False
 
-    def verify_formation_in_list(self):
-        """Verify that the created formation appears in GET /api/demo/formations"""
+    def generate_diagnostic_summary(self):
+        """Generate a comprehensive diagnostic summary"""
         try:
-            if not self.admin_token:
-                self.log_test("Verify Formation In List", False, "No admin token available")
-                return False
+            print(f"📋 Generating diagnostic summary")
             
-            if not self.created_formation_id:
-                self.log_test("Verify Formation In List", False, "No created formation ID to verify")
-                return False
+            # Collect key findings
+            summary = {
+                "authentication_success": any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"]),
+                "total_formations": len(self.formations_all) if self.formations_all else 0,
+                "formations_2025": len(self.formations_2025) if self.formations_2025 else 0,
+                "pr_test_found": self.pr_test_formation is not None,
+                "pr_test_year": self.pr_test_formation.get("annee") if self.pr_test_formation else None,
+                "dashboard_working": self.dashboard_data is not None,
+                "issue_root_cause": None,
+                "recommended_solution": None
+            }
             
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
+            # Determine root cause and solution
+            if summary["pr_test_found"] and summary["pr_test_year"] != 2025:
+                summary["issue_root_cause"] = f"Formation 'PR test' has year '{summary['pr_test_year']}' but module filters for 2025"
+                summary["recommended_solution"] = f"Either update formation year to 2025 or modify frontend to show formations from year {summary['pr_test_year']}"
+            elif not summary["pr_test_found"]:
+                summary["issue_root_cause"] = "Formation 'PR test' not found in database"
+                summary["recommended_solution"] = "Verify formation exists or check formation name"
             
-            print(f"🔍 Verifying created formation appears in formations list")
-            
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/formations")
-            
-            if response.status_code == 200:
-                try:
-                    formations = response.json()
-                    
-                    # Look for our created formation
-                    created_formation_found = False
-                    for formation in formations:
-                        if formation.get("id") == self.created_formation_id:
-                            created_formation_found = True
-                            break
-                    
-                    if created_formation_found:
-                        self.log_test("Verify Formation In List", True, 
-                                    f"✅ Created formation found in formations list", 
-                                    {
-                                        "formation_id": self.created_formation_id,
-                                        "total_formations": len(formations),
-                                        "formation_found": True
-                                    })
-                        return True
-                    else:
-                        self.log_test("Verify Formation In List", False, 
-                                    f"❌ Created formation not found in formations list")
-                        return False
-                    
-                except json.JSONDecodeError:
-                    self.log_test("Verify Formation In List", False, f"❌ Invalid JSON response from formations endpoint")
-                    return False
-                    
-            else:
-                self.log_test("Verify Formation In List", False, 
-                            f"❌ Could not access formations endpoint: {response.status_code} - {response.text}")
-                return False
+            self.log_test("Generate Diagnostic Summary", True, 
+                        f"✅ Diagnostic summary generated", 
+                        summary)
+            return True
                 
         except Exception as e:
-            self.log_test("Verify Formation In List", False, f"Formation verification error: {str(e)}")
-            return False
-    
-    def cleanup_test_formation(self):
-        """Clean up the test formation created during testing"""
-        try:
-            if not self.admin_token or not self.created_formation_id:
-                self.log_test("Cleanup Test Formation", True, "No formation to clean up")
-                return True
-            
-            admin_session = requests.Session()
-            admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
-            
-            print(f"🧹 Cleaning up test formation: {self.created_formation_id}")
-            
-            response = admin_session.delete(f"{self.base_url}/{TENANT_SLUG}/formations/{self.created_formation_id}")
-            
-            if response.status_code in [200, 204]:
-                self.log_test("Cleanup Test Formation", True, 
-                            f"✅ Test formation cleaned up successfully", 
-                            {
-                                "formation_id": self.created_formation_id,
-                                "status_code": response.status_code
-                            })
-                return True
-            else:
-                self.log_test("Cleanup Test Formation", False, 
-                            f"⚠️ Could not clean up test formation: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Cleanup Test Formation", False, f"Cleanup error: {str(e)}")
+            self.log_test("Generate Diagnostic Summary", False, f"Summary generation error: {str(e)}")
             return False
 
     def run_formation_validation_tests(self):
