@@ -6490,38 +6490,6 @@ const Planning = () => {
                   </div>
                 )}
 
-                {/* Section 5: Jours de semaine (si récurrence hebdomadaire ou bihebdomadaire) */}
-                {(advancedAssignConfig.recurrence_type === 'hebdomadaire' || advancedAssignConfig.recurrence_type === 'bihebdomadaire') && (
-                  <div className="assign-section">
-                    <h4>📋 Jours de la semaine</h4>
-                    <div className="jours-selection">
-                      {[
-                        { value: 'monday', label: 'Lundi' },
-                        { value: 'tuesday', label: 'Mardi' },
-                        { value: 'wednesday', label: 'Mercredi' },
-                        { value: 'thursday', label: 'Jeudi' },
-                        { value: 'friday', label: 'Vendredi' },
-                        { value: 'saturday', label: 'Samedi' },
-                        { value: 'sunday', label: 'Dimanche' }
-                      ].map(jour => (
-                        <label key={jour.value} className="jour-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={advancedAssignConfig.jours_semaine.includes(jour.value)}
-                            onChange={(e) => {
-                              const updatedJours = e.target.checked
-                                ? [...advancedAssignConfig.jours_semaine, jour.value]
-                                : advancedAssignConfig.jours_semaine.filter(j => j !== jour.value);
-                              setAdvancedAssignConfig({...advancedAssignConfig, jours_semaine: updatedJours});
-                            }}
-                          />
-                          <span>{jour.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Section 6: Résumé de l'assignation */}
                 <div className="assign-section">
                   <h4>📊 Résumé de l'assignation</h4>
