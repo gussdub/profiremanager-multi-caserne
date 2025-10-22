@@ -46,14 +46,14 @@ import time
 # Configuration - REAL PRODUCTION URLs
 BASE_URL = "https://demo-dashboard-1.preview.emergentagent.com/api"
 
-# Test Configuration for Demo tenant
-TENANT_SLUG = "demo"
+# Test Configuration for Shefford tenant
+TENANT_SLUG = "shefford"
 
-# Dashboard Testing Configuration
-# Using existing users in MongoDB Atlas production database for tenant "demo"
-# Authentication: admin@firemanager.ca or any valid credentials for demo tenant
+# Formation Diagnostic Configuration
+# Using existing users in MongoDB Atlas production database for tenant "shefford"
+# Authentication: admin@firemanager.ca / Admin123!
 
-class FormationValidationTesting:
+class FormationDiagnosticTesting:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
