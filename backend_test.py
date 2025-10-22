@@ -201,10 +201,11 @@ class FormationDiagnosticTesting:
                 try:
                     self.formations_2025 = response.json()
                     
-                    # Look for "PR test" formation in filtered results
+                    # Look for "PR test" or "test PR" formation in filtered results
                     pr_test_in_2025 = False
                     for formation in self.formations_2025:
-                        if "PR test" in formation.get("nom", ""):
+                        nom = formation.get("nom", "").lower()
+                        if "pr test" in nom or "test pr" in nom:
                             pr_test_in_2025 = True
                             break
                     
