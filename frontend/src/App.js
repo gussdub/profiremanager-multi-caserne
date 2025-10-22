@@ -8035,6 +8035,34 @@ const Formations = () => {
   };
   
   const handleSaveFormation = async () => {
+    // Validation frontend
+    if (!formationForm.nom || !formationForm.nom.trim()) {
+      toast({ 
+        title: "Erreur", 
+        description: "Le nom de la formation est obligatoire", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!formationForm.competence_id) {
+      toast({ 
+        title: "Erreur", 
+        description: "Veuillez sélectionner une compétence associée", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!formationForm.date_debut) {
+      toast({ 
+        title: "Erreur", 
+        description: "La date de début est obligatoire", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     try {
       if (selectedFormation) {
         await apiPut(tenantSlug, `/formations/${selectedFormation.id}`, formationForm);
@@ -8046,7 +8074,7 @@ const Formations = () => {
       setShowFormationModal(false);
       loadData();
     } catch (error) {
-      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur lors de la sauvegarde", variant: "destructive" });
     }
   };
   
