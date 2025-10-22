@@ -426,81 +426,88 @@ class FormationDiagnosticTesting:
         
         return passed >= 4  # Consider success if core diagnostic tests pass
     
-    def generate_validation_report(self):
-        """Generate detailed formation validation report"""
+    def generate_diagnostic_report(self):
+        """Generate detailed formation diagnostic report"""
         print(f"\n" + "=" * 80)
-        print(f"📋 RAPPORT DE VALIDATION - CRÉATION DE FORMATION DEMO")
+        print(f"📋 RAPPORT DIAGNOSTIC - FORMATION SHEFFORD")
         print("=" * 80)
         
         # Check test results
         auth_success = any(r["success"] for r in self.test_results if "Admin Authentication" in r["test"])
-        competences_success = any(r["success"] for r in self.test_results if "Get Competences List" in r["test"])
-        without_competence_success = any(r["success"] for r in self.test_results if "Formation Creation Without Competence" in r["test"])
-        invalid_competence_success = any(r["success"] for r in self.test_results if "Formation Creation With Invalid Competence" in r["test"])
-        valid_competence_success = any(r["success"] for r in self.test_results if "Formation Creation With Valid Competence" in r["test"])
-        verification_success = any(r["success"] for r in self.test_results if "Verify Formation In List" in r["test"])
+        all_formations_success = any(r["success"] for r in self.test_results if "Get All Formations" in r["test"])
+        filtered_formations_success = any(r["success"] for r in self.test_results if "Get Formations With Year Filter" in r["test"])
+        dashboard_success = any(r["success"] for r in self.test_results if "Get Dashboard Data" in r["test"])
+        analysis_success = any(r["success"] for r in self.test_results if "Analyze Formation Differences" in r["test"])
         
-        print(f"🔐 Authentification admin demo: {'✅ Réussie' if auth_success else '❌ Échouée'}")
-        print(f"📚 Récupération compétences: {'✅ Réussie' if competences_success else '❌ Échouée'}")
-        print(f"❌ Test SANS compétence: {'✅ Rejetée correctement' if without_competence_success else '❌ Validation échouée'}")
-        print(f"❌ Test compétence INVALIDE: {'✅ Rejetée correctement' if invalid_competence_success else '❌ Validation échouée'}")
-        print(f"✅ Test compétence VALIDE: {'✅ Création réussie' if valid_competence_success else '❌ Création échouée'}")
-        print(f"🔍 Vérification dans liste: {'✅ Formation trouvée' if verification_success else '❌ Formation non trouvée'}")
+        print(f"🔐 Authentification admin Shefford: {'✅ Réussie' if auth_success else '❌ Échouée'}")
+        print(f"📚 Récupération toutes formations: {'✅ Réussie' if all_formations_success else '❌ Échouée'}")
+        print(f"🔍 Récupération formations 2025: {'✅ Réussie' if filtered_formations_success else '❌ Échouée'}")
+        print(f"📊 Récupération données Dashboard: {'✅ Réussie' if dashboard_success else '❌ Échouée'}")
+        print(f"🔬 Analyse des différences: {'✅ Réussie' if analysis_success else '❌ Échouée'}")
         
         if not auth_success:
-            print(f"\n❌ IMPOSSIBLE DE CONTINUER LES TESTS")
-            print(f"   Cause: Échec de l'authentification avec gussdub@gmail.com / 230685Juin+")
-            print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'demo'")
+            print(f"\n❌ IMPOSSIBLE DE CONTINUER LE DIAGNOSTIC")
+            print(f"   Cause: Échec de l'authentification avec admin@firemanager.ca / Admin123!")
+            print(f"   Action requise: Vérifier les identifiants ou l'existence du tenant 'shefford'")
             return
         
-        if not competences_success:
-            print(f"\n❌ IMPOSSIBLE DE RÉCUPÉRER LES COMPÉTENCES")
-            print(f"   Cause: Endpoint GET /api/demo/competences inaccessible ou vide")
-            print(f"   Action requise: Vérifier l'endpoint et créer des compétences si nécessaire")
-            return
-        
-        print(f"\n🔍 RÉSULTATS DES VALIDATIONS:")
+        print(f"\n🔍 RÉSULTATS DU DIAGNOSTIC:")
         print("-" * 60)
         
-        # Validation results summary
-        validations_working = 0
-        total_validations = 3
+        # Get detailed results from test logs
+        total_formations = 0
+        formations_2025 = 0
+        pr_test_found = False
+        pr_test_year = None
+        pr_test_in_dashboard = False
         
-        if without_competence_success:
-            print(f"✅ Validation #1: Formation SANS compétence correctement rejetée (400 Bad Request)")
-            validations_working += 1
-        else:
-            print(f"❌ Validation #1: Formation SANS compétence PAS rejetée (validation manquante)")
+        for result in self.test_results:
+            if "Get All Formations" in result["test"] and result["success"]:
+                details = result.get("details", {})
+                total_formations = details.get("total_formations", 0)
+                pr_test_found = details.get("pr_test_found", False)
+                if details.get("pr_test_formation"):
+                    pr_test_year = details["pr_test_formation"].get("annee")
+            
+            if "Get Formations With Year Filter" in result["test"] and result["success"]:
+                details = result.get("details", {})
+                formations_2025 = details.get("filtered_formations_2025", 0)
+            
+            if "Get Dashboard Data" in result["test"] and result["success"]:
+                details = result.get("details", {})
+                pr_test_in_dashboard = details.get("pr_test_in_dashboard", False)
         
-        if invalid_competence_success:
-            print(f"✅ Validation #2: Formation avec compétence INVALIDE correctement rejetée (404 Not Found)")
-            validations_working += 1
-        else:
-            print(f"❌ Validation #2: Formation avec compétence INVALIDE PAS rejetée (validation manquante)")
+        print(f"📊 Formations totales dans Shefford: {total_formations}")
+        print(f"📊 Formations avec filtre année 2025: {formations_2025}")
+        print(f"🔍 Formation 'PR test' trouvée: {'✅ Oui' if pr_test_found else '❌ Non'}")
+        if pr_test_found:
+            print(f"📅 Année de 'PR test': {pr_test_year}")
+        print(f"📊 'PR test' visible dans Dashboard: {'✅ Oui' if pr_test_in_dashboard else '❌ Non'}")
         
-        if valid_competence_success:
-            print(f"✅ Validation #3: Formation avec compétence VALIDE correctement acceptée (200 OK)")
-            validations_working += 1
-        else:
-            print(f"❌ Validation #3: Formation avec compétence VALIDE PAS acceptée (erreur inattendue)")
-        
-        print(f"\n🎯 CONCLUSION DES VALIDATIONS:")
+        print(f"\n🎯 DIAGNOSTIC FINAL:")
         print("-" * 60)
         
-        if validations_working == total_validations:
-            print("🎉 TOUTES LES VALIDATIONS FONCTIONNENT CORRECTEMENT!")
-            print("   ✅ Validation frontend: competence_id obligatoire")
-            print("   ✅ Validation backend: compétence doit exister")
-            print("   ✅ Création réussie avec compétence valide")
-            print("   Les corrections sont entièrement fonctionnelles.")
-        elif validations_working >= 2:
-            print("⚠️ VALIDATIONS PARTIELLEMENT FONCTIONNELLES")
-            print(f"   {validations_working}/{total_validations} validations fonctionnent")
-            print("   Action requise: Corriger les validations manquantes")
+        if pr_test_found and pr_test_year != 2025 and pr_test_in_dashboard:
+            print("🎯 PROBLÈME IDENTIFIÉ!")
+            print(f"   ❌ Formation 'PR test' a l'année '{pr_test_year}' mais le module Formation filtre pour 2025")
+            print(f"   ✅ Dashboard l'affiche car il ne filtre PAS par année")
+            print(f"   ❌ Module Formation ne l'affiche PAS car il filtre par année")
+            print(f"\n💡 SOLUTIONS POSSIBLES:")
+            print(f"   1. Modifier l'année de 'PR test' de '{pr_test_year}' vers '2025'")
+            print(f"   2. Modifier le frontend pour afficher les formations de l'année '{pr_test_year}'")
+            print(f"   3. Modifier le filtre par défaut du module Formation")
+        elif not pr_test_found:
+            print("❌ FORMATION 'PR TEST' NON TROUVÉE")
+            print("   La formation n'existe pas dans la base de données")
+            print("   Vérifier le nom exact ou l'existence de la formation")
+        elif pr_test_found and pr_test_year == 2025:
+            print("⚠️ PROBLÈME DIFFÉRENT")
+            print("   Formation 'PR test' a bien l'année 2025")
+            print("   Le problème vient d'ailleurs (filtre frontend, logique backend, etc.)")
         else:
-            print("❌ VALIDATIONS NON FONCTIONNELLES")
-            print(f"   Seulement {validations_working}/{total_validations} validations fonctionnent")
-            print("   Action requise: Vérifier l'implémentation des validations")
+            print("❓ DIAGNOSTIC INCOMPLET")
+            print("   Impossible de déterminer la cause exacte")
+            print("   Vérifier les logs détaillés ci-dessus")
         
         print("=" * 80)
 
