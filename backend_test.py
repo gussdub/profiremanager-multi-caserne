@@ -340,26 +340,26 @@ class FormationReportsEndpointTesting:
             self.log_test("Generate Test Summary", False, f"Summary generation error: {str(e)}")
             return False
 
-    def run_formation_diagnostic_tests(self):
-        """Run the complete Formation Diagnostic Testing"""
-        print("🚀 Starting Formation Diagnostic Testing - Shefford Tenant")
+    def run_formation_reports_tests(self):
+        """Run the complete Formation Reports Endpoints Testing"""
+        print("🚀 Starting Formation Reports Endpoints Testing - Shefford Tenant")
         print("=" * 80)
         print(f"🏢 Tenant: {TENANT_SLUG}")
         print(f"👤 Admin: gussdub@gmail.com / 230685Juin+")
-        print(f"🎯 Objectif: Diagnostiquer pourquoi 'PR test' n'apparaît pas dans module Formation")
-        print(f"🔍 Test 1: Récupérer TOUTES les formations (sans filtre)")
-        print(f"🔍 Test 2: Récupérer formations avec filtre année 2025")
-        print(f"🔍 Test 3: Vérifier données Dashboard")
-        print(f"🔍 Test 4: Analyser les différences")
+        print(f"🎯 Objectif: Vérifier que les corrections des endpoints rapports formations fonctionnent")
+        print(f"🔍 Test 1: Authentification admin Shefford")
+        print(f"🔍 Test 2: Endpoint formations principal (GET /formations?annee=2025)")
+        print(f"🔍 Test 3: Endpoint conformité (GET /formations/rapports/conformite?annee=2025)")
+        print(f"🔍 Test 4: Endpoint dashboard formations (GET /formations/rapports/dashboard?annee=2025)")
         print("=" * 80)
         
         tests = [
             ("Admin Authentication", self.test_admin_authentication),
-            ("Get All Formations", self.get_all_formations),
-            ("Get Formations With Year Filter", self.get_formations_with_year_filter),
-            ("Get Dashboard Data", self.get_dashboard_data),
-            ("Analyze Formation Differences", self.analyze_formation_differences),
-            ("Generate Diagnostic Summary", self.generate_diagnostic_summary),
+            ("Test Formations Endpoint", self.test_formations_endpoint),
+            ("Test Conformité Report Endpoint", self.test_conformite_report_endpoint),
+            ("Test Dashboard Formations Endpoint", self.test_dashboard_formations_endpoint),
+            ("Verify Endpoints Fix", self.verify_endpoints_fix),
+            ("Generate Test Summary", self.generate_test_summary),
         ]
         
         passed = 0
@@ -376,10 +376,10 @@ class FormationReportsEndpointTesting:
         print(f"\n" + "=" * 80)
         print(f"📊 Test Results: {passed}/{total} tests passed")
         
-        # Generate detailed diagnostic report
-        self.generate_diagnostic_report()
+        # Generate detailed test report
+        self.generate_test_report()
         
-        return passed >= 4  # Consider success if core diagnostic tests pass
+        return passed >= 4  # Consider success if core tests pass
     
     def generate_diagnostic_report(self):
         """Generate detailed formation diagnostic report"""
