@@ -457,7 +457,7 @@ class FormationReportsEndpointTesting:
         print("=" * 80)
 
 if __name__ == "__main__":
-    testing = FormationDiagnosticTesting()
-    success = testing.run_formation_diagnostic_tests()
+    testing = FormationReportsEndpointTesting()
+    success = testing.run_formation_reports_tests()
     
     sys.exit(0 if success else 1)
