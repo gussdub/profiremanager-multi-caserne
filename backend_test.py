@@ -10,7 +10,7 @@ CONTEXTE:
 - Besoin de comprendre pourquoi le filtre par année ne fonctionne pas
 
 TESTS À EFFECTUER:
-1. Login admin shefford (admin@firemanager.ca / admin123)
+1. Login admin shefford (gussdub@gmail.com / 230685Juin+)
 
 2. Récupérer TOUTES les formations sans filtre:
    GET /api/shefford/formations
