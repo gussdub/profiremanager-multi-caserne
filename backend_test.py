@@ -83,12 +83,12 @@ class FormationDiagnosticTesting:
             print(f"   Details: {details}")
     
     def test_admin_authentication(self):
-        """Test admin authentication for Demo tenant - specifically gussdub@gmail.com / 230685Juin+"""
+        """Test admin authentication for Shefford tenant - specifically admin@firemanager.ca / Admin123!"""
         try:
             # Use the specific credentials mentioned in the review request
-            admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
+            admin_credentials = {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"}
             
-            print(f"🔑 Authenticating as demo admin: {admin_credentials['email']}")
+            print(f"🔑 Authenticating as Shefford admin: {admin_credentials['email']}")
             
             # Try tenant-specific login first
             response = self.session.post(f"{self.base_url}/{TENANT_SLUG}/auth/login", json=admin_credentials)
@@ -104,7 +104,7 @@ class FormationDiagnosticTesting:
                     self.admin_user_id = user_info.get("id")
                     
                     self.log_test("Admin Authentication", True, 
-                                f"✅ Demo admin login successful for {admin_credentials['email']}", 
+                                f"✅ Shefford admin login successful for {admin_credentials['email']}", 
                                 {
                                     "admin_user_id": self.admin_user_id,
                                     "user_info": user_info,
