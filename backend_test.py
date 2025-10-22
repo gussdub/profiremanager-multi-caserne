@@ -211,70 +211,55 @@ class FormationValidationTesting:
             self.log_test("Formation Creation Without Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
-    def get_real_planning_data(self):
-        """Get real planning data from GET /api/demo/planning/assignations/{current_week}"""
+    def test_formation_creation_with_invalid_competence(self):
+        """Test formation creation WITH invalid competence - should fail with 404"""
         try:
             if not self.admin_token:
-                self.log_test("Get Real Planning Data", False, "No admin token available")
+                self.log_test("Formation Creation With Invalid Competence", False, "No admin token available")
                 return False
             
             admin_session = requests.Session()
             admin_session.headers.update({"Authorization": f"Bearer {self.admin_token}"})
             
-            # Get current week (Monday of current week)
-            from datetime import datetime, timedelta
-            today = datetime.now()
-            monday = today - timedelta(days=today.weekday())
-            current_week = monday.strftime("%Y-%m-%d")
+            print(f"❌ Testing formation creation WITH invalid competence (should fail)")
             
-            print(f"📅 Getting real planning data from GET /api/{TENANT_SLUG}/planning/assignations/{current_week}")
+            formation_data = {
+                "nom": "Test Formation Competence Invalide",
+                "competence_id": "fake-id-123",  # Invalid competence_id - should trigger 404 error
+                "date_debut": "2025-12-01",
+                "date_fin": "2025-12-01",  
+                "heure_debut": "09:00",
+                "heure_fin": "17:00",
+                "duree_heures": 8,
+                "places_max": 20,
+                "annee": 2025
+            }
             
-            response = admin_session.get(f"{self.base_url}/{TENANT_SLUG}/planning/assignations/{current_week}")
+            response = admin_session.post(f"{self.base_url}/{TENANT_SLUG}/formations", json=formation_data)
             
-            if response.status_code == 200:
-                try:
-                    assignations = response.json()
-                    
-                    # Count assignations for current month
-                    current_month = datetime.now().strftime("%Y-%m")
-                    monthly_assignations = []
-                    
-                    if isinstance(assignations, list):
-                        monthly_assignations = [a for a in assignations if a.get("date", "").startswith(current_month)]
-                    elif isinstance(assignations, dict):
-                        # Handle different response format
-                        for day_data in assignations.values():
-                            if isinstance(day_data, dict):
-                                for garde_data in day_data.values():
-                                    if isinstance(garde_data, list):
-                                        monthly_assignations.extend(garde_data)
-                    
-                    self.real_data["planning"] = {
-                        "current_week_assignations": assignations,
-                        "monthly_assignations_count": len(monthly_assignations),
-                        "current_week": current_week
-                    }
-                    
-                    self.log_test("Get Real Planning Data", True, 
-                                f"✅ Retrieved planning data for week {current_week}", 
+            # Should return 404 Not Found
+            if response.status_code == 404:
+                response_text = response.text
+                if "compétence" in response_text.lower() and ("trouvée" in response_text.lower() or "found" in response_text.lower()):
+                    self.log_test("Formation Creation With Invalid Competence", True, 
+                                f"✅ Correctly rejected formation with invalid competence: {response.status_code}", 
                                 {
-                                    "current_week": current_week,
-                                    "monthly_assignations_count": len(monthly_assignations),
-                                    "assignations_type": type(assignations).__name__
+                                    "status_code": response.status_code,
+                                    "response_message": response_text,
+                                    "validation_working": True
                                 })
                     return True
-                    
-                except json.JSONDecodeError:
-                    self.log_test("Get Real Planning Data", False, f"❌ Invalid JSON response from planning endpoint")
+                else:
+                    self.log_test("Formation Creation With Invalid Competence", False, 
+                                f"❌ Wrong error message for invalid competence: {response_text}")
                     return False
-                    
             else:
-                self.log_test("Get Real Planning Data", False, 
-                            f"❌ Could not access planning endpoint: {response.status_code} - {response.text}")
+                self.log_test("Formation Creation With Invalid Competence", False, 
+                            f"❌ Formation creation should have failed but got status {response.status_code}: {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_test("Get Real Planning Data", False, f"Get real planning data error: {str(e)}")
+            self.log_test("Formation Creation With Invalid Competence", False, f"Formation creation test error: {str(e)}")
             return False
 
     def get_real_formations_data(self):
