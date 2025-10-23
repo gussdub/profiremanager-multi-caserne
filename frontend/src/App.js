@@ -666,6 +666,22 @@ const Login = () => {
               >
                 {loading ? 'Connexion...' : 'Se connecter'}
               </Button>
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
             </form>
           </CardContent>
         </Card>
