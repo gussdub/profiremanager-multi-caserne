@@ -7237,9 +7237,9 @@ const Planning = () => {
                   variant="default" 
                   onClick={handleAdvancedAssignment}
                   data-testid="create-advanced-assignment-btn"
-                  disabled={!advancedAssignConfig.user_id || !advancedAssignConfig.type_garde_id || !advancedAssignConfig.date_debut}
+                  disabled={!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut}
                 >
-                  🚒 Créer l'assignation
+                  🚒 Créer l'assignation{advancedAssignConfig.type_garde_ids.length > 1 ? 's' : ''}
                 </Button>
               </div>
             </div>
