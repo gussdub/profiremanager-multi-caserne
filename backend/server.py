@@ -4879,6 +4879,9 @@ class ParametresRemplacements(BaseModel):
     seuil_max_heures: int = 40  # Nombre d'heures maximum
     periode_calcul_heures: str = "semaine"  # semaine, mois, personnalise
     jours_periode_personnalisee: int = 7  # Nombre de jours si période personnalisée
+    # Regroupement des heures
+    activer_regroupement_heures: bool = False
+    duree_max_regroupement: int = 24  # Durée maximale d'une garde regroupée en heures
 
 # EPI Models
 # ==================== MODÈLES EPI NFPA 1851 ====================
