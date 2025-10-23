@@ -8937,9 +8937,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     else:
                         continue
                     
-                    # Check if user already assigned on this date
+                    # Check if user already assigned on this type de garde for this date
                     already_assigned = next((a for a in existing_assignations 
-                                           if a["date"] == date_str and a["user_id"] == user["id"]), None)
+                                           if a["date"] == date_str 
+                                           and a["user_id"] == user["id"]
+                                           and a["type_garde_id"] == type_garde["id"]), None)
                     if already_assigned:
                         continue
                     
