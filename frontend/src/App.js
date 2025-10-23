@@ -4757,6 +4757,7 @@ const Planning = () => {
   const [showAutoAttributionModal, setShowAutoAttributionModal] = useState(false);
   const [autoAttributionConfig, setAutoAttributionConfig] = useState({
     periode: 'semaine', // semaine ou mois
+    periodeLabel: '', // 'Semaine actuelle', 'Semaine suivante', 'Mois actuel', 'Mois suivant'
     date: currentWeek
   });
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
