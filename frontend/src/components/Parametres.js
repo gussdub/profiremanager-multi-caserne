@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Button } from "./ui/button.jsx";
+import { Input } from "./ui/input.jsx";
+import { Label } from "./ui/label.jsx";
 import { useToast } from "../hooks/use-toast";
 import { buildApiUrl } from "../utils/api";
 
