@@ -4789,6 +4789,11 @@ class ParametresRemplacements(BaseModel):
     max_contacts: int = 5
     priorite_grade: bool = True
     priorite_competences: bool = True
+    # Gestion des heures supplémentaires
+    activer_gestion_heures_sup: bool = False
+    seuil_max_heures: int = 40  # Nombre d'heures maximum
+    periode_calcul_heures: str = "semaine"  # semaine, mois, personnalise
+    jours_periode_personnalisee: int = 7  # Nombre de jours si période personnalisée
 
 # EPI Models
 # ==================== MODÈLES EPI NFPA 1851 ====================
