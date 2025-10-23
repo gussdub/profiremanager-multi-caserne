@@ -777,6 +777,32 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
+  const handleSaveHeuresSupParams = async () => {
+    try {
+      // Récupérer d'abord les paramètres de remplacements existants
+      const existingParams = await axios.get(`${API}/parametres/remplacements`).catch(() => ({ data: null }));
+      
+      // Fusionner avec les nouveaux paramètres d'heures sup
+      const updatedParams = {
+        ...(existingParams.data || {}),
+        ...heuresSupParams
+      };
+      
+      await axios.put(`${API}/parametres/remplacements`, updatedParams);
+      toast({
+        title: "Configuration sauvegardée",
+        description: "Les paramètres de gestion des heures supplémentaires ont été enregistrés",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de sauvegarder les paramètres",
+        variant: "destructive"
+      });
+    }
+  };
+
   const validatePassword = (password) => {
     if (password.length < 8) return false;
     const hasUppercase = /[A-Z]/.test(password);
