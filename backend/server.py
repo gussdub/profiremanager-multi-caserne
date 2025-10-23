@@ -659,39 +659,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         logging.error(f"❌ Erreur vérification mot de passe: {e}")
         return False
 
-async def migrate_password_if_needed(user_id: str, plain_password: str, current_hash: str, collection_name: str = "users"):
-    """
-    Migre automatiquement un mot de passe SHA256 vers bcrypt lors d'une connexion réussie.
-    
-    Args:
-        user_id: L'ID de l'utilisateur
-        plain_password: Le mot de passe en clair (vérifié)
-        current_hash: Le hash actuel dans la DB
-        collection_name: Nom de la collection MongoDB (users ou super_admins)
-    """
-    # Vérifier si c'est un ancien hash SHA256 qui nécessite migration
-    # Bcrypt hash commence par $2 (peut être $2$, $2a$, $2b$, $2x$, $2y$)
-    if not current_hash.startswith('$2'):
-        try:
-            logging.info(f"🔄 Migration du mot de passe pour l'utilisateur {user_id} de SHA256 vers bcrypt")
-            new_hash = get_password_hash(plain_password)
-            
-            # Mettre à jour dans la base de données
-            collection = db[collection_name]
-            result = await collection.update_one(
-                {"id": user_id},
-                {"$set": {"mot_de_passe_hash": new_hash}}
-            )
-            
-            if result.modified_count > 0:
-                logging.info(f"✅ Migration du mot de passe réussie pour {user_id}")
-            else:
-                logging.warning(f"⚠️ Migration du mot de passe échouée pour {user_id} - aucun document modifié")
-                
-        except Exception as e:
-            logging.error(f"❌ Erreur lors de la migration du mot de passe pour {user_id}: {e}")
-            # Ne pas bloquer la connexion en cas d'erreur de migration
-
 security = HTTPBearer()
 
 # Define Models
