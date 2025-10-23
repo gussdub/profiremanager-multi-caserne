@@ -5272,7 +5272,7 @@ async def reset_password(tenant_slug: str, request: ResetPasswordRequest):
             raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien de réinitialisation.")
         
         # Valider le nouveau mot de passe
-        if not validate_password_complexity(request.nouveau_mot_de_passe):
+        if not validate_complex_password(request.nouveau_mot_de_passe):
             raise HTTPException(
                 status_code=400,
                 detail="Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
