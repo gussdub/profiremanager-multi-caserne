@@ -153,6 +153,14 @@ const Parametres = ({ user, tenantSlug }) => {
     derniere_notification: null
   });
 
+  // Paramètres de gestion des heures supplémentaires
+  const [heuresSupParams, setHeuresSupParams] = useState({
+    activer_gestion_heures_sup: false,
+    seuil_max_heures: 40,
+    periode_calcul_heures: 'semaine',
+    jours_periode_personnalisee: 7
+  });
+
   const { toast } = useToast();
 
   const joursOptions = [
