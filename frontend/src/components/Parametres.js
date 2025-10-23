@@ -1585,20 +1585,7 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
               )}
 
-              <div className="info-box" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
-                <h4 style={{ color: '#1e40af', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  ℹ️ Fonctionnement
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#1e40af' }}>
-                  <li>Le système prend le <strong>minimum</strong> entre le seuil système et la préférence personnelle de l'employé</li>
-                  <li>S'applique à <strong>tous les types d'employés</strong> (temps plein et temps partiel)</li>
-                  <li>Bloque l'attribution automatique si la limite est atteinte</li>
-                  <li>Exclut l'employé des <strong>demandes de remplacement automatiques</strong> uniquement</li>
-                  <li>Les affectations manuelles restent possibles malgré le dépassement</li>
-                </ul>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <Button 
                   variant="default"
                   onClick={handleSaveHeuresSupParams}
@@ -1611,7 +1598,27 @@ const Parametres = ({ user, tenantSlug }) => {
 
             {/* NOUVELLE SECTION: Regroupement des Heures */}
             <div className="regroupement-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
-              <h3>🔗 Regroupement des Heures</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🔗 Regroupement des Heures
+                <span 
+                  title="Le système regroupe automatiquement les gardes d'une même journée ou de jours consécutifs pour minimiser les déplacements"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: '#3b82f6',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    cursor: 'help',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  i
+                </span>
+              </h3>
               <p style={{ color: '#64748b', marginBottom: '20px' }}>
                 Optimisez le confort des employés en regroupant automatiquement les gardes
               </p>
