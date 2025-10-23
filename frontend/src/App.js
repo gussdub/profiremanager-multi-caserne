@@ -173,14 +173,409 @@ const AuthProvider = ({ children }) => {
   );
 };
 
+// ForgotPassword Component
+const ForgotPassword = ({ onBack }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API}/${tenantSlug}/auth/forgot-password`, {
+        email
+      });
+
+      setEmailSent(true);
+      toast({
+        title: "Email envoyé",
+        description: "Si cet email existe, vous recevrez un lien de réinitialisation.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Une erreur est survenue",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (emailSent) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Email envoyé ✅</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Si cet email existe dans notre système, vous recevrez un lien de réinitialisation dans quelques instants.
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                Vérifiez votre boîte de réception et vos courriers indésirables.
+              </p>
+              <Button 
+                onClick={onBack}
+                className="w-full"
+                variant="outline"
+              >
+                Retour à la connexion
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <div className="logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <h1>ProFireManager</h1>
+            <p className="version">v2.0 Avancé</p>
+          </div>
+        </div>
+        
+        <Card className="login-card">
+          <CardHeader>
+            <CardTitle>Mot de passe oublié</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Nous vous enverrons un lien pour réinitialiser votre mot de passe.
+                </p>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
+              </Button>
+              <Button 
+                type="button"
+                onClick={onBack}
+                className="w-full"
+                variant="outline"
+              >
+                Retour à la connexion
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ResetPassword Component
+const ResetPassword = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [tokenValid, setTokenValid] = useState(null);
+  const [email, setEmail] = useState('');
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  
+  // Extraire le token de l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+
+  useEffect(() => {
+    // Vérifier la validité du token au chargement
+    const verifyToken = async () => {
+      if (!token) {
+        setTokenValid(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API}/${tenantSlug}/auth/verify-reset-token/${token}`);
+        setTokenValid(true);
+        setEmail(response.data.email);
+      } catch (error) {
+        setTokenValid(false);
+        toast({
+          title: "Token invalide",
+          description: error.response?.data?.detail || "Ce lien est invalide ou a expiré",
+          variant: "destructive"
+        });
+      }
+    };
+
+    verifyToken();
+  }, [token, tenantSlug]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 8 caractères",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await axios.post(`${API}/${tenantSlug}/auth/reset-password`, {
+        token,
+        nouveau_mot_de_passe: password
+      });
+
+      setSuccess(true);
+      toast({
+        title: "Succès",
+        description: "Votre mot de passe a été réinitialisé avec succès",
+      });
+
+      // Rediriger vers la page de connexion après 3 secondes
+      setTimeout(() => {
+        window.location.href = `/${tenantSlug}`;
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Une erreur est survenue",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (tokenValid === null) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="loading-spinner"></div>
+            <p>Vérification du lien...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tokenValid === false) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Lien invalide ❌</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Ce lien de réinitialisation est invalide ou a expiré.
+              </p>
+              <Button 
+                onClick={() => window.location.href = `/${tenantSlug}`}
+                className="w-full"
+              >
+                Retour à la connexion
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Mot de passe réinitialisé ✅</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Votre mot de passe a été réinitialisé avec succès.
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                Vous allez être redirigé vers la page de connexion...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <div className="logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <h1>ProFireManager</h1>
+            <p className="version">v2.0 Avancé</p>
+          </div>
+        </div>
+        
+        <Card className="login-card">
+          <CardHeader>
+            <CardTitle>Nouveau mot de passe</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Email: <strong>{email}</strong>
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="password">Nouveau mot de passe</Label>
+                <div style={{position: 'relative'}}>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{paddingRight: '40px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.2rem'
+                    }}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
 // Login Component
 const Login = () => {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
+
+  if (showForgotPassword) {
+    return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
