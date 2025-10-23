@@ -10476,19 +10476,19 @@ async def update_parametres_remplacements(
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Récupérer le tenant_id de l'utilisateur courant
-    tenant_id = current_user.tenant_id
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
     
     # Chercher les paramètres existants pour ce tenant
-    existing = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+    existing = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
     
     # S'assurer que tenant_id est présent dans les données
-    parametres_data["tenant_id"] = tenant_id
+    parametres_data["tenant_id"] = tenant.id
     
     if existing:
         # Mettre à jour les paramètres existants
         await db.parametres_remplacements.update_one(
-            {"tenant_id": tenant_id},
+            {"tenant_id": tenant.id},
             {"$set": parametres_data}
         )
     else:
