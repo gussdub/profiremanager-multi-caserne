@@ -7194,10 +7194,13 @@ const Planning = () => {
                       </span>
                     </div>
                     <div className="summary-row">
-                      <span className="summary-label">Type de garde :</span>
+                      <span className="summary-label">Type(s) de garde :</span>
                       <span className="summary-value">
-                        {advancedAssignConfig.type_garde_id ?
-                          typesGarde.find(t => t.id === advancedAssignConfig.type_garde_id)?.nom
+                        {advancedAssignConfig.type_garde_ids.length > 0 ?
+                          typesGarde
+                            .filter(t => advancedAssignConfig.type_garde_ids.includes(t.id))
+                            .map(t => t.nom)
+                            .join(' + ')
                           : 'Non sélectionné'}
                       </span>
                     </div>
