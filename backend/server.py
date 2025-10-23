@@ -8921,15 +8921,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     # ÉTAPE 2: Check if user has availability (for part-time employees)
                     if user["type_emploi"] == "temps_partiel":
-                        # Get user disponibilités
+                        # Get user disponibilités for THIS SPECIFIC type de garde
                         user_dispos = await db.disponibilites.find({
                             "user_id": user["id"],
                             "date": date_str,
+                            "type_garde_id": type_garde["id"],  # Vérifier le type de garde spécifique
                             "statut": "disponible"
                         }).to_list(10)
                         
                         if not user_dispos:
-                            continue  # Skip if not available
+                            continue  # Skip if not available for this specific garde
                     elif user["type_emploi"] == "temps_plein":
                         # Si gestion heures sup désactivée, skip temps plein (planning fixe manuel)
                         if not activer_heures_sup:
