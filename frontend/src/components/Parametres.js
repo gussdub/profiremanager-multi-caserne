@@ -161,6 +161,12 @@ const Parametres = ({ user, tenantSlug }) => {
     jours_periode_personnalisee: 7
   });
 
+  // Paramètres de regroupement des heures
+  const [regroupementParams, setRegroupementParams] = useState({
+    activer_regroupement_heures: false,
+    duree_max_regroupement: 24
+  });
+
   const { toast } = useToast();
 
   const joursOptions = [
