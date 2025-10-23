@@ -2688,6 +2688,34 @@ async def trouver_remplacants_potentiels(
             if indispo:
                 continue  # A une indisponibilité, on passe
             
+            # 3b. Vérifier les limites d'heures (gestion heures supplémentaires)
+            # Récupérer les paramètres de remplacements
+            parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+            if parametres and parametres.get("activer_gestion_heures_sup", False):
+                seuil_max_heures = parametres.get("seuil_max_heures", 40)
+                periode_calcul = parametres.get("periode_calcul_heures", "semaine")
+                jours_personnalises = parametres.get("jours_periode_personnalisee", 7)
+                
+                # Calculer les heures actuelles de l'employé
+                heures_actuelles = await calculer_heures_employe_periode(
+                    user_id=user["id"],
+                    tenant_id=tenant_id,
+                    date_reference=date_garde,
+                    periode=periode_calcul,
+                    jours_personnalises=jours_personnalises
+                )
+                
+                # Récupérer la préférence personnelle de l'employé
+                heures_max_user = user.get("heures_max_semaine", float('inf'))
+                
+                # Prendre le minimum entre la limite système et la préférence personnelle
+                limite_effective = min(seuil_max_heures, heures_max_user)
+                
+                # Vérifier si ajouter cette garde dépasserait la limite
+                duree_garde = type_garde_data.get("duree_heures", 8)
+                if heures_actuelles + duree_garde > limite_effective:
+                    continue  # Skip car dépasse les heures supplémentaires autorisées
+            
             # 4. Vérifier s'il a une disponibilité déclarée (bonus)
             dispo = await db.disponibilites.find_one({
                 "user_id": user["id"],
