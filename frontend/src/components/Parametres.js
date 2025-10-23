@@ -323,6 +323,12 @@ const Parametres = ({ user, tenantSlug }) => {
           periode_calcul_heures: paramsRemplacementsResponse.data.periode_calcul_heures || 'semaine',
           jours_periode_personnalisee: paramsRemplacementsResponse.data.jours_periode_personnalisee || 7
         });
+        
+        setRegroupementParams({
+          activer_regroupement_heures: paramsRemplacementsResponse.data.activer_regroupement_heures || false,
+          duree_max_regroupement: paramsRemplacementsResponse.data.duree_max_regroupement || 24
+        });
+        
         // Charger aussi les autres paramètres de remplacements dans systemSettings
         setSystemSettings(prev => ({
           ...prev,
