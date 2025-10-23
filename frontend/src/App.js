@@ -13365,9 +13365,19 @@ const App = () => {
 const AppWithProviders = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <Routes>
+        <Route path="/:tenant/reset-password" element={
+          <AuthProvider>
+            <ResetPassword />
+            <Toaster />
+          </AuthProvider>
+        } />
+        <Route path="*" element={
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        } />
+      </Routes>
     </BrowserRouter>
   );
 };
