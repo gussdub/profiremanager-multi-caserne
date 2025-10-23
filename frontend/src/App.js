@@ -5500,6 +5500,60 @@ const Planning = () => {
         </div>
       </div>
 
+      {/* Sélecteur de période pour KPIs */}
+      <div style={{
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '1rem', 
+        marginBottom: '1.5rem',
+        padding: '1rem',
+        background: '#F9FAFB',
+        borderRadius: '8px',
+        border: '1px solid #E5E7EB'
+      }}>
+        <span style={{fontWeight: '600', color: '#374151'}}>📊 Statistiques pour:</span>
+        <div style={{display: 'flex', gap: '0.5rem'}}>
+          <button
+            onClick={() => setKpiPeriode('actuel')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: kpiPeriode === 'actuel' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
+              background: kpiPeriode === 'actuel' ? '#EFF6FF' : 'white',
+              color: kpiPeriode === 'actuel' ? '#1E40AF' : '#6B7280',
+              fontWeight: kpiPeriode === 'actuel' ? '600' : '400',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            📅 Mois actuel
+          </button>
+          <button
+            onClick={() => setKpiPeriode('suivant')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: kpiPeriode === 'suivant' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
+              background: kpiPeriode === 'suivant' ? '#EFF6FF' : 'white',
+              color: kpiPeriode === 'suivant' ? '#1E40AF' : '#6B7280',
+              fontWeight: kpiPeriode === 'suivant' ? '600' : '400',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            📆 Mois suivant
+          </button>
+        </div>
+        <span style={{
+          marginLeft: 'auto',
+          color: '#6B7280',
+          fontSize: '0.875rem',
+          fontWeight: '500'
+        }}>
+          {kpis.monthLabel}
+        </span>
+      </div>
+
       {/* KPIs du Mois */}
       <div className="kpi-grid" style={{marginBottom: '2rem'}}>
         <div className="kpi-card" style={{background: '#FCA5A5'}}>
