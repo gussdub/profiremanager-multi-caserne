@@ -1565,14 +1565,43 @@ const Parametres = ({ user, tenantSlug }) => {
                   </Button>
                 </div>
               </div>
-            </div>
 
-            {/* NOUVELLE SECTION: Gestion des Heures Supplémentaires */}
-            <div className="heures-sup-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
-              <h3>⏰ Gestion des Heures Supplémentaires</h3>
-              <p style={{ color: '#64748b', marginBottom: '20px' }}>
-                Configurez les limites d'heures de travail pour éviter les heures supplémentaires non autorisées
-              </p>
+              {/* CARTE 3: Gestion des Heures Supplémentaires */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 16px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '1.25rem',
+                  color: '#1e293b'
+                }}>
+                  ⏰ Gestion des Heures Supplémentaires
+                  <span 
+                    title="Empêche l'attribution automatique au-delà du seuil configuré. Prend le minimum entre limite système et préférence employé. Affecte tous les employés."
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: '#3b82f6',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      cursor: 'help',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    i
+                  </span>
+                </h3>
               
               <div className="toggle-container" style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
                 <label className="setting-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
