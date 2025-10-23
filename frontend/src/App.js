@@ -5417,6 +5417,14 @@ const Planning = () => {
     if (user.role === 'employe') return;
 
     try {
+      // Activer l'overlay de chargement
+      setAttributionLoading(true);
+      setShowAutoAttributionModal(false);
+      
+      // Étape 1: Préparation
+      setAttributionStep('Préparation de l\'attribution automatique...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Calculer la plage de dates selon la période
       let semaine_debut, semaine_fin;
       
@@ -5446,6 +5454,17 @@ const Planning = () => {
         semaine_fin = lastSunday.toISOString().split('T')[0];
       }
       
+      // Étape 2: Analyse des disponibilités
+      setAttributionStep('Analyse des disponibilités des employés...');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Étape 3: Calcul de l'équitabilité
+      setAttributionStep('Calcul de l\'équitabilité des heures...');
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Étape 4: Assignation des gardes
+      setAttributionStep('Assignation automatique des gardes en cours...');
+      
       // Lancer l'attribution automatique directement
       const responseData = await apiPost(
         tenantSlug, 
@@ -5453,13 +5472,20 @@ const Planning = () => {
         {}
       );
       
+      // Étape 5: Finalisation
+      setAttributionStep('Finalisation et vérification...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Désactiver l'overlay
+      setAttributionLoading(false);
+      setAttributionStep('');
+      
       toast({
         title: "Attribution automatique réussie",
         description: `${responseData.assignations_creees} nouvelle(s) assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`,
         variant: "success"
       });
 
-      setShowAutoAttributionModal(false);
       // Réinitialiser la config
       setAutoAttributionConfig({
         periode: 'semaine',
@@ -5468,6 +5494,10 @@ const Planning = () => {
       });
       fetchPlanningData();
     } catch (error) {
+      // Désactiver l'overlay en cas d'erreur
+      setAttributionLoading(false);
+      setAttributionStep('');
+      
       toast({
         title: "Erreur",
         description: error.response?.data?.detail || "Erreur lors de l'attribution automatique",
