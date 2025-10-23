@@ -6865,23 +6865,121 @@ const Planning = () => {
                 </div>
 
                 {/* Section 2: Type de garde */}
-                <div className="assign-section">
-                  <h4>🚒 Type de garde</h4>
+<parameter name="div" className="assign-section">
+                  <h4>🚒 Type(s) de garde</h4>
                   <div className="form-field">
-                    <Label>Type de garde *</Label>
-                    <select
-                      value={advancedAssignConfig.type_garde_id}
-                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, type_garde_id: e.target.value})}
-                      className="form-select"
-                      data-testid="advanced-type-garde-select"
-                    >
-                      <option value="">Sélectionner un type de garde</option>
-                      {typesGarde.map(type => (
-                        <option key={type.id} value={type.id}>
-                          {type.nom} ({type.heure_debut} - {type.heure_fin})
-                        </option>
-                      ))}
-                    </select>
+                    <Label>Type(s) de garde * (sélection multiple)</Label>
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+                      💡 Vous pouvez sélectionner plusieurs types de garde pour la même assignation
+                    </p>
+                    
+                    {/* Multi-select avec checkboxes */}
+                    <div style={{
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      background: '#f8fafc'
+                    }}>
+                      {typesGarde.length === 0 && (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                          Aucun type de garde disponible
+                        </div>
+                      )}
+                      
+                      {typesGarde.map(type => {
+                        const isSelected = advancedAssignConfig.type_garde_ids.includes(type.id);
+                        
+                        return (
+                          <label
+                            key={type.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              padding: '0.75rem',
+                              margin: '0.25rem 0',
+                              border: '2px solid',
+                              borderColor: isSelected ? '#dc2626' : '#e2e8f0',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              background: isSelected ? '#fee2e2' : 'white',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = '#fafafa';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'white';
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  // Ajouter le type de garde
+                                  setAdvancedAssignConfig({
+                                    ...advancedAssignConfig,
+                                    type_garde_ids: [...advancedAssignConfig.type_garde_ids, type.id]
+                                  });
+                                } else {
+                                  // Retirer le type de garde
+                                  setAdvancedAssignConfig({
+                                    ...advancedAssignConfig,
+                                    type_garde_ids: advancedAssignConfig.type_garde_ids.filter(id => id !== type.id)
+                                  });
+                                }
+                              }}
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                cursor: 'pointer',
+                                accentColor: '#dc2626'
+                              }}
+                              data-testid={`type-garde-checkbox-${type.id}`}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: isSelected ? '600' : '500', color: '#1e293b' }}>
+                                {type.nom}
+                              </div>
+                              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                {type.heure_debut && type.heure_fin ? (
+                                  <>⏰ {type.heure_debut} - {type.heure_fin} ({type.duree_heures || 8}h)</>
+                                ) : (
+                                  <>⏰ Durée: {type.duree_heures || 8}h</>
+                                )}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div style={{ color: '#dc2626', fontSize: '1.2rem' }}>✓</div>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Résumé de la sélection */}
+                    {advancedAssignConfig.type_garde_ids.length > 0 && (
+                      <div style={{
+                        marginTop: '1rem',
+                        padding: '0.75rem',
+                        background: '#eff6ff',
+                        border: '1px solid #3b82f6',
+                        borderRadius: '8px'
+                      }}>
+                        <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.5rem' }}>
+                          📋 Sélection actuelle: {advancedAssignConfig.type_garde_ids.length} type(s) de garde
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+                          {typesGarde
+                            .filter(tg => advancedAssignConfig.type_garde_ids.includes(tg.id))
+                            .map(tg => tg.nom)
+                            .join(' + ')}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
