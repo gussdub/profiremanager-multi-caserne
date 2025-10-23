@@ -6551,62 +6551,186 @@ const Planning = () => {
       )}
 
       
-      {/* Modal Attribution Automatique */}
+      {/* Modal Attribution Automatique - Version améliorée */}
       {showAutoAttributionModal && (
         <div className="modal-overlay" onClick={() => setShowAutoAttributionModal(false)}>
           <div className="modal-content medium-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>✨ Attribution Automatique</h2>
+              <h2>✨ Attribution Automatique du Planning</h2>
               <Button variant="ghost" onClick={() => setShowAutoAttributionModal(false)}>✕</Button>
             </div>
             
             <div className="modal-body">
-              <div className="form-grid">
-                <div>
-                  <Label>Période *</Label>
-                  <select 
-                    className="form-select"
-                    value={autoAttributionConfig.periode}
-                    onChange={e => setAutoAttributionConfig({
+              <h3 style={{marginBottom: '1rem', fontSize: '1.1rem'}}>Pour quelle période?</h3>
+              
+              <div style={{display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(2, 1fr)'}}>
+                {/* Semaine actuelle */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                    const dateStr = monday.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
                       ...autoAttributionConfig,
-                      periode: e.target.value,
-                      date: e.target.value === 'semaine' ? currentWeek : currentMonth
-                    })}
-                  >
-                    <option value="semaine">📅 Semaine</option>
-                    <option value="mois">📆 Mois</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <Label>{autoAttributionConfig.periode === 'semaine' ? 'Semaine du' : 'Mois'} *</Label>
-                  {autoAttributionConfig.periode === 'semaine' ? (
-                    <Input 
-                      type="date"
-                      value={autoAttributionConfig.date}
-                      onChange={e => setAutoAttributionConfig({...autoAttributionConfig, date: e.target.value})}
-                    />
-                  ) : (
-                    <Input 
-                      type="month"
-                      value={autoAttributionConfig.date}
-                      onChange={e => setAutoAttributionConfig({...autoAttributionConfig, date: e.target.value})}
-                    />
-                  )}
-                </div>
+                      periode: 'semaine',
+                      periodeLabel: 'Semaine actuelle',
+                      date: dateStr
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Semaine actuelle' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Semaine actuelle' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📅</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Semaine actuelle</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {(() => {
+                      const today = new Date();
+                      const monday = new Date(today);
+                      monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                      const sunday = new Date(monday);
+                      sunday.setDate(monday.getDate() + 6);
+                      return `${monday.toLocaleDateString('fr-CA')} au ${sunday.toLocaleDateString('fr-CA')}`;
+                    })()}
+                  </div>
+                </button>
+
+                {/* Semaine suivante */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const nextMonday = new Date(today);
+                    nextMonday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? 1 : 8));
+                    const dateStr = nextMonday.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'semaine',
+                      periodeLabel: 'Semaine suivante',
+                      date: dateStr
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Semaine suivante' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Semaine suivante' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📅</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Semaine suivante</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {(() => {
+                      const today = new Date();
+                      const nextMonday = new Date(today);
+                      nextMonday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? 1 : 8));
+                      const nextSunday = new Date(nextMonday);
+                      nextSunday.setDate(nextMonday.getDate() + 6);
+                      return `${nextMonday.toLocaleDateString('fr-CA')} au ${nextSunday.toLocaleDateString('fr-CA')}`;
+                    })()}
+                  </div>
+                </button>
+
+                {/* Mois actuel */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const dateStr = firstDay.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'mois',
+                      periodeLabel: 'Mois actuel',
+                      date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Mois actuel' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Mois actuel' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📆</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Mois actuel</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </div>
+                </button>
+
+                {/* Mois suivant */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                    const dateStr = nextMonth.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'mois',
+                      periodeLabel: 'Mois suivant',
+                      date: `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Mois suivant' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Mois suivant' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📆</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Mois suivant</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </div>
+                </button>
               </div>
+              
+              {/* Résumé de la sélection */}
+              {autoAttributionConfig.periodeLabel && (
+                <div style={{marginTop: '1.5rem', padding: '1rem', background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '8px'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
+                    <span style={{fontSize: '1.25rem'}}>✅</span>
+                    <span style={{fontWeight: '600', color: '#166534'}}>Période sélectionnée</span>
+                  </div>
+                  <p style={{margin: 0, fontSize: '0.875rem', color: '#15803D'}}>
+                    {autoAttributionConfig.periodeLabel}
+                    {autoAttributionConfig.periode === 'mois' && ' (toutes les semaines du mois)'}
+                  </p>
+                </div>
+              )}
               
               <div style={{marginTop: '1.5rem', padding: '1rem', background: '#EFF6FF', borderRadius: '8px'}}>
                 <p style={{margin: 0, fontSize: '0.875rem', color: '#1E40AF'}}>
-                  💡 L'attribution automatique créera les assignations pour {autoAttributionConfig.periode === 'semaine' ? 'la semaine sélectionnée' : 'le mois sélectionné'} selon les règles configurées dans Paramètres.
+                  💡 L'attribution automatique créera les assignations selon les règles configurées dans Paramètres.
+                  {autoAttributionConfig.periode === 'mois' && ' Toutes les semaines du mois seront planifiées.'}
                 </p>
               </div>
             </div>
             
             <div className="modal-actions">
               <Button variant="outline" onClick={() => setShowAutoAttributionModal(false)}>Annuler</Button>
-              <Button onClick={handleAttributionAuto}>
-                ✨ Lancer l'attribution
+              <Button 
+                onClick={handleAttributionAuto}
+                disabled={!autoAttributionConfig.periodeLabel}
+                style={{opacity: !autoAttributionConfig.periodeLabel ? 0.5 : 1}}
+              >
+                ✨ Confirmer et lancer
               </Button>
             </div>
           </div>
