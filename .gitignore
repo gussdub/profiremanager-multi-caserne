@@ -109,3 +109,7 @@ DEPLOYMENT_LOG.txt
 *_original.js
 PROFIREMANAGER_PACKAGE.json
 vercel.json
+-e 
+# Environment files
+*.env
+*.env.*
