@@ -4997,24 +4997,77 @@ const Planning = () => {
     if (user.role === 'employe') return;
 
     try {
-      const targetDate = autoAttributionConfig.periode === 'semaine' 
-        ? autoAttributionConfig.date 
-        : `${autoAttributionConfig.date}-01`;
+      // Calculer la plage de dates selon la période
+      let semaine_debut, semaine_fin;
       
-      const responseData = await apiPost(tenantSlug, `/planning/attribution-auto?semaine_debut=${targetDate}`, {});
+      if (autoAttributionConfig.periode === 'semaine') {
+        // Pour une semaine: date de début = lundi, date de fin = dimanche
+        const monday = new Date(autoAttributionConfig.date);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        
+        semaine_debut = monday.toISOString().split('T')[0];
+        semaine_fin = sunday.toISOString().split('T')[0];
+      } else {
+        // Pour un mois: calculer toutes les semaines du mois
+        const [year, month] = autoAttributionConfig.date.split('-');
+        const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const lastDay = new Date(parseInt(year), parseInt(month), 0);
+        
+        // Trouver le lundi de la première semaine du mois
+        const firstMonday = new Date(firstDay);
+        firstMonday.setDate(firstDay.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
+        
+        // Trouver le dimanche de la dernière semaine du mois
+        const lastSunday = new Date(lastDay);
+        lastSunday.setDate(lastDay.getDate() + (7 - lastDay.getDay()) % 7);
+        
+        semaine_debut = firstMonday.toISOString().split('T')[0];
+        semaine_fin = lastSunday.toISOString().split('T')[0];
+      }
+      
+      // Vérifier s'il existe déjà des assignations pour cette période
+      const checkResponse = await apiGet(tenantSlug, `/planning/assignations/check-periode?debut=${semaine_debut}&fin=${semaine_fin}`);
+      
+      if (checkResponse && checkResponse.existing_count > 0) {
+        // Demander confirmation à l'utilisateur
+        const userConfirmed = window.confirm(
+          `⚠️ Il existe déjà ${checkResponse.existing_count} assignation(s) pour cette période.\n\n` +
+          `Voulez-vous :\n` +
+          `• OK = Conserver les existantes et créer seulement les manquantes\n` +
+          `• Annuler = Ne rien faire`
+        );
+        
+        if (!userConfirmed) {
+          return; // L'utilisateur annule
+        }
+      }
+      
+      // Lancer l'attribution automatique
+      const responseData = await apiPost(
+        tenantSlug, 
+        `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}`, 
+        {}
+      );
       
       toast({
         title: "Attribution automatique réussie",
-        description: `${responseData.assignations_creees} nouvelles assignations créées pour ${autoAttributionConfig.periode === 'semaine' ? 'la semaine' : 'le mois'}`,
+        description: `${responseData.assignations_creees} nouvelle(s) assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`,
         variant: "success"
       });
 
       setShowAutoAttributionModal(false);
+      // Réinitialiser la config
+      setAutoAttributionConfig({
+        periode: 'semaine',
+        periodeLabel: '',
+        date: currentWeek
+      });
       fetchPlanningData();
     } catch (error) {
       toast({
-        title: "Erreur d'attribution",
-        description: error.detail || error.message || "Impossible d'effectuer l'attribution automatique",
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de l'attribution automatique",
         variant: "destructive"
       });
     }
