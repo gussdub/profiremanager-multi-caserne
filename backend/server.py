@@ -5224,6 +5224,9 @@ async def verify_reset_token(tenant_slug: str, token: str):
         expires_at = token_data["expires_at"]
         if isinstance(expires_at, str):
             expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        elif expires_at.tzinfo is None:
+            # Si c'est un datetime sans timezone, on assume UTC
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
         
         if datetime.now(timezone.utc) > expires_at:
             raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien de réinitialisation.")
