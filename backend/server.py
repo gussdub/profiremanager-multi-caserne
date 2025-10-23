@@ -8178,15 +8178,93 @@ async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, cur
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur attribution démo: {str(e)}")
 
+# Vérification des assignations existantes pour une période
+@api_router.get("/{tenant_slug}/planning/assignations/check-periode")
+async def check_assignations_periode(
+    tenant_slug: str, 
+    debut: str, 
+    fin: str, 
+    current_user: User = Depends(get_current_user)
+):
+    """Vérifie s'il existe des assignations pour la période donnée"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        existing_count = await db.assignations.count_documents({
+            "date": {
+                "$gte": debut,
+                "$lte": fin
+            },
+            "tenant_id": tenant.id
+        })
+        
+        return {
+            "existing_count": existing_count,
+            "periode": f"{debut} au {fin}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur vérification période: {str(e)}")
+
 # Attribution automatique intelligente avec rotation équitable et ancienneté
 @api_router.post("/{tenant_slug}/planning/attribution-auto")
-async def attribution_automatique(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
+async def attribution_automatique(
+    tenant_slug: str, 
+    semaine_debut: str, 
+    semaine_fin: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Attribution automatique pour une ou plusieurs semaines"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    try:
+        # Si pas de semaine_fin fournie, calculer pour une seule semaine
+        if not semaine_fin:
+            semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+        
+        # Pour une période complète (mois), traiter semaine par semaine
+        start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
+        end_date = datetime.strptime(semaine_fin, "%Y-%m-%d")
+        
+        total_assignations_creees = 0
+        current_week_start = start_date
+        
+        # Itérer sur toutes les semaines de la période
+        while current_week_start <= end_date:
+            current_week_end = current_week_start + timedelta(days=6)
+            if current_week_end > end_date:
+                current_week_end = end_date
+            
+            week_start_str = current_week_start.strftime("%Y-%m-%d")
+            week_end_str = current_week_end.strftime("%Y-%m-%d")
+            
+            # Traiter cette semaine
+            assignations_cette_semaine = await traiter_semaine_attribution_auto(
+                tenant, 
+                week_start_str, 
+                week_end_str
+            )
+            
+            total_assignations_creees += assignations_cette_semaine
+            
+            # Passer à la semaine suivante
+            current_week_start += timedelta(days=7)
+        
+        return {
+            "message": "Attribution automatique intelligente effectuée avec succès",
+            "assignations_creees": total_assignations_creees,
+            "algorithme": "5 niveaux: Manuel → Disponibilités → Grades → Rotation équitable → Ancienneté",
+            "periode": f"{semaine_debut} à {semaine_fin}"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
+
+async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_fin: str):
+    """Traite l'attribution automatique pour une seule semaine"""
     try:
         # Get all available users and types de garde pour ce tenant
         users = await db.users.find({"statut": "Actif", "tenant_id": tenant.id}).to_list(1000)
