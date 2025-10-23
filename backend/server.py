@@ -1186,6 +1186,80 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**user)
 
+async def trouver_opportunites_regroupement(
+    date_str: str,
+    types_garde: list,
+    existing_assignations: list,
+    duree_max: int,
+    tenant_id: str
+):
+    """
+    Trouve les opportunités de regroupement de gardes pour une date donnée
+    
+    Returns:
+        List de tuples (type_garde_1, type_garde_2_or_None, date_2_or_None) représentant les regroupements possibles
+    """
+    opportunites = []
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    date_suivante_str = (date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # 1. MÊME JOURNÉE: Chercher des gardes qui peuvent se regrouper dans la même journée
+    gardes_date = [tg for tg in types_garde]
+    
+    for i, tg1 in enumerate(gardes_date):
+        # Chercher dans les gardes suivantes
+        for tg2 in gardes_date[i+1:]:
+            duree_totale = tg1.get("duree_heures", 8) + tg2.get("duree_heures", 8)
+            
+            if duree_totale <= duree_max:
+                # Vérifier qu'elles ne sont pas déjà assignées
+                assignations_tg1 = [a for a in existing_assignations 
+                                   if a["date"] == date_str and a["type_garde_id"] == tg1["id"]]
+                assignations_tg2 = [a for a in existing_assignations 
+                                   if a["date"] == date_str and a["type_garde_id"] == tg2["id"]]
+                
+                places_tg1 = tg1.get("nombre_pompiers_requis", 1) - len(assignations_tg1)
+                places_tg2 = tg2.get("nombre_pompiers_requis", 1) - len(assignations_tg2)
+                
+                if places_tg1 > 0 and places_tg2 > 0:
+                    # Opportunité de regroupement même journée
+                    opportunites.append({
+                        "type": "meme_journee",
+                        "garde1": tg1,
+                        "garde2": tg2,
+                        "date1": date_str,
+                        "date2": date_str,
+                        "duree_totale": duree_totale
+                    })
+    
+    # 2. JOURS CONSÉCUTIFS: Chercher des gardes sur jour J et J+1
+    for tg1 in types_garde:
+        for tg2 in types_garde:
+            duree_totale = tg1.get("duree_heures", 8) + tg2.get("duree_heures", 8)
+            
+            if duree_totale <= duree_max:
+                # Vérifier qu'elles ne sont pas déjà assignées
+                assignations_tg1 = [a for a in existing_assignations 
+                                   if a["date"] == date_str and a["type_garde_id"] == tg1["id"]]
+                assignations_tg2 = [a for a in existing_assignations 
+                                   if a["date"] == date_suivante_str and a["type_garde_id"] == tg2["id"]]
+                
+                places_tg1 = tg1.get("nombre_pompiers_requis", 1) - len(assignations_tg1)
+                places_tg2 = tg2.get("nombre_pompiers_requis", 1) - len(assignations_tg2)
+                
+                if places_tg1 > 0 and places_tg2 > 0:
+                    # Opportunité de regroupement jours consécutifs
+                    opportunites.append({
+                        "type": "jours_consecutifs",
+                        "garde1": tg1,
+                        "garde2": tg2,
+                        "date1": date_str,
+                        "date2": date_suivante_str,
+                        "duree_totale": duree_totale
+                    })
+    
+    return opportunites
+
 async def calculer_heures_employe_periode(user_id: str, tenant_id: str, date_reference: str, periode: str, jours_personnalises: int = 7):
     """
     Calcule les heures travaillées par un employé sur une période donnée
