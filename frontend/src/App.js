@@ -5636,10 +5636,10 @@ const Planning = () => {
     if (user.role === 'employe') return;
 
     // Validation des champs requis
-    if (!advancedAssignConfig.user_id || !advancedAssignConfig.type_garde_id || !advancedAssignConfig.date_debut) {
+    if (!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut) {
       toast({
         title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez remplir tous les champs obligatoires (utilisateur, au moins un type de garde, date de début)",
         variant: "destructive"
       });
       return;
@@ -5655,35 +5655,76 @@ const Planning = () => {
       return;
     }
 
-    try {
-      const assignmentData = {
-        user_id: advancedAssignConfig.user_id,
-        type_garde_id: advancedAssignConfig.type_garde_id,
-        recurrence_type: advancedAssignConfig.recurrence_type,
-        date_debut: advancedAssignConfig.date_debut,
-        date_fin: advancedAssignConfig.date_fin || advancedAssignConfig.date_debut,
-        jours_semaine: advancedAssignConfig.jours_semaine,
-        bi_hebdomadaire: advancedAssignConfig.bi_hebdomadaire,
-        recurrence_intervalle: advancedAssignConfig.recurrence_intervalle,
-        recurrence_frequence: advancedAssignConfig.recurrence_frequence,
-        assignation_type: "manuel_avance"
-      };
+    // Vérification des chevauchements d'horaires entre les types de garde sélectionnés
+    const selectedTypesGarde = typesGarde.filter(tg => advancedAssignConfig.type_garde_ids.includes(tg.id));
+    let hasOverlap = false;
+    
+    for (let i = 0; i < selectedTypesGarde.length; i++) {
+      for (let j = i + 1; j < selectedTypesGarde.length; j++) {
+        const tg1 = selectedTypesGarde[i];
+        const tg2 = selectedTypesGarde[j];
+        
+        // Vérifier si les horaires se chevauchent (si les champs existent)
+        if (tg1.heure_debut && tg1.heure_fin && tg2.heure_debut && tg2.heure_fin) {
+          const start1 = tg1.heure_debut;
+          const end1 = tg1.heure_fin;
+          const start2 = tg2.heure_debut;
+          const end2 = tg2.heure_fin;
+          
+          // Chevauchement si: start1 < end2 AND start2 < end1
+          if (start1 < end2 && start2 < end1) {
+            hasOverlap = true;
+            break;
+          }
+        }
+      }
+      if (hasOverlap) break;
+    }
+    
+    // Avertir si chevauchement mais permettre quand même
+    if (hasOverlap) {
+      toast({
+        title: "⚠️ Attention - Horaires qui se chevauchent",
+        description: "Certains types de garde sélectionnés ont des horaires qui se chevauchent. L'assignation sera quand même créée.",
+        variant: "warning",
+        duration: 5000
+      });
+    }
 
-      await apiPost(tenantSlug, '/planning/assignation-avancee', assignmentData);
+    try {
+      // Créer une assignation pour chaque type de garde sélectionné
+      const promises = advancedAssignConfig.type_garde_ids.map(type_garde_id => {
+        const assignmentData = {
+          user_id: advancedAssignConfig.user_id,
+          type_garde_id: type_garde_id,
+          recurrence_type: advancedAssignConfig.recurrence_type,
+          date_debut: advancedAssignConfig.date_debut,
+          date_fin: advancedAssignConfig.date_fin || advancedAssignConfig.date_debut,
+          jours_semaine: advancedAssignConfig.jours_semaine,
+          bi_hebdomadaire: advancedAssignConfig.bi_hebdomadaire,
+          recurrence_intervalle: advancedAssignConfig.recurrence_intervalle,
+          recurrence_frequence: advancedAssignConfig.recurrence_frequence,
+          assignation_type: "manuel_avance"
+        };
+        
+        return apiPost(tenantSlug, '/planning/assignation-avancee', assignmentData);
+      });
+      
+      await Promise.all(promises);
 
       const selectedUser = users.find(u => u.id === advancedAssignConfig.user_id);
-      const selectedTypeGarde = typesGarde.find(t => t.id === advancedAssignConfig.type_garde_id);
+      const selectedTypesNames = selectedTypesGarde.map(tg => tg.nom).join(', ');
       
       toast({
-        title: "Assignation avancée créée",
-        description: `${selectedUser?.prenom} ${selectedUser?.nom} assigné(e) pour ${selectedTypeGarde?.nom} (${advancedAssignConfig.recurrence_type})`,
+        title: "Assignations avancées créées",
+        description: `${selectedUser?.prenom} ${selectedUser?.nom} assigné(e) pour ${advancedAssignConfig.type_garde_ids.length} type(s) de garde: ${selectedTypesNames} (${advancedAssignConfig.recurrence_type})`,
         variant: "success"
       });
 
       // Reset du formulaire
       setAdvancedAssignConfig({
         user_id: '',
-        type_garde_id: '',
+        type_garde_ids: [],
         jour_specifique: '',
         recurrence_type: 'unique',
         jours_semaine: [],
