@@ -1662,18 +1662,6 @@ const Parametres = ({ user, tenantSlug }) => {
                   <li><strong>Tous types de gardes:</strong> Peut regrouper n'importe quels types de gardes</li>
                 </ul>
               </div>
-
-              <div className="example-box" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
-                <h4 style={{ color: '#1e40af', margin: '0 0 10px 0' }}>
-                  📋 Exemple concret
-                </h4>
-                <p style={{ color: '#1e40af', margin: '5px 0' }}>
-                  <strong>Sans regroupement:</strong> Pierre a 6h samedi + 6h dimanche = 2 jours travaillés
-                </p>
-                <p style={{ color: '#1e40af', margin: '5px 0' }}>
-                  <strong>Avec regroupement:</strong> Pierre a 6h samedi + 6h dimanche (regroupées) = Même charge de travail, moins de déplacements
-                </p>
-              </div>
             </div>
           </div>
         )}
