@@ -1409,13 +1409,44 @@ const Parametres = ({ user, tenantSlug }) => {
                   </label>
                 </div>
               </div>
+              </div>
 
-              {/* NOUVELLE SECTION: Validation du Planning */}
-              <div className="validation-planning-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
-                <h3>📅 Validation et Notification du Planning</h3>
-                <p style={{ color: '#64748b', marginBottom: '20px' }}>
-                  Configurez quand les pompiers seront avisés de leurs gardes assignées par email détaillé
-                </p>
+              {/* CARTE 2: Validation du Planning */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 16px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '1.25rem',
+                  color: '#1e293b'
+                }}>
+                  📅 Validation et Notification du Planning
+                  <span 
+                    title="Configure les emails automatiques envoyés aux employés pour les informer de leurs gardes assignées"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: '#3b82f6',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      cursor: 'help',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    i
+                  </span>
+                </h3>
                 
                 <div className="validation-params-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }}>
                   <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
