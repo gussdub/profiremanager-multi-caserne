@@ -1603,6 +1603,78 @@ const Parametres = ({ user, tenantSlug }) => {
                 </Button>
               </div>
             </div>
+
+            {/* NOUVELLE SECTION: Regroupement des Heures */}
+            <div className="regroupement-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
+              <h3>🔗 Regroupement des Heures</h3>
+              <p style={{ color: '#64748b', marginBottom: '20px' }}>
+                Optimisez le confort des employés en regroupant automatiquement les gardes
+              </p>
+              
+              <div className="toggle-container" style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                <label className="setting-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div className="toggle-info">
+                    <span style={{ fontWeight: '600', color: '#1e293b' }}>Activer le regroupement des heures</span>
+                    <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
+                      Le système assignera automatiquement plusieurs gardes au même employé pour limiter les jours travaillés
+                    </small>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={regroupementParams.activer_regroupement_heures}
+                    onChange={(e) => setRegroupementParams({...regroupementParams, activer_regroupement_heures: e.target.checked})}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                </label>
+              </div>
+
+              {regroupementParams.activer_regroupement_heures && (
+                <div className="regroupement-params" style={{ marginBottom: '20px' }}>
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      Durée maximale d'une garde regroupée (heures)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="48"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      value={regroupementParams.duree_max_regroupement}
+                      onChange={(e) => setRegroupementParams({...regroupementParams, duree_max_regroupement: parseInt(e.target.value) || 24})}
+                    />
+                    <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
+                      Nombre maximum d'heures qu'un employé peut avoir en regroupement
+                    </small>
+                  </div>
+                </div>
+              )}
+
+              <div className="info-box" style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                <h4 style={{ color: '#15803d', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  💡 Comment ça fonctionne
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#15803d' }}>
+                  <li><strong>Même journée:</strong> 6h AM + 6h PM → 2 gardes assignées au même employé</li>
+                  <li><strong>Jours consécutifs:</strong> Samedi 12h + Dimanche 12h → 2 gardes assignées au même employé</li>
+                  <li><strong>Priorité:</strong> Appliqué APRÈS l'équitabilité des heures, AVANT l'ancienneté</li>
+                  <li><strong>Disponibilités:</strong> Vérifie la disponibilité sur tous les jours concernés</li>
+                  <li><strong>Flexibilité:</strong> Si regroupement impossible, assigne normalement (séparé)</li>
+                  <li><strong>Tous types de gardes:</strong> Peut regrouper n'importe quels types de gardes</li>
+                </ul>
+              </div>
+
+              <div className="example-box" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                <h4 style={{ color: '#1e40af', margin: '0 0 10px 0' }}>
+                  📋 Exemple concret
+                </h4>
+                <p style={{ color: '#1e40af', margin: '5px 0' }}>
+                  <strong>Sans regroupement:</strong> Pierre a 6h samedi + 6h dimanche = 2 jours travaillés
+                </p>
+                <p style={{ color: '#1e40af', margin: '5px 0' }}>
+                  <strong>Avec regroupement:</strong> Pierre a 6h samedi + 6h dimanche (regroupées) = Même charge de travail, moins de déplacements
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
