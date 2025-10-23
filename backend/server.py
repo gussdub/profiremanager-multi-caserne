@@ -8598,6 +8598,32 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         users = await db.users.find({"statut": "Actif", "tenant_id": tenant.id}).to_list(1000)
         types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
         
+        # Récupérer les paramètres de remplacements (incluant gestion heures sup)
+        parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
+        if not parametres:
+            # Créer des paramètres par défaut
+            default_params = ParametresRemplacements(tenant_id=tenant.id)
+            await db.parametres_remplacements.insert_one(default_params.dict())
+            parametres = default_params.dict()
+        
+        activer_heures_sup = parametres.get("activer_gestion_heures_sup", False)
+        seuil_max_heures = parametres.get("seuil_max_heures", 40)
+        periode_calcul = parametres.get("periode_calcul_heures", "semaine")
+        jours_personnalises = parametres.get("jours_periode_personnalisee", 7)
+        
+        # Calculer les heures actuelles pour chaque employé si gestion heures sup activée
+        user_heures_actuelles = {}
+        if activer_heures_sup:
+            for user in users:
+                heures = await calculer_heures_employe_periode(
+                    user_id=user["id"],
+                    tenant_id=tenant.id,
+                    date_reference=semaine_debut,
+                    periode=periode_calcul,
+                    jours_personnalises=jours_personnalises
+                )
+                user_heures_actuelles[user["id"]] = heures
+        
         # Get existing assignations for the week
         semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         existing_assignations = await db.assignations.find({
