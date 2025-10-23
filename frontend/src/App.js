@@ -5315,6 +5315,9 @@ const Planning = () => {
     setShowAssignModal(true);
   };
 
+  // Nouvel état pour le sélecteur de période KPI
+  const [kpiPeriode, setKpiPeriode] = useState('actuel'); // 'actuel' ou 'suivant'
+
   const navigateWeek = (direction) => {
     const [year, month, day] = currentWeek.split('-').map(Number);
     const newDate = new Date(Date.UTC(year, month - 1, day));
@@ -5328,16 +5331,27 @@ const Planning = () => {
     setCurrentMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  // Calcul des KPIs pour le mois en cours
-  const calculateKPIs = () => {
+  // Calcul des KPIs pour le mois sélectionné (actuel ou suivant)
+  const calculateKPIs = (periode = 'actuel') => {
     const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    let targetMonthStart, targetMonthEnd, monthLabel;
     
-    // Filtrer les assignations du mois en cours
+    if (periode === 'actuel') {
+      // Mois actuel
+      targetMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    } else {
+      // Mois suivant
+      targetMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    }
+    
+    // Filtrer les assignations du mois cible
     const monthAssignations = assignations.filter(a => {
       const assignDate = new Date(a.date);
-      return assignDate >= currentMonthStart && assignDate <= currentMonthEnd;
+      return assignDate >= targetMonthStart && assignDate <= targetMonthEnd;
     });
     
     // Compter les gardes uniques du mois
