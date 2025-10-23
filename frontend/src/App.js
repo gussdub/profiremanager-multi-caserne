@@ -2683,7 +2683,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     date_embauche: '',
     taux_horaire: 0,
     formations: [],
-    mot_de_passe: ''
+    mot_de_passe: '',
+    // Tailles EPI (optionnelles)
+    taille_casque: '',
+    taille_bottes: '',
+    taille_veste_bunker: '',
+    taille_pantalon_bunker: '',
+    taille_gants: '',
+    taille_masque_apria: '',
+    taille_cagoule: ''
   });
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
