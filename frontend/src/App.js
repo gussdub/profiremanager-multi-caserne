@@ -7278,6 +7278,87 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Overlay de chargement Attribution Automatique */}
+      {attributionLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '500px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            {/* Spinner animé */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 24px',
+              border: '6px solid #f3f4f6',
+              borderTop: '6px solid #dc2626',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            
+            {/* Message d'étape */}
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: '#1e293b',
+              marginBottom: '12px'
+            }}>
+              Attribution en cours...
+            </h2>
+            
+            <p style={{
+              fontSize: '1rem',
+              color: '#64748b',
+              marginBottom: '24px',
+              minHeight: '24px'
+            }}>
+              {attributionStep}
+            </p>
+            
+            {/* Barre de progression visuelle */}
+            <div style={{
+              width: '100%',
+              height: '4px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '2px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                height: '100%',
+                backgroundColor: '#dc2626',
+                animation: 'progress 2s ease-in-out infinite'
+              }}></div>
+            </div>
+            
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#94a3b8',
+              marginTop: '20px',
+              fontStyle: 'italic'
+            }}>
+              Veuillez patienter, cela peut prendre quelques instants...
+            </p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
