@@ -8797,20 +8797,40 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Vérifier disponibilités si temps partiel
                         if user["type_emploi"] == "temps_partiel":
                             # Doit être disponible sur les deux dates (ou jours concernés)
-                            dates_a_verifier = [opp['date1']]
-                            if opp['date2'] != opp['date1']:
-                                dates_a_verifier.append(opp['date2'])
-                            
+                            # Et pour les types de garde spécifiques
                             disponible_toutes_dates = True
-                            for date_check in dates_a_verifier:
-                                dispo = await db.disponibilites.find_one({
+                            
+                            # Vérifier dispo pour garde1 sur date1
+                            dispo1 = await db.disponibilites.find_one({
+                                "user_id": user["id"],
+                                "date": opp['date1'],
+                                "type_garde_id": opp['garde1']["id"],
+                                "statut": "disponible"
+                            })
+                            if not dispo1:
+                                disponible_toutes_dates = False
+                            
+                            # Vérifier dispo pour garde2 sur date2 (si différente de date1)
+                            if disponible_toutes_dates and opp['date2'] != opp['date1']:
+                                dispo2 = await db.disponibilites.find_one({
                                     "user_id": user["id"],
-                                    "date": date_check,
+                                    "date": opp['date2'],
+                                    "type_garde_id": opp['garde2']["id"],
                                     "statut": "disponible"
                                 })
-                                if not dispo:
+                                if not dispo2:
                                     disponible_toutes_dates = False
-                                    break
+                            
+                            # Même journée: vérifier garde2 aussi
+                            elif disponible_toutes_dates and opp['date2'] == opp['date1']:
+                                dispo2 = await db.disponibilites.find_one({
+                                    "user_id": user["id"],
+                                    "date": opp['date2'],
+                                    "type_garde_id": opp['garde2']["id"],
+                                    "statut": "disponible"
+                                })
+                                if not dispo2:
+                                    disponible_toutes_dates = False
                             
                             if not disponible_toutes_dates:
                                 continue
