@@ -6865,7 +6865,7 @@ const Planning = () => {
                 </div>
 
                 {/* Section 2: Type de garde */}
-<parameter name="div" className="assign-section">
+                <div className="assign-section">
                   <h4>🚒 Type(s) de garde</h4>
                   <div className="form-field">
                     <Label>Type(s) de garde * (sélection multiple)</Label>
