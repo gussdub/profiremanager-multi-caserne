@@ -1257,20 +1257,53 @@ const Parametres = ({ user, tenantSlug }) => {
         )}
 
         {activeTab === 'attribution' && (
-          <div className="attribution-tab">
-            <div className="tab-header">
+          <div className="attribution-tab" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <div className="tab-header" style={{ marginBottom: '30px' }}>
               <div>
-                <h2>Attribution Automatique Intelligente</h2>
-                <p>Configurez l'algorithme d'assignation automatique en 5 niveaux de priorité</p>
+                <h2>⚙️ Configuration du Planning</h2>
+                <p style={{ color: '#64748b' }}>Paramétrez l'attribution automatique, les heures supplémentaires et le regroupement</p>
               </div>
-              <Button variant="outline" data-testid="test-attribution-btn">
-                🧪 Tester l'algorithme
-              </Button>
             </div>
             
-            <div className="attribution-content">
-              <div className="priority-section">
-                <h3>Algorithme d'assignation automatique (5 niveaux)</h3>
+            {/* Grille de sections */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* CARTE 1: Algorithme d'attribution */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 16px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '1.25rem',
+                  color: '#1e293b'
+                }}>
+                  🤖 Algorithme d'assignation automatique
+                  <span 
+                    title="L'algorithme assigne automatiquement les employés selon 5 niveaux de priorité: Manuel → Disponibilités → Grades → Équitabilité → Ancienneté"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: '#3b82f6',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      cursor: 'help',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    i
+                  </span>
+                </h3>
                 <div className="priority-list">
                   <div className="priority-item">
                     <span className="priority-number">1</span>
