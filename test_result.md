@@ -532,6 +532,21 @@ backend:
         agent: "testing"
         comment: "✅ FORMATION REPORTS ENDPOINTS FIX VERIFIED - Comprehensive testing completed successfully with ALL 6/6 tests passed (100% success rate): 1) ✅ Admin Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ credentials for Shefford tenant, 2) ✅ Formations Endpoint: GET /api/shefford/formations?annee=2025 returned 2 formations including 'test PR' formation, 3) ✅ Conformité Report: GET /api/shefford/formations/rapports/conformite?annee=2025 returned 200 OK (was 500 before fix) with all required fields (annee, heures_minimales, total_pompiers, conformes, pourcentage_conformite, pompiers), 4) ✅ Dashboard Formations: GET /api/shefford/formations/rapports/dashboard?annee=2025 returned 200 OK with KPIs (heures_planifiees, heures_effectuees, pourcentage_realisation, total_pompiers, pompiers_formes, pourcentage_pompiers), 5) ✅ Fix Verification: All endpoints working correctly after date parsing corrections, 6) ✅ Test Summary: All objectives achieved. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: Date parsing fix with try/catch successfully resolved 500 errors, all formation report endpoints now return 200 OK, frontend can load all data without errors. The corrections at line 3990-3997 with proper None/invalid date handling are working perfectly."
 
+  - task: "Assignation Manuelle Avancée - Bug Fix bi_hebdomadaire"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "BUG FIX - Fixed critical bug in assignation manuelle avancée where variable 'bi_hebdomadaire' was used but not defined. Added line 7799: bi_hebdomadaire = assignation_data.get('bi_hebdomadaire', False). This was causing 500 errors when users clicked 'Créer l'assignation' in the advanced assignment interface. The fix ensures the bi_hebdomadaire parameter is properly extracted from the request data with a default value of False."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIX FULLY VERIFIED - Comprehensive testing completed successfully with 100% success rate (4/4 tests passed). CRITICAL SUCCESS: The bi_hebdomadaire bug is completely resolved! Test results: 1) ✅ Assignation Unique: POST /api/demo/planning/assignation-avancee with bi_hebdomadaire=false returns 200 OK and creates 1 assignation (was 500 error before fix), 2) ✅ Récurrence Hebdomadaire: POST with bi_hebdomadaire=true returns 200 OK and creates 3 assignations for Monday/Wednesday pattern over 3 weeks, 3) ✅ Default Value Handling: Request without bi_hebdomadaire parameter works correctly (uses default False), 4) ✅ Database Verification: All created assignations found in planning with assignation_type='manuel_avance'. Used demo tenant with gussdub@gmail.com / 230685Juin+ credentials. Tested with future dates (2025-11-22, 2025-12-02 to 2025-12-22, 2026-01-01) to avoid conflicts. The fix at line 7799 'bi_hebdomadaire = assignation_data.get('bi_hebdomadaire', False)' is working perfectly. Users can now successfully create advanced manual assignments for all recurrence types without errors."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
