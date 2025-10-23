@@ -794,16 +794,17 @@ const Parametres = ({ user, tenantSlug }) => {
       // Récupérer d'abord les paramètres de remplacements existants
       const existingParams = await axios.get(`${API}/parametres/remplacements`).catch(() => ({ data: null }));
       
-      // Fusionner avec les nouveaux paramètres d'heures sup
+      // Fusionner avec les nouveaux paramètres d'heures sup et regroupement
       const updatedParams = {
         ...(existingParams.data || {}),
-        ...heuresSupParams
+        ...heuresSupParams,
+        ...regroupementParams
       };
       
       await axios.put(`${API}/parametres/remplacements`, updatedParams);
       toast({
         title: "Configuration sauvegardée",
-        description: "Les paramètres de gestion des heures supplémentaires ont été enregistrés",
+        description: "Les paramètres ont été enregistrés avec succès",
         variant: "success"
       });
     } catch (error) {
