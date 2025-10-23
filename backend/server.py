@@ -1186,6 +1186,63 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**user)
 
+async def calculer_heures_employe_periode(user_id: str, tenant_id: str, date_reference: str, periode: str, jours_personnalises: int = 7):
+    """
+    Calcule les heures travaillées par un employé sur une période donnée
+    
+    Args:
+        user_id: ID de l'employé
+        tenant_id: ID du tenant
+        date_reference: Date de référence (format YYYY-MM-DD)
+        periode: Type de période ("semaine", "mois", "personnalise")
+        jours_personnalises: Nombre de jours si période personnalisée
+    
+    Returns:
+        Nombre d'heures travaillées sur la période
+    """
+    date_ref = datetime.strptime(date_reference, "%Y-%m-%d")
+    
+    # Calculer date_debut et date_fin selon la période
+    if periode == "semaine":
+        # Du lundi au dimanche de la semaine en cours
+        date_debut = date_ref - timedelta(days=date_ref.weekday())
+        date_fin = date_debut + timedelta(days=6)
+    elif periode == "mois":
+        # Du 1er au dernier jour du mois
+        date_debut = date_ref.replace(day=1)
+        # Dernier jour du mois
+        if date_ref.month == 12:
+            date_fin = date_ref.replace(day=31)
+        else:
+            date_fin = (date_ref.replace(month=date_ref.month + 1, day=1) - timedelta(days=1))
+    else:  # personnalise
+        # X jours glissants avant la date de référence
+        date_debut = date_ref - timedelta(days=jours_personnalises - 1)
+        date_fin = date_ref
+    
+    date_debut_str = date_debut.strftime("%Y-%m-%d")
+    date_fin_str = date_fin.strftime("%Y-%m-%d")
+    
+    # Récupérer toutes les assignations de l'employé sur cette période
+    assignations = await db.assignations.find({
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "date": {
+            "$gte": date_debut_str,
+            "$lte": date_fin_str
+        }
+    }).to_list(1000)
+    
+    # Calculer le total des heures
+    total_heures = 0
+    for assignation in assignations:
+        # Récupérer le type de garde pour obtenir la durée
+        type_garde = await db.types_garde.find_one({"id": assignation["type_garde_id"]})
+        if type_garde:
+            total_heures += type_garde.get("duree_heures", 8)
+    
+    return total_heures
+
 # Root route
 @api_router.get("/")
 async def root():
