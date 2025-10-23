@@ -10441,22 +10441,33 @@ async def get_parametres_remplacements(current_user: User = Depends(get_current_
 
 @api_router.put("/parametres/remplacements")
 async def update_parametres_remplacements(
-    parametres: ParametresRemplacements,
+    parametres_data: dict,
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres de remplacements"""
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    existing = await db.parametres_remplacements.find_one()
+    # Récupérer le tenant_id de l'utilisateur courant
+    tenant_id = current_user.tenant_id
+    
+    # Chercher les paramètres existants pour ce tenant
+    existing = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+    
+    # S'assurer que tenant_id est présent dans les données
+    parametres_data["tenant_id"] = tenant_id
     
     if existing:
+        # Mettre à jour les paramètres existants
         await db.parametres_remplacements.update_one(
-            {"id": existing["id"]},
-            {"$set": parametres.dict()}
+            {"tenant_id": tenant_id},
+            {"$set": parametres_data}
         )
     else:
-        await db.parametres_remplacements.insert_one(parametres.dict())
+        # Créer de nouveaux paramètres avec un ID
+        if "id" not in parametres_data:
+            parametres_data["id"] = str(uuid.uuid4())
+        await db.parametres_remplacements.insert_one(parametres_data)
     
     return {"message": "Paramètres mis à jour avec succès"}
 
