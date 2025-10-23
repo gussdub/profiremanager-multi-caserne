@@ -10428,16 +10428,17 @@ async def get_parametres_remplacements(current_user: User = Depends(get_current_
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    parametres = await db.parametres_remplacements.find_one()
+    # Chercher pour ce tenant spécifique
+    parametres = await db.parametres_remplacements.find_one({"tenant_id": current_user.tenant_id})
     
     if not parametres:
-        # Créer paramètres par défaut
-        default_params = ParametresRemplacements()
+        # Créer paramètres par défaut pour ce tenant
+        default_params = ParametresRemplacements(tenant_id=current_user.tenant_id)
         await db.parametres_remplacements.insert_one(default_params.dict())
         return default_params
     
     cleaned_params = clean_mongo_doc(parametres)
-    return ParametresRemplacements(**cleaned_params)
+    return cleaned_params  # Retourner le dict directement pour plus de flexibilité
 
 @api_router.put("/parametres/remplacements")
 async def update_parametres_remplacements(
