@@ -291,14 +291,15 @@ const Parametres = ({ user, tenantSlug }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [typesResponse, formationsResponse, competencesResponse, gradesResponse, usersResponse, validationResponse, paramsFormationsResponse] = await Promise.all([
+      const [typesResponse, formationsResponse, competencesResponse, gradesResponse, usersResponse, validationResponse, paramsFormationsResponse, paramsRemplacementsResponse] = await Promise.all([
         axios.get(`${API}/types-garde`),
         axios.get(`${API}/formations`),
         axios.get(`${API}/competences`),
         axios.get(`${API}/grades`),
         axios.get(`${API}/users`),
         axios.get(`${API}/parametres/validation-planning`).catch(() => ({ data: validationParams })),
-        axios.get(`${API}/parametres/formations`).catch(() => ({ data: { heures_minimales_annuelles: 100, delai_notification_liste_attente: 7, email_notifications_actif: true } }))
+        axios.get(`${API}/parametres/formations`).catch(() => ({ data: { heures_minimales_annuelles: 100, delai_notification_liste_attente: 7, email_notifications_actif: true } })),
+        axios.get(`${API}/parametres/remplacements`).catch(() => ({ data: null }))
       ]);
       setTypesGarde(typesResponse.data);
       setFormations(formationsResponse.data);
@@ -307,6 +308,23 @@ const Parametres = ({ user, tenantSlug }) => {
       setUsers(usersResponse.data);
       setValidationParams(validationResponse.data);
       setParametresFormations(paramsFormationsResponse.data);
+      
+      // Charger les paramètres de remplacements (incluant heures sup)
+      if (paramsRemplacementsResponse.data) {
+        setHeuresSupParams({
+          activer_gestion_heures_sup: paramsRemplacementsResponse.data.activer_gestion_heures_sup || false,
+          seuil_max_heures: paramsRemplacementsResponse.data.seuil_max_heures || 40,
+          periode_calcul_heures: paramsRemplacementsResponse.data.periode_calcul_heures || 'semaine',
+          jours_periode_personnalisee: paramsRemplacementsResponse.data.jours_periode_personnalisee || 7
+        });
+        // Charger aussi les autres paramètres de remplacements dans systemSettings
+        setSystemSettings(prev => ({
+          ...prev,
+          mode_notification: paramsRemplacementsResponse.data.mode_notification || 'simultane',
+          delai_attente_minutes: paramsRemplacementsResponse.data.delai_attente_heures * 60 || 1440,
+          max_personnes_contact: paramsRemplacementsResponse.data.max_contacts || 5
+        }));
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres:', error);
     } finally {
