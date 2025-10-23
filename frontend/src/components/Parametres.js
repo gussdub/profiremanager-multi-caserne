@@ -1687,31 +1687,44 @@ const Parametres = ({ user, tenantSlug }) => {
                   💾 Enregistrer la configuration
                 </Button>
               </div>
-            </div>
+              </div>
 
-            {/* NOUVELLE SECTION: Regroupement des Heures */}
-            <div className="regroupement-section" style={{ marginTop: '30px', borderTop: '2px solid #e2e8f0', paddingTop: '30px' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                🔗 Regroupement des Heures
-                <span 
-                  title="Le système regroupe automatiquement les gardes d'une même journée ou de jours consécutifs pour minimiser les déplacements"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: '#3b82f6',
-                    color: 'white',
-                    fontSize: '0.75rem',
-                    cursor: 'help',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  i
-                </span>
-              </h3>
+              {/* CARTE 4: Regroupement des Heures */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 16px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '1.25rem',
+                  color: '#1e293b'
+                }}>
+                  🔗 Regroupement des Heures
+                  <span 
+                    title="Regroupe automatiquement les gardes: même journée (6h AM + 6h PM) ou jours consécutifs (Sam + Dim). Priorité: après équitabilité, avant ancienneté."
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: '#3b82f6',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      cursor: 'help',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    i
+                  </span>
+                </h3>
               <p style={{ color: '#64748b', marginBottom: '20px' }}>
                 Optimisez le confort des employés en regroupant automatiquement les gardes
               </p>
