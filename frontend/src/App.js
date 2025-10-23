@@ -5361,7 +5361,7 @@ const Planning = () => {
     });
     
     // Calculer le total de gardes théoriques du mois
-    const daysInMonth = currentMonthEnd.getDate();
+    const daysInMonth = targetMonthEnd.getDate();
     const totalGardesTheoriques = daysInMonth * typesGarde.length;
     
     // Calculer les gardes couvertes et non couvertes
@@ -5398,11 +5398,12 @@ const Planning = () => {
       quartsCouverts: gardesCouvertes,
       quartsNonCouverts: gardesNonCouvertes,
       heuresTotales,
-      tauxCouverture
+      tauxCouverture,
+      monthLabel // Ajouté pour affichage
     };
   };
 
-  const kpis = calculateKPIs();
+  const kpis = calculateKPIs(kpiPeriode);
 
   // Fonctions d'export Planning
   const handleExportPDFPlanning = async () => {
