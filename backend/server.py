@@ -625,43 +625,34 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
 
 def get_password_hash(password: str) -> str:
     """
-    Crée un hash du mot de passe.
-    Utilise SHA256 pour la simplicité et la fiabilité.
+    Crée un hash bcrypt du mot de passe (sécurisé et standard).
     """
     password_bytes = password.encode('utf-8')
-    return hashlib.sha256(password_bytes).hexdigest()
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Vérifie un mot de passe contre son hash.
-    SUPPORTE BCRYPT ET SHA256 pour compatibilité maximale.
+    Vérifie un mot de passe contre son hash bcrypt.
+    Système simplifié: UNIQUEMENT bcrypt pour stabilité maximale.
     
     Retourne True si le mot de passe correspond, False sinon.
     """
     try:
         password_bytes = plain_password.encode('utf-8')
         
-        # Vérifier d'abord si c'est un hash bcrypt (commence par $2)
-        if hashed_password.startswith('$2'):
-            logging.info(f"🔐 Hash bcrypt détecté, vérification bcrypt")
-            try:
-                if isinstance(hashed_password, str):
-                    hash_bytes = hashed_password.encode('utf-8')
-                else:
-                    hash_bytes = hashed_password
-                
-                result = bcrypt.checkpw(password_bytes, hash_bytes)
-                logging.info(f"✅ Vérification bcrypt: {result}")
-                return result
-            except Exception as bcrypt_error:
-                logging.error(f"❌ Erreur bcrypt: {bcrypt_error}")
-                return False
+        # Vérifier si c'est un hash bcrypt valide
+        if not hashed_password or not hashed_password.startswith('$2'):
+            logging.error(f"❌ Hash invalide ou non-bcrypt détecté")
+            return False
         
-        # Sinon, vérifier avec SHA256
-        logging.info(f"🔐 Hash SHA256 détecté, vérification SHA256")
-        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
-        result = sha256_hash == hashed_password
-        logging.info(f"✅ Vérification SHA256: {result}")
+        if isinstance(hashed_password, str):
+            hash_bytes = hashed_password.encode('utf-8')
+        else:
+            hash_bytes = hashed_password
+        
+        result = bcrypt.checkpw(password_bytes, hash_bytes)
+        logging.info(f"✅ Vérification bcrypt: {result}")
         return result
         
     except Exception as e:
