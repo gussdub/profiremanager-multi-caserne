@@ -1660,20 +1660,6 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 </div>
               )}
-
-              <div className="info-box" style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
-                <h4 style={{ color: '#15803d', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  💡 Comment ça fonctionne
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#15803d' }}>
-                  <li><strong>Même journée:</strong> 6h AM + 6h PM → 2 gardes assignées au même employé</li>
-                  <li><strong>Jours consécutifs:</strong> Samedi 12h + Dimanche 12h → 2 gardes assignées au même employé</li>
-                  <li><strong>Priorité:</strong> Appliqué APRÈS l'équitabilité des heures, AVANT l'ancienneté</li>
-                  <li><strong>Disponibilités:</strong> Vérifie la disponibilité sur tous les jours concernés</li>
-                  <li><strong>Flexibilité:</strong> Si regroupement impossible, assigne normalement (séparé)</li>
-                  <li><strong>Tous types de gardes:</strong> Peut regrouper n'importe quels types de gardes</li>
-                </ul>
-              </div>
             </div>
           </div>
         )}
