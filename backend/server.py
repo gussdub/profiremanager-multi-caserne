@@ -500,6 +500,106 @@ def send_temporary_password_email(user_email: str, user_name: str, temp_password
     except Exception as e:
         print(f"❌ Erreur lors de l'envoi de l'email de réinitialisation à {user_email}: {str(e)}")
         return False
+
+
+def send_password_reset_email(user_email: str, user_name: str, reset_token: str, tenant_slug: str = ""):
+    """
+    Envoie un email avec un lien pour réinitialiser le mot de passe
+    """
+    try:
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
+        reset_link = f"{frontend_url}/{tenant_slug}/reset-password?token={reset_token}"
+        
+        subject = "Réinitialisation de votre mot de passe - ProFireManager"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
+                         alt="ProFireManager" 
+                         width="60" 
+                         height="60"
+                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+                </div>
+                
+                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
+                
+                <p>Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte ProFireManager.</p>
+                
+                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #92400e; margin-top: 0;">⚠️ IMPORTANT - Sécurité</h3>
+                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
+                        Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe actuel reste inchangé.
+                    </p>
+                    <p style="color: #78350f; margin: 10px 0;">
+                        Ce lien est valide pendant <strong>1 heure</strong> seulement.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_link}" 
+                       style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                        🔐 Réinitialiser mon mot de passe
+                    </a>
+                </div>
+                
+                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                    <p style="color: #1e3a8a; margin: 0; font-size: 14px;">
+                        💡 <strong>Le lien ne fonctionne pas?</strong><br>
+                        Copiez et collez cette adresse dans votre navigateur :<br>
+                        <span style="font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all;">{reset_link}</span>
+                    </p>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                
+                <p style="color: #666; font-size: 14px; text-align: center;">
+                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
+                    Pour des questions de sécurité, contactez votre administrateur.
+                </p>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #999; font-size: 12px;">
+                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Envoyer l'email via SendGrid
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        
+        if not sendgrid_api_key:
+            print(f"[WARNING] SENDGRID_API_KEY non configurée - Email non envoyé à {user_email}")
+            return False
+        
+        message = Mail(
+            from_email=sender_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Email de réinitialisation de mot de passe envoyé avec succès à {user_email}")
+            return True
+        else:
+            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
+            return False
+                
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi de l'email de réinitialisation à {user_email}: {str(e)}")
+        return False
         
 
 def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
