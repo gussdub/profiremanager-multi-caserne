@@ -1766,6 +1766,8 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 </div>
               )}
+              </div>
+
             </div>
           </div>
         )}
