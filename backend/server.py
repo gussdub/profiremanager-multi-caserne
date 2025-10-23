@@ -8447,7 +8447,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Retirer ce pompier de la liste des disponibles pour cette garde
                     users_with_min_hours.pop(0)
         
-        return {
+        return len(nouvelles_assignations)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur traitement semaine: {str(e)}")
             "message": "Attribution automatique intelligente effectuée avec succès",
             "assignations_creees": len(nouvelles_assignations),
             "algorithme": "5 niveaux: Manuel → Disponibilités → Grades → Rotation équitable → Ancienneté",
