@@ -8764,6 +8764,118 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         user_hours += type_garde.get("duree_heures", 8)
             user_monthly_hours[user["id"]] = user_hours
         
+        # REGROUPEMENT DES HEURES (si activé) - Traiter avant l'attribution normale
+        regroupements_traites = []  # Pour tracker les gardes déjà regroupées
+        if parametres.get("activer_regroupement_heures", False):
+            duree_max_regroupement = parametres.get("duree_max_regroupement", 24)
+            
+            # Parcourir chaque jour de la semaine pour identifier les opportunités
+            for day_offset in range(7):
+                current_date = datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=day_offset)
+                date_str = current_date.strftime("%Y-%m-%d")
+                
+                # Trouver les opportunités de regroupement pour cette date
+                opportunites = await trouver_opportunites_regroupement(
+                    date_str=date_str,
+                    types_garde=types_garde,
+                    existing_assignations=existing_assignations,
+                    duree_max=duree_max_regroupement,
+                    tenant_id=tenant.id
+                )
+                
+                # Traiter chaque opportunité
+                for opp in opportunites:
+                    # Vérifier si ces gardes n'ont pas déjà été traitées
+                    key = f"{opp['date1']}_{opp['garde1']['id']}_{opp['date2']}_{opp['garde2']['id']}"
+                    if key in regroupements_traites:
+                        continue
+                    
+                    # Trouver les employés disponibles pour les DEUX gardes
+                    candidats_regroupement = []
+                    
+                    for user in users:
+                        # Vérifier disponibilités si temps partiel
+                        if user["type_emploi"] == "temps_partiel":
+                            # Doit être disponible sur les deux dates (ou jours concernés)
+                            dates_a_verifier = [opp['date1']]
+                            if opp['date2'] != opp['date1']:
+                                dates_a_verifier.append(opp['date2'])
+                            
+                            disponible_toutes_dates = True
+                            for date_check in dates_a_verifier:
+                                dispo = await db.disponibilites.find_one({
+                                    "user_id": user["id"],
+                                    "date": date_check,
+                                    "statut": "disponible"
+                                })
+                                if not dispo:
+                                    disponible_toutes_dates = False
+                                    break
+                            
+                            if not disponible_toutes_dates:
+                                continue
+                        
+                        # Vérifier heures supplémentaires si activé
+                        if activer_heures_sup:
+                            heures_actuelles = user_heures_actuelles.get(user["id"], 0)
+                            heures_max_user = user.get("heures_max_semaine", float('inf'))
+                            limite_effective = min(seuil_max_heures, heures_max_user)
+                            
+                            if heures_actuelles + opp['duree_totale'] > limite_effective:
+                                continue  # Dépasserait la limite
+                        
+                        # Vérifier qu'il n'est pas déjà assigné sur ces dates/gardes
+                        deja_assigne = any(
+                            (a["date"] == opp['date1'] and a["type_garde_id"] == opp['garde1']["id"] and a["user_id"] == user["id"]) or
+                            (a["date"] == opp['date2'] and a["type_garde_id"] == opp['garde2']["id"] and a["user_id"] == user["id"])
+                            for a in existing_assignations
+                        )
+                        
+                        if not deja_assigne:
+                            candidats_regroupement.append(user)
+                    
+                    # Si on a des candidats, appliquer l'équitabilité puis assigner
+                    if candidats_regroupement:
+                        # ÉTAPE 4b: Tri par équitabilité (heures mensuelles)
+                        candidats_regroupement.sort(key=lambda u: user_monthly_hours.get(u["id"], 0))
+                        
+                        # Sélectionner le meilleur candidat
+                        selected_user = candidats_regroupement[0]
+                        
+                        # Créer les 2 assignations pour ce regroupement
+                        assignation1 = Assignation(
+                            user_id=selected_user["id"],
+                            tenant_id=tenant.id,
+                            type_garde_id=opp['garde1']["id"],
+                            date=opp['date1'],
+                            assignation_type="automatique"
+                        )
+                        
+                        assignation2 = Assignation(
+                            user_id=selected_user["id"],
+                            tenant_id=tenant.id,
+                            type_garde_id=opp['garde2']["id"],
+                            date=opp['date2'],
+                            assignation_type="automatique"
+                        )
+                        
+                        # Insérer dans la base de données
+                        await db.assignations.insert_one(assignation1.dict())
+                        await db.assignations.insert_one(assignation2.dict())
+                        
+                        nouvelles_assignations.append(assignation1.dict())
+                        nouvelles_assignations.append(assignation2.dict())
+                        existing_assignations.append(assignation1.dict())
+                        existing_assignations.append(assignation2.dict())
+                        
+                        # Mettre à jour les heures mensuelles
+                        user_monthly_hours[selected_user["id"]] += opp['duree_totale']
+                        
+                        # Marquer comme traité
+                        regroupements_traites.append(key)
+                        
+                        logging.info(f"✅ Regroupement créé: {selected_user['prenom']} {selected_user['nom']} - {opp['type']} - {opp['duree_totale']}h")
+        
         # Attribution automatique logic (5 niveaux de priorité)
         nouvelles_assignations = []
         
