@@ -10445,26 +10445,30 @@ async def creer_notification(
 
 # ==================== PARAMÈTRES REMPLACEMENTS ====================
 
-@api_router.get("/parametres/remplacements")
-async def get_parametres_remplacements(current_user: User = Depends(get_current_user)):
+@api_router.get("/{tenant_slug}/parametres/remplacements")
+async def get_parametres_remplacements(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère les paramètres de remplacements"""
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    # Vérifier le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     # Chercher pour ce tenant spécifique
-    parametres = await db.parametres_remplacements.find_one({"tenant_id": current_user.tenant_id})
+    parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
     
     if not parametres:
         # Créer paramètres par défaut pour ce tenant
-        default_params = ParametresRemplacements(tenant_id=current_user.tenant_id)
+        default_params = ParametresRemplacements(tenant_id=tenant.id)
         await db.parametres_remplacements.insert_one(default_params.dict())
         return default_params
     
     cleaned_params = clean_mongo_doc(parametres)
     return cleaned_params  # Retourner le dict directement pour plus de flexibilité
 
-@api_router.put("/parametres/remplacements")
+@api_router.put("/{tenant_slug}/parametres/remplacements")
 async def update_parametres_remplacements(
+    tenant_slug: str,
     parametres_data: dict,
     current_user: User = Depends(get_current_user)
 ):
