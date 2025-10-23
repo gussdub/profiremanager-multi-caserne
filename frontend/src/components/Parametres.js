@@ -919,63 +919,6 @@ const Parametres = ({ user, tenantSlug }) => {
     }
   };
 
-  const handleResetPassword = async (user) => {
-    // Générer un mot de passe temporaire aléatoire
-    const generateTempPassword = () => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*';
-      let password = '';
-      password += chars[Math.floor(Math.random() * 26)]; // Majuscule
-      password += chars[Math.floor(Math.random() * 26) + 26]; // Minuscule
-      password += '23456789'[Math.floor(Math.random() * 8)]; // Chiffre
-      password += '!@#$%^&*'[Math.floor(Math.random() * 8)]; // Spécial
-      // Compléter jusqu'à 10 caractères
-      for (let i = 0; i < 6; i++) {
-        password += chars[Math.floor(Math.random() * chars.length)];
-      }
-      // Mélanger
-      return password.split('').sort(() => 0.5 - Math.random()).join('');
-    };
-
-    const newTempPassword = generateTempPassword();
-
-    try {
-      const response = await axios.put(`${API}/users/${user.id}/password`, {
-        mot_de_passe: newTempPassword,
-        ancien_mot_de_passe: '' // Admin bypass
-      });
-
-      setEditingUser(user);
-      setShowResetPasswordModal(true);
-
-      // Afficher la notification selon si l'email a été envoyé ou non
-      if (response.data.email_sent) {
-        toast({
-          title: "Mot de passe réinitialisé",
-          description: `Le mot de passe temporaire a été généré et envoyé par courriel à ${user.prenom} ${user.nom} (${response.data.email_address})`,
-          variant: "success"
-        });
-      } else if (response.data.error) {
-        toast({
-          title: "Mot de passe réinitialisé avec avertissement",
-          description: response.data.error,
-          variant: "warning"
-        });
-      } else {
-        toast({
-          title: "Mot de passe réinitialisé",
-          description: `Le mot de passe temporaire pour ${user.prenom} ${user.nom} a été généré`,
-          variant: "success"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de réinitialiser le mot de passe",
-        variant: "destructive"
-      });
-    }
-  };
-
   const resetNewUser = () => {
     setNewUser({
       nom: '',
