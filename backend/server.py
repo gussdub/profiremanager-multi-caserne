@@ -7796,6 +7796,7 @@ async def assignation_manuelle_avancee(
         date_debut = datetime.strptime(assignation_data.get("date_debut"), "%Y-%m-%d").date()
         date_fin = datetime.strptime(assignation_data.get("date_fin", assignation_data.get("date_debut")), "%Y-%m-%d").date()
         jours_semaine = assignation_data.get("jours_semaine", [])
+        bi_hebdomadaire = assignation_data.get("bi_hebdomadaire", False)
         recurrence_intervalle = assignation_data.get("recurrence_intervalle", 1)
         recurrence_frequence = assignation_data.get("recurrence_frequence", "jours")
         
