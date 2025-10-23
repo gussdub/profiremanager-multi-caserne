@@ -5126,6 +5126,191 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         logging.error(f"❌ Erreur inattendue lors du login pour {user_login.email}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
+# ==================== PASSWORD RESET ROUTES ====================
+
+@api_router.post("/{tenant_slug}/auth/forgot-password")
+async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
+    """
+    Endpoint pour demander une réinitialisation de mot de passe.
+    Envoie un email avec un lien contenant un token valide 1 heure.
+    """
+    try:
+        logging.info(f"🔑 Demande de réinitialisation de mot de passe pour {request.email} sur tenant {tenant_slug}")
+        
+        # Vérifier que le tenant existe
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Chercher l'utilisateur dans ce tenant
+        user_data = await db.users.find_one({
+            "email": request.email,
+            "tenant_id": tenant.id
+        })
+        
+        # Même si l'utilisateur n'existe pas, on retourne un message générique pour la sécurité
+        if not user_data:
+            logging.warning(f"⚠️ Tentative de réinitialisation pour email inexistant: {request.email} dans tenant {tenant_slug}")
+            # Ne pas révéler que l'email n'existe pas
+            return {
+                "message": "Si cet email existe dans notre système, vous recevrez un lien de réinitialisation.",
+                "email_sent": False
+            }
+        
+        # Générer un token unique
+        reset_token = str(uuid.uuid4())
+        
+        # Calculer l'expiration (1 heure)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        
+        # Créer l'objet token
+        token_obj = PasswordResetToken(
+            tenant_id=tenant.id,
+            user_id=user_data["id"],
+            email=request.email,
+            token=reset_token,
+            expires_at=expires_at
+        )
+        
+        # Sauvegarder le token dans la base de données
+        await db.password_reset_tokens.insert_one(token_obj.dict())
+        
+        logging.info(f"✅ Token de réinitialisation créé pour {request.email}, expire à {expires_at}")
+        
+        # Envoyer l'email
+        user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
+        email_sent = send_password_reset_email(
+            user_email=request.email,
+            user_name=user_name or request.email,
+            reset_token=reset_token,
+            tenant_slug=tenant_slug
+        )
+        
+        if email_sent:
+            logging.info(f"✅ Email de réinitialisation envoyé avec succès à {request.email}")
+        else:
+            logging.warning(f"⚠️ L'email n'a pas pu être envoyé à {request.email}")
+        
+        return {
+            "message": "Si cet email existe dans notre système, vous recevrez un lien de réinitialisation.",
+            "email_sent": email_sent
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la demande de réinitialisation pour {request.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
+
+@api_router.get("/{tenant_slug}/auth/verify-reset-token/{token}")
+async def verify_reset_token(tenant_slug: str, token: str):
+    """
+    Vérifie si un token de réinitialisation est valide et non expiré
+    """
+    try:
+        # Vérifier que le tenant existe
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Chercher le token
+        token_data = await db.password_reset_tokens.find_one({
+            "token": token,
+            "tenant_id": tenant.id,
+            "used": False
+        })
+        
+        if not token_data:
+            raise HTTPException(status_code=404, detail="Token invalide ou déjà utilisé")
+        
+        # Vérifier l'expiration
+        expires_at = token_data["expires_at"]
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien de réinitialisation.")
+        
+        return {
+            "valid": True,
+            "email": token_data["email"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la vérification du token: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
+
+@api_router.post("/{tenant_slug}/auth/reset-password")
+async def reset_password(tenant_slug: str, request: ResetPasswordRequest):
+    """
+    Réinitialise le mot de passe avec un token valide
+    """
+    try:
+        logging.info(f"🔑 Tentative de réinitialisation de mot de passe avec token sur tenant {tenant_slug}")
+        
+        # Vérifier que le tenant existe
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Chercher le token
+        token_data = await db.password_reset_tokens.find_one({
+            "token": request.token,
+            "tenant_id": tenant.id,
+            "used": False
+        })
+        
+        if not token_data:
+            logging.warning(f"⚠️ Token invalide ou déjà utilisé: {request.token[:8]}...")
+            raise HTTPException(status_code=404, detail="Token invalide ou déjà utilisé")
+        
+        # Vérifier l'expiration
+        expires_at = token_data["expires_at"]
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        
+        if datetime.now(timezone.utc) > expires_at:
+            logging.warning(f"⚠️ Token expiré pour {token_data['email']}")
+            raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien de réinitialisation.")
+        
+        # Valider le nouveau mot de passe
+        if not validate_password_complexity(request.nouveau_mot_de_passe):
+            raise HTTPException(
+                status_code=400,
+                detail="Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
+            )
+        
+        # Hacher le nouveau mot de passe avec bcrypt
+        nouveau_hash = get_password_hash(request.nouveau_mot_de_passe)
+        logging.info(f"🔐 Nouveau mot de passe hashé avec bcrypt pour {token_data['email']}")
+        
+        # Mettre à jour le mot de passe de l'utilisateur
+        result = await db.users.update_one(
+            {"id": token_data["user_id"], "tenant_id": tenant.id},
+            {"$set": {"mot_de_passe_hash": nouveau_hash}}
+        )
+        
+        if result.modified_count == 0:
+            logging.error(f"❌ Échec de la mise à jour du mot de passe pour user_id: {token_data['user_id']}")
+            raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour du mot de passe")
+        
+        # Marquer le token comme utilisé
+        await db.password_reset_tokens.update_one(
+            {"token": request.token},
+            {"$set": {"used": True}}
+        )
+        
+        logging.info(f"✅ Mot de passe réinitialisé avec succès pour {token_data['email']}")
+        
+        return {
+            "message": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
+            "email": token_data["email"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de la réinitialisation du mot de passe: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
 # ==================== TENANT ROUTES (LEGACY / TO MIGRATE) ====================
 
 # Demandes de congé routes
