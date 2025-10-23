@@ -8451,14 +8451,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur traitement semaine: {str(e)}")
-            "message": "Attribution automatique intelligente effectuée avec succès",
-            "assignations_creees": len(nouvelles_assignations),
-            "algorithme": "5 niveaux: Manuel → Disponibilités → Grades → Rotation équitable → Ancienneté",
-            "semaine": f"{semaine_debut} - {semaine_fin}"
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
 
 # Endpoint pour obtenir les statistiques personnelles mensuelles
 @api_router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
