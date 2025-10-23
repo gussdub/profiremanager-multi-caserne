@@ -5033,24 +5033,7 @@ const Planning = () => {
         semaine_fin = lastSunday.toISOString().split('T')[0];
       }
       
-      // Vérifier s'il existe déjà des assignations pour cette période
-      const checkResponse = await apiGet(tenantSlug, `/planning/assignations/check-periode?debut=${semaine_debut}&fin=${semaine_fin}`);
-      
-      if (checkResponse && checkResponse.existing_count > 0) {
-        // Demander confirmation à l'utilisateur
-        const userConfirmed = window.confirm(
-          `⚠️ Il existe déjà ${checkResponse.existing_count} assignation(s) pour cette période.\n\n` +
-          `Voulez-vous :\n` +
-          `• OK = Conserver les existantes et créer seulement les manquantes\n` +
-          `• Annuler = Ne rien faire`
-        );
-        
-        if (!userConfirmed) {
-          return; // L'utilisateur annule
-        }
-      }
-      
-      // Lancer l'attribution automatique
+      // Lancer l'attribution automatique directement
       const responseData = await apiPost(
         tenantSlug, 
         `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}`, 
