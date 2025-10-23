@@ -1013,71 +1013,76 @@ const Parametres = ({ user, tenantSlug }) => {
         </div>
       </div>
 
-      {/* Navigation par onglets - Style Harmonisé */}
-      <div className="parametres-tabs-harmonized">
-        <button
-          className={`parametres-tab-btn ${activeTab === 'types-garde' ? 'active' : ''}`}
-          onClick={() => setActiveTab('types-garde')}
-          data-testid="tab-types-garde"
-        >
-          🚒 Gardes
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'competences' ? 'active' : ''}`}
-          onClick={() => setActiveTab('competences')}
-          data-testid="tab-competences"
-        >
-          📜 Compétences
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'grades' ? 'active' : ''}`}
-          onClick={() => setActiveTab('grades')}
-          data-testid="tab-grades"
-        >
-          🎖️ Grades
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'attribution' ? 'active' : ''}`}
-          onClick={() => setActiveTab('attribution')}
-          data-testid="tab-attribution"
-        >
-          📅 Planning
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'comptes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('comptes')}
-          data-testid="tab-comptes"
-        >
-          👥 Comptes
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'remplacements' ? 'active' : ''}`}
-          onClick={() => setActiveTab('remplacements')}
-          data-testid="tab-remplacements"
-        >
-          🔄 Remplacements
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'disponibilites' ? 'active' : ''}`}
-          onClick={() => setActiveTab('disponibilites')}
-          data-testid="tab-disponibilites"
-        >
-          📅 Disponibilités
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'epi' ? 'active' : ''}`}
-          onClick={() => setActiveTab('epi')}
-          data-testid="tab-epi"
-        >
-          🛡️ EPI
-        </button>
-        <button
-          className={`parametres-tab-btn ${activeTab === 'formations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('formations')}
-          data-testid="tab-formations"
-        >
-          📚 Formations
-        </button>
+      {/* Navigation par GRILLE DE CARTES */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px',
+        padding: '0 10px'
+      }}>
+        {[
+          { id: 'types-garde', icon: '🚒', title: 'Gardes', desc: 'Types de gardes' },
+          { id: 'competences', icon: '📜', title: 'Compétences', desc: 'Certifications' },
+          { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Hiérarchie' },
+          { id: 'attribution', icon: '📅', title: 'Planning', desc: 'Attribution auto' },
+          { id: 'comptes', icon: '👥', title: 'Comptes', desc: 'Utilisateurs' },
+          { id: 'remplacements', icon: '🔄', title: 'Remplacements', desc: 'Règles' },
+          { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
+          { id: 'epi', icon: '🛡️', title: 'EPI', desc: 'Équipements' },
+          { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`param-card ${activeTab === tab.id ? 'active' : ''}`}
+            style={{
+              background: activeTab === tab.id ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' : 'white',
+              border: activeTab === tab.id ? '2px solid #dc2626' : '2px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '20px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              textAlign: 'left',
+              boxShadow: activeTab === tab.id ? '0 8px 16px rgba(220, 38, 38, 0.2)' : '0 2px 4px rgba(0,0,0,0.05)',
+              transform: activeTab === tab.id ? 'scale(1.02)' : 'scale(1)'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== tab.id) {
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== tab.id) {
+                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
+          >
+            <div style={{
+              fontSize: '2rem',
+              marginBottom: '10px',
+              filter: activeTab === tab.id ? 'brightness(0) invert(1)' : 'none'
+            }}>
+              {tab.icon}
+            </div>
+            <div style={{
+              fontWeight: '600',
+              fontSize: '1.1rem',
+              color: activeTab === tab.id ? 'white' : '#1e293b',
+              marginBottom: '4px'
+            }}>
+              {tab.title}
+            </div>
+            <div style={{
+              fontSize: '0.875rem',
+              color: activeTab === tab.id ? 'rgba(255,255,255,0.9)' : '#64748b'
+            }}>
+              {tab.desc}
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Contenu conditionnel selon l'onglet actif */}
