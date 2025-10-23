@@ -6813,20 +6813,6 @@ const Planning = () => {
                 </button>
               </div>
               
-              {/* Résumé de la sélection */}
-              {autoAttributionConfig.periodeLabel && (
-                <div style={{marginTop: '1.5rem', padding: '1rem', background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '8px'}}>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
-                    <span style={{fontSize: '1.25rem'}}>✅</span>
-                    <span style={{fontWeight: '600', color: '#166534'}}>Période sélectionnée</span>
-                  </div>
-                  <p style={{margin: 0, fontSize: '0.875rem', color: '#15803D'}}>
-                    {autoAttributionConfig.periodeLabel}
-                    {autoAttributionConfig.periode === 'mois' && ' (toutes les semaines du mois)'}
-                  </p>
-                </div>
-              )}
-              
               <div style={{marginTop: '1.5rem', padding: '1rem', background: '#EFF6FF', borderRadius: '8px'}}>
                 <p style={{margin: 0, fontSize: '0.875rem', color: '#1E40AF'}}>
                   💡 L'attribution automatique créera les assignations selon les règles configurées dans Paramètres.
