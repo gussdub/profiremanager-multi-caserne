@@ -5179,7 +5179,7 @@ const Planning = () => {
   });
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
     user_id: '',
-    type_garde_id: '',
+    type_garde_ids: [], // Changé en array pour multi-sélection
     recurrence_type: 'unique', // unique, hebdomadaire, bihebdomadaire, mensuelle, annuelle, personnalisee
     jours_semaine: [], // pour récurrence hebdomadaire/bihebdomadaire (sélection multiple)
     bi_hebdomadaire: false, // une semaine sur deux (obsolète, utilisé par bihebdomadaire maintenant)
