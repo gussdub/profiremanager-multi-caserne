@@ -1262,13 +1262,25 @@ const SuperAdminDashboard = ({ onLogout }) => {
                         {admin.email}
                       </div>
                     </div>
-                    <Button 
-                      variant="destructive"
-                      onClick={() => handleDeleteSuperAdmin(admin.id)}
-                      style={{ background: '#dc2626' }}
-                    >
-                      🗑️ Supprimer
-                    </Button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <Button 
+                        variant="default"
+                        onClick={() => {
+                          setEditingSuperAdmin(admin);
+                          setShowEditSuperAdminModal(true);
+                        }}
+                        style={{ background: '#3b82f6' }}
+                      >
+                        ✏️ Modifier
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => handleDeleteSuperAdmin(admin.id)}
+                        style={{ background: '#dc2626' }}
+                      >
+                        🗑️ Supprimer
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
