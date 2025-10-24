@@ -602,6 +602,133 @@ def send_password_reset_email(user_email: str, user_name: str, reset_token: str,
         return False
         
 
+def send_super_admin_welcome_email(user_email: str, user_name: str, temp_password: str):
+    """
+    Envoie un email de bienvenue à un nouveau super admin
+    """
+    try:
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
+        admin_url = f"{frontend_url}/admin"
+        
+        subject = "Bienvenue en tant que Super Admin - ProFireManager"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
+                         alt="ProFireManager" 
+                         width="60" 
+                         height="60"
+                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+                </div>
+                
+                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
+                
+                <p>Votre compte <strong>Super Administrateur</strong> a été créé avec succès dans ProFireManager v2.0.</p>
+                
+                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #92400e; margin-top: 0;">👑 Privilèges de Super Admin</h3>
+                    <p style="color: #92400e; margin: 10px 0;">
+                        En tant que Super Admin, vous avez accès à:
+                    </p>
+                    <ul style="color: #78350f; margin: 10px 0;">
+                        <li><strong>Tous les tenants/casernes</strong> de la plateforme</li>
+                        <li><strong>Interface d'administration</strong> globale</li>
+                        <li><strong>Gestion des autres super admins</strong></li>
+                        <li><strong>Création et configuration</strong> des tenants</li>
+                        <li><strong>Statistiques</strong> multi-tenant</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #dc2626; margin-top: 0;">🔑 Informations de connexion :</h3>
+                    <p><strong>Email :</strong> {user_email}</p>
+                    <p><strong>Mot de passe temporaire :</strong> {temp_password}</p>
+                    <p style="color: #dc2626; font-weight: bold;">⚠️ Veuillez modifier votre mot de passe lors de votre première connexion</p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{admin_url}" 
+                       style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                        👑 Accéder à l'interface Super Admin
+                    </a>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                        💡 Ajoutez ce lien à vos favoris pour un accès rapide
+                    </p>
+                </div>
+                
+                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                    <h4 style="color: #1e40af; margin-top: 0;">📋 Fonctionnalités disponibles :</h4>
+                    <ul style="color: #1e40af; margin: 0;">
+                        <li>Gestion multi-tenant (création, édition, suppression)</li>
+                        <li>Statistiques globales de la plateforme</li>
+                        <li>Gestion des super administrateurs</li>
+                        <li>Configuration des tenants</li>
+                        <li>Surveillance des performances</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fee2e2; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h4 style="color: #991b1b; margin-top: 0;">🔒 IMPORTANT - Sécurité :</h4>
+                    <p style="color: #991b1b; font-weight: bold; margin: 10px 0;">
+                        ⚠️ Changez votre mot de passe temporaire IMMÉDIATEMENT !
+                    </p>
+                    <p style="color: #7f1d1d; margin: 10px 0;">
+                        En tant que Super Admin, vous avez un accès complet au système. Utilisez des mots de passe forts et ne partagez jamais vos identifiants.
+                    </p>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                
+                <p style="color: #666; font-size: 14px; text-align: center;">
+                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
+                    Si vous n'avez pas demandé ce compte, contactez immédiatement l'administrateur système.
+                </p>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #999; font-size: 12px;">
+                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Envoyer l'email via SendGrid
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        
+        if not sendgrid_api_key:
+            print(f"[WARNING] SENDGRID_API_KEY non configurée - Email non envoyé à {user_email}")
+            return False
+        
+        message = Mail(
+            from_email=sender_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Email de bienvenue super admin envoyé avec succès à {user_email}")
+            return True
+        else:
+            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
+            return False
+                
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi de l'email super admin à {user_email}: {str(e)}")
+        return False
+
+
 def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
     """
     Envoie un email détaillé avec les gardes assignées pour le mois
