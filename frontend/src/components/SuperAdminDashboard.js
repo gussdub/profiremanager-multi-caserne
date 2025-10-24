@@ -1061,6 +1061,181 @@ const SuperAdminDashboard = ({ onLogout }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Créer un super admin */}
+      {showCreateSuperAdminModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            width: '500px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ margin: '0 0 20px 0', fontSize: '24px', fontWeight: 'bold' }}>
+              👨‍💼 Créer un super admin
+            </h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <Label>Prénom *</Label>
+                <Input
+                  type="text"
+                  value={newSuperAdmin.prenom}
+                  onChange={(e) => setNewSuperAdmin({ ...newSuperAdmin, prenom: e.target.value })}
+                  placeholder="Jean"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Nom *</Label>
+                <Input
+                  type="text"
+                  value={newSuperAdmin.nom}
+                  onChange={(e) => setNewSuperAdmin({ ...newSuperAdmin, nom: e.target.value })}
+                  placeholder="Dupont"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={newSuperAdmin.email}
+                  onChange={(e) => setNewSuperAdmin({ ...newSuperAdmin, email: e.target.value })}
+                  placeholder="super.admin@exemple.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Mot de passe *</Label>
+                <Input
+                  type="password"
+                  value={newSuperAdmin.mot_de_passe}
+                  onChange={(e) => setNewSuperAdmin({ ...newSuperAdmin, mot_de_passe: e.target.value })}
+                  placeholder="Minimum 8 caractères"
+                  required
+                />
+                <small style={{ color: '#64748b', fontSize: '12px' }}>
+                  Minimum 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial
+                </small>
+              </div>
+
+              <div style={{
+                padding: '15px',
+                background: '#fef3c7',
+                borderRadius: '8px',
+                border: '1px solid #fcd34d',
+                fontSize: '13px',
+                color: '#92400e'
+              }}>
+                ⚠️ Un super admin peut gérer TOUS les tenants et accéder à cette interface d'administration.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
+              <Button variant="outline" onClick={() => {
+                setShowCreateSuperAdminModal(false);
+                setNewSuperAdmin({ email: '', prenom: '', nom: '', mot_de_passe: '' });
+              }}>
+                Annuler
+              </Button>
+              <Button onClick={handleCreateSuperAdmin} style={{ background: '#10b981' }}>
+                ✅ Créer le super admin
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gérer les super admins */}
+      {showManageSuperAdminsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            width: '700px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ margin: '0 0 20px 0', fontSize: '24px', fontWeight: 'bold' }}>
+              👥 Gestion des super admins
+            </h2>
+
+            {superAdmins.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                Aucun super admin trouvé
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {superAdmins.map((admin) => (
+                  <div key={admin.id} style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '16px' }}>
+                        {admin.prenom} {admin.nom}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '14px' }}>
+                        {admin.email}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => handleDeleteSuperAdmin(admin.id)}
+                      style={{ background: '#dc2626' }}
+                    >
+                      🗑️ Supprimer
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
+              <Button variant="outline" onClick={() => {
+                setShowManageSuperAdminsModal(false);
+              }}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
