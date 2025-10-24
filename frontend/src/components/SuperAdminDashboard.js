@@ -15,6 +15,9 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [showCreateSuperAdminModal, setShowCreateSuperAdminModal] = useState(false);
+  const [showManageSuperAdminsModal, setShowManageSuperAdminsModal] = useState(false);
+  const [superAdmins, setSuperAdmins] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [newTenant, setNewTenant] = useState({
     nom: '',
@@ -25,6 +28,12 @@ const SuperAdminDashboard = ({ onLogout }) => {
     date_creation: ''
   });
   const [newAdmin, setNewAdmin] = useState({
+    email: '',
+    prenom: '',
+    nom: '',
+    mot_de_passe: ''
+  });
+  const [newSuperAdmin, setNewSuperAdmin] = useState({
     email: '',
     prenom: '',
     nom: '',
