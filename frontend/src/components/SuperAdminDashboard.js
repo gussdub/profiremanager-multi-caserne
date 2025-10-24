@@ -473,9 +473,30 @@ const SuperAdminDashboard = ({ onLogout }) => {
           </h1>
           <p style={{ color: '#666', margin: 0 }}>Gestion centralisée des casernes ProFireManager</p>
         </div>
-        <Button variant="outline" onClick={onLogout}>
-          Déconnexion
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="default" 
+            onClick={() => {
+              setShowCreateSuperAdminModal(true);
+            }}
+            style={{ background: '#10b981' }}
+          >
+            ➕ Ajouter un super admin
+          </Button>
+          <Button 
+            variant="default" 
+            onClick={() => {
+              fetchSuperAdmins();
+              setShowManageSuperAdminsModal(true);
+            }}
+            style={{ background: '#3b82f6' }}
+          >
+            👥 Gérer les super admins
+          </Button>
+          <Button variant="outline" onClick={onLogout}>
+            Déconnexion
+          </Button>
+        </div>
       </div>
 
       {/* Statistiques globales */}
