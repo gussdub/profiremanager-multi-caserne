@@ -1296,6 +1296,85 @@ const SuperAdminDashboard = ({ onLogout }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Modifier un super admin */}
+      {showEditSuperAdminModal && editingSuperAdmin && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1001
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            width: '500px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ margin: '0 0 20px 0', fontSize: '24px', fontWeight: 'bold' }}>
+              ✏️ Modifier un super admin
+            </h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={editingSuperAdmin.email}
+                  disabled
+                  style={{ background: '#f3f4f6', cursor: 'not-allowed' }}
+                />
+                <small style={{ color: '#64748b', fontSize: '12px' }}>
+                  L'email ne peut pas être modifié
+                </small>
+              </div>
+
+              <div>
+                <Label>Prénom *</Label>
+                <Input
+                  type="text"
+                  value={editingSuperAdmin.prenom}
+                  onChange={(e) => setEditingSuperAdmin({ ...editingSuperAdmin, prenom: e.target.value })}
+                  placeholder="Jean"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Nom *</Label>
+                <Input
+                  type="text"
+                  value={editingSuperAdmin.nom}
+                  onChange={(e) => setEditingSuperAdmin({ ...editingSuperAdmin, nom: e.target.value })}
+                  placeholder="Dupont"
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
+              <Button variant="outline" onClick={() => {
+                setShowEditSuperAdminModal(false);
+                setEditingSuperAdmin(null);
+              }}>
+                Annuler
+              </Button>
+              <Button onClick={handleEditSuperAdmin} style={{ background: '#3b82f6' }}>
+                ✅ Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
