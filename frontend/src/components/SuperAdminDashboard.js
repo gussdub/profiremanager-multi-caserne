@@ -351,6 +351,110 @@ const SuperAdminDashboard = ({ onLogout }) => {
     });
   };
 
+  // Fonctions pour gérer les super admins
+  const fetchSuperAdmins = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/super-admins`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des super admins');
+      }
+
+      const data = await response.json();
+      setSuperAdmins(data);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateSuperAdmin = async () => {
+    if (!newSuperAdmin.email || !newSuperAdmin.prenom || !newSuperAdmin.nom || !newSuperAdmin.mot_de_passe) {
+      toast({
+        title: "Erreur",
+        description: "Tous les champs sont obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/super-admins`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newSuperAdmin)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la création du super admin');
+      }
+
+      toast({
+        title: "Succès",
+        description: "Super admin créé avec succès"
+      });
+
+      setShowCreateSuperAdminModal(false);
+      setNewSuperAdmin({ email: '', prenom: '', nom: '', mot_de_passe: '' });
+      fetchSuperAdmins();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSuperAdmin = async (superAdminId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce super admin ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/super-admins/${superAdminId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la suppression');
+      }
+
+      toast({
+        title: "Succès",
+        description: "Super admin supprimé avec succès"
+      });
+
+      fetchSuperAdmins();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
