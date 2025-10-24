@@ -1750,6 +1750,75 @@ async def get_current_user_info(tenant_slug: str, current_user: User = Depends(g
         "formations": current_user.formations
     }
 
+# ==================== SUPER ADMIN MANAGEMENT ROUTES ====================
+
+@api_router.get("/admin/super-admins")
+async def list_super_admins(admin: SuperAdmin = Depends(get_super_admin)):
+    """Liste tous les super admins"""
+    super_admins = await db.super_admins.find().to_list(1000)
+    return [clean_mongo_doc(sa) for sa in super_admins]
+
+@api_router.post("/admin/super-admins")
+async def create_super_admin(
+    super_admin_data: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Créer un nouveau super admin"""
+    # Valider les données
+    if not all(key in super_admin_data for key in ['email', 'prenom', 'nom', 'mot_de_passe']):
+        raise HTTPException(status_code=400, detail="Tous les champs sont obligatoires")
+    
+    # Vérifier si l'email existe déjà
+    existing = await db.super_admins.find_one({"email": super_admin_data['email']})
+    if existing:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+    
+    # Valider la complexité du mot de passe
+    if not validate_complex_password(super_admin_data['mot_de_passe']):
+        raise HTTPException(
+            status_code=400,
+            detail="Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
+        )
+    
+    # Créer le super admin
+    new_super_admin = SuperAdmin(
+        email=super_admin_data['email'],
+        prenom=super_admin_data['prenom'],
+        nom=super_admin_data['nom'],
+        mot_de_passe_hash=get_password_hash(super_admin_data['mot_de_passe'])
+    )
+    
+    await db.super_admins.insert_one(new_super_admin.dict())
+    
+    logging.info(f"✅ Super admin créé: {new_super_admin.email}")
+    
+    return {"message": "Super admin créé avec succès", "id": new_super_admin.id}
+
+@api_router.delete("/admin/super-admins/{super_admin_id}")
+async def delete_super_admin(
+    super_admin_id: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Supprimer un super admin"""
+    # Empêcher la suppression de soi-même
+    if super_admin_id == admin.id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
+    
+    # Vérifier qu'il reste au moins un autre super admin
+    count = await db.super_admins.count_documents({})
+    if count <= 1:
+        raise HTTPException(status_code=400, detail="Impossible de supprimer le dernier super admin")
+    
+    # Supprimer
+    result = await db.super_admins.delete_one({"id": super_admin_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Super admin non trouvé")
+    
+    logging.info(f"✅ Super admin supprimé: {super_admin_id}")
+    
+    return {"message": "Super admin supprimé avec succès"}
+
 # User management routes
 @api_router.post("/{tenant_slug}/users", response_model=User)
 async def create_user(tenant_slug: str, user_create: UserCreate, current_user: User = Depends(get_current_user)):
