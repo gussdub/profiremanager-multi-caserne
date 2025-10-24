@@ -1960,6 +1960,38 @@ async def delete_super_admin(
     
     return {"message": "Super admin supprimé avec succès"}
 
+@api_router.put("/admin/super-admins/{super_admin_id}")
+async def update_super_admin(
+    super_admin_id: str,
+    update_data: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Modifier les informations d'un super admin"""
+    # Vérifier que le super admin existe
+    existing = await db.super_admins.find_one({"id": super_admin_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Super admin non trouvé")
+    
+    # Préparer les données à mettre à jour
+    update_fields = {}
+    if "prenom" in update_data and update_data["prenom"]:
+        update_fields["prenom"] = update_data["prenom"]
+    if "nom" in update_data and update_data["nom"]:
+        update_fields["nom"] = update_data["nom"]
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour")
+    
+    # Mettre à jour
+    await db.super_admins.update_one(
+        {"id": super_admin_id},
+        {"$set": update_fields}
+    )
+    
+    logging.info(f"✅ Super admin modifié: {super_admin_id}")
+    
+    return {"message": "Super admin modifié avec succès"}
+
 # User management routes
 @api_router.post("/{tenant_slug}/users", response_model=User)
 async def create_user(tenant_slug: str, user_create: UserCreate, current_user: User = Depends(get_current_user)):
