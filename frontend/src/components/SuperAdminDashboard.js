@@ -457,6 +457,52 @@ const SuperAdminDashboard = ({ onLogout }) => {
     }
   };
 
+  const handleEditSuperAdmin = async () => {
+    if (!editingSuperAdmin.prenom || !editingSuperAdmin.nom) {
+      toast({
+        title: "Erreur",
+        description: "Le prénom et le nom sont obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/super-admins/${editingSuperAdmin.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prenom: editingSuperAdmin.prenom,
+          nom: editingSuperAdmin.nom
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la modification');
+      }
+
+      toast({
+        title: "Succès",
+        description: "Super admin modifié avec succès"
+      });
+
+      setShowEditSuperAdminModal(false);
+      setEditingSuperAdmin(null);
+      fetchSuperAdmins();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
