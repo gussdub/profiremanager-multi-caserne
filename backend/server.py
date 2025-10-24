@@ -1908,18 +1908,32 @@ async def create_super_admin(
         )
     
     # Créer le super admin
+    temp_password = super_admin_data['mot_de_passe']  # Garder le mot de passe temporaire pour l'email
     new_super_admin = SuperAdmin(
         email=super_admin_data['email'],
         prenom=super_admin_data['prenom'],
         nom=super_admin_data['nom'],
-        mot_de_passe_hash=get_password_hash(super_admin_data['mot_de_passe'])
+        mot_de_passe_hash=get_password_hash(temp_password)
     )
     
     await db.super_admins.insert_one(new_super_admin.dict())
     
     logging.info(f"✅ Super admin créé: {new_super_admin.email}")
     
-    return {"message": "Super admin créé avec succès", "id": new_super_admin.id}
+    # Envoyer l'email de bienvenue
+    user_name = f"{new_super_admin.prenom} {new_super_admin.nom}"
+    email_sent = send_super_admin_welcome_email(
+        new_super_admin.email,
+        user_name,
+        temp_password
+    )
+    
+    if email_sent:
+        logging.info(f"✅ Email de bienvenue super admin envoyé à {new_super_admin.email}")
+    else:
+        logging.warning(f"⚠️ Email non envoyé à {new_super_admin.email} (SendGrid non configuré ou erreur)")
+    
+    return {"message": "Super admin créé avec succès", "id": new_super_admin.id, "email_sent": email_sent}
 
 @api_router.delete("/admin/super-admins/{super_admin_id}")
 async def delete_super_admin(
