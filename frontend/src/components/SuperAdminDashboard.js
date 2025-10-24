@@ -17,7 +17,9 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
   const [showCreateSuperAdminModal, setShowCreateSuperAdminModal] = useState(false);
   const [showManageSuperAdminsModal, setShowManageSuperAdminsModal] = useState(false);
+  const [showEditSuperAdminModal, setShowEditSuperAdminModal] = useState(false);
   const [superAdmins, setSuperAdmins] = useState([]);
+  const [editingSuperAdmin, setEditingSuperAdmin] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [newTenant, setNewTenant] = useState({
     nom: '',
