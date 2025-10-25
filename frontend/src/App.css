@@ -6736,6 +6736,51 @@ body {
   }
 }
 
+/* Responsive TRÈS Petits Écrans (smartphones étroits) */
+@media (max-width: 380px) {
+  .disponibilites-visual-container {
+    padding: 0.5rem; /* Padding minimal */
+  }
+
+  .visual-calendar {
+    border-radius: 8px; /* Coins moins arrondis sur très petits écrans */
+  }
+
+  .calendar-weekday {
+    font-size: 0.65rem !important; /* Encore plus petit */
+    padding: 0 1px !important;
+    letter-spacing: 0px !important;
+  }
+
+  .calendar-day-cell {
+    min-width: 35px; /* Largeur minimale encore réduite */
+    min-height: 40px; /* Hauteur réduite */
+    padding: 0.2rem;
+  }
+
+  .calendar-day-number {
+    font-size: 0.65rem; /* Numéro plus petit */
+  }
+
+  .calendar-dispo-pill {
+    font-size: 0.45rem; /* Texte très petit mais lisible */
+    padding: 0.15rem 0.2rem;
+  }
+
+  .calendar-indispo-marker {
+    font-size: 1rem; /* Croix plus petite */
+  }
+
+  .disponibilites-visual-header h1 {
+    font-size: 1.25rem; /* Titre plus petit */
+  }
+
+  .calendar-nav-button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
 /* Responsive Tablette */
 @media (min-width: 769px) and (max-width: 1024px) {
   .disponibilites-visual-container {
