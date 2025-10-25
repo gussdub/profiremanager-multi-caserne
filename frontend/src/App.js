@@ -8028,6 +8028,158 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Modal de Demande de Remplacement - Acceptation/Refus */}
+      {showRemplacementModal && selectedDemandeRemplacement && (
+        <div className="modal-overlay" onClick={() => setShowRemplacementModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>🔔 Demande de Remplacement</h3>
+              <Button variant="ghost" onClick={() => setShowRemplacementModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              {/* En-tête avec info garde */}
+              <div style={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                color: 'white',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                marginBottom: '1.5rem'
+              }}>
+                <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.3rem' }}>
+                  {selectedDemandeRemplacement.type_garde?.nom || 'Garde'}
+                </h2>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.95rem', opacity: 0.95 }}>
+                  <span>📅 {new Date(selectedDemandeRemplacement.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <span>⏱️ {selectedDemandeRemplacement.type_garde?.duree_heures || 8}h</span>
+                </div>
+              </div>
+
+              {/* Informations demandeur */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ marginBottom: '0.75rem', color: '#1f2937' }}>👤 Demandeur</h4>
+                <div style={{ 
+                  padding: '1rem',
+                  background: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                    {selectedDemandeRemplacement.demandeur?.prenom} {selectedDemandeRemplacement.demandeur?.nom}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                    {selectedDemandeRemplacement.demandeur?.grade || 'Pompier'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Raison de la demande */}
+              {selectedDemandeRemplacement.raison && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: '#1f2937' }}>📝 Raison</h4>
+                  <div style={{
+                    padding: '1rem',
+                    background: '#fef3c7',
+                    borderRadius: '8px',
+                    border: '1px solid #fbbf24',
+                    fontStyle: 'italic'
+                  }}>
+                    {selectedDemandeRemplacement.raison}
+                  </div>
+                </div>
+              )}
+
+              {/* Priorité */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  background: selectedDemandeRemplacement.priorite === 'urgente' ? '#fee2e2' : '#dbeafe',
+                  color: selectedDemandeRemplacement.priorite === 'urgente' ? '#dc2626' : '#1e40af',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  fontSize: '0.9rem'
+                }}>
+                  {selectedDemandeRemplacement.priorite === 'urgente' ? '🚨 Priorité Urgente' : '📋 Priorité Normale'}
+                </div>
+              </div>
+
+              {/* Champ commentaire optionnel */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: '#1f2937' }}>💬 Message (optionnel)</h4>
+                <textarea
+                  value={remplacementCommentaire}
+                  onChange={(e) => setRemplacementCommentaire(e.target.value)}
+                  placeholder="Ajoutez un commentaire..."
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              {/* Boutons d'action */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '2rem' }}>
+                <Button
+                  onClick={handleAccepterRemplacement}
+                  style={{
+                    flex: 1,
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    padding: '12px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  ✅ J'accepte
+                </Button>
+                <Button
+                  onClick={handleRefuserRemplacement}
+                  variant="outline"
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  ❌ Refuser
+                </Button>
+              </div>
+
+              {/* Note informative */}
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem',
+                background: '#eff6ff',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                color: '#1e40af'
+              }}>
+                <strong>ℹ️ Note:</strong> En acceptant, vous serez automatiquement assigné à cette garde dans le planning.
+                Le demandeur sera notifié immédiatement.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
