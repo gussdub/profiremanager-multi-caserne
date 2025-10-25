@@ -9774,7 +9774,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     // Options de récurrence
     recurrence_type: 'hebdomadaire', // 'hebdomadaire', 'bihebdomadaire', 'mensuelle', 'annuelle', 'personnalisee'
     recurrence_frequence: 'jours', // Pour personnalisée: 'jours', 'semaines', 'mois', 'ans'
-    recurrence_intervalle: 1 // Tous les X (jours/semaines/mois/ans)
+    recurrence_intervalle: 1, // Tous les X (jours/semaines/mois/ans)
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
   });
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
