@@ -6206,6 +6206,26 @@ const Planning = () => {
           <Button variant="outline" onClick={handleExportExcelPlanning}>
             📊 Export Excel
           </Button>
+          
+          {/* Rapport d'audit (admin seulement) */}
+          {user.role === 'admin' && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button 
+                variant="outline" 
+                onClick={() => handleDownloadAuditReport('pdf')}
+                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+              >
+                🔍 Audit PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleDownloadAuditReport('excel')}
+                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+              >
+                🔍 Audit Excel
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
