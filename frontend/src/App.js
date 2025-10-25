@@ -9802,21 +9802,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       if (!tenantSlug) return;
       
       try {
-        // Charger les users uniquement pour admin/superviseur (pour les KPIs)
-        const promises = [
+        const [dispoData, typesData, usersData] = await Promise.all([
           apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
-          apiGet(tenantSlug, '/types-garde')
-        ];
-        
-        // Les employés n'ont pas accès à /users, mais ils n'en ont pas besoin (KPIs pas affichés)
-        if (user.role === 'admin' || user.role === 'superviseur') {
-          promises.push(apiGet(tenantSlug, '/users'));
-        }
-        
-        const results = await Promise.all(promises);
-        setUserDisponibilites(results[0]);
-        setTypesGarde(results[1]);
-        setUsers(results[2] || []); // Tableau vide pour employés
+          apiGet(tenantSlug, '/types-garde'),
+          apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+        ]);
+        setUserDisponibilites(dispoData);
+        setTypesGarde(typesData);
+        setUsers(usersData);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
         toast({
