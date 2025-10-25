@@ -5917,6 +5917,201 @@ async def recherche_remplacants_automatique(demande_id: str, current_user: User 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur recherche automatique: {str(e)}")
 
+# Accepter une demande de remplacement
+@api_router.post("/{tenant_slug}/remplacements/{demande_id}/accepter")
+async def accepter_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    commentaire: str = Body(None, embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Un employé accepte une demande de remplacement
+    """
+    try:
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer la demande
+        demande = await db.demandes_remplacement.find_one({
+            "id": demande_id,
+            "tenant_id": tenant.id
+        })
+        
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande est toujours en attente
+        if demande["statut"] != "en_attente":
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cette demande n'est plus disponible (statut: {demande['statut']})"
+            )
+        
+        # Vérifier que l'utilisateur a bien été contacté pour cette demande
+        remplacants_contactes = demande.get("remplacants_contactes", [])
+        if current_user.id not in remplacants_contactes:
+            raise HTTPException(
+                status_code=403, 
+                detail="Vous n'êtes pas autorisé à accepter cette demande"
+            )
+        
+        # Mettre à jour le statut de la demande
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "accepte",
+                    "remplacant_id": current_user.id,
+                    "date_acceptation": datetime.now(timezone.utc).isoformat(),
+                    "commentaire_remplacant": commentaire
+                }
+            }
+        )
+        
+        # Créer l'assignation dans le planning
+        type_garde = await db.types_garde.find_one({"id": demande["type_garde_id"]})
+        
+        assignation = Assignation(
+            user_id=current_user.id,
+            type_garde_id=demande["type_garde_id"],
+            date=demande["date"],
+            statut="planifie",
+            assignation_type="manuel",  # Remplacement accepté = manuel
+            tenant_id=tenant.id
+        )
+        
+        await db.assignations.insert_one(assignation.dict())
+        
+        # Notifier le demandeur
+        demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
+        notification_demandeur = Notification(
+            user_id=demande["demandeur_id"],
+            titre="✅ Remplacement trouvé",
+            message=f"{current_user.prenom} {current_user.nom} a accepté votre demande de remplacement pour le {demande['date']} - {type_garde['nom'] if type_garde else 'Garde'}",
+            type="remplacement_accepte",
+            lien=f"/{tenant_slug}/remplacements",
+            tenant_id=tenant.id
+        )
+        await db.notifications.insert_one(notification_demandeur.dict())
+        
+        # Notifier les autres candidats que la demande est pourvue
+        for remplacant_id in remplacants_contactes:
+            if remplacant_id != current_user.id:
+                notification_autres = Notification(
+                    user_id=remplacant_id,
+                    titre="ℹ️ Remplacement pourvu",
+                    message=f"Le remplacement du {demande['date']} a été pourvu par un autre pompier",
+                    type="remplacement_pourvu",
+                    lien=f"/{tenant_slug}/remplacements",
+                    tenant_id=tenant.id
+                )
+                await db.notifications.insert_one(notification_autres.dict())
+        
+        return {
+            "message": "Demande acceptée avec succès",
+            "demande_id": demande_id,
+            "assignation_creee": True,
+            "remplacant": f"{current_user.prenom} {current_user.nom}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Erreur acceptation demande: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'acceptation: {str(e)}")
+
+# Refuser une demande de remplacement
+@api_router.post("/{tenant_slug}/remplacements/{demande_id}/refuser")
+async def refuser_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    raison: str = Body(None, embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Un employé refuse une demande de remplacement
+    """
+    try:
+        # Vérifier le tenant
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer la demande
+        demande = await db.demandes_remplacement.find_one({
+            "id": demande_id,
+            "tenant_id": tenant.id
+        })
+        
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande est toujours en attente
+        if demande["statut"] != "en_attente":
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cette demande n'est plus disponible (statut: {demande['statut']})"
+            )
+        
+        # Vérifier que l'utilisateur a bien été contacté pour cette demande
+        remplacants_contactes = demande.get("remplacants_contactes", [])
+        if current_user.id not in remplacants_contactes:
+            raise HTTPException(
+                status_code=403, 
+                detail="Vous n'êtes pas autorisé à refuser cette demande"
+            )
+        
+        # Ajouter le refus à l'historique
+        historique = demande.get("historique_tentatives", [])
+        historique.append({
+            "user_id": current_user.id,
+            "nom": f"{current_user.prenom} {current_user.nom}",
+            "action": "refuse",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "raison": raison
+        })
+        
+        # Retirer cet utilisateur de la liste des contactés
+        remplacants_restants = [r for r in remplacants_contactes if r != current_user.id]
+        
+        # Si plus personne de disponible, marquer comme expiree
+        nouveau_statut = "expiree" if len(remplacants_restants) == 0 else "en_attente"
+        
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "historique_tentatives": historique,
+                    "remplacants_contactes": remplacants_restants,
+                    "statut": nouveau_statut
+                }
+            }
+        )
+        
+        # Notifier le demandeur si tous ont refusé
+        if nouveau_statut == "expiree":
+            notification_demandeur = Notification(
+                user_id=demande["demandeur_id"],
+                titre="❌ Aucun remplaçant trouvé",
+                message=f"Malheureusement, aucun pompier n'est disponible pour votre remplacement du {demande['date']}",
+                type="remplacement_expire",
+                lien=f"/{tenant_slug}/remplacements",
+                tenant_id=tenant.id
+            )
+            await db.notifications.insert_one(notification_demandeur.dict())
+        
+        return {
+            "message": "Demande refusée",
+            "demande_id": demande_id,
+            "remplacants_restants": len(remplacants_restants),
+            "statut": nouveau_statut
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Erreur refus demande: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du refus: {str(e)}")
+
 # Rapports et exports routes
 @api_router.get("/rapports/export-pdf")
 async def export_pdf_report(type_rapport: str = "general", user_id: str = None, current_user: User = Depends(get_current_user)):
