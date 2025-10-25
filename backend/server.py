@@ -178,7 +178,207 @@ async def startup_event():
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
     
+    # Démarrer le scheduler APScheduler pour les notifications automatiques
+    asyncio.create_task(start_notification_scheduler())
+    
     print("🚀 ProFireManager API Multi-Tenant démarré")
+
+# ==================== SCHEDULER NOTIFICATIONS AUTOMATIQUES ====================
+
+async def start_notification_scheduler():
+    """Démarre le scheduler pour les notifications automatiques de planning"""
+    scheduler = AsyncIOScheduler()
+    
+    # Créer un job qui vérifie toutes les heures si une notification doit être envoyée
+    # On vérifie à chaque heure au lieu de programmer des jobs dynamiques
+    scheduler.add_job(
+        job_verifier_notifications_planning,
+        CronTrigger(minute=0),  # Toutes les heures à la minute 0
+        id='check_planning_notifications',
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logging.info("✅ Scheduler de notifications automatiques démarré")
+
+async def job_verifier_notifications_planning():
+    """
+    Job qui vérifie si des notifications de planning doivent être envoyées
+    S'exécute toutes les heures
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        current_hour = now.hour
+        current_day = now.day
+        
+        logging.info(f"🔍 Vérification des notifications planning - Jour {current_day}, Heure {current_hour}h")
+        
+        # Récupérer tous les tenants
+        tenants = await db.tenants.find().to_list(None)
+        
+        for tenant in tenants:
+            try:
+                # Récupérer les paramètres de notification de ce tenant
+                params = await db.parametres_validation_planning.find_one({"tenant_id": tenant["id"]})
+                
+                if not params:
+                    continue
+                
+                # Vérifier si notifications automatiques activées
+                if not params.get("envoi_automatique", False):
+                    continue
+                
+                # Vérifier si c'est le bon jour
+                jour_envoi = params.get("jour_envoi", 25)
+                if current_day != jour_envoi:
+                    continue
+                
+                # Vérifier si c'est la bonne heure
+                heure_envoi = params.get("heure_envoi", "17:00")
+                heure_cible = int(heure_envoi.split(":")[0])
+                
+                if current_hour != heure_cible:
+                    continue
+                
+                # Vérifier si déjà envoyé aujourd'hui
+                derniere_notif = params.get("derniere_notification")
+                if derniere_notif:
+                    derniere_date = datetime.fromisoformat(derniere_notif).date()
+                    if derniere_date == now.date():
+                        logging.info(f"⏭️ Notifications déjà envoyées aujourd'hui pour {tenant['nom']}")
+                        continue
+                
+                # C'est le moment d'envoyer !
+                logging.info(f"📧 Envoi des notifications automatiques pour {tenant['nom']}")
+                
+                # Calculer la période à notifier
+                periode_couverte = params.get("periode_couverte", "mois_suivant")
+                
+                if periode_couverte == "mois_suivant":
+                    # Mois suivant
+                    next_month = now + timedelta(days=30)
+                    periode_debut = next_month.replace(day=1).strftime("%Y-%m-%d")
+                    
+                    # Dernier jour du mois suivant
+                    if next_month.month == 12:
+                        last_day = next_month.replace(year=next_month.year + 1, month=1, day=1) - timedelta(days=1)
+                    else:
+                        last_day = next_month.replace(month=next_month.month + 1, day=1) - timedelta(days=1)
+                    periode_fin = last_day.strftime("%Y-%m-%d")
+                else:
+                    # Mois en cours
+                    periode_debut = now.replace(day=1).strftime("%Y-%m-%d")
+                    if now.month == 12:
+                        last_day = now.replace(year=now.year + 1, month=1, day=1) - timedelta(days=1)
+                    else:
+                        last_day = now.replace(month=now.month + 1, day=1) - timedelta(days=1)
+                    periode_fin = last_day.strftime("%Y-%m-%d")
+                
+                # Envoyer les notifications
+                await envoyer_notifications_planning_automatique(
+                    tenant=tenant,
+                    periode_debut=periode_debut,
+                    periode_fin=periode_fin
+                )
+                
+                # Mettre à jour la date de dernière notification
+                await db.parametres_validation_planning.update_one(
+                    {"tenant_id": tenant["id"]},
+                    {"$set": {"derniere_notification": now.isoformat()}}
+                )
+                
+                logging.info(f"✅ Notifications envoyées avec succès pour {tenant['nom']}")
+                
+            except Exception as e:
+                logging.error(f"❌ Erreur envoi notifications pour {tenant.get('nom', 'Unknown')}: {str(e)}", exc_info=True)
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_verifier_notifications_planning: {str(e)}", exc_info=True)
+
+async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut: str, periode_fin: str):
+    """Envoie les notifications de planning (version automatique sans auth)"""
+    try:
+        # Récupérer les assignations de la période
+        assignations = await db.assignations.find({
+            "tenant_id": tenant["id"],
+            "date": {
+                "$gte": periode_debut,
+                "$lte": periode_fin
+            }
+        }).to_list(None)
+        
+        if not assignations:
+            logging.info(f"Aucune assignation trouvée pour {tenant['nom']} période {periode_debut} - {periode_fin}")
+            return
+        
+        # Grouper par pompier
+        gardes_par_pompier = {}
+        for assignation in assignations:
+            user_id = assignation["user_id"]
+            if user_id not in gardes_par_pompier:
+                gardes_par_pompier[user_id] = []
+            gardes_par_pompier[user_id].append(assignation)
+        
+        # Récupérer infos users et types garde
+        users = await db.users.find({"tenant_id": tenant["id"]}).to_list(None)
+        types_garde = await db.types_garde.find({"tenant_id": tenant["id"]}).to_list(None)
+        
+        user_map = {u["id"]: u for u in users}
+        type_garde_map = {t["id"]: t for t in types_garde}
+        
+        # Envoyer email à chaque pompier
+        emails_envoyes = 0
+        for user_id, gardes in gardes_par_pompier.items():
+            user = user_map.get(user_id)
+            if not user or not user.get("email"):
+                continue
+            
+            # Préparer liste des gardes avec détails
+            gardes_list = []
+            for garde in gardes:
+                type_g = type_garde_map.get(garde["type_garde_id"], {})
+                
+                # Trouver collègues sur même garde
+                collegues_meme_garde = [
+                    a for a in assignations 
+                    if a["date"] == garde["date"] 
+                    and a["type_garde_id"] == garde["type_garde_id"]
+                    and a["user_id"] != user_id
+                ]
+                
+                collegues_noms = []
+                for coll in collegues_meme_garde:
+                    coll_user = user_map.get(coll["user_id"])
+                    if coll_user:
+                        collegues_noms.append(f"{coll_user.get('prenom', '')} {coll_user.get('nom', '')}")
+                
+                gardes_list.append({
+                    "date": garde["date"],
+                    "type_garde": type_g.get("nom", "Garde"),
+                    "collegues": collegues_noms
+                })
+            
+            # Trier par date
+            gardes_list.sort(key=lambda x: x["date"])
+            
+            # Envoyer email
+            try:
+                send_gardes_notification_email(
+                    user_email=user["email"],
+                    user_name=f"{user.get('prenom', '')} {user.get('nom', '')}",
+                    gardes_list=gardes_list,
+                    tenant_slug=tenant["slug"],
+                    periode=f"{periode_debut} au {periode_fin}"
+                )
+                emails_envoyes += 1
+            except Exception as e:
+                logging.error(f"Erreur envoi email à {user.get('email')}: {str(e)}")
+        
+        logging.info(f"✅ {emails_envoyes} emails envoyés pour {tenant['nom']}")
+        
+    except Exception as e:
+        logging.error(f"Erreur dans envoyer_notifications_planning_automatique: {str(e)}", exc_info=True)
+        raise
 
 async def job_verifier_timeouts_remplacements():
     """
