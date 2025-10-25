@@ -5199,6 +5199,9 @@ const Planning = () => {
   const [selectedGardeDetails, setSelectedGardeDetails] = useState(null);
   const [attributionLoading, setAttributionLoading] = useState(false);
   const [attributionStep, setAttributionStep] = useState('');
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [selectedAuditAssignation, setSelectedAuditAssignation] = useState(null);
+  const [auditNotesEdit, setAuditNotesEdit] = useState('');
   const { toast } = useToast();
 
   // Fonction pour calculer l'aperçu des dates de récurrence
