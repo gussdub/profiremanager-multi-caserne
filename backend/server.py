@@ -9440,13 +9440,30 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         users_with_min_hours.pop(0)  # Retirer ce pompier et essayer le suivant
                         continue
                     
-                    # Créer l'assignation
+                    # Générer la justification détaillée
+                    justification = await generer_justification_attribution(
+                        selected_user=selected_user,
+                        all_candidates=available_users,
+                        type_garde=type_garde,
+                        date_str=date_str,
+                        user_monthly_hours=user_monthly_hours,
+                        activer_heures_sup=activer_heures_sup,
+                        seuil_max_heures=seuil_max_heures,
+                        user_heures_actuelles=user_heures_actuelles,
+                        existing_assignations=existing_assignations,
+                        disponibilites_evaluees=None  # TODO: passer les vraies dispos si nécessaire
+                    )
+                    
+                    # Créer l'assignation avec justification
                     assignation_obj = Assignation(
                         user_id=selected_user["id"],
                         type_garde_id=type_garde["id"],
                         date=date_str,
                         assignation_type="auto",
-                        tenant_id=tenant.id
+                        tenant_id=tenant.id,
+                        justification=justification,
+                        notes_admin=None,
+                        justification_historique=[]
                     )
                     
                     await db.assignations.insert_one(assignation_obj.dict())
