@@ -7635,6 +7635,228 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Modal d'Audit de l'Affectation */}
+      {showAuditModal && selectedAuditAssignation && selectedAuditAssignation.justification && (
+        <div className="modal-overlay" onClick={() => setShowAuditModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h3>🔍 Audit de l'Affectation Automatique</h3>
+              <Button variant="ghost" onClick={() => setShowAuditModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              {/* En-tête de l'assignation */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                marginBottom: '1.5rem'
+              }}>
+                <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>
+                  {selectedAuditAssignation.person?.prenom} {selectedAuditAssignation.person?.nom}
+                </h3>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.95rem', opacity: 0.95 }}>
+                  <span>📅 {selectedAuditAssignation.date}</span>
+                  <span>🚒 {selectedAuditAssignation.justification.type_garde_info?.nom}</span>
+                  <span>⏱️ {selectedAuditAssignation.justification.type_garde_info?.duree_heures}h</span>
+                </div>
+              </div>
+
+              {/* Scores de l'utilisateur sélectionné */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>📊 Scores de Sélection</h4>
+                {['equite', 'anciennete', 'disponibilite', 'competences'].map(critere => {
+                  const score = selectedAuditAssignation.justification.assigned_user?.scores?.[critere] || 0;
+                  const maxScore = 100;
+                  const percentage = (score / maxScore) * 100;
+                  
+                  // Couleurs selon le score
+                  let barColor = '#ef4444'; // rouge
+                  if (percentage >= 75) barColor = '#10b981'; // vert
+                  else if (percentage >= 50) barColor = '#f59e0b'; // orange
+                  
+                  return (
+                    <div key={critere} style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: '500', textTransform: 'capitalize' }}>
+                          {critere === 'equite' && '⚖️ Équité'}
+                          {critere === 'anciennete' && '🎖️ Ancienneté'}
+                          {critere === 'disponibilite' && '✅ Disponibilité'}
+                          {critere === 'competences' && '💼 Compétences'}
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: barColor }}>{score.toFixed(1)}/100</span>
+                      </div>
+                      <div style={{ 
+                        width: '100%',
+                        height: '8px',
+                        background: '#e5e7eb',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          background: barColor,
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Score total */}
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '2px solid #8b5cf6'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Score Total</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8b5cf6' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.scores?.total?.toFixed(1)}/400
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Détails de l'utilisateur */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>📋 Détails de l'Employé</h4>
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '1rem',
+                  padding: '1rem',
+                  background: '#f9fafb',
+                  borderRadius: '8px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Heures ce mois</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.heures_ce_mois || 0}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Moyenne équipe</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.moyenne_equipe || 0}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Années de service</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.annees_service || 0} ans
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Grade</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.person?.grade || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Autres candidats évalués */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>
+                  👥 Autres Candidats Évalués ({selectedAuditAssignation.justification.other_candidates?.length || 0})
+                </h4>
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {selectedAuditAssignation.justification.other_candidates?.slice(0, 10).map((candidate, idx) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        padding: '0.75rem',
+                        marginBottom: '0.5rem',
+                        background: candidate.scores ? '#f0fdf4' : '#fef2f2',
+                        border: `1px solid ${candidate.scores ? '#86efac' : '#fca5a5'}`,
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                            {candidate.nom_complet} - {candidate.grade}
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                            {candidate.heures_ce_mois}h ce mois
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.9rem', 
+                            color: candidate.scores ? '#059669' : '#dc2626',
+                            marginTop: '0.25rem',
+                            fontWeight: '500'
+                          }}>
+                            {candidate.excluded_reason}
+                          </div>
+                        </div>
+                        {candidate.scores && (
+                          <div style={{ 
+                            padding: '0.5rem 0.75rem',
+                            background: 'white',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            color: '#8b5cf6'
+                          }}>
+                            {candidate.scores.total}/400
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes Admin (éditables) */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: '#1f2937' }}>📝 Notes de l'Administrateur</h4>
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                  Ajoutez vos commentaires sur cette affectation (optionnel)
+                </p>
+                <textarea
+                  value={auditNotesEdit}
+                  onChange={(e) => setAuditNotesEdit(e.target.value)}
+                  placeholder="Ex: Affectation validée, équilibre respecté..."
+                  style={{
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+                <Button 
+                  onClick={handleSaveAuditNotes}
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  💾 Enregistrer les notes
+                </Button>
+              </div>
+
+              {/* Statistiques globales */}
+              <div style={{
+                padding: '1rem',
+                background: '#eff6ff',
+                borderRadius: '8px',
+                border: '1px solid #93c5fd'
+              }}>
+                <div style={{ fontSize: '0.85rem', color: '#1e40af' }}>
+                  <strong>Candidats totaux évalués:</strong> {selectedAuditAssignation.justification.total_candidates_evaluated || 0}
+                  <br />
+                  <strong>Date d'attribution:</strong> {new Date(selectedAuditAssignation.justification.date_attribution).toLocaleString('fr-FR')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
