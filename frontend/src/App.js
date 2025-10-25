@@ -9748,7 +9748,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
     recurrence_type: 'hebdomadaire',
     recurrence_frequence: 'jours',
-    recurrence_intervalle: 1
+    recurrence_intervalle: 1,
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
   });
   const [generationConfig, setGenerationConfig] = useState({
     horaire_type: 'montreal',
