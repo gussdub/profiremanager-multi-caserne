@@ -10578,6 +10578,30 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   if (loading) return <div className="loading" data-testid="disponibilites-loading">Chargement...</div>;
 
+  // Vérifier si l'utilisateur peut accéder à ce module
+  if (!managingUser && targetUser?.type_emploi !== 'temps_partiel') {
+    return (
+      <div className="disponibilites-refonte">
+        <div className="module-header">
+          <h1>⚠️ Accès Restreint</h1>
+        </div>
+        <Card>
+          <CardContent style={{ padding: '2rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+              Le module "Mes disponibilités" est réservé aux employés à temps partiel.
+            </p>
+            <p style={{ color: '#666', marginBottom: '2rem' }}>
+              Vous êtes actuellement un employé à temps plein et n'avez pas besoin de déclarer vos disponibilités.
+            </p>
+            <Button onClick={() => setCurrentPage('dashboard')}>
+              ← Retour au Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="disponibilites-refonte">
       {/* Bouton retour si on gère un autre utilisateur */}
