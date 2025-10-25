@@ -5900,11 +5900,15 @@ async def recherche_remplacants_automatique(demande_id: str, current_user: User 
         
         # Créer les notifications pour les remplaçants potentiels
         for remplacant in remplacants_finaux:
-            notification = NotificationRemplacement(
-                demande_remplacement_id=demande_id,
+            notification = Notification(
+                tenant_id=tenant.id,
                 destinataire_id=remplacant["user_id"],
+                type="remplacement_disponible",
+                titre="🔔 Remplacement Disponible",
                 message=f"Remplacement disponible le {demande['date']} - {type_garde['nom'] if type_garde else 'Garde'}",
-                type_notification="remplacement_disponible"
+                lien=f"/{tenant_slug}/remplacements",
+                data={"demande_id": demande_id},
+                statut="non_lu"
             )
             await db.notifications.insert_one(notification.dict())
         
