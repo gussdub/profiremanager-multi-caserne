@@ -2090,8 +2090,8 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
 
 @api_router.get("/{tenant_slug}/users", response_model=List[User])
 async def get_users(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # Tous les utilisateurs authentifiés peuvent voir la liste des users (lecture seule)
+    # Les employés ont besoin de voir les noms dans le Planning
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
