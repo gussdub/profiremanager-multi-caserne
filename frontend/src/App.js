@@ -5372,7 +5372,7 @@ const Planning = () => {
       const [typesData, assignationsData, usersData] = await Promise.all([
         apiGet(tenantSlug, '/types-garde'),
         apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
-        user.role !== 'employe' ? apiGet(tenantSlug, '/users') : Promise.resolve([])
+        apiGet(tenantSlug, '/users') // Charger les utilisateurs pour tous les rôles (employés ont besoin de voir les noms)
       ]);
       
       setTypesGarde(typesData);
