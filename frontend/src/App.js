@@ -12459,6 +12459,73 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           </div>
         </div>
       )}
+      
+      {/* Overlay de chargement lors de l'enregistrement */}
+      {savingDisponibilites && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            minWidth: '400px',
+            maxWidth: '500px'
+          }}>
+            {/* Spinner animé */}
+            <div style={{
+              width: '60px',
+              height: '60px',
+              border: '4px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '4px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            
+            {/* Message */}
+            <div style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              {savingMessage}
+            </div>
+            
+            <div style={{
+              fontSize: '0.9rem',
+              opacity: 0.9,
+              textAlign: 'center'
+            }}>
+              Veuillez patienter...
+            </div>
+          </div>
+          
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+      )}
     </div>
   );
 };
