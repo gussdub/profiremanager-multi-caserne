@@ -9798,16 +9798,28 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       if (!tenantSlug) return;
       
       try {
-        const [dispoData, typesData, usersData] = await Promise.all([
+        // Charger les users uniquement pour admin/superviseur (pour les KPIs)
+        const promises = [
           apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
-          apiGet(tenantSlug, '/types-garde'),
-          apiGet(tenantSlug, '/users') // Récupérer tous les utilisateurs pour les KPIs
-        ]);
-        setUserDisponibilites(dispoData);
-        setTypesGarde(typesData);
-        setUsers(usersData);
+          apiGet(tenantSlug, '/types-garde')
+        ];
+        
+        // Les employés n'ont pas accès à /users, mais ils n'en ont pas besoin (KPIs pas affichés)
+        if (user.role === 'admin' || user.role === 'superviseur') {
+          promises.push(apiGet(tenantSlug, '/users'));
+        }
+        
+        const results = await Promise.all(promises);
+        setUserDisponibilites(results[0]);
+        setTypesGarde(results[1]);
+        setUsers(results[2] || []); // Tableau vide pour employés
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les disponibilités",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -9818,7 +9830,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     } else {
       setLoading(false);
     }
-  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug]);
+  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug, user.role, toast]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
