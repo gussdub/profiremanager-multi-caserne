@@ -10793,10 +10793,20 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         }
       }
       
+      setSavingMessage(`Enregistrement de ${indisponibilitesACreer.length} indisponibilité(s)...`);
+      
       // Envoyer les indisponibilités au backend
-      for (const indispo of indisponibilitesACreer) {
+      for (let i = 0; i < indisponibilitesACreer.length; i++) {
+        const indispo = indisponibilitesACreer[i];
         await apiPost(tenantSlug, '/disponibilites', indispo);
+        
+        // Mettre à jour le message tous les 10 enregistrements
+        if ((i + 1) % 10 === 0 || i === indisponibilitesACreer.length - 1) {
+          setSavingMessage(`Enregistrement... ${i + 1}/${indisponibilitesACreer.length}`);
+        }
       }
+      
+      setSavingMessage('Finalisation...');
       
       toast({
         title: "Indisponibilités enregistrées",
@@ -10823,8 +10833,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
       
+      setSavingDisponibilites(false);
+      
     } catch (error) {
       console.error('Erreur sauvegarde indisponibilités:', error);
+      setSavingDisponibilites(false);
       toast({
         title: "Erreur",
         description: error.response?.data?.detail || "Impossible d'enregistrer les indisponibilités",
