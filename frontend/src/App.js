@@ -5778,13 +5778,112 @@ const Planning = () => {
       a.date === dateStr && a.type_garde_id === typeGarde.id
     );
     
+    const personnelAssigne = gardeAssignations
+      .map(a => {
+        const person = getUserById(a.user_id);
+        return person ? { ...person, assignation_id: a.id } : null;
+      })
+      .filter(p => p !== null);
+    
     setSelectedGardeDetails({
-      date: date,
-      typeGarde: typeGarde,
-      assignations: gardeAssignations,
-      personnelAssigne: gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean)
+      date,
+      typeGarde,
+      personnelAssigne,
+      assignations: gardeAssignations
     });
     setShowGardeDetailsModal(true);
+  };
+
+  // Ouvrir le modal d'audit pour une assignation
+  const openAuditModal = (assignation, person) => {
+    setSelectedAuditAssignation({
+      ...assignation,
+      person: person
+    });
+    setAuditNotesEdit(assignation.notes_admin || '');
+    setShowAuditModal(true);
+  };
+
+  // Sauvegarder les notes admin
+  const handleSaveAuditNotes = async () => {
+    if (!selectedAuditAssignation) return;
+    
+    try {
+      await apiPut(
+        tenantSlug,
+        `/assignations/${selectedAuditAssignation.id}/notes`,
+        { notes: auditNotesEdit }
+      );
+      
+      toast({
+        title: "Notes enregistrées",
+        description: "Les notes admin ont été mises à jour avec succès",
+      });
+      
+      // Mettre à jour localement
+      setAssignations(prev => prev.map(a => 
+        a.id === selectedAuditAssignation.id 
+          ? { ...a, notes_admin: auditNotesEdit }
+          : a
+      ));
+      
+      // Mettre à jour l'assignation sélectionnée
+      setSelectedAuditAssignation(prev => ({
+        ...prev,
+        notes_admin: auditNotesEdit
+      }));
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde notes:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder les notes",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Télécharger le rapport d'audit
+  const handleDownloadAuditReport = async (format = 'pdf') => {
+    try {
+      const currentDate = new Date(currentWeek);
+      const mois = currentDate.toISOString().slice(0, 7); // YYYY-MM
+      
+      const response = await fetch(
+        `${BACKEND_URL}/api/${tenantSlug}/planning/rapport-audit?mois=${mois}&format=${format}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erreur téléchargement rapport');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_affectations_${mois}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Téléchargement réussi",
+        description: `Le rapport d'audit ${format.toUpperCase()} a été téléchargé`,
+      });
+    } catch (error) {
+      console.error('Erreur téléchargement rapport:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le rapport d'audit",
+        variant: "destructive"
+      });
+    }
   };
 
   const openAssignModal = (date, typeGarde) => {
