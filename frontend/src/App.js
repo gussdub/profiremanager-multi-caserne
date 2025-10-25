@@ -10020,19 +10020,35 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         let compteur = 0;
         const maxIterations = 1000;
         
+        // Mapping des jours pour la vérification
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
         while (currentDate <= dateFin && compteur < maxIterations) {
-          disponibilitesACreer.push({
-            user_id: targetUser.id,
-            date: currentDate.toISOString().split('T')[0],
-            type_garde_id: availabilityConfig.type_garde_id || null,
-            heure_debut: availabilityConfig.heure_debut,
-            heure_fin: availabilityConfig.heure_fin,
-            statut: availabilityConfig.statut,
-            origine: 'manuelle'
-          });
+          // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés, filtrer par jour
+          let includeDate = true;
+          if ((availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') 
+              && availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0) {
+            const dayOfWeek = currentDate.getDay();
+            includeDate = availabilityConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+          }
+          
+          if (includeDate) {
+            disponibilitesACreer.push({
+              user_id: targetUser.id,
+              date: currentDate.toISOString().split('T')[0],
+              type_garde_id: availabilityConfig.type_garde_id || null,
+              heure_debut: availabilityConfig.heure_debut,
+              heure_fin: availabilityConfig.heure_fin,
+              statut: availabilityConfig.statut,
+              origine: 'manuelle'
+            });
+          }
           
           currentDate = new Date(currentDate);
-          currentDate.setDate(currentDate.getDate() + intervalJours);
+          currentDate.setDate(currentDate.getDate() + 1); // Toujours avancer de 1 jour pour vérifier tous les jours
           compteur++;
         }
       }
