@@ -5203,6 +5203,17 @@ class ParametresRemplacements(BaseModel):
     activer_regroupement_heures: bool = False
     duree_max_regroupement: int = 24  # Durée maximale d'une garde regroupée en heures
 
+class ParametresValidationPlanning(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    frequence: str = "mensuel"  # mensuel, hebdomadaire
+    jour_envoi: int = 25  # Jour du mois (1-28)
+    heure_envoi: str = "17:00"  # Heure d'envoi (HH:MM)
+    periode_couverte: str = "mois_suivant"  # mois_suivant, mois_en_cours
+    envoi_automatique: bool = True  # Activer/désactiver l'envoi automatique
+    derniere_notification: Optional[str] = None  # Dernière exécution (ISO datetime)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # EPI Models
 # ==================== MODÈLES EPI NFPA 1851 ====================
 
