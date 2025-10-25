@@ -11671,6 +11671,57 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                               </div>
                             </div>
                           )}
+                          
+                          {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                          {(manualIndispoConfig.recurrence_type === 'hebdomadaire' || manualIndispoConfig.recurrence_type === 'bihebdomadaire') && (
+                            <div style={{ marginTop: '15px', padding: '15px', background: '#fef2f2', borderRadius: '8px' }}>
+                              <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                                {[
+                                  { label: 'Lun', value: 'monday' },
+                                  { label: 'Mar', value: 'tuesday' },
+                                  { label: 'Mer', value: 'wednesday' },
+                                  { label: 'Jeu', value: 'thursday' },
+                                  { label: 'Ven', value: 'friday' },
+                                  { label: 'Sam', value: 'saturday' },
+                                  { label: 'Dim', value: 'sunday' }
+                                ].map(jour => (
+                                  <label
+                                    key={jour.value}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      padding: '8px',
+                                      borderRadius: '8px',
+                                      border: `2px solid ${manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#dc2626' : '#cbd5e1'}`,
+                                      background: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#fee2e2' : 'white',
+                                      cursor: 'pointer',
+                                      fontWeight: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={manualIndispoConfig.jours_semaine?.includes(jour.value) || false}
+                                      onChange={(e) => {
+                                        const currentJours = manualIndispoConfig.jours_semaine || [];
+                                        const newJours = e.target.checked
+                                          ? [...currentJours, jour.value]
+                                          : currentJours.filter(j => j !== jour.value);
+                                        setManualIndispoConfig({...manualIndispoConfig, jours_semaine: newJours});
+                                      }}
+                                      style={{ marginRight: '6px' }}
+                                    />
+                                    {jour.label}
+                                  </label>
+                                ))}
+                              </div>
+                              {manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0 && (
+                                <p style={{ marginTop: '10px', color: '#dc2626', fontSize: '0.9rem' }}>
+                                  ✓ {manualIndispoConfig.jours_semaine.length} jour(s) sélectionné(s)
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
