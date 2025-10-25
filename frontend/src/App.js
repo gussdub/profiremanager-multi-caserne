@@ -6872,7 +6872,10 @@ const Planning = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => openAuditModal(selectedGardeDetails.assignations[index], person)}
+                              onClick={() => {
+                                console.log('Bouton Audit cliqué', selectedGardeDetails.assignations[index]);
+                                openAuditModal(selectedGardeDetails.assignations[index], person);
+                              }}
                               style={{ marginLeft: '8px' }}
                             >
                               🔍 Audit
