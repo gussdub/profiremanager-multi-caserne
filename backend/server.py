@@ -11430,6 +11430,72 @@ async def update_parametres_remplacements(
 
 
 
+# ==================== PARAMÈTRES VALIDATION PLANNING ====================
+
+@api_router.get("/{tenant_slug}/parametres/validation-planning")
+async def get_parametres_validation_planning(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les paramètres de validation/notification du planning"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    params = await db.parametres_validation_planning.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        # Créer paramètres par défaut
+        default_params = ParametresValidationPlanning(
+            tenant_id=tenant.id,
+            frequence="mensuel",
+            jour_envoi=25,
+            heure_envoi="17:00",
+            periode_couverte="mois_suivant",
+            envoi_automatique=True,
+            derniere_notification=None
+        )
+        await db.parametres_validation_planning.insert_one(default_params.dict())
+        params = default_params.dict()
+    
+    return clean_mongo_doc(params)
+
+@api_router.put("/{tenant_slug}/parametres/validation-planning")
+async def update_parametres_validation_planning(
+    tenant_slug: str,
+    params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres de validation/notification du planning"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Valider les données
+    if params.get("jour_envoi") and (params["jour_envoi"] < 1 or params["jour_envoi"] > 28):
+        raise HTTPException(status_code=400, detail="Le jour d'envoi doit être entre 1 et 28")
+    
+    # Vérifier si paramètres existent
+    existing = await db.parametres_validation_planning.find_one({"tenant_id": tenant.id})
+    
+    if existing:
+        # Mettre à jour
+        await db.parametres_validation_planning.update_one(
+            {"tenant_id": tenant.id},
+            {"$set": {**params, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    else:
+        # Créer
+        new_params = ParametresValidationPlanning(
+            tenant_id=tenant.id,
+            **params
+        )
+        await db.parametres_validation_planning.insert_one(new_params.dict())
+    
+    # Si les notifications automatiques ont été activées, redémarrer le scheduler
+    if params.get("envoi_automatique"):
+        # Le scheduler sera automatiquement rechargé au prochain tick
+        logging.info(f"Notifications automatiques activées pour {tenant.nom}")
+    
+    return {"message": "Paramètres mis à jour avec succès"}
+
+
 # ==================== PARAMÈTRES DISPONIBILITÉS ====================
 
 @api_router.get("/{tenant_slug}/parametres/disponibilites")
