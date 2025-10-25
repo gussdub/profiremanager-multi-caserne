@@ -899,31 +899,96 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
                   <div 
                     key={notif.id}
                     className={`notification-item ${notif.statut === 'non_lu' ? 'unread' : ''}`}
-                    onClick={() => {
-                      marquerCommeLue(notif.id);
-                      if (notif.lien) {
-                        setCurrentPage(notif.lien.replace('/', ''));
-                        setShowNotifications(false);
-                      }
-                    }}
                   >
-                    <div className="notification-icon">
-                      {notif.type === 'remplacement_demande' && '🔄'}
-                      {notif.type === 'conge_approuve' && '✅'}
-                      {notif.type === 'conge_refuse' && '❌'}
-                      {notif.type === 'conge_demande' && '📝'}
-                      {notif.type === 'planning_assigne' && '📅'}
+                    <div 
+                      onClick={() => {
+                        marquerCommeLue(notif.id);
+                        if (notif.type === 'remplacement_disponible' && notif.data?.demande_id) {
+                          // Ouvrir le modal de remplacement
+                          openRemplacementModal(notif.data.demande_id);
+                          setShowNotifications(false);
+                        } else if (notif.lien) {
+                          setCurrentPage(notif.lien.replace(/^\/[^\/]+\//, ''));
+                          setShowNotifications(false);
+                        }
+                      }}
+                      style={{ cursor: 'pointer', flex: 1 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <div className="notification-icon">
+                          {notif.type === 'remplacement_demande' && '🔄'}
+                          {notif.type === 'remplacement_disponible' && '🔔'}
+                          {notif.type === 'remplacement_accepte' && '✅'}
+                          {notif.type === 'remplacement_pourvu' && 'ℹ️'}
+                          {notif.type === 'conge_approuve' && '✅'}
+                          {notif.type === 'conge_refuse' && '❌'}
+                          {notif.type === 'conge_demande' && '📝'}
+                          {notif.type === 'planning_assigne' && '📅'}
+                        </div>
+                        <div className="notification-content" style={{ flex: 1 }}>
+                          <h4>{notif.titre}</h4>
+                          <p>{notif.message}</p>
+                          <span className="notification-time">
+                            {new Date(notif.date_creation).toLocaleString('fr-FR')}
+                          </span>
+                          
+                          {/* Boutons d'action pour remplacement disponible */}
+                          {notif.type === 'remplacement_disponible' && notif.data?.demande_id && (
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '8px', 
+                              marginTop: '10px',
+                              paddingTop: '10px',
+                              borderTop: '1px solid #e5e7eb'
+                            }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openRemplacementModal(notif.data.demande_id);
+                                  setShowNotifications(false);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 12px',
+                                  background: '#10b981',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✅ Accepter
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openRemplacementModal(notif.data.demande_id);
+                                  setShowNotifications(false);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 12px',
+                                  background: '#6b7280',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📋 Voir détails
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {notif.statut === 'non_lu' && (
+                          <div className="notification-dot"></div>
+                        )}
+                      </div>
                     </div>
-                    <div className="notification-content">
-                      <h4>{notif.titre}</h4>
-                      <p>{notif.message}</p>
-                      <span className="notification-time">
-                        {new Date(notif.date_creation).toLocaleString('fr-FR')}
-                      </span>
-                    </div>
-                    {notif.statut === 'non_lu' && (
-                      <div className="notification-dot"></div>
-                    )}
                   </div>
                 ))
               )}
