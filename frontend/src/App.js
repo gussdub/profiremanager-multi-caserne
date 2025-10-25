@@ -10402,7 +10402,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         heure_fin: '23:59',
         recurrence_type: 'hebdomadaire',
         recurrence_frequence: 'jours',
-        recurrence_intervalle: 1
+        recurrence_intervalle: 1,
+        jours_semaine: []
       });
       
       // Recharger les disponibilités
