@@ -620,10 +620,11 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="off"
+                  autoComplete="username email"
                   data-testid="login-email-input"
                 />
               </div>
@@ -632,11 +633,12 @@ const Login = () => {
                 <div style={{position: 'relative'}}>
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     value={motDePasse}
                     onChange={(e) => setMotDePasse(e.target.value)}
                     required
-                    autoComplete="new-password"
+                    autoComplete="current-password"
                     data-testid="login-password-input"
                     style={{paddingRight: '40px'}}
                   />
