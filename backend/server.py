@@ -8941,6 +8941,182 @@ async def attribution_automatique(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
 
+async def generer_justification_attribution(
+    selected_user: Dict,
+    all_candidates: List[Dict],
+    type_garde: Dict,
+    date_str: str,
+    user_monthly_hours: Dict,
+    activer_heures_sup: bool,
+    seuil_max_heures: float,
+    user_heures_actuelles: Dict,
+    existing_assignations: List[Dict],
+    disponibilites_evaluees: List[Dict] = None
+) -> Dict[str, Any]:
+    """
+    Génère une justification détaillée pour une attribution automatique
+    """
+    # Calculer les scores pour l'utilisateur sélectionné
+    heures_selectionnee = user_monthly_hours.get(selected_user["id"], 0)
+    moyenne_equipe = sum(user_monthly_hours.values()) / len(user_monthly_hours) if user_monthly_hours else 0
+    
+    # Score d'équité (0-100) - Plus les heures sont basses, meilleur le score
+    if moyenne_equipe > 0:
+        ecart_ratio = (moyenne_equipe - heures_selectionnee) / moyenne_equipe
+        score_equite = min(100, max(0, 50 + (ecart_ratio * 50)))
+    else:
+        score_equite = 50
+    
+    # Score d'ancienneté (0-100)
+    try:
+        date_embauche = selected_user.get("date_embauche", "1900-01-01")
+        try:
+            embauche_dt = datetime.strptime(date_embauche, "%Y-%m-%d")
+        except:
+            embauche_dt = datetime.strptime(date_embauche, "%d/%m/%Y")
+        
+        annees_service = (datetime.now() - embauche_dt).days / 365.25
+        score_anciennete = min(100, annees_service * 5)  # 5 points par an, max 100
+    except:
+        annees_service = 0
+        score_anciennete = 0
+    
+    # Score de disponibilité (0-100)
+    if selected_user.get("type_emploi") == "temps_partiel":
+        score_disponibilite = 100 if disponibilites_evaluees else 50
+    else:
+        score_disponibilite = 75  # Temps plein toujours disponible
+    
+    # Score de compétences (0-100) - basé sur le grade
+    grade_scores = {
+        "Directeur": 100,
+        "Capitaine": 85,
+        "Lieutenant": 70,
+        "Pompier": 50
+    }
+    score_competences = grade_scores.get(selected_user.get("grade", "Pompier"), 50)
+    
+    # Score total
+    score_total = score_equite + score_anciennete + score_disponibilite + score_competences
+    
+    # Détails de l'utilisateur sélectionné
+    assigned_user_info = {
+        "user_id": selected_user["id"],
+        "nom_complet": f"{selected_user['prenom']} {selected_user['nom']}",
+        "grade": selected_user.get("grade", "N/A"),
+        "type_emploi": selected_user.get("type_emploi", "N/A"),
+        "scores": {
+            "equite": round(score_equite, 1),
+            "anciennete": round(score_anciennete, 1),
+            "disponibilite": round(score_disponibilite, 1),
+            "competences": round(score_competences, 1),
+            "total": round(score_total, 1)
+        },
+        "details": {
+            "heures_ce_mois": heures_selectionnee,
+            "moyenne_equipe": round(moyenne_equipe, 1),
+            "annees_service": round(annees_service, 1),
+            "disponibilite_declaree": selected_user.get("type_emploi") == "temps_partiel" and bool(disponibilites_evaluees),
+            "heures_max_autorisees": selected_user.get("heures_max_semaine", seuil_max_heures) if activer_heures_sup else None
+        }
+    }
+    
+    # Évaluer les autres candidats
+    other_candidates = []
+    for candidate in all_candidates:
+        if candidate["id"] == selected_user["id"]:
+            continue  # Skip l'utilisateur sélectionné
+        
+        # Déterminer la raison d'exclusion
+        raison_exclusion = None
+        candidate_scores = None
+        
+        # Vérifier heures supplémentaires
+        if activer_heures_sup:
+            heures_actuelles = user_heures_actuelles.get(candidate["id"], 0)
+            heures_max_user = candidate.get("heures_max_semaine", float('inf'))
+            limite_effective = min(seuil_max_heures, heures_max_user)
+            
+            if heures_actuelles + type_garde.get("duree_heures", 8) > limite_effective:
+                raison_exclusion = f"Heures max atteintes ({heures_actuelles}h/{limite_effective}h)"
+        
+        # Vérifier disponibilité (temps partiel)
+        if not raison_exclusion and candidate.get("type_emploi") == "temps_partiel":
+            # Vérifier s'il a déclaré une disponibilité (simplifié)
+            raison_exclusion = "Disponibilité non déclarée"
+        
+        # Vérifier s'il est déjà assigné
+        if not raison_exclusion:
+            deja_assigne = any(
+                a["user_id"] == candidate["id"] and 
+                a["date"] == date_str and 
+                a["type_garde_id"] == type_garde["id"]
+                for a in existing_assignations
+            )
+            if deja_assigne:
+                raison_exclusion = "Déjà assigné à cette garde"
+        
+        # Si pas exclu, calculer les scores
+        if not raison_exclusion:
+            heures_candidate = user_monthly_hours.get(candidate["id"], 0)
+            
+            # Scores similaires à l'utilisateur sélectionné
+            if moyenne_equipe > 0:
+                ecart_ratio = (moyenne_equipe - heures_candidate) / moyenne_equipe
+                cand_score_equite = min(100, max(0, 50 + (ecart_ratio * 50)))
+            else:
+                cand_score_equite = 50
+            
+            try:
+                date_emb = candidate.get("date_embauche", "1900-01-01")
+                try:
+                    emb_dt = datetime.strptime(date_emb, "%Y-%m-%d")
+                except:
+                    emb_dt = datetime.strptime(date_emb, "%d/%m/%Y")
+                cand_annees = (datetime.now() - emb_dt).days / 365.25
+                cand_score_anc = min(100, cand_annees * 5)
+            except:
+                cand_score_anc = 0
+            
+            cand_score_dispo = 100 if candidate.get("type_emploi") == "temps_partiel" else 75
+            cand_score_comp = grade_scores.get(candidate.get("grade", "Pompier"), 50)
+            cand_total = cand_score_equite + cand_score_anc + cand_score_dispo + cand_score_comp
+            
+            candidate_scores = {
+                "equite": round(cand_score_equite, 1),
+                "anciennete": round(cand_score_anc, 1),
+                "disponibilite": round(cand_score_dispo, 1),
+                "competences": round(cand_score_comp, 1),
+                "total": round(cand_total, 1)
+            }
+            
+            raison_exclusion = f"Score inférieur (total: {round(cand_total, 1)} vs {round(score_total, 1)})"
+        
+        other_candidates.append({
+            "user_id": candidate["id"],
+            "nom_complet": f"{candidate['prenom']} {candidate['nom']}",
+            "grade": candidate.get("grade", "N/A"),
+            "excluded_reason": raison_exclusion,
+            "scores": candidate_scores,
+            "heures_ce_mois": user_monthly_hours.get(candidate["id"], 0)
+        })
+    
+    # Trier les autres candidats par score décroissant (si scores disponibles)
+    other_candidates.sort(key=lambda x: x["scores"]["total"] if x["scores"] else 0, reverse=True)
+    
+    return {
+        "assigned_user": assigned_user_info,
+        "other_candidates": other_candidates[:10],  # Limiter à 10 pour ne pas surcharger
+        "total_candidates_evaluated": len(all_candidates),
+        "date_attribution": datetime.now(timezone.utc).isoformat(),
+        "type_garde_info": {
+            "nom": type_garde.get("nom", "N/A"),
+            "duree_heures": type_garde.get("duree_heures", 8),
+            "personnel_requis": type_garde.get("personnel_requis", 1)
+        }
+    }
+
+
 async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_fin: str):
     """Traite l'attribution automatique pour une seule semaine"""
     try:
