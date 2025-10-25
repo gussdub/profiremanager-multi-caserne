@@ -10362,10 +10362,13 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         
       } else {
         // MODE RÉCURRENCE: Date début/fin avec récurrence
+        setSavingMessage('Calcul des dates de récurrence...');
+        
         const dateDebut = new Date(availabilityConfig.date_debut);
         const dateFin = new Date(availabilityConfig.date_fin);
         
         if (dateDebut > dateFin) {
+          setSavingDisponibilites(false);
           toast({
             title: "Dates invalides",
             description: "La date de début doit être avant la date de fin",
