@@ -10328,11 +10328,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   const handleSaveAvailability = async () => {
     try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des disponibilités...');
+      
       let disponibilitesACreer = [];
       
       if (availabilityConfig.mode === 'calendrier') {
         // MODE CALENDRIER: Clics multiples sur dates
         if (selectedDates.length === 0) {
+          setSavingDisponibilites(false);
           toast({
             title: "Aucune date sélectionnée",
             description: "Veuillez cliquer sur les dates dans le calendrier",
@@ -10340,6 +10344,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           });
           return;
         }
+        
+        setSavingMessage(`Création de ${selectedDates.length} disponibilité(s)...`);
         
         // Créer une disponibilité pour chaque date sélectionnée
         for (const date of selectedDates) {
