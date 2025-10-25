@@ -5371,15 +5371,22 @@ const Planning = () => {
         `${currentMonth}-01` : // Premier jour du mois
         currentWeek;
         
-      const [typesData, assignationsData, usersData] = await Promise.all([
+      // Charger les users uniquement pour admin/superviseur (employés n'ont pas accès à /users)
+      const promises = [
         apiGet(tenantSlug, '/types-garde'),
-        apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
-        apiGet(tenantSlug, '/users') // Charger les utilisateurs pour tous les rôles (employés ont besoin de voir les noms)
-      ]);
+        apiGet(tenantSlug, `/planning/assignations/${dateRange}`)
+      ];
       
-      setTypesGarde(typesData);
-      setAssignations(assignationsData);
-      setUsers(usersData);
+      // Les employés n'ont pas accès à /users
+      if (user.role === 'admin' || user.role === 'superviseur') {
+        promises.push(apiGet(tenantSlug, '/users'));
+      }
+      
+      const results = await Promise.all(promises);
+      
+      setTypesGarde(results[0]);
+      setAssignations(results[1]);
+      setUsers(results[2] || []); // Tableau vide pour employés
     } catch (error) {
       console.error('Erreur lors du chargement du planning:', error);
       toast({
