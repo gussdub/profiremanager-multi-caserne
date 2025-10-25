@@ -9813,12 +9813,28 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       }
     };
 
-    if (targetUser?.id && targetUser?.type_emploi === 'temps_partiel') {
+    // Vérifier si l'utilisateur est temps partiel
+    if (targetUser?.id) {
+      if (targetUser.type_emploi !== 'temps_partiel') {
+        // Rediriger les utilisateurs non temps partiel vers le dashboard
+        console.log('Utilisateur non temps partiel, redirection vers dashboard');
+        setLoading(false);
+        toast({
+          title: "Accès restreint",
+          description: "Le module 'Mes disponibilités' est réservé aux employés à temps partiel.",
+          variant: "warning"
+        });
+        // Rediriger vers le dashboard après 2 secondes
+        setTimeout(() => {
+          setCurrentPage('dashboard');
+        }, 2000);
+        return;
+      }
       fetchDisponibilites();
     } else {
       setLoading(false);
     }
-  }, [targetUser?.id, tenantSlug]);
+  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug, toast, setCurrentPage]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
