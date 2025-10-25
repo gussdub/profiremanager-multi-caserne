@@ -6825,6 +6825,16 @@ const Planning = () => {
                           <span className="assignment-method">
                             {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' ? '🤖 Auto' : '👤 Manuel'}
                           </span>
+                          {user.role === 'admin' && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openAuditModal(selectedGardeDetails.assignations[index], person)}
+                              style={{ marginLeft: '8px' }}
+                            >
+                              🔍 Audit
+                            </Button>
+                          )}
                           {user.role !== 'employe' && (
                             <Button 
                               variant="ghost" 
