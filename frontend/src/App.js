@@ -11275,6 +11275,57 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                           </div>
                         </div>
                       )}
+                      
+                      {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                      {(availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                            {[
+                              { label: 'Lun', value: 'monday' },
+                              { label: 'Mar', value: 'tuesday' },
+                              { label: 'Mer', value: 'wednesday' },
+                              { label: 'Jeu', value: 'thursday' },
+                              { label: 'Ven', value: 'friday' },
+                              { label: 'Sam', value: 'saturday' },
+                              { label: 'Dim', value: 'sunday' }
+                            ].map(jour => (
+                              <label
+                                key={jour.value}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  border: `2px solid ${availabilityConfig.jours_semaine?.includes(jour.value) ? '#16a34a' : '#cbd5e1'}`,
+                                  background: availabilityConfig.jours_semaine?.includes(jour.value) ? '#dcfce7' : 'white',
+                                  cursor: 'pointer',
+                                  fontWeight: availabilityConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={availabilityConfig.jours_semaine?.includes(jour.value) || false}
+                                  onChange={(e) => {
+                                    const currentJours = availabilityConfig.jours_semaine || [];
+                                    const newJours = e.target.checked
+                                      ? [...currentJours, jour.value]
+                                      : currentJours.filter(j => j !== jour.value);
+                                    setAvailabilityConfig({...availabilityConfig, jours_semaine: newJours});
+                                  }}
+                                  style={{ marginRight: '6px' }}
+                                />
+                                {jour.label}
+                              </label>
+                            ))}
+                          </div>
+                          {availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0 && (
+                            <p style={{ marginTop: '10px', color: '#16a34a', fontSize: '0.9rem' }}>
+                              ✓ {availabilityConfig.jours_semaine.length} jour(s) sélectionné(s)
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Résumé pour le mode récurrence */}
