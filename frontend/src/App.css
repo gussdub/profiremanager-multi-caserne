@@ -6319,9 +6319,10 @@ body {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible; /* Permettre de voir le calendrier complet */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 2rem;
+  width: 100%; /* Forcer 100% de largeur */
 }
 
 /* Force Grid avec spécificité maximale */
@@ -6331,6 +6332,7 @@ body {
   grid-auto-flow: column !important;
   background: linear-gradient(135deg, #0f172a, #1e293b);
   padding: 1rem 0;
+  width: 100%; /* Assurer que la grille prend 100% */
 }
 
 .disponibilites-visual-container .visual-calendar .calendar-weekday {
@@ -6340,6 +6342,7 @@ body {
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding: 0 4px; /* Petit padding pour éviter le débordement */
 }
 
 .disponibilites-visual-container .visual-calendar .calendar-days-grid {
@@ -6348,6 +6351,7 @@ body {
   grid-auto-flow: row !important;
   gap: 0;
   padding: 0;
+  width: 100%; /* Assurer que la grille prend 100% */
 }
 
 .calendar-day-cell {
