@@ -10675,11 +10675,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   const handleSaveManualIndisponibilites = async () => {
     try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des indisponibilités...');
+      
       let indisponibilitesACreer = [];
       
       if (manualIndispoMode === 'calendrier') {
         // MODE CALENDRIER: Clics multiples sur dates
         if (manualIndispoConfig.dates.length === 0) {
+          setSavingDisponibilites(false);
           toast({
             title: "Aucune date sélectionnée",
             description: "Veuillez cliquer sur les dates dans le calendrier",
@@ -10687,6 +10691,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           });
           return;
         }
+        
+        setSavingMessage(`Création de ${manualIndispoConfig.dates.length} indisponibilité(s)...`);
         
         // Créer une indisponibilité pour chaque date sélectionnée
         for (const date of manualIndispoConfig.dates) {
