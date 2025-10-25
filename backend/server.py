@@ -1038,6 +1038,9 @@ class Assignation(BaseModel):
     date: str
     statut: str = "planifie"  # planifie, confirme, remplacement_demande
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
+    justification: Optional[Dict[str, Any]] = None  # Justification détaillée pour assignations auto
+    notes_admin: Optional[str] = None  # Notes manuelles de l'admin
+    justification_historique: Optional[List[Dict[str, Any]]] = None  # Historique des justifications
 
 class AssignationCreate(BaseModel):
     tenant_id: Optional[str] = None  # Sera fourni automatiquement par l'endpoint
