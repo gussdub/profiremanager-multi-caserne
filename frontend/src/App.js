@@ -5796,12 +5796,35 @@ const Planning = () => {
 
   // Ouvrir le modal d'audit pour une assignation
   const openAuditModal = (assignation, person) => {
+    console.log('openAuditModal appelé', { assignation, person });
+    
+    if (!assignation) {
+      console.error('Assignation manquante');
+      toast({
+        title: "Erreur",
+        description: "Assignation introuvable",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!assignation.justification) {
+      console.error('Justification manquante', assignation);
+      toast({
+        title: "Justification indisponible",
+        description: "Cette assignation ne contient pas de données d'audit. Elle a peut-être été créée avant l'activation de la fonctionnalité d'audit.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedAuditAssignation({
       ...assignation,
       person: person
     });
     setAuditNotesEdit(assignation.notes_admin || '');
     setShowAuditModal(true);
+    console.log('Modal audit ouvert');
   };
 
   // Sauvegarder les notes admin
