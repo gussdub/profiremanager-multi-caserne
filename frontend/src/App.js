@@ -731,6 +731,83 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     }
   }, [user]);
 
+  // Ouvrir le modal de détails de demande de remplacement
+  const openRemplacementModal = async (demande_id) => {
+    try {
+      const demande = await apiGet(tenantSlug, `/remplacements/${demande_id}`);
+      setSelectedDemandeRemplacement(demande);
+      setRemplacementCommentaire('');
+      setShowRemplacementModal(true);
+    } catch (error) {
+      console.error('Erreur chargement demande:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les détails de la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Accepter une demande de remplacement
+  const handleAccepterRemplacement = async () => {
+    if (!selectedDemandeRemplacement) return;
+    
+    try {
+      await apiPost(
+        tenantSlug,
+        `/remplacements/${selectedDemandeRemplacement.id}/accepter`,
+        { commentaire: remplacementCommentaire }
+      );
+      
+      toast({
+        title: "✅ Remplacement accepté",
+        description: "Vous avez été assigné à cette garde. Le demandeur a été notifié.",
+      });
+      
+      setShowRemplacementModal(false);
+      setSelectedDemandeRemplacement(null);
+      loadNotifications();
+      
+    } catch (error) {
+      console.error('Erreur acceptation remplacement:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'accepter la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Refuser une demande de remplacement
+  const handleRefuserRemplacement = async () => {
+    if (!selectedDemandeRemplacement) return;
+    
+    try {
+      await apiPost(
+        tenantSlug,
+        `/remplacements/${selectedDemandeRemplacement.id}/refuser`,
+        { raison: remplacementCommentaire || "Non disponible" }
+      );
+      
+      toast({
+        title: "Demande refusée",
+        description: "Le demandeur a été notifié de votre refus.",
+      });
+      
+      setShowRemplacementModal(false);
+      setSelectedDemandeRemplacement(null);
+      loadNotifications();
+      
+    } catch (error) {
+      console.error('Erreur refus remplacement:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de refuser la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Jouer un son quand il y a de nouvelles notifications
   useEffect(() => {
     if (unreadCount > 0) {
