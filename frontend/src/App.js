@@ -700,6 +700,9 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showRemplacementModal, setShowRemplacementModal] = useState(false);
+  const [selectedDemandeRemplacement, setSelectedDemandeRemplacement] = useState(null);
+  const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
 
   // Charger les notifications
   const loadNotifications = async () => {
