@@ -5142,8 +5142,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         type="number"
                         min="5"
                         max="168"
-                        value={newUser.heures_max_semaine || 40}
-                        onChange={(e) => setNewUser({...newUser, heures_max_semaine: parseInt(e.target.value) || 40})}
+                        value={newUser.heures_max_semaine !== undefined ? newUser.heures_max_semaine : 40}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? '' : parseInt(e.target.value) || '';
+                          setNewUser({...newUser, heures_max_semaine: value});
+                        }}
                         placeholder="Ex: 40"
                         data-testid="edit-user-heures-max-input"
                         disabled={newUser.type_emploi === 'temps_partiel'}
