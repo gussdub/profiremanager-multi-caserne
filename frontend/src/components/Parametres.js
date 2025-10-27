@@ -2603,6 +2603,19 @@ const Parametres = ({ user, tenantSlug }) => {
                   />
                   <small>1 = niveau le plus bas, 10 = niveau le plus haut</small>
                 </div>
+
+                <div className="form-field">
+                  <label className="setting-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={editGrade.est_officier}
+                      onChange={(e) => setEditGrade({...editGrade, est_officier: e.target.checked})}
+                      data-testid="edit-grade-est-officier"
+                    />
+                    <span>👮 Est un grade d'officier</span>
+                  </label>
+                  <small className="text-muted">Les grades d'officiers incluent Capitaine, Lieutenant, Directeur, Chef de division, etc.</small>
+                </div>
               </div>
 
               <div className="modal-actions">
