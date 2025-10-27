@@ -3070,6 +3070,21 @@ async def create_assignation(tenant_slug: str, assignation: AssignationCreate, c
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # VÉRIFICATION CRITIQUE : Empêcher les doublons
+    # Vérifier si cet utilisateur est déjà assigné à cette garde à cette date
+    existing_assignment = await db.assignations.find_one({
+        "tenant_id": tenant.id,
+        "user_id": assignation.user_id,
+        "type_garde_id": assignation.type_garde_id,
+        "date": assignation.date
+    })
+    
+    if existing_assignment:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cet employé est déjà assigné à cette garde pour cette date"
+        )
+    
     # Store assignation in database avec tenant_id
     assignation_dict = assignation.dict()
     assignation_dict["tenant_id"] = tenant.id
