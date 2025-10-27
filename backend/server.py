@@ -7583,15 +7583,29 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     has_garde_externe = any(t.get("est_garde_externe", False) for t in types_garde)
     
     # ===== SECTION PERSONNELLE =====
-    # Heures travaillées ce mois
+    # Heures travaillées ce mois (séparé interne/externe)
     mes_assignations_mois = [a for a in assignations if a["user_id"] == current_user.id and "date" in a]
-    heures_mois = 0
+    heures_mois_internes = 0
+    heures_mois_externes = 0
+    heures_mois_total = 0
     nombre_gardes_mois = 0
     for assignation in mes_assignations_mois:
         try:
             date_assign = datetime.fromisoformat(assignation["date"])
             if debut_mois <= date_assign <= fin_mois:
-                heures_mois += 8  # Estimation 8h par garde
+                # Récupérer le type de garde pour calculer la durée exacte
+                type_garde = type_garde_map.get(assignation.get("type_garde_id"))
+                if type_garde:
+                    duree = type_garde.get("duree_heures", 8)
+                    if type_garde.get("est_garde_externe", False):
+                        heures_mois_externes += duree
+                    else:
+                        heures_mois_internes += duree
+                    heures_mois_total += duree
+                else:
+                    # Fallback si type garde non trouvé
+                    heures_mois_internes += 8
+                    heures_mois_total += 8
                 nombre_gardes_mois += 1
         except:
             pass
