@@ -301,6 +301,22 @@ const Parametres = ({ user, tenantSlug }) => {
     setCreateForm({...createForm, jours_application: updatedJours});
   };
 
+  const handleCreateCompetenceChange = (competenceId) => {
+    const updatedCompetences = createForm.competences_requises.includes(competenceId)
+      ? createForm.competences_requises.filter(c => c !== competenceId)
+      : [...createForm.competences_requises, competenceId];
+    
+    setCreateForm({...createForm, competences_requises: updatedCompetences});
+  };
+
+  const handleEditCompetenceChange = (competenceId) => {
+    const updatedCompetences = editForm.competences_requises.includes(competenceId)
+      ? editForm.competences_requises.filter(c => c !== competenceId)
+      : [...editForm.competences_requises, competenceId];
+    
+    setEditForm({...editForm, competences_requises: updatedCompetences});
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
