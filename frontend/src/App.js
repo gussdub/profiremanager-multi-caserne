@@ -13344,15 +13344,24 @@ const MonProfil = () => {
                 <Label>Heures maximum par semaine</Label>
                 <div className="heures-max-input">
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="5"
                     max="168"
                     value={profileData.heures_max_semaine !== null && profileData.heures_max_semaine !== undefined 
                       ? profileData.heures_max_semaine 
                       : (userProfile?.heures_max_semaine || 40)}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? null : parseInt(e.target.value);
-                      setProfileData({...profileData, heures_max_semaine: value});
+                      const value = e.target.value;
+                      // Permettre seulement les chiffres ou champ vide
+                      if (value === '' || /^\d+$/.test(value)) {
+                        const numValue = value === '' ? null : parseInt(value);
+                        // Valider la plage 5-168
+                        if (numValue === null || (numValue >= 5 && numValue <= 168)) {
+                          setProfileData({...profileData, heures_max_semaine: numValue});
+                        }
+                      }
                     }}
                     disabled={!isEditing || userProfile?.type_emploi === 'temps_plein'}
                     data-testid="profile-heures-max-input"
