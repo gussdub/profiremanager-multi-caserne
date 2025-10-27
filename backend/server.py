@@ -1395,6 +1395,7 @@ class Grade(BaseModel):
     tenant_id: str
     nom: str
     niveau_hierarchique: int  # 1 = niveau le plus bas, 10 = niveau le plus haut
+    est_officier: bool = False  # True si ce grade est considéré comme un officier
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -1402,10 +1403,12 @@ class GradeCreate(BaseModel):
     tenant_id: Optional[str] = None
     nom: str
     niveau_hierarchique: int
+    est_officier: bool = False
 
 class GradeUpdate(BaseModel):
     nom: Optional[str] = None
     niveau_hierarchique: Optional[int] = None
+    est_officier: Optional[bool] = None
 
 class ParametresFormations(BaseModel):
     """Paramètres globaux formations pour NFPA 1500"""
