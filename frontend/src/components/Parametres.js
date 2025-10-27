@@ -379,7 +379,8 @@ const Parametres = ({ user, tenantSlug }) => {
       jours_application: type.jours_application || [],
       officier_obligatoire: type.officier_obligatoire || false,
       est_garde_externe: type.est_garde_externe || false,
-      taux_horaire_externe: type.taux_horaire_externe || null
+      taux_horaire_externe: type.taux_horaire_externe || null,
+      competences_requises: type.competences_requises || []
     });
     setShowEditTypeModal(true);
   };
