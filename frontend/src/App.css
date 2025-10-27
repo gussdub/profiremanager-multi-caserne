@@ -11953,25 +11953,34 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
   color: white;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 28px;
+  gap: 0.5rem;
 }
 
 .garde-mois-item:hover {
   transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.garde-initiale {
+.garde-nom-complet {
   font-size: 0.75rem;
   font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .coverage-icon {
   font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 /* Responsive planning moderne */
