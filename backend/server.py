@@ -1152,6 +1152,8 @@ class User(BaseModel):
     numero_employe: str = ""
     date_embauche: str = ""
     taux_horaire: float = 0.0  # Taux horaire en $/h
+    heures_internes: float = 0.0  # Heures de garde internes (travail physique)
+    heures_externes: float = 0.0  # Heures de garde externes (astreinte à domicile)
     formations: List[str] = []
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
