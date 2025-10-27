@@ -9704,15 +9704,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             if not disponible_toutes_dates:
                                 continue
                         
-                        # Vérifier heures supplémentaires si activé
-                        if activer_heures_sup:
-                            heures_actuelles = user_heures_actuelles.get(user["id"], 0)
-                            heures_max_user = user.get("heures_max_semaine", float('inf'))
-                            limite_effective = min(seuil_max_heures, heures_max_user)
-                            
-                            if heures_actuelles + opp['duree_totale'] > limite_effective:
-                                continue  # Dépasserait la limite
-                        
                         # Vérifier qu'il n'est pas déjà assigné sur ces dates/gardes
                         deja_assigne = any(
                             (a["date"] == opp['date1'] and a["type_garde_id"] == opp['garde1']["id"] and a["user_id"] == user["id"]) or
