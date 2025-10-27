@@ -3403,6 +3403,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     try {
       const userToUpdate = {
         ...newUser,
+        heures_max_semaine: parseInt(newUser.heures_max_semaine) || 40,
         role: selectedUser.role, // Préserver le rôle existant
         statut: selectedUser.statut, // Préserver le statut existant
         mot_de_passe: newUser.mot_de_passe || 'unchanged' // Mot de passe optionnel
