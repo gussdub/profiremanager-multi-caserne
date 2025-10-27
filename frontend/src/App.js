@@ -3001,10 +3001,25 @@ const Dashboard = () => {
       <div className="dashboard-section">
         <h2>👤 Ma Section Personnelle</h2>
         <div className="kpi-grid">
-          <div className="kpi-card" style={{background: '#FEF3C7'}}>
-            <h3>{section_personnelle.heures_travaillees_mois}h</h3>
-            <p>Heures travaillées ce mois</p>
-          </div>
+          {!section_personnelle.has_garde_externe ? (
+            // Affichage simple si pas de garde externe
+            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+              <h3>{section_personnelle.heures_travaillees_mois}h</h3>
+              <p>Heures travaillées ce mois</p>
+            </div>
+          ) : (
+            // Affichage séparé si garde externe existe
+            <>
+              <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                <h3>{section_personnelle.heures_internes_mois}h</h3>
+                <p>🏢 Heures Internes</p>
+              </div>
+              <div className="kpi-card" style={{background: '#E0E7FF'}}>
+                <h3>{section_personnelle.heures_externes_mois}h</h3>
+                <p>🏠 Heures Externes</p>
+              </div>
+            </>
+          )}
           <div className="kpi-card" style={{background: '#FCA5A5'}}>
             <h3>{section_personnelle.nombre_gardes_mois}</h3>
             <p>Nombre de gardes</p>
