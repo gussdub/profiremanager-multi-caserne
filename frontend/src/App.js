@@ -6998,6 +6998,9 @@ const Planning = () => {
                     {selectedGardeDetails.typeGarde.officier_obligatoire && (
                       <span>🎖️ Officier obligatoire</span>
                     )}
+                    {selectedGardeDetails.typeGarde.est_garde_externe && (
+                      <span className="badge-externe">🏠 Garde Externe</span>
+                    )}
                   </div>
                 </div>
                 <div className="coverage-indicator">
