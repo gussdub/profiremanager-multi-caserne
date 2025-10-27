@@ -9821,15 +9821,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
                     # Note: Les gardes externes n'ont PAS de limite d'heures supplémentaires
                     if not type_garde.get("est_garde_externe", False):
-                        heures_actuelles = user_heures_actuelles.get(user["id"], 0) if activer_heures_sup else 0
                         heures_max_user = user.get("heures_max_semaine", 40)
                         
                         if activer_heures_sup:
-                            # Heures sup activées : prendre minimum entre limite système et préférence user
-                            limite_effective = min(seuil_max_heures, heures_max_user)
-                            # Vérifier si dépasse limite (mais autoriser car heures sup activées)
-                            if heures_actuelles + type_garde.get("duree_heures", 8) > limite_effective:
-                                continue  # Skip si dépasse même avec heures sup activées
+                            # Heures sup activées : peut dépasser heures_max_user mais respecter limite système si elle existe
+                            # Pour l'instant, on ne limite pas (les heures sup sont autorisées)
+                            pass  # Pas de skip, autoriser l'attribution
                         else:
                             # Heures sup DÉSACTIVÉES : vérifier strictement heures_max_semaine
                             # Calculer les heures de la semaine actuelle pour cet utilisateur
