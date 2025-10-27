@@ -9828,11 +9828,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         available_users = officers
                 
                 # ÉTAPE 4: Rotation équitable - sort by monthly hours (ascending)
-                available_users.sort(key=lambda u: user_monthly_hours.get(u["id"], 0))
+                # Utiliser le compteur approprié selon le type de garde (interne ou externe)
+                if type_garde.get("est_garde_externe", False):
+                    available_users.sort(key=lambda u: user_monthly_hours_externes.get(u["id"], 0))
+                else:
+                    available_users.sort(key=lambda u: user_monthly_hours_internes.get(u["id"], 0))
                 
                 # ÉTAPE 5: Ancienneté - among users with same hours, prioritize by ancienneté
-                min_hours = user_monthly_hours.get(available_users[0]["id"], 0)
-                users_with_min_hours = [u for u in available_users if user_monthly_hours.get(u["id"], 0) == min_hours]
+                if type_garde.get("est_garde_externe", False):
+                    min_hours = user_monthly_hours_externes.get(available_users[0]["id"], 0)
+                    users_with_min_hours = [u for u in available_users if user_monthly_hours_externes.get(u["id"], 0) == min_hours]
+                else:
+                    min_hours = user_monthly_hours_internes.get(available_users[0]["id"], 0)
+                    users_with_min_hours = [u for u in available_users if user_monthly_hours_internes.get(u["id"], 0) == min_hours]
                 
                 if len(users_with_min_hours) > 1:
                     # Sort by ancienneté (date_embauche) - oldest first
