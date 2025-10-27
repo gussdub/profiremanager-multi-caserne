@@ -9877,11 +9877,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             continue  # Skip if not available for this specific garde
                     # Temps plein : toujours éligible (limite heures déjà vérifiée ci-dessus)
                     
-                    # VÉRIFICATION CRITIQUE : Check if user already assigned on this date (ANY garde type)
-                    # Simplifié : on ne veut PAS qu'une personne soit assignée plusieurs fois le même jour
+                    # VÉRIFICATION : Check if user already assigned to THIS TYPE DE GARDE on this date
+                    # Important : On permet plusieurs gardes différentes le même jour (ex: matin + après-midi)
                     already_assigned = next((a for a in existing_assignations 
                                            if a["date"] == date_str 
-                                           and a["user_id"] == user["id"]), None)
+                                           and a["user_id"] == user["id"]
+                                           and a["type_garde_id"] == type_garde["id"]), None)
                     if already_assigned:
                         continue
                     
