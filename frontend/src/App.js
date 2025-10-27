@@ -5472,6 +5472,7 @@ const Planning = () => {
     periode: 'semaine', // semaine ou mois
     periodeLabel: '', // 'Semaine actuelle', 'Semaine suivante', 'Mois actuel', 'Mois suivant'
     date: currentWeek,
+    mode: 'completer', // 'completer' ou 'reinitialiser'
     mode: 'completer' // 'completer' ou 'reinitialiser'
   });
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
