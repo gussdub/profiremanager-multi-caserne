@@ -9395,8 +9395,6 @@ async def generer_justification_attribution(
     user_monthly_hours_internes: Dict,
     user_monthly_hours_externes: Dict,
     activer_heures_sup: bool,
-    seuil_max_heures: float,
-    user_heures_actuelles: Dict,
     existing_assignations: List[Dict],
     disponibilites_evaluees: List[Dict] = None
 ) -> Dict[str, Any]:
