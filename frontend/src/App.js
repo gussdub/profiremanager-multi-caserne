@@ -4453,6 +4453,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             {selectedUser.taux_horaire ? `${selectedUser.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
                           </span>
                         </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Heures max/semaine</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                            {selectedUser.heures_max_semaine || 40}h
+                            {selectedUser.type_emploi === 'temps_plein' && (
+                              <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '0.5rem' }}>(Admin)</span>
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
