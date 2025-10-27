@@ -11474,6 +11474,17 @@ body {
   color: #64748b;
 }
 
+.badge-externe {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
 .coverage-indicator {
   text-align: center;
 }
