@@ -3223,29 +3223,32 @@ async def trouver_remplacants_potentiels(
             # Récupérer les paramètres de remplacements
             parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
             if parametres and parametres.get("activer_gestion_heures_sup", False):
-                seuil_max_heures = parametres.get("seuil_max_heures", 40)
-                periode_calcul = parametres.get("periode_calcul_heures", "semaine")
-                jours_personnalises = parametres.get("jours_periode_personnalisee", 7)
+                # Si heures sup activées, ne pas limiter
+                pass  # Autoriser toutes les heures
+            else:
+                # Heures sup désactivées : vérifier la limite hebdo
+                heures_max_user = user.get("heures_max_semaine", 40)
                 
-                # Calculer les heures actuelles de l'employé
-                heures_actuelles = await calculer_heures_employe_periode(
-                    user_id=user["id"],
-                    tenant_id=tenant_id,
-                    date_reference=date_garde,
-                    periode=periode_calcul,
-                    jours_personnalises=jours_personnalises
-                )
+                # Calculer heures de la semaine pour cet utilisateur
+                semaine_debut = datetime.strptime(date_garde, "%Y-%m-%d")
+                while semaine_debut.weekday() != 0:  # Trouver le lundi
+                    semaine_debut -= timedelta(days=1)
+                semaine_fin = semaine_debut + timedelta(days=6)
                 
-                # Récupérer la préférence personnelle de l'employé
-                heures_max_user = user.get("heures_max_semaine", float('inf'))
+                assignations_semaine = await db.assignations.find({
+                    "user_id": user["id"],
+                    "tenant_id": tenant_id,
+                    "date": {
+                        "$gte": semaine_debut.strftime("%Y-%m-%d"),
+                        "$lte": semaine_fin.strftime("%Y-%m-%d")
+                    }
+                }).to_list(1000)
                 
-                # Prendre le minimum entre la limite système et la préférence personnelle
-                limite_effective = min(seuil_max_heures, heures_max_user)
-                
-                # Vérifier si ajouter cette garde dépasserait la limite
+                heures_semaine = sum(8 for _ in assignations_semaine)  # Simplification: 8h par garde
                 duree_garde = type_garde_data.get("duree_heures", 8)
-                if heures_actuelles + duree_garde > limite_effective:
-                    continue  # Skip car dépasse les heures supplémentaires autorisées
+                
+                if heures_semaine + duree_garde > heures_max_user:
+                    continue  # Skip car dépasse les heures max hebdo
             
             # 4. Vérifier s'il a une disponibilité déclarée (bonus)
             dispo = await db.disponibilites.find_one({
