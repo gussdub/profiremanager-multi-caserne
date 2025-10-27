@@ -9778,7 +9778,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             tenant_id=tenant.id,
                             type_garde_id=opp['garde1']["id"],
                             date=opp['date1'],
-                            assignation_type="automatique"
+                            assignation_type="auto"  # Corrigé: "auto" au lieu de "automatique"
                         )
                         
                         assignation2 = Assignation(
@@ -9786,7 +9786,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             tenant_id=tenant.id,
                             type_garde_id=opp['garde2']["id"],
                             date=opp['date2'],
-                            assignation_type="automatique"
+                            assignation_type="auto"  # Corrigé: "auto" au lieu de "automatique"
                         )
                         
                         # Insérer dans la base de données
