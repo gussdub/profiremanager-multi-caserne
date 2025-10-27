@@ -13243,8 +13243,11 @@ const MonProfil = () => {
                     type="number"
                     min="5"
                     max="168"
-                    value={profileData.heures_max_semaine || userProfile?.heures_max_semaine || 40}
-                    onChange={(e) => setProfileData({...profileData, heures_max_semaine: parseInt(e.target.value)})}
+                    value={profileData.heures_max_semaine !== undefined ? profileData.heures_max_semaine : (userProfile?.heures_max_semaine || 40)}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value) || '';
+                      setProfileData({...profileData, heures_max_semaine: value});
+                    }}
                     disabled={!isEditing || userProfile?.type_emploi === 'temps_plein'}
                     data-testid="profile-heures-max-input"
                   />
