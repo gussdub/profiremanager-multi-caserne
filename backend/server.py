@@ -9636,6 +9636,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             user_monthly_hours_internes[user["id"]] = user_hours_internes
             user_monthly_hours_externes[user["id"]] = user_hours_externes
         
+        # Initialiser la liste des nouvelles assignations
+        nouvelles_assignations = []
+        
         # REGROUPEMENT DES HEURES (si activé) - Traiter avant l'attribution normale
         regroupements_traites = []  # Pour tracker les gardes déjà regroupées
         if parametres.get("activer_regroupement_heures", False):
