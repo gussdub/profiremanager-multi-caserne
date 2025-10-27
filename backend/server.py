@@ -9704,8 +9704,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     # Si on a des candidats, appliquer l'équitabilité puis assigner
                     if candidats_regroupement:
-                        # ÉTAPE 4b: Tri par équitabilité (heures mensuelles)
-                        candidats_regroupement.sort(key=lambda u: user_monthly_hours.get(u["id"], 0))
+                        # ÉTAPE 4b: Tri par équitabilité (heures mensuelles selon type de garde)
+                        # Utiliser le compteur approprié selon le type de garde de l'opportunité
+                        type_garde_opp = opp.get('garde1') or {}
+                        if type_garde_opp.get("est_garde_externe", False):
+                            candidats_regroupement.sort(key=lambda u: user_monthly_hours_externes.get(u["id"], 0))
+                        else:
+                            candidats_regroupement.sort(key=lambda u: user_monthly_hours_internes.get(u["id"], 0))
                         
                         # Sélectionner le meilleur candidat
                         selected_user = candidats_regroupement[0]
