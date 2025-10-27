@@ -9398,12 +9398,18 @@ async def attribution_automatique(
             # Passer à la semaine suivante
             current_week_start += timedelta(days=7)
         
-        return {
+        response = {
             "message": "Attribution automatique intelligente effectuée avec succès",
             "assignations_creees": total_assignations_creees,
             "algorithme": "5 niveaux: Manuel → Disponibilités → Grades → Rotation équitable → Ancienneté",
             "periode": f"{semaine_debut} à {semaine_fin}"
         }
+        
+        if reset and assignations_supprimees > 0:
+            response["assignations_supprimees"] = assignations_supprimees
+            response["message"] = f"Planning réinitialisé ({assignations_supprimees} assignations auto supprimées) et attribution effectuée"
+        
+        return response
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
