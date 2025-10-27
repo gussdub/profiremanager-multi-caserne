@@ -13109,26 +13109,27 @@ const MonProfil = () => {
                 />
               </div>
 
-              {userProfile?.type_emploi === 'temps_partiel' && (
-                <div className="form-field">
-                  <Label>Heures maximum par semaine</Label>
-                  <div className="heures-max-input">
-                    <Input
-                      type="number"
-                      min="5"
-                      max="168"
-                      value={profileData.heures_max_semaine || userProfile?.heures_max_semaine || 25}
-                      onChange={(e) => setProfileData({...profileData, heures_max_semaine: parseInt(e.target.value)})}
-                      disabled={!isEditing}
-                      data-testid="profile-heures-max-input"
-                    />
-                    <span className="heures-max-unit">heures/semaine</span>
-                  </div>
-                  <small className="heures-max-help">
-                    Indiquez le nombre maximum d'heures que vous souhaitez travailler par semaine (5-168h).
-                  </small>
+              {/* Heures maximum par semaine - Visible pour tous, modifiable pour temps partiel uniquement */}
+              <div className="form-field">
+                <Label>Heures maximum par semaine</Label>
+                <div className="heures-max-input">
+                  <Input
+                    type="number"
+                    min="5"
+                    max="168"
+                    value={profileData.heures_max_semaine || userProfile?.heures_max_semaine || 40}
+                    onChange={(e) => setProfileData({...profileData, heures_max_semaine: parseInt(e.target.value)})}
+                    disabled={!isEditing || userProfile?.type_emploi === 'temps_plein'}
+                    data-testid="profile-heures-max-input"
+                  />
+                  <span className="heures-max-unit">heures/semaine</span>
                 </div>
-              )}
+                <small className="heures-max-help">
+                  {userProfile?.type_emploi === 'temps_partiel' 
+                    ? "Indiquez le nombre maximum d'heures que vous souhaitez travailler par semaine (5-168h)."
+                    : "Limite d'heures hebdomadaires configurée par l'administrateur."}
+                </small>
+              </div>
 
               {isEditing && (
                 <div className="form-actions">
