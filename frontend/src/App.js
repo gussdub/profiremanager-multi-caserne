@@ -5820,7 +5820,8 @@ const Planning = () => {
       setAutoAttributionConfig({
         periode: 'semaine',
         periodeLabel: '',
-        date: currentWeek
+        date: currentWeek,
+        mode: 'completer'
       });
       fetchPlanningData();
     } catch (error) {
