@@ -9381,7 +9381,7 @@ async def attribution_automatique(
                     "$gte": semaine_debut,
                     "$lte": semaine_fin
                 },
-                "assignation_type": "auto"
+                "assignation_type": {"$in": ["auto", "automatique"]}  # Support ancien + nouveau format
             })
             assignations_supprimees = result.deleted_count
         
