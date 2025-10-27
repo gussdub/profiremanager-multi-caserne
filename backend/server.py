@@ -7652,7 +7652,10 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     formations_a_venir.sort(key=lambda x: x["date_debut"])
     
     section_personnelle = {
-        "heures_travaillees_mois": heures_mois,
+        "heures_travaillees_mois": heures_mois_total,  # Total pour compatibilité
+        "heures_internes_mois": heures_mois_internes,
+        "heures_externes_mois": heures_mois_externes,
+        "has_garde_externe": has_garde_externe,  # Indicateur si garde externe existe
         "nombre_gardes_mois": nombre_gardes_mois,
         "pourcentage_presence_formations": pourcentage_presence_formations,
         "formations_a_venir": formations_a_venir
