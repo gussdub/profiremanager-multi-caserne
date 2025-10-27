@@ -9858,6 +9858,20 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     if already_assigned:
                         continue
                     
+                    # VÉRIFICATION DES COMPÉTENCES REQUISES
+                    competences_requises = type_garde.get("competences_requises", [])
+                    if competences_requises:
+                        # Vérifier si l'utilisateur possède toutes les compétences requises
+                        user_formations = user.get("formations", [])
+                        has_all_competences = all(comp_id in user_formations for comp_id in competences_requises)
+                        
+                        if not has_all_competences:
+                            # Exception: Pour "Officier obligatoire", accepter les pompiers fonction_superieur même sans compétences
+                            if type_garde.get("officier_obligatoire", False) and user.get("fonction_superieur", False):
+                                pass  # Autoriser le pompier fonction_superieur
+                            else:
+                                continue  # Skip si compétences manquantes
+                    
                     available_users.append(user)
                 
                 if not available_users:
