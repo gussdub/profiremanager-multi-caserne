@@ -9771,7 +9771,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         logging.info(f"✅ Regroupement créé: {selected_user['prenom']} {selected_user['nom']} - {opp['type']} - {opp['duree_totale']}h")
         
         # Attribution automatique logic (5 niveaux de priorité)
-        nouvelles_assignations = []
+        # nouvelles_assignations déjà déclaré plus haut
         
         for type_garde in types_garde:
             # Check each day for this type de garde
