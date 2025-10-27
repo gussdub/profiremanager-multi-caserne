@@ -9907,8 +9907,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     existing_assignations.append(assignation_obj.dict())
                     pompiers_assignes_cette_iteration += 1
                     
-                    # Update monthly hours for next iteration
-                    user_monthly_hours[selected_user["id"]] += type_garde.get("duree_heures", 8)
+                    # Update monthly hours for next iteration (compteur approprié selon type de garde)
+                    duree = type_garde.get("duree_heures", 8)
+                    if type_garde.get("est_garde_externe", False):
+                        user_monthly_hours_externes[selected_user["id"]] += duree
+                    else:
+                        user_monthly_hours_internes[selected_user["id"]] += duree
                     
                     # Retirer ce pompier de la liste des disponibles pour cette garde
                     users_with_min_hours.pop(0)
