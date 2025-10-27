@@ -5133,6 +5133,27 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       />
                     </div>
                   </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Heures maximum par semaine *</Label>
+                      <Input
+                        type="number"
+                        min="5"
+                        max="168"
+                        value={newUser.heures_max_semaine || 40}
+                        onChange={(e) => setNewUser({...newUser, heures_max_semaine: parseInt(e.target.value) || 40})}
+                        placeholder="Ex: 40"
+                        data-testid="edit-user-heures-max-input"
+                        disabled={newUser.type_emploi === 'temps_partiel'}
+                      />
+                      <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.875rem' }}>
+                        {newUser.type_emploi === 'temps_plein' 
+                          ? "Limite d'heures hebdomadaires pour l'auto-attribution (modifiable par admin uniquement)"
+                          : "Les employés temps partiel modifient ce champ dans leur profil"}
+                      </small>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Section 3: Compétences */}
