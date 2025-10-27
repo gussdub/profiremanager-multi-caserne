@@ -9856,12 +9856,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         if not user_dispos:
                             continue  # Skip if not available for this specific garde
-                    elif user["type_emploi"] == "temps_plein":
-                        # Si gestion heures sup désactivée, skip temps plein (planning fixe manuel)
-                        if not activer_heures_sup:
-                            continue
-                    else:
-                        continue
+                    # Temps plein : toujours éligible (limite heures déjà vérifiée ci-dessus)
                     
                     # Check if user already assigned on this type de garde for this date
                     already_assigned = next((a for a in existing_assignations 
