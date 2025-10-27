@@ -2404,6 +2404,28 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
 
                 <div className="form-field">
+                  <Label>Compétences requises *</Label>
+                  <div className="competences-selection">
+                    {competences.length > 0 ? (
+                      competences.map(comp => (
+                        <label key={comp.id} className="competence-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={editForm.competences_requises.includes(comp.id)}
+                            onChange={() => handleEditCompetenceChange(comp.id)}
+                            data-testid={`edit-competence-${comp.id}`}
+                          />
+                          <span>{comp.nom}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-muted">Aucune compétence disponible. Créez d'abord des compétences dans l'onglet Compétences.</p>
+                    )}
+                  </div>
+                  <small className="text-muted">Au moins une compétence requise pour effectuer cette garde</small>
+                </div>
+
+                <div className="form-field">
                   <label className="setting-checkbox">
                     <input
                       type="checkbox"
