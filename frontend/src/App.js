@@ -12934,7 +12934,7 @@ const MonProfil = () => {
         telephone: profileData.telephone,
         adresse: profileData.adresse,
         contact_urgence: profileData.contact_urgence,
-        heures_max_semaine: profileData.heures_max_semaine || 25
+        heures_max_semaine: parseInt(profileData.heures_max_semaine) || 25
       };
 
       const updatedData = await apiPut(tenantSlug, '/users/mon-profil', updateData);
