@@ -9365,7 +9365,8 @@ async def generer_justification_attribution(
     all_candidates: List[Dict],
     type_garde: Dict,
     date_str: str,
-    user_monthly_hours: Dict,
+    user_monthly_hours_internes: Dict,
+    user_monthly_hours_externes: Dict,
     activer_heures_sup: bool,
     seuil_max_heures: float,
     user_heures_actuelles: Dict,
@@ -9375,6 +9376,9 @@ async def generer_justification_attribution(
     """
     Génère une justification détaillée pour une attribution automatique
     """
+    # Utiliser le compteur approprié selon le type de garde
+    user_monthly_hours = user_monthly_hours_externes if type_garde.get("est_garde_externe", False) else user_monthly_hours_internes
+    
     # Calculer les scores pour l'utilisateur sélectionné
     heures_selectionnee = user_monthly_hours.get(selected_user["id"], 0)
     moyenne_equipe = sum(user_monthly_hours.values()) / len(user_monthly_hours) if user_monthly_hours else 0
