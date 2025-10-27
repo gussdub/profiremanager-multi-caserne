@@ -2380,6 +2380,34 @@ const Parametres = ({ user, tenantSlug }) => {
                     <span>Officier obligatoire pour cette garde</span>
                   </label>
                 </div>
+
+                <div className="form-field">
+                  <label className="setting-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={editForm.est_garde_externe}
+                      onChange={(e) => setEditForm({...editForm, est_garde_externe: e.target.checked})}
+                      data-testid="edit-garde-externe-checkbox"
+                    />
+                    <span>Garde Externe (astreinte à domicile)</span>
+                  </label>
+                </div>
+
+                {editForm.est_garde_externe && (
+                  <div className="form-field">
+                    <Label>Taux horaire externe ($/h)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editForm.taux_horaire_externe || ''}
+                      onChange={(e) => setEditForm({...editForm, taux_horaire_externe: e.target.value ? parseFloat(e.target.value) : null})}
+                      placeholder="Ex: 25.00"
+                      data-testid="edit-taux-horaire-externe-input"
+                    />
+                    <small className="text-muted">Pour les futures payes automatiques</small>
+                  </div>
+                )}
               </div>
 
               <div className="modal-actions">
