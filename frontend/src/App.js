@@ -5336,6 +5336,74 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           </div>
         </div>
       )}
+      {/* Modal d'édition des heures max (Admin uniquement pour temps plein) */}
+      {showEditHeuresMaxModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowEditHeuresMaxModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>⏰ Modifier les heures max/semaine</h3>
+              <Button variant="ghost" onClick={() => setShowEditHeuresMaxModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '1rem', color: '#64748b' }}>
+                Employé: <strong>{selectedUser.prenom} {selectedUser.nom}</strong>
+              </p>
+              <div className="form-field">
+                <Label>Heures maximum par semaine *</Label>
+                <Input
+                  type="number"
+                  min="5"
+                  max="168"
+                  value={editHeuresMaxValue}
+                  onChange={(e) => setEditHeuresMaxValue(parseInt(e.target.value))}
+                  data-testid="edit-heures-max-input"
+                />
+                <small className="text-muted">
+                  Limite d'heures hebdomadaires pour l'auto-attribution (5-168h).
+                </small>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowEditHeuresMaxModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await apiPut(tenantSlug, `/users/${selectedUser.id}`, {
+                      heures_max_semaine: editHeuresMaxValue
+                    });
+                    
+                    toast({
+                      title: "Heures max mises à jour",
+                      description: `Les heures max ont été modifiées à ${editHeuresMaxValue}h/semaine.`
+                    });
+                    
+                    // Refresh data
+                    const usersData = await apiGet(tenantSlug, '/users');
+                    setUsers(usersData);
+                    
+                    // Update selected user
+                    const updatedUser = usersData.find(u => u.id === selectedUser.id);
+                    setSelectedUser(updatedUser);
+                    
+                    setShowEditHeuresMaxModal(false);
+                  } catch (error) {
+                    toast({
+                      title: "Erreur",
+                      description: "Impossible de modifier les heures max.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                data-testid="save-heures-max-btn"
+              >
+                💾 Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
