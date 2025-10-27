@@ -1181,7 +1181,10 @@ const Parametres = ({ user, tenantSlug }) => {
                 <div key={grade.id} className="grade-card" data-testid={`grade-${grade.id}`}>
                   <div className="grade-header">
                     <div className="grade-info">
-                      <h3>{grade.nom}</h3>
+                      <h3>
+                        {grade.nom}
+                        {grade.est_officier && <span className="badge-officier">👮 Officier</span>}
+                      </h3>
                       <div className="grade-details">
                         <span className="detail-item">📊 Niveau hiérarchique: {grade.niveau_hierarchique}</span>
                       </div>
