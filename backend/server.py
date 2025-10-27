@@ -9818,18 +9818,31 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Find available users for this slot
                 available_users = []
                 for user in users:
-                    # VÉRIFICATION GLOBALE: Gestion des heures supplémentaires (tous types d'employés)
+                    # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
                     # Note: Les gardes externes n'ont PAS de limite d'heures supplémentaires
-                    if activer_heures_sup and not type_garde.get("est_garde_externe", False):
-                        heures_actuelles = user_heures_actuelles.get(user["id"], 0)
-                        heures_max_user = user.get("heures_max_semaine", float('inf'))  # Préférence personnelle
+                    if not type_garde.get("est_garde_externe", False):
+                        heures_actuelles = user_heures_actuelles.get(user["id"], 0) if activer_heures_sup else 0
+                        heures_max_user = user.get("heures_max_semaine", 40)
                         
-                        # Prendre le minimum entre la limite système et la préférence personnelle
-                        limite_effective = min(seuil_max_heures, heures_max_user)
-                        
-                        # Vérifier si ajouter cette garde dépasserait la limite effective
-                        if heures_actuelles + type_garde.get("duree_heures", 8) > limite_effective:
-                            continue  # Skip si dépasse la limite (heures supplémentaires)
+                        if activer_heures_sup:
+                            # Heures sup activées : prendre minimum entre limite système et préférence user
+                            limite_effective = min(seuil_max_heures, heures_max_user)
+                            # Vérifier si dépasse limite (mais autoriser car heures sup activées)
+                            if heures_actuelles + type_garde.get("duree_heures", 8) > limite_effective:
+                                continue  # Skip si dépasse même avec heures sup activées
+                        else:
+                            # Heures sup DÉSACTIVÉES : vérifier strictement heures_max_semaine
+                            # Calculer les heures de la semaine actuelle pour cet utilisateur
+                            heures_semaine_actuelle = 0
+                            for assignation in existing_assignations:
+                                if assignation["user_id"] == user["id"]:
+                                    type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
+                                    if type_g:
+                                        heures_semaine_actuelle += type_g.get("duree_heures", 8)
+                            
+                            # Ne PAS attribuer si dépasse heures_max_semaine
+                            if heures_semaine_actuelle + type_garde.get("duree_heures", 8) > heures_max_user:
+                                continue  # Skip si dépasse la limite hebdo
                     
                     # ÉTAPE 2: Check if user has availability (for part-time employees)
                     if user["type_emploi"] == "temps_partiel":
