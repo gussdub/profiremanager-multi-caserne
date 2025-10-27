@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://profireops.preview.emergentagent.com/api"
+BACKEND_URL = "https://firefighter-shifts-2.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
