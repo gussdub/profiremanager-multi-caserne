@@ -9338,9 +9338,14 @@ async def attribution_automatique(
     tenant_slug: str, 
     semaine_debut: str, 
     semaine_fin: str = None,
+    reset: bool = False,  # Nouveau paramètre pour réinitialiser
     current_user: User = Depends(get_current_user)
 ):
-    """Attribution automatique pour une ou plusieurs semaines"""
+    """Attribution automatique pour une ou plusieurs semaines
+    
+    Args:
+        reset: Si True, supprime d'abord toutes les assignations AUTO de la période
+    """
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -9351,6 +9356,19 @@ async def attribution_automatique(
         # Si pas de semaine_fin fournie, calculer pour une seule semaine
         if not semaine_fin:
             semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+        
+        # Si reset=True, supprimer d'abord toutes les assignations AUTO de la période
+        assignations_supprimees = 0
+        if reset:
+            result = await db.assignations.delete_many({
+                "tenant_id": tenant.id,
+                "date": {
+                    "$gte": semaine_debut,
+                    "$lte": semaine_fin
+                },
+                "assignation_type": "auto"
+            })
+            assignations_supprimees = result.deleted_count
         
         # Pour une période complète (mois), traiter semaine par semaine
         start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
