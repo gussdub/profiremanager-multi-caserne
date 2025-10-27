@@ -9592,17 +9592,25 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             "tenant_id": tenant.id
         }).to_list(1000)
         
-        # Calculate monthly hours for each user
-        user_monthly_hours = {}
+        # Calculate monthly hours for each user (séparé interne/externe)
+        user_monthly_hours_internes = {}
+        user_monthly_hours_externes = {}
         for user in users:
-            user_hours = 0
+            user_hours_internes = 0
+            user_hours_externes = 0
             for assignation in monthly_assignations:
                 if assignation["user_id"] == user["id"]:
                     # Find type garde to get duration
                     type_garde = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
                     if type_garde:
-                        user_hours += type_garde.get("duree_heures", 8)
-            user_monthly_hours[user["id"]] = user_hours
+                        duree = type_garde.get("duree_heures", 8)
+                        # Séparer les heures selon le type de garde
+                        if type_garde.get("est_garde_externe", False):
+                            user_hours_externes += duree
+                        else:
+                            user_hours_internes += duree
+            user_monthly_hours_internes[user["id"]] = user_hours_internes
+            user_monthly_hours_externes[user["id"]] = user_hours_externes
         
         # REGROUPEMENT DES HEURES (si activé) - Traiter avant l'attribution normale
         regroupements_traites = []  # Pour tracker les gardes déjà regroupées
