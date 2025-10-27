@@ -5471,7 +5471,8 @@ const Planning = () => {
   const [autoAttributionConfig, setAutoAttributionConfig] = useState({
     periode: 'semaine', // semaine ou mois
     periodeLabel: '', // 'Semaine actuelle', 'Semaine suivante', 'Mois actuel', 'Mois suivant'
-    date: currentWeek
+    date: currentWeek,
+    mode: 'completer' // 'completer' ou 'reinitialiser'
   });
   const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
     user_id: '',
