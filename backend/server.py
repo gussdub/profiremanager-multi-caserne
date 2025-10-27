@@ -7574,6 +7574,13 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
     inscriptions_formations = await db.inscriptions_formations.find({"tenant_id": tenant.id}).to_list(10000)
     demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Créer un mapping des types de garde pour accès rapide
+    type_garde_map = {t["id"]: t for t in types_garde}
+    
+    # Vérifier si le tenant a au moins une garde externe
+    has_garde_externe = any(t.get("est_garde_externe", False) for t in types_garde)
     
     # ===== SECTION PERSONNELLE =====
     # Heures travaillées ce mois
