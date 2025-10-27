@@ -6698,7 +6698,7 @@ const Planning = () => {
                           data-testid={`garde-mois-${date.getDate()}-${typeGarde.id}`}
                           title={`${typeGarde.nom} - ${assignedUsers.length}/${typeGarde.personnel_requis}`}
                         >
-                          <span className="garde-initiale">{typeGarde.nom.charAt(0)}</span>
+                          <span className="garde-nom-complet">{typeGarde.nom}</span>
                           <span className="coverage-icon">
                             {coverage === 'complete' ? '✅' : coverage === 'partielle' ? '⚠️' : '❌'}
                           </span>
