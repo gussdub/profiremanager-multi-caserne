@@ -4457,10 +4457,35 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         </div>
                         <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Heures max/semaine</span>
-                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
-                            {selectedUser.heures_max_semaine || 40}h
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                            <span>{selectedUser.heures_max_semaine || 40}h</span>
                             {selectedUser.type_emploi === 'temps_plein' && (
-                              <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '0.5rem' }}>(Admin)</span>
+                              <>
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Admin)</span>
+                                <button
+                                  onClick={() => {
+                                    setEditHeuresMaxValue(selectedUser.heures_max_semaine || 40);
+                                    setShowEditHeuresMaxModal(true);
+                                  }}
+                                  style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    fontSize: '14px',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.target.style.background = '#e2e8f0'}
+                                  onMouseOut={(e) => e.target.style.background = 'none'}
+                                  title="Modifier les heures max"
+                                >
+                                  ✏️
+                                </button>
+                              </>
+                            )}
+                            {selectedUser.type_emploi === 'temps_partiel' && (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Modifiable par l'employé)</span>
                             )}
                           </span>
                         </div>
