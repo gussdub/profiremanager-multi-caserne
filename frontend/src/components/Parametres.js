@@ -89,12 +89,14 @@ const Parametres = ({ user, tenantSlug }) => {
 
   const [newGrade, setNewGrade] = useState({
     nom: '',
-    niveau_hierarchique: 1
+    niveau_hierarchique: 1,
+    est_officier: false
   });
 
   const [editGrade, setEditGrade] = useState({
     nom: '',
-    niveau_hierarchique: 1
+    niveau_hierarchique: 1,
+    est_officier: false
   });
 
   const [newUser, setNewUser] = useState({
