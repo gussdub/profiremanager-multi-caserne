@@ -608,7 +608,8 @@ const Parametres = ({ user, tenantSlug }) => {
     setEditingItem(grade);
     setEditGrade({
       nom: grade.nom,
-      niveau_hierarchique: grade.niveau_hierarchique
+      niveau_hierarchique: grade.niveau_hierarchique,
+      est_officier: grade.est_officier || false
     });
     setShowEditGradeModal(true);
   };
