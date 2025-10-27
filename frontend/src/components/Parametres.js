@@ -357,7 +357,9 @@ const Parametres = ({ user, tenantSlug }) => {
       duree_heures: type.duree_heures,
       couleur: type.couleur,
       jours_application: type.jours_application || [],
-      officier_obligatoire: type.officier_obligatoire || false
+      officier_obligatoire: type.officier_obligatoire || false,
+      est_garde_externe: type.est_garde_externe || false,
+      taux_horaire_externe: type.taux_horaire_externe || null
     });
     setShowEditTypeModal(true);
   };
