@@ -5717,8 +5717,11 @@ const Planning = () => {
       setShowAutoAttributionModal(false);
       
       // Étape 1: Préparation
-      setAttributionStep('Préparation de l\'attribution automatique...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setAttributionStep('📋 Préparation de l\'attribution automatique...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      setAttributionStep('📋 Chargement des paramètres de configuration...');
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Calculer la plage de dates selon la période
       let semaine_debut, semaine_fin;
@@ -5749,16 +5752,39 @@ const Planning = () => {
         semaine_fin = lastSunday.toISOString().split('T')[0];
       }
       
-      // Étape 2: Analyse des disponibilités
-      setAttributionStep('Analyse des disponibilités des employés...');
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Étape 2: Chargement des données
+      setAttributionStep('📦 Récupération des types de garde...');
+      await new Promise(resolve => setTimeout(resolve, 400));
       
-      // Étape 3: Calcul de l'équitabilité
-      setAttributionStep('Calcul de l\'équitabilité des heures...');
-      await new Promise(resolve => setTimeout(resolve, 600));
+      setAttributionStep('👥 Chargement de la liste du personnel...');
+      await new Promise(resolve => setTimeout(resolve, 400));
       
-      // Étape 4: Assignation des gardes
-      setAttributionStep('Assignation automatique des gardes en cours...');
+      // Étape 3: Analyse des disponibilités
+      setAttributionStep('📅 Analyse des disponibilités déclarées...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setAttributionStep('🔍 Vérification des indisponibilités...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // Étape 4: Vérifications des critères
+      setAttributionStep('🎓 Vérification des compétences requises...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      setAttributionStep('👮 Vérification des grades et officiers...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // Étape 5: Calcul de l'équitabilité
+      setAttributionStep('⚖️ Calcul des heures internes et externes...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setAttributionStep('📊 Analyse de l\'équité entre les employés...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // Étape 6: Assignation des gardes
+      setAttributionStep('🚀 Lancement de l\'attribution automatique...');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setAttributionStep('🔄 Attribution des gardes en cours...');
       
       // Lancer l'attribution automatique directement
       const responseData = await apiPost(
@@ -5767,9 +5793,12 @@ const Planning = () => {
         {}
       );
       
-      // Étape 5: Finalisation
-      setAttributionStep('Finalisation et vérification...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Étape 7: Finalisation
+      setAttributionStep('📝 Génération des justifications d\'attribution...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      setAttributionStep('✅ Vérification finale de la cohérence...');
+      await new Promise(resolve => setTimeout(resolve, 400));
       
       // Désactiver l'overlay
       setAttributionLoading(false);
