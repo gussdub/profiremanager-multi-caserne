@@ -9776,7 +9776,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 available_users = []
                 for user in users:
                     # VÉRIFICATION GLOBALE: Gestion des heures supplémentaires (tous types d'employés)
-                    if activer_heures_sup:
+                    # Note: Les gardes externes n'ont PAS de limite d'heures supplémentaires
+                    if activer_heures_sup and not type_garde.get("est_garde_externe", False):
                         heures_actuelles = user_heures_actuelles.get(user["id"], 0)
                         heures_max_user = user.get("heures_max_semaine", float('inf'))  # Préférence personnelle
                         
