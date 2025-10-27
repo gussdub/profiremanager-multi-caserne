@@ -3209,6 +3209,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [showEPIModal, setShowEPIModal] = useState(false);
   const [showAddEPIModal, setShowAddEPIModal] = useState(false);
   const [showEPIAccordion, setShowEPIAccordion] = useState(false);
+  const [showEditHeuresMaxModal, setShowEditHeuresMaxModal] = useState(false);
+  const [editHeuresMaxValue, setEditHeuresMaxValue] = useState(40);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
