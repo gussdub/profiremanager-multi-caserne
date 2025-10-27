@@ -9587,6 +9587,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         periode_calcul = parametres.get("periode_calcul_heures", "semaine")
         jours_personnalises = parametres.get("jours_periode_personnalisee", 7)
         
+        # Récupérer les grades pour vérifier les officiers
+        grades = await db.grades.find({"tenant_id": tenant.id}).to_list(1000)
+        grades_map = {g["nom"]: g for g in grades}
+        
         # Calculer les heures actuelles pour chaque employé si gestion heures sup activée
         user_heures_actuelles = {}
         if activer_heures_sup:
