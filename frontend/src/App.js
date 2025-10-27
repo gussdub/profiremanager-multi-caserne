@@ -5790,12 +5790,19 @@ const Planning = () => {
       setAttributionStep('🚀 Lancement de l\'attribution automatique...');
       await new Promise(resolve => setTimeout(resolve, 300));
       
+      // Si mode réinitialiser, ajouter une étape de suppression
+      if (autoAttributionConfig.mode === 'reinitialiser') {
+        setAttributionStep('🗑️ Suppression des assignations AUTO existantes...');
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+      
       setAttributionStep('🔄 Attribution des gardes en cours...');
       
-      // Lancer l'attribution automatique directement
+      // Lancer l'attribution automatique avec le paramètre reset
+      const resetParam = autoAttributionConfig.mode === 'reinitialiser' ? '&reset=true' : '';
       const responseData = await apiPost(
         tenantSlug, 
-        `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}`, 
+        `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}${resetParam}`, 
         {}
       );
       
@@ -5810,9 +5817,14 @@ const Planning = () => {
       setAttributionLoading(false);
       setAttributionStep('');
       
+      // Message personnalisé selon le mode
+      const successMessage = autoAttributionConfig.mode === 'reinitialiser' 
+        ? `Planning réinitialisé ! ${responseData.assignations_supprimees || 0} assignation(s) supprimée(s), ${responseData.assignations_creees} nouvelle(s) créée(s)`
+        : `${responseData.assignations_creees} nouvelle(s) assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`;
+      
       toast({
-        title: "Attribution automatique réussie",
-        description: `${responseData.assignations_creees} nouvelle(s) assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`,
+        title: autoAttributionConfig.mode === 'reinitialiser' ? "Planning réinitialisé" : "Attribution automatique réussie",
+        description: successMessage,
         variant: "success"
       });
 
