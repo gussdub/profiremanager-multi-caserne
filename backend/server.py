@@ -9949,8 +9949,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         user_monthly_hours_internes=user_monthly_hours_internes,
                         user_monthly_hours_externes=user_monthly_hours_externes,
                         activer_heures_sup=activer_heures_sup,
-                        seuil_max_heures=seuil_max_heures,
-                        user_heures_actuelles=user_heures_actuelles,
                         existing_assignations=existing_assignations,
                         disponibilites_evaluees=None  # TODO: passer les vraies dispos si nécessaire
                     )
