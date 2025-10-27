@@ -9465,7 +9465,7 @@ async def generer_justification_attribution(
             "moyenne_equipe": round(moyenne_equipe, 1),
             "annees_service": round(annees_service, 1),
             "disponibilite_declaree": selected_user.get("type_emploi") == "temps_partiel" and bool(disponibilites_evaluees),
-            "heures_max_autorisees": selected_user.get("heures_max_semaine", seuil_max_heures) if activer_heures_sup else None
+            "heures_max_autorisees": selected_user.get("heures_max_semaine", 40) if not activer_heures_sup else None
         }
     }
     
@@ -9479,14 +9479,18 @@ async def generer_justification_attribution(
         raison_exclusion = None
         candidate_scores = None
         
-        # Vérifier heures supplémentaires
-        if activer_heures_sup:
-            heures_actuelles = user_heures_actuelles.get(candidate["id"], 0)
-            heures_max_user = candidate.get("heures_max_semaine", float('inf'))
-            limite_effective = min(seuil_max_heures, heures_max_user)
+        # Vérifier heures supplémentaires (seulement si désactivées)
+        if not activer_heures_sup:
+            # Calculer heures de la semaine pour ce candidat
+            heures_semaine_candidate = 0
+            for assignation in existing_assignations:
+                if assignation["user_id"] == candidate["id"]:
+                    heures_semaine_candidate += 8  # Simplification
             
-            if heures_actuelles + type_garde.get("duree_heures", 8) > limite_effective:
-                raison_exclusion = f"Heures max atteintes ({heures_actuelles}h/{limite_effective}h)"
+            heures_max_user = candidate.get("heures_max_semaine", 40)
+            
+            if heures_semaine_candidate + type_garde.get("duree_heures", 8) > heures_max_user:
+                raison_exclusion = f"Heures max atteintes ({heures_semaine_candidate}h/{heures_max_user}h)"
         
         # Vérifier disponibilité (temps partiel)
         if not raison_exclusion and candidate.get("type_emploi") == "temps_partiel":
