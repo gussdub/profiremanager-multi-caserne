@@ -54,7 +54,8 @@ const Parametres = ({ user, tenantSlug }) => {
     jours_application: [],
     officier_obligatoire: false,
     est_garde_externe: false,
-    taux_horaire_externe: null
+    taux_horaire_externe: null,
+    competences_requises: []
   });
 
   // Create form state for new types garde
