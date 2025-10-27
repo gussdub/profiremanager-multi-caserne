@@ -11998,6 +11998,44 @@ body {
     gap: 1rem;
   }
 }
+
+/* Mobile - Noms de garde plus petits */
+@media (max-width: 768px) {
+  .garde-mois-item {
+    padding: 0.25rem 0.4rem;
+    min-height: 24px;
+    gap: 0.3rem;
+  }
+  
+  .garde-nom-complet {
+    font-size: 0.65rem;
+  }
+  
+  .coverage-icon {
+    font-size: 0.75rem;
+  }
+  
+  .calendrier-mois {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Très petits écrans - Ultra compact */
+@media (max-width: 480px) {
+  .garde-nom-complet {
+    font-size: 0.6rem;
+  }
+  
+  .garde-mois-item {
+    padding: 0.2rem 0.3rem;
+    min-height: 22px;
+    border-radius: 4px;
+  }
+  
+  .coverage-icon {
+    font-size: 0.7rem;
+  }
+}
 @media (max-width: 1024px) {
   .planning-controls {
     flex-direction: column;
