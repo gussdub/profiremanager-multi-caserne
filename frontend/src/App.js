@@ -3383,6 +3383,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       numero_employe: user.numero_employe,
       date_embauche: user.date_embauche,
       taux_horaire: user.taux_horaire || 0,
+      heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
       mot_de_passe: ''
     });
