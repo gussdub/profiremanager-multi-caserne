@@ -9583,9 +9583,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             parametres = default_params.dict()
         
         activer_heures_sup = parametres.get("activer_gestion_heures_sup", False)
-        seuil_max_heures = parametres.get("seuil_max_heures", 40)
-        periode_calcul = parametres.get("periode_calcul_heures", "semaine")
-        jours_personnalises = parametres.get("jours_periode_personnalisee", 7)
         
         # Récupérer les grades pour vérifier les officiers
         grades = await db.grades.find({"tenant_id": tenant.id}).to_list(1000)
