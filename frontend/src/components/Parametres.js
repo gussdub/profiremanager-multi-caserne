@@ -52,7 +52,9 @@ const Parametres = ({ user, tenantSlug }) => {
     duree_heures: 8,
     couleur: '#3B82F6',
     jours_application: [],
-    officier_obligatoire: false
+    officier_obligatoire: false,
+    est_garde_externe: false,
+    taux_horaire_externe: null
   });
 
   // Create form state for new types garde
