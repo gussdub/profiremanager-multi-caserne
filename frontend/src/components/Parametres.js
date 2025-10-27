@@ -1090,6 +1090,11 @@ const Parametres = ({ user, tenantSlug }) => {
                         <span>📅 Jours: {type.jours_application.join(', ')}</span>
                       </div>
                     )}
+                    {type.est_garde_externe && type.taux_horaire_externe && (
+                      <div className="type-taux">
+                        <span>💰 Taux externe: {type.taux_horaire_externe}$/h</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
