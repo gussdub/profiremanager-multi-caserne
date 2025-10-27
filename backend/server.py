@@ -9878,11 +9878,29 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     continue
                 
                 # ÉTAPE 3: Apply grade requirements (1 officier obligatoire si configuré)
+                # Logique CASCADE: Officiers qualifiés → Pompiers fonction_superieur
                 if type_garde.get("officier_obligatoire", False):
-                    # Filter officers (Capitaine, Lieutenant, Directeur)
-                    officers = [u for u in available_users if u["grade"] in ["Capitaine", "Lieutenant", "Directeur"]]
-                    if officers:
-                        available_users = officers
+                    # Identifier les utilisateurs avec des grades d'officier
+                    user_grade_obj = grades_map.get(user.get("grade")) if "user" in locals() else None
+                    
+                    # Séparer officiers et pompiers fonction_superieur
+                    officers_qualifies = []
+                    pompiers_fonction_sup = []
+                    
+                    for u in available_users:
+                        grade_obj = grades_map.get(u.get("grade"))
+                        if grade_obj and grade_obj.get("est_officier", False):
+                            officers_qualifies.append(u)
+                        elif u.get("fonction_superieur", False):
+                            pompiers_fonction_sup.append(u)
+                    
+                    # Priorité 1: Officiers qualifiés (avec compétences vérifiées)
+                    if officers_qualifies:
+                        available_users = officers_qualifies
+                    # Priorité 2 (Fallback): Pompiers fonction_superieur si aucun officier
+                    elif pompiers_fonction_sup:
+                        available_users = pompiers_fonction_sup
+                    # Priorité 3: Si aucun des deux, garde reste non assignée (available_users vide)
                 
                 # ÉTAPE 4: Rotation équitable - sort by monthly hours (ascending)
                 # Utiliser le compteur approprié selon le type de garde (interne ou externe)
