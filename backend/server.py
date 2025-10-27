@@ -9741,8 +9741,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         existing_assignations.append(assignation1.dict())
                         existing_assignations.append(assignation2.dict())
                         
-                        # Mettre à jour les heures mensuelles
-                        user_monthly_hours[selected_user["id"]] += opp['duree_totale']
+                        # Mettre à jour les heures mensuelles (compteur approprié selon type de garde)
+                        if type_garde_opp.get("est_garde_externe", False):
+                            user_monthly_hours_externes[selected_user["id"]] += opp['duree_totale']
+                        else:
+                            user_monthly_hours_internes[selected_user["id"]] += opp['duree_totale']
                         
                         # Marquer comme traité
                         regroupements_traites.append(key)
