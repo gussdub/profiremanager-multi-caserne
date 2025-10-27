@@ -1545,7 +1545,7 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
               </div>
 
-              {/* CARTE 3: Gestion des Heures Supplémentaires */}
+              {/* CARTE 3: Autoriser heures supplémentaires */}
               <div style={{
                 background: 'white',
                 border: '2px solid #e5e7eb',
@@ -1561,9 +1561,9 @@ const Parametres = ({ user, tenantSlug }) => {
                   fontSize: '1.25rem',
                   color: '#1e293b'
                 }}>
-                  ⏰ Gestion des Heures Supplémentaires
+                  ⏰ Autoriser heures supplémentaires
                   <span 
-                    title="Empêche l'attribution automatique au-delà du seuil configuré. Prend le minimum entre limite système et préférence employé. Affecte tous les employés."
+                    title="Lorsqu'activé, l'auto-attribution peut dépasser les heures maximum hebdomadaires (lundi-dimanche) configurées dans le dossier personnel de chaque employé."
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1585,9 +1585,9 @@ const Parametres = ({ user, tenantSlug }) => {
               <div className="toggle-container" style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
                 <label className="setting-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div className="toggle-info">
-                    <span style={{ fontWeight: '600', color: '#1e293b' }}>Activer la gestion des heures supplémentaires</span>
+                    <span style={{ fontWeight: '600', color: '#1e293b' }}>Autoriser les heures supplémentaires</span>
                     <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
-                      Empêche l'attribution automatique et les demandes de remplacement au-delà du seuil configuré
+                      Lorsqu'activé, l'auto-attribution peut dépasser les heures maximum hebdomadaires (lundi-dimanche) configurées dans le dossier personnel de chaque employé.
                     </small>
                   </div>
                   <input
@@ -1598,64 +1598,6 @@ const Parametres = ({ user, tenantSlug }) => {
                   />
                 </label>
               </div>
-
-              {heuresSupParams.activer_gestion_heures_sup && (
-                <div className="heures-sup-params-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
-                      Seuil maximum d'heures
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="168"
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                      value={heuresSupParams.seuil_max_heures}
-                      onChange={(e) => setHeuresSupParams({...heuresSupParams, seuil_max_heures: parseInt(e.target.value) || 40})}
-                    />
-                    <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
-                      Nombre maximum d'heures sur la période sélectionnée
-                    </small>
-                  </div>
-
-                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
-                      Période de calcul
-                    </label>
-                    <select
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                      value={heuresSupParams.periode_calcul_heures}
-                      onChange={(e) => setHeuresSupParams({...heuresSupParams, periode_calcul_heures: e.target.value})}
-                    >
-                      <option value="semaine">Semaine (du lundi au dimanche)</option>
-                      <option value="mois">Mois (du 1er au dernier jour)</option>
-                      <option value="personnalise">Période personnalisée</option>
-                    </select>
-                    <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
-                      Période sur laquelle les heures sont comptabilisées
-                    </small>
-                  </div>
-
-                  {heuresSupParams.periode_calcul_heures === 'personnalise' && (
-                    <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
-                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
-                        Nombre de jours glissants
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="365"
-                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                        value={heuresSupParams.jours_periode_personnalisee}
-                        onChange={(e) => setHeuresSupParams({...heuresSupParams, jours_periode_personnalisee: parseInt(e.target.value) || 7})}
-                      />
-                      <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
-                        Nombre de jours avant la date de référence
-                      </small>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <Button 
