@@ -9588,19 +9588,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         grades = await db.grades.find({"tenant_id": tenant.id}).to_list(1000)
         grades_map = {g["nom"]: g for g in grades}
         
-        # Calculer les heures actuelles pour chaque employé si gestion heures sup activée
-        user_heures_actuelles = {}
-        if activer_heures_sup:
-            for user in users:
-                heures = await calculer_heures_employe_periode(
-                    user_id=user["id"],
-                    tenant_id=tenant.id,
-                    date_reference=semaine_debut,
-                    periode=periode_calcul,
-                    jours_personnalises=jours_personnalises
-                )
-                user_heures_actuelles[user["id"]] = heures
-        
         # Get existing assignations for the week
         semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         existing_assignations = await db.assignations.find({
