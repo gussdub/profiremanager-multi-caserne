@@ -7893,6 +7893,53 @@ const Planning = () => {
                   {autoAttributionConfig.periode === 'mois' && ' Toutes les semaines du mois seront planifiées.'}
                 </p>
               </div>
+
+              {/* Choix du mode : Compléter ou Réinitialiser */}
+              <div style={{marginTop: '1.5rem'}}>
+                <h3 style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>⚙️ Mode d'attribution</h3>
+                
+                <div style={{display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(2, 1fr)'}}>
+                  {/* Option A : Compléter */}
+                  <button
+                    onClick={() => setAutoAttributionConfig({...autoAttributionConfig, mode: 'completer'})}
+                    style={{
+                      padding: '1rem',
+                      border: autoAttributionConfig.mode === 'completer' ? '3px solid #10B981' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      background: autoAttributionConfig.mode === 'completer' ? '#ECFDF5' : 'white',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>✅</div>
+                    <div style={{fontWeight: '600', marginBottom: '0.25rem', color: '#10B981'}}>Compléter le planning</div>
+                    <div style={{fontSize: '0.8rem', color: '#6B7280'}}>
+                      Conserve les assignations existantes et complète les slots vides
+                    </div>
+                  </button>
+
+                  {/* Option B : Réinitialiser */}
+                  <button
+                    onClick={() => setAutoAttributionConfig({...autoAttributionConfig, mode: 'reinitialiser'})}
+                    style={{
+                      padding: '1rem',
+                      border: autoAttributionConfig.mode === 'reinitialiser' ? '3px solid #EF4444' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      background: autoAttributionConfig.mode === 'reinitialiser' ? '#FEF2F2' : 'white',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>🔄</div>
+                    <div style={{fontWeight: '600', marginBottom: '0.25rem', color: '#EF4444'}}>Réinitialiser complètement</div>
+                    <div style={{fontSize: '0.8rem', color: '#6B7280'}}>
+                      ⚠️ Supprime toutes les assignations AUTO et recommence
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
             
             <div className="modal-actions">
@@ -7900,9 +7947,12 @@ const Planning = () => {
               <Button 
                 onClick={handleAttributionAuto}
                 disabled={!autoAttributionConfig.periodeLabel}
-                style={{opacity: !autoAttributionConfig.periodeLabel ? 0.5 : 1}}
+                style={{
+                  opacity: !autoAttributionConfig.periodeLabel ? 0.5 : 1,
+                  background: autoAttributionConfig.mode === 'reinitialiser' ? '#EF4444' : '#3B82F6'
+                }}
               >
-                ✨ Confirmer et lancer
+                {autoAttributionConfig.mode === 'reinitialiser' ? '🔄 Réinitialiser et Attribuer' : '✨ Lancer l\'attribution'}
               </Button>
             </div>
           </div>
