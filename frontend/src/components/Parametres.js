@@ -1061,6 +1061,7 @@ const Parametres = ({ user, tenantSlug }) => {
                         <span>⏰ {type.heure_debut} - {type.heure_fin}</span>
                         <span>👥 {type.personnel_requis} personnel</span>
                         {type.officier_obligatoire && <span>🎖️ Officier requis</span>}
+                        {type.est_garde_externe && <span className="badge-externe">🏠 Garde Externe</span>}
                       </div>
                     </div>
                     <div className="type-actions">
