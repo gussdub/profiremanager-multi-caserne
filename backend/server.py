@@ -13545,6 +13545,80 @@ async def update_batiment(
     
     return {"message": "Bâtiment mis à jour avec succès"}
 
+@api_router.post("/{tenant_slug}/prevention/batiments/import-csv")
+async def import_batiments_csv(
+    tenant_slug: str,
+    request: Dict[str, Any],  # Contient batiments: List[dict]
+    current_user: User = Depends(get_current_user)
+):
+    """Import en masse de bâtiments via CSV"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    batiments_data = request.get('batiments', [])
+    if not batiments_data:
+        raise HTTPException(status_code=400, detail="Aucune donnée de bâtiment fournie")
+    
+    success_count = 0
+    error_count = 0
+    errors = []
+    
+    for idx, batiment_data in enumerate(batiments_data):
+        try:
+            # Validation des données
+            if not batiment_data.get('nom_etablissement', '').strip():
+                errors.append({
+                    "row": idx + 1,
+                    "message": "Nom d'établissement requis"
+                })
+                error_count += 1
+                continue
+                
+            if not batiment_data.get('adresse_civique', '').strip():
+                errors.append({
+                    "row": idx + 1,
+                    "message": "Adresse civique requise"
+                })
+                error_count += 1
+                continue
+            
+            # Nettoyer et préparer les données
+            batiment_dict = {}
+            for field_key, value in batiment_data.items():
+                if value and str(value).strip():  # Ignorer les valeurs vides
+                    batiment_dict[field_key] = str(value).strip()
+                else:
+                    batiment_dict[field_key] = ""
+            
+            # Ajouter les métadonnées
+            batiment_dict["tenant_id"] = tenant.id
+            batiment_dict["statut"] = "actif"
+            
+            # Créer l'objet Batiment et l'insérer
+            batiment_obj = Batiment(**batiment_dict)
+            await db.batiments.insert_one(batiment_obj.dict())
+            success_count += 1
+            
+        except Exception as e:
+            errors.append({
+                "row": idx + 1,
+                "message": str(e)
+            })
+            error_count += 1
+    
+    return {
+        "success_count": success_count,
+        "error_count": error_count,
+        "errors": errors[:10],  # Limiter à 10 erreurs pour éviter une réponse trop lourde
+        "total_processed": len(batiments_data)
+    }
+
 @api_router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}")
 async def delete_batiment(
     tenant_slug: str, 
