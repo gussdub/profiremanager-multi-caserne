@@ -5466,7 +5466,7 @@ const Planning = () => {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
   const [viewMode, setViewMode] = useState('mois'); // 'semaine' ou 'mois' - Défaut: mois
-  const [displayMode, setDisplayMode] = useState('calendrier'); // 'calendrier' ou 'liste'
+  const [displayMode] = useState('calendrier'); // Vue calendrier uniquement (liste supprimée car moins lisible)
   const [searchFilter, setSearchFilter] = useState('');
   const [typeGardeFilter, setTypeGardeFilter] = useState('');
   const [typesGarde, setTypesGarde] = useState([]);
