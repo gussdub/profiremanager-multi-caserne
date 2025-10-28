@@ -10177,12 +10177,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 ))
                 
                 # ÉTAPE 5: Ancienneté - among users with same hours and type, prioritize by ancienneté
-                if type_garde.get("est_garde_externe", False):
-                    min_hours = user_monthly_hours_externes.get(available_users[0]["id"], 0)
-                    users_with_min_hours = [u for u in available_users if user_monthly_hours_externes.get(u["id"], 0) == min_hours]
-                else:
-                    min_hours = user_monthly_hours_internes.get(available_users[0]["id"], 0)
-                    users_with_min_hours = [u for u in available_users if user_monthly_hours_internes.get(u["id"], 0) == min_hours]
+                users_with_min_hours = []
+                if available_users:  # Vérification que available_users n'est pas vide
+                    if type_garde.get("est_garde_externe", False):
+                        min_hours = user_monthly_hours_externes.get(available_users[0]["id"], 0)
+                        users_with_min_hours = [u for u in available_users if user_monthly_hours_externes.get(u["id"], 0) == min_hours]
+                    else:
+                        min_hours = user_monthly_hours_internes.get(available_users[0]["id"], 0)
+                        users_with_min_hours = [u for u in available_users if user_monthly_hours_internes.get(u["id"], 0) == min_hours]
                 
                 if len(users_with_min_hours) > 1:
                     # Sort by ancienneté (date_embauche) - oldest first
