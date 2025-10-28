@@ -14506,6 +14506,421 @@ const Rapports = () => {
   );
 };
 
+// Import CSV Component avec mapping des colonnes
+const ImportCSV = ({ onImportComplete }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [step, setStep] = useState(1); // 1: Upload, 2: Mapping, 3: Preview, 4: Import
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvData, setCsvData] = useState([]);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [previewData, setPreviewData] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState(null);
+
+  // Champs disponibles pour le mapping
+  const availableFields = [
+    { key: 'nom_etablissement', label: 'Nom établissement', required: true },
+    { key: 'adresse_civique', label: 'Adresse civique', required: true },
+    { key: 'ville', label: 'Ville', required: false },
+    { key: 'code_postal', label: 'Code postal', required: false },
+    { key: 'numero_lot_cadastre', label: 'Numéro lot/cadastre', required: false },
+    { key: 'proprietaire_nom', label: 'Propriétaire - Nom', required: false },
+    { key: 'proprietaire_telephone', label: 'Propriétaire - Téléphone', required: false },
+    { key: 'proprietaire_courriel', label: 'Propriétaire - Courriel', required: false },
+    { key: 'gerant_nom', label: 'Gérant - Nom', required: false },
+    { key: 'gerant_telephone', label: 'Gérant - Téléphone', required: false },
+    { key: 'gerant_courriel', label: 'Gérant - Courriel', required: false },
+    { key: 'groupe_occupation', label: 'Groupe occupation (C,E,F,I...)', required: false },
+    { key: 'description_activite', label: 'Description activité', required: false },
+    { key: 'notes_generales', label: 'Notes générales', required: false }
+  ];
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+      toast({
+        title: "Format non supporté",
+        description: "Seuls les fichiers CSV et Excel (.xlsx, .xls) sont acceptés",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCsvFile(file);
+    parseCSV(file);
+  };
+
+  const parseCSV = async (file) => {
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length < 2) {
+        throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
+      }
+
+      // Parse headers (première ligne)
+      const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
+      setCsvHeaders(headers);
+
+      // Parse data (lignes suivantes)
+      const data = lines.slice(1).map((line, index) => {
+        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const row = { _index: index };
+        headers.forEach((header, i) => {
+          row[header] = values[i] || '';
+        });
+        return row;
+      });
+
+      setCsvData(data);
+      setStep(2); // Passer au mapping
+      
+      toast({
+        title: "Fichier analysé",
+        description: `${data.length} ligne(s) détectée(s) avec ${headers.length} colonne(s)`
+      });
+
+    } catch (error) {
+      console.error('Erreur parsing CSV:', error);
+      toast({
+        title: "Erreur d'analyse",
+        description: error.message || "Impossible d'analyser le fichier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleColumnMapping = (csvColumn, fieldKey) => {
+    setColumnMapping(prev => ({
+      ...prev,
+      [fieldKey]: csvColumn
+    }));
+  };
+
+  const generatePreview = () => {
+    const preview = csvData.slice(0, 5).map(row => {
+      const mapped = {};
+      availableFields.forEach(field => {
+        const csvColumn = columnMapping[field.key];
+        mapped[field.key] = csvColumn ? row[csvColumn] : '';
+      });
+      return mapped;
+    });
+    setPreviewData(preview);
+    setStep(3);
+  };
+
+  const validateMapping = () => {
+    const requiredFields = availableFields.filter(f => f.required);
+    const missingFields = requiredFields.filter(f => !columnMapping[f.key]);
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Champs requis manquants",
+        description: `Veuillez mapper: ${missingFields.map(f => f.label).join(', ')}`,
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleImport = async () => {
+    if (!validateMapping()) return;
+
+    setImporting(true);
+    try {
+      const mappedData = csvData.map(row => {
+        const batiment = {};
+        availableFields.forEach(field => {
+          const csvColumn = columnMapping[field.key];
+          batiment[field.key] = csvColumn ? (row[csvColumn] || '') : '';
+        });
+        return batiment;
+      });
+
+      const response = await apiPost(tenantSlug, '/prevention/batiments/import-csv', {
+        batiments: mappedData
+      });
+
+      setImportResults(response);
+      setStep(4);
+
+      toast({
+        title: "Import terminé",
+        description: `${response.success_count} bâtiment(s) importé(s) avec succès`
+      });
+
+    } catch (error) {
+      console.error('Erreur import:', error);
+      toast({
+        title: "Erreur d'import",
+        description: error.message || "Une erreur s'est produite lors de l'import",
+        variant: "destructive"
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>📁 Étape 1: Sélectionner le fichier</h3>
+              <p>Choisissez votre fichier CSV ou Excel contenant les données des bâtiments</p>
+            </div>
+
+            <div className="file-upload-area">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+                id="csv-upload"
+              />
+              <label htmlFor="csv-upload" className="file-upload-label">
+                <div className="upload-icon">📄</div>
+                <div className="upload-text">
+                  <strong>Cliquer pour sélectionner</strong> ou glisser votre fichier ici
+                  <br />
+                  <small>Formats acceptés: .csv, .xlsx, .xls</small>
+                </div>
+              </label>
+            </div>
+
+            <div className="import-tips">
+              <h4>💡 Conseils pour un import réussi:</h4>
+              <ul>
+                <li>La première ligne doit contenir les en-têtes de colonnes</li>
+                <li>Utilisez des noms de colonnes clairs (ex: "Nom", "Adresse", "Ville")</li>
+                <li>Les champs requis: Nom établissement, Adresse civique</li>
+                <li>Encodage recommandé: UTF-8</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>🔗 Étape 2: Correspondance des colonnes</h3>
+              <p>Associez les colonnes de votre fichier aux champs du système</p>
+            </div>
+
+            <div className="mapping-container">
+              <div className="mapping-header">
+                <div className="file-info">
+                  📊 <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
+                </div>
+              </div>
+
+              <div className="mapping-table">
+                <div className="mapping-row header">
+                  <div className="field-column">Champ système</div>
+                  <div className="arrow-column">➡️</div>
+                  <div className="csv-column">Colonne CSV</div>
+                  <div className="preview-column">Aperçu données</div>
+                </div>
+
+                {availableFields.map(field => (
+                  <div key={field.key} className="mapping-row">
+                    <div className="field-column">
+                      <span className={field.required ? 'required-field' : 'optional-field'}>
+                        {field.label}
+                        {field.required && <span className="required-star"> *</span>}
+                      </span>
+                    </div>
+                    <div className="arrow-column">➡️</div>
+                    <div className="csv-column">
+                      <select
+                        value={columnMapping[field.key] || ''}
+                        onChange={(e) => handleColumnMapping(e.target.value, field.key)}
+                        className="mapping-select"
+                      >
+                        <option value="">-- Sélectionner une colonne --</option>
+                        {csvHeaders.map(header => (
+                          <option key={header} value={header}>{header}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="preview-column">
+                      {columnMapping[field.key] && csvData[0] ? (
+                        <span className="preview-data">
+                          {csvData[0][columnMapping[field.key]] || '(vide)'}
+                        </span>
+                      ) : (
+                        <span className="no-preview">-</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mapping-actions">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  ← Retour
+                </Button>
+                <Button onClick={generatePreview}>
+                  Aperçu données →
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>👀 Étape 3: Aperçu des données</h3>
+              <p>Vérifiez que les données sont correctement mappées avant l'import</p>
+            </div>
+
+            <div className="preview-container">
+              <div className="preview-info">
+                📋 Aperçu des <strong>5 premières lignes</strong> sur {csvData.length} total
+              </div>
+
+              <div className="preview-table">
+                <div className="preview-headers">
+                  {availableFields.map(field => (
+                    <div key={field.key} className="preview-header">
+                      {field.label}
+                      {field.required && <span className="required-star"> *</span>}
+                    </div>
+                  ))}
+                </div>
+
+                {previewData.map((row, index) => (
+                  <div key={index} className="preview-row">
+                    {availableFields.map(field => (
+                      <div key={field.key} className="preview-cell">
+                        {row[field.key] || <span className="empty-cell">(vide)</span>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div className="preview-actions">
+                <Button variant="outline" onClick={() => setStep(2)}>
+                  ← Modifier mapping
+                </Button>
+                <Button 
+                  onClick={handleImport}
+                  disabled={importing}
+                  className="import-confirm-btn"
+                >
+                  {importing ? '⏳ Import en cours...' : '✅ Confirmer import'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>🎉 Import terminé</h3>
+            </div>
+
+            {importResults && (
+              <div className="import-results">
+                <div className="results-summary">
+                  <div className="result-stat success">
+                    <div className="stat-number">{importResults.success_count}</div>
+                    <div className="stat-label">Importés avec succès</div>
+                  </div>
+                  {importResults.error_count > 0 && (
+                    <div className="result-stat error">
+                      <div className="stat-number">{importResults.error_count}</div>
+                      <div className="stat-label">Erreurs</div>
+                    </div>
+                  )}
+                </div>
+
+                {importResults.errors && importResults.errors.length > 0 && (
+                  <div className="import-errors">
+                    <h4>⚠️ Lignes avec erreurs:</h4>
+                    <ul>
+                      {importResults.errors.map((error, index) => (
+                        <li key={index}>
+                          Ligne {error.row}: {error.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="final-actions">
+                  <Button 
+                    onClick={onImportComplete}
+                    className="finish-btn"
+                  >
+                    📋 Voir les bâtiments
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setStep(1);
+                      setCsvFile(null);
+                      setCsvData([]);
+                      setColumnMapping({});
+                      setImportResults(null);
+                    }}
+                  >
+                    🔄 Nouvel import
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      default:
+        return <div>Étape inconnue</div>;
+    }
+  };
+
+  return (
+    <div className="import-csv-container">
+      <div className="import-progress">
+        <div className="progress-steps">
+          {[1, 2, 3, 4].map(stepNum => (
+            <div 
+              key={stepNum} 
+              className={`progress-step ${step >= stepNum ? 'active' : ''} ${step === stepNum ? 'current' : ''}`}
+            >
+              <div className="step-circle">{stepNum}</div>
+              <div className="step-label">
+                {stepNum === 1 && 'Upload'}
+                {stepNum === 2 && 'Mapping'}
+                {stepNum === 3 && 'Preview'}
+                {stepNum === 4 && 'Import'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="import-content">
+        {renderStep()}
+      </div>
+    </div>
+  );
+};
+
 // Module Prévention - Gestion des inspections et bâtiments
 const Prevention = () => {
   const { user } = useAuth();
