@@ -705,7 +705,7 @@ const Login = () => {
 };
 
 // Sidebar Navigation avec menu hamburger mobile
-const Sidebar = ({ currentPage, setCurrentPage }) => {
+const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, logout } = useAuth();
   const { tenantSlug } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
