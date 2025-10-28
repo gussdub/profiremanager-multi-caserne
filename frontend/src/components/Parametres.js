@@ -2868,35 +2868,66 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
 
                 <div className="form-field">
-                  <Label>Compétences requises *</Label>
-                  <div className="competences-selection">
-                    {competences.length > 0 ? (
-                      competences.map(comp => (
-                        <label key={comp.id} className="competence-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={createForm.competences_requises.includes(comp.id)}
-                            onChange={() => handleCreateCompetenceChange(comp.id)}
+                  <Label style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>
+                    🎯 Compétences requises
+                  </Label>
+                  <p style={{fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem'}}>
+                    Sélectionnez les compétences nécessaires pour effectuer cette garde
+                  </p>
+                  
+                  {competences.length > 0 ? (
+                    <div className="competences-grid-modern">
+                      {competences.map(comp => {
+                        const isSelected = createForm.competences_requises.includes(comp.id);
+                        return (
+                          <div
+                            key={comp.id}
+                            className={`competence-card-modern ${isSelected ? 'selected' : ''}`}
+                            onClick={() => handleCreateCompetenceChange(comp.id)}
                             data-testid={`create-competence-${comp.id}`}
-                          />
-                          <span>{comp.nom}</span>
-                        </label>
-                      ))
-                    ) : (
-                      <p className="text-muted">Aucune compétence disponible. Créez d'abord des compétences dans l'onglet Compétences.</p>
-                    )}
-                  </div>
-                  <small className="text-muted">Au moins une compétence requise pour effectuer cette garde</small>
+                          >
+                            <div className="competence-icon">
+                              {isSelected ? '✓' : '○'}
+                            </div>
+                            <div className="competence-info">
+                              <span className="competence-nom">{comp.nom}</span>
+                              {comp.description && (
+                                <span className="competence-desc">{comp.description}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-state-card">
+                      <span className="empty-icon">📋</span>
+                      <p>Aucune compétence disponible</p>
+                      <small>Créez d'abord des compétences dans l'onglet Compétences</small>
+                    </div>
+                  )}
+                  
+                  {createForm.competences_requises.length > 0 && (
+                    <div className="competences-selected-summary">
+                      <strong>{createForm.competences_requises.length}</strong> compétence(s) sélectionnée(s)
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-field">
-                  <label className="setting-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={createForm.officier_obligatoire}
-                      onChange={(e) => setCreateForm({...createForm, officier_obligatoire: e.target.checked})}
-                    />
-                    <span>Officier obligatoire pour cette garde</span>
+                  <label className="setting-checkbox-modern">
+                    <div className="checkbox-wrapper">
+                      <input
+                        type="checkbox"
+                        checked={createForm.officier_obligatoire}
+                        onChange={(e) => setCreateForm({...createForm, officier_obligatoire: e.target.checked})}
+                      />
+                      <span className="checkbox-custom"></span>
+                    </div>
+                    <div className="checkbox-content">
+                      <span className="checkbox-title">👮 Officier obligatoire</span>
+                      <span className="checkbox-description">Cette garde nécessite la présence d'un officier qualifié</span>
+                    </div>
                   </label>
                 </div>
 
