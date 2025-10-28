@@ -10201,6 +10201,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Assigner autant de pompiers que nécessaire pour remplir la garde
                 pompiers_assignes_cette_iteration = 0
                 
+                # 🔍 DEBUG LOGGING pour diagnostic auto-attribution
+                logging.info(f"🔍 [DEBUG] {type_garde['nom']} - {date_str}:")
+                logging.info(f"    places_restantes={places_restantes}")
+                logging.info(f"    available_users={len(available_users)} utilisateurs")
+                if available_users:
+                    logging.info(f"    premier available_user: {available_users[0].get('prenom')} {available_users[0].get('nom')} ({available_users[0].get('type_emploi')})")
+                logging.info(f"    users_with_min_hours={len(users_with_min_hours)} utilisateurs")
+                if users_with_min_hours:
+                    logging.info(f"    premier min_hours_user: {users_with_min_hours[0].get('prenom')} {users_with_min_hours[0].get('nom')}")
+                
                 for _ in range(places_restantes):
                     if not users_with_min_hours:
                         break  # Plus de pompiers disponibles
