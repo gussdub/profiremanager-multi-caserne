@@ -9900,8 +9900,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             else:
                                 continue  # Skip si compétences manquantes
                     
-                    # DÉDUPLICATION CRITIQUE : N'ajouter que si pas déjà dans la liste
-                    if user not in available_users:
+                    # DÉDUPLICATION CRITIQUE : Comparer par ID car dict comparison ne fonctionne pas
+                    if user["id"] not in [u["id"] for u in available_users]:
                         available_users.append(user)
                 
                 if not available_users:
