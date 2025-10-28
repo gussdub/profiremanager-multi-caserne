@@ -337,6 +337,21 @@ backend:
         agent: "main"
         comment: "NEW FEATURE - Système complet de remplacement automatisé implémenté. Fonctionnalités: 1) TypeGarde enrichi avec 'competences_requises' pour définir les formations/compétences nécessaires, 2) DemandeRemplacement enrichi avec: statut (en_attente, en_cours, accepte, expiree, annulee), priorite (urgent ≤24h, normal >24h calculée auto), remplacant_id, tentatives_historique (historique complet des contacts), remplacants_contactes_ids (liste active), date_prochaine_tentative, nombre_tentatives. 3) Algorithme de recherche trouver_remplacants_potentiels() avec filtres: compétences requises, grade équivalent/supérieur, pas d'indisponibilité, bonus disponibilité déclarée, tri par ancienneté (date_embauche). 4) Système de gestion: lancer_recherche_remplacant() contacte remplaçant(s) selon mode_notification (un_par_un/multiple), respecte delai_attente_heures, gère nombre_simultane, envoie notifications push ciblées. 5) Fonctions accepter_remplacement() et refuser_remplacement() avec: vérification ancienneté si acceptations multiples, mise à jour automatique planning (assignations), notifications demandeur/superviseurs/autres remplaçants. 6) Job périodique verifier_et_traiter_timeouts() qui s'exécute toutes les minutes, marque tentatives expirées, relance recherche automatiquement. 7) Endpoints: POST /remplacements (crée + lance recherche auto), GET /remplacements/propositions (liste pour remplaçant), PUT /remplacements/{id}/accepter, PUT /remplacements/{id}/refuser, DELETE /remplacements/{id} (annuler). 8) Mise à jour planning automatique: change user_id dans assignations, ajoute est_remplacement=true et demandeur_original_id. Le système gère le flux complet de A à Z sans intervention manuelle, respecte tous les critères et délais, notifie toutes les parties concernées. NEEDS COMPREHENSIVE BACKEND TESTING."
 
+  - task: "Auto-Attribution Sébastien Charest - Gardes Préventionniste"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Test spécifique de l'auto-attribution pour vérifier que Sébastien Charest (temps_plein, compétence TPI) est maintenant assigné aux gardes 'Préventionniste'. Tests requis: 1) Vérifier que Sébastien a bien la compétence TPI dans son profil, 2) Tester l'auto-attribution pour une semaine future, 3) Vérifier que Sébastien apparaît dans les assignations pour les gardes Préventionniste, 4) Confirmer que la nouvelle logique temps_plein fonctionne."
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME IDENTIFIÉ - Tests auto-attribution partiellement réussis (4/6 tests passés, 66.7% succès). RÉSULTATS DÉTAILLÉS: ✅ Sébastien Charest trouvé avec type_emploi=temps_plein, 9 compétences dont TPI (8e4f0602-6da3-4fc8-aecc-4717bb45f06c) ✅, User ID: ab40b1d6-b8b6-4007-9caa-f2abf1ba2347, ✅ Types garde Préventionniste configurés correctement: 2 types trouvés ('Préventionniste 12H', 'Préventionniste 6H'), les 2 requièrent la compétence TPI ✅, ✅ Logique temps_plein fonctionnelle: 5 employés temps_plein trouvés, tous avec compétences, Sébastien inclus ✅. PROBLÈMES CRITIQUES: ❌ Auto-attribution ne crée AUCUNE assignation (0 assignations créées pour semaine 2025-11-03) malgré API 200 OK, ❌ Sébastien a 2 assignations totales mais 0 Préventionniste pour la semaine testée. DIAGNOSTIC: La logique d'auto-attribution semble ne pas fonctionner correctement - soit les critères de sélection sont trop restrictifs, soit il y a un bug dans l'algorithme d'attribution. Authentification réussie avec gussdub@gmail.com / 230685Juin+ pour tenant shefford."
+
   - task: "Garde Externe (External Shift) Functionality"
     implemented: true
     working: true
