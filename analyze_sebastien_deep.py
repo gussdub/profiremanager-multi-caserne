@@ -50,12 +50,13 @@ async def deep_analyze():
     print()
     
     # Vérifier la compétence TPI
-    has_tpi = TARGET_COMPETENCE_ID in sebastien.get('formations', [])
+    has_tpi = TARGET_COMPETENCE_ID in sebastien.get('competences', [])
     print(f"  A la compétence TPI ({TARGET_COMPETENCE_ID}): {'✓ OUI' if has_tpi else '❌ NON'}")
     print()
     
     if not has_tpi:
-        print("⚠️  PROBLÈME: Sébastien n'a pas TPI dans ses formations!")
+        print("⚠️  PROBLÈME: Sébastien n'a pas TPI dans ses compétences!")
+        print(f"    Compétences actuelles: {sebastien.get('competences', [])}")
         print(f"    Formations actuelles: {sebastien.get('formations', [])}")
         print()
     
