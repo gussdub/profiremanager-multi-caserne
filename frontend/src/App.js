@@ -48,6 +48,7 @@ const useAuth = () => {
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tenant, setTenant] = useState(null);
   const { tenantSlug, isSuperAdmin } = useTenant();
 
   useEffect(() => {
