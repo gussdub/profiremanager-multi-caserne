@@ -14625,6 +14625,12 @@ const AppLayout = () => {
             <Parametres user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
+      case 'mesepi':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <MesEPI user={user} />
+          </Suspense>
+        );
       case 'monprofil':
         return <MonProfil />;
       default:
