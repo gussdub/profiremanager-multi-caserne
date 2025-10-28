@@ -266,6 +266,38 @@ async def progress_event_generator(task_id: str):
             
     except asyncio.CancelledError:
         pass
+
+async def cleanup_expired_tasks():
+    """Nettoie périodiquement les tâches expirées du store"""
+    while True:
+        try:
+            current_time = time.time()
+            expired_keys = []
+            
+            for task_id, data in list(attribution_progress_store.items()):
+                # Supprimer les tâches terminées depuis plus de 5 minutes
+                if data.get("status") in ["termine", "erreur"]:
+                    # Vérifier si la tâche est vieille de plus de 5 minutes
+                    if "elapsed_time" in data:
+                        try:
+                            elapsed_seconds = float(data["elapsed_time"].replace("s", ""))
+                            task_age = current_time - (data.get("start_time", current_time) - elapsed_seconds)
+                            if task_age > 300:  # 5 minutes
+                                expired_keys.append(task_id)
+                        except:
+                            pass
+            
+            # Supprimer les tâches expirées
+            for key in expired_keys:
+                del attribution_progress_store[key]
+            
+            if expired_keys:
+                logging.info(f"🧹 Nettoyage: {len(expired_keys)} tâches expirées supprimées")
+            
+        except Exception as e:
+            logging.error(f"Erreur nettoyage tâches: {e}")
+        
+        await asyncio.sleep(300)  # Nettoyer toutes les 5 minutes
     
     # Démarrer le scheduler APScheduler pour les notifications automatiques
     asyncio.create_task(start_notification_scheduler())
