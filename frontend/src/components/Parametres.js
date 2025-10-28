@@ -262,7 +262,14 @@ const Parametres = ({ user, tenantSlug }) => {
     }
 
     try {
-      await axios.post(`${API}/types-garde`, createForm);
+      // Calculer automatiquement la durée
+      const duree_heures = calculateDuration(createForm.heure_debut, createForm.heure_fin);
+      const dataToSend = {
+        ...createForm,
+        duree_heures
+      };
+      
+      await axios.post(`${API}/types-garde`, dataToSend);
       toast({
         title: "Type de garde créé",
         description: "Le nouveau type de garde a été ajouté avec succès",
