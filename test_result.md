@@ -709,6 +709,8 @@ test_plan:
 agent_communication:
   - agent: "testing"
     message: "Starting comprehensive frontend testing of 'Accepter les gardes externes' functionality in user modals. Will test both creation and modification modals, verify checkbox behavior, and test specific users as requested."
+  - agent: "testing"
+    message: "✅ FRONTEND TESTING COMPLETED SUCCESSFULLY! All major functionality verified: 1) Login and navigation working, 2) Personnel management accessible, 3) Creation modal has '⚡ Préférences d'assignation' section and '🏠 Accepter les gardes externes' checkbox (checked by default), 4) Modification modals accessible with same sections, 5) Checkbox toggle functionality working, 6) Employment type selection functional, 7) Sébastien Charest found in user list. The 'Accepter les gardes externes' interface is fully implemented and functional in both user creation and modification modals as requested."
 
 test_plan:
   current_focus: []
