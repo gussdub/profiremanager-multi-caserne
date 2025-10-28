@@ -178,6 +178,93 @@ async def startup_event():
     
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
+
+# ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
+# Dictionnaire global pour stocker les progressions des attributions auto
+attribution_progress_store: Dict[str, Dict[str, Any]] = {}
+
+class AttributionProgress:
+    """Classe pour gérer la progression d'une attribution automatique"""
+    
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+        self.start_time = time.time()
+        self.current_step = ""
+        self.progress_percentage = 0
+        self.total_gardes = 0
+        self.gardes_traitees = 0
+        self.assignations_creees = 0
+        self.status = "en_cours"  # en_cours, termine, erreur
+        self.error_message = None
+        
+    def update(self, step: str, progress: int, gardes_traitees: int = 0, assignations: int = 0):
+        """Met à jour la progression"""
+        self.current_step = step
+        self.progress_percentage = min(progress, 100)
+        self.gardes_traitees = gardes_traitees
+        if assignations > 0:
+            self.assignations_creees = assignations
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def complete(self, assignations_totales: int):
+        """Marque la tâche comme terminée"""
+        self.status = "termine"
+        self.progress_percentage = 100
+        self.assignations_creees = assignations_totales
+        elapsed_time = time.time() - self.start_time
+        self.current_step = f"✅ Terminé en {elapsed_time:.1f}s - {assignations_totales} assignations créées"
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def error(self, message: str):
+        """Marque la tâche en erreur"""
+        self.status = "erreur"
+        self.error_message = message
+        self.current_step = f"❌ Erreur: {message}"
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def to_dict(self):
+        """Convertit en dictionnaire pour JSON"""
+        elapsed = time.time() - self.start_time
+        return {
+            "task_id": self.task_id,
+            "status": self.status,
+            "current_step": self.current_step,
+            "progress_percentage": self.progress_percentage,
+            "total_gardes": self.total_gardes,
+            "gardes_traitees": self.gardes_traitees,
+            "assignations_creees": self.assignations_creees,
+            "elapsed_time": f"{elapsed:.1f}s",
+            "error_message": self.error_message
+        }
+
+async def progress_event_generator(task_id: str):
+    """Générateur SSE pour streamer les mises à jour de progression"""
+    try:
+        # Attendre que la tâche soit créée
+        for _ in range(50):  # Attendre max 5 secondes
+            if task_id in attribution_progress_store:
+                break
+            await asyncio.sleep(0.1)
+        
+        # Streamer les mises à jour
+        last_data = None
+        while True:
+            if task_id in attribution_progress_store:
+                current_data = attribution_progress_store[task_id]
+                
+                # Envoyer seulement si les données ont changé
+                if current_data != last_data:
+                    yield f"data: {json.dumps(current_data)}\n\n"
+                    last_data = current_data.copy()
+                
+                # Si terminé ou en erreur, arrêter le stream
+                if current_data.get("status") in ["termine", "erreur"]:
+                    break
+            
+            await asyncio.sleep(0.5)  # Mise à jour toutes les 500ms
+            
+    except asyncio.CancelledError:
+        pass
     
     # Démarrer le scheduler APScheduler pour les notifications automatiques
     asyncio.create_task(start_notification_scheduler())
