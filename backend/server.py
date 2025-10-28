@@ -3335,9 +3335,9 @@ async def trouver_remplacants_potentiels(
         remplacants_potentiels = []
         
         for user in users_list:
-            # 1. Vérifier les compétences/formations
-            user_formations = set(user.get("formations", []))
-            if competences_requises and not set(competences_requises).issubset(user_formations):
+            # 1. Vérifier les compétences
+            user_competences = set(user.get("competences", []))
+            if competences_requises and not set(competences_requises).issubset(user_competences):
                 continue  # Ne possède pas toutes les compétences requises
             
             # 2. Vérifier le grade
