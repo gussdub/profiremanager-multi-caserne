@@ -2267,12 +2267,9 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
 
                 <div className="form-field">
-                  <Label style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>
+                  <Label style={{marginBottom: '0.5rem', fontSize: '0.95rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
                     🎯 Compétences requises
                   </Label>
-                  <p style={{fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem'}}>
-                    Sélectionnez les compétences nécessaires pour effectuer cette garde
-                  </p>
                   
                   {competences.length > 0 ? (
                     <div className="competences-grid-modern">
@@ -2789,12 +2786,9 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
 
                 <div className="form-field">
-                  <Label style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>
+                  <Label style={{marginBottom: '0.5rem', fontSize: '0.95rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
                     🎯 Compétences requises
                   </Label>
-                  <p style={{fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem'}}>
-                    Sélectionnez les compétences nécessaires pour effectuer cette garde
-                  </p>
                   
                   {competences.length > 0 ? (
                     <div className="competences-grid-modern">
