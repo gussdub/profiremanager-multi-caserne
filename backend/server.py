@@ -10169,14 +10169,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         available_users = pompiers_fonction_sup
                     # Priorité 3: Si aucun des deux, garde reste non assignée (available_users vide)
                 
-                # ÉTAPE 4: Rotation équitable - sort by monthly hours (ascending)
-                # Utiliser le compteur approprié selon le type de garde (interne ou externe)
-                if type_garde.get("est_garde_externe", False):
-                    available_users.sort(key=lambda u: user_monthly_hours_externes.get(u["id"], 0))
-                else:
-                    available_users.sort(key=lambda u: user_monthly_hours_internes.get(u["id"], 0))
+                # ÉTAPE 4: Prioriser temps_partiel avant temps_plein
+                # Trier par: 1) type_emploi (temps_partiel first), 2) heures mensuelles, 3) ancienneté
+                available_users.sort(key=lambda u: (
+                    0 if u["type_emploi"] == "temps_partiel" else 1,  # temps_partiel en premier
+                    user_monthly_hours_externes.get(u["id"], 0) if type_garde.get("est_garde_externe", False) else user_monthly_hours_internes.get(u["id"], 0)
+                ))
                 
-                # ÉTAPE 5: Ancienneté - among users with same hours, prioritize by ancienneté
+                # ÉTAPE 5: Ancienneté - among users with same hours and type, prioritize by ancienneté
                 if type_garde.get("est_garde_externe", False):
                     min_hours = user_monthly_hours_externes.get(available_users[0]["id"], 0)
                     users_with_min_hours = [u for u in available_users if user_monthly_hours_externes.get(u["id"], 0) == min_hours]
