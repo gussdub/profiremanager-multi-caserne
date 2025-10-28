@@ -6558,24 +6558,6 @@ const Planning = () => {
             </button>
           </div>
 
-          {/* Toggle Vue Calendrier/Liste */}
-          <div className="view-toggle">
-            <button 
-              className={displayMode === 'calendrier' ? 'active' : ''}
-              onClick={() => setDisplayMode('calendrier')}
-              title="Vue Calendrier"
-            >
-              📆
-            </button>
-            <button 
-              className={displayMode === 'liste' ? 'active' : ''}
-              onClick={() => setDisplayMode('liste')}
-              title="Vue Liste"
-            >
-              ☰
-            </button>
-          </div>
-
           {/* Exports */}
           <Button variant="outline" onClick={handleExportPDFPlanning}>
             📄 Export PDF
