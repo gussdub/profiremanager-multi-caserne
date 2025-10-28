@@ -595,6 +595,21 @@ backend:
         agent: "testing"
         comment: "✅ OVERTIME HOURS MANAGEMENT FULLY FUNCTIONAL - Comprehensive testing completed successfully with 87.5% success rate (7/8 tests passed). CORE FUNCTIONALITY VERIFIED: 1) ✅ PUT Parameters Update: Successfully updated overtime parameters (activer_gestion_heures_sup=true, seuil_max_heures=35, periode_calcul_heures='semaine') via PUT /api/parametres/remplacements, 2) ✅ Attribution Auto - Disabled Limits: Automatic attribution works normally when overtime limits disabled (assignations_creees=0 due to no data, but endpoint functional), 3) ✅ Attribution Auto - Enabled Limits: Automatic attribution works with limits enabled, system correctly processes overtime restrictions, 4) ✅ Employee Coverage: System has both employee types (5 full-time, 27 part-time employees) confirming feature affects all employee types, 5) ✅ calculer_heures_employe_periode Function: Function integration tested through parameter updates for different periods (semaine, mois, personnalise), 6) ✅ System vs Personal Limits: Logic implemented in attribution algorithm for minimum between system and personal limits. MINOR ISSUE: GET /api/parametres/remplacements returns 404 due to routing conflict (endpoint caught by tenant routing pattern), but PUT works correctly and parameters are saved. Used gussdub@gmail.com / 230685Juin+ credentials for Shefford tenant. All review request objectives achieved: new parameters working, attribution logic respects limits, both employee types covered, different calculation periods supported."
 
+  - task: "Module Mes EPI (My PPE) - Employee PPE Management"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW FEATURE TESTING - Comprehensive testing of 'Mes EPI' (My PPE) module as requested in review. Testing all 4 endpoints: 1) GET /api/{tenant_slug}/mes-epi (list assigned EPIs), 2) POST /api/{tenant_slug}/mes-epi/{epi_id}/inspection (record inspection after usage), 3) GET /api/{tenant_slug}/mes-epi/{epi_id}/historique (inspection history), 4) POST /api/{tenant_slug}/mes-epi/{epi_id}/demander-remplacement (replacement requests). Using tenant 'shefford' with credentials admin@firemanager.ca / Admin123! (fallback: gussdub@gmail.com / 230685Juin+)."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL BACKEND BUG IDENTIFIED - Mes EPI module testing completed with 63.6% success rate (7/11 tests passed). MAJOR ISSUE FOUND: Backend query bug in mes-epi endpoints. DETAILED ANALYSIS: 1) ✅ Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ for Shefford tenant, 2) ✅ EPI Creation: Successfully created test EPI (Casque MSA F1XF) assigned to user 426c0f86-91f2-48fb-9e77-c762f0e9e7dc, 3) ❌ CRITICAL BUG: GET /api/shefford/mes-epi returns empty list despite EPI being correctly assigned to current user (verified via admin endpoint), 4) ❌ All EPI-specific endpoints fail with 404 'EPI non trouvé ou non assigné à vous' despite correct assignment, 5) ✅ Error handling works correctly (404 for non-existent EPIs, 422 for missing fields). ROOT CAUSE: Backend query issue in mes-epi endpoints - EPIs are correctly created and assigned but not found by the query in db.epi.find({'tenant_id': tenant.id, 'user_id': current_user.id}). This could be due to collection name mismatch, field name mismatch, data type issue, or tenant ID mismatch. ENDPOINTS AFFECTED: All 4 mes-epi endpoints fail due to this query bug. RECOMMENDATION: Debug backend query logic in lines 12792-12795 of server.py."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
