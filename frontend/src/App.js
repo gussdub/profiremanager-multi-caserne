@@ -14570,7 +14570,7 @@ const AppLayout = () => {
 
 // Main App Component
 const App = () => {
-  const { user, loading, logout } = useAuth();
+  const { user, tenant, loading, logout } = useAuth();
   const { isSuperAdmin } = useTenant();
 
   if (loading) {
