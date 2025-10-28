@@ -79,7 +79,22 @@ const MesEPI = ({ user }) => {
     if (!selectedEPI) return;
 
     try {
-      await apiPost(tenantSlug, `/mes-epi/${selectedEPI.id}/inspection`, inspectionForm);
+      // Si une photo a été sélectionnée, la convertir en base64
+      let photoData = inspectionForm.photo_url;
+      
+      if (photoFile) {
+        const reader = new FileReader();
+        photoData = await new Promise((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(photoFile);
+        });
+      }
+
+      await apiPost(tenantSlug, `/mes-epi/${selectedEPI.id}/inspection`, {
+        ...inspectionForm,
+        photo_url: photoData
+      });
       
       toast({
         title: "Succès",
@@ -95,6 +110,8 @@ const MesEPI = ({ user }) => {
         notes: '',
         photo_url: ''
       });
+      setPhotoFile(null);
+      setPhotoPreview(null);
       loadEPIs();
     } catch (error) {
       console.error('Erreur lors de l\'inspection:', error);
@@ -104,6 +121,36 @@ const MesEPI = ({ user }) => {
         variant: "destructive"
       });
     }
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier la taille du fichier (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Erreur",
+          description: "La photo ne doit pas dépasser 5 MB",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setPhotoFile(file);
+      
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setInspectionForm({...inspectionForm, photo_url: ''});
   };
 
   const handleDemandeRemplacement = async () => {
