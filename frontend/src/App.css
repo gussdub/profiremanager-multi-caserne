@@ -2188,8 +2188,9 @@ body {
 
 .grid-row {
   display: grid;
-  grid-template-columns: 250px repeat(7, 1fr);
+  grid-template-columns: 250px repeat(7, minmax(140px, 1fr));
   border-bottom: 1px solid #f1f5f9;
+  overflow-x: auto;
 }
 
 .grid-row:hover {
