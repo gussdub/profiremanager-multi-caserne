@@ -9626,22 +9626,6 @@ async def process_attribution_auto_async(
     except Exception as e:
         logging.error(f"❌ [ERROR] Attribution auto échouée: {str(e)}", exc_info=True)
         progress.error(str(e))
-        
-        response = {
-            "message": "Attribution automatique intelligente effectuée avec succès",
-            "assignations_creees": total_assignations_creees,
-            "algorithme": "5 niveaux: Manuel → Disponibilités → Grades → Rotation équitable → Ancienneté",
-            "periode": f"{semaine_debut} à {semaine_fin}"
-        }
-        
-        if reset and assignations_supprimees > 0:
-            response["assignations_supprimees"] = assignations_supprimees
-            response["message"] = f"Planning réinitialisé ({assignations_supprimees} assignations auto supprimées) et attribution effectuée"
-        
-        return response
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'attribution automatique: {str(e)}")
 
 async def generer_justification_attribution(
     selected_user: Dict,
