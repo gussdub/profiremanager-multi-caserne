@@ -5730,13 +5730,7 @@ const Planning = () => {
       // Activer l'overlay de chargement
       setAttributionLoading(true);
       setShowAutoAttributionModal(false);
-      
-      // Étape 1: Préparation
-      setAttributionStep('📋 Préparation de l\'attribution automatique...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      setAttributionStep('📋 Chargement des paramètres de configuration...');
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setAttributionStep('📋 Initialisation...');
       
       // Calculer la plage de dates selon la période
       let semaine_debut, semaine_fin;
@@ -5767,84 +5761,97 @@ const Planning = () => {
         semaine_fin = lastSunday.toISOString().split('T')[0];
       }
       
-      // Étape 2: Chargement des données
-      setAttributionStep('📦 Récupération des types de garde...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      setAttributionStep('👥 Chargement de la liste du personnel...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Étape 3: Analyse des disponibilités
-      setAttributionStep('📅 Analyse des disponibilités déclarées...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setAttributionStep('🔍 Vérification des indisponibilités...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Étape 4: Vérifications des critères
-      setAttributionStep('🎓 Vérification des compétences requises...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      setAttributionStep('👮 Vérification des grades et officiers...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Étape 5: Calcul de l'équitabilité
-      setAttributionStep('⚖️ Calcul des heures internes et externes...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setAttributionStep('📊 Analyse de l\'équité entre les employés...');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Étape 6: Assignation des gardes
-      setAttributionStep('🚀 Lancement de l\'attribution automatique...');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Si mode réinitialiser, ajouter une étape de suppression
-      if (autoAttributionConfig.mode === 'reinitialiser') {
-        setAttributionStep('🗑️ Suppression des assignations AUTO existantes...');
-        await new Promise(resolve => setTimeout(resolve, 600));
-      }
-      
-      setAttributionStep('🔄 Attribution des gardes en cours...');
-      
       // Lancer l'attribution automatique avec le paramètre reset
       const resetParam = autoAttributionConfig.mode === 'reinitialiser' ? '&reset=true' : '';
-      const responseData = await apiPost(
+      const initResponse = await apiPost(
         tenantSlug, 
         `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}${resetParam}`, 
         {}
       );
       
-      // Étape 7: Finalisation
-      setAttributionStep('📝 Génération des justifications d\'attribution...');
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // Récupérer le task_id et l'URL du stream
+      const { task_id, stream_url } = initResponse;
       
-      setAttributionStep('✅ Vérification finale de la cohérence...');
-      await new Promise(resolve => setTimeout(resolve, 400));
+      if (!task_id) {
+        throw new Error("Aucun task_id reçu du serveur");
+      }
       
-      // Désactiver l'overlay
-      setAttributionLoading(false);
-      setAttributionStep('');
+      setAttributionStep('🚀 Attribution lancée - connexion au flux temps réel...');
       
-      // Message personnalisé selon le mode
-      const successMessage = autoAttributionConfig.mode === 'reinitialiser' 
-        ? `Planning réinitialisé ! ${responseData.assignations_supprimees || 0} assignation(s) supprimée(s), ${responseData.assignations_creees} nouvelle(s) créée(s)`
-        : `${responseData.assignations_creees} nouvelle(s) assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`;
+      // Se connecter au flux SSE pour recevoir les mises à jour
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const eventSource = new EventSource(`${backendUrl}${stream_url}`);
       
-      toast({
-        title: autoAttributionConfig.mode === 'reinitialiser' ? "Planning réinitialisé" : "Attribution automatique réussie",
-        description: successMessage,
-        variant: "success"
-      });
+      eventSource.onmessage = (event) => {
+        try {
+          const progress = JSON.parse(event.data);
+          
+          // Mettre à jour l'affichage avec la progression en temps réel
+          setAttributionStep(
+            `${progress.current_step} (${progress.progress_percentage}% - ${progress.elapsed_time})`
+          );
+          
+          // Si terminé, fermer la connexion
+          if (progress.status === 'termine') {
+            eventSource.close();
+            
+            // Désactiver l'overlay
+            setAttributionLoading(false);
+            setAttributionStep('');
+            
+            // Message personnalisé selon le mode
+            const successMessage = autoAttributionConfig.mode === 'reinitialiser' 
+              ? `Planning réinitialisé ! ${progress.assignations_creees} assignation(s) créée(s)`
+              : `${progress.assignations_creees} assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`;
+            
+            toast({
+              title: autoAttributionConfig.mode === 'reinitialiser' ? "Planning réinitialisé" : "Attribution automatique réussie",
+              description: successMessage,
+              variant: "success"
+            });
 
-      // Réinitialiser la config
-      setAutoAttributionConfig({
-        periode: 'semaine',
-        periodeLabel: '',
-        date: currentWeek,
-        mode: 'completer'
-      });
-      fetchPlanningData();
+            // Réinitialiser la config
+            setAutoAttributionConfig({
+              periode: 'semaine',
+              periodeLabel: '',
+              date: currentWeek,
+              mode: 'completer'
+            });
+            fetchPlanningData();
+          }
+          
+          // Si erreur, fermer la connexion
+          if (progress.status === 'erreur') {
+            eventSource.close();
+            
+            setAttributionLoading(false);
+            setAttributionStep('');
+            
+            toast({
+              title: "Erreur d'attribution",
+              description: progress.error_message || "Une erreur s'est produite",
+              variant: "destructive"
+            });
+          }
+        } catch (parseError) {
+          console.error('Erreur parsing SSE:', parseError);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('Erreur SSE:', error);
+        eventSource.close();
+        
+        setAttributionLoading(false);
+        setAttributionStep('');
+        
+        toast({
+          title: "Erreur de connexion",
+          description: "La connexion au serveur a été interrompue",
+          variant: "destructive"
+        });
+      };
+      
     } catch (error) {
       // Désactiver l'overlay en cas d'erreur
       setAttributionLoading(false);
