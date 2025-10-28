@@ -3388,6 +3388,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       taux_horaire: user.taux_horaire || 0,
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
+      accepte_gardes_externes: user.accepte_gardes_externes !== false, // Default to true si pas défini
       mot_de_passe: ''
     });
     setShowEditModal(true);
