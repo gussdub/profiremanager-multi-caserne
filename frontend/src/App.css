@@ -15292,3 +15292,282 @@ body {
   }
 }
 
+
+/* ==================== MES EPI MODULE ==================== */
+.mes-epi-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.mes-epi-header {
+  margin-bottom: 2rem;
+}
+
+.mes-epi-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.mes-epi-header p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.epi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.epi-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.epi-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.epi-details {
+  margin-bottom: 1.5rem;
+}
+
+.epi-detail-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.epi-detail-item:last-child {
+  border-bottom: none;
+}
+
+.epi-detail-item strong {
+  color: #475569;
+  display: inline-block;
+  min-width: 140px;
+}
+
+.epi-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.epi-actions button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.epi-actions .btn-primary {
+  background: #dc2626;
+  color: white;
+  border: none;
+}
+
+.epi-actions .btn-primary:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.epi-actions .btn-secondary {
+  background: #64748b;
+  color: white;
+  border: none;
+}
+
+.epi-actions .btn-secondary:hover:not(:disabled) {
+  background: #475569;
+}
+
+.epi-actions .btn-warning {
+  background: #f59e0b;
+  color: white;
+  border: none;
+}
+
+.epi-actions .btn-warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.epi-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badges de statut */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Formulaire d'inspection */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radio-label:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.radio-label input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.radio-label span {
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+/* Historique */
+.historique-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.historique-item {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.historique-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.historique-date {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.historique-defauts,
+.historique-notes {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.historique-defauts strong,
+.historique-notes strong {
+  color: #475569;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.historique-photo {
+  margin-top: 0.75rem;
+}
+
+.historique-photo a {
+  color: #dc2626;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.historique-photo a:hover {
+  text-decoration: underline;
+}
+
+/* Alerts */
+.alert {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.alert-info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+/* Modal grande */
+.modal-content.large {
+  max-width: 700px;
+  width: 90vw;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mes-epi-container {
+    padding: 1rem;
+  }
+
+  .epi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mes-epi-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
