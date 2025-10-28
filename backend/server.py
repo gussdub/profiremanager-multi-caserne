@@ -9502,10 +9502,13 @@ async def attribution_automatique(
     reset: bool = False,  # Nouveau paramètre pour réinitialiser
     current_user: User = Depends(get_current_user)
 ):
-    """Attribution automatique pour une ou plusieurs semaines
+    """Attribution automatique pour une ou plusieurs semaines avec progression temps réel
     
     Args:
         reset: Si True, supprime d'abord toutes les assignations AUTO de la période
+        
+    Returns:
+        task_id: Identifiant pour suivre la progression via SSE
     """
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
@@ -9513,14 +9516,47 @@ async def attribution_automatique(
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Générer un task_id unique
+    task_id = str(uuid.uuid4())
+    
+    # Lancer la tâche en arrière-plan
+    asyncio.create_task(
+        process_attribution_auto_async(
+            task_id, tenant, semaine_debut, semaine_fin, reset
+        )
+    )
+    
+    # Retourner immédiatement le task_id
+    return {
+        "task_id": task_id,
+        "message": "Attribution automatique lancée en arrière-plan",
+        "stream_url": f"/api/{tenant_slug}/planning/attribution-auto/progress/{task_id}"
+    }
+
+async def process_attribution_auto_async(
+    task_id: str,
+    tenant,
+    semaine_debut: str,
+    semaine_fin: str = None,
+    reset: bool = False
+):
+    """Traite l'attribution automatique de manière asynchrone avec suivi de progression"""
+    progress = AttributionProgress(task_id)
+    
     try:
+        start_time = time.time()
+        logging.info(f"⏱️ [PERF] Attribution auto démarrée - Task ID: {task_id}")
+        
         # Si pas de semaine_fin fournie, calculer pour une seule semaine
         if not semaine_fin:
             semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         
+        progress.update("Initialisation...", 5)
+        
         # Si reset=True, supprimer d'abord toutes les assignations AUTO de la période
         assignations_supprimees = 0
         if reset:
+            progress.update("Suppression des assignations existantes...", 10)
             result = await db.assignations.delete_many({
                 "tenant_id": tenant.id,
                 "date": {
@@ -9530,16 +9566,23 @@ async def attribution_automatique(
                 "assignation_type": {"$in": ["auto", "automatique"]}  # Support ancien + nouveau format
             })
             assignations_supprimees = result.deleted_count
+            logging.info(f"⏱️ [PERF] {assignations_supprimees} assignations supprimées")
         
         # Pour une période complète (mois), traiter semaine par semaine
         start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
         end_date = datetime.strptime(semaine_fin, "%Y-%m-%d")
         
+        # Calculer le nombre total de semaines
+        total_weeks = ((end_date - start_date).days // 7) + 1
+        progress.total_gardes = total_weeks
+        
         total_assignations_creees = 0
         current_week_start = start_date
+        week_number = 0
         
         # Itérer sur toutes les semaines de la période
         while current_week_start <= end_date:
+            week_number += 1
             current_week_end = current_week_start + timedelta(days=6)
             if current_week_end > end_date:
                 current_week_end = end_date
@@ -9547,17 +9590,42 @@ async def attribution_automatique(
             week_start_str = current_week_start.strftime("%Y-%m-%d")
             week_end_str = current_week_end.strftime("%Y-%m-%d")
             
+            # Mise à jour progression
+            progress_percent = 15 + int((week_number / total_weeks) * 80)
+            progress.update(
+                f"Traitement semaine {week_number}/{total_weeks} ({week_start_str})",
+                progress_percent,
+                gardes_traitees=week_number
+            )
+            
+            week_start_time = time.time()
+            
             # Traiter cette semaine
             assignations_cette_semaine = await traiter_semaine_attribution_auto(
                 tenant, 
                 week_start_str, 
-                week_end_str
+                week_end_str,
+                progress=progress  # Passer l'objet progress pour mises à jour granulaires
             )
             
+            week_elapsed = time.time() - week_start_time
+            logging.info(f"⏱️ [PERF] Semaine {week_number} traitée en {week_elapsed:.2f}s - {assignations_cette_semaine} assignations")
+            
             total_assignations_creees += assignations_cette_semaine
+            progress.assignations_creees = total_assignations_creees
             
             # Passer à la semaine suivante
             current_week_start += timedelta(days=7)
+        
+        # Terminer
+        total_elapsed = time.time() - start_time
+        logging.info(f"⏱️ [PERF] Attribution auto terminée en {total_elapsed:.2f}s - Total: {total_assignations_creees} assignations")
+        
+        progress.complete(total_assignations_creees)
+        
+    except Exception as e:
+        logging.error(f"❌ [ERROR] Attribution auto échouée: {str(e)}", exc_info=True)
+        progress.error(str(e))
         
         response = {
             "message": "Attribution automatique intelligente effectuée avec succès",
