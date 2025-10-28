@@ -2899,7 +2899,7 @@ const ModuleEPI = ({ user }) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   
@@ -5526,7 +5526,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
 // Planning Component optimisé - Vue moderne avec code couleur
 const Planning = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
@@ -8209,7 +8209,7 @@ const Planning = () => {
 
 // Remplacements Component optimisé - Gestion complète remplacements et congés
 const Remplacements = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const [demandes, setDemandes] = useState([]);
   const [demandesConge, setDemandesConge] = useState([]);
@@ -9441,7 +9441,7 @@ const Remplacements = () => {
 
 
 const Formations = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -10414,7 +10414,7 @@ const Formations = () => {
 };
 
 const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   
   // Déterminer quel utilisateur on gère (soi-même ou un autre)
@@ -12853,7 +12853,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 // Mon Profil Component épuré - sans disponibilités et remplacements
 // Mon Profil Component épuré - sans disponibilités et remplacements
 const MonProfil = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const [userProfile, setUserProfile] = useState(null);
   const [formations, setFormations] = useState([]);
@@ -13513,7 +13513,7 @@ const MonProfil = () => {
 // ====================================================================
 
 const Rapports = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   
@@ -14923,7 +14923,7 @@ const ImportCSV = ({ onImportComplete }) => {
 
 // Module Prévention - Gestion des inspections et bâtiments
 const Prevention = () => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   const [currentView, setCurrentView] = useState('dashboard');
@@ -15131,7 +15131,7 @@ const Prevention = () => {
 const AppLayout = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
 
   const renderCurrentPage = () => {
