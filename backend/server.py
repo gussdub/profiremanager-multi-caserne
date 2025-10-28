@@ -5537,6 +5537,43 @@ class InspectionEPICreate(BaseModel):
     rapport_pdf_url: str = ""
     signature_numerique: str = ""
 
+# Nouveaux modèles pour "Mes EPI"
+class InspectionApresUsage(BaseModel):
+    """Inspection simple après utilisation par l'employé"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    user_id: str  # Employé qui fait l'inspection
+    date_inspection: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    statut: str  # "OK" ou "Défaut"
+    notes: str = ""
+    photo_url: str = ""  # URL de la photo du défaut (optionnel)
+
+class InspectionApresUsageCreate(BaseModel):
+    epi_id: str
+    statut: str  # "OK" ou "Défaut"
+    notes: str = ""
+    photo_url: str = ""
+
+class DemandeRemplacementEPI(BaseModel):
+    """Demande de remplacement d'EPI par un employé"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    user_id: str  # Employé qui fait la demande
+    raison: str  # "Usé", "Perdu", "Défectueux", "Taille inadaptée"
+    notes_employe: str = ""
+    statut: str = "En attente"  # "En attente", "Approuvée", "Refusée"
+    date_demande: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    date_traitement: Optional[datetime] = None
+    traite_par: Optional[str] = None  # ID admin/superviseur qui traite
+    notes_admin: str = ""  # Notes de l'admin lors du traitement
+
+class DemandeRemplacementEPICreate(BaseModel):
+    epi_id: str
+    raison: str
+    notes_employe: str = ""
+
 class ISP(BaseModel):
     """Fournisseur de Services Indépendant"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
