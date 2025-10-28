@@ -2342,6 +2342,7 @@ body {
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: visible; /* Allow horizontal overflow for dropdowns */
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
