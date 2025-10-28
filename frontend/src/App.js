@@ -3260,6 +3260,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     date_embauche: '',
     taux_horaire: 0,
     formations: [],
+    accepte_gardes_externes: true, // True par défaut
     mot_de_passe: '',
     // Tailles EPI (optionnelles)
     taille_casque: '',
