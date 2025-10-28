@@ -2227,16 +2227,6 @@ const Parametres = ({ user, tenantSlug }) => {
                       data-testid="edit-personnel-input"
                     />
                   </div>
-                  <div className="form-field">
-                    <Label>Durée (heures)</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={editForm.duree_heures}
-                      onChange={(e) => setEditForm({...editForm, duree_heures: parseInt(e.target.value)})}
-                      data-testid="edit-duree-input"
-                    />
-                  </div>
                 </div>
 
                 <div className="form-field">
