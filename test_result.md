@@ -597,7 +597,7 @@ backend:
 
   - task: "Module Mes EPI (My PPE) - Employee PPE Management"
     implemented: true
-    working: false
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "critical"
@@ -609,6 +609,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL BACKEND BUG IDENTIFIED - Mes EPI module testing completed with 63.6% success rate (7/11 tests passed). MAJOR ISSUE FOUND: Backend query bug in mes-epi endpoints. DETAILED ANALYSIS: 1) ✅ Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ for Shefford tenant, 2) ✅ EPI Creation: Successfully created test EPI (Casque MSA F1XF) assigned to user 426c0f86-91f2-48fb-9e77-c762f0e9e7dc, 3) ❌ CRITICAL BUG: GET /api/shefford/mes-epi returns empty list despite EPI being correctly assigned to current user (verified via admin endpoint), 4) ❌ All EPI-specific endpoints fail with 404 'EPI non trouvé ou non assigné à vous' despite correct assignment, 5) ✅ Error handling works correctly (404 for non-existent EPIs, 422 for missing fields). ROOT CAUSE: Backend query issue in mes-epi endpoints - EPIs are correctly created and assigned but not found by the query in db.epi.find({'tenant_id': tenant.id, 'user_id': current_user.id}). This could be due to collection name mismatch, field name mismatch, data type issue, or tenant ID mismatch. ENDPOINTS AFFECTED: All 4 mes-epi endpoints fail due to this query bug. RECOMMENDATION: Debug backend query logic in lines 12792-12795 of server.py."
+      - working: true
+        agent: "testing"
+        comment: "✅ MES EPI MODULE FULLY FUNCTIONAL AFTER BUG FIX - Comprehensive re-testing completed successfully with PERFECT 100% success rate (10/10 tests passed). CRITICAL BUG RESOLVED: Fixed MongoDB ObjectId serialization issue by adding clean_mongo_doc() function calls to mes-epi endpoints. DETAILED SUCCESS ANALYSIS: 1) ✅ Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ for Shefford tenant, 2) ✅ GET /api/shefford/mes-epi: Now returns assigned EPIs correctly with proper structure (id, type_epi, marque, modele, taille, numero_serie, statut, date_mise_en_service), 3) ✅ POST Inspection OK: Successfully recorded inspection with statut='OK', returns correct response (message, defaut_signale=false), 4) ✅ POST Inspection Défaut: Successfully recorded inspection with statut='Défaut', returns correct response (message, defaut_signale=true), 5) ✅ GET Historique: Successfully retrieved 2 inspection records with both OK and Défaut statuses, all required fields present (id, epi_id, user_id, date_inspection, statut, notes), 6) ✅ POST Replacement Request: Successfully created replacement request with raison='Usure normale', returns demande_id, 7) ✅ Error Handling: Correctly returns 404 for non-existent EPIs and 422 for missing fields, 8) ✅ Response Structure: All API fields present and validated. BUG FIX APPLIED: Added clean_mongo_doc() calls in lines 12792-12805 (GET mes-epi) and 12855-12884 (GET historique) to remove MongoDB ObjectId fields before JSON serialization. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: All 4 mes-epi endpoints working correctly, inspection after usage functional (OK and Défaut), inspection history retrieval working, replacement requests working, proper error handling implemented. The collection name bug fix (db.epi → db.epis) mentioned in review was already correctly applied. System ready for production use."
 
 frontend:
   - task: "Frontend Integration"
