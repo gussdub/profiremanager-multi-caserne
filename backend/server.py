@@ -12884,13 +12884,19 @@ async def get_historique_inspections(
         "tenant_id": tenant.id
     }).sort("date_inspection", -1).to_list(1000)
     
-    # Ajouter les infos utilisateur
+    # Nettoyer les documents MongoDB et ajouter les infos utilisateur
+    cleaned_inspections = []
     for inspection in inspections:
+        cleaned_inspection = clean_mongo_doc(inspection)
+        
+        # Ajouter les infos utilisateur
         user = await db.users.find_one({"id": inspection["user_id"], "tenant_id": tenant.id})
         if user:
-            inspection["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+            cleaned_inspection["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+        
+        cleaned_inspections.append(cleaned_inspection)
     
-    return inspections
+    return cleaned_inspections
 
 @api_router.post("/{tenant_slug}/mes-epi/{epi_id}/demander-remplacement")
 async def demander_remplacement_epi(
