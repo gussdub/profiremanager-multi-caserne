@@ -182,6 +182,14 @@ const MesEPI = ({ user }) => {
 
   const openInspectionModal = (epi) => {
     setSelectedEPI(epi);
+    setInspectionForm({
+      statut_inspection: 'ok',
+      defauts_constates: '',
+      notes: '',
+      photo_url: ''
+    });
+    setPhotoFile(null);
+    setPhotoPreview(null);
     setShowInspectionModal(true);
   };
 
