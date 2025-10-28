@@ -27,7 +27,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
     contact_email: '',
     contact_telephone: '',
     adresse: '',
-    date_creation: ''
+    date_creation: '',
+    module_prevention_active: false
   });
   const [newAdmin, setNewAdmin] = useState({
     email: '',
