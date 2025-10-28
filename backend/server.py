@@ -1964,6 +1964,15 @@ async def get_global_stats(admin: SuperAdmin = Depends(get_super_admin)):
         "details_par_caserne": details_revenus
     }
 
+@api_router.get("/admin/tenants/by-slug/{tenant_slug}")
+async def get_tenant_by_slug(tenant_slug: str):
+    """Récupérer un tenant par son slug (pour récupérer les paramètres)"""
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    return clean_mongo_doc(tenant)
+
 @api_router.post("/admin/tenants")
 async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends(get_super_admin)):
     """Créer une nouvelle caserne"""
