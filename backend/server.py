@@ -9589,6 +9589,8 @@ async def process_attribution_auto_async(
     try:
         start_time = time.time()
         logging.info(f"⏱️ [PERF] Attribution auto démarrée - Task ID: {task_id}")
+        logging.info(f"🔍 [DEBUG] reset={reset}, type={type(reset)}, tenant_id={tenant.id}")
+        logging.info(f"🔍 [DEBUG] Période: {semaine_debut} → {semaine_fin}")
         
         # Si pas de semaine_fin fournie, calculer pour une seule semaine
         if not semaine_fin:
@@ -9599,6 +9601,22 @@ async def process_attribution_auto_async(
         # Si reset=True, supprimer d'abord toutes les assignations AUTO de la période
         assignations_supprimees = 0
         if reset:
+            logging.info(f"🔍 [DEBUG] RESET MODE ACTIVÉ - Tentative de suppression...")
+            
+            # Vérifier combien d'assignations existent
+            count_before = await db.assignations.count_documents({
+                "tenant_id": tenant.id,
+                "date": {"$gte": semaine_debut, "$lte": semaine_fin}
+            })
+            logging.info(f"🔍 [DEBUG] Assignations totales dans période: {count_before}")
+            
+            # Vérifier les types d'assignation existants
+            distinct_types = await db.assignations.distinct("assignation_type", {
+                "tenant_id": tenant.id,
+                "date": {"$gte": semaine_debut, "$lte": semaine_fin}
+            })
+            logging.info(f"🔍 [DEBUG] Types d'assignation existants: {distinct_types}")
+            
             progress.update("Suppression des assignations existantes...", 10)
             result = await db.assignations.delete_many({
                 "tenant_id": tenant.id,
@@ -9609,7 +9627,9 @@ async def process_attribution_auto_async(
                 "assignation_type": {"$in": ["auto", "automatique"]}  # Support ancien + nouveau format
             })
             assignations_supprimees = result.deleted_count
-            logging.info(f"⏱️ [PERF] {assignations_supprimees} assignations supprimées")
+            logging.info(f"⏱️ [PERF] ✅ {assignations_supprimees} assignations supprimées")
+        else:
+            logging.info(f"🔍 [DEBUG] RESET MODE DÉSACTIVÉ - Pas de suppression")
         
         # Pour une période complète (mois), traiter semaine par semaine
         start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
