@@ -9997,7 +9997,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             if competences_requises:
                 # Pour chaque compétence requise, compter combien d'users l'ont
                 for comp_id in competences_requises:
-                    users_with_comp = sum(1 for u in users if comp_id in u.get("competences", []))
+                    users_with_comp = sum(1 for u in users if comp_id in u.get("formations", []))
                     if users_with_comp == 0:
                         score += 10000  # Compétence impossible (personne ne l'a) - priorité maximale
                     elif users_with_comp == 1:
