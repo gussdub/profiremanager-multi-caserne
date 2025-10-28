@@ -9863,17 +9863,23 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             if heures_semaine_actuelle + type_garde.get("duree_heures", 8) > heures_max_user:
                                 continue  # Skip si dépasse la limite hebdo
                     
-                    # VÉRIFICATION OBLIGATOIRE : Tous les employés (temps plein ET temps partiel) 
-                    # doivent déclarer leur disponibilité pour être assignés
-                    user_dispos = await db.disponibilites.find({
-                        "user_id": user["id"],
-                        "date": date_str,
-                        "type_garde_id": type_garde["id"],
-                        "statut": "disponible"
-                    }).to_list(10)
+                    # ÉTAPE 2: Check if user has availability 
+                    # Temps partiel : DOIVENT déclarer disponibilité (obligatoire)
+                    # Temps plein : Pas de disponibilité requise (assignation manuelle principale)
+                    if user["type_emploi"] == "temps_partiel":
+                        # Get user disponibilités for THIS SPECIFIC type de garde
+                        user_dispos = await db.disponibilites.find({
+                            "user_id": user["id"],
+                            "date": date_str,
+                            "type_garde_id": type_garde["id"],
+                            "statut": "disponible"
+                        }).to_list(10)
+                        
+                        if not user_dispos:
+                            continue  # Skip temps partiel si pas de disponibilité déclarée
                     
-                    if not user_dispos:
-                        continue  # Skip si pas de disponibilité déclarée (temps plein ET temps partiel)
+                    # Temps plein : éligibles automatiquement pour gardes vacantes (backup)
+                    # Vérification heures/compétences déjà faite avant
                     
                     # VÉRIFICATION : Check if user already assigned to THIS TYPE DE GARDE on this date
                     # Important : On permet plusieurs gardes différentes le même jour (ex: matin + après-midi)
