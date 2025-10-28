@@ -10085,8 +10085,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     if type_g:
                                         heures_semaine_actuelle += type_g.get("duree_heures", 8)
                             
+                            # Log spécifique pour Sébastien Charest
+                            if user.get("email") == "sebas.charest18@hotmail.com":
+                                logging.info(f"🔍 [HEURES] Sébastien Charest - Vérification heures:")
+                                logging.info(f"    heures_max_semaine: {heures_max_user}")
+                                logging.info(f"    heures_semaine_actuelle: {heures_semaine_actuelle}")
+                                logging.info(f"    duree_garde: {type_garde.get('duree_heures', 8)}")
+                                logging.info(f"    total_si_assigné: {heures_semaine_actuelle + type_garde.get('duree_heures', 8)}")
+                                logging.info(f"    dépasse_limite: {heures_semaine_actuelle + type_garde.get('duree_heures', 8) > heures_max_user}")
+                            
                             # Ne PAS attribuer si dépasse heures_max_semaine
                             if heures_semaine_actuelle + type_garde.get("duree_heures", 8) > heures_max_user:
+                                if user.get("email") == "sebas.charest18@hotmail.com":
+                                    logging.info(f"❌ [HEURES] Sébastien Charest EXCLU pour dépassement limite heures!")
                                 continue  # Skip si dépasse la limite hebdo
                     
                     # ÉTAPE 2: Check if user has availability 
