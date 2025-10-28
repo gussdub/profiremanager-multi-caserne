@@ -6832,6 +6832,66 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Légende des Couleurs - En bas du planning */}
+      <div style={{
+        display: 'flex',
+        gap: '2rem',
+        justifyContent: 'center',
+        marginTop: '2rem',
+        padding: '1.25rem',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#10B981', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>✅ Complet</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#F59E0B', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>⚠️ Partiel</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#EF4444', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>❌ Vacant</span>
+        </div>
+        {user.role === 'employe' && (
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+            <span style={{
+              width: '24px', 
+              height: '24px', 
+              background: '#3B82F6', 
+              borderRadius: '6px', 
+              display: 'inline-block',
+              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+            }}></span>
+            <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>👤 Mes Quarts</span>
+          </div>
+        )}
+      </div>
+
       {/* Assignment Modal */}
       {showAssignModal && selectedSlot && user.role !== 'employe' && (
         <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
