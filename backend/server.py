@@ -12815,7 +12815,7 @@ async def creer_inspection_apres_usage(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'EPI appartient à l'utilisateur
-    epi = await db.epi.find_one({"id": epi_id, "tenant_id": tenant.id, "user_id": current_user.id})
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id, "user_id": current_user.id})
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé ou non assigné à vous")
     
