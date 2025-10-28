@@ -9913,27 +9913,25 @@ body {
   font-weight: 600;
 }
 
-/* Fonction Supérieur Styles */
+/* Fonction supérieur option */
 .fonction-superieur-option {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1rem;
+  margin-top: 0.5rem;
 }
 
 .fonction-checkbox {
   display: flex;
-  align-items: flex-start;
   gap: 0.75rem;
   cursor: pointer;
+  align-items: flex-start;
 }
 
 .fonction-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #dc2626;
-  margin-top: 0.125rem;
-  flex-shrink: 0;
+  margin-top: 0.25rem;
+  transform: scale(1.2);
 }
 
 .fonction-content {
@@ -9944,13 +9942,52 @@ body {
 
 .fonction-title {
   font-weight: 600;
-  color: #92400e;
-  font-size: 0.875rem;
+  color: #1e293b;
+  font-size: 0.95rem;
 }
 
 .fonction-description {
-  color: #78350f;
-  font-size: 0.75rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Garde externe option - Similar style to fonction-superieur */
+.garde-externe-option {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.garde-externe-checkbox {
+  display: flex;
+  gap: 0.75rem;
+  cursor: pointer;
+  align-items: flex-start;
+}
+
+.garde-externe-checkbox input[type="checkbox"] {
+  margin-top: 0.25rem;
+  transform: scale(1.2);
+}
+
+.garde-externe-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.garde-externe-title {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 0.95rem;
+}
+
+.garde-externe-description {
+  color: #0369a1;
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 
