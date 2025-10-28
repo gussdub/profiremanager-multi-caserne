@@ -6935,8 +6935,9 @@ const Planning = () => {
                       border: '1px solid #cbd5e1',
                       borderRadius: '6px',
                       marginTop: '4px',
-                      zIndex: 1000,
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      zIndex: 1050, // Increased z-index to be above modal
+                      boxShadow: '0 10px 15px rgba(0,0,0,0.15)', // Enhanced shadow for better visibility
+                      fontSize: '0.95rem' // Ensure readable text
                     }}>
                       {users
                         .filter(userOption => {
