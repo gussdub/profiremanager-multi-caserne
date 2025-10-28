@@ -12794,15 +12794,24 @@ async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current
         "user_id": current_user.id
     }).to_list(1000)
     
-    # Pour chaque EPI, récupérer la dernière inspection après usage
+    # Nettoyer les documents MongoDB et récupérer la dernière inspection
+    cleaned_epis = []
     for epi in mes_epis:
+        cleaned_epi = clean_mongo_doc(epi)
+        
+        # Récupérer la dernière inspection après usage
         derniereInspection = await db.inspections_apres_usage.find_one(
             {"epi_id": epi["id"], "tenant_id": tenant.id},
             sort=[("date_inspection", -1)]
         )
-        epi["derniere_inspection"] = derniereInspection
+        if derniereInspection:
+            cleaned_epi["derniere_inspection"] = clean_mongo_doc(derniereInspection)
+        else:
+            cleaned_epi["derniere_inspection"] = None
+            
+        cleaned_epis.append(cleaned_epi)
     
-    return mes_epis
+    return cleaned_epis
 
 @api_router.post("/{tenant_slug}/mes-epi/{epi_id}/inspection")
 async def creer_inspection_apres_usage(
