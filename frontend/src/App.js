@@ -706,7 +706,10 @@ const Login = () => {
 
 // Sidebar Navigation avec menu hamburger mobile
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
-  const { user, logout } = useAuth();
+  const { user, tenant: authTenant, logout } = useAuth();
+  
+  console.log('[DEBUG] Sidebar render - Props tenant:', tenant, 'Auth tenant:', authTenant, 'User:', user?.role);
+
   const { tenantSlug } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
