@@ -25,6 +25,9 @@ const MesEPI = ({ user }) => {
     photo_url: ''
   });
 
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
   const [remplacementForm, setRemplacementForm] = useState({
     raison: 'Usure normale',
     details: ''
