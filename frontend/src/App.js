@@ -14644,6 +14644,26 @@ const Prevention = () => {
           </div>
         );
       
+      case 'import':
+        return (
+          <div className="prevention-import">
+            <div className="page-header">
+              <h2>📊 Import CSV/Excel - Bâtiments</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('dashboard')}
+              >
+                ← Retour
+              </Button>
+            </div>
+            
+            <ImportCSV onImportComplete={() => {
+              setCurrentView('batiments');
+              fetchBatiments();
+            }} />
+          </div>
+        );
+      
       default:
         return <div>Vue en développement...</div>;
     }
