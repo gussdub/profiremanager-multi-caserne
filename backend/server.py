@@ -9553,6 +9553,9 @@ async def attribution_automatique(
     Returns:
         task_id: Identifiant pour suivre la progression via SSE
     """
+    logging.info(f"🔥 [ENDPOINT] Attribution auto appelé par {current_user.email}")
+    logging.info(f"🔥 [ENDPOINT] Paramètres reçus: tenant={tenant_slug}, debut={semaine_debut}, fin={semaine_fin}, reset={reset}")
+    
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
