@@ -2194,7 +2194,8 @@ async def login_legacy(user_login: UserLogin):
             "tenant": {
                 "id": tenant.id,
                 "slug": tenant.slug,
-                "nom": tenant.nom
+                "nom": tenant.nom,
+                "parametres": tenant.parametres  # Inclure les paramètres du tenant
             },
             "user": {
                 "id": user.id,
@@ -5934,7 +5935,8 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
             "tenant": {
                 "id": tenant.id,
                 "slug": tenant.slug,
-                "nom": tenant.nom
+                "nom": tenant.nom,
+                "parametres": tenant.parametres  # Inclure les paramètres du tenant
             },
             "user": {
                 "id": user.id,
