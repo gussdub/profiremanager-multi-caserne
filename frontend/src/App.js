@@ -70,8 +70,18 @@ const AuthProvider = ({ children }) => {
       
       // Verify token and get user info
       axios.get(meUrl)
-        .then(response => {
+        .then(async response => {
           setUser(response.data);
+          
+          // Récupérer les informations du tenant si ce n'est pas un super admin
+          if (!isSuperAdmin && tenantSlug) {
+            try {
+              const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
+              setTenant(tenantResponse.data);
+            } catch (error) {
+              console.log('Erreur récupération tenant:', error);
+            }
+          }
         })
         .catch((error) => {
           console.log('Token invalide ou expiré, nettoyage complet et redirection...');
