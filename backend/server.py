@@ -10091,7 +10091,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     # ÉTAPE 2: Check if user has availability 
                     # Temps partiel : DOIVENT déclarer disponibilité (obligatoire)
-                    # Temps plein : Pas de disponibilité requise (assignation manuelle principale)
+                    # Temps plein : Éligibles comme backup si pas assez de temps partiel disponibles
                     if user["type_emploi"] == "temps_partiel":
                         # ⚡ OPTIMIZED: Utiliser le dictionnaire préchargé au lieu d'une requête DB
                         has_dispo = (
@@ -10104,6 +10104,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             continue  # Skip temps partiel si pas de disponibilité déclarée
                     
                     # Temps plein : éligibles automatiquement pour gardes vacantes (backup)
+                    # Note: Les temps plein sont traités après les temps partiel pour priorité
                     # Vérification heures/compétences déjà faite avant
                     
                     # VÉRIFICATION : Check if user already assigned to THIS TYPE DE GARDE on this date
