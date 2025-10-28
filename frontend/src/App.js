@@ -5463,7 +5463,7 @@ const Planning = () => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [viewMode, setViewMode] = useState('semaine'); // 'semaine' ou 'mois'
+  const [viewMode, setViewMode] = useState('mois'); // 'semaine' ou 'mois' - Défaut: mois
   const [displayMode, setDisplayMode] = useState('calendrier'); // 'calendrier' ou 'liste'
   const [searchFilter, setSearchFilter] = useState('');
   const [typeGardeFilter, setTypeGardeFilter] = useState('');
