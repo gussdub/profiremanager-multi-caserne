@@ -6732,11 +6732,9 @@ const Planning = () => {
         </div>
       )}
 
-      {/* Vue Calendrier ou Liste */}
-      {displayMode === 'calendrier' ? (
-        // VUE CALENDRIER
-        viewMode === 'semaine' ? (
-          // Vue Semaine Calendrier
+      {/* Vue Calendrier */}
+      {viewMode === 'semaine' ? (
+        // Vue Semaine Calendrier
         <div className="planning-moderne">
           {typesGarde
             .filter(typeGarde => {
