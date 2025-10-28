@@ -6909,7 +6909,7 @@ const Planning = () => {
               
               <div className="user-selection">
                 <h4>Rechercher un pompier:</h4>
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative', overflow: 'visible' }}>
                   <Input
                     type="text"
                     placeholder="Tapez le nom ou prénom du pompier..."
