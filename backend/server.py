@@ -178,6 +178,9 @@ async def startup_event():
     
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
+    
+    # Démarrer le nettoyage périodique des tâches SSE expirées
+    asyncio.create_task(cleanup_expired_tasks())
 
 # ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
 # Dictionnaire global pour stocker les progressions des attributions auto
