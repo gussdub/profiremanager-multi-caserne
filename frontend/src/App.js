@@ -864,8 +864,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
+    console.log('[DEBUG] Filtering menu item:', item.id, 'requiresModule:', item.requiresModule);
+    
     // Vérification du rôle
-    if (!item.roles.includes(user?.role)) return false;
+    if (!item.roles.includes(user?.role)) {
+      console.log('[DEBUG] Item', item.id, 'filtered out - role mismatch. User role:', user?.role);
+      return false;
+    }
     
     // Vérifier si c'est le module "Mes disponibilités" qui ne doit être visible que pour les utilisateurs temps partiel
     if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') {
@@ -874,6 +879,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     
     // Vérifier si le module requiert une activation spéciale (ex: Prévention)
     if (item.requiresModule) {
+      console.log('[DEBUG] Module requires activation:', item.id, item.requiresModule);
       if (item.requiresModule === 'prevention') {
         console.log('[DEBUG] Checking prevention module:', {
           tenant: tenant,
@@ -885,6 +891,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       }
     }
     
+    console.log('[DEBUG] Item', item.id, 'approved');
     return true;
   });
 
