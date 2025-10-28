@@ -14506,6 +14506,192 @@ const Rapports = () => {
   );
 };
 
+// Module Prévention - Gestion des inspections et bâtiments
+const Prevention = () => {
+  const { user } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [batiments, setBatiments] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchBatiments = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGet(tenantSlug, '/prevention/batiments');
+      setBatiments(data);
+    } catch (error) {
+      console.error('Erreur chargement bâtiments:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les bâtiments",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBatiments();
+  }, [tenantSlug]);
+
+  const renderContent = () => {
+    switch(currentView) {
+      case 'dashboard':
+        return (
+          <div className="prevention-dashboard">
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <div className="stat-icon">🏢</div>
+                <div className="stat-content">
+                  <div className="stat-number">{batiments.length}</div>
+                  <div className="stat-label">Bâtiments</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📋</div>
+                <div className="stat-content">
+                  <div className="stat-number">0</div>
+                  <div className="stat-label">Inspections ce mois</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">⚠️</div>
+                <div className="stat-content">
+                  <div className="stat-number">0</div>
+                  <div className="stat-label">Non-conformités ouvertes</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📈</div>
+                <div className="stat-content">
+                  <div className="stat-number">95%</div>
+                  <div className="stat-label">Taux conformité</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="quick-actions">
+              <h3>Actions rapides</h3>
+              <div className="action-buttons">
+                <Button 
+                  onClick={() => setCurrentView('batiments')}
+                  className="action-button"
+                >
+                  📋 Gérer les bâtiments
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('inspections')}
+                  className="action-button"
+                >
+                  🔍 Nouvelle inspection
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('import')}
+                  className="action-button"
+                >
+                  📊 Import CSV/Excel
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'batiments':
+        return (
+          <div className="prevention-batiments">
+            <div className="page-header">
+              <h2>🏢 Gestion des Bâtiments</h2>
+              <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                ➕ Nouveau Bâtiment
+              </Button>
+            </div>
+            
+            {loading ? (
+              <div className="loading">Chargement des bâtiments...</div>
+            ) : (
+              <div className="batiments-list">
+                {batiments.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Aucun bâtiment enregistré</p>
+                    <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                      Ajouter le premier bâtiment
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="batiments-grid">
+                    {batiments.map(batiment => (
+                      <div key={batiment.id} className="batiment-card">
+                        <div className="batiment-header">
+                          <h4>{batiment.nom_etablissement || 'Sans nom'}</h4>
+                          <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                        </div>
+                        <div className="batiment-info">
+                          <p>{batiment.adresse_civique}</p>
+                          <p>{batiment.ville}</p>
+                        </div>
+                        <div className="batiment-actions">
+                          <Button size="sm" variant="outline">Voir</Button>
+                          <Button size="sm">Inspecter</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return <div>Vue en développement...</div>;
+    }
+  };
+
+  return (
+    <div className="prevention-container">
+      <div className="prevention-header">
+        <div className="header-content">
+          <h1>🔥 Module Prévention</h1>
+          <p>Gestion des inspections et de la sécurité incendie</p>
+        </div>
+        
+        <div className="prevention-nav">
+          <Button 
+            variant={currentView === 'dashboard' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('dashboard')}
+          >
+            📊 Tableau de bord
+          </Button>
+          <Button 
+            variant={currentView === 'batiments' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('batiments')}
+          >
+            🏢 Bâtiments
+          </Button>
+          <Button 
+            variant={currentView === 'inspections' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('inspections')}
+          >
+            📋 Inspections
+          </Button>
+          <Button 
+            variant={currentView === 'rapports' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('rapports')}
+          >
+            📈 Rapports
+          </Button>
+        </div>
+      </div>
+      
+      <div className="prevention-content">
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
 // Main Application Layout
 const AppLayout = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
