@@ -14537,6 +14537,8 @@ const AppLayout = () => {
         />;
       case 'formations':
         return <Formations />;
+      case 'prevention':
+        return <Prevention />;
       case 'rapports':
         return <Rapports />;
       case 'parametres':
