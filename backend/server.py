@@ -1299,7 +1299,8 @@ class UserCreate(BaseModel):
     numero_employe: str = ""
     date_embauche: str = ""
     taux_horaire: float = 0.0
-    formations: List[str] = []
+    formations: List[str] = []  # Liste des formations suivies
+    competences: List[str] = []  # Liste des compétences acquises
     mot_de_passe: str = "TempPass123!"
 
 class UserLogin(BaseModel):
