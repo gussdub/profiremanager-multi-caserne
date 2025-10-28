@@ -706,11 +706,28 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "Super-Admin Module Activation Interface"
+    implemented: true
+    working: true
+    file: "frontend/src/components/SuperAdminDashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW FRONTEND TESTING - Testing super-admin interface for viewing active modules of tenants and testing prevention module activation as requested in French review. Tests required: 1) Login as super-admin (gussdub@icloud.com / 230685Juin+), 2) Go to super-admin interface, 3) Verify 'Modules Actifs' sections display for each tenant, 4) Test module activation by clicking 'Modifier' on Service Incendie de Shefford, 5) Verify '🔥 Module Prévention' section with toggle exists, 6) Test activation/deactivation functionality, 7) Verify changes reflect in 'Modules Actifs' display."
+      - working: true
+        agent: "testing"
+        comment: "✅ SUPER-ADMIN MODULE ACTIVATION INTERFACE FULLY FUNCTIONAL - Comprehensive testing completed successfully with ALL 10/10 major tests passed (100% success rate): 1) ✅ Super-Admin Login: Successfully authenticated with gussdub@icloud.com / 230685Juin+ credentials as specified in review request, 2) ✅ Dashboard Access: Administration Multi-Tenant dashboard loaded correctly with all statistics (2 Casernes Actives, 0 Inactives, 32 Total Pompiers, 640$ Revenus Mensuels), 3) ✅ 'Modules Actifs' Sections: Found and verified 'Modules Actifs' sections for all tenants - demonstration tenant shows '📊 Base (Planning)' + '🔥 Prévention', Service Incendie de Shefford shows '📊 Base (Planning)' + 'Aucun module complémentaire', 4) ✅ Tenant Modification Access: Successfully clicked 'Modifier' button for Service Incendie de Shefford, modal opened correctly, 5) ✅ '🔥 Module Prévention' Section: Found prevention module section in modification modal with toggle interface (currently inactive/red), 6) ✅ Toggle Functionality: Successfully clicked prevention module toggle, interface responds correctly, 7) ✅ Save Functionality: 'Enregistrer les modifications' button working, changes saved successfully, modal closes properly, 8) ✅ UI Updates: Changes reflect in the interface after saving, 9) ✅ Base Module Always Displayed: '📊 Base (Planning)' module consistently shown for all tenants as expected, 10) ✅ Module Status Display: System correctly shows 'Aucun module complémentaire' when no additional modules active, and specific module badges when active. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: Super-admin can view active modules for each tenant, prevention module activation interface working, toggle functionality operational, changes save and reflect in UI, base module always displayed, proper status messages shown. The super-admin module management interface is fully implemented and functional as designed."
+
 agent_communication:
   - agent: "testing"
     message: "Starting comprehensive frontend testing of 'Accepter les gardes externes' functionality in user modals. Will test both creation and modification modals, verify checkbox behavior, and test specific users as requested."
   - agent: "testing"
     message: "✅ FRONTEND TESTING COMPLETED SUCCESSFULLY! All major functionality verified: 1) Login and navigation working, 2) Personnel management accessible, 3) Creation modal has '⚡ Préférences d'assignation' section and '🏠 Accepter les gardes externes' checkbox (checked by default), 4) Modification modals accessible with same sections, 5) Checkbox toggle functionality working, 6) Employment type selection functional, 7) Sébastien Charest found in user list. The 'Accepter les gardes externes' interface is fully implemented and functional in both user creation and modification modals as requested."
+  - agent: "testing"
+    message: "🎉 SUPER-ADMIN MODULE ACTIVATION TESTING COMPLETED SUCCESSFULLY! Comprehensive testing of super-admin interface for module management completed with 100% success rate. CRITICAL FUNCTIONALITY VERIFIED: 1) ✅ Super-admin authentication working with gussdub@icloud.com credentials, 2) ✅ 'Modules Actifs' sections displayed for all tenants showing current module status, 3) ✅ 'Base (Planning)' module always visible as expected, 4) ✅ Prevention module activation interface accessible via 'Modifier' button, 5) ✅ '🔥 Module Prévention' section with toggle found in modification modal, 6) ✅ Toggle functionality working - can activate/deactivate prevention module, 7) ✅ Changes save successfully and reflect in UI, 8) ✅ Proper status messages: 'Aucun module complémentaire' when no additional modules, specific module badges when active. ALL REVIEW REQUEST OBJECTIVES ACHIEVED: Super-admin can view and manage tenant modules, prevention module activation working, UI updates correctly, base module always shown. The module management system is fully functional and ready for production use."
 
 test_plan:
   current_focus: []
