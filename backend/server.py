@@ -13453,6 +13453,122 @@ async def traiter_demande_remplacement(
     return {"message": f"Demande {statut.lower()} avec succès"}
 
 
+# ==================== PRÉVENTION ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/prevention/batiments")
+async def get_batiments(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer tous les bâtiments du tenant"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    batiments = await db.batiments.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(batiment) for batiment in batiments]
+
+@api_router.post("/{tenant_slug}/prevention/batiments")
+async def create_batiment(
+    tenant_slug: str, 
+    batiment: BatimentCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau bâtiment"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    batiment_dict = batiment.dict()
+    batiment_dict["tenant_id"] = tenant.id
+    batiment_obj = Batiment(**batiment_dict)
+    
+    await db.batiments.insert_one(batiment_obj.dict())
+    return clean_mongo_doc(batiment_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/batiments/{batiment_id}")
+async def get_batiment(
+    tenant_slug: str, 
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un bâtiment spécifique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return clean_mongo_doc(batiment)
+
+@api_router.put("/{tenant_slug}/prevention/batiments/{batiment_id}")
+async def update_batiment(
+    tenant_slug: str, 
+    batiment_id: str,
+    batiment_update: BatimentCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un bâtiment"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_data = batiment_update.dict()
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return {"message": "Bâtiment mis à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}")
+async def delete_batiment(
+    tenant_slug: str, 
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un bâtiment"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.batiments.delete_one({"id": batiment_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return {"message": "Bâtiment supprimé avec succès"}
+
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
