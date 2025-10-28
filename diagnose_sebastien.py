@@ -44,7 +44,7 @@ async def diagnose():
         print(f"✓ {len(sebastien_users)} utilisateur(s) trouvé(s):")
         for user in sebastien_users:
             print(f"\n  ID:           {user.get('id')}")
-            print(f "  Nom complet:  {user.get('prenom')} {user.get('nom')}")
+            print(f"  Nom complet:  {user.get('prenom')} {user.get('nom')}")
             print(f"  Email:        {user.get('email')}")
             print(f"  Grade:        {user.get('grade')}")
             print(f"  Tenant ID:    {user.get('tenant_id')}")
