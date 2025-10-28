@@ -706,6 +706,62 @@ const SuperAdminDashboard = ({ onLogout }) => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Section Modules Actifs */}
+                      <div style={{
+                        background: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '16px' }}>🔥</span>
+                          <span style={{ fontWeight: 'bold', color: '#065f46' }}>Modules Actifs</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {/* Module de base toujours actif */}
+                          <span style={{
+                            background: '#dcfce7',
+                            color: '#166534',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            border: '1px solid #bbf7d0'
+                          }}>
+                            📊 Base (Planning)
+                          </span>
+                          
+                          {/* Module Prévention */}
+                          {tenant.parametres?.module_prevention_active ? (
+                            <span style={{
+                              background: '#fef3c7',
+                              color: '#92400e',
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              border: '1px solid #fbbf24'
+                            }}>
+                              🔥 Prévention
+                            </span>
+                          ) : null}
+                          
+                          {/* Aucun module complémentaire */}
+                          {!tenant.parametres?.module_prevention_active && (
+                            <span style={{
+                              background: '#f3f4f6',
+                              color: '#6b7280',
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontStyle: 'italic'
+                            }}>
+                              Aucun module complémentaire
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
                       <Button 
