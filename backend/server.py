@@ -10249,9 +10249,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Retirer ce pompier de la liste des disponibles pour cette garde
                     users_with_min_hours.pop(0)
         
+        # Logs de performance
+        perf_end = time.time()
+        perf_elapsed = perf_end - perf_start
+        logging.info(f"⏱️ [PERF] Semaine {semaine_debut} traitée en {perf_elapsed:.2f}s - {len(nouvelles_assignations)} assignations créées")
+        
         return len(nouvelles_assignations)
         
     except Exception as e:
+        logging.error(f"❌ [ERROR] Erreur traitement semaine {semaine_debut}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur traitement semaine: {str(e)}")
 
 # Endpoint pour mettre à jour les notes admin d'une assignation
