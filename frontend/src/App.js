@@ -6900,7 +6900,6 @@ const Planning = () => {
             })}
           </div>
         </div>
-        )
       )}
 
       {/* Assignment Modal */}
