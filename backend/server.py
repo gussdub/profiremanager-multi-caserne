@@ -9863,19 +9863,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             if heures_semaine_actuelle + type_garde.get("duree_heures", 8) > heures_max_user:
                                 continue  # Skip si dépasse la limite hebdo
                     
-                    # ÉTAPE 2: Check if user has availability (for part-time employees)
-                    if user["type_emploi"] == "temps_partiel":
-                        # Get user disponibilités for THIS SPECIFIC type de garde
-                        user_dispos = await db.disponibilites.find({
-                            "user_id": user["id"],
-                            "date": date_str,
-                            "type_garde_id": type_garde["id"],  # Vérifier le type de garde spécifique
-                            "statut": "disponible"
-                        }).to_list(10)
-                        
-                        if not user_dispos:
-                            continue  # Skip if not available for this specific garde
-                    # Temps plein : toujours éligible (limite heures déjà vérifiée ci-dessus)
+                    # VÉRIFICATION OBLIGATOIRE : Tous les employés (temps plein ET temps partiel) 
+                    # doivent déclarer leur disponibilité pour être assignés
+                    user_dispos = await db.disponibilites.find({
+                        "user_id": user["id"],
+                        "date": date_str,
+                        "type_garde_id": type_garde["id"],
+                        "statut": "disponible"
+                    }).to_list(10)
+                    
+                    if not user_dispos:
+                        continue  # Skip si pas de disponibilité déclarée (temps plein ET temps partiel)
                     
                     # VÉRIFICATION : Check if user already assigned to THIS TYPE DE GARDE on this date
                     # Important : On permet plusieurs gardes différentes le même jour (ex: matin + après-midi)
