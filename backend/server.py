@@ -9956,7 +9956,61 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Attribution automatique logic (5 niveaux de priorité)
         # nouvelles_assignations déjà déclaré plus haut
         
-        for type_garde in types_garde:
+        # ==================== PRIORISATION DES GARDES PAR COMPÉTENCES ====================
+        # Trier les types de garde par criticité des compétences requises
+        # Les gardes avec compétences rares/uniques sont traitées EN PREMIER
+        
+        def calculate_garde_priority(type_garde):
+            """Calcule un score de priorité pour trier les gardes
+            Score plus ÉLEVÉ = Plus prioritaire (traité en premier)
+            """
+            score = 0
+            
+            # CRITÈRE 1: Compétences requises (score élevé si compétences rares)
+            competences_requises = type_garde.get("competences_requises", [])
+            if competences_requises:
+                # Pour chaque compétence requise, compter combien d'users l'ont
+                for comp_id in competences_requises:
+                    users_with_comp = sum(1 for u in users if comp_id in u.get("competences", []))
+                    if users_with_comp == 0:
+                        score += 10000  # Compétence impossible (personne ne l'a) - priorité maximale
+                    elif users_with_comp == 1:
+                        score += 1000   # Compétence unique (1 seul user) - très haute priorité
+                    elif users_with_comp <= 3:
+                        score += 500    # Compétence rare (2-3 users) - haute priorité
+                    elif users_with_comp <= 5:
+                        score += 100    # Compétence peu commune (4-5 users) - priorité moyenne
+                    else:
+                        score += 10     # Compétence commune (6+ users) - faible priorité
+            
+            # CRITÈRE 2: Officier obligatoire (aussi une contrainte rare)
+            if type_garde.get("officier_obligatoire", False):
+                officiers_count = sum(1 for u in users 
+                                    if grades_map.get(u.get("grade", ""), {}).get("est_officier", False))
+                if officiers_count <= 2:
+                    score += 300  # Peu d'officiers disponibles
+                else:
+                    score += 50   # Plusieurs officiers disponibles
+            
+            # CRITÈRE 3: Personnel requis élevé (plus difficile à remplir)
+            personnel_requis = type_garde.get("personnel_requis", 1)
+            if personnel_requis >= 3:
+                score += 50
+            
+            return score
+        
+        # Trier les types de garde par priorité décroissante (score élevé en premier)
+        types_garde_sorted = sorted(types_garde, key=calculate_garde_priority, reverse=True)
+        
+        logging.info(f"📊 [ATTRIBUTION] Ordre de traitement des gardes (par priorité de compétences):")
+        for tg in types_garde_sorted[:5]:  # Logger les 5 premières
+            priority = calculate_garde_priority(tg)
+            comp_names = [c for c in competences if c["id"] in tg.get("competences_requises", [])]
+            logging.info(f"  - {tg['nom']}: priorité={priority}, compétences={[c['nom'] for c in comp_names]}")
+        
+        # ==================== FIN PRIORISATION ====================
+        
+        for type_garde in types_garde_sorted:  # Utiliser la liste triée au lieu de types_garde
             # Check each day for this type de garde
             for day_offset in range(7):
                 current_date = datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=day_offset)
