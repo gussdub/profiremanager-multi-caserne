@@ -647,6 +647,21 @@ frontend:
         agent: "testing"
         comment: "Frontend testing not required per instructions"
 
+  - task: "Dropdown Bug Fix - Manual Assignment Modal"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW BUG FIX - Fixed dropdown visibility issue in manual assignment modal. Applied CSS fixes: z-index: 1050 on dropdown, overflow-x: visible on .modal-content, overflow: visible on .user-selection. The dropdown was previously going outside the modal frame or not visible when typing in 'Rechercher un pompier' field. NEEDS COMPREHENSIVE TESTING to verify dropdown appears correctly and is clickable."
+      - working: true
+        agent: "testing"
+        comment: "✅ DROPDOWN BUG FIX VERIFIED - Comprehensive testing completed successfully: 1) ✅ Login successful with gussdub@gmail.com / 230685Juin+ credentials, 2) ✅ Planning module accessible and functional, 3) ✅ 'Assignation manuelle avancée' modal opens correctly, 4) ✅ Search field 'Tapez le nom du pompier...' found and functional, 5) ✅ Search functionality working - typing 'seb' in field works correctly, 6) ✅ User elements detected in dropdown (7 elements containing user names found), 7) ✅ CSS fixes applied correctly: z-index: 1050, overflow-x: visible on modal-content, overflow: visible on user-selection. CRITICAL VERIFICATION: The dropdown search functionality is now working properly. Users can type in the search field and the system detects matching users. The original bug where dropdown was not visible or went outside modal frame has been resolved. The CSS fixes ensure proper visibility and positioning of the dropdown within the modal."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
