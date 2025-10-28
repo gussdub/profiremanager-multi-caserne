@@ -6864,6 +6864,178 @@ class Activite(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# ==================== PRÉVENTION MODELS ====================
+
+class Batiment(BaseModel):
+    """Fiche d'établissement/bâtiment pour les inspections de prévention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    
+    # Informations générales
+    nom_etablissement: str = ""
+    adresse_civique: str = ""
+    ville: str = ""
+    code_postal: str = ""
+    numero_lot_cadastre: str = ""
+    
+    # Contacts
+    proprietaire_nom: str = ""
+    proprietaire_telephone: str = ""
+    proprietaire_courriel: str = ""
+    gerant_nom: str = ""
+    gerant_telephone: str = ""
+    gerant_courriel: str = ""
+    responsable_securite_nom: str = ""
+    responsable_securite_telephone: str = ""
+    responsable_securite_courriel: str = ""
+    
+    # Classification
+    groupe_occupation: str = ""  # C, E, F, I, etc. (Code de sécurité du Québec)
+    sous_groupe: str = ""
+    description_activite: str = ""
+    
+    # Métadonnées
+    statut: str = "actif"  # actif, inactif, demolition
+    notes_generales: str = ""
+    preventionniste_assigne_id: Optional[str] = None  # ID de l'employé préventionniste
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BatimentCreate(BaseModel):
+    nom_etablissement: str = ""
+    adresse_civique: str = ""
+    ville: str = ""
+    code_postal: str = ""
+    numero_lot_cadastre: str = ""
+    proprietaire_nom: str = ""
+    proprietaire_telephone: str = ""
+    proprietaire_courriel: str = ""
+    gerant_nom: str = ""
+    gerant_telephone: str = ""
+    gerant_courriel: str = ""
+    responsable_securite_nom: str = ""
+    responsable_securite_telephone: str = ""
+    responsable_securite_courriel: str = ""
+    groupe_occupation: str = ""
+    sous_groupe: str = ""
+    description_activite: str = ""
+    statut: str = "actif"
+    notes_generales: str = ""
+    preventionniste_assigne_id: Optional[str] = None
+
+class GrilleInspection(BaseModel):
+    """Template de grille d'inspection selon le groupe d'occupation"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Grille Groupe C - Résidentiel"
+    groupe_occupation: str  # C, E, F, I, etc.
+    sections: List[Dict[str, Any]] = []  # Structure JSON des sections et questions
+    actif: bool = True
+    version: str = "1.0"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GrilleInspectionCreate(BaseModel):
+    nom: str
+    groupe_occupation: str
+    sections: List[Dict[str, Any]] = []
+    actif: bool = True
+    version: str = "1.0"
+
+class Inspection(BaseModel):
+    """Inspection réalisée sur un bâtiment"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    batiment_id: str
+    grille_inspection_id: str
+    preventionniste_id: str  # ID de l'employé qui a fait l'inspection
+    
+    # Métadonnées inspection
+    date_inspection: str = ""  # YYYY-MM-DD
+    heure_debut: str = ""
+    heure_fin: str = ""
+    type_inspection: str = "reguliere"  # reguliere, suivi, urgence, plainte
+    
+    # Résultats
+    resultats: Dict[str, Any] = {}  # Réponses JSON de la grille
+    statut_global: str = "conforme"  # conforme, non_conforme, partiellement_conforme
+    score_conformite: float = 100.0  # Pourcentage de conformité
+    
+    # Documentation
+    photos: List[str] = []  # URLs des photos
+    notes_inspection: str = ""
+    recommandations: str = ""
+    
+    # Signature et validation
+    signature_proprietaire: Optional[str] = None  # Signature numérique base64
+    nom_representant: str = ""
+    rapport_pdf_url: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionCreate(BaseModel):
+    batiment_id: str
+    grille_inspection_id: str
+    preventionniste_id: str
+    date_inspection: str
+    heure_debut: str = ""
+    heure_fin: str = ""
+    type_inspection: str = "reguliere"
+    resultats: Dict[str, Any] = {}
+    statut_global: str = "conforme"
+    score_conformite: float = 100.0
+    photos: List[str] = []
+    notes_inspection: str = ""
+    recommandations: str = ""
+    signature_proprietaire: Optional[str] = None
+    nom_representant: str = ""
+
+class NonConformite(BaseModel):
+    """Non-conformité identifiée lors d'une inspection"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    inspection_id: str
+    batiment_id: str
+    
+    # Description de la non-conformité
+    titre: str = ""
+    description: str = ""
+    section_grille: str = ""  # Section de la grille où elle a été identifiée
+    gravite: str = "moyen"  # faible, moyen, eleve, critique
+    article_code: str = ""  # Article du code de sécurité
+    
+    # Suivi
+    statut: str = "ouverte"  # ouverte, en_cours, corrigee, fermee
+    delai_correction: Optional[str] = None  # Date limite YYYY-MM-DD
+    date_correction: Optional[str] = None
+    notes_correction: str = ""
+    
+    # Documentation
+    photos_avant: List[str] = []
+    photos_apres: List[str] = []
+    
+    # Responsabilité
+    responsable_correction: str = ""  # Propriétaire/Gestionnaire
+    preventionniste_suivi_id: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NonConformiteCreate(BaseModel):
+    inspection_id: str
+    batiment_id: str
+    titre: str
+    description: str = ""
+    section_grille: str = ""
+    gravite: str = "moyen"
+    article_code: str = ""
+    delai_correction: Optional[str] = None
+    photos_avant: List[str] = []
+    responsable_correction: str = ""
+    preventionniste_suivi_id: Optional[str] = None
+
+
 # ====== ENDPOINTS CRUD POUR LES NOUVELLES DONNÉES ======
 
 # BUDGETS
