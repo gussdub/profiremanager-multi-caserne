@@ -9692,6 +9692,31 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             "tenant_id": tenant.id
         }).to_list(1000)
         
+        # ⚡ OPTIMIZATION: Précharger TOUTES les disponibilités de la semaine en UNE SEULE requête
+        # Cela évite le problème N+1 (une requête par user/garde)
+        all_disponibilites = await db.disponibilites.find({
+            "date": {
+                "$gte": semaine_debut,
+                "$lte": semaine_fin
+            },
+            "statut": "disponible",
+            "tenant_id": tenant.id
+        }).to_list(10000)
+        
+        # Créer un index/dictionnaire pour lookup rapide
+        # Structure: {user_id: {date: {type_garde_id: True}}}
+        dispos_lookup = {}
+        for dispo in all_disponibilites:
+            user_id = dispo.get("user_id")
+            date = dispo.get("date")
+            type_garde_id = dispo.get("type_garde_id")
+            
+            if user_id not in dispos_lookup:
+                dispos_lookup[user_id] = {}
+            if date not in dispos_lookup[user_id]:
+                dispos_lookup[user_id][date] = {}
+            dispos_lookup[user_id][date][type_garde_id] = True
+        
         # Calculate monthly hours for each user (séparé interne/externe)
         user_monthly_hours_internes = {}
         user_monthly_hours_externes = {}
