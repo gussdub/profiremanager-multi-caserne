@@ -354,7 +354,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
       slug: '',
       contact_email: '',
       contact_telephone: '',
-      adresse: ''
+      adresse: '',
+      module_prevention_active: false
     });
   };
 
