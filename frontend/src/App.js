@@ -869,6 +869,9 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const filteredMenuItems = menuItems.filter(item => {
     console.log('[DEBUG] Filtering menu item:', item.id, 'requiresModule:', item.requiresModule);
     
+    // Utiliser authTenant (du contexte d'auth) au lieu de tenant (prop)
+    const currentTenant = authTenant || tenant;
+    
     // Vérification du rôle
     if (!item.roles.includes(user?.role)) {
       console.log('[DEBUG] Item', item.id, 'filtered out - role mismatch. User role:', user?.role);
@@ -885,12 +888,12 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       console.log('[DEBUG] Module requires activation:', item.id, item.requiresModule);
       if (item.requiresModule === 'prevention') {
         console.log('[DEBUG] Checking prevention module:', {
-          tenant: tenant,
-          parametres: tenant?.parametres,
-          module_prevention_active: tenant?.parametres?.module_prevention_active,
-          result: tenant?.parametres?.module_prevention_active === true
+          currentTenant: currentTenant,
+          parametres: currentTenant?.parametres,
+          module_prevention_active: currentTenant?.parametres?.module_prevention_active,
+          result: currentTenant?.parametres?.module_prevention_active === true
         });
-        return tenant?.parametres?.module_prevention_active === true;
+        return currentTenant?.parametres?.module_prevention_active === true;
       }
     }
     
