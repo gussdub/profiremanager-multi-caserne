@@ -385,6 +385,25 @@ const Parametres = ({ user, tenantSlug }) => {
     setShowEditTypeModal(true);
   };
 
+  // Fonction pour calculer automatiquement la durée en heures
+  const calculateDuration = (heure_debut, heure_fin) => {
+    if (!heure_debut || !heure_fin) return 0;
+    
+    const [startH, startM] = heure_debut.split(':').map(Number);
+    const [endH, endM] = heure_fin.split(':').map(Number);
+    
+    let startMinutes = startH * 60 + startM;
+    let endMinutes = endH * 60 + endM;
+    
+    // Si fin < début, c'est une garde qui passe minuit
+    if (endMinutes <= startMinutes) {
+      endMinutes += 24 * 60; // Ajouter 24h
+    }
+    
+    const durationMinutes = endMinutes - startMinutes;
+    return durationMinutes / 60; // Convertir en heures
+  };
+
   const handleUpdateType = async () => {
     if (!editForm.nom || !editForm.heure_debut || !editForm.heure_fin) {
       toast({
@@ -396,8 +415,15 @@ const Parametres = ({ user, tenantSlug }) => {
     }
 
     try {
-      console.log('Updating type with data:', editForm);
-      const response = await axios.put(`${API}/types-garde/${editingItem.id}`, editForm);
+      // Calculer automatiquement la durée
+      const duree_heures = calculateDuration(editForm.heure_debut, editForm.heure_fin);
+      const dataToSend = {
+        ...editForm,
+        duree_heures
+      };
+      
+      console.log('Updating type with data:', dataToSend);
+      const response = await axios.put(`${API}/types-garde/${editingItem.id}`, dataToSend);
       console.log('Update response:', response.data);
       
       toast({
