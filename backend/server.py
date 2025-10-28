@@ -10103,8 +10103,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 continue  # Skip si dépasse la limite hebdo
                     
                     # ÉTAPE 2: Check if user has availability 
-                    # Temps partiel : DOIVENT déclarer disponibilité (obligatoire)
-                    # Temps plein : Éligibles comme backup si pas assez de temps partiel disponibles
+                    # Temps partiel : DOIVENT déclarer disponibilité (obligatoire) ET accepter les gardes externes
+                    # Temps plein : Éligibles comme backup si pas assez de temps partiel disponibles ET acceptent les gardes externes
+                    
+                    # NOUVELLE VÉRIFICATION: Gardes externes - vérifier accepte_gardes_externes
+                    if type_garde.get("est_garde_externe", False):
+                        if not user.get("accepte_gardes_externes", True):  # Default True pour compatibilité
+                            # Log spécifique pour debug
+                            if user.get("email") == "sebas.charest18@hotmail.com":
+                                logging.info(f"❌ [GARDE_EXTERNE] Sébastien Charest EXCLU: accepte_gardes_externes=False")
+                            continue  # Skip si n'accepte pas les gardes externes
+                    
                     if user["type_emploi"] == "temps_partiel":
                         # ⚡ OPTIMIZED: Utiliser le dictionnaire préchargé au lieu d'une requête DB
                         has_dispo = (
