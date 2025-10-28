@@ -5202,6 +5202,34 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
                 </div>
 
+                {/* Section 2.5: Préférences gardes externes */}
+                <div className="form-section">
+                  <h4 className="section-title">⚡ Préférences d'assignation</h4>
+                  <div className="form-field">
+                    <div className="garde-externe-option">
+                      <label className="garde-externe-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={newUser.accepte_gardes_externes !== false} // True par défaut
+                          onChange={(e) => setNewUser({...newUser, accepte_gardes_externes: e.target.checked})}
+                          data-testid="edit-user-accepte-gardes-externes"
+                        />
+                        <div className="garde-externe-content">
+                          <span className="garde-externe-title">🏠 Accepter les gardes externes</span>
+                          <span className="garde-externe-description">
+                            {newUser.type_emploi === 'temps_partiel' 
+                              ? "Temps partiel: Requis pour être assigné aux gardes externes (en plus des disponibilités)"
+                              : newUser.type_emploi === 'temps_plein'
+                                ? "Temps plein: Permet d'être assigné automatiquement aux gardes externes"
+                                : "Permet d'être assigné aux gardes externes (astreinte à domicile)"
+                            }
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Section 3: Compétences */}
                 <div className="form-section">
                   <h4 className="section-title">📜 Compétences et certifications</h4>
