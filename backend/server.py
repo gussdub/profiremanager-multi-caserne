@@ -12862,7 +12862,7 @@ async def get_historique_inspections(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'EPI appartient à l'utilisateur (ou que c'est un admin/superviseur)
-    epi = await db.epi.find_one({"id": epi_id, "tenant_id": tenant.id})
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
