@@ -10175,16 +10175,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Select the best candidate
                     selected_user = users_with_min_hours[0]
                     
-                    # Vérifier qu'il n'est pas déjà assigné à cette garde
-                    deja_assigne = any(a["user_id"] == selected_user["id"] and 
-                                      a["date"] == date_str and 
-                                      a["type_garde_id"] == type_garde["id"] 
-                                      for a in existing_assignations)
-                    
-                    if deja_assigne:
-                        users_with_min_hours.pop(0)  # Retirer ce pompier et essayer le suivant
-                        continue
-                    
                     # Générer la justification détaillée
                     justification = await generer_justification_attribution(
                         selected_user=selected_user,
