@@ -677,6 +677,19 @@ frontend:
         agent: "testing"
         comment: "✅ DROPDOWN BUG FIX VERIFIED - Comprehensive testing completed successfully: 1) ✅ Login successful with gussdub@gmail.com / 230685Juin+ credentials, 2) ✅ Planning module accessible and functional, 3) ✅ 'Assignation manuelle avancée' modal opens correctly, 4) ✅ Search field 'Tapez le nom du pompier...' found and functional, 5) ✅ Search functionality working - typing 'seb' in field works correctly, 6) ✅ User elements detected in dropdown (7 elements containing user names found), 7) ✅ CSS fixes applied correctly: z-index: 1050, overflow-x: visible on modal-content, overflow: visible on user-selection. CRITICAL VERIFICATION: The dropdown search functionality is now working properly. Users can type in the search field and the system detects matching users. The original bug where dropdown was not visible or went outside modal frame has been resolved. The CSS fixes ensure proper visibility and positioning of the dropdown within the modal."
 
+frontend:
+  - task: "Accepter les gardes externes - User Modal Interface"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW FRONTEND TESTING - Testing the new 'Accepter les gardes externes' interface in user creation and modification modals as requested in French review. Tests required: 1) Login with gussdub@gmail.com / 230685Juin+, 2) Go to Personnel management, 3) Test Creation Modal: verify '⚡ Préférences d'assignation' section appears, verify '🏠 Accepter les gardes externes' checkbox is present and checked by default, test employment type change effects on help text, 4) Test Modification Modal: verify same section appears, verify checkbox reflects current user value, test modification and saving, 5) Specific tests: verify Sébastien Charest has checkbox unchecked (accepte_gardes_externes=false), verify part-time user has checkbox checked."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
