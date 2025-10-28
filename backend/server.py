@@ -9809,8 +9809,10 @@ async def generer_justification_attribution(
     }
 
 
-async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_fin: str):
-    """Traite l'attribution automatique pour une seule semaine"""
+async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_fin: str, progress: AttributionProgress = None):
+    """Traite l'attribution automatique pour une seule semaine avec suivi de performance"""
+    perf_start = time.time()
+    
     try:
         # Get all available users and types de garde pour ce tenant
         users = await db.users.find({"statut": "Actif", "tenant_id": tenant.id}).to_list(1000)
