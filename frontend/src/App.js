@@ -875,6 +875,12 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     // Vérifier si le module requiert une activation spéciale (ex: Prévention)
     if (item.requiresModule) {
       if (item.requiresModule === 'prevention') {
+        console.log('[DEBUG] Checking prevention module:', {
+          tenant: tenant,
+          parametres: tenant?.parametres,
+          module_prevention_active: tenant?.parametres?.module_prevention_active,
+          result: tenant?.parametres?.module_prevention_active === true
+        });
         return tenant?.parametres?.module_prevention_active === true;
       }
     }
