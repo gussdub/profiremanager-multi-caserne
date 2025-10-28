@@ -10119,14 +10119,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     competences_requises = type_garde.get("competences_requises", [])
                     if competences_requises:
                         # Vérifier si l'utilisateur possède toutes les compétences requises
-                        user_formations = user.get("formations", [])
-                        has_all_competences = all(comp_id in user_formations for comp_id in competences_requises)
+                        user_competences = user.get("competences", [])
+                        has_all_competences = all(comp_id in user_competences for comp_id in competences_requises)
                         
                         # Log pour debugging compétences
                         if type_garde["nom"] and "Préventionniste" in type_garde["nom"]:
                             logging.info(f"🔍 [COMPETENCE] {type_garde['nom']}: {user['prenom']} {user['nom']}")
                             logging.info(f"   Compétences requises: {competences_requises}")
-                            logging.info(f"   Formations user: {user_formations}")
+                            logging.info(f"   Compétences user: {user_competences}")
                             logging.info(f"   A toutes les compétences: {has_all_competences}")
                         
                         if not has_all_competences:
