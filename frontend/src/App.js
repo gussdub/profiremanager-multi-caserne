@@ -5762,7 +5762,7 @@ const Planning = () => {
       }
       
       // Lancer l'attribution automatique avec le paramètre reset
-      const resetParam = autoAttributionConfig.mode === 'reinitialiser' ? '&reset=true' : '';
+      const resetParam = autoAttributionConfig.mode === 'reinitialiser' ? '&reset=True' : '';
       const initResponse = await apiPost(
         tenantSlug, 
         `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}${resetParam}`, 
