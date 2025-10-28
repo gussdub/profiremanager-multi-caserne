@@ -9929,15 +9929,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Temps partiel : DOIVENT déclarer disponibilité (obligatoire)
                     # Temps plein : Pas de disponibilité requise (assignation manuelle principale)
                     if user["type_emploi"] == "temps_partiel":
-                        # Get user disponibilités for THIS SPECIFIC type de garde
-                        user_dispos = await db.disponibilites.find({
-                            "user_id": user["id"],
-                            "date": date_str,
-                            "type_garde_id": type_garde["id"],
-                            "statut": "disponible"
-                        }).to_list(10)
+                        # ⚡ OPTIMIZED: Utiliser le dictionnaire préchargé au lieu d'une requête DB
+                        has_dispo = (
+                            user["id"] in dispos_lookup and
+                            date_str in dispos_lookup[user["id"]] and
+                            type_garde["id"] in dispos_lookup[user["id"]][date_str]
+                        )
                         
-                        if not user_dispos:
+                        if not has_dispo:
                             continue  # Skip temps partiel si pas de disponibilité déclarée
                     
                     # Temps plein : éligibles automatiquement pour gardes vacantes (backup)
