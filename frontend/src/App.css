@@ -2153,9 +2153,10 @@ body {
 
 .grid-header {
   display: grid;
-  grid-template-columns: 250px repeat(7, 1fr);
+  grid-template-columns: 250px repeat(7, minmax(140px, 1fr));
   background-color: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
+  overflow-x: auto;
 }
 
 .header-cell {
@@ -2164,6 +2165,7 @@ body {
   font-weight: 600;
   color: #374151;
   border-right: 1px solid #e2e8f0;
+  min-width: 140px;
 }
 
 .header-cell:first-child {
