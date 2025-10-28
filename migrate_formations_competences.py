@@ -116,11 +116,5 @@ async def migrate_formations_competences():
     print()
 
 if __name__ == "__main__":
-    print("ATTENTION: Cette migration va modifier la structure des données utilisateur!")
-    print("Assurez-vous d'avoir une sauvegarde avant de continuer.")
-    response = input("\nContinuer la migration? (oui/non): ")
-    
-    if response.lower() in ['oui', 'o', 'yes', 'y']:
-        asyncio.run(migrate_formations_competences())
-    else:
-        print("Migration annulée.")
+    print("🚀 DÉMARRAGE DE LA MIGRATION AUTOMATIQUE...")
+    asyncio.run(migrate_formations_competences())
