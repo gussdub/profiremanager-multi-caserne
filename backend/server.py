@@ -1302,6 +1302,7 @@ class UserCreate(BaseModel):
     taux_horaire: float = 0.0
     formations: List[str] = []  # Liste des formations suivies
     competences: List[str] = []  # Liste des compétences acquises
+    accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
     mot_de_passe: str = "TempPass123!"
 
 class UserLogin(BaseModel):
