@@ -141,9 +141,10 @@ async def diagnose_users():
     sample_users = users[:3] if users else []
     for user in sample_users:
         has_competences = 'competences' in user
+        competences_status = 'EXISTE' if has_competences else 'N\'EXISTE PAS'
         print(f"  Utilisateur: {user.get('prenom')} {user.get('nom')}")
         print(f"    - Champ 'formations': {len(user.get('formations', []))} entrées")
-        print(f"    - Champ 'competences': {'EXISTE' if has_competences else 'N\'EXISTE PAS'}")
+        print(f"    - Champ 'competences': {competences_status}")
         if has_competences:
             print(f"      Contenu: {user.get('competences', [])}")
         print()
