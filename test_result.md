@@ -697,6 +697,17 @@ metadata:
   run_ui: false
 
 test_plan:
+  current_focus:
+    - "Accepter les gardes externes - User Modal Interface"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "testing"
+    message: "Starting comprehensive frontend testing of 'Accepter les gardes externes' functionality in user modals. Will test both creation and modification modals, verify checkbox behavior, and test specific users as requested."
+
+test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
