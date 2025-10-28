@@ -316,76 +316,110 @@ const MesEPI = ({ user }) => {
       {/* Modal Inspection */}
       {showInspectionModal && selectedEPI && (
         <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content inspection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>📋 Inspection après usage</h3>
               <button className="modal-close" onClick={() => setShowInspectionModal(false)}>×</button>
             </div>
+            
             <div className="modal-body">
-              <p className="mb-4">
-                <strong>EPI:</strong> {selectedEPI.type_epi} - {selectedEPI.numero_serie}
-              </p>
-
-              <div className="form-group">
-                <Label>État de l'EPI *</Label>
-                <div className="radio-group">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="statut_inspection"
-                      value="ok"
-                      checked={inspectionForm.statut_inspection === 'ok'}
-                      onChange={(e) => setInspectionForm({...inspectionForm, statut_inspection: e.target.value})}
-                    />
-                    <span>✅ OK - Aucun problème détecté</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="statut_inspection"
-                      value="defaut"
-                      checked={inspectionForm.statut_inspection === 'defaut'}
-                      onChange={(e) => setInspectionForm({...inspectionForm, statut_inspection: e.target.value})}
-                    />
-                    <span>⚠️ Défaut constaté</span>
-                  </label>
+              {/* EPI Info Card */}
+              <div className="epi-info-card">
+                <div className="epi-info-icon">🛡️</div>
+                <div className="epi-info-details">
+                  <h4>{selectedEPI.type_epi}</h4>
+                  <p>{selectedEPI.marque} {selectedEPI.modele}</p>
+                  <span className="epi-serial">N° {selectedEPI.numero_serie}</span>
                 </div>
               </div>
 
+              {/* État de l'EPI */}
+              <div className="form-group">
+                <Label className="form-label-bold">État de l'EPI après utilisation *</Label>
+                <div className="status-cards">
+                  <div 
+                    className={`status-card ${inspectionForm.statut_inspection === 'ok' ? 'active' : ''}`}
+                    onClick={() => setInspectionForm({...inspectionForm, statut_inspection: 'ok'})}
+                  >
+                    <div className="status-icon ok">✓</div>
+                    <div className="status-text">
+                      <strong>Conforme</strong>
+                      <span>Aucun problème détecté</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`status-card ${inspectionForm.statut_inspection === 'defaut' ? 'active' : ''}`}
+                    onClick={() => setInspectionForm({...inspectionForm, statut_inspection: 'defaut'})}
+                  >
+                    <div className="status-icon defaut">⚠</div>
+                    <div className="status-text">
+                      <strong>Défaut constaté</strong>
+                      <span>Nécessite une vérification</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Défauts constatés (si défaut) */}
               {inspectionForm.statut_inspection === 'defaut' && (
-                <div className="form-group">
-                  <Label>Défauts constatés *</Label>
+                <div className="form-group defaut-section">
+                  <Label className="form-label-bold">Défauts constatés *</Label>
                   <textarea
                     value={inspectionForm.defauts_constates}
                     onChange={(e) => setInspectionForm({...inspectionForm, defauts_constates: e.target.value})}
-                    placeholder="Décrivez les défauts observés..."
+                    placeholder="Décrivez précisément les défauts observés (déchirure, usure, casse, etc.)..."
                     rows="3"
                     className="form-control"
                   />
                 </div>
               )}
 
+              {/* Notes complémentaires */}
               <div className="form-group">
-                <Label>Notes complémentaires (optionnel)</Label>
+                <Label className="form-label-bold">Notes complémentaires</Label>
                 <textarea
                   value={inspectionForm.notes}
                   onChange={(e) => setInspectionForm({...inspectionForm, notes: e.target.value})}
-                  placeholder="Ajoutez des notes si nécessaire..."
+                  placeholder="Ajoutez des notes si nécessaire (optionnel)..."
                   rows="2"
                   className="form-control"
                 />
               </div>
 
+              {/* Photo */}
               <div className="form-group">
-                <Label>URL Photo (optionnel)</Label>
-                <Input
-                  type="text"
-                  value={inspectionForm.photo_url}
-                  onChange={(e) => setInspectionForm({...inspectionForm, photo_url: e.target.value})}
-                  placeholder="https://..."
-                />
+                <Label className="form-label-bold">Ajouter une photo</Label>
+                
+                {!photoPreview ? (
+                  <div className="photo-upload-zone">
+                    <input
+                      type="file"
+                      id="photo-input"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handlePhotoChange}
+                      className="photo-input-hidden"
+                    />
+                    <label htmlFor="photo-input" className="photo-upload-label">
+                      <div className="photo-upload-icon">📷</div>
+                      <div className="photo-upload-text">
+                        <strong>Prendre ou choisir une photo</strong>
+                        <span>Appuyez pour capturer ou sélectionner (max 5 MB)</span>
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="photo-preview-container">
+                    <img src={photoPreview} alt="Preview" className="photo-preview" />
+                    <button className="photo-remove" onClick={removePhoto} type="button">
+                      ✕ Supprimer
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+
             <div className="modal-footer">
               <Button onClick={() => setShowInspectionModal(false)} className="btn-secondary">
                 Annuler
@@ -395,7 +429,7 @@ const MesEPI = ({ user }) => {
                 className="btn-primary"
                 disabled={inspectionForm.statut_inspection === 'defaut' && !inspectionForm.defauts_constates}
               >
-                Enregistrer l'inspection
+                ✓ Enregistrer l'inspection
               </Button>
             </div>
           </div>
