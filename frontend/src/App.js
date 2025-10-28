@@ -846,6 +846,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
+    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe'] }
   ];
 
