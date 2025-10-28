@@ -146,7 +146,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
       contact_email: tenant.contact_email,
       contact_telephone: tenant.contact_telephone || '',
       adresse: tenant.adresse || '',
-      is_active: tenant.is_active !== undefined ? tenant.is_active : true
+      is_active: tenant.is_active !== undefined ? tenant.is_active : true,
+      module_prevention_active: tenant.parametres?.module_prevention_active || false
     });
     setShowEditModal(true);
   };
