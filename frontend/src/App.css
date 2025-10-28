@@ -2363,6 +2363,12 @@ body {
   padding: 1.5rem;
 }
 
+/* Fix for dropdown in modals - ensure search dropdowns are visible */
+.modal-body .user-selection {
+  overflow: visible !important;
+  position: relative;
+}
+
 .modal-body p {
   margin-bottom: 0.5rem;
   color: #374151;
