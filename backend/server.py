@@ -9875,6 +9875,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         grades = await db.grades.find({"tenant_id": tenant.id}).to_list(1000)
         grades_map = {g["nom"]: g for g in grades}
         
+        # Récupérer les compétences pour la priorisation des gardes
+        competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
+        
         # Get existing assignations for the week
         semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         existing_assignations = await db.assignations.find({
