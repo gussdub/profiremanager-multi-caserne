@@ -196,6 +196,7 @@ class AttributionProgress:
         self.assignations_creees = 0
         self.status = "en_cours"  # en_cours, termine, erreur
         self.error_message = None
+        self.expires_at = time.time() + 3600  # Expire après 1 heure
         
     def update(self, step: str, progress: int, gardes_traitees: int = 0, assignations: int = 0):
         """Met à jour la progression"""
