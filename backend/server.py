@@ -12781,6 +12781,256 @@ async def get_rapport_cout_total(
     }
 
 
+# ==================== MES EPI (Module Employé) ====================
+
+@api_router.get("/{tenant_slug}/mes-epi")
+async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les EPI de l'utilisateur connecté"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les EPI assignés à cet utilisateur
+    mes_epis = await db.epi.find({
+        "tenant_id": tenant.id,
+        "user_id": current_user.id
+    }).to_list(1000)
+    
+    # Pour chaque EPI, récupérer la dernière inspection après usage
+    for epi in mes_epis:
+        derniereInspection = await db.inspections_apres_usage.find_one(
+            {"epi_id": epi["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        epi["derniere_inspection"] = derniereInspection
+    
+    return mes_epis
+
+@api_router.post("/{tenant_slug}/mes-epi/{epi_id}/inspection")
+async def creer_inspection_apres_usage(
+    tenant_slug: str,
+    epi_id: str,
+    inspection: InspectionApresUsageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre une inspection après usage par l'employé"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'EPI appartient à l'utilisateur
+    epi = await db.epi.find_one({"id": epi_id, "tenant_id": tenant.id, "user_id": current_user.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé ou non assigné à vous")
+    
+    # Créer l'inspection
+    inspection_obj = InspectionApresUsage(
+        tenant_id=tenant.id,
+        epi_id=epi_id,
+        user_id=current_user.id,
+        statut=inspection.statut,
+        notes=inspection.notes,
+        photo_url=inspection.photo_url
+    )
+    
+    await db.inspections_apres_usage.insert_one(inspection_obj.dict())
+    
+    # Si défaut signalé, envoyer notification aux admins/superviseurs
+    if inspection.statut == "Défaut":
+        # Récupérer tous les admins/superviseurs
+        admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["admin", "superviseur"]}
+        }).to_list(1000)
+        
+        for admin in admins:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=admin["id"],
+                type="epi_defaut",
+                titre="⚠️ Défaut EPI signalé",
+                message=f"{current_user.prenom} {current_user.nom} a signalé un défaut sur {epi['type_epi']} - {epi['marque']} {epi['modele']}",
+                lien=f"/gestion-epi",
+                data={"epi_id": epi_id, "user_id": current_user.id}
+            )
+    
+    return {"message": "Inspection enregistrée avec succès", "defaut_signale": inspection.statut == "Défaut"}
+
+@api_router.get("/{tenant_slug}/mes-epi/{epi_id}/historique")
+async def get_historique_inspections(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique des inspections après usage d'un EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'EPI appartient à l'utilisateur (ou que c'est un admin/superviseur)
+    epi = await db.epi.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    if epi.get("user_id") != current_user.id and current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer toutes les inspections
+    inspections = await db.inspections_apres_usage.find({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id
+    }).sort("date_inspection", -1).to_list(1000)
+    
+    # Ajouter les infos utilisateur
+    for inspection in inspections:
+        user = await db.users.find_one({"id": inspection["user_id"], "tenant_id": tenant.id})
+        if user:
+            inspection["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+    
+    return inspections
+
+@api_router.post("/{tenant_slug}/mes-epi/{epi_id}/demander-remplacement")
+async def demander_remplacement_epi(
+    tenant_slug: str,
+    epi_id: str,
+    demande: DemandeRemplacementEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une demande de remplacement d'EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'EPI appartient à l'utilisateur
+    epi = await db.epi.find_one({"id": epi_id, "tenant_id": tenant.id, "user_id": current_user.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé ou non assigné à vous")
+    
+    # Vérifier s'il n'y a pas déjà une demande en attente pour cet EPI
+    demande_existante = await db.demandes_remplacement_epi.find_one({
+        "epi_id": epi_id,
+        "tenant_id": tenant.id,
+        "statut": "En attente"
+    })
+    
+    if demande_existante:
+        raise HTTPException(status_code=400, detail="Une demande de remplacement est déjà en attente pour cet EPI")
+    
+    # Créer la demande
+    demande_obj = DemandeRemplacementEPI(
+        tenant_id=tenant.id,
+        epi_id=epi_id,
+        user_id=current_user.id,
+        raison=demande.raison,
+        notes_employe=demande.notes_employe
+    )
+    
+    await db.demandes_remplacement_epi.insert_one(demande_obj.dict())
+    
+    # Envoyer notification aux admins/superviseurs
+    admins = await db.users.find({
+        "tenant_id": tenant.id,
+        "role": {"$in": ["admin", "superviseur"]}
+    }).to_list(1000)
+    
+    for admin in admins:
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=admin["id"],
+            type="demande_remplacement_epi",
+            titre="🔄 Demande de remplacement EPI",
+            message=f"{current_user.prenom} {current_user.nom} demande le remplacement de {epi['type_epi']} - Raison: {demande.raison}",
+            lien=f"/gestion-epi",
+            data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison}
+        )
+    
+    return {"message": "Demande de remplacement créée avec succès", "demande_id": demande_obj.id}
+
+@api_router.get("/{tenant_slug}/epi/demandes-remplacement")
+async def get_demandes_remplacement(
+    tenant_slug: str,
+    statut: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les demandes de remplacement (admin/superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Filtrer par statut si spécifié
+    query = {"tenant_id": tenant.id}
+    if statut:
+        query["statut"] = statut
+    
+    demandes = await db.demandes_remplacement_epi.find(query).sort("date_demande", -1).to_list(1000)
+    
+    # Enrichir avec les infos EPI et utilisateur
+    for demande in demandes:
+        epi = await db.epi.find_one({"id": demande["epi_id"], "tenant_id": tenant.id})
+        user = await db.users.find_one({"id": demande["user_id"], "tenant_id": tenant.id})
+        
+        if epi:
+            demande["epi_info"] = {
+                "type_epi": epi.get("type_epi"),
+                "marque": epi.get("marque"),
+                "modele": epi.get("modele"),
+                "numero_serie": epi.get("numero_serie")
+            }
+        
+        if user:
+            demande["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+        
+        # Ajouter info admin si traité
+        if demande.get("traite_par"):
+            admin = await db.users.find_one({"id": demande["traite_par"], "tenant_id": tenant.id})
+            if admin:
+                demande["traite_par_nom"] = f"{admin.get('prenom', '')} {admin.get('nom', '')}"
+    
+    return demandes
+
+@api_router.put("/{tenant_slug}/epi/demandes-remplacement/{demande_id}")
+async def traiter_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    statut: str,
+    notes_admin: str = "",
+    current_user: User = Depends(get_current_user)
+):
+    """Approuver ou refuser une demande de remplacement (admin/superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if statut not in ["Approuvée", "Refusée"]:
+        raise HTTPException(status_code=400, detail="Statut invalide. Doit être 'Approuvée' ou 'Refusée'")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer la demande
+    demande = await db.demandes_remplacement_epi.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    if demande["statut"] != "En attente":
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée")
+    
+    # Mettre à jour la demande
+    await db.demandes_remplacement_epi.update_one(
+        {"id": demande_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": statut,
+            "date_traitement": datetime.now(timezone.utc),
+            "traite_par": current_user.id,
+            "notes_admin": notes_admin
+        }}
+    )
+    
+    # Envoyer notification à l'employé
+    await creer_notification(
+        tenant_id=tenant.id,
+        destinataire_id=demande["user_id"],
+        type="reponse_demande_remplacement_epi",
+        titre=f"Demande de remplacement EPI {'approuvée' if statut == 'Approuvée' else 'refusée'}",
+        message=f"Votre demande de remplacement EPI a été {statut.lower()}. {notes_admin}",
+        lien="/mes-epi",
+        data={"demande_id": demande_id, "statut": statut}
+    )
+    
+    return {"message": f"Demande {statut.lower()} avec succès"}
+
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
