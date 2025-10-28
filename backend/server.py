@@ -1280,6 +1280,7 @@ class User(BaseModel):
     heures_externes: float = 0.0  # Heures de garde externes (astreinte à domicile)
     formations: List[str] = []  # Liste des UUIDs de formations suivies (pour module Formation)
     competences: List[str] = []  # Liste des UUIDs de compétences acquises/certifiées (pour auto-attribution)
+    accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
