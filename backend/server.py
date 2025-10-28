@@ -9472,6 +9472,27 @@ async def check_assignations_periode(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur vérification période: {str(e)}")
 
+# ==================== SSE ENDPOINT POUR PROGRESSION ====================
+@api_router.get("/{tenant_slug}/planning/attribution-auto/progress/{task_id}")
+async def attribution_progress_stream(
+    tenant_slug: str,
+    task_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Stream SSE pour suivre la progression de l'attribution automatique"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    return StreamingResponse(
+        progress_event_generator(task_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Nginx buffering disabled
+        }
+    )
+
 # Attribution automatique intelligente avec rotation équitable et ancienneté
 @api_router.post("/{tenant_slug}/planning/attribution-auto")
 async def attribution_automatique(
