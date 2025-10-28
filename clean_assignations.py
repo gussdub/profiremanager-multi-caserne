@@ -11,7 +11,9 @@ load_dotenv('/app/backend/.env')
 async def clean_auto_assignations():
     MONGO_URL = os.environ.get('MONGO_URL')
     client = AsyncIOMotorClient(MONGO_URL)
-    db = client.firemanager_db
+    
+    # Utiliser le nom de base de données depuis l'URL
+    db = client.profiremanager  # Base de données de production
     
     print("=" * 80)
     print("NETTOYAGE DES ASSIGNATIONS AUTOMATIQUES UNIQUEMENT")
