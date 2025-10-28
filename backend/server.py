@@ -12789,7 +12789,7 @@ async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Récupérer tous les EPI assignés à cet utilisateur
-    mes_epis = await db.epi.find({
+    mes_epis = await db.epis.find({
         "tenant_id": tenant.id,
         "user_id": current_user.id
     }).to_list(1000)
