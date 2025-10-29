@@ -17421,6 +17421,223 @@ const GestionNonConformites = ({ setCurrentView }) => {
   );
 };
 
+const CalendrierInspections = ({ setCurrentView, batiments }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    const fetchInspections = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/inspections');
+        setInspections(data);
+      } catch (error) {
+        console.error('Erreur chargement inspections:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les inspections",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInspections();
+  }, [tenantSlug]);
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const getInspectionsForDay = (day) => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    return inspections.filter(insp => insp.date_inspection === dateStr);
+  };
+
+  const getBatimentName = (batimentId) => {
+    const batiment = batiments.find(b => b.id === batimentId);
+    return batiment?.nom_etablissement || 'Inconnu';
+  };
+
+  const getSuggestedInspections = () => {
+    // Bâtiments sans inspection dans les 3 derniers mois
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    return batiments.filter(batiment => {
+      const batimentInspections = inspections.filter(insp => insp.batiment_id === batiment.id);
+      if (batimentInspections.length === 0) return true;
+      
+      const lastInspection = batimentInspections.sort((a, b) => 
+        new Date(b.date_inspection) - new Date(a.date_inspection)
+      )[0];
+      
+      return new Date(lastInspection.date_inspection) < threeMonthsAgo;
+    });
+  };
+
+  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentMonth);
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+  const previousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const today = new Date();
+  const isToday = (day) => {
+    return today.getDate() === day && 
+           today.getMonth() === month && 
+           today.getFullYear() === year;
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement du calendrier...</div>;
+  }
+
+  return (
+    <div className="calendrier-container">
+      <div className="page-header">
+        <h2>📅 Calendrier des Inspections</h2>
+        <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+          ➕ Planifier une inspection
+        </Button>
+      </div>
+
+      {/* Navigation du calendrier */}
+      <div className="calendar-nav">
+        <Button variant="outline" onClick={previousMonth}>
+          ← Mois précédent
+        </Button>
+        <h3>{monthNames[month]} {year}</h3>
+        <Button variant="outline" onClick={nextMonth}>
+          Mois suivant →
+        </Button>
+      </div>
+
+      {/* Grille du calendrier */}
+      <div className="calendar-grid">
+        {/* En-têtes des jours */}
+        {dayNames.map(day => (
+          <div key={day} className="calendar-day-header">
+            {day}
+          </div>
+        ))}
+        
+        {/* Jours vides au début */}
+        {Array.from({ length: startingDayOfWeek }).map((_, index) => (
+          <div key={`empty-${index}`} className="calendar-day empty"></div>
+        ))}
+        
+        {/* Jours du mois */}
+        {Array.from({ length: daysInMonth }).map((_, index) => {
+          const day = index + 1;
+          const dayInspections = getInspectionsForDay(day);
+          
+          return (
+            <div 
+              key={day} 
+              className={`calendar-day ${isToday(day) ? 'today' : ''} ${dayInspections.length > 0 ? 'has-inspections' : ''}`}
+            >
+              <div className="day-number">{day}</div>
+              {dayInspections.length > 0 && (
+                <div className="day-inspections">
+                  {dayInspections.slice(0, 2).map(insp => (
+                    <div 
+                      key={insp.id} 
+                      className={`inspection-badge ${insp.statut_global}`}
+                      title={getBatimentName(insp.batiment_id)}
+                    >
+                      {getBatimentName(insp.batiment_id).substring(0, 15)}...
+                    </div>
+                  ))}
+                  {dayInspections.length > 2 && (
+                    <div className="more-inspections">
+                      +{dayInspections.length - 2} autre(s)
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Inspections à venir suggérées */}
+      <div className="suggested-inspections">
+        <h3>🔔 Inspections Suggérées</h3>
+        <p className="subtitle">Bâtiments sans inspection depuis plus de 3 mois</p>
+        
+        {getSuggestedInspections().length === 0 ? (
+          <div className="empty-state">
+            ✅ Tous les bâtiments sont à jour dans leurs inspections
+          </div>
+        ) : (
+          <div className="suggested-list">
+            {getSuggestedInspections().slice(0, 10).map(batiment => (
+              <div key={batiment.id} className="suggested-item">
+                <div className="suggested-info">
+                  <h4>{batiment.nom_etablissement}</h4>
+                  <p>{batiment.adresse_civique}</p>
+                  {batiment.groupe_occupation && (
+                    <span className="groupe-badge">Groupe {batiment.groupe_occupation}</span>
+                  )}
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    // Pre-remplir le formulaire avec ce bâtiment
+                    setCurrentView('nouvelle-inspection');
+                  }}
+                >
+                  Planifier
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Légende */}
+      <div className="calendar-legend">
+        <h4>Légende</h4>
+        <div className="legend-items">
+          <div className="legend-item">
+            <div className="legend-color today-marker"></div>
+            <span>Aujourd'hui</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color conforme"></div>
+            <span>Inspection conforme</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color non_conforme"></div>
+            <span>Inspection non-conforme</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Module Prévention - Gestion des inspections et bâtiments
 const Prevention = () => {
   const { user, tenant } = useAuth();
