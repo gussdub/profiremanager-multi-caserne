@@ -445,6 +445,31 @@ Nous vous accompagnons dans la migration de vos données existantes (Excel, autr
 
 ---
 
+### 💰 Exemples de Coûts Mensuels
+
+**Petite Caserne - 15 pompiers**
+- 15 × 12$ = **180$/mois**
+- Import de données : **1,500$** (one-time)
+- **Coût annuel : 3,660$**
+
+**Caserne Moyenne - 35 pompiers**
+- 35 × 20$ = **700$/mois**
+- Import de données : **2,500$** (one-time)
+- **Coût annuel : 10,900$**
+
+**Grande Caserne - 60 pompiers**
+- 60 × 27$ = **1,620$/mois**
+- Import de données : **3,500$** (one-time)
+- **Coût annuel : 22,940$**
+
+**💡 Comparaison avec la gestion manuelle :**
+- Temps admin économisé : ~8h/semaine
+- Coût horaire moyen admin : 35$/h
+- Économie annuelle : **14,560$**
+- **ROI positif dès la première année !**
+
+---
+
 ### Options Supplémentaires
 
 **Formation sur site complète**  
