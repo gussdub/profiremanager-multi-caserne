@@ -13758,6 +13758,371 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+# ==================== INSPECTIONS ====================
+
+@api_router.post("/{tenant_slug}/prevention/inspections")
+async def create_inspection(
+    tenant_slug: str,
+    inspection: InspectionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    inspection_dict = inspection.dict()
+    inspection_dict["tenant_id"] = tenant.id
+    inspection_obj = Inspection(**inspection_dict)
+    
+    await db.inspections.insert_one(inspection_obj.dict())
+    
+    return clean_mongo_doc(inspection_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/inspections")
+async def get_inspections(
+    tenant_slug: str,
+    batiment_id: Optional[str] = None,
+    preventionniste_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les inspections avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    if batiment_id:
+        query["batiment_id"] = batiment_id
+    if preventionniste_id:
+        query["preventionniste_id"] = preventionniste_id
+    
+    inspections = await db.inspections.find(query).sort("created_at", -1).to_list(1000)
+    return [clean_mongo_doc(i) for i in inspections]
+
+@api_router.get("/{tenant_slug}/prevention/inspections/{inspection_id}")
+async def get_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une inspection spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    inspection = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant.id})
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    return clean_mongo_doc(inspection)
+
+@api_router.put("/{tenant_slug}/prevention/inspections/{inspection_id}")
+async def update_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    inspection_data: InspectionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour une inspection"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_dict = inspection_data.dict()
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.inspections.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    updated_inspection = await db.inspections.find_one({"id": inspection_id})
+    return clean_mongo_doc(updated_inspection)
+
+@api_router.delete("/{tenant_slug}/prevention/inspections/{inspection_id}")
+async def delete_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une inspection"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.inspections.delete_one({"id": inspection_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Supprimer aussi les non-conformités associées
+    await db.non_conformites.delete_many({"inspection_id": inspection_id, "tenant_id": tenant.id})
+    
+    return {"message": "Inspection supprimée avec succès"}
+
+
+# ==================== NON-CONFORMITÉS ====================
+
+@api_router.post("/{tenant_slug}/prevention/non-conformites")
+async def create_non_conformite(
+    tenant_slug: str,
+    non_conformite: NonConformiteCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle non-conformité"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    nc_dict = non_conformite.dict()
+    nc_dict["tenant_id"] = tenant.id
+    nc_obj = NonConformite(**nc_dict)
+    
+    await db.non_conformites.insert_one(nc_obj.dict())
+    
+    return clean_mongo_doc(nc_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/non-conformites")
+async def get_non_conformites(
+    tenant_slug: str,
+    inspection_id: Optional[str] = None,
+    batiment_id: Optional[str] = None,
+    statut: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les non-conformités avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    if inspection_id:
+        query["inspection_id"] = inspection_id
+    if batiment_id:
+        query["batiment_id"] = batiment_id
+    if statut:
+        query["statut"] = statut
+    
+    non_conformites = await db.non_conformites.find(query).sort("created_at", -1).to_list(1000)
+    return [clean_mongo_doc(nc) for nc in non_conformites]
+
+@api_router.get("/{tenant_slug}/prevention/non-conformites/{nc_id}")
+async def get_non_conformite(
+    tenant_slug: str,
+    nc_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une non-conformité spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    nc = await db.non_conformites.find_one({"id": nc_id, "tenant_id": tenant.id})
+    
+    if not nc:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    
+    return clean_mongo_doc(nc)
+
+@api_router.put("/{tenant_slug}/prevention/non-conformites/{nc_id}")
+async def update_non_conformite(
+    tenant_slug: str,
+    nc_id: str,
+    nc_data: NonConformiteCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour une non-conformité"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_dict = nc_data.dict()
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.non_conformites.update_one(
+        {"id": nc_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    
+    updated_nc = await db.non_conformites.find_one({"id": nc_id})
+    return clean_mongo_doc(updated_nc)
+
+@api_router.patch("/{tenant_slug}/prevention/non-conformites/{nc_id}/statut")
+async def update_non_conformite_statut(
+    tenant_slug: str,
+    nc_id: str,
+    statut: str = Body(..., embed=True),
+    notes_correction: str = Body("", embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour le statut d'une non-conformité"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_data = {
+        "statut": statut,
+        "notes_correction": notes_correction,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if statut == "corrigee" or statut == "fermee":
+        update_data["date_correction"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    result = await db.non_conformites.update_one(
+        {"id": nc_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    
+    updated_nc = await db.non_conformites.find_one({"id": nc_id})
+    return clean_mongo_doc(updated_nc)
+
+@api_router.delete("/{tenant_slug}/prevention/non-conformites/{nc_id}")
+async def delete_non_conformite(
+    tenant_slug: str,
+    nc_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une non-conformité"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.non_conformites.delete_one({"id": nc_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    
+    return {"message": "Non-conformité supprimée avec succès"}
+
+
+# ==================== STATISTIQUES PRÉVENTION ====================
+
+@api_router.get("/{tenant_slug}/prevention/statistiques")
+async def get_prevention_statistics(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les statistiques du module prévention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Compter les bâtiments
+    total_batiments = await db.batiments.count_documents({"tenant_id": tenant.id})
+    batiments_avec_preventionniste = await db.batiments.count_documents({
+        "tenant_id": tenant.id,
+        "preventionniste_assigne_id": {"$exists": True, "$ne": None}
+    })
+    
+    # Compter les inspections
+    total_inspections = await db.inspections.count_documents({"tenant_id": tenant.id})
+    inspections_conformes = await db.inspections.count_documents({
+        "tenant_id": tenant.id,
+        "statut_global": "conforme"
+    })
+    
+    # Compter les non-conformités
+    total_non_conformites = await db.non_conformites.count_documents({"tenant_id": tenant.id})
+    nc_ouvertes = await db.non_conformites.count_documents({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["ouverte", "en_cours"]}
+    })
+    nc_corrigees = await db.non_conformites.count_documents({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["corrigee", "fermee"]}
+    })
+    
+    # Récupérer les préventionnistes actifs
+    preventionnistes = await db.users.find({
+        "tenant_slug": tenant.slug,
+        "role": {"$in": ["admin", "superviseur"]}
+    }).to_list(100)
+    
+    preventionnistes_stats = []
+    for prev in preventionnistes:
+        batiments_assignes = await db.batiments.count_documents({
+            "tenant_id": tenant.id,
+            "preventionniste_assigne_id": prev["id"]
+        })
+        inspections_realisees = await db.inspections.count_documents({
+            "tenant_id": tenant.id,
+            "preventionniste_id": prev["id"]
+        })
+        
+        preventionnistes_stats.append({
+            "id": prev["id"],
+            "nom": f"{prev.get('prenom', '')} {prev.get('nom', '')}",
+            "batiments_assignes": batiments_assignes,
+            "inspections_realisees": inspections_realisees
+        })
+    
+    return {
+        "batiments": {
+            "total": total_batiments,
+            "avec_preventionniste": batiments_avec_preventionniste,
+            "sans_preventionniste": total_batiments - batiments_avec_preventionniste
+        },
+        "inspections": {
+            "total": total_inspections,
+            "conformes": inspections_conformes,
+            "non_conformes": total_inspections - inspections_conformes,
+            "taux_conformite": round((inspections_conformes / total_inspections * 100) if total_inspections > 0 else 100, 1)
+        },
+        "non_conformites": {
+            "total": total_non_conformites,
+            "ouvertes": nc_ouvertes,
+            "corrigees": nc_corrigees,
+            "taux_resolution": round((nc_corrigees / total_non_conformites * 100) if total_non_conformites > 0 else 100, 1)
+        },
+        "preventionnistes": preventionnistes_stats
+    }
+
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
