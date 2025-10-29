@@ -15084,6 +15084,8 @@ const ImportCSV = ({ onImportComplete }) => {
 
   return (
     <div className="import-csv-container">
+      {showFieldEditor && <FieldEditor />}
+      
       <div className="import-progress">
         <div className="progress-steps">
           {[1, 2, 3, 4].map(stepNum => (
