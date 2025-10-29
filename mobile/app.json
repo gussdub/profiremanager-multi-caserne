@@ -13,6 +13,7 @@
       "backgroundColor": "#D9072B"
     },
     "primaryColor": "#D9072B",
+    "owner": "profiremanager",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.profiremanager.app",
