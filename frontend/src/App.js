@@ -16386,6 +16386,27 @@ const Prevention = () => {
           </div>
         );
       
+      case 'inspections':
+        return <ListeInspections setCurrentView={setCurrentView} />;
+      
+      case 'nouvelle-inspection':
+        return (
+          <NouvelleInspection 
+            setCurrentView={setCurrentView}
+            batiments={batiments}
+          />
+        );
+      
+      case 'realiser-inspection':
+        return (
+          <RealiserInspection 
+            setCurrentView={setCurrentView}
+          />
+        );
+      
+      case 'non-conformites':
+        return <GestionNonConformites setCurrentView={setCurrentView} />;
+      
       default:
         return <div>Vue en développement...</div>;
     }
