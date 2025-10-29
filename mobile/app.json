@@ -47,19 +47,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#D9072B",
-          "sounds": [
-            "./assets/notification-sound.wav"
-          ]
-        }
-      ]
+      "expo-notifications"
     ],
     "notification": {
-      "icon": "./assets/notification-icon.png",
       "color": "#D9072B"
     },
     "extra": {
