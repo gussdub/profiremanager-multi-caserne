@@ -14675,8 +14675,15 @@ const ImportCSV = ({ onImportComplete }) => {
       const mappedData = csvData.map(row => {
         const batiment = {};
         availableFields.forEach(field => {
-          const csvColumn = columnMapping[field.key];
-          batiment[field.key] = csvColumn ? (row[csvColumn] || '') : '';
+          // Priorité 1: Valeur par défaut (saisie de masse écrase tout)
+          if (defaultValues[field.key]) {
+            batiment[field.key] = defaultValues[field.key];
+          }
+          // Priorité 2: Valeur du CSV
+          else {
+            const csvColumn = columnMapping[field.key];
+            batiment[field.key] = csvColumn ? (row[csvColumn] || '') : '';
+          }
         });
         return batiment;
       });
