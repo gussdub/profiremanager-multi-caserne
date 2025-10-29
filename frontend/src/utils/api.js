@@ -112,6 +112,16 @@ export const apiPut = (tenantSlug, endpoint, data) => {
 };
 
 /**
+ * Helper pour les requêtes PATCH
+ */
+export const apiPatch = (tenantSlug, endpoint, data) => {
+  return apiCall(tenantSlug, endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+};
+
+/**
  * Helper pour les requêtes DELETE
  */
 export const apiDelete = (tenantSlug, endpoint) => {
@@ -124,5 +134,6 @@ export default {
   apiGet,
   apiPost,
   apiPut,
+  apiPatch,
   apiDelete,
 };
