@@ -14448,6 +14448,205 @@ async def get_prevention_statistics(
     }
 
 
+# ==================== EXPORT EXCEL ====================
+
+@api_router.get("/{tenant_slug}/prevention/export-excel")
+async def export_excel_prevention(
+    tenant_slug: str,
+    type_export: str = "inspections",  # inspections, batiments, non_conformites
+    current_user: User = Depends(get_current_user)
+):
+    """Exporter les données en Excel"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    try:
+        from io import BytesIO
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        
+        if type_export == "inspections":
+            ws.title = "Inspections"
+            
+            # En-têtes
+            headers = ["Date", "Bâtiment", "Préventionniste", "Type", "Statut", "Score (%)", "Non-conformités"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Données
+            inspections = await db.inspections.find({"tenant_id": tenant.id}).to_list(10000)
+            batiments = await db.batiments.find({"tenant_id": tenant.id}).to_list(10000)
+            users = await db.users.find({"tenant_slug": tenant.slug}).to_list(10000)
+            
+            batiments_dict = {b["id"]: b for b in batiments}
+            users_dict = {u["id"]: u for u in users}
+            
+            for idx, insp in enumerate(inspections, 2):
+                batiment = batiments_dict.get(insp.get("batiment_id"), {})
+                preventionniste = users_dict.get(insp.get("preventionniste_id"), {})
+                
+                nc_count = await db.non_conformites.count_documents({
+                    "inspection_id": insp["id"],
+                    "tenant_id": tenant.id
+                })
+                
+                ws.cell(row=idx, column=1, value=insp.get("date_inspection", ""))
+                ws.cell(row=idx, column=2, value=batiment.get("nom_etablissement", ""))
+                ws.cell(row=idx, column=3, value=f"{preventionniste.get('prenom', '')} {preventionniste.get('nom', '')}")
+                ws.cell(row=idx, column=4, value=insp.get("type_inspection", ""))
+                ws.cell(row=idx, column=5, value=insp.get("statut_global", ""))
+                ws.cell(row=idx, column=6, value=insp.get("score_conformite", 0))
+                ws.cell(row=idx, column=7, value=nc_count)
+        
+        elif type_export == "batiments":
+            ws.title = "Bâtiments"
+            
+            headers = ["Nom", "Adresse", "Ville", "Code Postal", "Groupe Occ.", "Préventionniste", "Nb Inspections"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+                cell.alignment = Alignment(horizontal="center")
+            
+            batiments = await db.batiments.find({"tenant_id": tenant.id}).to_list(10000)
+            users = await db.users.find({"tenant_slug": tenant.slug}).to_list(10000)
+            users_dict = {u["id"]: u for u in users}
+            
+            for idx, bat in enumerate(batiments, 2):
+                preventionniste = users_dict.get(bat.get("preventionniste_assigne_id"), {})
+                insp_count = await db.inspections.count_documents({
+                    "batiment_id": bat["id"],
+                    "tenant_id": tenant.id
+                })
+                
+                ws.cell(row=idx, column=1, value=bat.get("nom_etablissement", ""))
+                ws.cell(row=idx, column=2, value=bat.get("adresse_civique", ""))
+                ws.cell(row=idx, column=3, value=bat.get("ville", ""))
+                ws.cell(row=idx, column=4, value=bat.get("code_postal", ""))
+                ws.cell(row=idx, column=5, value=bat.get("groupe_occupation", ""))
+                ws.cell(row=idx, column=6, value=f"{preventionniste.get('prenom', '')} {preventionniste.get('nom', '')}")
+                ws.cell(row=idx, column=7, value=insp_count)
+        
+        elif type_export == "non_conformites":
+            ws.title = "Non-Conformités"
+            
+            headers = ["Date Détection", "Bâtiment", "Titre", "Description", "Gravité", "Statut", "Délai Correction"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill(start_color="E74C3C", end_color="E74C3C", fill_type="solid")
+                cell.alignment = Alignment(horizontal="center")
+            
+            non_conformites = await db.non_conformites.find({"tenant_id": tenant.id}).to_list(10000)
+            batiments = await db.batiments.find({"tenant_id": tenant.id}).to_list(10000)
+            batiments_dict = {b["id"]: b for b in batiments}
+            
+            for idx, nc in enumerate(non_conformites, 2):
+                batiment = batiments_dict.get(nc.get("batiment_id"), {})
+                
+                ws.cell(row=idx, column=1, value=nc.get("created_at", "")[:10])
+                ws.cell(row=idx, column=2, value=batiment.get("nom_etablissement", ""))
+                ws.cell(row=idx, column=3, value=nc.get("titre", ""))
+                ws.cell(row=idx, column=4, value=nc.get("description", ""))
+                ws.cell(row=idx, column=5, value=nc.get("gravite", ""))
+                ws.cell(row=idx, column=6, value=nc.get("statut", ""))
+                ws.cell(row=idx, column=7, value=nc.get("delai_correction", ""))
+        
+        # Ajuster la largeur des colonnes
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Sauvegarder dans un buffer
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=export_{type_export}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export: {str(e)}")
+
+
+# ==================== RAPPORTS AVANCÉS ====================
+
+@api_router.get("/{tenant_slug}/prevention/rapports/tendances")
+async def get_tendances(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les tendances sur les 6 derniers mois"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Calculer les 6 derniers mois
+    today = datetime.now(timezone.utc)
+    months_data = []
+    
+    for i in range(6):
+        month_date = today - timedelta(days=30 * i)
+        month_start = month_date.replace(day=1).strftime("%Y-%m-%d")
+        
+        if month_date.month == 12:
+            next_month = month_date.replace(year=month_date.year + 1, month=1, day=1)
+        else:
+            next_month = month_date.replace(month=month_date.month + 1, day=1)
+        month_end = next_month.strftime("%Y-%m-%d")
+        
+        # Inspections du mois
+        inspections_count = await db.inspections.count_documents({
+            "tenant_id": tenant.id,
+            "date_inspection": {"$gte": month_start, "$lt": month_end}
+        })
+        
+        conformes_count = await db.inspections.count_documents({
+            "tenant_id": tenant.id,
+            "date_inspection": {"$gte": month_start, "$lt": month_end},
+            "statut_global": "conforme"
+        })
+        
+        # Non-conformités du mois
+        nc_ouvertes = await db.non_conformites.count_documents({
+            "tenant_id": tenant.id,
+            "created_at": {"$gte": month_start, "$lt": month_end}
+        })
+        
+        months_data.append({
+            "mois": month_date.strftime("%B %Y"),
+            "inspections_total": inspections_count,
+            "inspections_conformes": conformes_count,
+            "taux_conformite": round((conformes_count / inspections_count * 100) if inspections_count > 0 else 0, 1),
+            "non_conformites_nouvelles": nc_ouvertes
+        })
+    
+    return {
+        "tendances": list(reversed(months_data))
+    }
+
+
 # ==================== HEALTH CHECK ====================
 
 @app.get("/api/health")
