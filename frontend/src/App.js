@@ -14940,6 +14940,7 @@ const ImportCSV = ({ onImportComplete }) => {
                   <div className="field-column">Champ système</div>
                   <div className="arrow-column">➡️</div>
                   <div className="csv-column">Colonne CSV</div>
+                  <div className="default-value-column">💾 Valeur par défaut (saisie de masse)</div>
                   <div className="preview-column">Aperçu données</div>
                 </div>
 
@@ -14957,6 +14958,7 @@ const ImportCSV = ({ onImportComplete }) => {
                         value={columnMapping[field.key] || ''}
                         onChange={(e) => handleColumnMapping(e.target.value, field.key)}
                         className="mapping-select"
+                        disabled={!!defaultValues[field.key]}
                       >
                         <option value="">-- Sélectionner une colonne --</option>
                         {csvHeaders.map(header => (
@@ -14964,8 +14966,21 @@ const ImportCSV = ({ onImportComplete }) => {
                         ))}
                       </select>
                     </div>
+                    <div className="default-value-column">
+                      <input
+                        type="text"
+                        value={defaultValues[field.key] || ''}
+                        onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                        placeholder="Ex: Montréal (appliqué à toutes les lignes)"
+                        className="default-value-input"
+                      />
+                    </div>
                     <div className="preview-column">
-                      {columnMapping[field.key] && csvData[0] ? (
+                      {defaultValues[field.key] ? (
+                        <span className="preview-data default-preview">
+                          <strong>{defaultValues[field.key]}</strong> (toutes)
+                        </span>
+                      ) : columnMapping[field.key] && csvData[0] ? (
                         <span className="preview-data">
                           {csvData[0][columnMapping[field.key]] || '(vide)'}
                         </span>
