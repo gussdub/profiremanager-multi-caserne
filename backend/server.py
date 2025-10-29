@@ -14275,6 +14275,95 @@ async def delete_non_conformite(
     return {"message": "Non-conformité supprimée avec succès"}
 
 
+# ==================== UPLOAD PHOTOS ====================
+
+@api_router.post("/{tenant_slug}/prevention/upload-photo")
+async def upload_photo(
+    tenant_slug: str,
+    photo_base64: str = Body(..., embed=True),
+    filename: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload une photo en base64 et retourne l'URL"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    try:
+        # Générer un ID unique pour la photo
+        photo_id = str(uuid.uuid4())
+        
+        # Stocker la photo dans la collection photos
+        photo_doc = {
+            "id": photo_id,
+            "tenant_id": tenant.id,
+            "filename": filename,
+            "data": photo_base64,
+            "uploaded_by": current_user.id,
+            "uploaded_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.photos_prevention.insert_one(photo_doc)
+        
+        # Retourner l'ID de la photo (qui servira d'URL)
+        return {
+            "photo_id": photo_id,
+            "url": f"/api/{tenant_slug}/prevention/photos/{photo_id}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
+
+@api_router.get("/{tenant_slug}/prevention/photos/{photo_id}")
+async def get_photo(
+    tenant_slug: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une photo par son ID"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    photo = await db.photos_prevention.find_one({"id": photo_id, "tenant_id": tenant.id})
+    
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    return {
+        "id": photo["id"],
+        "filename": photo.get("filename", "photo.jpg"),
+        "data": photo["data"],
+        "uploaded_at": photo.get("uploaded_at")
+    }
+
+@api_router.delete("/{tenant_slug}/prevention/photos/{photo_id}")
+async def delete_photo(
+    tenant_slug: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une photo"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.photos_prevention.delete_one({"id": photo_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    return {"message": "Photo supprimée avec succès"}
+
+
 # ==================== STATISTIQUES PRÉVENTION ====================
 
 @api_router.get("/{tenant_slug}/prevention/statistiques")
