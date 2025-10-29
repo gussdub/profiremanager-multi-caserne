@@ -15802,8 +15802,10 @@ const AssignerPreventionniste = ({ onAssign }) => {
                   <div className="user-info">
                     <h4>{user.prenom} {user.nom}</h4>
                     <p>{user.email}</p>
-                    <span className="role-badge">{user.role}</span>
-                    <span className="grade-badge">{user.grade}</span>
+                    <div className="user-badges">
+                      <span className={`role-badge ${user.role}`}>{user.role}</span>
+                      {user.grade && <span className="grade-badge">{user.grade}</span>}
+                    </div>
                   </div>
                   <div className="user-stats">
                     <span className="current-assignments">
