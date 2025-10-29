@@ -17884,6 +17884,7 @@ const Prevention = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [batiments, setBatiments] = useState([]);
   const [stats, setStats] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchBatiments = async () => {
@@ -17912,9 +17913,19 @@ const Prevention = () => {
     }
   };
 
+  const fetchNotifications = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/notifications');
+      setNotifications(data.notifications || []);
+    } catch (error) {
+      console.error('Erreur chargement notifications:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBatiments();
     fetchStats();
+    fetchNotifications();
   }, [tenantSlug]);
 
   const renderContent = () => {
