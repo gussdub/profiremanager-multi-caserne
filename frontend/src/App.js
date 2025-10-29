@@ -16952,10 +16952,6 @@ const Prevention = () => {
             </div>
           </div>
         );
-              </div>
-            </div>
-          </div>
-        );
       
       case 'batiments':
         return (
