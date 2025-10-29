@@ -14636,8 +14636,15 @@ const ImportCSV = ({ onImportComplete }) => {
     const preview = csvData.slice(0, 5).map(row => {
       const mapped = {};
       availableFields.forEach(field => {
-        const csvColumn = columnMapping[field.key];
-        mapped[field.key] = csvColumn ? row[csvColumn] : '';
+        // Priorité 1: Valeur par défaut (écrase tout)
+        if (defaultValues[field.key]) {
+          mapped[field.key] = defaultValues[field.key];
+        } 
+        // Priorité 2: Valeur du CSV
+        else {
+          const csvColumn = columnMapping[field.key];
+          mapped[field.key] = csvColumn ? row[csvColumn] : '';
+        }
       });
       return mapped;
     });
