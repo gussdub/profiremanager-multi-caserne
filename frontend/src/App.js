@@ -14908,6 +14908,7 @@ const ImportCSV = ({ onImportComplete }) => {
                 <li>Utilisez des noms de colonnes clairs (ex: "Nom", "Adresse", "Ville")</li>
                 <li>Les champs requis: Nom établissement, Adresse civique</li>
                 <li>Encodage recommandé: UTF-8</li>
+                <li><strong>💾 Nouveau:</strong> Vous pourrez définir des valeurs par défaut pour tous les bâtiments (ex: même ville pour tous)</li>
               </ul>
             </div>
           </div>
