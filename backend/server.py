@@ -13758,6 +13758,242 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+# ==================== GÉNÉRATION RAPPORT PDF ====================
+
+async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> BytesIO:
+    """Générer un rapport PDF pour une inspection"""
+    # Récupérer l'inspection
+    inspection = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant_id})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Récupérer le bâtiment
+    batiment = await db.batiments.find_one({"id": inspection["batiment_id"], "tenant_id": tenant_id})
+    
+    # Récupérer la grille d'inspection
+    grille = await db.grilles_inspection.find_one({"id": inspection["grille_inspection_id"], "tenant_id": tenant_id})
+    
+    # Récupérer le préventionniste
+    preventionniste = await db.users.find_one({"id": inspection["preventionniste_id"]})
+    
+    # Récupérer les non-conformités
+    non_conformites = await db.non_conformites.find({
+        "inspection_id": inspection_id,
+        "tenant_id": tenant_id
+    }).to_list(1000)
+    
+    # Créer le PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Style personnalisé
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#1f2937'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#374151'),
+        spaceAfter=12,
+        spaceBefore=20
+    )
+    
+    # Titre
+    story.append(Paragraph("RAPPORT D'INSPECTION INCENDIE", title_style))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Informations générales
+    story.append(Paragraph("INFORMATIONS GÉNÉRALES", heading_style))
+    
+    info_data = [
+        ["Date d'inspection:", inspection.get("date_inspection", "N/A")],
+        ["Type:", inspection.get("type_inspection", "régulière").upper()],
+        ["Préventionniste:", f"{preventionniste.get('prenom', '')} {preventionniste.get('nom', '')}" if preventionniste else "N/A"],
+        ["Heure début:", inspection.get("heure_debut", "N/A")],
+        ["Heure fin:", inspection.get("heure_fin", "N/A")],
+    ]
+    
+    info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1f2937')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb'))
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Informations bâtiment
+    if batiment:
+        story.append(Paragraph("INFORMATIONS BÂTIMENT", heading_style))
+        
+        bat_data = [
+            ["Nom établissement:", batiment.get("nom_etablissement", "N/A")],
+            ["Adresse:", batiment.get("adresse_civique", "N/A")],
+            ["Ville:", batiment.get("ville", "N/A")],
+            ["Code postal:", batiment.get("code_postal", "N/A")],
+            ["Groupe occupation:", batiment.get("groupe_occupation", "N/A")],
+        ]
+        
+        bat_table = Table(bat_data, colWidths=[2*inch, 4*inch])
+        bat_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1f2937')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb'))
+        ]))
+        story.append(bat_table)
+        story.append(Spacer(1, 0.3*inch))
+    
+    # Résultat global
+    story.append(Paragraph("RÉSULTAT GLOBAL", heading_style))
+    
+    statut_color = colors.HexColor('#10b981') if inspection.get("statut_global") == "conforme" else colors.HexColor('#ef4444')
+    statut_text = inspection.get("statut_global", "N/A").upper()
+    score = inspection.get("score_conformite", 100)
+    
+    result_data = [
+        ["Statut:", statut_text],
+        ["Score de conformité:", f"{score}%"],
+        ["Non-conformités:", str(len(non_conformites))],
+    ]
+    
+    result_table = Table(result_data, colWidths=[2*inch, 4*inch])
+    result_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+        ('BACKGROUND', (1, 0), (1, 0), statut_color),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1f2937')),
+        ('TEXTCOLOR', (1, 0), (1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb'))
+    ]))
+    story.append(result_table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Non-conformités
+    if non_conformites:
+        story.append(Paragraph("NON-CONFORMITÉS IDENTIFIÉES", heading_style))
+        
+        for idx, nc in enumerate(non_conformites, 1):
+            nc_data = [
+                [f"#{idx}", ""],
+                ["Titre:", nc.get("titre", "N/A")],
+                ["Description:", nc.get("description", "N/A")],
+                ["Gravité:", nc.get("gravite", "N/A").upper()],
+                ["Statut:", nc.get("statut", "N/A")],
+                ["Délai correction:", nc.get("delai_correction", "N/A")],
+            ]
+            
+            nc_table = Table(nc_data, colWidths=[2*inch, 4*inch])
+            nc_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#fef2f2')),
+                ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb')),
+                ('SPAN', (0, 0), (-1, 0)),
+            ]))
+            story.append(nc_table)
+            story.append(Spacer(1, 0.2*inch))
+    
+    # Notes et recommandations
+    if inspection.get("notes_inspection") or inspection.get("recommandations"):
+        story.append(Paragraph("NOTES ET RECOMMANDATIONS", heading_style))
+        
+        if inspection.get("notes_inspection"):
+            story.append(Paragraph(f"<b>Notes:</b> {inspection.get('notes_inspection')}", styles['Normal']))
+            story.append(Spacer(1, 0.1*inch))
+        
+        if inspection.get("recommandations"):
+            story.append(Paragraph(f"<b>Recommandations:</b> {inspection.get('recommandations')}", styles['Normal']))
+            story.append(Spacer(1, 0.3*inch))
+    
+    # Signature
+    story.append(Spacer(1, 0.5*inch))
+    story.append(Paragraph("SIGNATURES", heading_style))
+    
+    sig_data = [
+        ["Préventionniste:", "_" * 40],
+        ["Date:", "_" * 40],
+        ["", ""],
+        ["Représentant bâtiment:", "_" * 40],
+        ["Nom:", inspection.get("nom_representant", "_" * 40)],
+        ["Date:", "_" * 40],
+    ]
+    
+    sig_table = Table(sig_data, colWidths=[2*inch, 4*inch])
+    sig_table.setStyle(TableStyle([
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1f2937')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    story.append(sig_table)
+    
+    # Générer le PDF
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+
+@api_router.get("/{tenant_slug}/prevention/inspections/{inspection_id}/rapport-pdf")
+async def get_inspection_rapport_pdf(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Générer et télécharger le rapport PDF d'une inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que l'inspection existe
+    inspection = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant.id})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Générer le PDF
+    pdf_buffer = await generer_rapport_inspection_pdf(inspection_id, tenant.id)
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=rapport_inspection_{inspection_id}.pdf"
+        }
+    )
+
+
 # ==================== INSPECTIONS ====================
 
 @api_router.post("/{tenant_slug}/prevention/inspections")
