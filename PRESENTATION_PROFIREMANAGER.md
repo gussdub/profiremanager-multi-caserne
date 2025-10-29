@@ -526,14 +526,27 @@ Fonctionnalités sur mesure pour vos besoins spécifiques
 
 ## 🎁 Offre de Lancement
 
-### Profitez de nos conditions spéciales :
+### Profitez de nos conditions spéciales de lancement :
 
-✨ **-25% sur les 6 premiers mois**  
-✨ **Migration de données GRATUITE** (valeur 1,500$)  
-✨ **Formation initiale OFFERTE** (valeur 800$)  
-✨ **Support Premium 1 mois GRATUIT** (valeur 299$)
+✨ **-30% sur les 3 premiers mois**  
+✨ **Migration de données OFFERTE** (économie de 1,500$ à 3,500$)  
+✨ **Formation initiale de 2h OFFERTE** (valeur 400$)  
 
-**Offre valable jusqu'au 31 décembre 2025**
+**Offre valable pour toute souscription avant le 31 mars 2026**
+
+### Exemple de Calcul
+
+**Caserne avec 25 pompiers :**
+- Tarif normal : 25 × 12$ = **300$/mois**
+- 3 premiers mois avec -30% : **210$/mois**
+- Migration gratuite : **Économie de 1,500$**
+- **Économie totale : 1,770$ la première année**
+
+**Caserne avec 40 pompiers :**
+- Tarif normal : 40 × 20$ = **800$/mois**
+- 3 premiers mois avec -30% : **560$/mois**
+- Migration gratuite : **Économie de 2,500$**
+- **Économie totale : 3,220$ la première année**
 
 ---
 
