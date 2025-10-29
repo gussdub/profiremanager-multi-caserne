@@ -14915,6 +14915,389 @@ const ImportCSV = ({ onImportComplete }) => {
   );
 };
 
+// Gestion des Préventionnistes
+const GestionPreventionnistes = () => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [users, setUsers] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [preventionnistes, setPreventionnistes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, batimentsData] = await Promise.all([
+        apiGet(tenantSlug, '/users'),
+        apiGet(tenantSlug, '/prevention/batiments')
+      ]);
+      
+      setUsers(usersData);
+      setBatiments(batimentsData);
+      
+      // Filtrer les préventionnistes (utilisateurs avec des bâtiments assignés)
+      const preventionnistesActifs = usersData.filter(user => 
+        batimentsData.some(batiment => batiment.preventionniste_assigne_id === user.id)
+      );
+      setPreventionnistes(preventionnistesActifs);
+      
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const handleRemoveAssignment = async (batimentId) => {
+    try {
+      await apiPut(tenantSlug, `/prevention/batiments/${batimentId}`, {
+        preventionniste_assigne_id: null
+      });
+      
+      toast({
+        title: "Succès",
+        description: "Assignation supprimée"
+      });
+      
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'assignation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement...</div>;
+  }
+
+  return (
+    <div className="gestion-preventionnistes">
+      {/* Vue d'ensemble */}
+      <div className="overview-cards">
+        <div className="overview-card">
+          <div className="card-icon">👨‍🚒</div>
+          <div className="card-content">
+            <div className="card-number">{preventionnistes.length}</div>
+            <div className="card-label">Préventionnistes actifs</div>
+          </div>
+        </div>
+        <div className="overview-card">
+          <div className="card-icon">🏢</div>
+          <div className="card-content">
+            <div className="card-number">{batiments.filter(b => b.preventionniste_assigne_id).length}</div>
+            <div className="card-label">Bâtiments assignés</div>
+          </div>
+        </div>
+        <div className="overview-card">
+          <div className="card-icon">⚠️</div>
+          <div className="card-content">
+            <div className="card-number">{batiments.filter(b => !b.preventionniste_assigne_id).length}</div>
+            <div className="card-label">Sans préventionniste</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Liste des préventionnistes */}
+      <div className="preventionnistes-section">
+        <h3>👨‍🚒 Préventionnistes Actifs</h3>
+        
+        {preventionnistes.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucun préventionniste assigné</p>
+            <p><small>Assignez des bâtiments aux employés pour créer des préventionnistes</small></p>
+          </div>
+        ) : (
+          <div className="preventionnistes-grid">
+            {preventionnistes.map(preventionniste => {
+              const batimentsAssignes = batiments.filter(b => b.preventionniste_assigne_id === preventionniste.id);
+              
+              return (
+                <div key={preventionniste.id} className="preventionniste-card">
+                  <div className="preventionniste-header">
+                    <div className="preventionniste-info">
+                      <h4>{preventionniste.prenom} {preventionniste.nom}</h4>
+                      <p>{preventionniste.email}</p>
+                      <span className="grade-badge">{preventionniste.grade}</span>
+                    </div>
+                    <div className="preventionniste-stats">
+                      <div className="stat-item">
+                        <span className="stat-number">{batimentsAssignes.length}</span>
+                        <span className="stat-label">bâtiments</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="batiments-assignes">
+                    <h5>🏢 Bâtiments assignés:</h5>
+                    {batimentsAssignes.length === 0 ? (
+                      <p className="no-batiments">Aucun bâtiment assigné</p>
+                    ) : (
+                      <div className="batiments-list">
+                        {batimentsAssignes.slice(0, 3).map(batiment => (
+                          <div key={batiment.id} className="batiment-item">
+                            <span className="batiment-name">{batiment.nom_etablissement}</span>
+                            <button 
+                              onClick={() => handleRemoveAssignment(batiment.id)}
+                              className="remove-btn"
+                              title="Supprimer l'assignation"
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                        {batimentsAssignes.length > 3 && (
+                          <p className="more-batiments">
+                            ... et {batimentsAssignes.length - 3} autres
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Bâtiments sans préventionniste */}
+      <div className="batiments-section">
+        <h3>⚠️ Bâtiments Sans Préventionniste</h3>
+        
+        {batiments.filter(b => !b.preventionniste_assigne_id).length === 0 ? (
+          <div className="success-state">
+            <p>✅ Tous les bâtiments ont un préventionniste assigné</p>
+          </div>
+        ) : (
+          <div className="batiments-sans-preventionniste">
+            {batiments
+              .filter(b => !b.preventionniste_assigne_id)
+              .slice(0, 10)
+              .map(batiment => (
+              <div key={batiment.id} className="batiment-sans-preventionniste">
+                <div className="batiment-details">
+                  <h4>{batiment.nom_etablissement}</h4>
+                  <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                  <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                </div>
+                <div className="assign-actions">
+                  <p><small>Besoin d'un préventionniste</small></p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AssignerPreventionniste = ({ onAssign }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [users, setUsers] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedBatiments, setSelectedBatiments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, batimentsData] = await Promise.all([
+        apiGet(tenantSlug, '/users'),
+        apiGet(tenantSlug, '/prevention/batiments')
+      ]);
+      
+      setUsers(usersData.filter(u => u.role === 'admin' || u.role === 'superviseur'));
+      setBatiments(batimentsData);
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const handleBatimentToggle = (batimentId) => {
+    setSelectedBatiments(prev => 
+      prev.includes(batimentId) 
+        ? prev.filter(id => id !== batimentId)
+        : [...prev, batimentId]
+    );
+  };
+
+  const handleAssign = async () => {
+    if (!selectedUser || selectedBatiments.length === 0) {
+      toast({
+        title: "Validation",
+        description: "Veuillez sélectionner un préventionniste et au moins un bâtiment",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      
+      // Assigner le préventionniste à tous les bâtiments sélectionnés
+      await Promise.all(
+        selectedBatiments.map(batimentId =>
+          apiPut(tenantSlug, `/prevention/batiments/${batimentId}`, {
+            preventionniste_assigne_id: selectedUser
+          })
+        )
+      );
+
+      toast({
+        title: "Succès",
+        description: `${selectedBatiments.length} bâtiment(s) assigné(s) avec succès`
+      });
+
+      onAssign();
+    } catch (error) {
+      console.error('Erreur assignation:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de l'assignation",
+        variant: "destructive"
+      });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement...</div>;
+  }
+
+  const selectedUserInfo = users.find(u => u.id === selectedUser);
+
+  return (
+    <div className="assigner-preventionniste">
+      <div className="assignment-steps">
+        {/* Étape 1: Sélectionner préventionniste */}
+        <div className="step-section">
+          <h3>👤 Étape 1: Sélectionner le préventionniste</h3>
+          <div className="users-grid">
+            {users.map(user => (
+              <label key={user.id} className="user-option">
+                <input
+                  type="radio"
+                  name="preventionniste"
+                  value={user.id}
+                  checked={selectedUser === user.id}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                />
+                <div className="user-card">
+                  <div className="user-info">
+                    <h4>{user.prenom} {user.nom}</h4>
+                    <p>{user.email}</p>
+                    <span className="role-badge">{user.role}</span>
+                    <span className="grade-badge">{user.grade}</span>
+                  </div>
+                  <div className="user-stats">
+                    <span className="current-assignments">
+                      {batiments.filter(b => b.preventionniste_assigne_id === user.id).length} bâtiments actuels
+                    </span>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Étape 2: Sélectionner bâtiments */}
+        {selectedUser && (
+          <div className="step-section">
+            <h3>🏢 Étape 2: Sélectionner les bâtiments ({selectedBatiments.length} sélectionnés)</h3>
+            <div className="batiments-selection">
+              {batiments
+                .filter(b => !b.preventionniste_assigne_id || b.preventionniste_assigne_id === selectedUser)
+                .map(batiment => (
+                <label key={batiment.id} className="batiment-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedBatiments.includes(batiment.id)}
+                    onChange={() => handleBatimentToggle(batiment.id)}
+                  />
+                  <div className="batiment-card">
+                    <div className="batiment-info">
+                      <h4>{batiment.nom_etablissement}</h4>
+                      <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                      <div className="batiment-meta">
+                        <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                        {batiment.preventionniste_assigne_id === selectedUser && (
+                          <span className="assigned-badge">Déjà assigné</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Résumé et confirmation */}
+        {selectedUser && selectedBatiments.length > 0 && (
+          <div className="step-section confirmation">
+            <h3>✅ Confirmation de l'assignation</h3>
+            <div className="assignment-summary">
+              <div className="summary-item">
+                <strong>Préventionniste:</strong> {selectedUserInfo?.prenom} {selectedUserInfo?.nom}
+              </div>
+              <div className="summary-item">
+                <strong>Bâtiments à assigner:</strong> {selectedBatiments.length}
+              </div>
+            </div>
+
+            <div className="confirmation-actions">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSelectedUser('');
+                  setSelectedBatiments([]);
+                }}
+              >
+                🔄 Recommencer
+              </Button>
+              <Button 
+                onClick={handleAssign}
+                disabled={assigning}
+                className="confirm-btn"
+              >
+                {assigning ? '⏳ Assignation...' : '✅ Confirmer l\'assignation'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Module Prévention - Gestion des inspections et bâtiments
 const Prevention = () => {
   const { user, tenant } = useAuth();
