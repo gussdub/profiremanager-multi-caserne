@@ -15194,6 +15194,7 @@ const GrillesInspection = () => {
   const { toast } = useToast();
   const [grilles, setGrilles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingGrille, setEditingGrille] = useState(null);
 
   const fetchGrilles = async () => {
     try {
@@ -15234,6 +15235,10 @@ const GrillesInspection = () => {
       });
     }
   };
+
+  if (editingGrille) {
+    return <EditerGrille grille={editingGrille} onClose={() => setEditingGrille(null)} onSave={() => { setEditingGrille(null); fetchGrilles(); }} />;
+  }
 
   if (loading) {
     return <div className="loading">Chargement des grilles...</div>;
