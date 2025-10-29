@@ -14512,9 +14512,10 @@ const ImportCSV = ({ onImportComplete }) => {
   const [previewData, setPreviewData] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  const [showFieldEditor, setShowFieldEditor] = useState(false);
 
-  // Champs disponibles pour le mapping
-  const availableFields = [
+  // Champs par défaut
+  const defaultFields = [
     { key: 'nom_etablissement', label: 'Nom établissement', required: true },
     { key: 'adresse_civique', label: 'Adresse civique', required: true },
     { key: 'ville', label: 'Ville', required: false },
@@ -14530,6 +14531,32 @@ const ImportCSV = ({ onImportComplete }) => {
     { key: 'description_activite', label: 'Description activité', required: false },
     { key: 'notes_generales', label: 'Notes générales', required: false }
   ];
+
+  // Charger les champs personnalisés depuis le localStorage ou utiliser les champs par défaut
+  const [availableFields, setAvailableFields] = useState(() => {
+    const savedFields = localStorage.getItem(`${tenantSlug}_import_fields`);
+    return savedFields ? JSON.parse(savedFields) : defaultFields;
+  });
+
+  // Sauvegarder les champs personnalisés
+  const saveCustomFields = (fields) => {
+    localStorage.setItem(`${tenantSlug}_import_fields`, JSON.stringify(fields));
+    setAvailableFields(fields);
+    toast({
+      title: "Champs sauvegardés",
+      description: "Vos champs personnalisés ont été enregistrés"
+    });
+  };
+
+  // Réinitialiser aux champs par défaut
+  const resetToDefaultFields = () => {
+    localStorage.removeItem(`${tenantSlug}_import_fields`);
+    setAvailableFields(defaultFields);
+    toast({
+      title: "Réinitialisation",
+      description: "Les champs ont été réinitialisés aux valeurs par défaut"
+    });
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
