@@ -707,8 +707,6 @@ const Login = () => {
 // Sidebar Navigation avec menu hamburger mobile
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
-  
-  console.log('[DEBUG] Sidebar render - Props tenant:', tenant, 'Auth tenant:', authTenant, 'User:', user?.role);
 
   const { tenantSlug } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -859,7 +857,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'], requiresModule: 'prevention' },
+    { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'] },  // Supprimé requiresModule temporairement
     { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
     { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe'] },
@@ -867,37 +865,14 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
-    console.log('[DEBUG] Filtering menu item:', item.id, 'requiresModule:', item.requiresModule);
-    
-    // Utiliser authTenant (du contexte d'auth) au lieu de tenant (prop)
-    const currentTenant = authTenant || tenant;
-    
-    // Vérification du rôle
-    if (!item.roles.includes(user?.role)) {
-      console.log('[DEBUG] Item', item.id, 'filtered out - role mismatch. User role:', user?.role);
-      return false;
-    }
+    // Vérification du rôle seulement
+    if (!item.roles.includes(user?.role)) return false;
     
     // Vérifier si c'est le module "Mes disponibilités" qui ne doit être visible que pour les utilisateurs temps partiel
     if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') {
       return false;
     }
     
-    // Vérifier si le module requiert une activation spéciale (ex: Prévention)
-    if (item.requiresModule) {
-      console.log('[DEBUG] Module requires activation:', item.id, item.requiresModule);
-      if (item.requiresModule === 'prevention') {
-        console.log('[DEBUG] Checking prevention module:', {
-          currentTenant: currentTenant,
-          parametres: currentTenant?.parametres,
-          module_prevention_active: currentTenant?.parametres?.module_prevention_active,
-          result: currentTenant?.parametres?.module_prevention_active === true
-        });
-        return currentTenant?.parametres?.module_prevention_active === true;
-      }
-    }
-    
-    console.log('[DEBUG] Item', item.id, 'approved');
     return true;
   });
 
