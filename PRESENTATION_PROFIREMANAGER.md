@@ -394,67 +394,74 @@ Grilles conformes au **Code de sécurité du Québec** pour :
 
 ---
 
-## 📦 Formules et Tarification
+## 📦 Tarification Simple et Transparente
 
-### Formule Essentielle
-**Idéale pour petites casernes (1-15 employés)**
+### Tarif par Pompier/Mois
 
-✅ Gestion des gardes  
-✅ Planification automatique  
-✅ Gestion du personnel  
-✅ Calendrier interactif  
+Notre tarification est **claire et évolutive** selon la taille de votre organisation :
+
+| Nombre de Pompiers | Prix par Pompier/Mois | Exemple (30 pompiers) |
+|---------------------|----------------------|----------------------|
+| **0 à 30 pompiers** | **12$/mois** | 360$/mois |
+| **31 à 50 pompiers** | **20$/mois** | 800$/mois (40 pompiers) |
+| **51 pompiers et plus** | **27$/mois** | 1,350$/mois (50 pompiers) |
+
+### ✨ Tous les Modules Inclus
+
+**Peu importe votre formule, vous avez accès à :**
+
+✅ Gestion des gardes avec attribution automatique  
+✅ Planification intelligente et calendrier interactif  
+✅ Gestion complète du personnel  
+✅ Module EPI (Équipements de Protection)  
+✅ Module Prévention (import CSV, grilles d'inspection, préventionnistes)  
+✅ Tableaux de bord et rapports avancés  
+✅ Multi-tenant et gestion des rôles  
 ✅ Support par email  
+✅ Mises à jour automatiques  
 
-**À partir de 299$/mois**
-
----
-
-### Formule Professionnelle
-**Pour casernes moyennes (16-40 employés)**
-
-✅ **Tout Essentielle, plus :**  
-✅ Module EPI complet  
-✅ Rapports avancés  
-✅ API d'intégration  
-✅ Support prioritaire  
-✅ Formation incluse  
-
-**À partir de 599$/mois**
+**Pas de frais cachés, pas de modules supplémentaires payants !**
 
 ---
 
-### Formule Entreprise
-**Pour grandes organisations (40+ employés)**
+### 💼 Services d'Intégration
 
-✅ **Tout Professionnelle, plus :**  
-✅ Module Prévention complet  
-✅ Import CSV illimité  
-✅ Grilles personnalisées  
-✅ Support téléphonique dédié  
-✅ Formation sur site  
-✅ Personnalisations sur mesure  
+#### Migration et Import de Données
 
-**Sur devis - Nous contacter**
+Nous vous accompagnons dans la migration de vos données existantes (Excel, autres systèmes) :
+
+| Taille de l'Organisation | Tarif d'Import |
+|---------------------------|----------------|
+| **0 à 30 pompiers** | **1,500$** |
+| **31 à 50 pompiers** | **2,500$** |
+| **51 pompiers et plus** | **3,500$** |
+
+**Inclus dans l'import :**
+- Analyse de vos données actuelles
+- Nettoyage et validation
+- Import dans ProFireManager
+- Vérification et tests
+- Formation de base (2h)
 
 ---
 
 ### Options Supplémentaires
 
-**Module Prévention** (ajout à toute formule)  
-Import bâtiments, grilles d'inspection, gestion préventionnistes  
-**+199$/mois**
+**Formation sur site complète**  
+2 jours de formation approfondie de votre équipe  
+**2,500$** (forfait)
 
-**Formation sur site**  
-2 jours de formation complète de votre équipe  
-**2,500$ (one-time)**
+**Formation personnalisée à distance**  
+Sessions de 4h adaptées à vos besoins spécifiques  
+**800$** (par session)
 
-**Migration de données**  
-Import et configuration de vos données existantes  
-**À partir de 1,500$**
+**Support Premium 24/7**  
+Support téléphonique prioritaire avec temps de réponse < 2h  
+**+5$/pompier/mois**
 
-**Support Premium**  
-Support 24/7 avec temps de réponse < 2h  
-**+299$/mois**
+**Développements personnalisés**  
+Fonctionnalités sur mesure pour vos besoins spécifiques  
+**Sur devis**
 
 ---
 
