@@ -14904,6 +14904,13 @@ const ImportCSV = ({ onImportComplete }) => {
                 <div className="file-info">
                   📊 <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
                 </div>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => setShowFieldEditor(true)}
+                >
+                  ⚙️ Personnaliser les champs
+                </Button>
               </div>
 
               <div className="mapping-table">
