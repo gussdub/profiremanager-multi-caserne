@@ -15189,6 +15189,252 @@ const ImportCSV = ({ onImportComplete }) => {
 };
 
 // Gestion des Grilles d'Inspection
+const EditerGrille = ({ grille, onClose, onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: grille.nom,
+    groupe_occupation: grille.groupe_occupation || '',
+    sections: grille.sections || [],
+    actif: grille.actif !== false,
+    version: grille.version || '1.0'
+  });
+  const [saving, setSaving] = useState(false);
+
+  const addSection = () => {
+    setFormData({
+      ...formData,
+      sections: [...formData.sections, { titre: '', questions: [] }]
+    });
+  };
+
+  const removeSection = (index) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateSection = (index, field, value) => {
+    const newSections = [...formData.sections];
+    newSections[index] = { ...newSections[index], [field]: value };
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const addQuestion = (sectionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = [...(newSections[sectionIndex].questions || []), ''];
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const removeQuestion = (sectionIndex, questionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex);
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const updateQuestion = (sectionIndex, questionIndex, value) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions[questionIndex] = value;
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const handleSave = async () => {
+    if (!formData.nom) {
+      toast({
+        title: "Validation",
+        description: "Le nom de la grille est requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.sections.length === 0) {
+      toast({
+        title: "Validation",
+        description: "La grille doit contenir au moins une section",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, formData);
+      
+      toast({
+        title: "Succès",
+        description: "Grille mise à jour avec succès"
+      });
+      
+      onSave();
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la grille",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="editer-grille-container">
+      <div className="page-header">
+        <h2>✏️ Modifier la Grille: {grille.nom}</h2>
+        <div className="header-actions">
+          <Button variant="outline" onClick={onClose}>
+            ✕ Annuler
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Sauvegarde...' : '💾 Enregistrer'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grille-form">
+        {/* Informations générales */}
+        <div className="form-section">
+          <h3>Informations Générales</h3>
+          <div className="form-grid">
+            <div className="form-field">
+              <label>Nom de la grille *</label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                className="form-input"
+                placeholder="Ex: Grille Résidentielle Personnalisée"
+              />
+            </div>
+            <div className="form-field">
+              <label>Groupe d'occupation</label>
+              <select
+                value={formData.groupe_occupation}
+                onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
+                className="form-select"
+              >
+                <option value="">-- Sélectionner --</option>
+                <option value="A">A - Habitation</option>
+                <option value="B">B - Soins et détention</option>
+                <option value="C">C - Résidentiel</option>
+                <option value="D">D - Affaires</option>
+                <option value="E">E - Commerce</option>
+                <option value="F">F - Industriel</option>
+                <option value="I">I - Assemblée</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Version</label>
+              <input
+                type="text"
+                value={formData.version}
+                onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                className="form-input"
+                placeholder="1.0"
+              />
+            </div>
+            <div className="form-field checkbox-field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.actif}
+                  onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
+                />
+                <span>Grille active</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="form-section">
+          <div className="section-header">
+            <h3>Sections ({formData.sections.length})</h3>
+            <Button size="sm" onClick={addSection}>
+              ➕ Ajouter une section
+            </Button>
+          </div>
+
+          <div className="sections-list">
+            {formData.sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="section-editor">
+                <div className="section-editor-header">
+                  <h4>Section {sectionIndex + 1}</h4>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => removeSection(sectionIndex)}
+                  >
+                    🗑️ Supprimer section
+                  </Button>
+                </div>
+
+                <div className="section-editor-content">
+                  <div className="form-field">
+                    <label>Titre de la section *</label>
+                    <input
+                      type="text"
+                      value={section.titre}
+                      onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
+                      className="form-input"
+                      placeholder="Ex: Voies d'évacuation"
+                    />
+                  </div>
+
+                  <div className="questions-editor">
+                    <div className="questions-header">
+                      <label>Questions ({section.questions?.length || 0})</label>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => addQuestion(sectionIndex)}
+                      >
+                        ➕ Ajouter question
+                      </Button>
+                    </div>
+
+                    <div className="questions-list-editor">
+                      {(section.questions || []).map((question, questionIndex) => (
+                        <div key={questionIndex} className="question-editor-item">
+                          <span className="question-number">{questionIndex + 1}.</span>
+                          <input
+                            type="text"
+                            value={question}
+                            onChange={(e) => updateQuestion(sectionIndex, questionIndex, e.target.value)}
+                            className="question-input"
+                            placeholder="Entrez votre question..."
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeQuestion(sectionIndex, questionIndex)}
+                            className="remove-question-btn"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {formData.sections.length === 0 && (
+            <div className="empty-state">
+              <p>Aucune section. Cliquez sur "Ajouter une section" pour commencer.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GrillesInspection = () => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
