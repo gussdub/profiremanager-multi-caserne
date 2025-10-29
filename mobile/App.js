@@ -1,9 +1,9 @@
+import 'react-native-gesture-handler';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
-import { useNavigation } from '@react-navigation/native';
 
 function AppContent() {
   const navigationRef = useRef();
@@ -13,9 +13,14 @@ function AppContent() {
     registerForPushNotificationsAsync();
 
     // Configurer les listeners de notifications
-    const unsubscribe = setupNotificationListeners(navigationRef.current);
+    let unsubscribe;
+    if (navigationRef.current) {
+      unsubscribe = setupNotificationListeners(navigationRef.current);
+    }
 
-    return unsubscribe;
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   return (
