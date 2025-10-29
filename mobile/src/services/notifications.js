@@ -45,10 +45,10 @@ export async function registerForPushNotificationsAsync() {
         const user = JSON.parse(userData);
         const tenant = JSON.parse(tenantData);
         
-        await api.post(`/api/${tenant.slug}/notifications/register-token`, {
+        await api.post(`/api/${tenant.slug}/notifications/register-device`, {
           user_id: user.id,
-          push_token: token,
-          device_type: Device.osName,
+          device_token: token,
+          platform: Device.osName.toLowerCase(),
         });
       }
     } catch (error) {
