@@ -588,10 +588,16 @@ R : Vous recevez un export complet de toutes vos données au format standard.
 ### Support
 
 **Q : Quel type de support est fourni ?**  
-R : Email pour toutes les formules, téléphone prioritaire pour Pro et Entreprise, 24/7 avec Support Premium.
+R : Support par email pour tous les abonnements. Support Premium 24/7 disponible en option (+5$/pompier/mois).
 
 **Q : Y a-t-il des frais cachés ?**  
-R : Non, tarification transparente. Seules les options supplémentaires sont facturées en plus.
+R : Non, tarification 100% transparente. Prix par pompier fixe, tous les modules inclus. Seuls les services d'intégration et options supplémentaires sont en sus.
+
+**Q : Comment évolue le prix si on ajoute des pompiers ?**  
+R : Vous êtes facturé uniquement pour le nombre réel de pompiers actifs dans le système. Ajout/retrait possible à tout moment.
+
+**Q : Peut-on payer annuellement pour économiser ?**  
+R : Oui! Paiement annuel = **2 mois offerts** (économie de ~17%). Contactez-nous pour un devis personnalisé.
 
 ---
 
