@@ -16161,6 +16161,683 @@ const AssignerPreventionniste = ({ onAssign }) => {
   );
 };
 
+// ==================== COMPOSANTS INSPECTIONS ====================
+
+const ListeInspections = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [inspections, setInspections] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // all, conforme, non_conforme
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [inspectionsData, batimentsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/prevention/inspections'),
+        apiGet(tenantSlug, '/prevention/batiments'),
+        apiGet(tenantSlug, '/users')
+      ]);
+      
+      setInspections(inspectionsData);
+      setBatiments(batimentsData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les inspections",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const getBatimentName = (batimentId) => {
+    const batiment = batiments.find(b => b.id === batimentId);
+    return batiment?.nom_etablissement || 'Inconnu';
+  };
+
+  const getPreventionnisteName = (userId) => {
+    const preventionniste = users.find(u => u.id === userId);
+    return preventionniste ? `${preventionniste.prenom} ${preventionniste.nom}` : 'Inconnu';
+  };
+
+  const filteredInspections = inspections.filter(insp => {
+    if (filter === 'all') return true;
+    if (filter === 'conforme') return insp.statut_global === 'conforme';
+    if (filter === 'non_conforme') return insp.statut_global !== 'conforme';
+    return true;
+  });
+
+  const handleDownloadPDF = async (inspectionId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/inspections/${inspectionId}/rapport-pdf`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur téléchargement');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_inspection_${inspectionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Succès",
+        description: "Rapport téléchargé"
+      });
+    } catch (error) {
+      console.error('Erreur téléchargement PDF:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le rapport",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement des inspections...</div>;
+  }
+
+  return (
+    <div className="inspections-container">
+      <div className="page-header">
+        <h2>📋 Liste des Inspections</h2>
+        <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+          ➕ Nouvelle Inspection
+        </Button>
+      </div>
+
+      <div className="inspections-filters">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+        >
+          Toutes ({inspections.length})
+        </Button>
+        <Button
+          variant={filter === 'conforme' ? 'default' : 'outline'}
+          onClick={() => setFilter('conforme')}
+        >
+          ✅ Conformes ({inspections.filter(i => i.statut_global === 'conforme').length})
+        </Button>
+        <Button
+          variant={filter === 'non_conforme' ? 'default' : 'outline'}
+          onClick={() => setFilter('non_conforme')}
+        >
+          ⚠️ Non-conformes ({inspections.filter(i => i.statut_global !== 'conforme').length})
+        </Button>
+      </div>
+
+      {filteredInspections.length === 0 ? (
+        <div className="empty-state">
+          <p>Aucune inspection trouvée</p>
+          <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+            Créer la première inspection
+          </Button>
+        </div>
+      ) : (
+        <div className="inspections-list">
+          {filteredInspections.map(inspection => (
+            <div key={inspection.id} className="inspection-card">
+              <div className="inspection-header">
+                <div>
+                  <h4>{getBatimentName(inspection.batiment_id)}</h4>
+                  <p className="inspection-date">{inspection.date_inspection}</p>
+                </div>
+                <span className={`statut-badge ${inspection.statut_global}`}>
+                  {inspection.statut_global === 'conforme' ? '✅ Conforme' : '⚠️ Non-conforme'}
+                </span>
+              </div>
+              
+              <div className="inspection-details">
+                <div className="detail-item">
+                  <span className="label">Préventionniste:</span>
+                  <span>{getPreventionnisteName(inspection.preventionniste_id)}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Type:</span>
+                  <span>{inspection.type_inspection}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Score:</span>
+                  <span className="score">{inspection.score_conformite}%</span>
+                </div>
+              </div>
+              
+              <div className="inspection-actions">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleDownloadPDF(inspection.id)}
+                >
+                  📄 Rapport PDF
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    // TODO: Vue détail inspection
+                    toast({
+                      title: "Info",
+                      description: "Détails de l'inspection à venir"
+                    });
+                  }}
+                >
+                  👁️ Voir détails
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NouvelleInspection = ({ setCurrentView, batiments }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [grilles, setGrilles] = useState([]);
+  const [formData, setFormData] = useState({
+    batiment_id: '',
+    grille_inspection_id: '',
+    date_inspection: new Date().toISOString().split('T')[0],
+    type_inspection: 'reguliere'
+  });
+
+  useEffect(() => {
+    const fetchGrilles = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+        setGrilles(data);
+      } catch (error) {
+        console.error('Erreur chargement grilles:', error);
+      }
+    };
+    fetchGrilles();
+  }, [tenantSlug]);
+
+  const handleSubmit = async () => {
+    if (!formData.batiment_id || !formData.grille_inspection_id) {
+      toast({
+        title: "Validation",
+        description: "Veuillez sélectionner un bâtiment et une grille",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const inspection = await apiPost(tenantSlug, '/prevention/inspections', {
+        ...formData,
+        preventionniste_id: user.id,
+        heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+        resultats: {},
+        statut_global: 'en_cours',
+        score_conformite: 0
+      });
+
+      toast({
+        title: "Succès",
+        description: "Inspection créée"
+      });
+
+      // Rediriger vers la réalisation de l'inspection
+      localStorage.setItem('current_inspection_id', inspection.id);
+      setCurrentView('realiser-inspection');
+    } catch (error) {
+      console.error('Erreur création inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="nouvelle-inspection-container">
+      <div className="page-header">
+        <h2>🔍 Nouvelle Inspection</h2>
+        <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+          ← Retour
+        </Button>
+      </div>
+
+      <div className="inspection-form">
+        <div className="form-section">
+          <label>Bâtiment à inspecter *</label>
+          <select
+            value={formData.batiment_id}
+            onChange={(e) => setFormData({ ...formData, batiment_id: e.target.value })}
+            className="form-select"
+          >
+            <option value="">-- Sélectionner un bâtiment --</option>
+            {batiments.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.nom_etablissement} - {b.adresse_civique}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-section">
+          <label>Grille d'inspection *</label>
+          <select
+            value={formData.grille_inspection_id}
+            onChange={(e) => setFormData({ ...formData, grille_inspection_id: e.target.value })}
+            className="form-select"
+          >
+            <option value="">-- Sélectionner une grille --</option>
+            {grilles.map(g => (
+              <option key={g.id} value={g.id}>
+                {g.nom} {g.groupe_occupation ? `(Groupe ${g.groupe_occupation})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-section">
+          <label>Date d'inspection *</label>
+          <input
+            type="date"
+            value={formData.date_inspection}
+            onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+            className="form-input"
+          />
+        </div>
+
+        <div className="form-section">
+          <label>Type d'inspection</label>
+          <select
+            value={formData.type_inspection}
+            onChange={(e) => setFormData({ ...formData, type_inspection: e.target.value })}
+            className="form-select"
+          >
+            <option value="reguliere">Régulière</option>
+            <option value="suivi">Suivi</option>
+            <option value="urgence">Urgence</option>
+            <option value="plainte">Suite à plainte</option>
+          </select>
+        </div>
+
+        <div className="form-actions">
+          <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+            Annuler
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Création...' : 'Démarrer l\'inspection'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RealiserInspection = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [inspection, setInspection] = useState(null);
+  const [grille, setGrille] = useState(null);
+  const [batiment, setBatiment] = useState(null);
+  const [resultats, setResultats] = useState({});
+  const [nonConformites, setNonConformites] = useState([]);
+
+  useEffect(() => {
+    const loadInspection = async () => {
+      try {
+        const inspectionId = localStorage.getItem('current_inspection_id');
+        if (!inspectionId) {
+          setCurrentView('inspections');
+          return;
+        }
+
+        const inspData = await apiGet(tenantSlug, `/prevention/inspections/${inspectionId}`);
+        setInspection(inspData);
+        setResultats(inspData.resultats || {});
+
+        const [grilleData, batimentData] = await Promise.all([
+          apiGet(tenantSlug, `/prevention/grilles-inspection/${inspData.grille_inspection_id}`),
+          apiGet(tenantSlug, `/prevention/batiments/${inspData.batiment_id}`)
+        ]);
+
+        setGrille(grilleData);
+        setBatiment(batimentData);
+      } catch (error) {
+        console.error('Erreur chargement inspection:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger l'inspection",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInspection();
+  }, [tenantSlug]);
+
+  const handleReponse = (sectionIndex, questionIndex, valeur) => {
+    setResultats(prev => ({
+      ...prev,
+      [`section_${sectionIndex}_question_${questionIndex}`]: valeur
+    }));
+  };
+
+  const handleSaveInspection = async (statut = 'brouillon') => {
+    try {
+      // Calculer le score de conformité
+      const totalQuestions = grille.sections.reduce((acc, section) => acc + section.questions.length, 0);
+      const reponsesConformes = Object.values(resultats).filter(r => r === 'conforme' || r === 'oui').length;
+      const score = totalQuestions > 0 ? Math.round((reponsesConformes / totalQuestions) * 100) : 0;
+
+      const statutGlobal = score >= 80 ? 'conforme' : score >= 50 ? 'partiellement_conforme' : 'non_conforme';
+
+      await apiPut(tenantSlug, `/prevention/inspections/${inspection.id}`, {
+        ...inspection,
+        resultats,
+        score_conformite: score,
+        statut_global: statutGlobal,
+        heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // Créer les non-conformités si nécessaire
+      for (const nc of nonConformites) {
+        await apiPost(tenantSlug, '/prevention/non-conformites', {
+          ...nc,
+          inspection_id: inspection.id,
+          batiment_id: inspection.batiment_id
+        });
+      }
+
+      toast({
+        title: "Succès",
+        description: statut === 'brouillon' ? "Inspection sauvegardée" : "Inspection terminée"
+      });
+
+      localStorage.removeItem('current_inspection_id');
+      setCurrentView('inspections');
+    } catch (error) {
+      console.error('Erreur sauvegarde inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder l'inspection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const ajouterNonConformite = (sectionIndex, questionIndex, question) => {
+    setNonConformites(prev => [...prev, {
+      titre: question,
+      section_grille: `Section ${sectionIndex + 1}`,
+      description: '',
+      gravite: 'moyen',
+      statut: 'ouverte'
+    }]);
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement de l'inspection...</div>;
+  }
+
+  if (!inspection || !grille || !batiment) {
+    return <div>Erreur: Données manquantes</div>;
+  }
+
+  return (
+    <div className="realiser-inspection-container">
+      <div className="page-header">
+        <div>
+          <h2>🔍 Inspection en cours</h2>
+          <p className="inspection-subtitle">{batiment.nom_etablissement} - {batiment.adresse_civique}</p>
+        </div>
+        <div className="header-actions">
+          <Button variant="outline" onClick={() => handleSaveInspection('brouillon')}>
+            💾 Sauvegarder brouillon
+          </Button>
+          <Button onClick={() => handleSaveInspection('termine')}>
+            ✅ Terminer l'inspection
+          </Button>
+        </div>
+      </div>
+
+      <div className="grille-inspection-content">
+        {grille.sections.map((section, sectionIdx) => (
+          <div key={sectionIdx} className="grille-section">
+            <h3>{section.titre}</h3>
+            
+            <div className="questions-list">
+              {section.questions.map((question, questionIdx) => (
+                <div key={questionIdx} className="question-item">
+                  <label className="question-text">{question}</label>
+                  
+                  <div className="question-reponses">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="conforme"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'conforme'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>✅ Conforme</span>
+                    </label>
+                    
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="non_conforme"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>⚠️ Non-conforme</span>
+                    </label>
+                    
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="na"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'na'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>⊘ N/A</span>
+                    </label>
+                  </div>
+
+                  {resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => ajouterNonConformite(sectionIdx, questionIdx, question)}
+                      className="add-nc-btn"
+                    >
+                      ➕ Ajouter non-conformité
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {nonConformites.length > 0 && (
+        <div className="non-conformites-preview">
+          <h3>⚠️ Non-conformités identifiées ({nonConformites.length})</h3>
+          <div className="nc-list-preview">
+            {nonConformites.map((nc, idx) => (
+              <div key={idx} className="nc-preview-item">
+                <span className="nc-number">#{idx + 1}</span>
+                <span>{nc.titre}</span>
+                <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const GestionNonConformites = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [nonConformites, setNonConformites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchNonConformites = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/non-conformites');
+        setNonConformites(data);
+      } catch (error) {
+        console.error('Erreur chargement non-conformités:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les non-conformités",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNonConformites();
+  }, [tenantSlug]);
+
+  const handleUpdateStatut = async (ncId, newStatut) => {
+    try {
+      await apiPatch(tenantSlug, `/prevention/non-conformites/${ncId}/statut`, {
+        statut: newStatut
+      });
+
+      setNonConformites(prev => 
+        prev.map(nc => nc.id === ncId ? { ...nc, statut: newStatut } : nc)
+      );
+
+      toast({
+        title: "Succès",
+        description: "Statut mis à jour"
+      });
+    } catch (error) {
+      console.error('Erreur mise à jour statut:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredNC = nonConformites.filter(nc => {
+    if (filter === 'all') return true;
+    if (filter === 'ouverte') return nc.statut === 'ouverte' || nc.statut === 'en_cours';
+    if (filter === 'corrigee') return nc.statut === 'corrigee' || nc.statut === 'fermee';
+    return true;
+  });
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement...</div>;
+  }
+
+  return (
+    <div className="non-conformites-container">
+      <div className="page-header">
+        <h2>⚠️ Gestion des Non-Conformités</h2>
+      </div>
+
+      <div className="nc-filters">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+        >
+          Toutes ({nonConformites.length})
+        </Button>
+        <Button
+          variant={filter === 'ouverte' ? 'default' : 'outline'}
+          onClick={() => setFilter('ouverte')}
+        >
+          🔴 Ouvertes ({nonConformites.filter(nc => nc.statut === 'ouverte' || nc.statut === 'en_cours').length})
+        </Button>
+        <Button
+          variant={filter === 'corrigee' ? 'default' : 'outline'}
+          onClick={() => setFilter('corrigee')}
+        >
+          ✅ Corrigées ({nonConformites.filter(nc => nc.statut === 'corrigee' || nc.statut === 'fermee').length})
+        </Button>
+      </div>
+
+      {filteredNC.length === 0 ? (
+        <div className="empty-state">
+          <p>Aucune non-conformité trouvée</p>
+        </div>
+      ) : (
+        <div className="nc-list">
+          {filteredNC.map(nc => (
+            <div key={nc.id} className="nc-card">
+              <div className="nc-header">
+                <h4>{nc.titre}</h4>
+                <span className={`statut-badge ${nc.statut}`}>{nc.statut}</span>
+              </div>
+              
+              <div className="nc-details">
+                <p><strong>Description:</strong> {nc.description || 'N/A'}</p>
+                <p><strong>Gravité:</strong> <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span></p>
+                {nc.delai_correction && (
+                  <p><strong>Délai correction:</strong> {nc.delai_correction}</p>
+                )}
+              </div>
+
+              <div className="nc-actions">
+                <select
+                  value={nc.statut}
+                  onChange={(e) => handleUpdateStatut(nc.id, e.target.value)}
+                  className="statut-select"
+                >
+                  <option value="ouverte">Ouverte</option>
+                  <option value="en_cours">En cours</option>
+                  <option value="corrigee">Corrigée</option>
+                  <option value="fermee">Fermée</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Module Prévention - Gestion des inspections et bâtiments
 const Prevention = () => {
   const { user, tenant } = useAuth();
