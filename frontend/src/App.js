@@ -16672,6 +16672,9 @@ const RealiserInspection = ({ setCurrentView }) => {
         resultats,
         score_conformite: score,
         statut_global: statutGlobal,
+        photos: photos,
+        notes_inspection: notes,
+        recommandations: recommandations,
         heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
       });
 
