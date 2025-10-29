@@ -17429,6 +17429,9 @@ const Prevention = () => {
       case 'inspections':
         return <ListeInspections setCurrentView={setCurrentView} />;
       
+      case 'detail-inspection':
+        return <DetailInspection inspectionId={localStorage.getItem('detail_inspection_id')} setCurrentView={setCurrentView} />;
+      
       case 'nouvelle-inspection':
         return (
           <NouvelleInspection 
