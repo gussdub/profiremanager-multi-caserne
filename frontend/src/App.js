@@ -14935,6 +14935,11 @@ const ImportCSV = ({ onImportComplete }) => {
                 </Button>
               </div>
 
+              <div className="mapping-info-box">
+                <p>💡 <strong>Astuce:</strong> Utilisez la colonne "Valeur par défaut" pour appliquer une même valeur à toutes les lignes importées. Par exemple, si tous vos bâtiments sont dans la même ville, entrez le nom de la ville dans "Valeur par défaut" au lieu de l'ajouter dans le CSV.</p>
+                <p><small>⚠️ La valeur par défaut écrase toujours les données du CSV si les deux sont renseignés.</small></p>
+              </div>
+
               <div className="mapping-table">
                 <div className="mapping-row header">
                   <div className="field-column">Champ système</div>
