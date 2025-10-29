@@ -1,20 +1,35 @@
+import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { AuthProvider } from './src/context/AuthContext';
+import AppNavigator from './src/navigation/AppNavigator';
+import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
+import { useNavigation } from '@react-navigation/native';
 
-export default function App() {
+function AppContent() {
+  const navigationRef = useRef();
+
+  useEffect(() => {
+    // Enregistrer pour les notifications push
+    registerForPushNotificationsAsync();
+
+    // Configurer les listeners de notifications
+    const unsubscribe = setupNotificationListeners(navigationRef.current);
+
+    return unsubscribe;
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      <StatusBar style="light" />
+      <AppNavigator ref={navigationRef} />
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
