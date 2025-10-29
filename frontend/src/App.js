@@ -14784,9 +14784,10 @@ const ImportCSV = ({ onImportComplete }) => {
             {/* Liste des champs existants */}
             <div className="existing-fields">
               <h4>Champs actuels ({editingFields.length})</h4>
+              <p className="helper-text">💡 Cochez "Obligatoire" pour les champs qui doivent absolument être remplis lors de l'import.</p>
               <div className="fields-list">
                 {editingFields.map((field, index) => (
-                  <div key={field.key} className="field-item">
+                  <div key={field.key} className={`field-item ${field.required ? 'required-field-item' : ''}`}>
                     <div className="field-number">{index + 1}</div>
                     <div className="field-details">
                       <input
@@ -14798,13 +14799,15 @@ const ImportCSV = ({ onImportComplete }) => {
                       />
                       <code className="field-key">{field.key}</code>
                     </div>
-                    <label className="field-required">
+                    <label className={`field-required-toggle ${field.required ? 'required-active' : ''}`}>
                       <input
                         type="checkbox"
                         checked={field.required}
                         onChange={(e) => updateField(field.key, { required: e.target.checked })}
                       />
-                      <span>Requis</span>
+                      <span className="toggle-text">
+                        {field.required ? '✅ Obligatoire' : '⚪ Optionnel'}
+                      </span>
                     </label>
                     <button
                       onClick={() => removeField(field.key)}
