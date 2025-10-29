@@ -17933,6 +17933,39 @@ const Prevention = () => {
       case 'dashboard':
         return (
           <div className="prevention-dashboard">
+            {/* Notifications en haut */}
+            {notifications.length > 0 && (
+              <div className="notifications-section">
+                <h3>🔔 Notifications ({notifications.length})</h3>
+                <div className="notifications-list">
+                  {notifications.slice(0, 5).map(notif => (
+                    <div key={notif.id} className={`notification-item priority-${notif.priority}`}>
+                      <div className="notif-icon">
+                        {notif.priority === 'urgent' && '🚨'}
+                        {notif.priority === 'high' && '⚠️'}
+                        {notif.priority === 'medium' && '📌'}
+                      </div>
+                      <div className="notif-content">
+                        <h4>{notif.titre}</h4>
+                        <p>{notif.description}</p>
+                        {notif.jours_retard && (
+                          <span className="notif-badge retard">{notif.jours_retard} jours de retard</span>
+                        )}
+                        {notif.jours_restants !== undefined && (
+                          <span className="notif-badge warning">{notif.jours_restants} jours restants</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {notifications.length > 5 && (
+                    <div className="more-notifications">
+                      +{notifications.length - 5} notification(s) supplémentaire(s)
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="dashboard-stats">
               <div className="stat-card">
                 <div className="stat-icon">🏢</div>
