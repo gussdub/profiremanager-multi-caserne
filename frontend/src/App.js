@@ -16612,6 +16612,9 @@ const RealiserInspection = ({ setCurrentView }) => {
   const [batiment, setBatiment] = useState(null);
   const [resultats, setResultats] = useState({});
   const [nonConformites, setNonConformites] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [notes, setNotes] = useState('');
+  const [recommandations, setRecommandations] = useState('');
 
   useEffect(() => {
     const loadInspection = async () => {
