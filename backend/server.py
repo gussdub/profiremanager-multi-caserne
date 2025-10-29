@@ -13547,6 +13547,119 @@ async def update_batiment(
     
     return {"message": "Bâtiment mis à jour avec succès"}
 
+@api_router.get("/{tenant_slug}/prevention/grilles-inspection")
+async def get_grilles_inspection(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer toutes les grilles d'inspection du tenant"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    grilles = await db.grilles_inspection.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(grille) for grille in grilles]
+
+@api_router.post("/{tenant_slug}/prevention/grilles-inspection")
+async def create_grille_inspection(
+    tenant_slug: str, 
+    grille: GrilleInspectionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle grille d'inspection"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    grille_dict = grille.dict()
+    grille_dict["tenant_id"] = tenant.id
+    grille_obj = GrilleInspection(**grille_dict)
+    
+    await db.grilles_inspection.insert_one(grille_obj.dict())
+    return clean_mongo_doc(grille_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/grilles-inspection/{grille_id}")
+async def get_grille_inspection(
+    tenant_slug: str, 
+    grille_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une grille d'inspection spécifique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    grille = await db.grilles_inspection.find_one({"id": grille_id, "tenant_id": tenant.id})
+    if not grille:
+        raise HTTPException(status_code=404, detail="Grille d'inspection non trouvée")
+    
+    return clean_mongo_doc(grille)
+
+@api_router.put("/{tenant_slug}/prevention/grilles-inspection/{grille_id}")
+async def update_grille_inspection(
+    tenant_slug: str, 
+    grille_id: str,
+    grille_update: GrilleInspectionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour une grille d'inspection"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_data = grille_update.dict()
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.grilles_inspection.update_one(
+        {"id": grille_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Grille d'inspection non trouvée")
+    
+    return {"message": "Grille d'inspection mise à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/prevention/grilles-inspection/{grille_id}")
+async def delete_grille_inspection(
+    tenant_slug: str, 
+    grille_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une grille d'inspection"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.grilles_inspection.delete_one({"id": grille_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Grille d'inspection non trouvée")
+    
+    return {"message": "Grille d'inspection supprimée avec succès"}
+
 @api_router.post("/{tenant_slug}/prevention/batiments/import-csv")
 async def import_batiments_csv(
     tenant_slug: str,
