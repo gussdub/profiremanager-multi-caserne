@@ -1,4 +1,3 @@
-import 'react-native-gesture-handler';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
