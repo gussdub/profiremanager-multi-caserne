@@ -14825,30 +14825,34 @@ const ImportCSV = ({ onImportComplete }) => {
             <div className="add-field-section">
               <h4>➕ Ajouter un nouveau champ</h4>
               <div className="add-field-form">
-                <input
-                  type="text"
-                  value={newField.key}
-                  onChange={(e) => setNewField({ ...newField, key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                  placeholder="Clé (ex: contact_urgence)"
-                  className="field-key-input"
-                />
-                <input
-                  type="text"
-                  value={newField.label}
-                  onChange={(e) => setNewField({ ...newField, label: e.target.value })}
-                  placeholder="Label (ex: Contact d'urgence)"
-                  className="field-label-input"
-                />
-                <label className="field-required">
+                <div className="add-field-inputs">
+                  <input
+                    type="text"
+                    value={newField.key}
+                    onChange={(e) => setNewField({ ...newField, key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                    placeholder="Clé (ex: contact_urgence)"
+                    className="field-key-input"
+                  />
+                  <input
+                    type="text"
+                    value={newField.label}
+                    onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+                    placeholder="Label (ex: Contact d'urgence)"
+                    className="field-label-input"
+                  />
+                </div>
+                <label className={`field-required-toggle ${newField.required ? 'required-active' : ''}`}>
                   <input
                     type="checkbox"
                     checked={newField.required}
                     onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
                   />
-                  <span>Requis</span>
+                  <span className="toggle-text">
+                    {newField.required ? '✅ Obligatoire' : '⚪ Optionnel'}
+                  </span>
                 </label>
                 <Button size="sm" onClick={addField}>
-                  Ajouter
+                  ➕ Ajouter
                 </Button>
               </div>
             </div>
