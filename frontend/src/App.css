@@ -11019,6 +11019,50 @@ body {
   cursor: pointer;
 }
 
+/* Nouveau style pour le toggle Obligatoire/Optionnel */
+.field-required-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.field-required-toggle:hover {
+  background: #e5e7eb;
+}
+
+.field-required-toggle.required-active {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.field-required-toggle.required-active:hover {
+  background: #bbf7d0;
+}
+
+.field-required-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.field-required-toggle .toggle-text {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.field-required-toggle.required-active .toggle-text {
+  color: #166534;
+}
+
 .remove-field-btn {
   background: none;
   border: none;
