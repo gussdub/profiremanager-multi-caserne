@@ -16845,6 +16845,7 @@ const Prevention = () => {
   const { toast } = useToast();
   const [currentView, setCurrentView] = useState('dashboard');
   const [batiments, setBatiments] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fetchBatiments = async () => {
@@ -16864,8 +16865,18 @@ const Prevention = () => {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/statistiques');
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur chargement statistiques:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBatiments();
+    fetchStats();
   }, [tenantSlug]);
 
   const renderContent = () => {
@@ -16877,28 +16888,28 @@ const Prevention = () => {
               <div className="stat-card">
                 <div className="stat-icon">🏢</div>
                 <div className="stat-content">
-                  <div className="stat-number">{batiments.length}</div>
+                  <div className="stat-number">{stats?.batiments?.total || batiments.length}</div>
                   <div className="stat-label">Bâtiments</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">📋</div>
                 <div className="stat-content">
-                  <div className="stat-number">0</div>
-                  <div className="stat-label">Inspections ce mois</div>
+                  <div className="stat-number">{stats?.inspections?.total || 0}</div>
+                  <div className="stat-label">Inspections totales</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">⚠️</div>
                 <div className="stat-content">
-                  <div className="stat-number">0</div>
+                  <div className="stat-number">{stats?.non_conformites?.ouvertes || 0}</div>
                   <div className="stat-label">Non-conformités ouvertes</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">📈</div>
                 <div className="stat-content">
-                  <div className="stat-number">95%</div>
+                  <div className="stat-number">{stats?.inspections?.taux_conformite || 100}%</div>
                   <div className="stat-label">Taux conformité</div>
                 </div>
               </div>
@@ -16917,7 +16928,19 @@ const Prevention = () => {
                   onClick={() => setCurrentView('inspections')}
                   className="action-button"
                 >
-                  🔍 Nouvelle inspection
+                  🔍 Voir les inspections
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('nouvelle-inspection')}
+                  className="action-button"
+                >
+                  ➕ Nouvelle inspection
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('non-conformites')}
+                  className="action-button"
+                >
+                  ⚠️ Non-conformités
                 </Button>
                 <Button 
                   onClick={() => setCurrentView('import')}
@@ -16925,6 +16948,10 @@ const Prevention = () => {
                 >
                   📊 Import CSV/Excel
                 </Button>
+              </div>
+            </div>
+          </div>
+        );
               </div>
             </div>
           </div>
