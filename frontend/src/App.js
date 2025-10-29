@@ -9,7 +9,7 @@ import { Calendar } from "./components/ui/calendar";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
 import { useTenant } from "./contexts/TenantContext";
-import { apiGet, apiPost, apiPut, apiDelete, apiCall } from "./utils/api";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
 import Chart from "react-apexcharts";
