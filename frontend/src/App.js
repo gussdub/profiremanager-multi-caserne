@@ -14509,6 +14509,7 @@ const ImportCSV = ({ onImportComplete }) => {
   const [csvData, setCsvData] = useState([]);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [columnMapping, setColumnMapping] = useState({});
+  const [defaultValues, setDefaultValues] = useState({}); // Valeurs par défaut pour saisie de masse
   const [previewData, setPreviewData] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
