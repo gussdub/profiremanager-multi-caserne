@@ -15025,25 +15025,49 @@ const ImportCSV = ({ onImportComplete }) => {
                 📋 Aperçu des <strong>5 premières lignes</strong> sur {csvData.length} total
               </div>
 
-              <div className="preview-table">
-                <div className="preview-headers">
-                  {availableFields.map(field => (
-                    <div key={field.key} className="preview-header">
-                      {field.label}
-                      {field.required && <span className="required-star"> *</span>}
-                    </div>
-                  ))}
-                </div>
-
-                {previewData.map((row, index) => (
-                  <div key={index} className="preview-row">
-                    {availableFields.map(field => (
-                      <div key={field.key} className="preview-cell">
-                        {row[field.key] || <span className="empty-cell">(vide)</span>}
-                      </div>
+              <div className="preview-table-wrapper">
+                <table className="preview-table-enhanced">
+                  <thead>
+                    <tr>
+                      <th className="row-number-header">#</th>
+                      {availableFields.map(field => (
+                        <th key={field.key} className={field.required ? 'required-header' : ''}>
+                          {field.label}
+                          {field.required && <span className="required-star"> *</span>}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((row, index) => (
+                      <tr key={index}>
+                        <td className="row-number">{index + 1}</td>
+                        {availableFields.map(field => (
+                          <td key={field.key} className="preview-data-cell">
+                            {row[field.key] ? (
+                              <span className={defaultValues[field.key] ? 'default-value-indicator' : 'csv-value-indicator'}>
+                                {row[field.key]}
+                              </span>
+                            ) : (
+                              <span className="empty-cell">(vide)</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </div>
-                ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="preview-legend">
+                <div className="legend-item">
+                  <span className="legend-badge default-badge">Bleu</span>
+                  <span>Valeur par défaut (appliquée à toutes les lignes)</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-badge csv-badge">Vert</span>
+                  <span>Valeur du fichier CSV</span>
+                </div>
               </div>
 
               <div className="preview-actions">
