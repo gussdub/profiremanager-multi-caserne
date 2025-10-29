@@ -15053,6 +15053,39 @@ const Prevention = () => {
           </div>
         );
       
+      case 'preventionnistes':
+        return (
+          <div className="prevention-preventionnistes">
+            <div className="page-header">
+              <h2>👨‍🚒 Gestion des Préventionnistes</h2>
+              <Button onClick={() => setCurrentView('assigner-preventionniste')}>
+                ➕ Assigner Préventionniste
+              </Button>
+            </div>
+            
+            <GestionPreventionnistes />
+          </div>
+        );
+      
+      case 'assigner-preventionniste':
+        return (
+          <div className="prevention-assigner">
+            <div className="page-header">
+              <h2>👤 Assigner un Préventionniste</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('preventionnistes')}
+              >
+                ← Retour
+              </Button>
+            </div>
+            
+            <AssignerPreventionniste onAssign={() => {
+              setCurrentView('preventionnistes');
+            }} />
+          </div>
+        );
+
       case 'grilles':
         return (
           <div className="prevention-grilles">
