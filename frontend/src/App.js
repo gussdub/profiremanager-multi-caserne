@@ -14625,6 +14625,13 @@ const ImportCSV = ({ onImportComplete }) => {
     }));
   };
 
+  const handleDefaultValue = (fieldKey, value) => {
+    setDefaultValues(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
+  };
+
   const generatePreview = () => {
     const preview = csvData.slice(0, 5).map(row => {
       const mapped = {};
