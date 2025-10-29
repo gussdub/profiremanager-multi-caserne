@@ -17975,6 +17975,12 @@ const Prevention = () => {
                   🔍 Voir les inspections
                 </Button>
                 <Button 
+                  onClick={() => setCurrentView('rapports')}
+                  className="action-button"
+                >
+                  📊 Rapports et Analyses
+                </Button>
+                <Button 
                   onClick={() => setCurrentView('nouvelle-inspection')}
                   className="action-button"
                 >
