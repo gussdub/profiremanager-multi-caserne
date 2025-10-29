@@ -14915,6 +14915,594 @@ const ImportCSV = ({ onImportComplete }) => {
   );
 };
 
+// Gestion des Grilles d'Inspection
+const GrillesInspection = () => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [grilles, setGrilles] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchGrilles = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+      setGrilles(data);
+    } catch (error) {
+      console.error('Erreur chargement grilles:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les grilles d'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGrilles();
+  }, [tenantSlug]);
+
+  const handleDeleteGrille = async (grilleId) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette grille ?')) return;
+    
+    try {
+      await apiDelete(tenantSlug, `/prevention/grilles-inspection/${grilleId}`);
+      toast({
+        title: "Succès",
+        description: "Grille supprimée avec succès"
+      });
+      fetchGrilles();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la grille",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement des grilles...</div>;
+  }
+
+  return (
+    <div className="grilles-inspection-container">
+      {/* Grilles par défaut */}
+      <div className="default-grilles-section">
+        <h3>📋 Grilles Templates par Groupe d'Occupation</h3>
+        <p>Grilles d'inspection pré-configurées selon le Code de sécurité du Québec</p>
+        
+        <div className="default-grilles-grid">
+          {DEFAULT_GRILLES_TEMPLATES.map(template => (
+            <div key={template.groupe} className="template-card">
+              <div className="template-header">
+                <h4>Groupe {template.groupe}</h4>
+                <span className="groupe-badge">{template.groupe}</span>
+              </div>
+              <div className="template-info">
+                <p><strong>{template.nom}</strong></p>
+                <p>{template.description}</p>
+                <div className="template-stats">
+                  <span className="stat">{template.sections.length} sections</span>
+                  <span className="stat">{template.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions</span>
+                </div>
+              </div>
+              <div className="template-actions">
+                <Button 
+                  size="sm" 
+                  onClick={() => window.location.href = `#grille-${template.groupe}`}
+                >
+                  👀 Aperçu
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => createGrilleFromTemplate(template)}
+                >
+                  📝 Utiliser
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Grilles personnalisées */}
+      <div className="custom-grilles-section">
+        <h3>🛠️ Grilles Personnalisées</h3>
+        
+        {grilles.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucune grille personnalisée créée</p>
+            <p><small>Utilisez les templates ci-dessus ou créez une grille from scratch</small></p>
+          </div>
+        ) : (
+          <div className="custom-grilles-grid">
+            {grilles.map(grille => (
+              <div key={grille.id} className="grille-card">
+                <div className="grille-header">
+                  <h4>{grille.nom}</h4>
+                  <span className="groupe-badge">{grille.groupe_occupation}</span>
+                </div>
+                <div className="grille-info">
+                  <p>Version: {grille.version}</p>
+                  <p>Sections: {grille.sections.length}</p>
+                  <p>Statut: {grille.actif ? '✅ Actif' : '❌ Inactif'}</p>
+                </div>
+                <div className="grille-actions">
+                  <Button size="sm">Modifier</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDeleteGrille(grille.id)}
+                  >
+                    Supprimer
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Aperçu des grilles templates */}
+      <div className="templates-preview">
+        {DEFAULT_GRILLES_TEMPLATES.map(template => (
+          <div key={`preview-${template.groupe}`} id={`grille-${template.groupe}`} className="template-preview">
+            <div className="preview-header">
+              <h3>📋 Grille Template - Groupe {template.groupe}: {template.nom}</h3>
+              <p>{template.description}</p>
+            </div>
+            
+            <div className="sections-preview">
+              {template.sections.map((section, sectionIndex) => (
+                <div key={sectionIndex} className="section-preview">
+                  <h4>{section.titre}</h4>
+                  <p><em>{section.description}</em></p>
+                  
+                  <div className="questions-preview">
+                    {section.questions.slice(0, 3).map((question, qIndex) => (
+                      <div key={qIndex} className="question-preview">
+                        <span className="question-text">{question.question}</span>
+                        <span className="question-type">({question.type})</span>
+                      </div>
+                    ))}
+                    {section.questions.length > 3 && (
+                      <p className="more-questions">... et {section.questions.length - 3} autres questions</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  async function createGrilleFromTemplate(template) {
+    try {
+      const grilleData = {
+        nom: template.nom,
+        groupe_occupation: template.groupe,
+        sections: template.sections,
+        actif: true,
+        version: "1.0"
+      };
+
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', grilleData);
+      
+      toast({
+        title: "Succès",
+        description: `Grille "${template.nom}" créée avec succès`
+      });
+      
+      fetchGrilles();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la grille",
+        variant: "destructive"
+      });
+    }
+  }
+};
+
+const CreateGrilleInspection = ({ onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: '',
+    groupe_occupation: '',
+    sections: [],
+    actif: true,
+    version: '1.0'
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!formData.nom || !formData.groupe_occupation) {
+      toast({
+        title: "Validation",
+        description: "Veuillez remplir tous les champs requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
+      
+      toast({
+        title: "Succès",
+        description: "Grille créée avec succès"
+      });
+      
+      onSave();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la grille",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="create-grille-container">
+      <div className="grille-form">
+        <div className="form-section">
+          <h3>ℹ️ Informations de base</h3>
+          <div className="form-fields">
+            <div className="form-field">
+              <label>Nom de la grille *</label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                placeholder="Ex: Inspection Commerciale Détaillée"
+              />
+            </div>
+            <div className="form-field">
+              <label>Groupe d'occupation *</label>
+              <select
+                value={formData.groupe_occupation}
+                onChange={(e) => setFormData({...formData, groupe_occupation: e.target.value})}
+              >
+                <option value="">Sélectionner un groupe</option>
+                <option value="A">Groupe A - Résidentiel unifamilial</option>
+                <option value="B">Groupe B - Soins et détention</option>
+                <option value="C">Groupe C - Résidentiel</option>
+                <option value="D">Groupe D - Affaires et services personnels</option>
+                <option value="E">Groupe E - Commerce</option>
+                <option value="F">Groupe F - Industriel</option>
+                <option value="G">Groupe G - Garages et stations-service</option>
+                <option value="H">Groupe H - Risques élevés</option>
+                <option value="I">Groupe I - Assemblée</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>📝 Recommandation</h3>
+          <div className="recommendation-note">
+            <p>💡 <strong>Pour commencer rapidement :</strong></p>
+            <p>Nous recommandons d'utiliser les <strong>grilles templates</strong> pré-configurées selon le Code de sécurité du Québec. Vous pourrez ensuite les personnaliser selon vos besoins.</p>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.href = '#templates'}
+            >
+              📋 Voir les templates disponibles
+            </Button>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <Button variant="outline" onClick={onSave}>
+            Annuler
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Création...' : 'Créer la grille'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Templates de grilles d'inspection par défaut
+const DEFAULT_GRILLES_TEMPLATES = [
+  {
+    groupe: "C",
+    nom: "Résidentiel - Habitation",
+    description: "Maisons unifamiliales, duplex, immeubles résidentiels",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Identification complète de l'établissement et des responsables",
+        questions: [
+          { question: "Plan de mesures d'urgence en cas d'incendie affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan à jour et exercé dans la dernière année?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis d'occupation valide affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Notes générales", type: "texte" },
+          { question: "Photos", type: "photos" }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Vérification de la documentation obligatoire",
+        questions: [
+          { question: "Plans d'évacuation affichés et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registres d'entretien tenus à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Notes sur la documentation", type: "texte" }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Vérification des moyens d'évacuation et de leur accessibilité",
+        questions: [
+          { question: "Nombre de sorties suffisant et bien réparties?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Panneaux 'SORTIE' clairs et éclairés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes de sortie faciles à ouvrir de l'intérieur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Dégagements libres de tout encombrement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de sécurité fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des voies d'évacuation", type: "photos" }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Vérification des équipements de protection contre l'incendie",
+        questions: [
+          { question: "Détecteurs de fumée présents et fonctionnels?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Date de fabrication des détecteurs < 10 ans?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détecteurs CO présents si applicable?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs présents et accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Inspection mensuelle extincteurs à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des équipements", type: "photos" }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Évaluation des risques particuliers selon l'occupation",
+        questions: [
+          { question: "Dégagement libre devant panneau électrique (1m)?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aucun fil électrique dénudé visible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Appareils à combustible: dégagements respectés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Conduits d'évacuation en bon état?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des risques identifiés", type: "photos" }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Vérification de l'accessibilité pour les véhicules d'urgence",
+        questions: [
+          { question: "Adresse civique visible de la rue?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Voie d'accès dégagée pour véhicules d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Poteau d'incendie dégagé et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "E",
+    nom: "Commerce - Établissements commerciaux",
+    description: "Magasins, centres commerciaux, bureaux commerciaux",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Identification complète de l'établissement commercial",
+        questions: [
+          { question: "Plan de mesures d'urgence affiché et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Responsable sécurité incendie identifié?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis d'occupation commercial valide?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Formation du personnel sur évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation spécifique aux établissements commerciaux",
+        questions: [
+          { question: "Plans d'évacuation affichés à chaque étage?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Certificats des systèmes de protection à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Moyens d'évacuation pour occupation commerciale",
+        questions: [
+          { question: "Sorties de secours dégagées et signalisées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Largeur des dégagements conforme au nombre d'occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes équipées de dispositifs anti-panique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage d'urgence testé mensuellement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aucun stockage dans les dégagements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Systèmes de protection spécifiques aux commerces",
+        questions: [
+          { question: "Système d'alarme incendie fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détecteurs de fumée dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs appropriés au type de risque?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de gicleurs (si requis) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Robinets d'incendie armés accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques particuliers aux activités commerciales",
+        questions: [
+          { question: "Stockage respecte les distances de sécurité?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Piles de marchandises stables et limitées en hauteur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Séparation des produits incompatibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Zones de livraison dégagées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système électrique conforme et entretenu?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès pour intervention en milieu commercial",
+        questions: [
+          { question: "Signalisation claire pour identification du bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Accès véhicules lourds possible et dégagé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Boîte à clés (Knox Box) installée si requise?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan d'intervention disponible sur site?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "F",
+    nom: "Industriel - Établissements industriels",
+    description: "Usines, ateliers, entrepôts industriels",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Information sur l'établissement industriel et ses activités",
+        questions: [
+          { question: "Plan d'intervention d'urgence détaillé disponible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Équipe de sécurité incendie formée et désignée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis pour matières dangereuses à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Formation du personnel sur les risques spécifiques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation technique et réglementaire",
+        questions: [
+          { question: "Fiches de données de sécurité (FDS) disponibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plans des installations avec localisation des risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registres de maintenance des équipements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis de travaux à chaud à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Moyens d'évacuation pour milieu industriel",
+        questions: [
+          { question: "Sorties d'urgence adaptées aux effectifs?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Chemins d'évacuation clairement marqués?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes coupe-feu maintenues fermées automatiquement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de sécurité conforme aux zones à risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Points de rassemblement extérieurs identifiés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Systèmes de protection industrielle",
+        questions: [
+          { question: "Système d'alarme automatique fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de détection adapté aux risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs spécialisés selon les risques présents?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système fixe d'extinction (mousse, CO2) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Réseau de gicleurs industriel fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Colonne sèche et raccords normalisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques industriels particuliers",
+        questions: [
+          { question: "Matières dangereuses stockées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aires de stockage avec rétention appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Équipements électriques adaptés aux zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de ventilation et évacuation des fumées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Travaux à chaud avec surveillance appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Nettoyage régulier des zones d'accumulation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès spécialisé pour intervention industrielle",
+        questions: [
+          { question: "Accès pompiers avec véhicules spécialisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan d'intervention détaillé remis aux pompiers?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de communication d'urgence opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Moyens d'approvisionnement en eau suffisants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "I",
+    nom: "Assemblée - Lieux de rassemblement",
+    description: "Écoles, théâtres, centres communautaires, églises",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Gestion sécurité pour lieux d'assemblée",
+        questions: [
+          { question: "Plan d'évacuation affiché dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Responsable évacuation désigné pour chaque événement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Capacité maximale d'occupation respectée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Personnel formé aux procédures d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation pour gestion des foules",
+        questions: [
+          { question: "Plans d'évacuation adaptés au type d'assemblée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Procédures d'urgence communiquées au public?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Évacuation sécuritaire des grandes assemblées",
+        questions: [
+          { question: "Nombre de sorties conforme à l'occupation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Largeur des sorties proportionnelle aux occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes s'ouvrent dans le sens de l'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage d'urgence sur tous les parcours?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aisles et dégagements libres pendant les événements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Protection adaptée aux assemblées",
+        questions: [
+          { question: "Système d'alarme audible dans tout le bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de sonorisation pour annonces d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détection automatique dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs accessibles et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de gicleurs dans les zones de rassemblement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques liés aux activités d'assemblée",
+        questions: [
+          { question: "Sièges et rangées fixées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Scène et décors avec matériaux ignifuges?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de scène avec protection thermique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Cuisine (si présente) avec système d'extinction?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Contrôle du tabagisme respecté?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès pour intervention lors d'assemblées",
+        questions: [
+          { question: "Accès prioritaire maintenu libre en tout temps?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Communication directe avec services d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan du site remis aux services d'incendie?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Stationnement d'urgence réservé et signalisé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  }
+];
+
 // Gestion des Préventionnistes
 const GestionPreventionnistes = () => {
   const { tenantSlug } = useTenant();
