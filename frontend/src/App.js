@@ -15109,7 +15109,7 @@ const GrillesInspection = () => {
   }
 };
 
-const CreateGrilleInspection = ({ onSave }) => {
+const CreateGrilleInspection = ({ onSave, onViewTemplates }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
