@@ -15053,6 +15053,39 @@ const Prevention = () => {
           </div>
         );
       
+      case 'grilles':
+        return (
+          <div className="prevention-grilles">
+            <div className="page-header">
+              <h2>📋 Grilles d'Inspection</h2>
+              <Button onClick={() => setCurrentView('nouvelle-grille')}>
+                ➕ Nouvelle Grille
+              </Button>
+            </div>
+            
+            <GrillesInspection />
+          </div>
+        );
+      
+      case 'nouvelle-grille':
+        return (
+          <div className="prevention-nouvelle-grille">
+            <div className="page-header">
+              <h2>📝 Créer une Grille d'Inspection</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('grilles')}
+              >
+                ← Retour aux grilles
+              </Button>
+            </div>
+            
+            <CreateGrilleInspection onSave={() => {
+              setCurrentView('grilles');
+            }} />
+          </div>
+        );
+
       case 'import':
         return (
           <div className="prevention-import">
