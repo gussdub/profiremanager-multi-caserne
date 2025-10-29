@@ -16848,6 +16848,200 @@ const RealiserInspection = ({ setCurrentView }) => {
   );
 };
 
+const DetailInspection = ({ inspectionId, setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [inspection, setInspection] = useState(null);
+  const [batiment, setBatiment] = useState(null);
+  const [grille, setGrille] = useState(null);
+  const [preventionniste, setPreventionniste] = useState(null);
+  const [nonConformites, setNonConformites] = useState([]);
+
+  useEffect(() => {
+    const loadDetails = async () => {
+      try {
+        const inspData = await apiGet(tenantSlug, `/prevention/inspections/${inspectionId}`);
+        setInspection(inspData);
+
+        const [batData, grilleData, prevData, ncData] = await Promise.all([
+          apiGet(tenantSlug, `/prevention/batiments/${inspData.batiment_id}`),
+          apiGet(tenantSlug, `/prevention/grilles-inspection/${inspData.grille_inspection_id}`),
+          apiGet(tenantSlug, `/users`).then(users => users.find(u => u.id === inspData.preventionniste_id)),
+          apiGet(tenantSlug, `/prevention/non-conformites?inspection_id=${inspectionId}`)
+        ]);
+
+        setBatiment(batData);
+        setGrille(grilleData);
+        setPreventionniste(prevData);
+        setNonConformites(ncData);
+      } catch (error) {
+        console.error('Erreur chargement détails:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les détails",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDetails();
+  }, [inspectionId, tenantSlug]);
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement...</div>;
+  }
+
+  if (!inspection || !batiment) {
+    return <div>Erreur: Données manquantes</div>;
+  }
+
+  return (
+    <div className="detail-inspection-container">
+      <div className="page-header">
+        <h2>🔍 Détails de l'Inspection</h2>
+        <div className="header-actions">
+          <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+            ← Retour à la liste
+          </Button>
+          <Button onClick={() => {
+            window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/inspections/${inspectionId}/rapport-pdf`, '_blank');
+          }}>
+            📄 Télécharger PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="detail-content">
+        {/* Résumé */}
+        <div className="detail-card">
+          <h3>📊 Résumé</h3>
+          <div className="summary-grid">
+            <div className="summary-item">
+              <span className="label">Statut:</span>
+              <span className={`statut-badge ${inspection.statut_global}`}>
+                {inspection.statut_global === 'conforme' ? '✅ Conforme' : '⚠️ Non-conforme'}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Score:</span>
+              <span className="score-badge">{inspection.score_conformite}%</span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Date:</span>
+              <span>{inspection.date_inspection}</span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Type:</span>
+              <span>{inspection.type_inspection}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bâtiment */}
+        <div className="detail-card">
+          <h3>🏢 Bâtiment Inspecté</h3>
+          <div className="info-grid">
+            <div className="info-item">
+              <span className="label">Nom:</span>
+              <span>{batiment.nom_etablissement}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Adresse:</span>
+              <span>{batiment.adresse_civique}, {batiment.ville}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Groupe occupation:</span>
+              <span>{batiment.groupe_occupation}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Préventionniste */}
+        {preventionniste && (
+          <div className="detail-card">
+            <h3>👨‍🚒 Préventionniste</h3>
+            <p><strong>{preventionniste.prenom} {preventionniste.nom}</strong></p>
+            <p>{preventionniste.email}</p>
+          </div>
+        )}
+
+        {/* Grille utilisée */}
+        {grille && (
+          <div className="detail-card">
+            <h3>📋 Grille d'Inspection</h3>
+            <p><strong>{grille.nom}</strong></p>
+            {grille.groupe_occupation && <p>Groupe {grille.groupe_occupation}</p>}
+          </div>
+        )}
+
+        {/* Non-conformités */}
+        {nonConformites.length > 0 && (
+          <div className="detail-card">
+            <h3>⚠️ Non-Conformités ({nonConformites.length})</h3>
+            <div className="nc-detail-list">
+              {nonConformites.map((nc, idx) => (
+                <div key={nc.id} className="nc-detail-item">
+                  <div className="nc-detail-header">
+                    <span className="nc-number">#{idx + 1}</span>
+                    <h4>{nc.titre}</h4>
+                    <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span>
+                    <span className={`statut-badge ${nc.statut}`}>{nc.statut}</span>
+                  </div>
+                  {nc.description && <p className="nc-description">{nc.description}</p>}
+                  {nc.delai_correction && (
+                    <p className="nc-delai">
+                      <strong>Délai:</strong> {nc.delai_correction}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Photos */}
+        {inspection.photos && inspection.photos.length > 0 && (
+          <div className="detail-card">
+            <h3>📸 Photos ({inspection.photos.length})</h3>
+            <div className="photos-grid">
+              {inspection.photos.map((photoUrl, idx) => (
+                <div key={idx} className="photo-item-view">
+                  <img 
+                    src={photoUrl.includes('data:') ? photoUrl : `${process.env.REACT_APP_BACKEND_URL}${photoUrl}`}
+                    alt={`Photo ${idx + 1}`}
+                    className="photo-detail"
+                    onClick={() => window.open(photoUrl, '_blank')}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {inspection.notes_inspection && (
+          <div className="detail-card">
+            <h3>📝 Notes d'Inspection</h3>
+            <p className="note-text">{inspection.notes_inspection}</p>
+          </div>
+        )}
+
+        {/* Recommandations */}
+        {inspection.recommandations && (
+          <div className="detail-card">
+            <h3>💡 Recommandations</h3>
+            <p className="note-text">{inspection.recommandations}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GestionNonConformites = ({ setCurrentView }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
