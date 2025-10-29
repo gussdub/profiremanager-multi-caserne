@@ -17725,6 +17725,12 @@ const Prevention = () => {
                   📋 Gérer les bâtiments
                 </Button>
                 <Button 
+                  onClick={() => setCurrentView('calendrier')}
+                  className="action-button"
+                >
+                  📅 Calendrier d'inspections
+                </Button>
+                <Button 
                   onClick={() => setCurrentView('inspections')}
                   className="action-button"
                 >
