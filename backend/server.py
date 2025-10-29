@@ -14589,6 +14589,120 @@ async def export_excel_prevention(
         raise HTTPException(status_code=500, detail=f"Erreur export: {str(e)}")
 
 
+# ==================== NOTIFICATIONS ====================
+
+@api_router.get("/{tenant_slug}/prevention/notifications")
+async def get_notifications(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les notifications pour l'utilisateur"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    notifications = []
+    today = datetime.now(timezone.utc).date()
+    
+    # 1. Non-conformités en retard
+    non_conformites = await db.non_conformites.find({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["ouverte", "en_cours"]}
+    }).to_list(1000)
+    
+    batiments = await db.batiments.find({"tenant_id": tenant.id}).to_list(10000)
+    batiments_dict = {b["id"]: b for b in batiments}
+    
+    for nc in non_conformites:
+        if nc.get("delai_correction"):
+            try:
+                delai_date = datetime.strptime(nc["delai_correction"], "%Y-%m-%d").date()
+                days_remaining = (delai_date - today).days
+                
+                if days_remaining < 0:
+                    notifications.append({
+                        "id": f"nc_late_{nc['id']}",
+                        "type": "nc_retard",
+                        "priority": "urgent",
+                        "titre": f"Non-conformité en retard",
+                        "description": f"{nc.get('titre', 'NC')} au {batiments_dict.get(nc.get('batiment_id'), {}).get('nom_etablissement', 'bâtiment')}",
+                        "jours_retard": abs(days_remaining),
+                        "link": f"/prevention/non-conformites/{nc['id']}",
+                        "date": nc.get("created_at", "")
+                    })
+                elif days_remaining <= 7:
+                    notifications.append({
+                        "id": f"nc_soon_{nc['id']}",
+                        "type": "nc_echeance_proche",
+                        "priority": "high",
+                        "titre": f"Échéance proche ({days_remaining}j)",
+                        "description": f"{nc.get('titre', 'NC')} au {batiments_dict.get(nc.get('batiment_id'), {}).get('nom_etablissement', 'bâtiment')}",
+                        "jours_restants": days_remaining,
+                        "link": f"/prevention/non-conformites/{nc['id']}",
+                        "date": nc.get("created_at", "")
+                    })
+            except:
+                pass
+    
+    # 2. Bâtiments sans inspection depuis 6 mois
+    six_months_ago = (datetime.now(timezone.utc) - timedelta(days=180)).date().isoformat()
+    
+    for batiment in batiments:
+        last_inspection = await db.inspections.find_one(
+            {"batiment_id": batiment["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        if not last_inspection or last_inspection.get("date_inspection", "") < six_months_ago:
+            notifications.append({
+                "id": f"bat_inspection_{batiment['id']}",
+                "type": "inspection_requise",
+                "priority": "medium",
+                "titre": "Inspection requise",
+                "description": f"{batiment.get('nom_etablissement', 'Bâtiment')} - Dernière inspection il y a >6 mois",
+                "link": f"/prevention/batiments/{batiment['id']}",
+                "date": last_inspection.get("date_inspection", "") if last_inspection else None
+            })
+    
+    # 3. Inspections non-conformes récentes (< 30 jours)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
+    
+    recent_non_conformes = await db.inspections.find({
+        "tenant_id": tenant.id,
+        "statut_global": {"$ne": "conforme"},
+        "date_inspection": {"$gte": thirty_days_ago}
+    }).to_list(100)
+    
+    for inspection in recent_non_conformes:
+        nc_count = await db.non_conformites.count_documents({
+            "inspection_id": inspection["id"],
+            "statut": {"$in": ["ouverte", "en_cours"]}
+        })
+        
+        if nc_count > 0:
+            notifications.append({
+                "id": f"insp_nc_{inspection['id']}",
+                "type": "inspection_nc",
+                "priority": "medium",
+                "titre": f"{nc_count} NC non résolues",
+                "description": f"Inspection du {inspection.get('date_inspection', '')} au {batiments_dict.get(inspection.get('batiment_id'), {}).get('nom_etablissement', 'bâtiment')}",
+                "link": f"/prevention/inspections/{inspection['id']}",
+                "date": inspection.get("date_inspection", "")
+            })
+    
+    # Trier par priorité
+    priority_order = {"urgent": 0, "high": 1, "medium": 2, "low": 3}
+    notifications.sort(key=lambda x: priority_order.get(x["priority"], 999))
+    
+    return {
+        "notifications": notifications,
+        "count": len(notifications),
+        "urgent_count": len([n for n in notifications if n["priority"] == "urgent"]),
+        "high_count": len([n for n in notifications if n["priority"] == "high"])
+    }
+
+
 # ==================== RAPPORTS AVANCÉS ====================
 
 @api_router.get("/{tenant_slug}/prevention/rapports/tendances")
