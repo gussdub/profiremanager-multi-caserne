@@ -15195,7 +15195,7 @@ const CreateGrilleInspection = ({ onSave, onViewTemplates }) => {
             <p>Nous recommandons d'utiliser les <strong>grilles templates</strong> pré-configurées selon le Code de sécurité du Québec. Vous pourrez ensuite les personnaliser selon vos besoins.</p>
             <Button 
               variant="outline"
-              onClick={() => window.location.href = '#templates'}
+              onClick={onViewTemplates}
             >
               📋 Voir les templates disponibles
             </Button>
