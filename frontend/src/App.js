@@ -16992,7 +16992,12 @@ const Prevention = () => {
                         </div>
                         <div className="batiment-actions">
                           <Button size="sm" variant="outline">Voir</Button>
-                          <Button size="sm">Inspecter</Button>
+                          <Button 
+                            size="sm"
+                            onClick={() => setCurrentView('nouvelle-inspection')}
+                          >
+                            Inspecter
+                          </Button>
                         </div>
                       </div>
                     ))}
