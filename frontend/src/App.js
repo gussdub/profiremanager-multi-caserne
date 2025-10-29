@@ -17924,6 +17924,9 @@ const Prevention = () => {
       case 'calendrier':
         return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} />;
       
+      case 'rapports':
+        return <ModuleRapports setCurrentView={setCurrentView} />;
+      
       default:
         return <div>Vue en développement...</div>;
     }
