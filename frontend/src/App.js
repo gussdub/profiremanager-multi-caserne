@@ -16815,6 +16815,35 @@ const RealiserInspection = ({ setCurrentView }) => {
           </div>
         </div>
       )}
+
+      <div className="inspection-documentation">
+        <div className="doc-section">
+          <h3>📸 Photos de l'inspection</h3>
+          <PhotoUploader photos={photos} setPhotos={setPhotos} maxPhotos={20} />
+        </div>
+
+        <div className="doc-section">
+          <h3>📝 Notes d'inspection</h3>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes, observations, commentaires..."
+            className="notes-textarea"
+            rows={4}
+          />
+        </div>
+
+        <div className="doc-section">
+          <h3>💡 Recommandations</h3>
+          <textarea
+            value={recommandations}
+            onChange={(e) => setRecommandations(e.target.value)}
+            placeholder="Recommandations pour améliorer la conformité..."
+            className="notes-textarea"
+            rows={4}
+          />
+        </div>
+      </div>
     </div>
   );
 };
