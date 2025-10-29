@@ -15139,6 +15139,12 @@ const Prevention = () => {
             📋 Inspections
           </Button>
           <Button 
+            variant={currentView === 'grilles' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('grilles')}
+          >
+            📋 Grilles d'Inspection
+          </Button>
+          <Button 
             variant={currentView === 'rapports' ? 'default' : 'outline'}
             onClick={() => setCurrentView('rapports')}
           >
