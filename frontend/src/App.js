@@ -14654,12 +14654,14 @@ const ImportCSV = ({ onImportComplete }) => {
 
   const validateMapping = () => {
     const requiredFields = availableFields.filter(f => f.required);
-    const missingFields = requiredFields.filter(f => !columnMapping[f.key]);
+    const missingFields = requiredFields.filter(f => 
+      !columnMapping[f.key] && !defaultValues[f.key] // Valide si colonne CSV OU valeur par défaut
+    );
     
     if (missingFields.length > 0) {
       toast({
         title: "Champs requis manquants",
-        description: `Veuillez mapper: ${missingFields.map(f => f.label).join(', ')}`,
+        description: `Veuillez mapper ou définir une valeur par défaut pour: ${missingFields.map(f => f.label).join(', ')}`,
         variant: "destructive"
       });
       return false;
