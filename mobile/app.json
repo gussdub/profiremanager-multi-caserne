@@ -42,7 +42,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#D9072B",
-          "sounds": ["./assets/notification-sound.wav"]
+          "sounds": [
+            "./assets/notification-sound.wav"
+          ]
         }
       ]
     ],
@@ -51,7 +53,10 @@
       "color": "#D9072B"
     },
     "extra": {
-      "apiUrl": "https://profire-inspect.preview.emergentagent.com"
+      "apiUrl": "https://profire-inspect.preview.emergentagent.com",
+      "eas": {
+        "projectId": "2fe5afe1-2ea3-447c-9350-9e4920ec940c"
+      }
     }
   }
 }
