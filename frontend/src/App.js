@@ -15309,7 +15309,7 @@ const GrillesInspection = () => {
                   <p>Statut: {grille.actif ? '✅ Actif' : '❌ Inactif'}</p>
                 </div>
                 <div className="grille-actions">
-                  <Button size="sm">Modifier</Button>
+                  <Button size="sm" onClick={() => setEditingGrille(grille)}>Modifier</Button>
                   <Button 
                     size="sm" 
                     variant="outline"
