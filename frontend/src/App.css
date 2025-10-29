@@ -10565,44 +10565,144 @@ body {
   font-size: 0.95rem;
 }
 
-.preview-table {
+/* Nouveau tableau d'aperçu amélioré */
+.preview-table-wrapper {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow-x: auto;
+  max-height: 600px;
+  overflow-y: auto;
+  background: white;
 }
 
-.preview-headers {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
+.preview-table-enhanced {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.preview-table-enhanced thead {
+  position: sticky;
+  top: 0;
   background: #f9fafb;
-  padding: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.preview-header {
-  padding: 1rem 0.75rem;
+.preview-table-enhanced th {
+  padding: 0.875rem 0.75rem;
+  text-align: left;
   font-weight: 600;
   color: #374151;
-  font-size: 0.85rem;
+  border-bottom: 2px solid #e5e7eb;
   border-right: 1px solid #e5e7eb;
+  white-space: nowrap;
 }
 
-.preview-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
+.preview-table-enhanced th:last-child {
+  border-right: none;
+}
+
+.preview-table-enhanced th.required-header {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.row-number-header {
+  width: 50px;
+  text-align: center;
+  background: #f3f4f6;
+}
+
+.preview-table-enhanced tbody tr {
   border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
 }
 
-.preview-row:hover {
+.preview-table-enhanced tbody tr:hover {
   background: #f9fafb;
 }
 
-.preview-cell {
+.preview-table-enhanced td {
   padding: 0.75rem;
-  font-size: 0.85rem;
-  color: #374151;
   border-right: 1px solid #f3f4f6;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-table-enhanced td:last-child {
+  border-right: none;
+}
+
+.row-number {
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.preview-data-cell {
+  color: #374151;
+}
+
+.csv-value-indicator {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.default-value-indicator {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.preview-legend {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.legend-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.legend-badge.default-badge {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.legend-badge.csv-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* Ancien tableau d'aperçu (obsolète, sera supprimé) */
+.preview-table {
+  display: none;
 }
 
 .empty-cell {
