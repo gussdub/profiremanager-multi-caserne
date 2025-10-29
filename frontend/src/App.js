@@ -15166,6 +15166,12 @@ const Prevention = () => {
             🏢 Bâtiments
           </Button>
           <Button 
+            variant={currentView === 'preventionnistes' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('preventionnistes')}
+          >
+            👨‍🚒 Préventionnistes
+          </Button>
+          <Button 
             variant={currentView === 'inspections' ? 'default' : 'outline'}
             onClick={() => setCurrentView('inspections')}
           >
