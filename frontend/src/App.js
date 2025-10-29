@@ -16163,6 +16163,112 @@ const AssignerPreventionniste = ({ onAssign }) => {
 
 // ==================== COMPOSANTS INSPECTIONS ====================
 
+// Composant d'upload de photos
+const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (photos.length + files.length > maxPhotos) {
+      toast({
+        title: "Limite atteinte",
+        description: `Maximum ${maxPhotos} photos`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        // Convertir en base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result;
+          
+          try {
+            const response = await apiPost(tenantSlug, '/prevention/upload-photo', {
+              photo_base64: base64,
+              filename: file.name
+            });
+            
+            setPhotos(prev => [...prev, response.url]);
+            
+            toast({
+              title: "Photo ajoutée",
+              description: file.name
+            });
+          } catch (error) {
+            console.error('Erreur upload:', error);
+            toast({
+              title: "Erreur",
+              description: `Impossible d'uploader ${file.name}`,
+              variant: "destructive"
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = (index) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="photo-uploader">
+      <div className="upload-header">
+        <label>📸 Photos ({photos.length}/{maxPhotos})</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          disabled={uploading || photos.length >= maxPhotos}
+          className="file-input"
+          id="photo-upload"
+          style={{ display: 'none' }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => document.getElementById('photo-upload').click()}
+          disabled={uploading || photos.length >= maxPhotos}
+        >
+          {uploading ? '⏳ Upload...' : '📷 Ajouter photos'}
+        </Button>
+      </div>
+
+      {photos.length > 0 && (
+        <div className="photos-grid">
+          {photos.map((photoUrl, index) => (
+            <div key={index} className="photo-item">
+              <img 
+                src={photoUrl.includes('data:') ? photoUrl : `${process.env.REACT_APP_BACKEND_URL}${photoUrl}`} 
+                alt={`Photo ${index + 1}`}
+                className="photo-thumbnail"
+              />
+              <button
+                onClick={() => removePhoto(index)}
+                className="remove-photo-btn"
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ListeInspections = ({ setCurrentView }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
