@@ -17698,6 +17698,9 @@ const Prevention = () => {
       case 'non-conformites':
         return <GestionNonConformites setCurrentView={setCurrentView} />;
       
+      case 'calendrier':
+        return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} />;
+      
       default:
         return <div>Vue en développement...</div>;
     }
