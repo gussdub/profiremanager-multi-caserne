@@ -14690,6 +14690,167 @@ const ImportCSV = ({ onImportComplete }) => {
     }
   };
 
+  // Composant éditeur de champs
+  const FieldEditor = () => {
+    const [editingFields, setEditingFields] = useState([...availableFields]);
+    const [newField, setNewField] = useState({ key: '', label: '', required: false });
+
+    const addField = () => {
+      if (!newField.key || !newField.label) {
+        toast({
+          title: "Validation",
+          description: "Veuillez remplir la clé et le label du champ",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Vérifier que la clé n'existe pas déjà
+      if (editingFields.some(f => f.key === newField.key)) {
+        toast({
+          title: "Erreur",
+          description: "Un champ avec cette clé existe déjà",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setEditingFields([...editingFields, { ...newField }]);
+      setNewField({ key: '', label: '', required: false });
+    };
+
+    const removeField = (key) => {
+      setEditingFields(editingFields.filter(f => f.key !== key));
+    };
+
+    const updateField = (key, updates) => {
+      setEditingFields(editingFields.map(f => 
+        f.key === key ? { ...f, ...updates } : f
+      ));
+    };
+
+    const handleSave = () => {
+      if (editingFields.length === 0) {
+        toast({
+          title: "Erreur",
+          description: "Vous devez avoir au moins un champ",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      saveCustomFields(editingFields);
+      setShowFieldEditor(false);
+    };
+
+    return (
+      <div className="field-editor-overlay">
+        <div className="field-editor-modal">
+          <div className="modal-header">
+            <h3>⚙️ Personnaliser les champs d'import</h3>
+            <button 
+              className="close-btn" 
+              onClick={() => setShowFieldEditor(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="modal-content">
+            {/* Liste des champs existants */}
+            <div className="existing-fields">
+              <h4>Champs actuels ({editingFields.length})</h4>
+              <div className="fields-list">
+                {editingFields.map((field, index) => (
+                  <div key={field.key} className="field-item">
+                    <div className="field-number">{index + 1}</div>
+                    <div className="field-details">
+                      <input
+                        type="text"
+                        value={field.label}
+                        onChange={(e) => updateField(field.key, { label: e.target.value })}
+                        placeholder="Label du champ"
+                        className="field-label-input"
+                      />
+                      <code className="field-key">{field.key}</code>
+                    </div>
+                    <label className="field-required">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) => updateField(field.key, { required: e.target.checked })}
+                      />
+                      <span>Requis</span>
+                    </label>
+                    <button
+                      onClick={() => removeField(field.key)}
+                      className="remove-field-btn"
+                      title="Supprimer ce champ"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Ajouter un nouveau champ */}
+            <div className="add-field-section">
+              <h4>➕ Ajouter un nouveau champ</h4>
+              <div className="add-field-form">
+                <input
+                  type="text"
+                  value={newField.key}
+                  onChange={(e) => setNewField({ ...newField, key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                  placeholder="Clé (ex: contact_urgence)"
+                  className="field-key-input"
+                />
+                <input
+                  type="text"
+                  value={newField.label}
+                  onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+                  placeholder="Label (ex: Contact d'urgence)"
+                  className="field-label-input"
+                />
+                <label className="field-required">
+                  <input
+                    type="checkbox"
+                    checked={newField.required}
+                    onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
+                  />
+                  <span>Requis</span>
+                </label>
+                <Button size="sm" onClick={addField}>
+                  Ajouter
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <Button 
+              variant="outline" 
+              onClick={resetToDefaultFields}
+            >
+              🔄 Réinitialiser par défaut
+            </Button>
+            <div className="footer-actions">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFieldEditor(false)}
+              >
+                Annuler
+              </Button>
+              <Button onClick={handleSave}>
+                💾 Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
