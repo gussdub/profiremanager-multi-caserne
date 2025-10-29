@@ -11040,11 +11040,16 @@ body {
   font-size: 0.9rem;
 }
 
+.user-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .user-info .role-badge,
 .user-info .grade-badge {
   display: inline-block;
-  margin-right: 0.5rem;
-  margin-top: 0;
+  margin: 0;
 }
 
 .user-stats {
