@@ -16086,9 +16086,10 @@ const Prevention = () => {
               </Button>
             </div>
             
-            <CreateGrilleInspection onSave={() => {
-              setCurrentView('grilles');
-            }} />
+            <CreateGrilleInspection 
+              onSave={() => setCurrentView('grilles')} 
+              onViewTemplates={() => setCurrentView('grilles')}
+            />
           </div>
         );
 
