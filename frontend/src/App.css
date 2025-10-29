@@ -11085,8 +11085,13 @@ body {
 
 .add-field-form {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.add-field-inputs {
+  display: flex;
   gap: 0.75rem;
-  align-items: flex-end;
 }
 
 .field-key-input,
