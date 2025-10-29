@@ -16439,11 +16439,8 @@ const ListeInspections = ({ setCurrentView }) => {
                 <Button 
                   size="sm"
                   onClick={() => {
-                    // TODO: Vue détail inspection
-                    toast({
-                      title: "Info",
-                      description: "Détails de l'inspection à venir"
-                    });
+                    localStorage.setItem('detail_inspection_id', inspection.id);
+                    setCurrentView('detail-inspection');
                   }}
                 >
                   👁️ Voir détails
