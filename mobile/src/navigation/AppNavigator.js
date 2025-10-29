@@ -2,9 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 // Screens
@@ -20,11 +19,39 @@ import MonProfilScreen from '../screens/MonProfilScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const Drawer = createDrawerNavigator();
 
 const PRIMARY_COLOR = '#D9072B';
 
-function MainTabs({ navigation }) {
+function PlusMenuScreen({ navigation }) {
+  const menuItems = [
+    { name: 'Prévention', icon: 'shield', screen: 'PreventionStack', color: '#D9072B' },
+    { name: 'Formations', icon: 'school', screen: 'FormationsStack', color: '#2196f3' },
+    { name: 'Mes EPI', icon: 'shield-checkmark', screen: 'MesEPIStack', color: '#4caf50' },
+    { name: 'Mon Profil', icon: 'person', screen: 'MonProfilStack', color: '#ff9800' },
+  ];
+
+  return (
+    <ScrollView style={styles.plusMenuContainer}>
+      <Text style={styles.plusMenuTitle}>Modules</Text>
+      <View style={styles.plusMenuGrid}>
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.plusMenuItem}
+            onPress={() => navigation.navigate(item.screen)}
+          >
+            <View style={[styles.plusMenuIcon, { backgroundColor: item.color }]}>
+              <Ionicons name={item.icon} size={32} color="#fff" />
+            </View>
+            <Text style={styles.plusMenuText}>{item.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -40,7 +67,7 @@ function MainTabs({ navigation }) {
           } else if (route.name === 'Remplacements') {
             iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'Plus') {
-            iconName = focused ? 'menu' : 'menu-outline';
+            iconName = focused ? 'apps' : 'apps-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -59,14 +86,6 @@ function MainTabs({ navigation }) {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.openDrawer()}
-            style={{ marginLeft: 15 }}
-          >
-            <Ionicons name="menu" size={28} color="#fff" />
-          </TouchableOpacity>
-        ),
       })}
     >
       <Tab.Screen 
@@ -89,113 +108,6 @@ function MainTabs({ navigation }) {
   );
 }
 
-function PlusMenuScreen({ navigation }) {
-  const menuItems = [
-    { name: 'Prévention', icon: 'shield', screen: 'Prévention', color: '#D9072B' },
-    { name: 'Formations', icon: 'school', screen: 'Formations', color: '#2196f3' },
-    { name: 'Mes EPI', icon: 'shield-checkmark', screen: 'MesEPI', color: '#4caf50' },
-    { name: 'Mon Profil', icon: 'person', screen: 'MonProfil', color: '#ff9800' },
-  ];
-
-  return (
-    <View style={styles.plusMenuContainer}>
-      <Text style={styles.plusMenuTitle}>Modules</Text>
-      <View style={styles.plusMenuGrid}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.plusMenuItem}
-            onPress={() => navigation.navigate(item.screen)}
-          >
-            <View style={[styles.plusMenuIcon, { backgroundColor: item.color }]}>
-              <Ionicons name={item.icon} size={32} color="#fff" />
-            </View>
-            <Text style={styles.plusMenuText}>{item.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function DrawerContent() {
-  return (
-    <Drawer.Navigator
-      screenOptions={{
-        headerShown: false,
-        drawerStyle: {
-          backgroundColor: '#fff',
-        },
-        drawerActiveTintColor: PRIMARY_COLOR,
-        drawerInactiveTintColor: '#666',
-      }}
-    >
-      <Drawer.Screen
-        name="MainTabs"
-        component={MainTabs}
-        options={{
-          drawerLabel: 'Accueil',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="Prévention"
-        component={PreventionScreen}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="shield-outline" size={size} color={color} />
-          ),
-          headerShown: true,
-          headerStyle: { backgroundColor: PRIMARY_COLOR },
-          headerTintColor: '#fff',
-        }}
-      />
-      <Drawer.Screen
-        name="Formations"
-        component={FormationsScreen}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="school-outline" size={size} color={color} />
-          ),
-          headerShown: true,
-          headerStyle: { backgroundColor: PRIMARY_COLOR },
-          headerTintColor: '#fff',
-        }}
-      />
-      <Drawer.Screen
-        name="MesEPI"
-        component={MesEPIScreen}
-        options={{
-          drawerLabel: 'Mes EPI',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="shield-checkmark-outline" size={size} color={color} />
-          ),
-          headerShown: true,
-          headerTitle: 'Mes Équipements',
-          headerStyle: { backgroundColor: PRIMARY_COLOR },
-          headerTintColor: '#fff',
-        }}
-      />
-      <Drawer.Screen
-        name="MonProfil"
-        component={MonProfilScreen}
-        options={{
-          drawerLabel: 'Mon Profil',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-          headerShown: true,
-          headerTitle: 'Mon Profil',
-          headerStyle: { backgroundColor: PRIMARY_COLOR },
-          headerTintColor: '#fff',
-        }}
-      />
-    </Drawer.Navigator>
-  );
-}
-
 export default function AppNavigator() {
   const { user, loading } = useAuth();
 
@@ -207,7 +119,49 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="Main" component={DrawerContent} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen 
+              name="PreventionStack" 
+              component={PreventionScreen}
+              options={{
+                headerShown: true,
+                title: 'Prévention',
+                headerStyle: { backgroundColor: PRIMARY_COLOR },
+                headerTintColor: '#fff',
+              }}
+            />
+            <Stack.Screen 
+              name="FormationsStack" 
+              component={FormationsScreen}
+              options={{
+                headerShown: true,
+                title: 'Formations',
+                headerStyle: { backgroundColor: PRIMARY_COLOR },
+                headerTintColor: '#fff',
+              }}
+            />
+            <Stack.Screen 
+              name="MesEPIStack" 
+              component={MesEPIScreen}
+              options={{
+                headerShown: true,
+                title: 'Mes Équipements',
+                headerStyle: { backgroundColor: PRIMARY_COLOR },
+                headerTintColor: '#fff',
+              }}
+            />
+            <Stack.Screen 
+              name="MonProfilStack" 
+              component={MonProfilScreen}
+              options={{
+                headerShown: true,
+                title: 'Mon Profil',
+                headerStyle: { backgroundColor: PRIMARY_COLOR },
+                headerTintColor: '#fff',
+              }}
+            />
+          </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
