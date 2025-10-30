@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.profiremanager.app",
-      "buildNumber": "1.0.0",
+      "buildNumber": "1.0.2",
       "infoPlist": {
         "NSCameraUsageDescription": "Cette application nécessite l'accès à la caméra pour scanner les codes QR.",
         "NSPhotoLibraryUsageDescription": "Cette application nécessite l'accès aux photos pour les inspections.",
