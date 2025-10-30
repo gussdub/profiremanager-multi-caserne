@@ -12371,6 +12371,157 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
     
     return epi_obj
 
+@api_router.post("/{tenant_slug}/epi/import-csv")
+async def import_epis_csv(
+    tenant_slug: str,
+    epis_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Import en masse d'EPI depuis un CSV"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epis = epis_data.get("epis", [])
+    if not epis:
+        raise HTTPException(status_code=400, detail="Aucun EPI à importer")
+    
+    results = {
+        "total": len(epis),
+        "created": 0,
+        "updated": 0,
+        "errors": [],
+        "duplicates": []
+    }
+    
+    for index, epi_data in enumerate(epis):
+        try:
+            # Validation des champs obligatoires
+            if not epi_data.get("type_epi") or not epi_data.get("numero_serie"):
+                results["errors"].append({
+                    "line": index + 1,
+                    "error": "Type EPI et Numéro de série requis",
+                    "data": epi_data
+                })
+                continue
+            
+            # Rechercher l'employé par nom complet si fourni
+            user_id = None
+            if epi_data.get("employe_nom"):
+                # Format attendu : "Prénom Nom"
+                nom_parts = epi_data["employe_nom"].strip().split(" ", 1)
+                if len(nom_parts) == 2:
+                    prenom, nom = nom_parts
+                    user = await db.users.find_one({
+                        "tenant_id": tenant.id,
+                        "prenom": {"$regex": f"^{prenom}$", "$options": "i"},
+                        "nom": {"$regex": f"^{nom}$", "$options": "i"}
+                    })
+                    if user:
+                        user_id = user["id"]
+                    else:
+                        results["errors"].append({
+                            "line": index + 1,
+                            "error": f"Employé non trouvé: {epi_data['employe_nom']}",
+                            "data": epi_data
+                        })
+                        continue
+            
+            # Vérifier si l'EPI existe déjà (par numéro de série)
+            existing_epi = await db.epis.find_one({
+                "numero_serie": epi_data["numero_serie"],
+                "tenant_id": tenant.id
+            })
+            
+            if existing_epi:
+                results["duplicates"].append({
+                    "line": index + 1,
+                    "numero_serie": epi_data["numero_serie"],
+                    "action": epi_data.get("action_doublon", "skip"),  # skip, update, create
+                    "data": epi_data
+                })
+                
+                # Si action_doublon = update, mettre à jour
+                if epi_data.get("action_doublon") == "update":
+                    update_data = {
+                        "type_epi": epi_data.get("type_epi"),
+                        "marque": epi_data.get("marque", ""),
+                        "modele": epi_data.get("modele", ""),
+                        "taille": epi_data.get("taille", ""),
+                        "statut": epi_data.get("statut", "bon"),
+                        "norme_certification": epi_data.get("norme_certification", ""),
+                        "notes": epi_data.get("notes", ""),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    if user_id:
+                        update_data["user_id"] = user_id
+                    
+                    # Dates optionnelles
+                    if epi_data.get("date_mise_en_service"):
+                        update_data["date_mise_en_service"] = epi_data["date_mise_en_service"]
+                    if epi_data.get("date_dernier_controle"):
+                        update_data["date_dernier_controle"] = epi_data["date_dernier_controle"]
+                    if epi_data.get("date_prochain_controle"):
+                        update_data["date_prochain_controle"] = epi_data["date_prochain_controle"]
+                    
+                    await db.epis.update_one(
+                        {"id": existing_epi["id"], "tenant_id": tenant.id},
+                        {"$set": update_data}
+                    )
+                    results["updated"] += 1
+                elif epi_data.get("action_doublon") == "create":
+                    # Créer quand même avec un numéro de série modifié
+                    count = await db.epis.count_documents({"tenant_id": tenant.id})
+                    epi_data["numero_serie"] = f"{epi_data['numero_serie']}-DUP-{count + 1}"
+                    # Continue avec la création ci-dessous
+                else:
+                    # skip par défaut
+                    continue
+            
+            # Créer l'EPI s'il n'existe pas (ou si action_doublon = create)
+            if not existing_epi or epi_data.get("action_doublon") == "create":
+                new_epi = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant.id,
+                    "type_epi": epi_data["type_epi"],
+                    "numero_serie": epi_data["numero_serie"],
+                    "marque": epi_data.get("marque", ""),
+                    "modele": epi_data.get("modele", ""),
+                    "taille": epi_data.get("taille", ""),
+                    "statut": epi_data.get("statut", "bon"),
+                    "norme_certification": epi_data.get("norme_certification", ""),
+                    "notes": epi_data.get("notes", ""),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                if user_id:
+                    new_epi["user_id"] = user_id
+                
+                # Dates optionnelles
+                if epi_data.get("date_mise_en_service"):
+                    new_epi["date_mise_en_service"] = epi_data["date_mise_en_service"]
+                if epi_data.get("date_dernier_controle"):
+                    new_epi["date_dernier_controle"] = epi_data["date_dernier_controle"]
+                if epi_data.get("date_prochain_controle"):
+                    new_epi["date_prochain_controle"] = epi_data["date_prochain_controle"]
+                
+                await db.epis.insert_one(new_epi)
+                results["created"] += 1
+        
+        except Exception as e:
+            results["errors"].append({
+                "line": index + 1,
+                "error": str(e),
+                "data": epi_data
+            })
+    
+    return results
+
+
+
 @api_router.get("/{tenant_slug}/epi", response_model=List[EPI])
 async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère tous les EPI du tenant (Admin/Superviseur)"""
