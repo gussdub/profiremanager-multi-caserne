@@ -5,6 +5,9 @@ import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { useToast } from "../hooks/use-toast";
 import { buildApiUrl } from "../utils/api";
+import ImportCSVEPI from "./ImportCSVEPI.jsx";
+import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
+import ImportCSVRapports from "./ImportCSVRapports.jsx";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
