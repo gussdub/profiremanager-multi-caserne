@@ -96,14 +96,33 @@ export default function LoginScreen() {
 
         <View style={styles.form}>
           <Text style={styles.label}>Caserne</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: shefford"
-            value={tenantSlug}
-            onChangeText={setTenantSlug}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {loadingTenants ? (
+            <ActivityIndicator color={PRIMARY_COLOR} />
+          ) : tenants.length > 0 ? (
+            <View style={styles.pickerContainer}>
+              <select
+                style={styles.picker}
+                value={tenantSlug}
+                onChange={(e) => setTenantSlug(e.target.value)}
+              >
+                <option value="">-- Sélectionnez une caserne --</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.slug} value={tenant.slug}>
+                    {tenant.nom}
+                  </option>
+                ))}
+              </select>
+            </View>
+          ) : (
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: shefford"
+              value={tenantSlug}
+              onChangeText={setTenantSlug}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          )}
 
           <Text style={styles.label}>Email</Text>
           <TextInput
