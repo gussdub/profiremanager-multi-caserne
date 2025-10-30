@@ -1,86 +1,84 @@
 <analysis>
-The AI engineer systematically enhanced the ProFireManager application, starting with UI/UX harmonization and crucial feature additions across multiple modules. The Personnel module was initially refined to correct layout issues and consolidate export functionalities into a single, comprehensive modal, integrating individual and bulk export options. Extensive documentation for marketing and user manuals was generated, adapting to environment constraints.
-
-Subsequently, the Planning module underwent significant design overhaul, incorporating KPIs, toggleable views, and styling consistent with the application's theme. A critical phase involved debugging and resolving complex backend API routing conflicts for Planning exports, successfully reordering routes to ensure correct functionality. This was followed by the design harmonization of Mes Disponibilités and Remplacements modules, strictly maintaining existing logic while integrating new KPIs, improved navigation, and fully functional PDF/Excel exports, addressing user feedback for clarity and completeness. The engineer is now poised to apply this harmonization process to the Paramètres module.
+The AI engineer's work spanned extensive feature development, bug fixes, and mobile application deployment. Key achievements include the full implementation of the Prévention module and its advanced features, resolution of the Modifier button bug (dismissed by user), and successful generation of iOS and Android builds with updated branding. Significant effort was dedicated to troubleshooting mobile build issues (ENOSPC, Babel/ngrok/reanimated errors). The engineer also implemented dynamic tenant selection for mobile, backend endpoints for new CSV imports (EPI, Personnel, Rapports), and updated Prevention module data based on official Quebec documents. The current task is to refine the Prévention module's risk level categories.
 </analysis>
 
 <product_requirements>
-The overarching goal was to modernize and harmonize the ProFireManager application's UI/UX, enhance core functionalities, and improve reporting capabilities. Key product requirements addressed throughout the development trajectory include:
-1.  **UI Harmonization:** Consistent pale red theme and modern layout across Mon Profil, Formation, EPI, Rapports, Dashboard, Personnel, Planning, Mes Disponibilités, and Remplacements modules.
-2.  **Personnel Module Enhancements:** Fix long email alignment, remove per-line print buttons, implement a unified export modal (PDF/Excel) supporting all personnel and individual employee data, and resolve email/badge overlap.
-3.  **Documentation Generation:** Create professional marketing/promotion text for directors and a comprehensive user manual for firefighters, including conceptual screenshots, pricing, and support details.
-4.  **Planning Module Harmonization & Functionality:** Integrate KPIs (total shifts, covered/uncovered, total planned hours, coverage rate), introduce a toggleable list/calendar view, highlight auto/manual assignment, enable adding people by clicking date/shift, ensure clear visualization, and implement functional PDF/Excel exports with correct backend routing.
-5.  **Mes Disponibilités Module Harmonization:** Redesign UI (header, KPIs for admins/supervisors: availability rate, # people with availability vs part-time, avg dispos, styled navigation, modals) without altering calendar functional logic. Implement working PDF/Excel exports (per person or all).
-6.  **Remplacements Module Harmonization:** Redesign UI (header, KPIs, stylized tabs, list/card toggle, exports per person/all, filters by status, role-based access) without altering core functional logic. Implement working PDF/Excel exports.
-7.  **Paramètres Module Harmonization:** Redesign the UI (header, KPIs, organization, buttons, forms) without altering functional logic.
+The ProFireManager application initially focused on firefighter shift management and is expanding to include a Prévention module.
+1.  **Module Prévention - Core & Advanced Features**: Implement comprehensive CRUD for inspections, non-conformities, PDF reports, dynamic grids, photo upload, detailed views, calendar, advanced reports (Excel), and automatic notifications. This module is activated per-tenant.
+2.  **Existing Functionality Fixes**: Initially, address UI bugs (manual assignment) and authentication issues. The Modifier button bug in custom inspection grids was reported but later dismissed by the user as functional.
+3.  **Promotional Document**: Create a sales document with tiered pricing.
+4.  **Mobile Application (iOS/Android)**: Develop a React Native/Expo mobile version, including notifications that ring the user's phone, and replicate core web application functionality.
+5.  **CSV Import for Mes EPI**: Implement a customizable, dynamic CSV import for Employee PPE data, mirroring the Prevention module's import, available on both web and mobile, with preview and duplicate handling.
+6.  **CSV Import for Personnel and Rapports**: Implement web-only CSV imports for personnel data (fast employee onboarding) and financial data (budgets/expenses).
+7.  **Prevention Module Enhancement**: Update building categories and suggest risks based on official Quebec documents (NR24-27, guide planification activité), rename cadastre to cadastre/matricule, and add a valeur foncière field.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-stack Architecture:** React (frontend), FastAPI (backend), MongoDB (database).
--   **API Design:**  prefix for backend, careful handling of dynamic path parameters vs. specific routes.
--   **Component-Based UI:**  central, ,  for state and side effects.
--   **Styling:**  for custom styles, ProFireManager branding (pale red), CSS for layout, email truncation, z-index.
--   **Reporting:** ,  (backend for PDF/Excel).
--   **Routing Priority:** FastAPI's route definition order for conflict resolution.
+-   **FastAPI**: Python backend framework.
+-   **React**: JavaScript frontend UI library.
+-   **MongoDB**: NoSQL database.
+-   **React Native + Expo**: Mobile application development.
+-   **Pydantic**: Data validation.
+-   **UUIDs**: Unique identifiers.
+-   **bcrypt**: Password hashing.
+-   **EAS CLI**: Expo Application Services for building and submitting mobile apps.
+-   **ngrok**: Used for creating public tunnels during mobile development.
 </key_technical_concepts>
 
 <code_architecture>
+The application utilizes a React/FastAPI/MongoDB stack.
+
 
 
 -   ****:
-    -   **Summary**: Central FastAPI application for managing MongoDB models and API endpoints. It defines data models and handles authentication, CRUD operations, and complex data aggregations.
+    -   **Importance**: Core backend logic, API routes, database interaction, authentication.
     -   **Changes Made**:
-        -   **Planning Exports**: Added  endpoints (, ) for PDF/Excel reports of planning data. Critically, these were moved to appear *before* dynamic path routes (e.g., ) to resolve routing conflicts.
-        -   **Disponibilités Exports**: Added  endpoints (, ) for PDF/Excel exports of availability data.
-        -   **Remplacements Exports**: Added  endpoints (, ) for PDF/Excel exports of replacement requests, also with correct routing priority.
-        -   Ensured consistency in  handling and JSON serialization practices.
-
+        -   **Prevention Module**:  model updated with new categories, cadastre/matricule, valeur_fonciere. New endpoint  added to provide official categories and risks.
+        -   **Mobile Integration**: Existing push notification registration endpoint  confirmed. New public endpoint  added to fetch tenant list for dynamic login on mobile.
+        -   **CSV Imports**: New  endpoints created for ,  (Personnel), and  (Rapports) to handle mass data entry.
 -   ****:
-    -   **Summary**: The primary React application component, managing global state, rendering major functional modules, and orchestrating UI interactions and API calls.
-    -   **Changes Made**:
-        -   **Personnel**: Implemented email truncation with tooltips; removed per-line print buttons; integrated PDF/Excel exports into a single modal (supporting All personnel or Specific person via dropdown); resolved email/badge overlap; updated states (, , ) and export functions.
-        -   **Planning**: Major redesign for harmonization. Added states for KPIs and view toggles (, ). Refactored JSX for a harmonized header, KPIs (total shifts, coverage), and a toggleable calendar/list view. Implemented and connected  and  functions to new export buttons.
-        -   **Mes Disponibilités**: Design harmonization (header, role-based KPIs, styled calendar navigation, modals). Introduced states (, , ) and functions for exports. Fixed a bug by adding  and  to fetch  within the component for KPI calculations.
-        -   **Remplacements**: Design harmonization in progress. Added states (, , , , , , ) for view toggles and filters. Replaced header, converted statistics cards to harmonized KPIs, and integrated stylized tabs. Implemented export functions and a modal.
-        -   **General**: Implemented new modals for exports across Personnel, Disponibilités, and Remplacements modules.
-
--   ****:
-    -   **Summary**: Contains global and component-specific CSS styles for layout, typography, and responsive design, ensuring a consistent application aesthetic.
-    -   **Changes Made**:
-        -   **Personnel**: Added styles for email truncation, tooltips, adjusted table cell widths, and z-index to correct alignment and overlap issues.
-        -   **Planning**: Added new classes and styles for the harmonized header, KPIs, view toggles, and improved calendar/list layouts. Updated the color of the Assignation Manuelle Avancée button.
-        -   **Mes Disponibilités**: Added styles for the new header, KPIs, and harmonized calendar navigation elements.
-        -   **Remplacements**: Added initial CSS for the harmonized header, KPIs, and stylized tabs.
-        -   General updates to align with the ProFireManager pale red branding.
-
--   ****:
-    -   **Summary**: A newly created Markdown file containing marketing and promotional text for the ProFireManager software, targeting fire station directors. It outlines features, benefits, pricing tiers, and support information.
-
--   ****:
-    -   **Summary**: A newly created Markdown file containing a comprehensive user manual for ProFireManager, targeted at firefighters. It provides detailed descriptions of each module and conceptual descriptions of functionalities, compensating for the lack of live screenshots during generation.
+    -   **Importance**: Main React application, handles routing.
+    -   **Changes Made**: Logic for integrating new CSV import components.
+-   ** (NEW)**:
+    -   **Importance**: Frontend component for importing EPI data.
+    -   **Changes Made**: Created, mirrors  for Prevention.
+-   ** (NEW)**:
+    -   **Importance**: Frontend component for importing Personnel data.
+    -   **Changes Made**: Created, mirrors .
+-   ** (NEW)**:
+    -   **Importance**: Frontend component for importing Reports data.
+    -   **Changes Made**: Created, mirrors .
+-   ** (NEW Directory)**:
+    -   **Importance**: Houses the React Native + Expo mobile application.
+    -   **Changes Made**: Full setup, including , , , , , , , and an  folder with app icons.
+-   ** (NEW)**:
+    -   **Importance**: Defines the navigation structure for the mobile app (Stack and Bottom Tabs).
+    -   **Changes Made**: Configured with , , , , , , , , .
+-   ** (NEW)**:
+    -   **Importance**: Handles user authentication and tenant selection for the mobile app.
+    -   **Changes Made**: Modified to dynamically fetch and select tenant slugs instead of hardcoding shefford. Implements  for remembering the last-used tenant.
+-   ** (NEW)**:
+    -   **Importance**: Centralized API helper functions for the mobile app.
+    -   **Changes Made**: Updated to correctly point to  endpoint and  for dynamic tenant fetching.
+-   ** (NEW)**:
+    -   **Importance**: Stores application icons and splash screens.
+    -   **Changes Made**: , , ,  were copied from the frontend  directory to use for mobile app branding.
 </code_architecture>
 
 <pending_tasks>
--   Harmonize the design of the Paramètres module (header, KPIs, organization, buttons, forms) to match the consistent style of other modules, strictly without modifying its functional logic.
+-   **Frontend Web Integration for New CSV Imports**: Integrate , , and  into the main web application UI.
+-   **Correction of Prevention Module Risk Levels**: Update the backend logic/data to correctly implement élevé, moyen, faible risk levels as per user clarification.
+-   **Frontend Implementation for Prevention Module Enhancements**: Update web and mobile UIs to reflect the new building categories, cadastre/matricule label, valeur foncière field, and dynamic risk suggestions.
+-   **Mobile App Testing**: Thoroughly test the newly built iOS and Android applications, particularly regarding tenant selection, push notifications, and functionality parity with the web version.
+-   **Android App Bundle (AAB) Production Build**: Address and resolve the underlying issues causing Android production builds to fail, and then submit the AAB to Google Play Store.
 </pending_tasks>
 
 <current_work>
-Immediately prior to this summary request, the AI engineer successfully completed the implementation of export functionalities for the Mes Disponibilités and Remplacements modules and finished a significant part of their design harmonization.
+Immediately before this summary, the AI engineer was addressing user requests for enhancements to the Prévention module. The user had provided two official Quebec documents (NR24-27 and guide planification activité) to standardize building categories and suggest risks. The engineer successfully extracted information from these PDFs to update the  model in  to include new categories, rename cadastre to cadastre/matricule, and add a valeur_fonciere field. A new backend endpoint  was also created to serve these official categories and risks.
 
-For **Mes Disponibilités**:
-*   The module's UI was harmonized with a modern header and redesigned navigation.
-*   KPIs (availability rate, people with availability vs. part-time, average availabilities per part-time) were implemented to be displayed for administrators/supervisors.
-*   A critical bug where the  variable was undefined for KPI calculations was resolved by fetching user data directly within the  component using  and .
-*   A KPI label was clarified for better readability as per user feedback.
-*   Full PDF/Excel export capabilities were implemented, including new backend API endpoints (,  in ) and corresponding frontend functions (, ) with a dedicated export modal in .
-
-For **Remplacements**:
-*   Initial design harmonization involved adding new states for view toggles and filters, replacing the header with a harmonized version, converting statistics cards into KPIs, and integrating stylized tabs.
-*   Full PDF/Excel export capabilities were implemented, including new backend API endpoints (,  in ) and corresponding frontend functions (, ) with a dedicated export modal in .
-
-The backend routing for all new export endpoints across Planning, Disponibilités, and Remplacements was carefully managed to prevent conflicts with existing dynamic routes. All frontend changes ensure that these modules now present a harmonized look and fully functional export options, completing the user's request for 100% functionality on exports.
+However, a clarification arose regarding risks: the user specified they meant niveaux de risque (risk levels like élevé, moyen, faible) rather than types of risks. The engineer is currently re-analyzing the provided documents to extract these specific risk levels to update the backend accordingly.
 </current_work>
 
 <optional_next_step>
-Examine the current structure of the Paramètres module in  to begin its design harmonization.
+Re-analyze the provided documents to accurately define and implement the élevé, moyen, faible risk levels in the backend.
 </optional_next_step>
