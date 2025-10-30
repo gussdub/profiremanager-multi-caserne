@@ -13949,6 +13949,132 @@ async def traiter_demande_remplacement(
 
 # ==================== PRÉVENTION ENDPOINTS ====================
 
+
+@api_router.get("/{tenant_slug}/prevention/references")
+async def get_prevention_references(tenant_slug: str):
+    """Récupère les catégories officielles (NR24-27) et risques (guide planification) pour le module prévention"""
+    
+    categories_nr24_27 = {
+        "A": {
+            "nom": "Établissements de réunion",
+            "sous_groupes": {
+                "A-1": "Destinés à la production et à la présentation d'arts du spectacle",
+                "A-2": "Qui ne figurent dans aucune autre division du groupe A",
+                "A-3": "De type aréna",
+                "A-4": "Où les occupants sont rassemblés en plein air"
+            }
+        },
+        "B": {
+            "nom": "Établissements de détention, soins, traitement et habitations supervisées",
+            "sous_groupes": {
+                "B-1": "Établissements de détention",
+                "B-2": "Établissements de traitement",
+                "B-3": "Établissements de soins",
+                "B-4": "Établissements de soins de type résidentiel"
+            }
+        },
+        "C": {
+            "nom": "Habitations",
+            "sous_groupes": {}
+        },
+        "D": {
+            "nom": "Établissements d'affaires",
+            "sous_groupes": {}
+        },
+        "E": {
+            "nom": "Établissements commerciaux",
+            "sous_groupes": {}
+        },
+        "F": {
+            "nom": "Établissements industriels",
+            "sous_groupes": {
+                "F-1": "À risques très élevés",
+                "F-2": "À risques moyens",
+                "F-3": "À risques faibles"
+            }
+        },
+        "G": {
+            "nom": "Établissements agricoles",
+            "sous_groupes": {
+                "G-1": "À risques très élevés",
+                "G-2": "Qui ne figurent dans aucune autre division du groupe G",
+                "G-3": "Abritant des serres",
+                "G-4": "Sans occupation humaine"
+            }
+        }
+    }
+    
+    risques_guide_planification = {
+        "incendies": [
+            "Incendie",
+            "Conflagration"
+        ],
+        "matieres": [
+            "Matières dangereuses",
+            "Matières hautement inflammables",
+            "Matières très toxiques",
+            "Matières combustibles",
+            "Produits chimiques"
+        ],
+        "infrastructure": [
+            "Explosion",
+            "Défaillances des systèmes de sécurité incendie",
+            "Matériaux de construction douteux"
+        ],
+        "occupants": [
+            "Grand nombre d'occupants",
+            "Capacité physique ou mentale insuffisante des occupants",
+            "Personnes avec limitations compliquant l'évacuation",
+            "Difficulté d'évacuation",
+            "Nombre élevé d'enfants"
+        ],
+        "usages_specifiques": [
+            "Usage résidentiel",
+            "Usage commercial",
+            "Usage industriel",
+            "Atelier/entrepôt",
+            "Garage de réparation",
+            "Imprimerie",
+            "Station-service",
+            "Bâtiment agricole",
+            "Hôpital/centre d'accueil",
+            "Établissement de détention",
+            "Centre commercial",
+            "Hôtel/motel",
+            "École/garderie/église",
+            "Usine de peinture",
+            "Usine de produits chimiques",
+            "Meunerie",
+            "Hangar"
+        ],
+        "environnement": [
+            "Incendies de forêt",
+            "Inondations",
+            "Glissements de terrain"
+        ],
+        "transport": [
+            "Réseaux routiers",
+            "Réseaux ferroviaires",
+            "Transport maritime",
+            "Trafic aérien",
+            "Transport de matières dangereuses",
+            "Accidents routiers",
+            "Accidents ferroviaires"
+        ],
+        "impact_societal": [
+            "Impact majeur sur la société",
+            "Importance pour la communauté",
+            "Pertes d'emplois potentielles",
+            "Effets psychologiques"
+        ]
+    }
+    
+    return {
+        "categories_nr24_27": categories_nr24_27,
+        "risques_guide_planification": risques_guide_planification
+    }
+
+
 @api_router.get("/{tenant_slug}/prevention/batiments")
 async def get_batiments(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupérer tous les bâtiments du tenant"""
