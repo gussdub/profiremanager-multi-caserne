@@ -7252,6 +7252,153 @@ async def create_budget(tenant_slug: str, budget: BudgetCreate, current_user: Us
     await db.budgets.insert_one(budget_obj.dict())
     return clean_mongo_doc(budget_obj.dict())
 
+@api_router.post("/{tenant_slug}/rapports/import-csv")
+async def import_rapports_csv(
+    tenant_slug: str,
+    rapports_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Import en masse de budgets et dépenses depuis un CSV"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    items = rapports_data.get("items", [])
+    if not items:
+        raise HTTPException(status_code=400, detail="Aucun élément à importer")
+    
+    results = {
+        "total": len(items),
+        "created_budgets": 0,
+        "created_depenses": 0,
+        "updated": 0,
+        "errors": [],
+        "duplicates": []
+    }
+    
+    for index, item_data in enumerate(items):
+        try:
+            # Validation des champs obligatoires
+            if not item_data.get("date") or not item_data.get("description") or not item_data.get("montant"):
+                results["errors"].append({
+                    "line": index + 1,
+                    "error": "Date, Description et Montant sont requis",
+                    "data": item_data
+                })
+                continue
+            
+            # Déterminer le type (budget ou dépense)
+            item_type = item_data.get("type", "depense").lower()
+            if item_type not in ["budget", "depense", "dépense"]:
+                results["errors"].append({
+                    "line": index + 1,
+                    "error": f"Type invalide: {item_type}. Doit être 'budget' ou 'depense'",
+                    "data": item_data
+                })
+                continue
+            
+            # Normaliser le type
+            if item_type in ["dépense", "depense"]:
+                item_type = "depense"
+            
+            # Vérifier si l'élément existe déjà (par date + description + montant)
+            collection = db.budgets if item_type == "budget" else db.depenses
+            
+            # Créer une date comparable
+            date_str = item_data["date"]
+            if isinstance(date_str, str):
+                try:
+                    # Essayer différents formats de date
+                    from dateutil import parser
+                    parsed_date = parser.parse(date_str)
+                    date_comparable = parsed_date.strftime("%Y-%m-%d")
+                except:
+                    date_comparable = date_str
+            else:
+                date_comparable = date_str
+            
+            existing_item = await collection.find_one({
+                "tenant_id": tenant.id,
+                "date": date_comparable,
+                "description": item_data["description"],
+                "montant": float(item_data["montant"])
+            })
+            
+            if existing_item:
+                results["duplicates"].append({
+                    "line": index + 1,
+                    "type": item_type,
+                    "date": date_comparable,
+                    "description": item_data["description"],
+                    "montant": item_data["montant"],
+                    "action": item_data.get("action_doublon", "skip"),
+                    "data": item_data
+                })
+                
+                # Si action_doublon = update, mettre à jour
+                if item_data.get("action_doublon") == "update":
+                    update_data = {
+                        "description": item_data["description"],
+                        "montant": float(item_data["montant"]),
+                        "categorie": item_data.get("categorie", ""),
+                        "numero_reference": item_data.get("numero_reference", ""),
+                        "fournisseur": item_data.get("fournisseur", ""),
+                        "compte_budgetaire": item_data.get("compte_budgetaire", ""),
+                        "projet_service": item_data.get("projet_service", ""),
+                        "notes": item_data.get("notes", ""),
+                        "piece_jointe_url": item_data.get("piece_jointe_url", ""),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    await collection.update_one(
+                        {"id": existing_item["id"], "tenant_id": tenant.id},
+                        {"$set": update_data}
+                    )
+                    results["updated"] += 1
+                else:
+                    # skip par défaut
+                    continue
+            
+            # Créer l'élément s'il n'existe pas
+            if not existing_item:
+                new_item = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant.id,
+                    "date": date_comparable,
+                    "description": item_data["description"],
+                    "montant": float(item_data["montant"]),
+                    "categorie": item_data.get("categorie", ""),
+                    "numero_reference": item_data.get("numero_reference", ""),
+                    "fournisseur": item_data.get("fournisseur", ""),
+                    "compte_budgetaire": item_data.get("compte_budgetaire", ""),
+                    "projet_service": item_data.get("projet_service", ""),
+                    "notes": item_data.get("notes", ""),
+                    "piece_jointe_url": item_data.get("piece_jointe_url", ""),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Champs spécifiques selon le type
+                if item_type == "budget":
+                    new_item["annee"] = item_data.get("annee", datetime.now(timezone.utc).year)
+                    await db.budgets.insert_one(new_item)
+                    results["created_budgets"] += 1
+                else:
+                    new_item["statut"] = item_data.get("statut", "approuve")
+                    await db.depenses.insert_one(new_item)
+                    results["created_depenses"] += 1
+        
+        except Exception as e:
+            results["errors"].append({
+                "line": index + 1,
+                "error": str(e),
+                "data": item_data
+            })
+    
+    return results
+
+
+
 @api_router.get("/{tenant_slug}/rapports/budgets")
 async def get_budgets(tenant_slug: str, annee: Optional[int] = None, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
