@@ -7077,7 +7077,8 @@ class Batiment(BaseModel):
     adresse_civique: str = ""
     ville: str = ""
     code_postal: str = ""
-    numero_lot_cadastre: str = ""
+    cadastre_matricule: str = ""  # Renommé de numero_lot_cadastre
+    valeur_fonciere: Optional[float] = None  # Nouveau champ
     
     # Contacts
     proprietaire_nom: str = ""
