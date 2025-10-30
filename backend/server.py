@@ -7109,7 +7109,8 @@ class BatimentCreate(BaseModel):
     adresse_civique: str = ""
     ville: str = ""
     code_postal: str = ""
-    numero_lot_cadastre: str = ""
+    cadastre_matricule: str = ""  # Renommé
+    valeur_fonciere: Optional[float] = None  # Nouveau
     proprietaire_nom: str = ""
     proprietaire_telephone: str = ""
     proprietaire_courriel: str = ""
@@ -7122,6 +7123,7 @@ class BatimentCreate(BaseModel):
     groupe_occupation: str = ""
     sous_groupe: str = ""
     description_activite: str = ""
+    risques: List[str] = []  # Nouveau
     statut: str = "actif"
     notes_generales: str = ""
     preventionniste_assigne_id: Optional[str] = None
