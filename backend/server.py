@@ -2441,6 +2441,196 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     
     return user_obj
 
+@api_router.post("/{tenant_slug}/users/import-csv")
+async def import_users_csv(
+    tenant_slug: str,
+    users_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Import en masse d'utilisateurs/personnel depuis un CSV"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    users = users_data.get("users", [])
+    if not users:
+        raise HTTPException(status_code=400, detail="Aucun utilisateur à importer")
+    
+    # Vérifier la limite du palier
+    current_count = await db.users.count_documents({"tenant_id": tenant.id})
+    total_to_import = len(users)
+    
+    if current_count < 30:
+        limite = 30
+        palier = "Basic (1-30)"
+    elif current_count < 50:
+        limite = 50
+        palier = "Standard (31-50)"
+    else:
+        limite = None
+        palier = "Premium (51+)"
+    
+    if limite and (current_count + total_to_import) > limite:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Import refusé: dépassement du palier {palier}. Vous avez {current_count} utilisateurs, tentative d'import de {total_to_import}. Limite: {limite}."
+        )
+    
+    results = {
+        "total": total_to_import,
+        "created": 0,
+        "updated": 0,
+        "errors": [],
+        "duplicates": [],
+        "password_reset_emails": []
+    }
+    
+    for index, user_data in enumerate(users):
+        try:
+            # Validation des champs obligatoires
+            if not user_data.get("prenom") or not user_data.get("nom") or not user_data.get("email"):
+                results["errors"].append({
+                    "line": index + 1,
+                    "error": "Prénom, Nom et Email sont requis",
+                    "data": user_data
+                })
+                continue
+            
+            # Vérifier si l'utilisateur existe déjà (par email)
+            existing_user = await db.users.find_one({
+                "email": user_data["email"],
+                "tenant_id": tenant.id
+            })
+            
+            if existing_user:
+                results["duplicates"].append({
+                    "line": index + 1,
+                    "email": user_data["email"],
+                    "action": user_data.get("action_doublon", "skip"),
+                    "data": user_data
+                })
+                
+                # Si action_doublon = update, mettre à jour
+                if user_data.get("action_doublon") == "update":
+                    update_data = {
+                        "prenom": user_data["prenom"],
+                        "nom": user_data["nom"],
+                        "numero_employe": user_data.get("numero_employe", ""),
+                        "grade": user_data.get("grade", ""),
+                        "type_emploi": user_data.get("type_emploi", "temps_plein"),
+                        "telephone": user_data.get("telephone", ""),
+                        "adresse": user_data.get("adresse", ""),
+                        "role": user_data.get("role", "employe"),
+                        "accepte_gardes_externes": user_data.get("accepte_gardes_externes", False)
+                    }
+                    
+                    # Champs optionnels
+                    if user_data.get("date_embauche"):
+                        update_data["date_embauche"] = user_data["date_embauche"]
+                    if user_data.get("taux_horaire"):
+                        update_data["taux_horaire"] = float(user_data["taux_horaire"])
+                    if user_data.get("competences"):
+                        update_data["competences"] = user_data["competences"].split(",") if isinstance(user_data["competences"], str) else user_data["competences"]
+                    
+                    # Contact d'urgence
+                    if user_data.get("contact_urgence_nom"):
+                        update_data["contact_urgence"] = {
+                            "nom": user_data.get("contact_urgence_nom", ""),
+                            "telephone": user_data.get("contact_urgence_telephone", ""),
+                            "relation": user_data.get("contact_urgence_relation", "")
+                        }
+                    
+                    await db.users.update_one(
+                        {"id": existing_user["id"], "tenant_id": tenant.id},
+                        {"$set": update_data}
+                    )
+                    results["updated"] += 1
+                else:
+                    # skip par défaut
+                    continue
+            
+            # Créer l'utilisateur s'il n'existe pas
+            if not existing_user:
+                # Générer un mot de passe temporaire
+                temp_password = f"Temp{str(uuid.uuid4())[:8]}!"
+                
+                new_user = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant.id,
+                    "email": user_data["email"],
+                    "prenom": user_data["prenom"],
+                    "nom": user_data["nom"],
+                    "numero_employe": user_data.get("numero_employe", ""),
+                    "grade": user_data.get("grade", ""),
+                    "type_emploi": user_data.get("type_emploi", "temps_plein"),
+                    "telephone": user_data.get("telephone", ""),
+                    "adresse": user_data.get("adresse", ""),
+                    "role": user_data.get("role", "employe"),
+                    "accepte_gardes_externes": user_data.get("accepte_gardes_externes", False),
+                    "mot_de_passe_hash": get_password_hash(temp_password),
+                    "heures_internes": 0,
+                    "heures_externes": 0,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Champs optionnels
+                if user_data.get("date_embauche"):
+                    new_user["date_embauche"] = user_data["date_embauche"]
+                if user_data.get("taux_horaire"):
+                    new_user["taux_horaire"] = float(user_data["taux_horaire"])
+                if user_data.get("competences"):
+                    new_user["competences"] = user_data["competences"].split(",") if isinstance(user_data["competences"], str) else user_data["competences"]
+                
+                # Contact d'urgence
+                if user_data.get("contact_urgence_nom"):
+                    new_user["contact_urgence"] = {
+                        "nom": user_data.get("contact_urgence_nom", ""),
+                        "telephone": user_data.get("contact_urgence_telephone", ""),
+                        "relation": user_data.get("contact_urgence_relation", "")
+                    }
+                
+                await db.users.insert_one(new_user)
+                results["created"] += 1
+                
+                # Envoyer email de réinitialisation de mot de passe
+                try:
+                    # Créer un token de réinitialisation
+                    reset_token = str(uuid.uuid4())
+                    await db.password_resets.insert_one({
+                        "email": user_data["email"],
+                        "tenant_id": tenant.id,
+                        "token": reset_token,
+                        "created_at": datetime.now(timezone.utc),
+                        "expires_at": datetime.now(timezone.utc) + timedelta(days=7)
+                    })
+                    
+                    # Envoyer l'email (fonction à implémenter selon votre système d'emails)
+                    reset_url = f"{os.environ.get('FRONTEND_URL')}/reset-password?token={reset_token}"
+                    # send_password_reset_email(user_data["email"], reset_url)
+                    
+                    results["password_reset_emails"].append({
+                        "email": user_data["email"],
+                        "reset_url": reset_url
+                    })
+                except Exception as e:
+                    results["errors"].append({
+                        "line": index + 1,
+                        "error": f"Utilisateur créé mais email non envoyé: {str(e)}",
+                        "data": user_data
+                    })
+        
+        except Exception as e:
+            results["errors"].append({
+                "line": index + 1,
+                "error": str(e),
+                "data": user_data
+            })
+    
+    return results
+
+
+
 @api_router.get("/{tenant_slug}/users", response_model=List[User])
 async def get_users(tenant_slug: str, current_user: User = Depends(get_current_user)):
     # Tous les utilisateurs authentifiés peuvent voir la liste des users (lecture seule)
