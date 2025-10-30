@@ -230,6 +230,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f9f9f9',
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    overflow: 'hidden',
+  },
+  picker: {
+    padding: 12,
+    fontSize: 16,
+    border: 'none',
+    backgroundColor: 'transparent',
+    width: '100%',
+  },
   button: {
     backgroundColor: PRIMARY_COLOR,
     borderRadius: 8,
