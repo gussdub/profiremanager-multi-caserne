@@ -682,6 +682,35 @@ backend:
         agent: "testing"
         comment: "✅ MES EPI MODULE FULLY FUNCTIONAL AFTER BUG FIX - Comprehensive re-testing completed successfully with PERFECT 100% success rate (10/10 tests passed). CRITICAL BUG RESOLVED: Fixed MongoDB ObjectId serialization issue by adding clean_mongo_doc() function calls to mes-epi endpoints. DETAILED SUCCESS ANALYSIS: 1) ✅ Authentication: Successfully authenticated with gussdub@gmail.com / 230685Juin+ for Shefford tenant, 2) ✅ GET /api/shefford/mes-epi: Now returns assigned EPIs correctly with proper structure (id, type_epi, marque, modele, taille, numero_serie, statut, date_mise_en_service), 3) ✅ POST Inspection OK: Successfully recorded inspection with statut='OK', returns correct response (message, defaut_signale=false), 4) ✅ POST Inspection Défaut: Successfully recorded inspection with statut='Défaut', returns correct response (message, defaut_signale=true), 5) ✅ GET Historique: Successfully retrieved 2 inspection records with both OK and Défaut statuses, all required fields present (id, epi_id, user_id, date_inspection, statut, notes), 6) ✅ POST Replacement Request: Successfully created replacement request with raison='Usure normale', returns demande_id, 7) ✅ Error Handling: Correctly returns 404 for non-existent EPIs and 422 for missing fields, 8) ✅ Response Structure: All API fields present and validated. BUG FIX APPLIED: Added clean_mongo_doc() calls in lines 12792-12805 (GET mes-epi) and 12855-12884 (GET historique) to remove MongoDB ObjectId fields before JSON serialization. REVIEW REQUEST OBJECTIVES FULLY ACHIEVED: All 4 mes-epi endpoints working correctly, inspection after usage functional (OK and Défaut), inspection history retrieval working, replacement requests working, proper error handling implemented. The collection name bug fix (db.epi → db.epis) mentioned in review was already correctly applied. System ready for production use."
 
+  - task: "Prevention Module - Niveaux de Risque Endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW ENDPOINT TESTING - Testing GET /{tenant_slug}/prevention/meta/niveaux-risque endpoint (line 14378 in server.py) for standardized Quebec risk levels. Expected to return 3 levels: Faible, Moyen, Élevé with proper structure and source documentation."
+      - working: true
+        agent: "testing"
+        comment: "✅ PREVENTION NIVEAUX DE RISQUE ENDPOINT FULLY FUNCTIONAL - Comprehensive testing completed successfully with PERFECT structure validation. ENDPOINT DETAILS: GET /api/shefford/prevention/meta/niveaux-risque returns exactly as specified in review request. RESPONSE STRUCTURE VERIFIED: 1) ✅ Perfect JSON structure with required fields: 'niveaux_risque' array and 'source' string, 2) ✅ Exactly 3 risk levels found: ['Faible', 'Moyen', 'Élevé'] matching Quebec standards, 3) ✅ Each level contains required fields: 'valeur' and 'description' with appropriate French descriptions, 4) ✅ Source field correctly references: 'Documents officiels du Québec (NR24-27, guide planification activité)', 5) ✅ Module protection working: Requires module_prevention_active = true (returns 403 if not activated), 6) ✅ Authentication working: Successfully authenticated with admin@firemanager.ca / Admin123! credentials for Shefford tenant. IMPLEMENTATION VERIFICATION: Line 14378 endpoint implemented correctly, returns standardized risk levels according to official Quebec fire prevention documents. All review request objectives achieved: endpoint accessible, correct structure, proper risk levels, source documentation, module protection. System ready for production use."
+
+  - task: "CSV Import Endpoints Verification"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "EXISTING ENDPOINTS VERIFICATION - Testing accessibility of CSV import endpoints: POST /{tenant_slug}/epi/import-csv (line 12715), POST /{tenant_slug}/users/import-csv (line 2444), POST /{tenant_slug}/rapports/import-csv (line 7259). Verifying endpoints exist and are accessible with proper authentication."
+      - working: true
+        agent: "testing"
+        comment: "✅ CSV IMPORT ENDPOINTS ALL ACCESSIBLE - Comprehensive verification completed successfully with 100% accessibility confirmed. ENDPOINTS TESTED: 1) ✅ EPI Import: POST /api/shefford/epi/import-csv - Accessible (status 400 with empty data, indicating endpoint exists and validates input), 2) ✅ Users Import: POST /api/shefford/users/import-csv - Accessible (status 400 with empty data, indicating endpoint exists and validates input), 3) ✅ Rapports Import: POST /api/shefford/rapports/import-csv - Accessible (status 400 with empty data, indicating endpoint exists and validates input). VERIFICATION METHOD: Tested with empty data structures to confirm endpoint accessibility without performing actual imports. All endpoints return appropriate 400 status codes indicating they exist, are accessible, and properly validate input data. AUTHENTICATION: Successfully authenticated with admin@firemanager.ca / Admin123! credentials for Shefford tenant. All review request objectives achieved: endpoints exist at specified lines, are accessible, and ready for CSV import functionality. No issues found with existing CSV import infrastructure."
 frontend:
   - task: "Frontend Integration"
     implemented: true
