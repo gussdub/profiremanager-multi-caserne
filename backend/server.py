@@ -15307,6 +15307,21 @@ async def initialize_production_data():
         )
 
 # Include the router in the main app
+
+# Endpoint public pour lister les tenants (pour l'app mobile)
+@app.get("/api/tenants")
+async def get_all_tenants():
+    """Récupère la liste de tous les tenants actifs (casernes) pour la sélection dans l'app mobile"""
+    try:
+        tenants = await db.tenants.find(
+            {"actif": True},
+            {"_id": 0, "id": 1, "slug": 1, "nom": 1}
+        ).to_list(length=None)
+        return tenants
+    except Exception as e:
+        return []
+
+
 app.include_router(api_router)
 
 app.add_middleware(
