@@ -14376,6 +14376,42 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+@api_router.get("/{tenant_slug}/prevention/meta/niveaux-risque")
+async def get_niveaux_risque(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les niveaux de risque standardisés selon les documents officiels du Québec"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Niveaux de risque standardisés selon les documents officiels du Québec
+    # (NR24-27 et guide planification activité)
+    niveaux_risque = [
+        {
+            "valeur": "Faible",
+            "description": "Risque d'incendie faible nécessitant une fréquence d'inspection normale"
+        },
+        {
+            "valeur": "Moyen",
+            "description": "Risque d'incendie moyen nécessitant une surveillance accrue"
+        },
+        {
+            "valeur": "Élevé",
+            "description": "Risque d'incendie élevé nécessitant des inspections fréquentes et un suivi rigoureux"
+        }
+    ]
+    
+    return {
+        "niveaux_risque": niveaux_risque,
+        "source": "Documents officiels du Québec (NR24-27, guide planification activité)"
+    }
+
+
+
 # ==================== GÉNÉRATION RAPPORT PDF ====================
 
 async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> BytesIO:
