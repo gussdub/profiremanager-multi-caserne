@@ -68,7 +68,14 @@ export default function LoginScreen() {
     const result = await signIn(email, password, tenantSlug);
     setLoading(false);
 
-    if (!result.success) {
+    if (result.success) {
+      // Sauvegarder la caserne pour la prochaine fois
+      try {
+        await AsyncStorage.setItem('lastTenantSlug', tenantSlug);
+      } catch (error) {
+        console.error('Erreur sauvegarde caserne:', error);
+      }
+    } else {
       Alert.alert('Erreur de connexion', result.message);
     }
   };
