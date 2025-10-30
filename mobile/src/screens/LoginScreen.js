@@ -18,9 +18,45 @@ const PRIMARY_COLOR = '#D9072B';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantSlug, setTenantSlug] = useState('shefford');
+  const [tenantSlug, setTenantSlug] = useState('');
+  const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingTenants, setLoadingTenants] = useState(true);
   const { signIn } = useAuth();
+
+  useEffect(() => {
+    loadTenants();
+    loadLastTenant();
+  }, []);
+
+  const loadTenants = async () => {
+    try {
+      const response = await fetch('https://profire-inspect.preview.emergentagent.com/api/tenants');
+      const data = await response.json();
+      setTenants(data);
+    } catch (error) {
+      console.error('Erreur chargement casernes:', error);
+      // En cas d'erreur, utiliser une liste de fallback
+      setTenants([
+        { slug: 'shefford', nom: 'Shefford' },
+        { slug: 'granby', nom: 'Granby' },
+        { slug: 'waterloo', nom: 'Waterloo' }
+      ]);
+    } finally {
+      setLoadingTenants(false);
+    }
+  };
+
+  const loadLastTenant = async () => {
+    try {
+      const lastTenant = await AsyncStorage.getItem('lastTenantSlug');
+      if (lastTenant) {
+        setTenantSlug(lastTenant);
+      }
+    } catch (error) {
+      console.error('Erreur chargement dernière caserne:', error);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password || !tenantSlug) {
