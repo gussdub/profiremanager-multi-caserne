@@ -21,7 +21,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Cette application nécessite l'accès à la caméra pour scanner les codes QR.",
         "NSPhotoLibraryUsageDescription": "Cette application nécessite l'accès aux photos pour les inspections.",
-        "NSLocationWhenInUseUsageDescription": "Cette application utilise votre localisation pour les inspections de prévention."
+        "NSLocationWhenInUseUsageDescription": "Cette application utilise votre localisation pour les inspections de prévention.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
