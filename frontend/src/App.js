@@ -18265,6 +18265,12 @@ const Prevention = () => {
           >
             📈 Rapports
           </Button>
+          <Button 
+            variant={currentView === 'plans-intervention' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('plans-intervention')}
+          >
+            🗺️ Plans d'Intervention
+          </Button>
         </div>
       </div>
       
