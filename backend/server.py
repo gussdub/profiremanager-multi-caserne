@@ -14670,10 +14670,10 @@ async def delete_grille_inspection(
 @api_router.post("/{tenant_slug}/prevention/batiments/import-csv")
 async def import_batiments_csv(
     tenant_slug: str,
-    request: Dict[str, Any],  # Contient batiments: List[dict]
+    request: Dict[str, Any],  # Contient batiments: List[dict], required_fields: List[dict]
     current_user: User = Depends(get_current_user)
 ):
-    """Import en masse de bâtiments via CSV"""
+    """Import en masse de bâtiments via CSV avec validation personnalisée"""
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
     
@@ -14687,28 +14687,31 @@ async def import_batiments_csv(
     if not batiments_data:
         raise HTTPException(status_code=400, detail="Aucune donnée de bâtiment fournie")
     
+    # Récupérer les champs requis personnalisés (sinon utiliser les valeurs par défaut)
+    required_fields = request.get('required_fields', [
+        {'key': 'nom_etablissement', 'label': 'Nom établissement'},
+        {'key': 'adresse_civique', 'label': 'Adresse civique'}
+    ])
+    
     success_count = 0
     error_count = 0
     errors = []
     
     for idx, batiment_data in enumerate(batiments_data):
         try:
-            # Validation des données
-            if not batiment_data.get('nom_etablissement', '').strip():
-                errors.append({
-                    "row": idx + 1,
-                    "message": "Nom d'établissement requis"
-                })
-                error_count += 1
-                continue
+            # Validation dynamique selon les champs requis personnalisés
+            for required_field in required_fields:
+                field_key = required_field['key']
+                field_label = required_field['label']
                 
-            if not batiment_data.get('adresse_civique', '').strip():
-                errors.append({
-                    "row": idx + 1,
-                    "message": "Adresse civique requise"
-                })
-                error_count += 1
-                continue
+                if not batiment_data.get(field_key, '').strip():
+                    errors.append({
+                        "row": idx + 1,
+                        "message": f"{field_label} requis"
+                    })
+                    error_count += 1
+                    # Passer à la ligne suivante si un champ requis est manquant
+                    raise ValueError(f"{field_label} manquant")
             
             # Nettoyer et préparer les données
             batiment_dict = {}
@@ -14727,6 +14730,9 @@ async def import_batiments_csv(
             await db.batiments.insert_one(batiment_obj.dict())
             success_count += 1
             
+        except ValueError:
+            # Erreur déjà ajoutée dans la liste
+            continue
         except Exception as e:
             errors.append({
                 "row": idx + 1,
