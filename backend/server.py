@@ -7400,6 +7400,235 @@ class GeocodeResponse(BaseModel):
     precision: str  # "building", "street", "city"
 
 
+# ==================== MODÈLES PLANS D'INTERVENTION ====================
+
+class ElementPlanBase(BaseModel):
+    """Classe de base pour tous les éléments d'un plan d'intervention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type_element: str  # hydrant, sortie, matiere_dangereuse, generatrice, gaz_naturel, reservoir_propane, vehicule
+    latitude: float
+    longitude: float
+    numero: Optional[str] = None  # Ex: H1, S1, MD1 (auto-généré)
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class HydrantElement(ElementPlanBase):
+    """Hydrant sur le plan"""
+    type_element: str = "hydrant"
+    type_hydrant: str  # borne_fontaine, borne_seche, aspiration
+    debit: float  # Débit
+    unite_debit: str = "gal/min"  # gal/min ou L/min
+    couleur_indicateur: Optional[str] = None  # Rouge, jaune, vert selon débit
+
+class SortieElement(ElementPlanBase):
+    """Sortie d'urgence sur le plan"""
+    type_element: str = "sortie"
+    type_sortie: str  # urgence, principale, secondaire
+    largeur_m: Optional[float] = None
+    acces_fauteuil: bool = False
+    eclairage_secours: bool = False
+
+class MatiereDangereuse(ElementPlanBase):
+    """Matière dangereuse présente"""
+    type_element: str = "matiere_dangereuse"
+    nom_produit: str
+    pictogramme_simdut: str  # URL ou code du pictogramme
+    quantite: Optional[float] = None
+    unite_quantite: str = "L"  # L, kg, m³
+    classe_danger: str = ""  # Ex: "Inflammable", "Toxique", "Corrosif"
+
+class GeneratriceElement(ElementPlanBase):
+    """Génératrice d'urgence"""
+    type_element: str = "generatrice"
+    puissance_kw: Optional[float] = None
+    emplacement_commutateur: str = ""
+    type_carburant: str = ""  # diesel, essence, gaz naturel
+
+class GazNaturelElement(ElementPlanBase):
+    """Entrée de gaz naturel"""
+    type_element: str = "gaz_naturel"
+    emplacement_vanne_coupure: str
+    accessible_exterieur: bool = True
+
+class ReservoirPropaneElement(ElementPlanBase):
+    """Réservoir de propane"""
+    type_element: str = "reservoir_propane"
+    capacite: float
+    unite_capacite: str = "gallons"  # gallons ou litres
+    emplacement_vanne: str
+    type_reservoir: str = ""  # aerien, enterre
+
+class VehiculeElement(ElementPlanBase):
+    """Position recommandée pour véhicules d'intervention"""
+    type_element: str = "vehicule"
+    type_vehicule: str  # echelle, pompe, citerne
+    position_recommandee: str  # Ex: "Face façade nord", "Cour arrière"
+    notes_stationnement: str = ""
+
+class RouteAcces(BaseModel):
+    """Route d'accès au bâtiment"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str = "Route principale"
+    chemin_polyline: List[Dict[str, float]] = []  # Liste de {lat, lng}
+    largeur_m: Optional[float] = None
+    pente: Optional[str] = None  # faible, moyenne, forte
+    notes: str = ""
+    est_principale: bool = True
+
+class ZoneDanger(BaseModel):
+    """Zone de danger ou périmètre d'évacuation"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str
+    type_zone: str  # perimetre_evacuation, zone_chaude, zone_tiede, zone_froide
+    polygone: List[Dict[str, float]] = []  # Liste de {lat, lng}
+    couleur: str = "#ff0000"  # Hex color
+    opacite: float = 0.3
+    rayon_m: Optional[float] = None
+    description: str = ""
+
+class SecteurPlan(BaseModel):
+    """Secteur du bâtiment (même système que photos inspection)"""
+    numero: int  # 1, 2, 3, 4, 5
+    cadran: Optional[str] = None  # A, B, C, D (subdivision secteur 1)
+    description: str = ""
+    elements_ids: List[str] = []  # IDs des éléments dans ce secteur
+
+class PlanEtage(BaseModel):
+    """Plan d'un étage intérieur"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    numero_etage: int  # -1 (sous-sol), 0 (RDC), 1, 2, 3...
+    nom: str  # "Rez-de-chaussée", "1er étage", "Sous-sol"
+    image_url: Optional[str] = None  # Image du plan d'étage
+    annotations: List[Dict[str, Any]] = []  # Annotations sur le plan
+    elements_interieurs: List[Dict[str, Any]] = []  # Escaliers, ascenseurs, etc.
+
+class PhotoPlanIntervention(BaseModel):
+    """Photo attachée au plan d'intervention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str
+    latitude: float
+    longitude: float
+    titre: str = ""
+    description: str = ""
+    categorie: str = ""  # facade, acces, danger, autre
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PlanIntervention(BaseModel):
+    """Plan d'intervention complet"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    batiment_id: str
+    
+    # Identification
+    numero_plan: str  # Ex: "PI-2025-001"
+    nom: str = ""
+    
+    # Versioning
+    version: str = "1.0"
+    version_precedente_id: Optional[str] = None
+    
+    # Statut et workflow
+    statut: str = "brouillon"  # brouillon, en_attente_validation, valide, archive, rejete
+    created_by_id: str  # ID du préventionniste créateur
+    validated_by_id: Optional[str] = None  # ID admin/superviseur qui valide
+    date_validation: Optional[datetime] = None
+    commentaires_validation: str = ""
+    commentaires_rejet: str = ""
+    
+    # Éléments du plan
+    hydrants: List[HydrantElement] = []
+    sorties: List[SortieElement] = []
+    matieres_dangereuses: List[MatiereDangereuse] = []
+    generatrices: List[GeneratriceElement] = []
+    gaz_naturel: List[GazNaturelElement] = []
+    reservoirs_propane: List[ReservoirPropaneElement] = []
+    vehicules: List[VehiculeElement] = []
+    
+    # Structure spatiale
+    routes_acces: List[RouteAcces] = []
+    zones_danger: List[ZoneDanger] = []
+    secteurs: List[SecteurPlan] = []
+    plans_etages: List[PlanEtage] = []
+    photos: List[PhotoPlanIntervention] = []
+    
+    # Vue aérienne
+    centre_lat: float
+    centre_lng: float
+    zoom_level: int = 18
+    vue_aerienne_url: Optional[str] = None  # Google Static Map URL
+    
+    # Calculs automatiques
+    distance_caserne_km: Optional[float] = None
+    distance_caserne_unite: str = "km"  # km ou m
+    temps_acces_minutes: Optional[int] = None
+    
+    # Documentation
+    notes_generales: str = ""
+    instructions_particulieres: str = ""
+    
+    # Export
+    pdf_url: Optional[str] = None
+    date_derniere_maj: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Métadonnées
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PlanInterventionCreate(BaseModel):
+    batiment_id: str
+    nom: str = ""
+    centre_lat: float
+    centre_lng: float
+    notes_generales: str = ""
+
+class PlanInterventionUpdate(BaseModel):
+    nom: Optional[str] = None
+    hydrants: Optional[List[HydrantElement]] = None
+    sorties: Optional[List[SortieElement]] = None
+    matieres_dangereuses: Optional[List[MatiereDangereuse]] = None
+    generatrices: Optional[List[GeneratriceElement]] = None
+    gaz_naturel: Optional[List[GazNaturelElement]] = None
+    reservoirs_propane: Optional[List[ReservoirPropaneElement]] = None
+    vehicules: Optional[List[VehiculeElement]] = None
+    routes_acces: Optional[List[RouteAcces]] = None
+    zones_danger: Optional[List[ZoneDanger]] = None
+    secteurs: Optional[List[SecteurPlan]] = None
+    plans_etages: Optional[List[PlanEtage]] = None
+    photos: Optional[List[PhotoPlanIntervention]] = None
+    notes_generales: Optional[str] = None
+    instructions_particulieres: Optional[str] = None
+
+class TemplatePlanIntervention(BaseModel):
+    """Template pré-défini de plan d'intervention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Résidentiel unifamilial", "Commercial petit", "Industriel F-1"
+    type_batiment: str  # residentiel, commercial, industriel
+    groupe_occupation: str  # A, B, C, D, E, F, G, I
+    sous_groupe: Optional[str] = None  # F-1, F-2, F-3, etc.
+    
+    # Éléments pré-configurés (positions relatives)
+    hydrants_defaut: List[Dict[str, Any]] = []
+    sorties_defaut: List[Dict[str, Any]] = []
+    vehicules_defaut: List[Dict[str, Any]] = []
+    
+    # Instructions
+    instructions_utilisation: str = ""
+    
+    actif: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ValidationRequest(BaseModel):
+    """Requête de validation de plan"""
+    commentaires: str = ""
+
+class RejectionRequest(BaseModel):
+    """Requête de rejet de plan"""
+    commentaires_rejet: str
+
+
+
+
 
 # ====== ENDPOINTS CRUD POUR LES NOUVELLES DONNÉES ======
 
