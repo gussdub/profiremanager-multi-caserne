@@ -15269,6 +15269,418 @@ async def delete_photo(
     return {"message": "Photo supprimée avec succès"}
 
 
+
+
+# ==================== INSPECTIONS VISUELLES (NOUVEAU SYSTÈME) ====================
+
+@api_router.post("/{tenant_slug}/prevention/inspections-visuelles")
+async def create_inspection_visuelle(
+    tenant_slug: str,
+    inspection: InspectionVisuelleCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection visuelle (pompiers + préventionnistes)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le bâtiment existe
+    batiment = await db.batiments.find_one({"id": inspection.batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    inspection_dict = inspection.dict()
+    inspection_dict["tenant_id"] = tenant.id
+    
+    # Créer l'objet InspectionVisuelle complet
+    inspection_obj = InspectionVisuelle(**inspection_dict)
+    
+    await db.inspections_visuelles.insert_one(inspection_obj.dict())
+    
+    return clean_mongo_doc(inspection_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/inspections-visuelles")
+async def get_inspections_visuelles(
+    tenant_slug: str,
+    batiment_id: Optional[str] = None,
+    statut: Optional[str] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la liste des inspections visuelles avec filtres"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    
+    if batiment_id:
+        query["batiment_id"] = batiment_id
+    
+    if statut:
+        query["statut"] = statut
+    
+    if date_debut and date_fin:
+        query["date_inspection"] = {"$gte": date_debut, "$lte": date_fin}
+    
+    inspections = await db.inspections_visuelles.find(query).sort("created_at", -1).to_list(length=None)
+    
+    return [clean_mongo_doc(insp) for insp in inspections]
+
+@api_router.get("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}")
+async def get_inspection_visuelle(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une inspection visuelle spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    inspection = await db.inspections_visuelles.find_one({"id": inspection_id, "tenant_id": tenant.id})
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    return clean_mongo_doc(inspection)
+
+@api_router.put("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}")
+async def update_inspection_visuelle(
+    tenant_slug: str,
+    inspection_id: str,
+    inspection_update: InspectionVisuelleUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour une inspection visuelle (toujours modifiable)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer l'inspection existante
+    existing = await db.inspections_visuelles.find_one({"id": inspection_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Mettre à jour uniquement les champs fournis
+    update_dict = {k: v for k, v in inspection_update.dict(exclude_unset=True).items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    # Calculer la durée si heure_fin est fournie
+    if "heure_fin" in update_dict and existing.get("heure_debut"):
+        try:
+            debut = datetime.fromisoformat(f"{existing['date_inspection']}T{existing['heure_debut']}")
+            fin = datetime.fromisoformat(f"{existing['date_inspection']}T{update_dict['heure_fin']}")
+            update_dict["duree_minutes"] = int((fin - debut).total_seconds() / 60)
+        except:
+            pass
+    
+    result = await db.inspections_visuelles.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    updated = await db.inspections_visuelles.find_one({"id": inspection_id})
+    return clean_mongo_doc(updated)
+
+@api_router.delete("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}")
+async def delete_inspection_visuelle(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une inspection visuelle (préventionnistes uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que l'utilisateur est préventionniste ou admin
+    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+        raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent supprimer des inspections")
+    
+    result = await db.inspections_visuelles.delete_one({"id": inspection_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Supprimer aussi les non-conformités associées
+    await db.non_conformites_visuelles.delete_many({"inspection_id": inspection_id, "tenant_id": tenant.id})
+    
+    return {"message": "Inspection supprimée avec succès"}
+
+
+# ==================== NON-CONFORMITÉS VISUELLES ====================
+
+@api_router.post("/{tenant_slug}/prevention/non-conformites-visuelles")
+async def create_non_conformite_visuelle(
+    tenant_slug: str,
+    nc: NonConformiteVisuelleCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle non-conformité visuelle"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    nc_dict = nc.dict()
+    nc_dict["tenant_id"] = tenant.id
+    
+    # Calculer la date limite si délai fourni
+    if nc_dict.get("delai_correction_jours"):
+        from datetime import timedelta
+        inspection = await db.inspections_visuelles.find_one({"id": nc.inspection_id})
+        if inspection:
+            date_insp = datetime.fromisoformat(inspection["date_inspection"])
+            date_limite = date_insp + timedelta(days=nc_dict["delai_correction_jours"])
+            nc_dict["date_limite"] = date_limite.strftime("%Y-%m-%d")
+    
+    nc_obj = NonConformiteVisuelle(**nc_dict)
+    
+    await db.non_conformites_visuelles.insert_one(nc_obj.dict())
+    
+    # Ajouter l'ID de la NC à l'inspection
+    await db.inspections_visuelles.update_one(
+        {"id": nc.inspection_id, "tenant_id": tenant.id},
+        {"$push": {"non_conformites_ids": nc_obj.id}}
+    )
+    
+    return clean_mongo_doc(nc_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/non-conformites-visuelles")
+async def get_non_conformites_visuelles(
+    tenant_slug: str,
+    inspection_id: Optional[str] = None,
+    batiment_id: Optional[str] = None,
+    statut: Optional[str] = None,
+    gravite: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les non-conformités visuelles avec filtres"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    
+    if inspection_id:
+        query["inspection_id"] = inspection_id
+    if batiment_id:
+        query["batiment_id"] = batiment_id
+    if statut:
+        query["statut"] = statut
+    if gravite:
+        query["gravite"] = gravite
+    
+    ncs = await db.non_conformites_visuelles.find(query).sort("created_at", -1).to_list(length=None)
+    
+    return [clean_mongo_doc(nc) for nc in ncs]
+
+@api_router.put("/{tenant_slug}/prevention/non-conformites-visuelles/{nc_id}")
+async def update_non_conformite_visuelle(
+    tenant_slug: str,
+    nc_id: str,
+    statut: Optional[str] = Body(None),
+    photos_resolution: Optional[List[PhotoInspection]] = Body(None),
+    notes_resolution: Optional[str] = Body(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour le statut d'une non-conformité"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    update_dict = {"updated_at": datetime.now(timezone.utc)}
+    
+    if statut:
+        update_dict["statut"] = statut
+        if statut == "resolue":
+            update_dict["date_resolution"] = datetime.now(timezone.utc)
+    
+    if photos_resolution:
+        update_dict["photos_resolution"] = [p.dict() for p in photos_resolution]
+    
+    if notes_resolution:
+        update_dict["notes_resolution"] = notes_resolution
+    
+    result = await db.non_conformites_visuelles.update_one(
+        {"id": nc_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    
+    updated = await db.non_conformites_visuelles.find_one({"id": nc_id})
+    return clean_mongo_doc(updated)
+
+
+# ==================== CARTE INTERACTIVE & GÉOCODAGE ====================
+
+@api_router.get("/{tenant_slug}/prevention/batiments/map")
+async def get_batiments_for_map(
+    tenant_slug: str,
+    niveau_risque: Optional[str] = None,
+    statut_inspection: Optional[str] = None,
+    secteur: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les bâtiments formatés pour affichage sur carte"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer tous les bâtiments
+    query = {"tenant_id": tenant.id, "statut": "actif"}
+    
+    if niveau_risque:
+        query["niveau_risque"] = niveau_risque
+    
+    batiments = await db.batiments.find(query).to_list(length=None)
+    
+    # Pour chaque bâtiment, déterminer le statut d'inspection
+    map_data = []
+    for bat in batiments:
+        # Chercher la dernière inspection
+        derniere_inspection = await db.inspections_visuelles.find_one(
+            {"batiment_id": bat["id"], "tenant_id": tenant.id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        # Déterminer le statut
+        if not derniere_inspection:
+            statut_insp = "a_faire"
+        elif derniere_inspection["statut"] == "en_cours":
+            statut_insp = "en_cours"
+        elif derniere_inspection["statut_conformite"] == "non_conforme":
+            statut_insp = "non_conforme"
+        else:
+            statut_insp = "fait_conforme"
+        
+        # Filtrer par statut si demandé
+        if statut_inspection and statut_insp != statut_inspection:
+            continue
+        
+        # Géocoder l'adresse si pas déjà fait (latitude/longitude manquants)
+        latitude = bat.get("latitude")
+        longitude = bat.get("longitude")
+        
+        map_item = BatimentMapView(
+            id=bat["id"],
+            nom_etablissement=bat.get("nom_etablissement", ""),
+            adresse_civique=bat.get("adresse_civique", ""),
+            ville=bat.get("ville", ""),
+            latitude=latitude,
+            longitude=longitude,
+            niveau_risque=bat.get("niveau_risque", ""),
+            statut_inspection=statut_insp,
+            derniere_inspection=derniere_inspection["date_inspection"] if derniere_inspection else None,
+            groupe_occupation=bat.get("groupe_occupation", ""),
+            sous_groupe=bat.get("sous_groupe", "")
+        )
+        
+        map_data.append(map_item.dict())
+    
+    return map_data
+
+@api_router.post("/{tenant_slug}/prevention/geocode")
+async def geocode_address(
+    tenant_slug: str,
+    request: GeocodeRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Géocoder une adresse en latitude/longitude avec Google Maps API"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    try:
+        import requests
+        import os
+        
+        api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé API Google Maps non configurée")
+        
+        # Appeler l'API Google Geocoding
+        url = "https://maps.googleapis.com/maps/api/geocode/json"
+        params = {
+            "address": request.adresse_complete,
+            "key": api_key
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data["status"] == "OK" and len(data["results"]) > 0:
+            result = data["results"][0]
+            location = result["geometry"]["location"]
+            
+            # Déterminer la précision
+            location_type = result["geometry"]["location_type"]
+            if location_type == "ROOFTOP":
+                precision = "building"
+            elif location_type in ["RANGE_INTERPOLATED", "GEOMETRIC_CENTER"]:
+                precision = "street"
+            else:
+                precision = "city"
+            
+            return GeocodeResponse(
+                latitude=location["lat"],
+                longitude=location["lng"],
+                adresse_formatee=result["formatted_address"],
+                precision=precision
+            )
+        else:
+            raise HTTPException(status_code=404, detail="Adresse non trouvée")
+    
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du géocodage: {str(e)}")
+
+@api_router.put("/{tenant_slug}/prevention/batiments/{batiment_id}/coordinates")
+async def update_batiment_coordinates(
+    tenant_slug: str,
+    batiment_id: str,
+    latitude: float = Body(...),
+    longitude: float = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les coordonnées GPS d'un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"$set": {
+            "latitude": latitude,
+            "longitude": longitude,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return {"message": "Coordonnées mises à jour avec succès"}
+
+
 # ==================== STATISTIQUES PRÉVENTION ====================
 
 @api_router.get("/{tenant_slug}/prevention/statistiques")
