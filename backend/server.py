@@ -7091,11 +7091,11 @@ class Batiment(BaseModel):
     responsable_securite_telephone: str = ""
     responsable_securite_courriel: str = ""
     
-    # Classification selon NR24-27 (Code national de prévention des incendies)
-    groupe_occupation: str = ""  # A, B, C, D, E, F, G (voir NR24-27)
-    sous_groupe: str = ""  # A-1, A-2, B-1, F-1, etc.
+    # Classification selon Code national de prévention des incendies - Canada 2020
+    groupe_occupation: str = ""  # A, B, C, D, E, F, G, I
+    sous_groupe: str = ""  # A-1, A-2, B-1, F-1, F-2, F-3, etc.
     description_activite: str = ""
-    niveau_risque: str = ""  # Faible, Moyen, Élevé (selon documents officiels Québec)
+    niveau_risque: str = ""  # Faible, Moyen, Élevé, Très élevé (selon Tableau A1)
     
     # Métadonnées
     statut: str = "actif"  # actif, inactif, demolition
