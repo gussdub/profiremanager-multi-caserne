@@ -7241,6 +7241,166 @@ class NonConformiteCreate(BaseModel):
     preventionniste_suivi_id: Optional[str] = None
 
 
+# ==================== MODÈLES ÉTENDUS POUR INSPECTIONS VISUELLES ====================
+
+class PhotoInspection(BaseModel):
+    """Photo prise lors d'une inspection"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str  # URL de stockage de la photo
+    categorie: str = ""  # Ex: "Preuve accroche porte", "Adresse non visible", "Matières dangereuses"
+    secteur: Optional[str] = None  # Secteur 1, 2, 3, 4, 5 selon schéma
+    cadran: Optional[str] = None  # Cadran A, B, C, D (subdivision du Secteur 1)
+    description: str = ""
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ParticipantInspection(BaseModel):
+    """Participant à une inspection (pompier ou préventionniste)"""
+    user_id: str
+    nom_complet: str
+    role: str  # "pompier" ou "preventionniste"
+    est_principal: bool = False  # Le pompier connecté qui crée l'inspection
+
+class InspectionVisuelle(BaseModel):
+    """Inspection visuelle complète pour tablette/mobile"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    batiment_id: str
+    
+    # Participants
+    participants: List[ParticipantInspection] = []
+    
+    # Timing
+    date_inspection: str = ""  # YYYY-MM-DD
+    heure_debut: Optional[str] = None
+    heure_fin: Optional[str] = None
+    duree_minutes: Optional[int] = None
+    
+    # Géolocalisation (capture automatique)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    
+    # Photos catégorisées
+    photos: List[PhotoInspection] = []
+    
+    # Non-conformités détaillées
+    non_conformites_ids: List[str] = []  # Références aux NonConformite
+    
+    # Checklist dynamique selon type de bâtiment
+    checklist_reponses: Dict[str, Any] = {}
+    
+    # Statuts
+    statut: str = "en_cours"  # en_cours, validee, non_conforme, suivi_requis
+    statut_conformite: str = "conforme"  # conforme, non_conforme, partiellement_conforme
+    
+    # Plan d'intervention
+    plan_intervention_url: Optional[str] = None  # URL du PDF du plan
+    
+    # Notes
+    notes_terrain: str = ""
+    recommandations: str = ""
+    
+    # Validation (modifiable en tout temps)
+    validee_par_id: Optional[str] = None
+    date_validation: Optional[datetime] = None
+    
+    # Mode hors-ligne
+    sync_status: str = "synced"  # synced, pending, offline
+    
+    # Métadonnées
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionVisuelleCreate(BaseModel):
+    batiment_id: str
+    participants: List[ParticipantInspection]
+    date_inspection: str
+    heure_debut: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    notes_terrain: str = ""
+
+class InspectionVisuelleUpdate(BaseModel):
+    participants: Optional[List[ParticipantInspection]] = None
+    heure_fin: Optional[str] = None
+    photos: Optional[List[PhotoInspection]] = None
+    checklist_reponses: Optional[Dict[str, Any]] = None
+    statut: Optional[str] = None
+    statut_conformite: Optional[str] = None
+    notes_terrain: Optional[str] = None
+    recommandations: Optional[str] = None
+    validee_par_id: Optional[str] = None
+
+class NonConformiteVisuelle(BaseModel):
+    """Non-conformité avec photos et gravité détaillée"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    inspection_id: str
+    batiment_id: str
+    
+    # Description
+    titre: str
+    description: str = ""
+    gravite: str = "mineur"  # mineur, majeur, critique
+    
+    # Articles et délais
+    article_municipal: str = ""  # Ex: "Article 45.2"
+    delai_correction_jours: Optional[int] = None
+    date_limite: Optional[str] = None  # YYYY-MM-DD
+    
+    # Photos
+    photos_nc: List[PhotoInspection] = []  # Photos de la non-conformité
+    photos_resolution: List[PhotoInspection] = []  # Photos après correction
+    
+    # Statut
+    statut: str = "nouvelle"  # nouvelle, en_cours, resolue
+    date_resolution: Optional[datetime] = None
+    notes_resolution: str = ""
+    
+    # Suivi
+    responsable_correction: str = ""  # Nom propriétaire/gestionnaire
+    preventionniste_suivi_id: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NonConformiteVisuelleCreate(BaseModel):
+    inspection_id: str
+    batiment_id: str
+    titre: str
+    description: str = ""
+    gravite: str = "mineur"
+    article_municipal: str = ""
+    delai_correction_jours: Optional[int] = None
+    photos_nc: List[PhotoInspection] = []
+    responsable_correction: str = ""
+
+class BatimentMapView(BaseModel):
+    """Vue simplifiée pour affichage sur carte"""
+    id: str
+    nom_etablissement: str
+    adresse_civique: str
+    ville: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    niveau_risque: str
+    statut_inspection: str  # "fait_conforme", "a_faire", "non_conforme", "en_cours"
+    derniere_inspection: Optional[str] = None  # Date ISO
+    groupe_occupation: str
+    sous_groupe: str
+
+class GeocodeRequest(BaseModel):
+    """Requête de géocodage d'adresse"""
+    adresse_complete: str
+
+class GeocodeResponse(BaseModel):
+    """Réponse de géocodage"""
+    latitude: float
+    longitude: float
+    adresse_formatee: str
+    precision: str  # "building", "street", "city"
+
+
+
 # ====== ENDPOINTS CRUD POUR LES NOUVELLES DONNÉES ======
 
 # BUDGETS
