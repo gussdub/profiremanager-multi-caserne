@@ -15910,6 +15910,549 @@ async def update_batiment_coordinates(
     return {"message": "Coordonnées mises à jour avec succès"}
 
 
+
+
+# ==================== PLANS D'INTERVENTION ====================
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention")
+async def create_plan_intervention(
+    tenant_slug: str,
+    plan: PlanInterventionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau plan d'intervention (préventionnistes uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que l'utilisateur est préventionniste ou admin
+    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+        raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des plans")
+    
+    # Vérifier que le bâtiment existe
+    batiment = await db.batiments.find_one({"id": plan.batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Générer le numéro de plan unique
+    current_year = datetime.now().year
+    count = await db.plans_intervention.count_documents({"tenant_id": tenant.id})
+    numero_plan = f"PI-{current_year}-{str(count + 1).zfill(3)}"
+    
+    plan_dict = plan.dict()
+    plan_dict["tenant_id"] = tenant.id
+    plan_dict["numero_plan"] = numero_plan
+    plan_dict["created_by_id"] = current_user.id
+    plan_dict["statut"] = "brouillon"
+    
+    plan_obj = PlanIntervention(**plan_dict)
+    
+    await db.plans_intervention.insert_one(plan_obj.dict())
+    
+    return clean_mongo_doc(plan_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/plans-intervention")
+async def get_plans_intervention(
+    tenant_slug: str,
+    batiment_id: Optional[str] = None,
+    statut: Optional[str] = None,
+    created_by_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la liste des plans d'intervention avec filtres"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    
+    if batiment_id:
+        query["batiment_id"] = batiment_id
+    if statut:
+        query["statut"] = statut
+    if created_by_id:
+        query["created_by_id"] = created_by_id
+    
+    plans = await db.plans_intervention.find(query).sort("created_at", -1).to_list(length=None)
+    
+    return [clean_mongo_doc(plan) for plan in plans]
+
+@api_router.get("/{tenant_slug}/prevention/plans-intervention/{plan_id}")
+async def get_plan_intervention(
+    tenant_slug: str,
+    plan_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un plan d'intervention spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan d'intervention non trouvé")
+    
+    return clean_mongo_doc(plan)
+
+@api_router.put("/{tenant_slug}/prevention/plans-intervention/{plan_id}")
+async def update_plan_intervention(
+    tenant_slug: str,
+    plan_id: str,
+    plan_update: PlanInterventionUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un plan d'intervention (seulement si brouillon ou en_attente)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer le plan existant
+    existing = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    # Vérifier que le plan est modifiable
+    if existing["statut"] not in ["brouillon", "en_attente_validation", "rejete"]:
+        raise HTTPException(status_code=403, detail="Plan validé non modifiable - créer une nouvelle version")
+    
+    # Vérifier que l'utilisateur est le créateur ou admin
+    if existing["created_by_id"] != current_user.id and current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seul le créateur ou un admin peut modifier ce plan")
+    
+    # Mettre à jour les champs fournis
+    update_dict = {k: v for k, v in plan_update.dict(exclude_unset=True).items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    update_dict["date_derniere_maj"] = datetime.now(timezone.utc)
+    
+    result = await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    updated = await db.plans_intervention.find_one({"id": plan_id})
+    return clean_mongo_doc(updated)
+
+@api_router.delete("/{tenant_slug}/prevention/plans-intervention/{plan_id}")
+async def delete_plan_intervention(
+    tenant_slug: str,
+    plan_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un plan d'intervention (admin uniquement)"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.plans_intervention.delete_one({"id": plan_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    return {"message": "Plan d'intervention supprimé avec succès"}
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/valider")
+async def soumettre_plan_validation(
+    tenant_slug: str,
+    plan_id: str,
+    request: ValidationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Soumettre un plan pour validation (préventionniste créateur)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    # Vérifier que l'utilisateur est le créateur
+    if plan["created_by_id"] != current_user.id and current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Seul le créateur peut soumettre le plan")
+    
+    # Vérifier que le plan est en brouillon
+    if plan["statut"] != "brouillon":
+        raise HTTPException(status_code=400, detail="Le plan n'est pas en brouillon")
+    
+    result = await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "en_attente_validation",
+            "commentaires_validation": request.commentaires,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"message": "Plan soumis pour validation"}
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/approuver")
+async def approuver_plan_intervention(
+    tenant_slug: str,
+    plan_id: str,
+    request: ValidationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Approuver un plan d'intervention (admin/superviseur uniquement)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les admin/superviseurs peuvent approuver")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    if plan["statut"] != "en_attente_validation":
+        raise HTTPException(status_code=400, detail="Le plan n'est pas en attente de validation")
+    
+    result = await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "valide",
+            "validated_by_id": current_user.id,
+            "date_validation": datetime.now(timezone.utc),
+            "commentaires_validation": request.commentaires,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"message": "Plan d'intervention approuvé"}
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/rejeter")
+async def rejeter_plan_intervention(
+    tenant_slug: str,
+    plan_id: str,
+    request: RejectionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Rejeter un plan d'intervention (admin/superviseur uniquement)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les admin/superviseurs peuvent rejeter")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    if plan["statut"] != "en_attente_validation":
+        raise HTTPException(status_code=400, detail="Le plan n'est pas en attente de validation")
+    
+    result = await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "rejete",
+            "validated_by_id": current_user.id,
+            "commentaires_rejet": request.commentaires_rejet,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"message": "Plan d'intervention rejeté"}
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/nouvelle-version")
+async def creer_nouvelle_version_plan(
+    tenant_slug: str,
+    plan_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle version d'un plan validé"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier permissions
+    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+        raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des versions")
+    
+    # Récupérer le plan existant
+    plan_actuel = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan_actuel:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    if plan_actuel["statut"] != "valide":
+        raise HTTPException(status_code=400, detail="Seul un plan validé peut avoir une nouvelle version")
+    
+    # Archiver l'ancien plan
+    await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "archive"}}
+    )
+    
+    # Créer la nouvelle version
+    nouveau_plan = plan_actuel.copy()
+    nouveau_plan["id"] = str(uuid.uuid4())
+    nouveau_plan["version_precedente_id"] = plan_id
+    nouveau_plan["statut"] = "brouillon"
+    nouveau_plan["created_by_id"] = current_user.id
+    nouveau_plan["validated_by_id"] = None
+    nouveau_plan["date_validation"] = None
+    nouveau_plan["commentaires_validation"] = ""
+    nouveau_plan["commentaires_rejet"] = ""
+    nouveau_plan["created_at"] = datetime.now(timezone.utc)
+    nouveau_plan["updated_at"] = datetime.now(timezone.utc)
+    
+    # Incrémenter la version
+    version_parts = nouveau_plan["version"].split(".")
+    version_parts[-1] = str(int(version_parts[-1]) + 1)
+    nouveau_plan["version"] = ".".join(version_parts)
+    
+    # Supprimer _id MongoDB du dict avant insertion
+    if "_id" in nouveau_plan:
+        del nouveau_plan["_id"]
+    
+    await db.plans_intervention.insert_one(nouveau_plan)
+    
+    return clean_mongo_doc(nouveau_plan)
+
+@api_router.get("/{tenant_slug}/prevention/plans-intervention/{plan_id}/versions")
+async def get_versions_plan(
+    tenant_slug: str,
+    plan_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des versions d'un plan"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Trouver toutes les versions liées
+    versions = []
+    
+    # Chercher la version actuelle
+    plan_actuel = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan_actuel:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    versions.append(clean_mongo_doc(plan_actuel))
+    
+    # Chercher les versions précédentes
+    version_precedente_id = plan_actuel.get("version_precedente_id")
+    while version_precedente_id:
+        plan_prec = await db.plans_intervention.find_one({"id": version_precedente_id, "tenant_id": tenant.id})
+        if plan_prec:
+            versions.append(clean_mongo_doc(plan_prec))
+            version_precedente_id = plan_prec.get("version_precedente_id")
+        else:
+            break
+    
+    # Chercher les versions suivantes
+    versions_suivantes = await db.plans_intervention.find({
+        "version_precedente_id": plan_id,
+        "tenant_id": tenant.id
+    }).to_list(length=None)
+    
+    for v in versions_suivantes:
+        versions.append(clean_mongo_doc(v))
+    
+    return sorted(versions, key=lambda x: x["version"], reverse=True)
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/calculer-distance")
+async def calculer_distance_caserne(
+    tenant_slug: str,
+    plan_id: str,
+    caserne_lat: float = Body(...),
+    caserne_lng: float = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Calculer la distance entre la caserne et le bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    # Calculer la distance en utilisant l'API Google Distance Matrix
+    try:
+        import requests
+        import os
+        
+        api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé API Google Maps non configurée")
+        
+        url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        params = {
+            "origins": f"{caserne_lat},{caserne_lng}",
+            "destinations": f"{plan['centre_lat']},{plan['centre_lng']}",
+            "key": api_key,
+            "mode": "driving"
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data["status"] == "OK" and len(data["rows"]) > 0:
+            element = data["rows"][0]["elements"][0]
+            if element["status"] == "OK":
+                distance_m = element["distance"]["value"]
+                duree_s = element["duration"]["value"]
+                
+                distance_km = distance_m / 1000.0
+                temps_minutes = duree_s // 60
+                
+                # Mettre à jour le plan
+                await db.plans_intervention.update_one(
+                    {"id": plan_id, "tenant_id": tenant.id},
+                    {"$set": {
+                        "distance_caserne_km": distance_km,
+                        "distance_caserne_unite": "km",
+                        "temps_acces_minutes": temps_minutes,
+                        "updated_at": datetime.now(timezone.utc)
+                    }}
+                )
+                
+                return {
+                    "distance_km": distance_km,
+                    "distance_m": distance_m,
+                    "temps_acces_minutes": temps_minutes,
+                    "message": "Distance calculée avec succès"
+                }
+        
+        raise HTTPException(status_code=404, detail="Impossible de calculer la distance")
+    
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du calcul de distance: {str(e)}")
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/{plan_id}/generer-pdf")
+async def generer_pdf_plan(
+    tenant_slug: str,
+    plan_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Générer le PDF d'un plan d'intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    plan = await db.plans_intervention.find_one({"id": plan_id, "tenant_id": tenant.id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan non trouvé")
+    
+    # TODO: Implémenter la génération PDF complète avec ReportLab/WeasyPrint
+    # Pour l'instant, retourner un placeholder
+    
+    pdf_url = f"/api/{tenant_slug}/prevention/plans-intervention/{plan_id}/pdf"
+    
+    await db.plans_intervention.update_one(
+        {"id": plan_id, "tenant_id": tenant.id},
+        {"$set": {
+            "pdf_url": pdf_url,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {
+        "pdf_url": pdf_url,
+        "message": "Génération PDF programmée (fonctionnalité à compléter)"
+    }
+
+
+# ==================== TEMPLATES PLANS D'INTERVENTION ====================
+
+@api_router.get("/{tenant_slug}/prevention/plans-intervention/templates")
+async def get_templates_plans(
+    tenant_slug: str,
+    type_batiment: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les templates de plans d'intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id, "actif": True}
+    
+    if type_batiment:
+        query["type_batiment"] = type_batiment
+    
+    templates = await db.templates_plans_intervention.find(query).to_list(length=None)
+    
+    return [clean_mongo_doc(t) for t in templates]
+
+@api_router.post("/{tenant_slug}/prevention/plans-intervention/from-template/{template_id}")
+async def creer_plan_depuis_template(
+    tenant_slug: str,
+    template_id: str,
+    batiment_id: str = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau plan à partir d'un template"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier permissions
+    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+        raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des plans")
+    
+    # Récupérer le template
+    template = await db.templates_plans_intervention.find_one({"id": template_id, "tenant_id": tenant.id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template non trouvé")
+    
+    # Vérifier que le bâtiment existe
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Créer le plan basé sur le template
+    current_year = datetime.now().year
+    count = await db.plans_intervention.count_documents({"tenant_id": tenant.id})
+    numero_plan = f"PI-{current_year}-{str(count + 1).zfill(3)}"
+    
+    # Utiliser les coordonnées du bâtiment si disponibles
+    centre_lat = batiment.get("latitude", 45.5017)  # Default Montreal
+    centre_lng = batiment.get("longitude", -73.5673)
+    
+    nouveau_plan = PlanIntervention(
+        tenant_id=tenant.id,
+        batiment_id=batiment_id,
+        numero_plan=numero_plan,
+        nom=f"Plan {batiment.get('nom_etablissement', '')}",
+        created_by_id=current_user.id,
+        centre_lat=centre_lat,
+        centre_lng=centre_lng,
+        notes_generales=template.get("instructions_utilisation", "")
+    )
+    
+    # Appliquer les éléments par défaut du template
+    # TODO: Adapter les positions relatives du template aux coordonnées du bâtiment
+    
+    await db.plans_intervention.insert_one(nouveau_plan.dict())
+    
+    return clean_mongo_doc(nouveau_plan.dict())
+
+
 # ==================== STATISTIQUES PRÉVENTION ====================
 
 @api_router.get("/{tenant_slug}/prevention/statistiques")
