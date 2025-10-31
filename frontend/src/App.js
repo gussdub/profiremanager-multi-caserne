@@ -18101,10 +18101,22 @@ const Prevention = () => {
                           <p>{batiment.ville}</p>
                         </div>
                         <div className="batiment-actions">
-                          <Button size="sm" variant="outline">Voir</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatiment(batiment);
+                              setShowBatimentModal(true);
+                            }}
+                          >
+                            Voir
+                          </Button>
                           <Button 
                             size="sm"
-                            onClick={() => setCurrentView('nouvelle-inspection')}
+                            onClick={() => {
+                              setSelectedBatiment(batiment);
+                              setCurrentView('nouvelle-inspection');
+                            }}
                           >
                             Inspecter
                           </Button>
