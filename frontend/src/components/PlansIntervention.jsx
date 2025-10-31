@@ -48,6 +48,7 @@ const PlansIntervention = ({ tenantSlug }) => {
   };
 
   const handleCreatePlan = (batimentId) => {
+    console.log('handleCreatePlan appelé avec batimentId:', batimentId);
     setSelectedBatiment(batimentId);
     setShowBuilder(true);
   };
