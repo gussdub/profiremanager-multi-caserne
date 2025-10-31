@@ -18228,6 +18228,8 @@ const Prevention = () => {
           <NouvelleInspection 
             setCurrentView={setCurrentView}
             batiments={batiments}
+            selectedBatiment={selectedBatiment}
+            onBatimentSelected={setSelectedBatiment}
           />
         );
       
