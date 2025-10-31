@@ -19,6 +19,7 @@ import "./App.css";
 const Parametres = lazy(() => import("./components/Parametres"));
 const SuperAdminDashboard = lazy(() => import("./components/SuperAdminDashboard"));
 const MesEPI = lazy(() => import("./components/MesEPI"));
+const PlansIntervention = lazy(() => import("./components/PlansIntervention"));
 
 // Composant de chargement
 const LoadingComponent = () => (
