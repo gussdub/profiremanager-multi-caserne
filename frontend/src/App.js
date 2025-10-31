@@ -14522,7 +14522,7 @@ const ImportCSV = ({ onImportComplete }) => {
     { key: 'adresse_civique', label: 'Adresse civique', required: true },
     { key: 'ville', label: 'Ville', required: false },
     { key: 'code_postal', label: 'Code postal', required: false },
-    { key: 'numero_lot_cadastre', label: 'Numéro lot/cadastre', required: false },
+    { key: 'cadastre_matricule', label: 'Cadastre/Matricule', required: false },
     { key: 'proprietaire_nom', label: 'Propriétaire - Nom', required: false },
     { key: 'proprietaire_telephone', label: 'Propriétaire - Téléphone', required: false },
     { key: 'proprietaire_courriel', label: 'Propriétaire - Courriel', required: false },
