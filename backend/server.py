@@ -14411,6 +14411,96 @@ async def get_niveaux_risque(
     
     return {
         "niveaux_risque": niveaux_risque,
+
+@api_router.get("/{tenant_slug}/prevention/meta/categories-batiments")
+async def get_categories_batiments(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les catégories et sous-catégories de bâtiments selon le Code national de prévention des incendies"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Catégories de bâtiments selon le Code national de prévention des incendies - Canada 2020
+    categories = [
+        {
+            "groupe": "A",
+            "nom": "Habitation",
+            "divisions": [
+                {"code": "A-1", "description": "Usage principal pour habitation"},
+                {"code": "A-2", "description": "Établissements de soins ou de détention supervisés"}
+            ]
+        },
+        {
+            "groupe": "B",
+            "nom": "Soins et détention",
+            "divisions": [
+                {"code": "B-1", "description": "Établissements de soins"},
+                {"code": "B-2", "description": "Établissements de détention"}
+            ]
+        },
+        {
+            "groupe": "C",
+            "nom": "Résidentiel",
+            "divisions": [
+                {"code": "C-1", "description": "Habitations unifamiliales et bifamiliales"},
+                {"code": "C-2", "description": "Habitations avec services communs"},
+                {"code": "C-3", "description": "Ensembles résidentiels"}
+            ]
+        },
+        {
+            "groupe": "D",
+            "nom": "Affaires",
+            "divisions": [
+                {"code": "D-1", "description": "Établissements d'affaires"},
+                {"code": "D-2", "description": "Établissements de services personnels"}
+            ]
+        },
+        {
+            "groupe": "E",
+            "nom": "Commerce",
+            "divisions": [
+                {"code": "E-1", "description": "Établissements mercantiles"},
+                {"code": "E-2", "description": "Établissements de vente au détail"}
+            ]
+        },
+        {
+            "groupe": "F",
+            "nom": "Industriel",
+            "divisions": [
+                {"code": "F-1", "description": "Établissements industriels à risques très élevés (entrepôts de matières dangereuses, usines chimiques, meuneries)"},
+                {"code": "F-2", "description": "Établissements industriels à risques moyens (ateliers, garages de réparation, imprimeries, stations-service)"},
+                {"code": "F-3", "description": "Établissements industriels à risques faibles (ateliers, entrepôts, salles de vente)"}
+            ]
+        },
+        {
+            "groupe": "G",
+            "nom": "Agricole",
+            "divisions": [
+                {"code": "G-1", "description": "Établissements agricoles à risques très élevés"},
+                {"code": "G-2", "description": "Établissements agricoles à risques moyens"},
+                {"code": "G-3", "description": "Établissements agricoles à risques faibles"}
+            ]
+        },
+        {
+            "groupe": "I",
+            "nom": "Assemblée",
+            "divisions": [
+                {"code": "I-1", "description": "Lieux de rassemblement (auditoriums, églises, salles de spectacle)"},
+                {"code": "I-2", "description": "Établissements de réunion"}
+            ]
+        }
+    ]
+    
+    return {
+        "categories": categories,
+        "source": "Code national de prévention des incendies - Canada 2020 (Division A)"
+    }
+
+
         "source": "Documents officiels du Québec (NR24-27, guide planification activité)"
     }
 
