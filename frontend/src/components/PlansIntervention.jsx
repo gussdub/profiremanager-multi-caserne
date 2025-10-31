@@ -41,6 +41,7 @@ const PlansIntervention = ({ tenantSlug }) => {
         buildApiUrl(`/${tenantSlug}/prevention/batiments`),
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('Bâtiments chargés:', response.data);
       setBatiments(response.data);
     } catch (error) {
       console.error('Erreur chargement bâtiments:', error);
