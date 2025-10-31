@@ -14691,8 +14691,14 @@ const ImportCSV = ({ onImportComplete }) => {
         return batiment;
       });
 
+      // Extraire les champs requis personnalisés
+      const requiredFields = availableFields
+        .filter(f => f.required)
+        .map(f => ({ key: f.key, label: f.label }));
+
       const response = await apiPost(tenantSlug, '/prevention/batiments/import-csv', {
-        batiments: mappedData
+        batiments: mappedData,
+        required_fields: requiredFields  // Envoyer les champs requis
       });
 
       setImportResults(response);
