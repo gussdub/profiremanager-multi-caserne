@@ -16725,18 +16725,25 @@ const ListeInspections = ({ setCurrentView }) => {
   );
 };
 
-const NouvelleInspection = ({ setCurrentView, batiments }) => {
+const NouvelleInspection = ({ setCurrentView, batiments, selectedBatiment, onBatimentSelected }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [grilles, setGrilles] = useState([]);
   const [formData, setFormData] = useState({
-    batiment_id: '',
+    batiment_id: selectedBatiment?.id || '',
     grille_inspection_id: '',
     date_inspection: new Date().toISOString().split('T')[0],
     type_inspection: 'reguliere'
   });
+
+  // Mettre à jour le bâtiment si selectedBatiment change
+  useEffect(() => {
+    if (selectedBatiment?.id) {
+      setFormData(prev => ({ ...prev, batiment_id: selectedBatiment.id }));
+    }
+  }, [selectedBatiment]);
 
   useEffect(() => {
     const fetchGrilles = async () => {
