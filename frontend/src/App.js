@@ -18212,6 +18212,9 @@ const Prevention = () => {
       case 'calendrier':
         return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} />;
       
+      case 'plans-intervention':
+        return <PlansIntervention tenantSlug={tenantSlug} />;
+      
       case 'rapports':
         return <ModuleRapports setCurrentView={setCurrentView} />;
       
