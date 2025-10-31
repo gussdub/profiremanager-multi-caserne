@@ -248,7 +248,14 @@ const PlansIntervention = ({ tenantSlug }) => {
                   ) : (
                     <Button 
                       onClick={() => handleCreatePlan(bat.id)}
-                      style={{ width: '100%', fontSize: '0.875rem' }}
+                      style={{ 
+                        width: '100%', 
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        pointerEvents: 'auto',
+                        zIndex: 10,
+                        position: 'relative'
+                      }}
                     >
                       ➕ Créer plan
                     </Button>
