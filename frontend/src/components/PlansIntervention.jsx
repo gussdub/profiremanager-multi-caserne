@@ -214,8 +214,22 @@ const PlansIntervention = ({ tenantSlug }) => {
         </CardHeader>
         <CardContent>
           <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-            Sélectionnez un bâtiment pour créer son plan d'intervention
+            Sélectionnez un bâtiment pour créer son plan d'intervention ({batiments.length} bâtiment(s) trouvé(s))
           </p>
+          {batiments.length === 0 ? (
+            <div style={{ 
+              padding: '2rem', 
+              textAlign: 'center',
+              border: '2px dashed #d1d5db',
+              borderRadius: '0.5rem',
+              color: '#6b7280'
+            }}>
+              <p>Aucun bâtiment disponible.</p>
+              <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                Créez d'abord des bâtiments dans la section "Bâtiments" du module Prévention.
+              </p>
+            </div>
+          ) : (
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
