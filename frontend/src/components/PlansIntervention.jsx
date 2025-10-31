@@ -279,6 +279,7 @@ const PlansIntervention = ({ tenantSlug }) => {
               );
             })}
           </div>
+          )}
         </CardContent>
       </Card>
 
