@@ -14503,12 +14503,7 @@ async def get_categories_batiments(
     }
 
 
-        "source": "Documents officiels du Québec (NR24-27, guide planification activité)"
-    }
-
-
-
-# ==================== GÉNÉRATION RAPPORT PDF ====================
+# ==================== GÉNÉRATION RAPPORT PDF ====================# ==================== GÉNÉRATION RAPPORT PDF ====================
 
 async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> BytesIO:
     """Générer un rapport PDF pour une inspection"""
