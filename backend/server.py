@@ -14411,6 +14411,8 @@ async def get_niveaux_risque(
     
     return {
         "niveaux_risque": niveaux_risque,
+        "source": "Documents officiels du Québec (Tableau A1: Classification des risques d'incendie)"
+    }
 
 @api_router.get("/{tenant_slug}/prevention/meta/categories-batiments")
 async def get_categories_batiments(
