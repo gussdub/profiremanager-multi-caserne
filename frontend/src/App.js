@@ -17913,6 +17913,8 @@ const Prevention = () => {
   const [stats, setStats] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedBatiment, setSelectedBatiment] = useState(null);
+  const [showBatimentModal, setShowBatimentModal] = useState(false);
 
   const fetchBatiments = async () => {
     try {
