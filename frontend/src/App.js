@@ -14537,7 +14537,20 @@ const ImportCSV = ({ onImportComplete }) => {
   // Charger les champs personnalisés depuis le localStorage ou utiliser les champs par défaut
   const [availableFields, setAvailableFields] = useState(() => {
     const savedFields = localStorage.getItem(`${tenantSlug}_import_fields`);
-    return savedFields ? JSON.parse(savedFields) : defaultFields;
+    if (savedFields) {
+      const fields = JSON.parse(savedFields);
+      // Migration automatique: remplacer numero_lot_cadastre par cadastre_matricule
+      const migratedFields = fields.map(field => {
+        if (field.key === 'numero_lot_cadastre') {
+          return { ...field, key: 'cadastre_matricule', label: 'Cadastre/Matricule' };
+        }
+        return field;
+      });
+      // Sauvegarder la version migrée
+      localStorage.setItem(`${tenantSlug}_import_fields`, JSON.stringify(migratedFields));
+      return migratedFields;
+    }
+    return defaultFields;
   });
 
   // Sauvegarder les champs personnalisés
