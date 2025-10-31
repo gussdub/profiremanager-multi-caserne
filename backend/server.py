@@ -14389,19 +14389,23 @@ async def get_niveaux_risque(
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
     # Niveaux de risque standardisés selon les documents officiels du Québec
-    # (NR24-27 et guide planification activité)
+    # (Tableau A1: Classification des risques d'incendie)
     niveaux_risque = [
         {
             "valeur": "Faible",
-            "description": "Risque d'incendie faible nécessitant une fréquence d'inspection normale"
+            "description": "Très petits bâtiments, très espacés. Bâtiments résidentiels de 1 ou 2 logements, de 1 ou 2 étages, détachés"
         },
         {
             "valeur": "Moyen",
-            "description": "Risque d'incendie moyen nécessitant une surveillance accrue"
+            "description": "Bâtiments d'au plus 3 étages et dont l'aire au sol est d'au plus 600 m²"
         },
         {
             "valeur": "Élevé",
-            "description": "Risque d'incendie élevé nécessitant des inspections fréquentes et un suivi rigoureux"
+            "description": "Bâtiments dont l'aire au sol est de plus de 600 m². Bâtiments de 4 à 6 étages. Lieux où les occupants sont normalement aptes à évacuer"
+        },
+        {
+            "valeur": "Très élevé",
+            "description": "Bâtiments de plus de 6 étages ou présentant un risque élevé de conflagration. Lieux où les occupants ne peuvent évacuer d'eux-mêmes ou évacuation difficile"
         }
     ]
     
