@@ -253,10 +253,6 @@ const MesEPI = ({ user }) => {
     }
   };
 
-  const handleDemandeRemplacement = async () => {
-    if (!selectedEPI) return;
-  };
-
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
