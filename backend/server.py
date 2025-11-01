@@ -5771,6 +5771,29 @@ class ParametresValidationPlanning(BaseModel):
     derniere_notification: Optional[str] = None  # Dernière exécution (ISO datetime)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== CONFIGURATION IMPORTS CSV ====================
+
+class ImportFieldConfig(BaseModel):
+    """Configuration d'un champ pour l'import CSV"""
+    key: str
+    label: str
+    required: bool = False
+
+class ImportSettings(BaseModel):
+    """Configuration des imports CSV pour un tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_fields: List[ImportFieldConfig] = []
+    personnel_fields: List[ImportFieldConfig] = []
+    rapports_fields: List[ImportFieldConfig] = []
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ImportSettingsUpdate(BaseModel):
+    """Mise à jour des configurations d'import"""
+    epi_fields: Optional[List[ImportFieldConfig]] = None
+    personnel_fields: Optional[List[ImportFieldConfig]] = None
+    rapports_fields: Optional[List[ImportFieldConfig]] = None
+
 # EPI Models
 # ==================== MODÈLES EPI NFPA 1851 ====================
 
