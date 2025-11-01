@@ -15,8 +15,7 @@ const ImportCSVPersonnel = ({ tenantSlug, onImportComplete }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [duplicateActions, setDuplicateActions] = useState({});
-
-  const availableFields = [
+  const [availableFields, setAvailableFields] = useState([
     { key: 'prenom', label: 'Prénom', required: true },
     { key: 'nom', label: 'Nom', required: true },
     { key: 'email', label: 'Email', required: true },
@@ -33,7 +32,32 @@ const ImportCSVPersonnel = ({ tenantSlug, onImportComplete }) => {
     { key: 'contact_urgence_nom', label: 'Contact urgence - Nom', required: false },
     { key: 'contact_urgence_telephone', label: 'Contact urgence - Téléphone', required: false },
     { key: 'contact_urgence_relation', label: 'Contact urgence - Relation', required: false }
-  ];
+  ]);
+
+  // Charger les champs configurés dynamiquement
+  React.useEffect(() => {
+    loadFieldsConfiguration();
+  }, [tenantSlug]);
+
+  const loadFieldsConfiguration = async () => {
+    try {
+      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.personnel_fields && data.personnel_fields.length > 0) {
+          setAvailableFields(data.personnel_fields);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+      // Continuer avec les champs par défaut en cas d'erreur
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
