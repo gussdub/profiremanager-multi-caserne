@@ -9227,6 +9227,92 @@ async def desinscrire_formation(tenant_slug: str, session_id: str, current_user:
     
     return {"message": "Désinscription réussie", "session_id": session_id}
 
+# ==================== GESTION DES CONFLITS DISPONIBILITÉS/INDISPONIBILITÉS ====================
+
+async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut: str, 
+                          heure_fin: str, type_garde_id: Optional[str], 
+                          element_type: str) -> List[Dict[str, Any]]:
+    """
+    Détecte les conflits entre disponibilités et indisponibilités
+    
+    Args:
+        tenant_id: ID du tenant
+        user_id: ID de l'utilisateur
+        date: Date au format YYYY-MM-DD
+        heure_debut: Heure de début (HH:MM)
+        heure_fin: Heure de fin (HH:MM)
+        type_garde_id: ID du type de garde (optionnel)
+        element_type: "disponibilite" ou "indisponibilite"
+        
+    Returns:
+        Liste des conflits avec détails
+    """
+    from datetime import datetime
+    
+    conflicts = []
+    
+    # Déterminer quelle collection chercher (l'opposé de ce qu'on crée)
+    if element_type == "disponibilite":
+        search_statuts = ["indisponible"]
+    else:  # indisponibilite
+        search_statuts = ["disponible", "preference"]
+    
+    # Récupérer toutes les entrées du même jour
+    existing_entries = await db.disponibilites.find({
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+        "date": date,
+        "statut": {"$in": search_statuts}
+    }).to_list(length=None)
+    
+    # Convertir les heures en minutes pour comparaison
+    def time_to_minutes(time_str):
+        h, m = map(int, time_str.split(':'))
+        return h * 60 + m
+    
+    new_start = time_to_minutes(heure_debut)
+    new_end = time_to_minutes(heure_fin)
+    
+    # Récupérer les types de garde pour affichage
+    types_garde_map = {}
+    types_garde_list = await db.types_garde.find({"tenant_id": tenant_id}).to_list(length=None)
+    for tg in types_garde_list:
+        types_garde_map[tg["id"]] = tg.get("nom", "N/A")
+    
+    for entry in existing_entries:
+        existing_start = time_to_minutes(entry["heure_debut"])
+        existing_end = time_to_minutes(entry["heure_fin"])
+        
+        # Vérifier le chevauchement
+        if not (new_end <= existing_start or new_start >= existing_end):
+            # Il y a chevauchement
+            overlap_start = max(new_start, existing_start)
+            overlap_end = min(new_end, existing_end)
+            
+            # Convertir retour en HH:MM
+            def minutes_to_time(minutes):
+                h = minutes // 60
+                m = minutes % 60
+                return f"{h:02d}:{m:02d}"
+            
+            conflict_detail = {
+                "conflict_id": entry["id"],
+                "conflict_type": entry["statut"],
+                "date": entry["date"],
+                "heure_debut": entry["heure_debut"],
+                "heure_fin": entry["heure_fin"],
+                "type_garde_id": entry.get("type_garde_id"),
+                "type_garde_nom": types_garde_map.get(entry.get("type_garde_id"), "Tous types"),
+                "statut": entry["statut"],
+                "overlap_start": minutes_to_time(overlap_start),
+                "overlap_end": minutes_to_time(overlap_end),
+                "origine": entry.get("origine", "manuelle")
+            }
+            
+            conflicts.append(conflict_detail)
+    
+    return conflicts
+
 # Disponibilités routes
 @api_router.post("/{tenant_slug}/disponibilites", response_model=Disponibilite)
 async def create_disponibilite(tenant_slug: str, disponibilite: DisponibiliteCreate, current_user: User = Depends(get_current_user)):
