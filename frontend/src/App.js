@@ -10840,7 +10840,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               heure_debut: availabilityConfig.heure_debut,
               heure_fin: availabilityConfig.heure_fin,
               statut: availabilityConfig.statut,
-              origine: 'manuelle'
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
             });
           }
           
