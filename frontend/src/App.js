@@ -3676,6 +3676,61 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
+  // Fonction pour résoudre les conflits de disponibilités
+  const handleResolveConflict = async (action) => {
+    try {
+      if (action === 'annuler') {
+        setShowConflictModal(false);
+        setConflictData({ conflicts: [], newItem: null, itemType: null });
+        return;
+      }
+
+      const conflict_ids = conflictData.conflicts.map(c => c.conflict_id);
+      
+      const response = await apiPost(tenantSlug, '/disponibilites/resolve-conflict', {
+        action: action,
+        new_item: conflictData.newItem,
+        conflict_ids: conflict_ids
+      });
+
+      toast({
+        title: "Résolution réussie",
+        description: response.message,
+        variant: "default"
+      });
+
+      // Recharger les disponibilités
+      if (selectedUser) {
+        const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+        setUserDisponibilites(disponibilitesData);
+      }
+
+      // Fermer le modal
+      setShowConflictModal(false);
+      setConflictData({ conflicts: [], newItem: null, itemType: null });
+
+      // Réinitialiser le formulaire
+      setNewDisponibilite({
+        date: new Date().toISOString().split('T')[0],
+        heure_debut: '08:00',
+        heure_fin: '17:00',
+        statut: 'disponible',
+        recurrence: false,
+        type_recurrence: 'hebdomadaire',
+        jours_semaine: [],
+        bi_hebdomadaire: false,
+        date_fin: ''
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de résoudre le conflit",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Fonction pour générer les disponibilités récurrentes
   const generateRecurringDisponibilites = (config, userId) => {
     const disponibilites = [];
