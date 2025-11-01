@@ -10762,7 +10762,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             heure_debut: availabilityConfig.heure_debut,
             heure_fin: availabilityConfig.heure_fin,
             statut: availabilityConfig.statut,
-            origine: 'manuelle'
+            origine: 'manuelle' // Origine manuelle car sélection date par date via calendrier
           });
         }
         
