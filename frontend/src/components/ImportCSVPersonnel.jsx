@@ -164,7 +164,7 @@ const ImportCSVPersonnel = ({ tenantSlug, onImportComplete }) => {
         <Input
           id="csv-upload"
           type="file"
-          accept=".csv"
+          accept=".csv,.CSV"
           onChange={handleFileUpload}
           className="hidden"
         />
