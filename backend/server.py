@@ -9315,10 +9315,40 @@ async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut:
 
 # Disponibilités routes
 @api_router.post("/{tenant_slug}/disponibilites", response_model=Disponibilite)
-async def create_disponibilite(tenant_slug: str, disponibilite: DisponibiliteCreate, current_user: User = Depends(get_current_user)):
+async def create_disponibilite(
+    tenant_slug: str, 
+    disponibilite: DisponibiliteCreate, 
+    force: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une disponibilité avec détection de conflits"""
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Détecter les conflits si force=False
+    if not force:
+        conflicts = await detect_conflicts(
+            tenant_id=tenant.id,
+            user_id=disponibilite.user_id,
+            date=disponibilite.date,
+            heure_debut=disponibilite.heure_debut,
+            heure_fin=disponibilite.heure_fin,
+            type_garde_id=disponibilite.type_garde_id,
+            element_type="disponibilite"
+        )
+        
+        if conflicts:
+            # Retourner HTTP 409 avec les détails des conflits
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Conflits détectés avec des indisponibilités existantes",
+                    "conflicts": conflicts,
+                    "new_item": disponibilite.dict()
+                }
+            )
+    
+    # Créer la disponibilité
     dispo_dict = disponibilite.dict()
     dispo_dict["tenant_id"] = tenant.id
     disponibilite_obj = Disponibilite(**dispo_dict)
