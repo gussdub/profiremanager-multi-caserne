@@ -143,6 +143,64 @@ const MesEPI = ({ user }) => {
     }
   };
 
+  const openInspectionModal = (epi) => {
+    setSelectedEPI(epi);
+    
+    // Initialiser les critères d'inspection pour ce type d'EPI
+    const criteres = getCriteresPourEPI(epi.type_epi);
+    const criteresInit = {};
+    criteres.forEach(critere => {
+      criteresInit[critere.id] = true; // Tous cochés par défaut
+    });
+    
+    setInspectionForm({
+      statut: 'ok',
+      defauts_constates: '',
+      notes: '',
+      photo_url: '',
+      criteres_inspection: criteresInit
+    });
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setShowInspectionModal(true);
+  };
+
+  const openHistoriqueModal = async (epi) => {
+    setSelectedEPI(epi);
+    await loadHistorique(epi.id);
+    setShowHistoriqueModal(true);
+  };
+
+  const openRemplacementModal = (epi) => {
+    setSelectedEPI(epi);
+    setRemplacementForm({
+      raison: '',
+      details: ''
+    });
+    setShowRemplacementModal(true);
+  };
+
+  // Vérifier si tous les critères sont cochés
+  const tousCriteresCoches = () => {
+    const criteres = getCriteresPourEPI(selectedEPI?.type_epi);
+    return criteres.every(critere => inspectionForm.criteres_inspection[critere.id] === true);
+  };
+
+  // Toggle d'un critère
+  const toggleCritere = (critereId) => {
+    const newCriteres = { ...inspectionForm.criteres_inspection };
+    newCriteres[critereId] = !newCriteres[critereId];
+    
+    // Si au moins un critère est décoché, statut = defaut
+    const tousCoches = Object.values(newCriteres).every(val => val === true);
+    
+    setInspectionForm({
+      ...inspectionForm,
+      criteres_inspection: newCriteres,
+      statut: tousCoches ? 'ok' : 'defaut'
+    });
+  };
+
   const handleInspection = async () => {
     if (!selectedEPI) return;
 
