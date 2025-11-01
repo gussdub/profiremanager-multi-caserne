@@ -310,30 +310,6 @@ const MesEPI = ({ user }) => {
     }
   };
 
-  const openInspectionModal = (epi) => {
-    setSelectedEPI(epi);
-    setInspectionForm({
-      statut_inspection: 'ok',
-      defauts_constates: '',
-      notes: '',
-      photo_url: ''
-    });
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setShowInspectionModal(true);
-  };
-
-  const openHistoriqueModal = async (epi) => {
-    setSelectedEPI(epi);
-    await loadHistorique(epi.id);
-    setShowHistoriqueModal(true);
-  };
-
-  const openRemplacementModal = (epi) => {
-    setSelectedEPI(epi);
-    setShowRemplacementModal(true);
-  };
-
   const getStatutBadge = (statut) => {
     const badges = {
       'En service': { class: 'badge-success', icon: '✅' },
