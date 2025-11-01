@@ -9370,6 +9370,85 @@ async def get_user_disponibilites(tenant_slug: str, user_id: str, current_user: 
     cleaned_disponibilites = [clean_mongo_doc(dispo) for dispo in disponibilites]
     return [Disponibilite(**dispo) for dispo in cleaned_disponibilites]
 
+@api_router.post("/{tenant_slug}/disponibilites/resolve-conflict")
+async def resolve_disponibilite_conflict(
+    tenant_slug: str,
+    data: Dict[str, Any] = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Résout un conflit lors de la création d'une disponibilité
+    
+    Actions possibles:
+    - supprimer_conflits: Supprime les indisponibilités en conflit et crée la disponibilité
+    - creer_quand_meme: Crée la disponibilité sans supprimer les conflits
+    - annuler: Ne fait rien
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    action = data.get("action")  # "supprimer_conflits", "creer_quand_meme", "annuler"
+    new_item_data = data.get("new_item")
+    conflict_ids = data.get("conflict_ids", [])
+    
+    if action == "annuler":
+        return {"message": "Opération annulée", "action": "annuler"}
+    
+    # Récupérer les détails des conflits avant suppression pour l'historique
+    conflicts_to_delete = []
+    if action == "supprimer_conflits" and conflict_ids:
+        for conflict_id in conflict_ids:
+            conflict_doc = await db.disponibilites.find_one({"id": conflict_id, "tenant_id": tenant.id})
+            if conflict_doc:
+                conflicts_to_delete.append(conflict_doc)
+        
+        # Supprimer les conflits
+        await db.disponibilites.delete_many({
+            "id": {"$in": conflict_ids},
+            "tenant_id": tenant.id
+        })
+        
+        # Notifier l'utilisateur affecté si différent de l'utilisateur courant
+        affected_user_id = new_item_data.get("user_id")
+        if affected_user_id != current_user.id:
+            notification = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": affected_user_id,
+                "titre": "Indisponibilités modifiées",
+                "message": f"{len(conflict_ids)} indisponibilité(s) supprimée(s) en raison d'un conflit avec une nouvelle disponibilité",
+                "type": "disponibilite",
+                "lue": False,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+    
+    # Créer la disponibilité
+    dispo_dict = new_item_data.copy()
+    dispo_dict["tenant_id"] = tenant.id
+    dispo_dict["id"] = str(uuid.uuid4())
+    dispo_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.disponibilites.insert_one(dispo_dict)
+    
+    # Enregistrer dans l'historique
+    resolution = ConflictResolution(
+        tenant_id=tenant.id,
+        user_id=current_user.id,
+        affected_user_id=new_item_data.get("user_id"),
+        action=action,
+        type_created="disponibilite",
+        conflicts_deleted=conflicts_to_delete,
+        created_item=dispo_dict
+    )
+    await db.conflict_resolutions.insert_one(resolution.dict())
+    
+    return {
+        "message": f"Disponibilité créée avec succès. Action: {action}",
+        "action": action,
+        "conflicts_deleted": len(conflicts_to_delete),
+        "created_item": dispo_dict
+    }
+
 @api_router.put("/{tenant_slug}/disponibilites/{user_id}")
 async def update_user_disponibilites(tenant_slug: str, user_id: str, disponibilites: List[DisponibiliteCreate], current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
