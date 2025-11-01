@@ -1037,7 +1037,8 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
           { id: 'epi', icon: '🛡️', title: 'EPI', desc: 'Équipements' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
-          { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' }
+          { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' },
+          { id: 'config-imports', icon: '⚙️', title: 'Config Imports', desc: 'Champs obligatoires' }
         ].map(tab => (
           <button
             key={tab.id}
