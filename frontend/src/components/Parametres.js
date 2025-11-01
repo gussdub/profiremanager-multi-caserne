@@ -1304,7 +1304,7 @@ const Parametres = ({ user, tenantSlug }) => {
                 }}>
                   🤖 Algorithme d'assignation automatique
                   <span 
-                    title="L'algorithme assigne automatiquement les employés selon 5 niveaux de priorité: Manuel → Disponibilités → Grades → Équitabilité → Ancienneté"
+                    title="L'algorithme assigne automatiquement les employés selon 5 niveaux de priorité dans l'ordre suivant"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1326,7 +1326,7 @@ const Parametres = ({ user, tenantSlug }) => {
                   <div className="priority-item">
                     <span className="priority-number">1</span>
                     <div className="priority-content">
-                      <span className="priority-text">Assignations manuelles privilégiées</span>
+                      <span className="priority-text">👤 Assignations manuelles privilégiées</span>
                       <span className="priority-description">Les assignations manuelles ne sont jamais écrasées</span>
                     </div>
                     <span className="priority-status active">✅ Actif</span>
@@ -1335,8 +1335,8 @@ const Parametres = ({ user, tenantSlug }) => {
                   <div className="priority-item">
                     <span className="priority-number">2</span>
                     <div className="priority-content">
-                      <span className="priority-text">Respecter les disponibilités des employés</span>
-                      <span className="priority-description">Vérification des créneaux de disponibilité (temps partiel uniquement)</span>
+                      <span className="priority-text">✅ Respecter les disponibilités</span>
+                      <span className="priority-description">Temps partiel : doit avoir déclaré une disponibilité. Temps plein : éligible automatiquement</span>
                     </div>
                     <span className="priority-status active">✅ Actif</span>
                   </div>
@@ -1344,7 +1344,7 @@ const Parametres = ({ user, tenantSlug }) => {
                   <div className="priority-item">
                     <span className="priority-number">3</span>
                     <div className="priority-content">
-                      <span className="priority-text">Respecter les grades requis</span>
+                      <span className="priority-text">🎖️ Respecter les grades requis</span>
                       <span className="priority-description">Assignation d'un officier si configuré pour le type de garde</span>
                     </div>
                     <span className="priority-status active">✅ Actif</span>
@@ -1353,19 +1353,19 @@ const Parametres = ({ user, tenantSlug }) => {
                   <div className="priority-item">
                     <span className="priority-number">4</span>
                     <div className="priority-content">
-                      <span className="priority-text">Rotation équitable du personnel</span>
+                      <span className="priority-text">⚖️ Rotation équitable du personnel</span>
                       <span className="priority-description">Favorise les employés avec moins d'heures dans le mois</span>
                     </div>
-                    <span className="priority-status active">✅ Actif - Nouvelle version</span>
+                    <span className="priority-status active">✅ Actif</span>
                   </div>
                   
                   <div className="priority-item">
                     <span className="priority-number">5</span>
                     <div className="priority-content">
-                      <span className="priority-text">Ancienneté des employés</span>
+                      <span className="priority-text">📅 Ancienneté des employés</span>
                       <span className="priority-description">En cas d'égalité d'heures, privilégier l'ancienneté (date d'embauche)</span>
                     </div>
-                    <span className="priority-status active">✅ Actif - Nouveau niveau</span>
+                    <span className="priority-status active">✅ Actif</span>
                   </div>
                 </div>
               </div>
@@ -1374,27 +1374,39 @@ const Parametres = ({ user, tenantSlug }) => {
                 <h3>Détails de l'algorithme</h3>
                 <div className="details-grid">
                   <div className="detail-card">
-                    <h4>🎯 Cible</h4>
-                    <p>Employés temps partiel uniquement</p>
-                    <small>Les temps plein ont un planning fixe manuel</small>
+                    <h4>🎯 Temps partiel</h4>
+                    <p>Doit déclarer disponibilité</p>
+                    <small>Vérification obligatoire des créneaux disponibles</small>
+                  </div>
+                  
+                  <div className="detail-card">
+                    <h4>🏢 Temps plein</h4>
+                    <p>Éligible automatiquement</p>
+                    <small>Agit comme backup si pas assez de temps partiel</small>
                   </div>
                   
                   <div className="detail-card">
                     <h4>📊 Calcul équitable</h4>
                     <p>Cumul mensuel des heures</p>
-                    <small>Favorise ceux avec moins d'heures assignées</small>
+                    <small>Priorité à ceux avec moins d'heures assignées</small>
                   </div>
                   
                   <div className="detail-card">
                     <h4>📅 Ancienneté</h4>
-                    <p>Basée sur la date d'embauche</p>
-                    <small>Plus ancien = priorité en cas d'égalité</small>
+                    <p>Basée sur date d'embauche</p>
+                    <small>Plus ancien = priorité en cas d'égalité d'heures</small>
                   </div>
                   
                   <div className="detail-card">
                     <h4>⚙️ Déclenchement</h4>
-                    <p>Bouton "Attribution auto" dans Planning</p>
-                    <small>Processus sur demande pour préserver le manuel</small>
+                    <p>Bouton "Attribution auto"</p>
+                    <small>Processus sur demande dans le module Planning</small>
+                  </div>
+                  
+                  <div className="detail-card">
+                    <h4>🔍 Audit</h4>
+                    <p>Traçabilité complète</p>
+                    <small>Cliquez sur une garde pour voir le détail de sélection</small>
                   </div>
                 </div>
               </div>
