@@ -1589,6 +1589,31 @@ class DisponibiliteReinitialiser(BaseModel):
     mode: str  # "tout" ou "generees_seulement"
     type_entree: str = "les_deux"  # "disponibilites", "indisponibilites", "les_deux"
 
+class ConflictResolution(BaseModel):
+    """Historique des résolutions de conflits disponibilité/indisponibilité"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str  # Utilisateur qui a créé et résolu le conflit
+    affected_user_id: str  # Utilisateur dont les dispos/indispos sont affectées
+    action: str  # "supprimer_conflits", "creer_quand_meme", "annuler"
+    type_created: str  # "disponibilite" ou "indisponibilite"
+    conflicts_deleted: List[Dict[str, Any]] = []  # Liste des éléments supprimés
+    created_item: Optional[Dict[str, Any]] = None  # L'élément créé
+    resolved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ConflictDetail(BaseModel):
+    """Détails d'un conflit détecté"""
+    conflict_id: str
+    conflict_type: str  # "disponibilite" ou "indisponibilite"
+    date: str
+    heure_debut: str
+    heure_fin: str
+    type_garde_id: Optional[str] = None
+    type_garde_nom: Optional[str] = None
+    statut: str
+    overlap_start: str  # Début du chevauchement
+    overlap_end: str  # Fin du chevauchement
+
 class DeviceToken(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
