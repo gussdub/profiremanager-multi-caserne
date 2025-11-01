@@ -3605,16 +3605,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       let disponibilitesToCreate = [];
 
       if (newDisponibilite.recurrence) {
-        // Générer toutes les occurrences
+        // Générer toutes les occurrences avec origine "recurrence"
         disponibilitesToCreate = generateRecurringDisponibilites(newDisponibilite, selectedUser.id);
+        // Marquer toutes comme récurrence
+        disponibilitesToCreate = disponibilitesToCreate.map(d => ({...d, origine: 'recurrence'}));
       } else {
-        // Disponibilité unique
+        // Disponibilité unique avec origine "manuelle"
         disponibilitesToCreate = [{
           date: newDisponibilite.date,
           heure_debut: newDisponibilite.heure_debut,
           heure_fin: newDisponibilite.heure_fin,
           statut: newDisponibilite.statut,
-          user_id: selectedUser.id
+          user_id: selectedUser.id,
+          origine: 'manuelle'
         }];
       }
 
