@@ -254,20 +254,7 @@ const MesEPI = ({ user }) => {
   };
 
   const handleDemandeRemplacement = async () => {
-        notes: '',
-        photo_url: ''
-      });
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      loadEPIs();
-    } catch (error) {
-      console.error('Erreur lors de l\'inspection:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'enregistrer l'inspection",
-        variant: "destructive"
-      });
-    }
+    if (!selectedEPI) return;
   };
 
   const handlePhotoChange = (e) => {
