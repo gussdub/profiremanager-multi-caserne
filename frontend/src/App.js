@@ -17915,6 +17915,7 @@ const Prevention = () => {
   const [loading, setLoading] = useState(false);
   const [selectedBatiment, setSelectedBatiment] = useState(null);
   const [showBatimentModal, setShowBatimentModal] = useState(false);
+  const [grilles, setGrilles] = useState([]);
 
   const fetchBatiments = async () => {
     try {
