@@ -18649,6 +18649,23 @@ const AppLayout = () => {
       <main className="main-content">
         {renderCurrentPage()}
       </main>
+      
+      {/* Modal de résolution des conflits */}
+      {showConflictModal && (
+        <Suspense fallback={<LoadingComponent />}>
+          <ConflictResolutionModal
+            isOpen={showConflictModal}
+            onClose={() => {
+              setShowConflictModal(false);
+              setConflictData({ conflicts: [], newItem: null, itemType: null });
+            }}
+            conflicts={conflictData.conflicts}
+            newItem={conflictData.newItem}
+            itemType={conflictData.itemType}
+            onResolve={handleResolveConflict}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
