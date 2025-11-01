@@ -17956,7 +17956,105 @@ const Prevention = () => {
     fetchBatiments();
     fetchStats();
     fetchNotifications();
+    fetchGrilles();
   }, [tenantSlug]);
+
+  const fetchGrilles = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+      setGrilles(data);
+    } catch (error) {
+      console.error('Erreur chargement grilles:', error);
+    }
+  };
+
+  // Déterminer la grille par défaut selon le type de bâtiment
+  const getDefaultGrille = (batiment) => {
+    if (!grilles || grilles.length === 0) return null;
+    
+    // Si une seule grille, la retourner
+    if (grilles.length === 1) return grilles[0];
+    
+    // Mapping type de bâtiment → grille
+    const grilleMapping = {
+      'C': 'residentiel',
+      'A-1': 'residentiel',
+      'A-2': 'soins',
+      'B': 'soins',
+      'D': 'commercial',
+      'E': 'commercial',
+      'F-1': 'industriel_elevé',
+      'F-2': 'industriel_moyen',
+      'F-3': 'industriel_faible',
+      'I': 'assemblée'
+    };
+    
+    const key = batiment.sous_groupe || batiment.groupe_occupation;
+    const grilleType = grilleMapping[key];
+    
+    // Chercher une grille correspondante
+    const grille = grilles.find(g => 
+      g.nom.toLowerCase().includes(grilleType) ||
+      g.type_batiment === grilleType
+    );
+    
+    // Si pas trouvé, retourner la première grille générique
+    return grille || grilles.find(g => g.nom.toLowerCase().includes('générique')) || grilles[0];
+  };
+
+  // Créer inspection directement et ouvrir la fiche
+  const handleInspectBatiment = async (batiment) => {
+    try {
+      setLoading(true);
+      
+      // Déterminer la grille par défaut
+      const grille = getDefaultGrille(batiment);
+      
+      if (!grille) {
+        toast({
+          title: "Erreur",
+          description: "Aucune grille d'inspection disponible. Créez-en une dans les paramètres.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'inspection automatiquement
+      const inspectionData = {
+        batiment_id: batiment.id,
+        grille_inspection_id: grille.id,
+        date_inspection: new Date().toISOString().split('T')[0],
+        type_inspection: 'reguliere',
+        inspecteur_id: user.id,
+        // Pré-remplir les infos du bâtiment
+        adresse: `${batiment.adresse_civique}, ${batiment.ville}`,
+        contact_nom: batiment.proprietaire_nom || batiment.gerant_nom || '',
+        contact_telephone: batiment.proprietaire_telephone || batiment.gerant_telephone || '',
+        contact_courriel: batiment.proprietaire_courriel || batiment.gerant_courriel || ''
+      };
+
+      const newInspection = await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+
+      // Rediriger vers la fiche d'inspection
+      setSelectedInspection(newInspection);
+      setCurrentView('fiche-inspection');
+
+      toast({
+        title: "Inspection créée",
+        description: `Inspection pour ${batiment.nom_etablissement || batiment.adresse_civique} créée avec succès`
+      });
+
+    } catch (error) {
+      console.error('Erreur création inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderContent = () => {
     switch(currentView) {
