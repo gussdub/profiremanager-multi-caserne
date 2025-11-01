@@ -18425,80 +18425,78 @@ const Prevention = () => {
         {renderContent()}
       </div>
 
-      {/* Modal détails bâtiment */}
+      {/* Modal détails bâtiment moderne */}
       {showBatimentModal && selectedBatiment && (
-        <div className="modal-overlay" onClick={() => setShowBatimentModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
-            <div className="modal-header">
-              <h2>🏢 Détails du Bâtiment</h2>
-              <button onClick={() => setShowBatimentModal(false)} className="modal-close">✖️</button>
-            </div>
-            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Informations générales</h3>
-                  <p><strong>Nom:</strong> {selectedBatiment.nom_etablissement || 'N/A'}</p>
-                  <p><strong>Adresse:</strong> {selectedBatiment.adresse_civique}</p>
-                  <p><strong>Ville:</strong> {selectedBatiment.ville}</p>
-                  <p><strong>Code postal:</strong> {selectedBatiment.code_postal}</p>
-                  <p><strong>Cadastre/Matricule:</strong> {selectedBatiment.cadastre_matricule || 'N/A'}</p>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Classification</h3>
-                  <p><strong>Groupe occupation:</strong> {selectedBatiment.groupe_occupation || 'N/A'}</p>
-                  <p><strong>Sous-groupe:</strong> {selectedBatiment.sous_groupe || 'N/A'}</p>
-                  <p><strong>Niveau de risque:</strong> {selectedBatiment.niveau_risque || 'N/A'}</p>
-                  <p><strong>Activité:</strong> {selectedBatiment.description_activite || 'N/A'}</p>
-                </div>
-              </div>
-              
-              {(selectedBatiment.proprietaire_nom || selectedBatiment.gerant_nom) && (
-                <>
-                  <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    {selectedBatiment.proprietaire_nom && (
-                      <div>
-                        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Propriétaire</h3>
-                        <p><strong>Nom:</strong> {selectedBatiment.proprietaire_nom}</p>
-                        <p><strong>Téléphone:</strong> {selectedBatiment.proprietaire_telephone || 'N/A'}</p>
-                        <p><strong>Courriel:</strong> {selectedBatiment.proprietaire_courriel || 'N/A'}</p>
-                      </div>
-                    )}
-                    {selectedBatiment.gerant_nom && (
-                      <div>
-                        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Gérant</h3>
-                        <p><strong>Nom:</strong> {selectedBatiment.gerant_nom}</p>
-                        <p><strong>Téléphone:</strong> {selectedBatiment.gerant_telephone || 'N/A'}</p>
-                        <p><strong>Courriel:</strong> {selectedBatiment.gerant_courriel || 'N/A'}</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {selectedBatiment.notes_generales && (
-                <>
-                  <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Notes</h3>
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{selectedBatiment.notes_generales}</p>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="modal-footer">
-              <Button variant="outline" onClick={() => setShowBatimentModal(false)}>
-                Fermer
-              </Button>
-              <Button onClick={() => {
+        <Suspense fallback={<div>Chargement...</div>}>
+          <BatimentDetailModal
+            batiment={selectedBatiment}
+            onClose={() => {
+              setShowBatimentModal(false);
+              setSelectedBatiment(null);
+            }}
+            onUpdate={async (updatedData) => {
+              try {
+                await apiPut(tenantSlug, `/prevention/batiments/${selectedBatiment.id}`, updatedData);
+                await fetchBatiments();
+                setSelectedBatiment(updatedData);
+                toast({
+                  title: "Succès",
+                  description: "Bâtiment mis à jour avec succès"
+                });
+              } catch (error) {
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de mettre à jour le bâtiment",
+                  variant: "destructive"
+                });
+              }
+            }}
+            onInspect={() => {
+              setShowBatimentModal(false);
+              handleInspectBatiment(selectedBatiment);
+            }}
+            onCreatePlan={() => {
+              setShowBatimentModal(false);
+              setCurrentView('plans-intervention');
+              // TODO: Pré-sélectionner ce bâtiment dans Plans Intervention
+            }}
+            onViewHistory={() => {
+              setShowBatimentModal(false);
+              setCurrentView('inspections');
+              // TODO: Filtrer par ce bâtiment
+            }}
+            onGenerateReport={() => {
+              // TODO: Générer rapport pour ce bâtiment
+              toast({
+                title: "Fonctionnalité à venir",
+                description: "Génération de rapport en développement"
+              });
+            }}
+            onDelete={async () => {
+              if (!window.confirm(`Supprimer le bâtiment ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}?`)) {
+                return;
+              }
+              try {
+                await apiDelete(tenantSlug, `/prevention/batiments/${selectedBatiment.id}`);
+                await fetchBatiments();
                 setShowBatimentModal(false);
-                setCurrentView('nouvelle-inspection');
-              }}>
-                🔍 Inspecter ce bâtiment
-              </Button>
-            </div>
-          </div>
-        </div>
+                setSelectedBatiment(null);
+                toast({
+                  title: "Succès",
+                  description: "Bâtiment supprimé"
+                });
+              } catch (error) {
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de supprimer le bâtiment",
+                  variant: "destructive"
+                });
+              }
+            }}
+            canEdit={['admin', 'superviseur'].includes(user?.role) || user?.type_emploi === 'preventionniste'}
+            tenantSlug={tenantSlug}
+          />
+        </Suspense>
       )}
     </div>
   );
