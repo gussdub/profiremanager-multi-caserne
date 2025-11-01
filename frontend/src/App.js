@@ -11183,6 +11183,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           'thursday': 4, 'friday': 5, 'saturday': 6
         };
         
+        // Pour bi-hebdomadaire, suivre les semaines
+        const startWeek = Math.floor((dateDebut - new Date(dateDebut.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+        
         while (currentDate <= dateFin && compteur < maxIterations) {
           // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés, filtrer par jour
           let includeDate = true;
@@ -11190,6 +11193,13 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               && manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0) {
             const dayOfWeek = currentDate.getDay();
             includeDate = manualIndispoConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+            
+            // Pour bi-hebdomadaire, ne garder qu'une semaine sur deux
+            if (includeDate && manualIndispoConfig.recurrence_type === 'bihebdomadaire') {
+              const currentWeek = Math.floor((currentDate - new Date(currentDate.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+              const weekDiff = currentWeek - startWeek;
+              includeDate = weekDiff % 2 === 0;
+            }
           }
           
           if (includeDate) {
