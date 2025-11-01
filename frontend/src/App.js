@@ -11188,7 +11188,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               heure_debut: manualIndispoConfig.heure_debut,
               heure_fin: manualIndispoConfig.heure_fin,
               statut: 'indisponible',
-              origine: 'manuelle'
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
             });
           }
           
