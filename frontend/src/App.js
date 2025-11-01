@@ -21,6 +21,7 @@ const SuperAdminDashboard = lazy(() => import("./components/SuperAdminDashboard"
 const MesEPI = lazy(() => import("./components/MesEPI"));
 const PlansIntervention = lazy(() => import("./components/PlansIntervention"));
 const BatimentDetailModal = lazy(() => import("./components/BatimentDetailModal"));
+const ConflictResolutionModal = lazy(() => import("./components/ConflictResolutionModal"));
 
 // Composant de chargement
 const LoadingComponent = () => (
