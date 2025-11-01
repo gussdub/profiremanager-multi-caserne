@@ -2325,6 +2325,22 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
+        {/* Nouvel onglet: Configuration des imports CSV */}
+        {activeTab === 'config-imports' && (
+          <div className="config-imports-tab">
+            <div className="tab-header">
+              <div>
+                <h2>Configuration des imports CSV</h2>
+                <p>Définissez quels champs sont obligatoires pour chaque type d'import</p>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '2rem' }}>
+              <ConfigurationImports tenantSlug={tenantSlug} />
+            </div>
+          </div>
+        )}
+
 
       </div>
 
