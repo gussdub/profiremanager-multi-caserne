@@ -15,8 +15,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [duplicateActions, setDuplicateActions] = useState({});
-
-  const availableFields = [
+  const [availableFields, setAvailableFields] = useState([
     { key: 'type_epi', label: 'Type EPI', required: true },
     { key: 'numero_serie', label: 'Numéro de série', required: true },
     { key: 'marque', label: 'Marque', required: false },
@@ -29,7 +28,32 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     { key: 'date_prochain_controle', label: 'Date prochain contrôle', required: false },
     { key: 'norme_certification', label: 'Norme certification', required: false },
     { key: 'notes', label: 'Notes', required: false }
-  ];
+  ]);
+
+  // Charger les champs configurés dynamiquement
+  React.useEffect(() => {
+    loadFieldsConfiguration();
+  }, [tenantSlug]);
+
+  const loadFieldsConfiguration = async () => {
+    try {
+      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.epi_fields && data.epi_fields.length > 0) {
+          setAvailableFields(data.epi_fields);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+      // Continuer avec les champs par défaut en cas d'erreur
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
