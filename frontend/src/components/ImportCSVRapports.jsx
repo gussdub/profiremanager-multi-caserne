@@ -180,7 +180,7 @@ const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Input
                 type="file"
-                accept=".csv"
+                accept=".csv,.CSV"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="csv-upload"
