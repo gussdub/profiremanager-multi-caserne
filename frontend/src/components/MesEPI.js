@@ -252,15 +252,8 @@ const MesEPI = ({ user }) => {
       });
     }
   };
-        description: inspectionForm.statut_inspection === 'ok' 
-          ? "Inspection enregistrée avec succès" 
-          : "Défaut signalé. Un administrateur sera notifié.",
-      });
 
-      setShowInspectionModal(false);
-      setInspectionForm({
-        statut_inspection: 'ok',
-        defauts_constates: '',
+  const handleDemandeRemplacement = async () => {
         notes: '',
         photo_url: ''
       });
