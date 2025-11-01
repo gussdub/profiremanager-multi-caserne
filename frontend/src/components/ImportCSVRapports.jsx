@@ -30,7 +30,7 @@ const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
       alert('Seuls les fichiers CSV sont acceptés');
       return;
     }
