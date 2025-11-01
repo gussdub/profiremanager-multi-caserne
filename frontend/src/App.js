@@ -18252,14 +18252,16 @@ const Prevention = () => {
 
       const newInspection = await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
 
-      // Rediriger vers la fiche d'inspection
-      setSelectedInspection(newInspection);
-      setCurrentView('fiche-inspection');
-
+      // Afficher un toast de succès
       toast({
         title: "Inspection créée",
         description: `Inspection pour ${batiment.nom_etablissement || batiment.adresse_civique} créée avec succès`
       });
+
+      // Rediriger vers la liste des inspections ou rester sur le dashboard
+      setCurrentView('inspections');
+      // Recharger les données
+      loadInspections();
 
     } catch (error) {
       console.error('Erreur création inspection:', error);
