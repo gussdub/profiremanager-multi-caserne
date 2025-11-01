@@ -3763,6 +3763,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               user_id: userId
             });
           }
+          // Avancer d'une semaine (7 jours)
           currentDate.setDate(currentDate.getDate() + 7);
           weekCounter++;
         }
