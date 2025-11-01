@@ -13274,6 +13274,122 @@ async def import_epis_csv(
     return results
 
 
+# ==================== CONFIGURATION IMPORTS CSV ====================
+
+@api_router.get("/{tenant_slug}/config/import-settings")
+async def get_import_settings(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère la configuration des imports CSV pour le tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur a les droits
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Récupérer ou créer la configuration par défaut
+    settings = await db.import_settings.find_one({"tenant_id": tenant.id})
+    
+    if not settings:
+        # Créer une configuration par défaut avec tous les champs disponibles
+        default_epi_fields = [
+            {"key": "type_epi", "label": "Type EPI", "required": True},
+            {"key": "numero_serie", "label": "Numéro de série", "required": True},
+            {"key": "marque", "label": "Marque", "required": False},
+            {"key": "modele", "label": "Modèle", "required": False},
+            {"key": "taille", "label": "Taille", "required": False},
+            {"key": "statut", "label": "Statut", "required": False},
+            {"key": "employe_nom", "label": "Employé (Prénom Nom)", "required": False},
+            {"key": "date_mise_en_service", "label": "Date mise en service", "required": False},
+            {"key": "date_dernier_controle", "label": "Date dernier contrôle", "required": False},
+            {"key": "date_prochain_controle", "label": "Date prochain contrôle", "required": False},
+            {"key": "norme_certification", "label": "Norme certification", "required": False},
+            {"key": "notes", "label": "Notes", "required": False}
+        ]
+        
+        default_personnel_fields = [
+            {"key": "prenom", "label": "Prénom", "required": True},
+            {"key": "nom", "label": "Nom", "required": True},
+            {"key": "email", "label": "Email", "required": True},
+            {"key": "numero_badge", "label": "Numéro de badge", "required": False},
+            {"key": "telephone", "label": "Téléphone", "required": False},
+            {"key": "adresse", "label": "Adresse", "required": False},
+            {"key": "ville", "label": "Ville", "required": False},
+            {"key": "code_postal", "label": "Code postal", "required": False},
+            {"key": "date_naissance", "label": "Date de naissance", "required": False},
+            {"key": "date_embauche", "label": "Date d'embauche", "required": False},
+            {"key": "role", "label": "Rôle", "required": False},
+            {"key": "statut", "label": "Statut", "required": False},
+            {"key": "contact_urgence_nom", "label": "Contact urgence - Nom", "required": False},
+            {"key": "contact_urgence_telephone", "label": "Contact urgence - Téléphone", "required": False},
+            {"key": "contact_urgence_relation", "label": "Contact urgence - Relation", "required": False}
+        ]
+        
+        default_rapports_fields = [
+            {"key": "type", "label": "Type (budget/depense)", "required": True},
+            {"key": "date", "label": "Date", "required": True},
+            {"key": "description", "label": "Description", "required": True},
+            {"key": "categorie", "label": "Catégorie", "required": False},
+            {"key": "montant", "label": "Montant", "required": True},
+            {"key": "notes", "label": "Notes", "required": False}
+        ]
+        
+        settings = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "epi_fields": default_epi_fields,
+            "personnel_fields": default_personnel_fields,
+            "rapports_fields": default_rapports_fields,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.import_settings.insert_one(settings)
+    
+    return settings
+
+
+@api_router.put("/{tenant_slug}/config/import-settings")
+async def update_import_settings(
+    tenant_slug: str,
+    settings_update: ImportSettingsUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour la configuration des imports CSV"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur a les droits
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Récupérer la configuration existante
+    existing_settings = await db.import_settings.find_one({"tenant_id": tenant.id})
+    
+    if not existing_settings:
+        raise HTTPException(status_code=404, detail="Configuration non trouvée")
+    
+    # Mettre à jour uniquement les champs fournis
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if settings_update.epi_fields is not None:
+        update_data["epi_fields"] = [field.dict() for field in settings_update.epi_fields]
+    
+    if settings_update.personnel_fields is not None:
+        update_data["personnel_fields"] = [field.dict() for field in settings_update.personnel_fields]
+    
+    if settings_update.rapports_fields is not None:
+        update_data["rapports_fields"] = [field.dict() for field in settings_update.rapports_fields]
+    
+    await db.import_settings.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    # Retourner la configuration mise à jour
+    updated_settings = await db.import_settings.find_one({"tenant_id": tenant.id})
+    return updated_settings
+
+
 
 @api_router.get("/{tenant_slug}/epi", response_model=List[EPI])
 async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_current_user)):
