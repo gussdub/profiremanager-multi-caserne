@@ -3620,7 +3620,30 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
       // Créer toutes les disponibilités
       for (const dispo of disponibilitesToCreate) {
-        await apiPost(tenantSlug, '/disponibilites', dispo);
+        try {
+          await apiPost(tenantSlug, '/disponibilites', dispo);
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            const conflictDetails = error.response.data.detail;
+            
+            // Stocker les données du conflit
+            setConflictData({
+              conflicts: conflictDetails.conflicts,
+              newItem: dispo,
+              itemType: 'disponibilite'
+            });
+            
+            // Afficher le modal de résolution
+            setShowConflictModal(true);
+            
+            // Arrêter la boucle après le premier conflit
+            return;
+          } else {
+            // Autre erreur
+            throw error;
+          }
+        }
       }
 
       toast({
