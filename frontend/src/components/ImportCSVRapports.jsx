@@ -16,15 +16,39 @@ const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [duplicateActions, setDuplicateActions] = useState({});
-
-  const availableFields = [
+  const [availableFields, setAvailableFields] = useState([
     { key: 'type', label: 'Type (budget/depense)', required: true },
     { key: 'date', label: 'Date', required: true },
     { key: 'description', label: 'Description', required: true },
     { key: 'categorie', label: 'Catégorie', required: false },
     { key: 'montant', label: 'Montant', required: true },
     { key: 'notes', label: 'Notes', required: false }
-  ];
+  ]);
+
+  // Charger les champs configurés dynamiquement
+  React.useEffect(() => {
+    loadFieldsConfiguration();
+  }, [tenantSlug]);
+
+  const loadFieldsConfiguration = async () => {
+    try {
+      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.rapports_fields && data.rapports_fields.length > 0) {
+          setAvailableFields(data.rapports_fields);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+      // Continuer avec les champs par défaut en cas d'erreur
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
