@@ -8087,9 +8087,70 @@ const Planning = () => {
                 </div>
               </div>
 
-              {/* Scores de l'utilisateur sélectionné */}
+              {/* Algorithme de sélection - Section explicative */}
+              <div style={{ 
+                marginBottom: '2rem',
+                padding: '1.5rem',
+                background: '#f0f9ff',
+                border: '2px solid #3b82f6',
+                borderRadius: '12px'
+              }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🤖 Algorithme d'assignation automatique
+                </h4>
+                <p style={{ fontSize: '0.9rem', color: '#1e40af', marginBottom: '1rem' }}>
+                  L'employé a été sélectionné en suivant ces étapes dans l'ordre :
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {[
+                    { num: 1, icon: '👤', title: 'Assignations manuelles privilégiées', desc: 'Les assignations manuelles ne sont jamais écrasées' },
+                    { num: 2, icon: '✅', title: 'Respecter les disponibilités', desc: 'Temps partiel : doit avoir déclaré une disponibilité. Temps plein : éligible automatiquement' },
+                    { num: 3, icon: '🎖️', title: 'Respecter les grades requis', desc: 'Assignation d\'un officier si configuré pour le type de garde' },
+                    { num: 4, icon: '⚖️', title: 'Rotation équitable du personnel', desc: 'Favorise les employés avec moins d\'heures dans le mois' },
+                    { num: 5, icon: '📅', title: 'Ancienneté des employés', desc: 'En cas d\'égalité d\'heures, privilégier l\'ancienneté (date d\'embauche)' }
+                  ].map((step) => (
+                    <div key={step.num} style={{ 
+                      display: 'flex', 
+                      alignItems: 'start', 
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid #bfdbfe'
+                    }}>
+                      <div style={{ 
+                        minWidth: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: '#3b82f6',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem'
+                      }}>
+                        {step.num}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.25rem' }}>
+                          {step.icon} {step.title}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          {step.desc}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scores informatifs (pas décisionnels) */}
               <div style={{ marginBottom: '2rem' }}>
-                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>📊 Scores de Sélection</h4>
+                <h4 style={{ marginBottom: '0.5rem', color: '#1f2937' }}>📊 Scores Informatifs de l'Employé Sélectionné</h4>
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1rem', fontStyle: 'italic' }}>
+                  ⚠️ Ces scores sont informatifs uniquement. La sélection se base sur l'algorithme ci-dessus.
+                </p>
                 {['equite', 'anciennete', 'disponibilite', 'competences'].map(critere => {
                   const score = selectedAuditAssignation.justification.assigned_user?.scores?.[critere] || 0;
                   const maxScore = 100;
@@ -8138,7 +8199,7 @@ const Planning = () => {
                   border: '2px solid #8b5cf6'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Score Total</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Score Total (informatif)</span>
                     <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8b5cf6' }}>
                       {selectedAuditAssignation.justification.assigned_user?.scores?.total?.toFixed(1)}/400
                     </span>
