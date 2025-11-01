@@ -204,6 +204,16 @@ const MesEPI = ({ user }) => {
   const handleInspection = async () => {
     if (!selectedEPI) return;
 
+    // Validation : si statut = defaut, il faut des défauts constatés
+    if (inspectionForm.statut === 'defaut' && !inspectionForm.defauts_constates.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez décrire les défauts constatés",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       // Si une photo a été sélectionnée, la convertir en base64
       let photoData = inspectionForm.photo_url;
@@ -218,12 +228,30 @@ const MesEPI = ({ user }) => {
       }
 
       await apiPost(tenantSlug, `/mes-epi/${selectedEPI.id}/inspection`, {
-        ...inspectionForm,
-        photo_url: photoData
+        statut: inspectionForm.statut,
+        defauts_constates: inspectionForm.defauts_constates,
+        notes: inspectionForm.notes,
+        photo_url: photoData,
+        criteres_inspection: inspectionForm.criteres_inspection
       });
       
       toast({
         title: "Succès",
+        description: "Inspection enregistrée avec succès",
+        variant: "default"
+      });
+      
+      setShowInspectionModal(false);
+      loadEPIs();
+    } catch (error) {
+      console.error('Erreur lors de l\'inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'inspection",
+        variant: "destructive"
+      });
+    }
+  };
         description: inspectionForm.statut_inspection === 'ok' 
           ? "Inspection enregistrée avec succès" 
           : "Défaut signalé. Un administrateur sera notifié.",
