@@ -19,26 +19,94 @@ const MesEPI = ({ user }) => {
   const { toast } = useToast();
 
   const [inspectionForm, setInspectionForm] = useState({
-    statut_inspection: 'ok',
+    statut: 'ok',
     defauts_constates: '',
     notes: '',
-    photo_url: ''
+    photo_url: '',
+    criteres_inspection: {}
   });
 
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
   const [remplacementForm, setRemplacementForm] = useState({
-    raison: 'Usure normale',
+    raison: '',
     details: ''
   });
 
   const raisonsRemplacement = [
-    'Usure normale',
-    'Défaut',
-    'Perte',
-    'Taille inadaptée'
+    { id: 'usure', label: 'Usure normale', icon: '⏳', desc: 'L\'EPI montre des signes d\'usure normale' },
+    { id: 'defaut', label: 'Défaut constaté', icon: '⚠️', desc: 'Défaut technique ou matériel' },
+    { id: 'perte', label: 'Perte/Vol', icon: '🔍', desc: 'EPI perdu ou volé' },
+    { id: 'taille', label: 'Taille inadaptée', icon: '📏', desc: 'Besoin d\'une autre taille' }
   ];
+
+  // Critères d'inspection par type d'EPI (basés sur les documents fournis)
+  const criteresParType = {
+    'Gants': [
+      { id: 'proprete', label: 'Propreté (absence de contamination)', icon: '🧼' },
+      { id: 'contamination', label: 'Pas de contamination par matières dangereuses', icon: '☣️' },
+      { id: 'dechirure', label: 'Pas de déchirure ou coupure', icon: '✂️' },
+      { id: 'flexibilite', label: 'Flexibilité/élasticité conservée', icon: '💪' }
+    ],
+    'Bottes': [
+      { id: 'proprete', label: 'Propreté (absence de contamination)', icon: '🧼' },
+      { id: 'perforation', label: 'Pas de perforation, déchirure ou coupure', icon: '🔪' },
+      { id: 'etancheite', label: 'Étanchéité préservée', icon: '💧' },
+      { id: 'semelle', label: 'Bon état de la semelle', icon: '👟' },
+      { id: 'fermeture', label: 'Fermeture éclair fonctionnelle', icon: '🔒' }
+    ],
+    'Cagoule': [
+      { id: 'proprete', label: 'Propreté (absence de contamination)', icon: '🧼' },
+      { id: 'dechirure', label: 'Pas de déchirure, coupure ou brûlure', icon: '🔥' },
+      { id: 'decoloration', label: 'Pas de décoloration', icon: '🎨' },
+      { id: 'couture', label: 'Coutures intactes', icon: '🧵' },
+      { id: 'ajustement', label: 'Ajustement facial correct', icon: '😷' }
+    ],
+    'Casque': [
+      { id: 'proprete', label: 'Propreté du revêtement extérieur', icon: '🧼' },
+      { id: 'fissure', label: 'Pas de fissure, bosse ou abrasion', icon: '🔨' },
+      { id: 'thermique', label: 'Pas de dommage thermique', icon: '🔥' },
+      { id: 'visiere', label: 'Visière en bon état', icon: '👁️' },
+      { id: 'suspension', label: 'Système de suspension et jugulaire OK', icon: '⛑️' }
+    ],
+    'Bunker': [
+      { id: 'proprete', label: 'Propreté (absence de contamination)', icon: '🧼' },
+      { id: 'dechirure', label: 'Pas de déchirure ou coupure', icon: '✂️' },
+      { id: 'quincaillerie', label: 'Quincaillerie et fermetures fonctionnelles', icon: '🔧' },
+      { id: 'thermique', label: 'Pas de dommage thermique', icon: '🔥' },
+      { id: 'bande', label: 'Bandes réfléchissantes intactes', icon: '✨' },
+      { id: 'couture', label: 'Coutures intactes', icon: '🧵' }
+    ],
+    'ARI': [
+      { id: 'proprete', label: 'Propreté (absence de contamination)', icon: '🧼' },
+      { id: 'dechirure', label: 'Pas de déchirure ou coupure', icon: '✂️' },
+      { id: 'quincaillerie', label: 'Quincaillerie complète (filtre, noze cup)', icon: '🔧' },
+      { id: 'visiere', label: 'Visière en bon état', icon: '👁️' },
+      { id: 'etancheite', label: 'Étanchéité préservée', icon: '💨' }
+    ]
+  };
+
+  // Fonction pour déterminer les critères selon le type d'EPI
+  const getCriteresPourEPI = (typeEPI) => {
+    if (!typeEPI) return [];
+    
+    const typeNormalise = typeEPI.toLowerCase();
+    
+    if (typeNormalise.includes('gant')) return criteresParType['Gants'];
+    if (typeNormalise.includes('botte')) return criteresParType['Bottes'];
+    if (typeNormalise.includes('cagoule')) return criteresParType['Cagoule'];
+    if (typeNormalise.includes('casque')) return criteresParType['Casque'];
+    if (typeNormalise.includes('bunker') || typeNormalise.includes('habit')) return criteresParType['Bunker'];
+    if (typeNormalise.includes('ari') || typeNormalise.includes('masque') || typeNormalise.includes('facial')) return criteresParType['ARI'];
+    
+    // Critères génériques si type non reconnu
+    return [
+      { id: 'proprete', label: 'Propreté générale', icon: '🧼' },
+      { id: 'integrite', label: 'Intégrité structurelle', icon: '✅' },
+      { id: 'fonctionnel', label: 'Fonctionnalité préservée', icon: '⚙️' }
+    ];
+  };
 
   useEffect(() => {
     loadEPIs();
