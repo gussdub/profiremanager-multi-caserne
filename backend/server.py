@@ -5921,15 +5921,18 @@ class InspectionApresUsage(BaseModel):
     epi_id: str
     user_id: str  # Employé qui fait l'inspection
     date_inspection: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    statut: str  # "OK" ou "Défaut"
+    statut: str  # "ok" ou "defaut"
+    defauts_constates: str = ""  # Description des défauts si statut = "defaut"
     notes: str = ""
     photo_url: str = ""  # URL de la photo du défaut (optionnel)
+    criteres_inspection: Optional[Dict[str, bool]] = {}  # Critères cochés/décochés
 
 class InspectionApresUsageCreate(BaseModel):
-    epi_id: str
-    statut: str  # "OK" ou "Défaut"
-    notes: str = ""
-    photo_url: str = ""
+    statut: str  # "ok" ou "defaut"
+    defauts_constates: Optional[str] = ""
+    notes: Optional[str] = ""
+    photo_url: Optional[str] = ""
+    criteres_inspection: Optional[Dict[str, bool]] = {}
 
 class DemandeRemplacementEPI(BaseModel):
     """Demande de remplacement d'EPI par un employé"""
