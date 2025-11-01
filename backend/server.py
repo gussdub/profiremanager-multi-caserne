@@ -14486,14 +14486,16 @@ async def creer_inspection_apres_usage(
         epi_id=epi_id,
         user_id=current_user.id,
         statut=inspection.statut,
-        notes=inspection.notes,
-        photo_url=inspection.photo_url
+        defauts_constates=inspection.defauts_constates or "",
+        notes=inspection.notes or "",
+        photo_url=inspection.photo_url or "",
+        criteres_inspection=inspection.criteres_inspection or {}
     )
     
     await db.inspections_apres_usage.insert_one(inspection_obj.dict())
     
     # Si défaut signalé, envoyer notification aux admins/superviseurs
-    if inspection.statut == "Défaut":
+    if inspection.statut == "defaut":
         # Récupérer tous les admins/superviseurs
         admins = await db.users.find({
             "tenant_id": tenant.id,
@@ -14506,12 +14508,12 @@ async def creer_inspection_apres_usage(
                 destinataire_id=admin["id"],
                 type="epi_defaut",
                 titre="⚠️ Défaut EPI signalé",
-                message=f"{current_user.prenom} {current_user.nom} a signalé un défaut sur {epi['type_epi']} - {epi['marque']} {epi['modele']}",
+                message=f"{current_user.prenom} {current_user.nom} a signalé un défaut sur {epi['type_epi']} - {epi.get('marque', '')} {epi.get('modele', '')}",
                 lien=f"/gestion-epi",
                 data={"epi_id": epi_id, "user_id": current_user.id}
             )
     
-    return {"message": "Inspection enregistrée avec succès", "defaut_signale": inspection.statut == "Défaut"}
+    return {"message": "Inspection enregistrée avec succès", "defaut_signale": inspection.statut == "defaut"}
 
 @api_router.get("/{tenant_slug}/mes-epi/{epi_id}/historique")
 async def get_historique_inspections(
