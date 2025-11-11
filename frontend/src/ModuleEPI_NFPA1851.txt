@@ -1,0 +1,420 @@
+// Module EPI NFPA 1851 - Phase 1
+const ModuleEPI = ({ user }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('inventaire'); // inventaire, inspections, isp, rapports
+  
+  // États pour inventaire EPI
+  const [epis, setEpis] = useState([]);
+  const [selectedEPI, setSelectedEPI] = useState(null);
+  const [showEPIModal, setShowEPIModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [epiForm, setEpiForm] = useState({
+    numero_serie: '',
+    type_epi: 'casque',
+    marque: '',
+    modele: '',
+    numero_serie_fabricant: '',
+    date_fabrication: '',
+    date_mise_en_service: new Date().toISOString().split('T')[0],
+    norme_certification: 'NFPA 1971',
+    cout_achat: 0,
+    couleur: '',
+    taille: '',
+    user_id: '',
+    statut: 'En service',
+    notes: ''
+  });
+  
+  // États pour inspections
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [typeInspection, setTypeInspection] = useState('apres_utilisation');
+  const [inspectionForm, setInspectionForm] = useState({
+    date_inspection: new Date().toISOString().split('T')[0],
+    inspecteur_nom: user?.prenom + ' ' + user?.nom || '',
+    inspecteur_id: user?.id || '',
+    isp_id: '',
+    isp_nom: '',
+    isp_accreditations: '',
+    statut_global: 'conforme',
+    checklist: {},
+    photos: [],
+    commentaires: '',
+    rapport_pdf_url: '',
+    signature_numerique: ''
+  });
+  const [inspections, setInspections] = useState([]);
+  
+  // États pour ISP
+  const [isps, setIsps] = useState([]);
+  const [showISPModal, setShowISPModal] = useState(false);
+  const [selectedISP, setSelectedISP] = useState(null);
+  const [ispForm, setIspForm] = useState({
+    nom: '',
+    contact: '',
+    telephone: '',
+    email: '',
+    accreditations: '',
+    notes: ''
+  });
+  
+  // États pour rapports
+  const [rapportConformite, setRapportConformite] = useState(null);
+  const [rapportEcheances, setRapportEcheances] = useState(null);
+  
+  // Types d'EPI
+  const typesEPI = [
+    { id: 'casque', nom: 'Casque', icone: '🪖' },
+    { id: 'bottes', nom: 'Bottes', icone: '👢' },
+    { id: 'veste_bunker', nom: 'Manteau Habit de Combat', icone: '🧥' },
+    { id: 'pantalon_bunker', nom: 'Pantalon Habit de Combat', icone: '👖' },
+    { id: 'gants', nom: 'Gants', icone: '🧤' },
+    { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+  ];
+  
+  // Checklists NFPA 1851
+  const getChecklistTemplate = (type) => {
+    if (type === 'apres_utilisation') {
+      return {
+        propre: true,
+        degra
+
+dation_visible: false,
+        fermetures_fonctionnelles: true,
+        bandes_reflechissantes_intactes: true
+      };
+    } else if (type === 'routine_mensuelle') {
+      return {
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: false,
+        dommages_chimiques: false,
+        dommages_mecaniques: false,
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon'
+      };
+    } else { // avancee_annuelle
+      return {
+        // Tout de routine PLUS
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: false,
+        dommages_chimiques: false,
+        dommages_mecaniques: false,
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon',
+        inspection_detaillee_doublure: 'bon',
+        separation_doublure: false,
+        bulles_delamination: false,
+        coutures_cachees: 'bon',
+        test_ajustement_complet: 'bon',
+        condition_etiquettes: 'bon'
+      };
+    }
+  };
+  
+  // Charger les données initiales
+  useEffect(() => {
+    if (tenantSlug) {
+      loadData();
+    }
+  }, [tenantSlug]);
+  
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [episData, ispsData] = await Promise.all([
+        apiGet(tenantSlug, '/epi'),
+        apiGet(tenantSlug, '/isp')
+      ]);
+      setEpis(episData || []);
+      setIsps(ispsData || []);
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données EPI",
+        variant: "destructive"
+      });
+    }
+    setLoading(false);
+  };
+  
+  // Charger rapports
+  const loadRapports = async () => {
+    try {
+      const [conformite, echeances] = await Promise.all([
+        apiGet(tenantSlug, '/epi/rapports/conformite'),
+        apiGet(tenantSlug, '/epi/rapports/echeances?jours=30')
+      ]);
+      setRapportConformite(conformite);
+      setRapportEcheances(echeances);
+    } catch (error) {
+      console.error('Erreur chargement rapports:', error);
+    }
+  };
+  
+  // CRUD EPI
+  const handleCreateEPI = async () => {
+    try {
+      await apiPost(tenantSlug, '/epi', epiForm);
+      toast({
+        title: "Succès",
+        description: "EPI créé avec succès"
+      });
+      setShowEPIModal(false);
+      loadData();
+      resetEPIForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la création",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleUpdateEPI = async () => {
+    try {
+      await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, epiForm);
+      toast({
+        title: "Succès",
+        description: "EPI modifié avec succès"
+      });
+      setShowEPIModal(false);
+      loadData();
+      resetEPIForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la modification",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteEPI = async (epiId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet EPI ?')) return;
+    
+    try {
+      await apiDelete(tenantSlug, `/epi/${epiId}`);
+      toast({
+        title: "Succès",
+        description: "EPI supprimé avec succès"
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la suppression",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetEPIForm = () => {
+    setEpiForm({
+      numero_serie: '',
+      type_epi: 'casque',
+      marque: '',
+      modele: '',
+      numero_serie_fabricant: '',
+      date_fabrication: '',
+      date_mise_en_service: new Date().toISOString().split('T')[0],
+      norme_certification: 'NFPA 1971',
+      cout_achat: 0,
+      couleur: '',
+      taille: '',
+      user_id: '',
+      statut: 'En service',
+      notes: ''
+    });
+    setSelectedEPI(null);
+  };
+  
+  // Inspections
+  const handleCreateInspection = async () => {
+    try {
+      const inspectionData = {
+        ...inspectionForm,
+        type_inspection: typeInspection,
+        checklist: getChecklistTemplate(typeInspection)
+      };
+      
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/inspection`, inspectionData);
+      toast({
+        title: "Succès",
+        description: "Inspection enregistrée avec succès"
+      });
+      setShowInspectionModal(false);
+      loadInspections(selectedEPI.id);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de l'enregistrement",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const loadInspections = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/inspections`);
+      setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur chargement inspections:', error);
+    }
+  };
+  
+  // ISP
+  const handleCreateISP = async () => {
+    try {
+      await apiPost(tenantSlug, '/isp', ispForm);
+      toast({
+        title: "Succès",
+        description: "Fournisseur ajouté avec succès"
+      });
+      setShowISPModal(false);
+      loadData();
+      resetISPForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la création",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleUpdateISP = async () => {
+    try {
+      await apiPut(tenantSlug, `/isp/${selectedISP.id}`, ispForm);
+      toast({
+        title: "Succès",
+        description: "Fournisseur modifié avec succès"
+      });
+      setShowISPModal(false);
+      loadData();
+      resetISPForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la modification",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteISP = async (ispId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) return;
+    
+    try {
+      await apiDelete(tenantSlug, `/isp/${ispId}`);
+      toast({
+        title: "Succès",
+        description: "Fournisseur supprimé avec succès"
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de la suppression",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetISPForm = () => {
+    setIspForm({
+      nom: '',
+      contact: '',
+      telephone: '',
+      email: '',
+      accreditations: '',
+      notes: ''
+    });
+    setSelectedISP(null);
+  };
+  
+  const openEditEPI = (epi) => {
+    setSelectedEPI(epi);
+    setEpiForm({
+      numero_serie: epi.numero_serie,
+      type_epi: epi.type_epi,
+      marque: epi.marque,
+      modele: epi.modele,
+      numero_serie_fabricant: epi.numero_serie_fabricant || '',
+      date_fabrication: epi.date_fabrication || '',
+      date_mise_en_service: epi.date_mise_en_service,
+      norme_certification: epi.norme_certification || 'NFPA 1971',
+      cout_achat: epi.cout_achat || 0,
+      couleur: epi.couleur || '',
+      taille: epi.taille || '',
+      user_id: epi.user_id || '',
+      statut: epi.statut,
+      notes: epi.notes || ''
+    });
+    setShowEPIModal(true);
+  };
+  
+  const openDetailEPI = async (epi) => {
+    setSelectedEPI(epi);
+    await loadInspections(epi.id);
+    setShowDetailModal(true);
+  };
+  
+  const openEditISP = (isp) => {
+    setSelectedISP(isp);
+    setIspForm({
+      nom: isp.nom,
+      contact: isp.contact || '',
+      telephone: isp.telephone || '',
+      email: isp.email || '',
+      accreditations: isp.accreditations || '',
+      notes: isp.notes || ''
+    });
+    setShowISPModal(true);
+  };
+  
+  const getStatutColor = (statut) => {
+    const colors = {
+      'En service': '#10B981',
+      'En inspection': '#F59E0B',
+      'En réparation': '#EF4444',
+      'Hors service': '#DC2626',
+      'Retiré': '#6B7280'
+    };
+    return colors[statut] || '#6B7280';
+  };
+  
+  const getTypeIcon = (type) => {
+    const type_obj = typesEPI.find(t => t.id === type);
+    return type_obj ? type_obj.icone : '🛡️';
+  };
+  
+  const getTypeName = (type) => {
+    const type_obj = typesEPI.find(t => t.id === type);
+    return type_obj ? type_obj.nom : type;
+  };
+  
+  if (loading) {
+    return (
+      <div className="module-container">
+        <div className="loading-spinner"></div>
+        <p>Chargement des données EPI...</p>
+      </div>
+    );
+  }
+
+  // Suite du rendu dans le prochain message car limite de tokens

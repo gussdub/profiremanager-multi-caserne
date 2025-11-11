@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "ProFireManager",
+    "slug": "profiremanager",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#D9072B"
+    },
+    "primaryColor": "#D9072B",
+    "owner": "profiremanager",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.profiremanager.app",
+      "buildNumber": "1.0.2",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Cette application nécessite l'accès à la caméra pour scanner les codes QR.",
+        "NSPhotoLibraryUsageDescription": "Cette application nécessite l'accès aux photos pour les inspections.",
+        "NSLocationWhenInUseUsageDescription": "Cette application utilise votre localisation pour les inspections de prévention.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#D9072B"
+      },
+      "package": "com.profiremanager.app",
+      "versionCode": 2,
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_FULL_SCREEN_INTENT",
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "notification": {
+      "color": "#D9072B"
+    },
+    "extra": {
+      "apiUrl": "https://profiremanager-1.preview.emergentagent.com",
+      "eas": {
+        "projectId": "2fe5afe1-2ea3-447c-9350-9e4920ec940c"
+      }
+    }
+  }
+}

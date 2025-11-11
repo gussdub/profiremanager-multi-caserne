@@ -1,0 +1,28 @@
+{
+  "short_name": "ProFireManager",
+  "name": "ProFireManager v2.0 - Gestion Services Incendie",
+  "description": "Application de gestion des horaires et remplacements automatisés pour services d'incendie au Canada",
+  "icons": [
+    {
+      "src": "logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#D9072B",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business", "utilities"],
+  "lang": "fr-CA",
+  "id": "profiremanager",
+  "prefer_related_applications": false
+}

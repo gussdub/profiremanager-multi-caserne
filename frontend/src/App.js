@@ -1,0 +1,20332 @@
+import React, { useState, useEffect, Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import axios from "axios";
+import { Button } from "./components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import { Calendar } from "./components/ui/calendar";
+import { useToast } from "./hooks/use-toast";
+import { Toaster } from "./components/ui/toaster";
+import { useTenant } from "./contexts/TenantContext";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
+import PushNotificationService from "./services/pushNotifications";
+import { fr } from "date-fns/locale";
+import Chart from "react-apexcharts";
+import "./App.css";
+
+// Lazy loading pour optimiser les performances
+const Parametres = lazy(() => import("./components/Parametres"));
+const SuperAdminDashboard = lazy(() => import("./components/SuperAdminDashboard"));
+const MesEPI = lazy(() => import("./components/MesEPI"));
+const PlansIntervention = lazy(() => import("./components/PlansIntervention"));
+const BatimentDetailModal = lazy(() => import("./components/BatimentDetailModalNew"));
+const ConflictResolutionModal = lazy(() => import("./components/ConflictResolutionModal"));
+
+// Composant de chargement
+const LoadingComponent = () => (
+  <div className="loading-component">
+    <div className="loading-spinner"></div>
+    <p>Chargement du module...</p>
+  </div>
+);
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
+
+// Configure axios defaults
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Fonctions utilitaires pour localStorage avec préfixe tenant (globales)
+const getStorageKey = (key, tenantSlug) => {
+  return tenantSlug ? `${tenantSlug}_${key}` : key;
+};
+
+window.getTenantItem = (key) => {
+  const tenantSlug = window.location.pathname.split('/')[1];
+  return localStorage.getItem(getStorageKey(key, tenantSlug));
+};
+
+window.setTenantItem = (key, value) => {
+  const tenantSlug = window.location.pathname.split('/')[1];
+  localStorage.setItem(getStorageKey(key, tenantSlug), value);
+};
+
+// Auth Context
+const AuthContext = React.createContext();
+
+const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tenant, setTenant] = useState(null);
+  const { tenantSlug, isSuperAdmin } = useTenant();
+
+  // Fonctions utilitaires pour le localStorage avec préfixe tenant
+  const getStorageKey = (key) => {
+    return tenantSlug ? `${tenantSlug}_${key}` : key;
+  };
+  
+  const getItem = (key) => {
+    return localStorage.getItem(getStorageKey(key));
+  };
+  
+  const setItem = (key, value) => {
+    localStorage.setItem(getStorageKey(key), value);
+  };
+  
+  const removeItem = (key) => {
+    localStorage.removeItem(getStorageKey(key));
+  };
+
+  useEffect(() => {
+    const token = getItem('token');
+    
+    // Ne pas vérifier le token si pas de tenantSlug
+    if (!tenantSlug) {
+      setLoading(false);
+      return;
+    }
+    
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Construire l'URL correcte selon le type d'utilisateur
+      const meUrl = isSuperAdmin 
+        ? `${API}/admin/auth/me` 
+        : `${API}/${tenantSlug}/auth/me`;
+      
+      // Verify token and get user info
+      axios.get(meUrl)
+        .then(async response => {
+          setUser(response.data);
+          
+          // Récupérer les informations du tenant si ce n'est pas un super admin
+          if (!isSuperAdmin && tenantSlug) {
+            try {
+              const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
+              setTenant(tenantResponse.data);
+            } catch (error) {
+              console.error('Erreur récupération tenant:', error);
+            }
+          }
+        })
+        .catch((error) => {
+          console.log('Token invalide ou expiré, nettoyage et redirection...');
+          // Nettoyer uniquement ce tenant
+          removeItem('token');
+          removeItem('tenant');
+          removeItem('user');
+          delete axios.defaults.headers.common['Authorization'];
+          setUser(null);
+          setTenant(null);
+          
+          // Forcer le rechargement de la page pour retourner au login
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [tenantSlug, isSuperAdmin]);
+
+  const login = async (email, mot_de_passe) => {
+    try {
+      // Nettoyer complètement avant une nouvelle connexion (au cas où) - uniquement pour ce tenant
+      removeItem('token');
+      removeItem('tenant');
+      removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      
+      // Utiliser l'endpoint tenant-spécifique
+      const loginUrl = isSuperAdmin
+        ? `${API}/admin/auth/login`
+        : `${API}/${tenantSlug}/auth/login`;
+      
+      const response = await axios.post(loginUrl, {
+        email,
+        mot_de_passe
+      });
+      
+      // Pour Super Admin, la réponse contient 'admin' au lieu de 'user'
+      const { access_token, user: userData, admin: adminData, tenant } = response.data;
+      const finalUserData = isSuperAdmin ? adminData : userData;
+      
+      setItem('token', access_token);
+      
+      // Stocker les infos du tenant si présentes
+      if (tenant) {
+        setItem('tenant', JSON.stringify(tenant));
+        setTenant(tenant); // Mettre à jour le state React
+      }
+      
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      setUser(finalUserData);
+      
+      // Initialiser les notifications push pour les utilisateurs non-super-admin
+      if (!isSuperAdmin && tenantSlug && finalUserData?.id) {
+        try {
+          await PushNotificationService.initialize(tenantSlug, finalUserData.id);
+          console.log('✅ Push notifications initialized');
+        } catch (error) {
+          console.error('⚠️ Push notifications initialization failed:', error);
+          // Ne pas bloquer la connexion si les notifications échouent
+        }
+      }
+      
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Erreur de connexion' 
+      };
+    }
+  };
+
+  const logout = () => {
+    // Désenregistrer les notifications push
+    PushNotificationService.unregister().catch(err => 
+      console.error('Error unregistering push notifications:', err)
+    );
+    
+    // Nettoyer uniquement les données du tenant actuel (pas tous les tenants)
+    removeItem('token');
+    removeItem('tenant');
+    removeItem('user');
+    removeItem('current_inspection_id');
+    removeItem('detail_inspection_id');
+    
+    // Supprimer le header Authorization d'axios
+    delete axios.defaults.headers.common['Authorization'];
+    
+    // Réinitialiser l'état utilisateur
+    setUser(null);
+    setTenant(null);
+    
+    // Forcer le rafraîchissement de la page pour éviter les problèmes de cache
+    setTimeout(() => {
+      window.location.href = window.location.origin + window.location.pathname;
+    }, 100);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, tenant, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// ForgotPassword Component
+const ForgotPassword = ({ onBack }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API}/${tenantSlug}/auth/forgot-password`, {
+        email
+      });
+
+      setEmailSent(true);
+      toast({
+        title: "Email envoyé",
+        description: "Si cet email existe, vous recevrez un lien de réinitialisation.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Une erreur est survenue",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (emailSent) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Email envoyé ✅</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Si cet email existe dans notre système, vous recevrez un lien de réinitialisation dans quelques instants.
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                Vérifiez votre boîte de réception et vos courriers indésirables.
+              </p>
+              <Button 
+                onClick={onBack}
+                className="w-full"
+                variant="outline"
+              >
+                Retour à la connexion
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <div className="logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <h1>ProFireManager</h1>
+            <p className="version">v2.0 Avancé</p>
+          </div>
+        </div>
+        
+        <Card className="login-card">
+          <CardHeader>
+            <CardTitle>Mot de passe oublié</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Nous vous enverrons un lien pour réinitialiser votre mot de passe.
+                </p>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
+              </Button>
+              <Button 
+                type="button"
+                onClick={onBack}
+                className="w-full"
+                variant="outline"
+              >
+                Retour à la connexion
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ResetPassword Component
+const ResetPassword = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [tokenValid, setTokenValid] = useState(null);
+  const [email, setEmail] = useState('');
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  
+  // Extraire le token de l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+
+  useEffect(() => {
+    // Vérifier la validité du token au chargement
+    const verifyToken = async () => {
+      if (!token) {
+        setTokenValid(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API}/${tenantSlug}/auth/verify-reset-token/${token}`);
+        setTokenValid(true);
+        setEmail(response.data.email);
+      } catch (error) {
+        setTokenValid(false);
+        toast({
+          title: "Token invalide",
+          description: error.response?.data?.detail || "Ce lien est invalide ou a expiré",
+          variant: "destructive"
+        });
+      }
+    };
+
+    verifyToken();
+  }, [token, tenantSlug]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 8 caractères",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await axios.post(`${API}/${tenantSlug}/auth/reset-password`, {
+        token,
+        nouveau_mot_de_passe: password
+      });
+
+      setSuccess(true);
+      toast({
+        title: "Succès",
+        description: "Votre mot de passe a été réinitialisé avec succès",
+      });
+
+      // Rediriger vers la page de connexion après 3 secondes
+      setTimeout(() => {
+        window.location.href = `/${tenantSlug}`;
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Une erreur est survenue",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (tokenValid === null) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="loading-spinner"></div>
+            <p>Vérification du lien...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tokenValid === false) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Lien invalide ❌</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Ce lien de réinitialisation est invalide ou a expiré.
+              </p>
+              <Button 
+                onClick={() => window.location.href = `/${tenantSlug}`}
+                className="w-full"
+              >
+                Retour à la connexion
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="logo">
+              <div className="logo-flame">
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+              <h1>ProFireManager</h1>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+          
+          <Card className="login-card">
+            <CardHeader>
+              <CardTitle>Mot de passe réinitialisé ✅</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                Votre mot de passe a été réinitialisé avec succès.
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                Vous allez être redirigé vers la page de connexion...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <div className="logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <h1>ProFireManager</h1>
+            <p className="version">v2.0 Avancé</p>
+          </div>
+        </div>
+        
+        <Card className="login-card">
+          <CardHeader>
+            <CardTitle>Nouveau mot de passe</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Email: <strong>{email}</strong>
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="password">Nouveau mot de passe</Label>
+                <div style={{position: 'relative'}}>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{paddingRight: '40px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.2rem'
+                    }}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// Login Component
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [motDePasse, setMotDePasse] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const { login } = useAuth();
+  const { toast } = useToast();
+
+  if (showForgotPassword) {
+    return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const result = await login(email, motDePasse);
+    
+    if (!result.success) {
+      toast({
+        title: "Erreur de connexion",
+        description: result.error,
+        variant: "destructive"
+      });
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <div className="logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <h1>ProFireManager</h1>
+            <p className="version">v2.0 Avancé</p>
+          </div>
+        </div>
+        
+        <Card className="login-card">
+          <CardHeader>
+            <CardTitle>Connexion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="username email"
+                  data-testid="login-email-input"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Mot de passe</Label>
+                <div style={{position: 'relative'}}>
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={motDePasse}
+                    onChange={(e) => setMotDePasse(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    data-testid="login-password-input"
+                    style={{paddingRight: '40px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.2rem'
+                    }}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+                data-testid="login-submit-btn"
+              >
+                {loading ? 'Connexion...' : 'Se connecter'}
+              </Button>
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// Sidebar Navigation avec menu hamburger mobile
+const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
+  const { user, tenant: authTenant, logout } = useAuth();
+
+  const { tenantSlug } = useTenant();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showRemplacementModal, setShowRemplacementModal] = useState(false);
+  const [selectedDemandeRemplacement, setSelectedDemandeRemplacement] = useState(null);
+  const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
+
+  // Charger les notifications
+  const loadNotifications = async () => {
+    if (!tenantSlug || !user) return;
+    
+    // Ne charger les notifications que pour les utilisateurs non-employés
+    if (user.role === 'employe') return;
+    
+    try {
+      const notificationsData = await apiGet(tenantSlug, '/notifications');
+      setNotifications(notificationsData);
+      
+      const countData = await apiGet(tenantSlug, '/notifications/non-lues/count');
+      setUnreadCount(countData.count);
+    } catch (error) {
+      console.error('Erreur chargement notifications:', error);
+    }
+  };
+
+  // Charger au montage et toutes les 30 secondes
+  useEffect(() => {
+    if (user) {
+      loadNotifications();
+      const interval = setInterval(loadNotifications, 30000); // 30 secondes
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Ouvrir le modal de détails de demande de remplacement
+  const openRemplacementModal = async (demande_id) => {
+    try {
+      const demande = await apiGet(tenantSlug, `/remplacements/${demande_id}`);
+      setSelectedDemandeRemplacement(demande);
+      setRemplacementCommentaire('');
+      setShowRemplacementModal(true);
+    } catch (error) {
+      console.error('Erreur chargement demande:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les détails de la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Accepter une demande de remplacement
+  const handleAccepterRemplacement = async () => {
+    if (!selectedDemandeRemplacement) return;
+    
+    try {
+      await apiPost(
+        tenantSlug,
+        `/remplacements/${selectedDemandeRemplacement.id}/accepter`,
+        { commentaire: remplacementCommentaire }
+      );
+      
+      toast({
+        title: "✅ Remplacement accepté",
+        description: "Vous avez été assigné à cette garde. Le demandeur a été notifié.",
+      });
+      
+      setShowRemplacementModal(false);
+      setSelectedDemandeRemplacement(null);
+      loadNotifications();
+      
+    } catch (error) {
+      console.error('Erreur acceptation remplacement:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'accepter la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Refuser une demande de remplacement
+  const handleRefuserRemplacement = async () => {
+    if (!selectedDemandeRemplacement) return;
+    
+    try {
+      await apiPost(
+        tenantSlug,
+        `/remplacements/${selectedDemandeRemplacement.id}/refuser`,
+        { raison: remplacementCommentaire || "Non disponible" }
+      );
+      
+      toast({
+        title: "Demande refusée",
+        description: "Le demandeur a été notifié de votre refus.",
+      });
+      
+      setShowRemplacementModal(false);
+      setSelectedDemandeRemplacement(null);
+      loadNotifications();
+      
+    } catch (error) {
+      console.error('Erreur refus remplacement:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de refuser la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Jouer un son quand il y a de nouvelles notifications
+  useEffect(() => {
+    if (unreadCount > 0) {
+      // Son de notification (vous pouvez personnaliser)
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZjTkIHGy57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3Qt');
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    }
+  }, [unreadCount]);
+
+  const marquerCommeLue = async (notifId) => {
+    try {
+      await apiPut(tenantSlug, `/notifications/${notifId}/marquer-lu`, {});
+      loadNotifications();
+    } catch (error) {
+      console.error('Erreur marquage notification:', error);
+    }
+  };
+
+  const marquerToutesLues = async () => {
+    try {
+      await apiPut(tenantSlug, '/notifications/marquer-toutes-lues', {});
+      loadNotifications();
+    } catch (error) {
+      console.error('Erreur marquage toutes notifications:', error);
+    }
+  };
+
+  const menuItems = [
+    { id: 'dashboard', label: 'Tableau de bord', icon: '📊', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'personnel', label: 'Personnel', icon: '👥', roles: ['admin', 'superviseur'] },
+    { id: 'epi', label: 'EPI', icon: '🛡️', roles: ['admin', 'superviseur'] },
+    { id: 'planning', label: 'Planning', icon: '📅', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'] },  // Supprimé requiresModule temporairement
+    { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
+    { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
+    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe'] }
+  ];
+
+  const filteredMenuItems = menuItems.filter(item => {
+    // Vérification du rôle seulement
+    if (!item.roles.includes(user?.role)) return false;
+    
+    // Vérifier si c'est le module "Mes disponibilités" qui ne doit être visible que pour les utilisateurs temps partiel
+    if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') {
+      return false;
+    }
+    
+    // Vérifier si c'est le module "Prévention" et s'il est activé pour ce tenant
+    if (item.id === 'prevention' && !authTenant?.parametres?.module_prevention_active) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  return (
+    <>
+      {/* Notification bell icon */}
+      <div className="notification-bell-container">
+        <button 
+          className="notification-bell"
+          onClick={() => setShowNotifications(!showNotifications)}
+          data-testid="notification-bell"
+        >
+          <i className="fas fa-bell"></i>
+          {unreadCount > 0 && (
+            <span className="notification-badge">{unreadCount}</span>
+          )}
+        </button>
+
+        {/* Dropdown des notifications */}
+        {showNotifications && (
+          <div className="notifications-dropdown">
+            <div className="notifications-header">
+              <h3>Notifications</h3>
+              {unreadCount > 0 && (
+                <button onClick={marquerToutesLues} className="mark-all-read">
+                  Tout marquer comme lu
+                </button>
+              )}
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length === 0 ? (
+                <div className="no-notifications">
+                  <i className="fas fa-inbox"></i>
+                  <p>Aucune notification</p>
+                </div>
+              ) : (
+                notifications.map(notif => (
+                  <div 
+                    key={notif.id}
+                    className={`notification-item ${notif.statut === 'non_lu' ? 'unread' : ''}`}
+                  >
+                    <div 
+                      onClick={() => {
+                        marquerCommeLue(notif.id);
+                        if (notif.type === 'remplacement_disponible' && notif.data?.demande_id) {
+                          // Ouvrir le modal de remplacement
+                          openRemplacementModal(notif.data.demande_id);
+                          setShowNotifications(false);
+                        } else if (notif.lien) {
+                          setCurrentPage(notif.lien.replace(/^\/[^\/]+\//, ''));
+                          setShowNotifications(false);
+                        }
+                      }}
+                      style={{ cursor: 'pointer', flex: 1 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <div className="notification-icon">
+                          {notif.type === 'remplacement_demande' && '🔄'}
+                          {notif.type === 'remplacement_disponible' && '🔔'}
+                          {notif.type === 'remplacement_accepte' && '✅'}
+                          {notif.type === 'remplacement_pourvu' && 'ℹ️'}
+                          {notif.type === 'conge_approuve' && '✅'}
+                          {notif.type === 'conge_refuse' && '❌'}
+                          {notif.type === 'conge_demande' && '📝'}
+                          {notif.type === 'planning_assigne' && '📅'}
+                        </div>
+                        <div className="notification-content" style={{ flex: 1 }}>
+                          <h4>{notif.titre}</h4>
+                          <p>{notif.message}</p>
+                          <span className="notification-time">
+                            {new Date(notif.date_creation).toLocaleString('fr-FR')}
+                          </span>
+                          
+                          {/* Boutons d'action pour remplacement disponible */}
+                          {notif.type === 'remplacement_disponible' && notif.data?.demande_id && (
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '8px', 
+                              marginTop: '10px',
+                              paddingTop: '10px',
+                              borderTop: '1px solid #e5e7eb'
+                            }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openRemplacementModal(notif.data.demande_id);
+                                  setShowNotifications(false);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 12px',
+                                  background: '#10b981',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✅ Accepter
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openRemplacementModal(notif.data.demande_id);
+                                  setShowNotifications(false);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 12px',
+                                  background: '#6b7280',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📋 Voir détails
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {notif.statut === 'non_lu' && (
+                          <div className="notification-dot"></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile hamburger button */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        data-testid="mobile-menu-toggle"
+      >
+        <span className="hamburger-line"></span>
+        <span className="hamburger-line"></span>
+        <span className="hamburger-line"></span>
+      </button>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
+
+      <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="logo-flame">
+              <div className="flame-container">
+                <i className="fas fa-fire flame-icon"></i>
+              </div>
+            </div>
+            <div>
+              <h2>ProFireManager</h2>
+              <p className="version">v2.0 Avancé</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {filteredMenuItems.map(item => (
+            <button
+              key={item.id}
+              className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentPage(item.id);
+                setIsMobileMenuOpen(false); // Fermer menu mobile après clic
+              }}
+              data-testid={`nav-${item.id}-btn`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-user">
+          <div className="user-info">
+            <div className="user-avatar">
+              <span className="user-icon">👤</span>
+            </div>
+            <div className="user-details">
+              <p className="user-name">{user?.prenom} {user?.nom}</p>
+              <p className="user-role">{user?.role === 'admin' ? 'Administrateur' : 
+                                      user?.role === 'superviseur' ? 'Superviseur' : 'Employé'}</p>
+              <p className="user-grade">{user?.grade}</p>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            onClick={() => {
+              logout();
+              setIsMobileMenuOpen(false);
+            }}
+            className="logout-btn"
+            data-testid="logout-btn"
+          >
+            🚪 Déconnexion
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Module EPI Component - Vue différente selon le rôle
+
+
+// ==================== MODULE EPI NFPA 1851 - PHASE 1 ====================
+const ModuleEPI = ({ user }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('inventaire');
+  
+  // États inventaire
+  const [epis, setEpis] = useState([]);
+  const [selectedEPI, setSelectedEPI] = useState(null);
+  const [showEPIModal, setShowEPIModal] = useState(false);
+  const [selectedDemandeRemplacement, setSelectedDemandeRemplacement] = useState(null);
+  const [showRemplacementModal, setShowRemplacementModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  
+  const [epiForm, setEpiForm] = useState({
+    numero_serie: '',
+    type_epi: 'casque',
+    marque: '',
+    modele: '',
+    numero_serie_fabricant: '',
+    date_fabrication: '',
+    date_mise_en_service: new Date().toISOString().split('T')[0],
+    norme_certification: 'NFPA 1971',
+    cout_achat: 0,
+    couleur: '',
+    taille: '',
+    user_id: '',
+    statut: 'En service',
+    notes: ''
+  });
+  
+  // États inspections
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [typeInspection, setTypeInspection] = useState('apres_utilisation');
+  const [inspections, setInspections] = useState([]);
+  const [inspectionForm, setInspectionForm] = useState({
+    date_inspection: new Date().toISOString().split('T')[0],
+    inspecteur_nom: '',
+    inspecteur_id: '',
+    isp_id: '',
+    isp_nom: '',
+    isp_accreditations: '',
+    statut_global: 'conforme',
+    checklist: {},
+    commentaires: ''
+  });
+  
+  // États ISP
+  const [isps, setIsps] = useState([]);
+  const [showISPModal, setShowISPModal] = useState(false);
+  const [selectedISP, setSelectedISP] = useState(null);
+  const [ispForm, setIspForm] = useState({
+    nom: '',
+    contact: '',
+    telephone: '',
+    email: '',
+    accreditations: '',
+    notes: ''
+  });
+  
+  // États demandes de remplacement EPI
+  const [demandesRemplacementEPI, setDemandesRemplacementEPI] = useState([]);
+  
+  // États rapports
+  const [rapportConformite, setRapportConformite] = useState(null);
+  const [rapportEcheances, setRapportEcheances] = useState(null);
+  
+  // États Phase 2 - Nettoyages
+  const [nettoyages, setNettoyages] = useState([]);
+  const [showNettoyageModal, setShowNettoyageModal] = useState(false);
+  const [nettoyageForm, setNettoyageForm] = useState({
+    type_nettoyage: 'routine',
+    date_nettoyage: new Date().toISOString().split('T')[0],
+    methode: 'laveuse_extractrice',
+    effectue_par: '',
+    effectue_par_id: user?.id || '',
+    isp_id: '',
+    nombre_cycles: 1,
+    temperature: '',
+    produits_utilises: '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Réparations
+  const [reparations, setReparations] = useState([]);
+  const [showReparationModal, setShowReparationModal] = useState(false);
+  const [selectedReparation, setSelectedReparation] = useState(null);
+  const [reparationForm, setReparationForm] = useState({
+    statut: 'demandee',
+    date_demande: new Date().toISOString().split('T')[0],
+    demandeur: user ? `${user.prenom} ${user.nom}` : '',
+    demandeur_id: user?.id || '',
+    reparateur_type: 'interne',
+    reparateur_nom: '',
+    isp_id: '',
+    probleme_description: '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Retrait
+  const [showRetraitModal, setShowRetraitModal] = useState(false);
+  const [retraitForm, setRetraitForm] = useState({
+    date_retrait: new Date().toISOString().split('T')[0],
+    raison: 'age_limite',
+    description_raison: '',
+    methode_disposition: 'coupe_detruit',
+    preuve_disposition: [],
+    certificat_disposition_url: '',
+    cout_disposition: 0,
+    retire_par: user ? `${user.prenom} ${user.nom}` : '',
+    retire_par_id: user?.id || '',
+    notes: ''
+  });
+  
+  // États Phase 2 - Rapports avancés
+  const [rapportRetraits, setRapportRetraits] = useState(null);
+  const [rapportTCO, setRapportTCO] = useState(null);
+  
+  // Types EPI
+  const typesEPI = [
+    { id: 'casque', nom: 'Casque', icone: '🪖' },
+    { id: 'bottes', nom: 'Bottes', icone: '👢' },
+    { id: 'veste_bunker', nom: 'Manteau Habit de Combat', icone: '🧥' },
+    { id: 'pantalon_bunker', nom: 'Pantalon Habit de Combat', icone: '👖' },
+    { id: 'gants', nom: 'Gants', icone: '🧤' },
+    { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+  ];
+  
+  // Checklists NFPA 1851
+  const getChecklistTemplate = (type) => {
+    if (type === 'apres_utilisation') {
+      return {
+        propre: 'oui',
+        degradation_visible: 'non',
+        fermetures_fonctionnelles: 'oui',
+        bandes_reflechissantes_intactes: 'oui'
+      };
+    } else if (type === 'routine_mensuelle') {
+      return {
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: 'non',
+        dommages_chimiques: 'non',
+        dommages_mecaniques: 'non',
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon'
+      };
+    } else {
+      return {
+        etat_coutures: 'bon',
+        fermetures_eclair: 'bon',
+        bandes_reflechissantes: 'bon',
+        usure_generale: 'bon',
+        dommages_thermiques: 'non',
+        dommages_chimiques: 'non',
+        dommages_mecaniques: 'non',
+        integrite_coque: 'bon',
+        etat_doublure: 'bon',
+        barriere_humidite: 'bon',
+        quincaillerie: 'bon',
+        ajustement_mobilite: 'bon',
+        inspection_detaillee_doublure: 'bon',
+        separation_doublure: 'non',
+        bulles_delamination: 'non',
+        coutures_cachees: 'bon',
+        test_ajustement_complet: 'bon',
+        condition_etiquettes: 'bon'
+      };
+    }
+  };
+  
+  useEffect(() => {
+    if (tenantSlug && user) {
+      loadData();
+      setInspectionForm(prev => ({
+        ...prev,
+        inspecteur_nom: `${user?.prenom || ''} ${user?.nom || ''}`,
+        inspecteur_id: user?.id || ''
+      }));
+    }
+  }, [tenantSlug, user]);
+  
+  useEffect(() => {
+    if (activeTab === 'rapports' && tenantSlug) {
+      loadRapports();
+    }
+  }, [activeTab, tenantSlug]);
+  
+  useEffect(() => {
+    if (activeTab === 'demandes') {
+      loadDemandesRemplacementEPI();
+    }
+  }, [activeTab]);
+  
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [episData, ispsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/epi'),
+        apiGet(tenantSlug, '/isp'),
+        apiGet(tenantSlug, '/users')
+      ]);
+      setEpis(episData || []);
+      setIsps(ispsData || []);
+      setUsers(usersData || []);
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    }
+    setLoading(false);
+  };
+  
+  const loadRapports = async () => {
+    try {
+      const [conformite, echeances, retraits, tco] = await Promise.all([
+        apiGet(tenantSlug, '/epi/rapports/conformite'),
+        apiGet(tenantSlug, '/epi/rapports/echeances?jours=30'),
+        apiGet(tenantSlug, '/epi/rapports/retraits-prevus?mois=12'),
+        apiGet(tenantSlug, '/epi/rapports/cout-total')
+      ]);
+      setRapportConformite(conformite);
+      setRapportEcheances(echeances);
+      setRapportRetraits(retraits);
+      setRapportTCO(tco);
+    } catch (error) {
+      console.error('Erreur rapports:', error);
+    }
+  };
+  
+  const loadDemandesRemplacementEPI = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/epi/demandes-remplacement');
+      setDemandesRemplacementEPI(data || []);
+    } catch (error) {
+      console.error('Erreur chargement demandes:', error);
+    }
+  };
+  
+  const loadInspections = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/inspections`);
+      setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur inspections:', error);
+    }
+  };
+  
+  // Phase 2 - Charger nettoyages
+  const loadNettoyages = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/nettoyages`);
+      setNettoyages(data || []);
+    } catch (error) {
+      console.error('Erreur nettoyages:', error);
+    }
+  };
+  
+  // Phase 2 - Charger réparations
+  const loadReparations = async (epiId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/epi/${epiId}/reparations`);
+      setReparations(data || []);
+    } catch (error) {
+      console.error('Erreur réparations:', error);
+    }
+  };
+  
+  // CRUD EPI
+  const handleSaveEPI = async () => {
+    try {
+      if (selectedEPI) {
+        await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, epiForm);
+        toast({ title: "Succès", description: "EPI modifié" });
+      } else {
+        await apiPost(tenantSlug, '/epi', epiForm);
+        toast({ title: "Succès", description: "EPI créé" });
+      }
+      setShowEPIModal(false);
+      loadData();
+      resetEPIForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteEPI = async (epiId) => {
+    if (!window.confirm('Supprimer cet EPI ?')) return;
+    try {
+      await apiDelete(tenantSlug, `/epi/${epiId}`);
+      toast({ title: "Succès", description: "EPI supprimé" });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetEPIForm = () => {
+    setEpiForm({
+      numero_serie: '',
+      type_epi: 'casque',
+      marque: '',
+      modele: '',
+      numero_serie_fabricant: '',
+      date_fabrication: '',
+      date_mise_en_service: new Date().toISOString().split('T')[0],
+      norme_certification: 'NFPA 1971',
+      cout_achat: 0,
+      couleur: '',
+      taille: '',
+      user_id: '',
+      statut: 'En service',
+      notes: ''
+    });
+    setSelectedEPI(null);
+  };
+  
+  const openEditEPI = (epi) => {
+    setSelectedEPI(epi);
+    setEpiForm({
+      numero_serie: epi.numero_serie,
+      type_epi: epi.type_epi,
+      marque: epi.marque,
+      modele: epi.modele,
+      numero_serie_fabricant: epi.numero_serie_fabricant || '',
+      date_fabrication: epi.date_fabrication || '',
+      date_mise_en_service: epi.date_mise_en_service,
+      norme_certification: epi.norme_certification || 'NFPA 1971',
+      cout_achat: epi.cout_achat || 0,
+      couleur: epi.couleur || '',
+      taille: epi.taille || '',
+      user_id: epi.user_id || '',
+      statut: epi.statut,
+      notes: epi.notes || ''
+    });
+    setShowEPIModal(true);
+  };
+  
+  const openDetailEPI = async (epi) => {
+    setSelectedEPI(epi);
+    await Promise.all([
+      loadInspections(epi.id),
+      loadNettoyages(epi.id),
+      loadReparations(epi.id)
+    ]);
+    setShowDetailModal(true);
+  };
+  
+  // Inspections
+  const handleSaveInspection = async () => {
+    try {
+      const data = {
+        ...inspectionForm,
+        type_inspection: typeInspection,
+        checklist: getChecklistTemplate(typeInspection)
+      };
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/inspection`, data);
+      toast({ title: "Succès", description: "Inspection enregistrée" });
+      setShowInspectionModal(false);
+      loadInspections(selectedEPI.id);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // ISP
+  const handleSaveISP = async () => {
+    try {
+      if (selectedISP) {
+        await apiPut(tenantSlug, `/isp/${selectedISP.id}`, ispForm);
+        toast({ title: "Succès", description: "Fournisseur modifié" });
+      } else {
+        await apiPost(tenantSlug, '/isp', ispForm);
+        toast({ title: "Succès", description: "Fournisseur ajouté" });
+      }
+      setShowISPModal(false);
+      loadData();
+      resetISPForm();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteISP = async (ispId) => {
+    if (!window.confirm('Supprimer ce fournisseur ?')) return;
+    try {
+      await apiDelete(tenantSlug, `/isp/${ispId}`);
+      toast({ title: "Succès", description: "Fournisseur supprimé" });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const resetISPForm = () => {
+    setIspForm({
+      nom: '',
+      contact: '',
+      telephone: '',
+      email: '',
+      accreditations: '',
+      notes: ''
+    });
+    setSelectedISP(null);
+  };
+  
+  const openEditISP = (isp) => {
+    setSelectedISP(isp);
+    setIspForm({
+      nom: isp.nom,
+      contact: isp.contact || '',
+      telephone: isp.telephone || '',
+      email: isp.email || '',
+      accreditations: isp.accreditations || '',
+      notes: isp.notes || ''
+    });
+    setShowISPModal(true);
+  };
+
+  // Phase 2 - Handlers Nettoyage
+  const handleSaveNettoyage = async () => {
+    try {
+      const data = {
+        ...nettoyageForm,
+        effectue_par: nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`
+      };
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/nettoyage`, data);
+      toast({ title: "Succès", description: "Nettoyage enregistré" });
+      setShowNettoyageModal(false);
+      loadNettoyages(selectedEPI.id);
+      setNettoyageForm({
+        type_nettoyage: 'routine',
+        date_nettoyage: new Date().toISOString().split('T')[0],
+        methode: 'laveuse_extractrice',
+        effectue_par: '',
+        effectue_par_id: user?.id || '',
+        isp_id: '',
+        nombre_cycles: 1,
+        temperature: '',
+        produits_utilises: '',
+        notes: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Phase 2 - Handlers Réparation
+  const handleSaveReparation = async () => {
+    try {
+      if (selectedReparation) {
+        await apiPut(tenantSlug, `/epi/${selectedEPI.id}/reparation/${selectedReparation.id}`, reparationForm);
+        toast({ title: "Succès", description: "Réparation mise à jour" });
+      } else {
+        const data = {
+          ...reparationForm,
+          demandeur: reparationForm.demandeur || `${user?.prenom || ''} ${user?.nom || ''}`
+        };
+        await apiPost(tenantSlug, `/epi/${selectedEPI.id}/reparation`, data);
+        toast({ title: "Succès", description: "Réparation créée" });
+      }
+      setShowReparationModal(false);
+      loadReparations(selectedEPI.id);
+      setSelectedReparation(null);
+      setReparationForm({
+        statut: 'demandee',
+        date_demande: new Date().toISOString().split('T')[0],
+        demandeur: `${user?.prenom} ${user?.nom}` || '',
+        demandeur_id: user?.id || '',
+        reparateur_type: 'interne',
+        reparateur_nom: '',
+        isp_id: '',
+        probleme_description: '',
+        notes: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const openEditReparation = (reparation) => {
+    setSelectedReparation(reparation);
+    setReparationForm({
+      statut: reparation.statut,
+      date_demande: reparation.date_demande,
+      demandeur: reparation.demandeur,
+      demandeur_id: reparation.demandeur_id || '',
+      reparateur_type: reparation.reparateur_type,
+      reparateur_nom: reparation.reparateur_nom || '',
+      isp_id: reparation.isp_id || '',
+      probleme_description: reparation.probleme_description,
+      notes: reparation.notes || ''
+    });
+    setShowReparationModal(true);
+  };
+  
+  // Phase 2 - Handlers Retrait
+  const handleSaveRetrait = async () => {
+    try {
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/retrait`, retraitForm);
+      toast({ title: "Succès", description: "EPI retiré avec succès" });
+      setShowRetraitModal(false);
+      setShowDetailModal(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const getTypeIcon = (type) => typesEPI.find(t => t.id === type)?.icone || '🛡️';
+  const getTypeName = (type) => typesEPI.find(t => t.id === type)?.nom || type;
+  const getStatutColor = (statut) => {
+    const colors = {
+      'En service': '#10B981',
+      'En inspection': '#F59E0B',
+      'En réparation': '#EF4444',
+      'Hors service': '#DC2626',
+      'Retiré': '#6B7280'
+    };
+    return colors[statut] || '#6B7280';
+  };
+  
+  const getUserName = (userId) => {
+    const user = users.find(u => u.id === userId);
+    return user ? `${user.prenom} ${user.nom}` : 'Non assigné';
+  };
+  
+  if (loading) {
+    return (
+      <div className="module-container">
+        <div className="loading-spinner"></div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="module-epi-nfpa">
+      <div className="module-header">
+        <div>
+          <h1>🛡️ Gestion EPI - NFPA 1851</h1>
+          <p>Système complet de gestion des équipements de protection</p>
+        </div>
+      </div>
+      
+      {/* Onglets */}
+      <div className="epi-tabs">
+        <button 
+          className={activeTab === 'inventaire' ? 'active' : ''}
+          onClick={() => setActiveTab('inventaire')}
+        >
+          📦 Inventaire ({epis.length})
+        </button>
+        <button 
+          className={activeTab === 'demandes' ? 'active' : ''}
+          onClick={() => setActiveTab('demandes')}
+        >
+          🔄 Demandes de remplacement
+        </button>
+        <button 
+          className={activeTab === 'nettoyage' ? 'active' : ''}
+          onClick={() => setActiveTab('nettoyage')}
+        >
+          🧼 Nettoyage & Entretien
+        </button>
+        <button 
+          className={activeTab === 'reparations' ? 'active' : ''}
+          onClick={() => setActiveTab('reparations')}
+        >
+          🔧 Réparations
+        </button>
+        <button 
+          className={activeTab === 'isp' ? 'active' : ''}
+          onClick={() => setActiveTab('isp')}
+        >
+          🏢 Fournisseurs ISP ({isps.length})
+        </button>
+        <button 
+          className={activeTab === 'rapports' ? 'active' : ''}
+          onClick={() => setActiveTab('rapports')}
+        >
+          📊 Rapports
+        </button>
+      </div>
+      
+      {/* ONGLET INVENTAIRE */}
+      {activeTab === 'inventaire' && (
+        <div className="epi-inventaire">
+          <div className="inventaire-actions">
+            <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }}>
+              ➕ Nouvel EPI
+            </Button>
+          </div>
+          
+          <div className="epi-grid">
+            {epis.map(epi => (
+              <div key={epi.id} className="epi-card">
+                <div className="epi-card-header">
+                  <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
+                  <div>
+                    <h3>{getTypeName(epi.type_epi)}</h3>
+                    <p className="epi-numero">#{epi.numero_serie}</p>
+                  </div>
+                  <span 
+                    className="epi-statut-badge" 
+                    style={{ backgroundColor: getStatutColor(epi.statut) }}
+                  >
+                    {epi.statut}
+                  </span>
+                </div>
+                <div className="epi-card-body">
+                  <p><strong>Marque:</strong> {epi.marque}</p>
+                  <p><strong>Modèle:</strong> {epi.modele}</p>
+                  <p><strong>Assigné à:</strong> {getUserName(epi.user_id)}</p>
+                  <p><strong>Mise en service:</strong> {new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div className="epi-card-actions">
+                  <Button size="sm" variant="outline" onClick={() => openDetailEPI(epi)}>
+                    📋 Détails
+                  </Button>
+                  <Button size="sm" onClick={() => openEditEPI(epi)}>
+                    ✏️ Modifier
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteEPI(epi.id)}>
+                    🗑️
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {epis.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun EPI enregistré</p>
+              <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }}>
+                Créer le premier EPI
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* ONGLET DEMANDES DE REMPLACEMENT */}
+      {activeTab === 'demandes' && (
+        <div className="epi-demandes">
+          <div className="demandes-header">
+            <h2>🔄 Demandes de remplacement EPI</h2>
+            <p>Gérer les demandes de remplacement des employés</p>
+          </div>
+          
+          {/* Statistiques */}
+          <div className="demandes-stats">
+            <div className="stat-card">
+              <h3>{demandesRemplacementEPI.filter(d => d.statut === 'En attente').length}</h3>
+              <p>En attente</p>
+            </div>
+            <div className="stat-card">
+              <h3>{demandesRemplacementEPI.filter(d => d.statut === 'Approuvée').length}</h3>
+              <p>Approuvées</p>
+            </div>
+            <div className="stat-card">
+              <h3>{demandesRemplacementEPI.filter(d => d.statut === 'Refusée').length}</h3>
+              <p>Refusées</p>
+            </div>
+          </div>
+
+          {/* Liste des demandes */}
+          <div className="demandes-list">
+            {demandesRemplacementEPI.length === 0 ? (
+              <div className="empty-state">
+                <p>Aucune demande de remplacement</p>
+              </div>
+            ) : (
+              demandesRemplacementEPI.map(demande => {
+                const epi = epis.find(e => e.id === demande.epi_id);
+                const employe = users.find(u => u.id === demande.user_id);
+                
+                return (
+                  <div key={demande.id} className="demande-card">
+                    <div className="demande-header">
+                      <div className="demande-info">
+                        <h4>{epi ? `${getTypeIcon(epi.type_epi)} ${getTypeName(epi.type_epi)} - #${epi.numero_serie}` : 'EPI inconnu'}</h4>
+                        <p>Demandé par: <strong>{employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu'}</strong></p>
+                        <p>Date: {new Date(demande.date_demande).toLocaleDateString('fr-FR')} à {new Date(demande.date_demande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <span 
+                        className="demande-statut-badge" 
+                        style={{
+                          backgroundColor: 
+                            demande.statut === 'En attente' ? '#F59E0B' :
+                            demande.statut === 'Approuvée' ? '#10B981' :
+                            '#EF4444'
+                        }}
+                      >
+                        {demande.statut}
+                      </span>
+                    </div>
+                    
+                    <div className="demande-body">
+                      <p><strong>Raison:</strong> {demande.raison}</p>
+                      {demande.notes_employe && (
+                        <p><strong>Détails:</strong> {demande.notes_employe}</p>
+                      )}
+                      {demande.notes_admin && (
+                        <p><strong>Notes admin:</strong> {demande.notes_admin}</p>
+                      )}
+                    </div>
+
+                    {demande.statut === 'En attente' && (
+                      <div className="demande-actions">
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            setSelectedDemandeRemplacement(demande);
+                            setShowRemplacementModal(true);
+                          }}
+                        >
+                          ✅ Approuver & Remplacer
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={async () => {
+                            try {
+                              await apiPost(tenantSlug, `/epi/demandes-remplacement/${demande.id}/refuser`, {
+                                notes_admin: 'Demande refusée'
+                              });
+                              toast({ title: "Succès", description: "Demande refusée" });
+                              loadDemandesRemplacementEPI();
+                            } catch (error) {
+                              toast({ title: "Erreur", description: "Impossible de refuser la demande", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          ❌ Refuser
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ONGLET ISP */}
+      {activeTab === 'isp' && (
+        <div className="epi-isp">
+          <div className="isp-actions">
+            <Button onClick={() => { resetISPForm(); setShowISPModal(true); }}>
+              ➕ Nouveau Fournisseur
+            </Button>
+          </div>
+          
+          <div className="isp-list">
+            {isps.map(isp => (
+              <div key={isp.id} className="isp-card">
+                <div className="isp-header">
+                  <h3>🏢 {isp.nom}</h3>
+                </div>
+                <div className="isp-body">
+                  <p><strong>Contact:</strong> {isp.contact}</p>
+                  <p><strong>Téléphone:</strong> {isp.telephone}</p>
+                  <p><strong>Email:</strong> {isp.email}</p>
+                  <p><strong>Accréditations:</strong> {isp.accreditations || 'Aucune'}</p>
+                </div>
+                <div className="isp-actions">
+                  <Button size="sm" onClick={() => openEditISP(isp)}>
+                    ✏️ Modifier
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteISP(isp.id)}>
+                    🗑️
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {isps.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun fournisseur enregistré</p>
+              <Button onClick={() => { resetISPForm(); setShowISPModal(true); }}>
+                Ajouter un fournisseur
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      
+
+      {/* ONGLET NETTOYAGE & ENTRETIEN */}
+      {activeTab === 'nettoyage' && (
+        <div className="epi-nettoyage">
+          <div className="nettoyage-header">
+            <h2>🧼 Nettoyage & Entretien</h2>
+            <p>Suivi des nettoyages routines et avancés selon NFPA 1851</p>
+          </div>
+          
+          <div className="nettoyage-info-card">
+            <h3>📋 Exigences NFPA 1851</h3>
+            <ul>
+              <li><strong>Nettoyage Routine:</strong> Après chaque utilisation ou contamination visible</li>
+              <li><strong>Nettoyage Avancé:</strong> Au moins 2 fois par an minimum</li>
+              <li><strong>Méthode recommandée:</strong> Laveuse extractrice avec cycle programmable</li>
+              <li><strong>Température:</strong> Eau tiède maximum 40°C</li>
+              <li><strong>Séchage:</strong> À l'abri des UV</li>
+            </ul>
+          </div>
+          
+          <div className="nettoyage-list">
+            <h3>EPIs en nettoyage ({epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').length})</h3>
+            {epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').length === 0 ? (
+              <div className="empty-state">
+                <p>Aucun EPI en nettoyage actuellement</p>
+              </div>
+            ) : (
+              epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').map(epi => (
+                <div key={epi.id} className="nettoyage-epi-card">
+                  <div className="nettoyage-epi-header">
+                    <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</span>
+                    <span>#{epi.numero_serie}</span>
+                    <Button 
+                      size="sm"
+                      onClick={async () => {
+                        setSelectedEPI(epi);
+                        await loadNettoyages(epi.id);
+                        setShowNettoyageModal(true);
+                      }}
+                    >
+                      ➕ Ajouter nettoyage
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* ONGLET RÉPARATIONS */}
+      {activeTab === 'reparations' && (
+        <div className="epi-reparations">
+          <div className="reparations-header">
+            <h2>🔧 Gestion des Réparations</h2>
+            <p>Suivi des tickets de réparation et interventions</p>
+          </div>
+          
+          <div className="reparations-stats">
+            <div className="stat-card">
+              <h3>{epis.filter(e => e.statut === 'En réparation').length}</h3>
+              <p>En cours</p>
+            </div>
+          </div>
+          
+          <div className="reparations-list">
+            <h3>EPIs en réparation ({epis.filter(e => e.statut === 'En réparation').length})</h3>
+            {epis.filter(e => e.statut === 'En réparation').length === 0 ? (
+              <div className="empty-state">
+                <p>Aucun EPI en réparation actuellement</p>
+              </div>
+            ) : (
+              epis.filter(e => e.statut === 'En réparation').map(epi => (
+                <div key={epi.id} className="reparation-epi-card">
+                  <div className="reparation-epi-header">
+                    <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)} - #{epi.numero_serie}</span>
+                    <span className="epi-statut-badge" style={{backgroundColor: getStatutColor(epi.statut)}}>
+                      {epi.statut}
+                    </span>
+                    <Button 
+                      size="sm"
+                      onClick={async () => {
+                        setSelectedEPI(epi);
+                        await loadReparations(epi.id);
+                        setSelectedReparation(null);
+                        setShowReparationModal(true);
+                      }}
+                    >
+                      ➕ Nouvelle réparation
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ONGLET RAPPORTS */}
+      {activeTab === 'rapports' && !rapportConformite && (
+        <div className="epi-rapports">
+          <div className="loading-state" style={{textAlign: 'center', padding: '3rem'}}>
+            <p>Chargement des rapports...</p>
+          </div>
+        </div>
+      )}
+      
+      {activeTab === 'rapports' && rapportConformite && (
+        <div className="epi-rapports">
+          {/* Filtres et Exports */}
+          <div className="rapports-controls">
+            <div className="filtres-section">
+                  <h3>🔍 Filtres</h3>
+                  <div className="filtres-grid">
+                    <div>
+                      <Label>Employé</Label>
+                      <select className="form-select">
+                        <option value="">Tous les employés</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <Label>Type d'EPI</Label>
+                      <select className="form-select">
+                        <option value="">Tous les types</option>
+                        {typesEPI.map(t => (
+                          <option key={t.id} value={t.id}>{t.icone} {t.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <Label>Date début</Label>
+                      <Input type="date" />
+                    </div>
+                    
+                    <div>
+                      <Label>Date fin</Label>
+                      <Input type="date" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="exports-section">
+                  <h3>📥 Exporter</h3>
+                  <div className="exports-buttons">
+                    <Button variant="outline">
+                      📄 Export PDF
+                    </Button>
+                    <Button variant="outline">
+                      📊 Export Excel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <h2>📊 Rapport de Conformité Générale</h2>
+              <div className="rapport-stats">
+            <div className="stat-card">
+              <h3>{rapportConformite.total}</h3>
+              <p>Total EPI</p>
+            </div>
+            <div className="stat-card" style={{background: '#D1FAE5'}}>
+              <h3>{rapportConformite.en_service}</h3>
+              <p>En service</p>
+            </div>
+            <div className="stat-card" style={{background: '#FEF3C7'}}>
+              <h3>{rapportConformite.en_inspection}</h3>
+              <p>En inspection</p>
+            </div>
+            <div className="stat-card" style={{background: '#FEE2E2'}}>
+              <h3>{rapportConformite.en_reparation}</h3>
+              <p>En réparation</p>
+            </div>
+          </div>
+          
+          <h2 style={{marginTop: '2rem'}}>📅 Échéances d'Inspection (30 jours)</h2>
+          {rapportEcheances && rapportEcheances.echeances.length > 0 ? (
+            <div className="echeances-list">
+              {rapportEcheances.echeances.map(epi => (
+                <div key={epi.id} className="echeance-card">
+                  <div>
+                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <p>#{epi.numero_serie}</p>
+                  </div>
+                  <div>
+                    <span className={`jours-badge ${epi.jours_restants <= 7 ? 'urgent' : ''}`}>
+                      {epi.jours_restants} jours restants
+                    </span>
+                    <p>Type: {epi.type_inspection_requise.replace('_', ' ')}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>Aucune échéance dans les 30 prochains jours</p>
+          )}
+          
+          {/* Rapport Retraits Prévus - Phase 2 */}
+          <h2 style={{marginTop: '3rem'}}>⏰ EPI à Retirer Prochainement (12 mois)</h2>
+          {rapportRetraits && rapportRetraits.epis && rapportRetraits.epis.length > 0 ? (
+            <div className="retraits-list">
+              {rapportRetraits.epis.map(epi => (
+                <div key={epi.id} className="retrait-card">
+                  <div>
+                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <p>#{epi.numero_serie} - {epi.marque} {epi.modele}</p>
+                  </div>
+                  <div>
+                    <span className="age-badge">
+                      Âge: {epi.age_annees} ans
+                    </span>
+                    <span className={`jours-badge ${epi.jours_avant_limite <= 90 ? 'urgent' : ''}`}>
+                      {epi.jours_avant_limite} jours avant limite
+                    </span>
+                    <p style={{fontSize: '0.85rem', color: '#666', marginTop: '0.5rem'}}>
+                      Limite: {new Date(epi.date_limite_prevue).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>Aucun EPI à retirer dans les 12 prochains mois</p>
+          )}
+          
+          {/* Rapport TCO - Phase 2 */}
+          <h2 style={{marginTop: '3rem'}}>💰 Coût Total de Possession (TCO)</h2>
+          {rapportTCO && rapportTCO.epis && (
+            <>
+              <div className="tco-summary" style={{marginBottom: '1.5rem'}}>
+                <div className="stat-card">
+                  <h3>{rapportTCO.total_epis}</h3>
+                  <p>Total EPI</p>
+                </div>
+                <div className="stat-card">
+                  <h3>{rapportTCO.cout_total_flotte.toFixed(2)} $</h3>
+                  <p>Coût Total Flotte</p>
+                </div>
+                <div className="stat-card">
+                  <h3>{rapportTCO.cout_moyen_par_epi.toFixed(2)} $</h3>
+                  <p>Coût Moyen/EPI</p>
+                </div>
+              </div>
+              
+              <div className="tco-list">
+                {rapportTCO.epis.slice(0, 10).map(epi => (
+                  <div key={epi.id} className="tco-card">
+                    <div>
+                      <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                      <p>#{epi.numero_serie}</p>
+                    </div>
+                    <div className="tco-details">
+                      <p><strong>Achat:</strong> {epi.cout_achat} $</p>
+                      <p><strong>Nettoyages:</strong> {epi.cout_nettoyages} $ ({epi.nombre_nettoyages}x)</p>
+                      <p><strong>Réparations:</strong> {epi.cout_reparations} $ ({epi.nombre_reparations}x)</p>
+                      <p style={{fontWeight: 'bold', color: '#1F2937', marginTop: '0.5rem'}}>
+                        Total: {epi.cout_total.toFixed(2)} $
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      
+      {/* MODAL EPI */}
+      {showEPIModal && (
+        <div className="modal-overlay" onClick={() => setShowEPIModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedEPI ? 'Modifier EPI' : 'Nouvel EPI'}</h2>
+              <Button variant="ghost" onClick={() => setShowEPIModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Numéro de série interne (optionnel)</Label>
+                  <Input 
+                    value={epiForm.numero_serie}
+                    onChange={e => setEpiForm({...epiForm, numero_serie: e.target.value})}
+                    placeholder="Généré automatiquement si vide (Ex: EPI-2025-0001)"
+                  />
+                  <small style={{display: 'block', marginTop: '4px', color: '#666'}}>
+                    Laissez vide pour génération automatique
+                  </small>
+                </div>
+                
+                <div>
+                  <Label>Type d'EPI *</Label>
+                  <select 
+                    className="form-select"
+                    value={epiForm.type_epi}
+                    onChange={e => setEpiForm({...epiForm, type_epi: e.target.value})}
+                  >
+                    {typesEPI.map(t => (
+                      <option key={t.id} value={t.id}>{t.icone} {t.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Marque *</Label>
+                  <Input 
+                    value={epiForm.marque}
+                    onChange={e => setEpiForm({...epiForm, marque: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Modèle *</Label>
+                  <Input 
+                    value={epiForm.modele}
+                    onChange={e => setEpiForm({...epiForm, modele: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>N° série fabricant</Label>
+                  <Input 
+                    value={epiForm.numero_serie_fabricant}
+                    onChange={e => setEpiForm({...epiForm, numero_serie_fabricant: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Date fabrication</Label>
+                  <Input 
+                    type="date"
+                    value={epiForm.date_fabrication}
+                    onChange={e => setEpiForm({...epiForm, date_fabrication: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Date mise en service *</Label>
+                  <Input 
+                    type="date"
+                    value={epiForm.date_mise_en_service}
+                    onChange={e => setEpiForm({...epiForm, date_mise_en_service: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Norme certification</Label>
+                  <Input 
+                    value={epiForm.norme_certification}
+                    onChange={e => setEpiForm({...epiForm, norme_certification: e.target.value})}
+                    placeholder="Ex: NFPA 1971, édition 2018"
+                  />
+                </div>
+                
+                <div>
+                  <Label>Coût d'achat</Label>
+                  <Input 
+                    type="number"
+                    value={epiForm.cout_achat}
+                    onChange={e => setEpiForm({...epiForm, cout_achat: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Couleur</Label>
+                  <Input 
+                    value={epiForm.couleur}
+                    onChange={e => setEpiForm({...epiForm, couleur: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Taille</Label>
+                  <Input 
+                    value={epiForm.taille}
+                    onChange={e => setEpiForm({...epiForm, taille: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Assigné à</Label>
+                  <select 
+                    className="form-select"
+                    value={epiForm.user_id}
+                    onChange={e => setEpiForm({...epiForm, user_id: e.target.value})}
+                  >
+                    <option value="">Non assigné</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Statut *</Label>
+                  <select 
+                    className="form-select"
+                    value={epiForm.statut}
+                    onChange={e => setEpiForm({...epiForm, statut: e.target.value})}
+                  >
+                    <option>En service</option>
+                    <option>En inspection</option>
+                    <option>En réparation</option>
+                    <option>Hors service</option>
+                    <option>Retiré</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={epiForm.notes}
+                  onChange={e => setEpiForm({...epiForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowEPIModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveEPI}>
+                {selectedEPI ? 'Modifier' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL APPROBATION REMPLACEMENT EPI */}
+      {showRemplacementModal && selectedDemandeRemplacement && (
+        <div className="modal-overlay" onClick={() => setShowRemplacementModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>✅ Approuver & Remplacer l'EPI</h3>
+              <Button variant="ghost" onClick={() => setShowRemplacementModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              {(() => {
+                const epi = epis.find(e => e.id === selectedDemandeRemplacement.epi_id);
+                const employe = users.find(u => u.id === selectedDemandeRemplacement.user_id);
+                
+                return (
+                  <>
+                    <div style={{ backgroundColor: '#fef3c7', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                      <strong>📋 Demande de remplacement :</strong>
+                      <p style={{ marginTop: '0.5rem' }}>
+                        <strong>EPI actuel :</strong> {epi ? `${getTypeName(epi.type_epi)} - #${epi.numero_serie}` : 'Inconnu'}<br/>
+                        <strong>Employé :</strong> {employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu'}<br/>
+                        <strong>Raison :</strong> {selectedDemandeRemplacement.raison}
+                      </p>
+                    </div>
+
+                    <h4 style={{ marginBottom: '1rem' }}>🆕 Informations du nouvel EPI</h4>
+                    
+                    <div className="form-group">
+                      <Label>Numéro de série *</Label>
+                      <Input 
+                        id="nouveau-numero-serie"
+                        placeholder="Ex: NS-2025-001"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Marque</Label>
+                      <Input 
+                        id="nouvelle-marque"
+                        placeholder="Ex: MSA, Honeywell..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Modèle</Label>
+                      <Input 
+                        id="nouveau-modele"
+                        placeholder="Ex: G1 SCBA, Cairns 1010..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Taille</Label>
+                      <Input 
+                        id="nouvelle-taille"
+                        defaultValue={epi?.taille || ''}
+                        placeholder="Ex: M, L, XL..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Date de mise en service *</Label>
+                      <Input 
+                        type="date"
+                        id="nouvelle-date-service"
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Notes admin</Label>
+                      <textarea 
+                        id="notes-admin-remplacement"
+                        className="form-control"
+                        rows="3"
+                        placeholder="Notes sur le remplacement..."
+                        defaultValue="Remplacement approuvé et nouvel EPI attribué"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <Label>Que faire avec l'ancien EPI ? *</Label>
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', cursor: 'pointer' }}>
+                          <input 
+                            type="radio" 
+                            name="action-ancien-epi" 
+                            value="garder"
+                            defaultChecked
+                            style={{ marginRight: '0.5rem' }}
+                          />
+                          Garder en historique (statut "Retiré")
+                        </label>
+                        <label style={{ display: 'block', cursor: 'pointer' }}>
+                          <input 
+                            type="radio" 
+                            name="action-ancien-epi" 
+                            value="supprimer"
+                            style={{ marginRight: '0.5rem' }}
+                          />
+                          Supprimer complètement de la base de données
+                        </label>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowRemplacementModal(false)}>Annuler</Button>
+              <Button onClick={async () => {
+                try {
+                  const nouveauNumeroSerie = document.getElementById('nouveau-numero-serie').value;
+                  const nouvelleMarque = document.getElementById('nouvelle-marque').value;
+                  const nouveauModele = document.getElementById('nouveau-modele').value;
+                  const nouvelleTaille = document.getElementById('nouvelle-taille').value;
+                  const nouvelleDateService = document.getElementById('nouvelle-date-service').value;
+                  const notesAdmin = document.getElementById('notes-admin-remplacement').value;
+                  const actionAncienEPI = document.querySelector('input[name="action-ancien-epi"]:checked').value;
+
+                  if (!nouveauNumeroSerie || !nouvelleDateService) {
+                    toast({ title: "Erreur", description: "Le numéro de série et la date de mise en service sont obligatoires", variant: "destructive" });
+                    return;
+                  }
+
+                  const epi = epis.find(e => e.id === selectedDemandeRemplacement.epi_id);
+
+                  // 1. Traiter l'ancien EPI selon le choix
+                  if (actionAncienEPI === 'garder') {
+                    // Marquer l'ancien EPI comme retiré
+                    await apiPut(tenantSlug, `/epi/${selectedDemandeRemplacement.epi_id}`, {
+                      ...epi,
+                      statut: 'Retiré',
+                      notes: (epi.notes || '') + ` [Retiré le ${new Date().toLocaleDateString('fr-FR')} - Remplacé par ${nouveauNumeroSerie}]`
+                    });
+                  } else if (actionAncienEPI === 'supprimer') {
+                    // Supprimer complètement l'ancien EPI
+                    await apiDelete(tenantSlug, `/epi/${selectedDemandeRemplacement.epi_id}`);
+                  }
+
+                  // 2. Créer le nouvel EPI
+                  const nouvelEPI = {
+                    type_epi: epi.type_epi,
+                    numero_serie: nouveauNumeroSerie,
+                    marque: nouvelleMarque,
+                    modele: nouveauModele,
+                    taille: nouvelleTaille,
+                    date_mise_en_service: nouvelleDateService,
+                    date_attribution: new Date().toISOString().split('T')[0],
+                    statut: 'En service',
+                    user_id: selectedDemandeRemplacement.user_id,
+                    notes: `Attribué suite à remplacement de ${epi.numero_serie}`
+                  };
+
+                  await apiPost(tenantSlug, '/epi', nouvelEPI);
+
+                  // 3. Approuver la demande
+                  await apiPost(tenantSlug, `/epi/demandes-remplacement/${selectedDemandeRemplacement.id}/approuver`, {
+                    notes_admin: notesAdmin
+                  });
+
+                  toast({ title: "Succès", description: `Remplacement effectué avec succès. Ancien EPI: ${actionAncienEPI === 'garder' ? 'conservé en historique' : 'supprimé'}` });
+                  setShowRemplacementModal(false);
+                  loadDemandesRemplacementEPI();
+                  loadEPIs();
+                } catch (error) {
+                  console.error('Erreur remplacement:', error);
+                  toast({ title: "Erreur", description: "Impossible d'effectuer le remplacement", variant: "destructive" });
+                }
+              }}>
+                ✅ Approuver & Remplacer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL DÉTAIL EPI */}
+      {showDetailModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{getTypeIcon(selectedEPI.type_epi)} Détails EPI - #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowDetailModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="epi-detail-grid">
+                <div className="detail-section">
+                  <h3>Informations générales</h3>
+                  <p><strong>Type:</strong> {getTypeName(selectedEPI.type_epi)}</p>
+                  <p><strong>Marque:</strong> {selectedEPI.marque}</p>
+                  <p><strong>Modèle:</strong> {selectedEPI.modele}</p>
+                  <p><strong>N° série fabricant:</strong> {selectedEPI.numero_serie_fabricant || 'N/A'}</p>
+                  <p><strong>Norme:</strong> {selectedEPI.norme_certification}</p>
+                  <p><strong>Statut:</strong> <span style={{color: getStatutColor(selectedEPI.statut)}}>{selectedEPI.statut}</span></p>
+                </div>
+                
+                <div className="detail-section">
+                  <h3>Dates & Coûts</h3>
+                  <p><strong>Fabrication:</strong> {selectedEPI.date_fabrication ? new Date(selectedEPI.date_fabrication).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                  <p><strong>Mise en service:</strong> {new Date(selectedEPI.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Coût d'achat:</strong> {selectedEPI.cout_achat} $</p>
+                </div>
+                
+                <div className="detail-section">
+                  <h3>Affectation</h3>
+                  <p><strong>Assigné à:</strong> {getUserName(selectedEPI.user_id)}</p>
+                  <p><strong>Taille:</strong> {selectedEPI.taille || 'N/A'}</p>
+                  <p><strong>Couleur:</strong> {selectedEPI.couleur || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div className="inspections-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>📋 Historique des inspections ({inspections.length})</h3>
+                  <Button onClick={() => setShowInspectionModal(true)}>
+                    ➕ Nouvelle inspection
+                  </Button>
+                </div>
+                
+                {inspections.length > 0 ? (
+                  <div className="inspections-list">
+                    {inspections.map(insp => (
+                      <div key={insp.id} className="inspection-card">
+                        <div className="inspection-header">
+                          <span className="inspection-type-badge">
+                            {insp.type_inspection === 'apres_utilisation' ? '🔍 Après utilisation' :
+                             insp.type_inspection === 'routine_mensuelle' ? '📅 Routine mensuelle' :
+                             '🔬 Avancée annuelle'}
+                          </span>
+                          <span className={`statut-badge ${insp.statut_global}`}>
+                            {insp.statut_global}
+                          </span>
+                        </div>
+                        <p><strong>Date:</strong> {new Date(insp.date_inspection).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Inspecteur:</strong> {insp.inspecteur_nom}</p>
+                        {insp.isp_nom && <p><strong>ISP:</strong> {insp.isp_nom}</p>}
+                        {insp.commentaires && <p><strong>Commentaires:</strong> {insp.commentaires}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucune inspection enregistrée</p>
+                )}
+              </div>
+              
+              {/* Section Nettoyages - Phase 2 */}
+              <div className="nettoyages-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>🧼 Historique des nettoyages ({nettoyages.length})</h3>
+                  <Button onClick={() => setShowNettoyageModal(true)}>
+                    ➕ Nouveau nettoyage
+                  </Button>
+                </div>
+                
+                {nettoyages.length > 0 ? (
+                  <div className="nettoyages-list">
+                    {nettoyages.map(nett => (
+                      <div key={nett.id} className="nettoyage-card">
+                        <div className="nettoyage-header">
+                          <span className={`type-badge ${nett.type_nettoyage}`}>
+                            {nett.type_nettoyage === 'routine' ? '🧽 Routine' : '🧼 Avancé'}
+                          </span>
+                          <span>{nett.methode}</span>
+                        </div>
+                        <p><strong>Date:</strong> {new Date(nett.date_nettoyage).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Effectué par:</strong> {nett.effectue_par}</p>
+                        <p><strong>Cycles:</strong> {nett.nombre_cycles}</p>
+                        {nett.notes && <p><strong>Notes:</strong> {nett.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucun nettoyage enregistré</p>
+                )}
+              </div>
+              
+              {/* Section Réparations - Phase 2 */}
+              <div className="reparations-section" style={{marginTop: '2rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3>🔧 Historique des réparations ({reparations.length})</h3>
+                  <Button onClick={() => {
+                    setSelectedReparation(null);
+                    setShowReparationModal(true);
+                  }}>
+                    ➕ Nouvelle réparation
+                  </Button>
+                </div>
+                
+                {reparations.length > 0 ? (
+                  <div className="reparations-list">
+                    {reparations.map(rep => (
+                      <div key={rep.id} className="reparation-card">
+                        <div className="reparation-header">
+                          <span className={`statut-badge ${rep.statut}`}>
+                            {rep.statut === 'demandee' ? '📝 Demandée' :
+                             rep.statut === 'en_cours' ? '⚙️ En cours' :
+                             rep.statut === 'terminee' ? '✅ Terminée' :
+                             '❌ Impossible'}
+                          </span>
+                          <span>{rep.reparateur_type === 'interne' ? '🏠 Interne' : '🏢 Externe'}</span>
+                        </div>
+                        <p><strong>Demande:</strong> {new Date(rep.date_demande).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Problème:</strong> {rep.probleme_description}</p>
+                        <p><strong>Coût:</strong> {rep.cout_reparation} $</p>
+                        <Button 
+                          size="sm" 
+                          onClick={() => openEditReparation(rep)}
+                          style={{marginTop: '0.5rem'}}
+                        >
+                          ✏️ Mettre à jour
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Aucune réparation enregistrée</p>
+                )}
+              </div>
+              
+              {/* Section Retrait - Phase 2 */}
+              {selectedEPI.statut !== 'Retiré' && (
+                <div className="retrait-section" style={{marginTop: '2rem', padding: '1.5rem', background: '#FEF3C7', borderRadius: '12px'}}>
+                  <h3 style={{color: '#92400E'}}>⚠️ Retrait de l'EPI</h3>
+                  <p style={{fontSize: '0.9rem', color: '#78350F'}}>
+                    Cet EPI doit être retiré du service de manière définitive ? (âge limite, dommage irréparable, etc.)
+                  </p>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setShowRetraitModal(true)}
+                    style={{marginTop: '1rem'}}
+                  >
+                    🚫 Retirer cet EPI
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL INSPECTION */}
+      {showInspectionModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📋 Nouvelle Inspection - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowInspectionModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type d'inspection *</Label>
+                  <select 
+                    className="form-select"
+                    value={typeInspection}
+                    onChange={e => setTypeInspection(e.target.value)}
+                  >
+                    <option value="apres_utilisation">🔍 Après utilisation</option>
+                    <option value="routine_mensuelle">📅 Routine mensuelle</option>
+                    <option value="avancee_annuelle">🔬 Avancée annuelle</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date inspection *</Label>
+                  <Input 
+                    type="date"
+                    value={inspectionForm.date_inspection}
+                    onChange={e => setInspectionForm({...inspectionForm, date_inspection: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Inspecteur *</Label>
+                  <Input 
+                    value={inspectionForm.inspecteur_nom}
+                    onChange={e => setInspectionForm({...inspectionForm, inspecteur_nom: e.target.value})}
+                  />
+                </div>
+                
+                {typeInspection === 'avancee_annuelle' && (
+                  <>
+                    <div>
+                      <Label>ISP (Fournisseur)</Label>
+                      <select 
+                        className="form-select"
+                        value={inspectionForm.isp_id}
+                        onChange={e => {
+                          const isp = isps.find(i => i.id === e.target.value);
+                          setInspectionForm({
+                            ...inspectionForm,
+                            isp_id: e.target.value,
+                            isp_nom: isp?.nom || '',
+                            isp_accreditations: isp?.accreditations || ''
+                          });
+                        }}
+                      >
+                        <option value="">Interne</option>
+                        {isps.map(isp => (
+                          <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+                
+                <div>
+                  <Label>Statut global *</Label>
+                  <select 
+                    className="form-select"
+                    value={inspectionForm.statut_global}
+                    onChange={e => setInspectionForm({...inspectionForm, statut_global: e.target.value})}
+                  >
+                    <option value="conforme">✅ Conforme</option>
+                    <option value="non_conforme">❌ Non conforme</option>
+                    <option value="necessite_reparation">🔧 Nécessite réparation</option>
+                    <option value="hors_service">🚫 Hors service</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Commentaires</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="4"
+                  value={inspectionForm.commentaires}
+                  onChange={e => setInspectionForm({...inspectionForm, commentaires: e.target.value})}
+                  placeholder="Observations, détails des points vérifiés..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#f0f9ff', borderRadius: '8px'}}>
+                <p style={{fontSize: '0.875rem', color: '#1e40af'}}>
+                  💡 <strong>Checklist NFPA 1851</strong> sera automatiquement générée selon le type d'inspection sélectionné.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowInspectionModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveInspection}>Enregistrer l'inspection</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL ISP */}
+      {showISPModal && (
+        <div className="modal-overlay" onClick={() => setShowISPModal(false)}>
+          <div className="modal-content medium-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedISP ? 'Modifier Fournisseur' : 'Nouveau Fournisseur'}</h2>
+              <Button variant="ghost" onClick={() => setShowISPModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Nom *</Label>
+                  <Input 
+                    value={ispForm.nom}
+                    onChange={e => setIspForm({...ispForm, nom: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Contact</Label>
+                  <Input 
+                    value={ispForm.contact}
+                    onChange={e => setIspForm({...ispForm, contact: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Téléphone</Label>
+                  <Input 
+                    value={ispForm.telephone}
+                    onChange={e => setIspForm({...ispForm, telephone: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    value={ispForm.email}
+                    onChange={e => setIspForm({...ispForm, email: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Accréditations</Label>
+                <Input 
+                  value={ispForm.accreditations}
+                  onChange={e => setIspForm({...ispForm, accreditations: e.target.value})}
+                  placeholder="Ex: NFPA 1851, ISO 9001..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={ispForm.notes}
+                  onChange={e => setIspForm({...ispForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowISPModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveISP}>
+                {selectedISP ? 'Modifier' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* MODAL NETTOYAGE - Phase 2 */}
+      {showNettoyageModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowNettoyageModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🧼 Nouveau Nettoyage - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowNettoyageModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type de nettoyage *</Label>
+                  <select 
+                    className="form-select"
+                    value={nettoyageForm.type_nettoyage}
+                    onChange={e => setNettoyageForm({...nettoyageForm, type_nettoyage: e.target.value})}
+                  >
+                    <option value="routine">🧽 Routine (après utilisation)</option>
+                    <option value="avance">🧼 Avancé (2x par an minimum)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date nettoyage *</Label>
+                  <Input 
+                    type="date"
+                    value={nettoyageForm.date_nettoyage}
+                    onChange={e => setNettoyageForm({...nettoyageForm, date_nettoyage: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Méthode *</Label>
+                  <select 
+                    className="form-select"
+                    value={nettoyageForm.methode}
+                    onChange={e => setNettoyageForm({...nettoyageForm, methode: e.target.value})}
+                  >
+                    <option value="laveuse_extractrice">🌀 Laveuse extractrice</option>
+                    <option value="manuel">✋ Manuel</option>
+                    <option value="externe">🏢 Externe (ISP)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Effectué par</Label>
+                  <Input 
+                    value={nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`}
+                    onChange={e => setNettoyageForm({...nettoyageForm, effectue_par: e.target.value})}
+                  />
+                </div>
+                
+                {nettoyageForm.methode === 'externe' && (
+                  <div>
+                    <Label>Fournisseur ISP</Label>
+                    <select 
+                      className="form-select"
+                      value={nettoyageForm.isp_id}
+                      onChange={e => setNettoyageForm({...nettoyageForm, isp_id: e.target.value})}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {isps.map(isp => (
+                        <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <Label>Nombre de cycles</Label>
+                  <Input 
+                    type="number"
+                    value={nettoyageForm.nombre_cycles}
+                    onChange={e => setNettoyageForm({...nettoyageForm, nombre_cycles: parseInt(e.target.value) || 1})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Température</Label>
+                  <Input 
+                    value={nettoyageForm.temperature}
+                    onChange={e => setNettoyageForm({...nettoyageForm, temperature: e.target.value})}
+                    placeholder="Ex: Eau tiède max 40°C"
+                  />
+                </div>
+                
+                <div>
+                  <Label>Produits utilisés</Label>
+                  <Input 
+                    value={nettoyageForm.produits_utilises}
+                    onChange={e => setNettoyageForm({...nettoyageForm, produits_utilises: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={nettoyageForm.notes}
+                  onChange={e => setNettoyageForm({...nettoyageForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowNettoyageModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveNettoyage}>Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL RÉPARATION - Phase 2 */}
+      {showReparationModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowReparationModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔧 {selectedReparation ? 'Mise à jour Réparation' : 'Nouvelle Réparation'} - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowReparationModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Statut *</Label>
+                  <select 
+                    className="form-select"
+                    value={reparationForm.statut}
+                    onChange={e => setReparationForm({...reparationForm, statut: e.target.value})}
+                  >
+                    <option value="demandee">📝 Demandée</option>
+                    <option value="en_cours">⚙️ En cours</option>
+                    <option value="terminee">✅ Terminée</option>
+                    <option value="impossible">❌ Impossible</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Date demande *</Label>
+                  <Input 
+                    type="date"
+                    value={reparationForm.date_demande}
+                    onChange={e => setReparationForm({...reparationForm, date_demande: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Type de réparateur *</Label>
+                  <select 
+                    className="form-select"
+                    value={reparationForm.reparateur_type}
+                    onChange={e => setReparationForm({...reparationForm, reparateur_type: e.target.value})}
+                  >
+                    <option value="interne">🏠 Interne</option>
+                    <option value="externe">🏢 Externe (ISP)</option>
+                  </select>
+                </div>
+                
+                {reparationForm.reparateur_type === 'externe' && (
+                  <div>
+                    <Label>Fournisseur ISP</Label>
+                    <select 
+                      className="form-select"
+                      value={reparationForm.isp_id}
+                      onChange={e => {
+                        const isp = isps.find(i => i.id === e.target.value);
+                        setReparationForm({
+                          ...reparationForm,
+                          isp_id: e.target.value,
+                          reparateur_nom: isp?.nom || ''
+                        });
+                      }}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {isps.map(isp => (
+                        <option key={isp.id} value={isp.id}>{isp.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {reparationForm.reparateur_type === 'interne' && (
+                  <div>
+                    <Label>Nom du réparateur</Label>
+                    <Input 
+                      value={reparationForm.reparateur_nom}
+                      onChange={e => setReparationForm({...reparationForm, reparateur_nom: e.target.value})}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Description du problème *</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="3"
+                  value={reparationForm.probleme_description}
+                  onChange={e => setReparationForm({...reparationForm, probleme_description: e.target.value})}
+                  placeholder="Décrivez le problème nécessitant réparation..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="2"
+                  value={reparationForm.notes}
+                  onChange={e => setReparationForm({...reparationForm, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowReparationModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveReparation}>
+                {selectedReparation ? 'Mettre à jour' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* MODAL RETRAIT - Phase 2 */}
+      {showRetraitModal && selectedEPI && (
+        <div className="modal-overlay" onClick={() => setShowRetraitModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{background: '#DC2626', color: 'white'}}>
+              <h2>🚫 Retrait Définitif EPI - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <Button variant="ghost" onClick={() => setShowRetraitModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="alert-warning" style={{marginBottom: '1.5rem', padding: '1rem', background: '#FEF3C7', borderRadius: '8px'}}>
+                <p style={{margin: 0, color: '#92400E'}}>
+                  ⚠️ <strong>ATTENTION:</strong> Cette action est définitive. L'EPI sera marqué comme retiré et ne pourra plus être utilisé.
+                </p>
+              </div>
+              
+              <div className="form-grid">
+                <div>
+                  <Label>Date de retrait *</Label>
+                  <Input 
+                    type="date"
+                    value={retraitForm.date_retrait}
+                    onChange={e => setRetraitForm({...retraitForm, date_retrait: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Raison du retrait *</Label>
+                  <select 
+                    className="form-select"
+                    value={retraitForm.raison}
+                    onChange={e => setRetraitForm({...retraitForm, raison: e.target.value})}
+                  >
+                    <option value="age_limite">⏰ Âge limite atteinte (10 ans)</option>
+                    <option value="dommage_irreparable">💔 Dommage irréparable</option>
+                    <option value="echec_inspection">❌ Échec inspection avancée</option>
+                    <option value="autre">📝 Autre raison</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Méthode de disposition *</Label>
+                  <select 
+                    className="form-select"
+                    value={retraitForm.methode_disposition}
+                    onChange={e => setRetraitForm({...retraitForm, methode_disposition: e.target.value})}
+                  >
+                    <option value="coupe_detruit">✂️ Coupé/Détruit</option>
+                    <option value="recyclage">♻️ Recyclage</option>
+                    <option value="don">🎁 Don</option>
+                    <option value="autre">📝 Autre</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Coût de disposition</Label>
+                  <Input 
+                    type="number"
+                    value={retraitForm.cout_disposition}
+                    onChange={e => setRetraitForm({...retraitForm, cout_disposition: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Description détaillée *</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="4"
+                  value={retraitForm.description_raison}
+                  onChange={e => setRetraitForm({...retraitForm, description_raison: e.target.value})}
+                  placeholder="Expliquez en détail pourquoi cet EPI doit être retiré..."
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
+                <Label>Notes complémentaires</Label>
+                <textarea 
+                  className="form-textarea"
+                  rows="2"
+                  value={retraitForm.notes}
+                  onChange={e => setRetraitForm({...retraitForm, notes: e.target.value})}
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#FEE2E2', borderRadius: '8px'}}>
+                <p style={{margin: 0, fontSize: '0.875rem', color: '#991B1B'}}>
+                  📸 <strong>Preuve de disposition:</strong> Après validation, prenez des photos de l'EPI coupé/détruit comme preuve de mise au rebut selon NFPA 1851.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowRetraitModal(false)}>Annuler</Button>
+              <Button variant="destructive" onClick={handleSaveRetrait}>
+                🚫 Confirmer le retrait
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+const Dashboard = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showActivitesEtendues, setShowActivitesEtendues] = useState(false);
+  const [messageForm, setMessageForm] = useState({
+    titre: '',
+    contenu: '',
+    priorite: 'info',
+    date_expiration: ''
+  });
+
+  useEffect(() => {
+    if (tenantSlug) {
+      loadDashboardData();
+      loadMessages();
+    }
+  }, [tenantSlug]);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet(tenantSlug, '/dashboard/donnees-completes');
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error);
+      toast({ title: "Erreur", description: "Impossible de charger les données", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const loadMessages = async () => {
+    try {
+      const messagesData = await apiGet(tenantSlug, '/dashboard/messages');
+      setMessages(messagesData);
+    } catch (error) {
+      console.error('Erreur chargement messages:', error);
+    }
+  };
+
+  const handleCreateMessage = async () => {
+    try {
+      await apiPost(tenantSlug, '/dashboard/messages', messageForm);
+      toast({ title: "Succès", description: "Message publié" });
+      setShowMessageModal(false);
+      setMessageForm({ titre: '', contenu: '', priorite: 'info', date_expiration: '' });
+      loadMessages();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de publier le message", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await apiDelete(tenantSlug, `/dashboard/messages/${messageId}`);
+      toast({ title: "Succès", description: "Message supprimé" });
+      loadMessages();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de supprimer le message", variant: "destructive" });
+    }
+  };
+
+  if (loading) return <div className="loading">Chargement du dashboard...</div>;
+  if (!dashboardData) return <div className="error">Erreur de chargement des données</div>;
+
+  const { section_personnelle, section_generale, activites_recentes } = dashboardData;
+
+  return (
+    <div className="dashboard-refonte">
+      <div className="module-header">
+        <div>
+          <h1>📊 Tableau de Bord</h1>
+          <p>Vue d'ensemble de votre activité et du service</p>
+        </div>
+      </div>
+
+      {/* MESSAGES IMPORTANTS */}
+      {messages.length > 0 && (
+        <div className="messages-importants-section">
+          {messages.map(msg => (
+            <div key={msg.id} className={`message-banner priorite-${msg.priorite}`}>
+              <div className="message-icon">
+                {msg.priorite === 'urgent' && '🚨'}
+                {msg.priorite === 'important' && '⚠️'}
+                {msg.priorite === 'info' && 'ℹ️'}
+              </div>
+              <div className="message-content">
+                <h4>{msg.titre}</h4>
+                <p>{msg.contenu}</p>
+                <small>Par {msg.auteur_nom} • {new Date(msg.created_at).toLocaleDateString('fr-FR')}</small>
+              </div>
+              {user?.role !== 'employe' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleDeleteMessage(msg.id)}
+                  style={{marginLeft: 'auto'}}
+                >
+                  ✕
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* BOUTON CRÉER MESSAGE (Admin/Superviseur) */}
+      {user?.role !== 'employe' && (
+        <div style={{marginBottom: '2rem'}}>
+          <Button onClick={() => setShowMessageModal(true)}>
+            ➕ Publier un message important
+          </Button>
+        </div>
+      )}
+
+      {/* SECTION PERSONNELLE */}
+      <div className="dashboard-section">
+        <h2>👤 Ma Section Personnelle</h2>
+        <div className="kpi-grid">
+          {!section_personnelle.has_garde_externe ? (
+            // Affichage simple si pas de garde externe
+            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+              <h3>{section_personnelle.heures_travaillees_mois}h</h3>
+              <p>Heures travaillées ce mois</p>
+            </div>
+          ) : (
+            // Affichage séparé si garde externe existe
+            <>
+              <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                <h3>{section_personnelle.heures_internes_mois}h</h3>
+                <p>🏢 Heures Internes</p>
+              </div>
+              <div className="kpi-card" style={{background: '#E0E7FF'}}>
+                <h3>{section_personnelle.heures_externes_mois}h</h3>
+                <p>🏠 Heures Externes</p>
+              </div>
+            </>
+          )}
+          <div className="kpi-card" style={{background: '#FCA5A5'}}>
+            <h3>{section_personnelle.nombre_gardes_mois}</h3>
+            <p>Nombre de gardes</p>
+          </div>
+          <div className="kpi-card" style={{background: '#D1FAE5'}}>
+            <h3>{section_personnelle.pourcentage_presence_formations}%</h3>
+            <p>Présence formations</p>
+          </div>
+          <div className="kpi-card" style={{background: '#DBEAFE'}}>
+            <h3>{section_personnelle.formations_a_venir.length}</h3>
+            <p>Formations à venir</p>
+          </div>
+        </div>
+
+        {/* Formations à venir */}
+        {section_personnelle.formations_a_venir.length > 0 && (
+          <div className="formations-a-venir">
+            <h3>🎓 Formations à Venir</h3>
+            <div className="formations-list-compact">
+              {section_personnelle.formations_a_venir.map(formation => (
+                <div key={formation.id} className="formation-item-compact">
+                  <div className="formation-info">
+                    <h4>{formation.nom}</h4>
+                    <p>{(() => {
+                      // Parser les dates comme locales sans conversion timezone
+                      const [y1, m1, d1] = formation.date_debut.split('-');
+                      const date1 = new Date(y1, m1 - 1, d1);
+                      const [y2, m2, d2] = formation.date_fin.split('-');
+                      const date2 = new Date(y2, m2 - 1, d2);
+                      return `${date1.toLocaleDateString('fr-FR')} - ${date2.toLocaleDateString('fr-FR')}`;
+                    })()}</p>
+                  </div>
+                  {formation.est_inscrit ? (
+                    <span className="badge-inscrit">✓ Inscrit</span>
+                  ) : (
+                    <span className="badge-non-inscrit">Non inscrit</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION GÉNÉRALE (Admin/Superviseur uniquement) */}
+      {section_generale && (
+        <>
+          <div className="dashboard-section">
+            <h2>🏢 Vue Générale du Service</h2>
+            <div className="kpi-grid">
+              <div className="kpi-card" style={{background: '#E0E7FF'}}>
+                <h3>{section_generale.couverture_planning}%</h3>
+                <p>Couverture planning</p>
+              </div>
+              <div className="kpi-card" style={{background: section_generale.gardes_manquantes > 0 ? '#FEE2E2' : '#D1FAE5'}}>
+                <h3>{section_generale.gardes_manquantes}</h3>
+                <p>Gardes manquantes</p>
+              </div>
+              <div className="kpi-card" style={{background: '#FED7AA'}}>
+                <h3>{section_generale.demandes_conges_en_attente}</h3>
+                <p>Demandes à approuver</p>
+              </div>
+              <div className="kpi-card" style={{background: '#E9D5FF'}}>
+                <h3>{section_generale.statistiques_mois.total_assignations}</h3>
+                <p>Assignations ce mois</p>
+              </div>
+            </div>
+
+            {/* Statistiques mois */}
+            <div className="stats-mois-grid">
+              <div className="stat-item">
+                <span className="stat-label">Personnel actif</span>
+                <span className="stat-value">{section_generale.statistiques_mois.total_personnel_actif}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Formations ce mois</span>
+                <span className="stat-value">{section_generale.statistiques_mois.formations_ce_mois}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVITÉS RÉCENTES */}
+          <div className="dashboard-section">
+            <h2>📋 Actualité Récente du Service</h2>
+            <div className="activites-liste">
+              {activites_recentes.slice(0, showActivitesEtendues ? activites_recentes.length : 10).map((activite, idx) => (
+                <div key={idx} className="activite-item">
+                  <div className="activite-icon">
+                    {activite.type_activite === 'creation_personnel' && '👤'}
+                    {activite.type_activite === 'assignation' && '📅'}
+                    {activite.type_activite === 'formation' && '🎓'}
+                    {activite.type_activite === 'remplacement' && '🔄'}
+                    {!['creation_personnel', 'assignation', 'formation', 'remplacement'].includes(activite.type_activite) && '📌'}
+                  </div>
+                  <div className="activite-content">
+                    <p>{activite.description}</p>
+                    <small>{new Date(activite.created_at).toLocaleString('fr-FR')}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {activites_recentes.length > 10 && (
+              <div style={{textAlign: 'center', marginTop: '1rem'}}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowActivitesEtendues(!showActivitesEtendues)}
+                >
+                  {showActivitesEtendues ? '▲ Voir moins' : '▼ Voir plus'}
+                </Button>
+              </div>
+            )}
+            
+            {activites_recentes.length === 0 && (
+              <div className="empty-state">
+                <p>Aucune activité récente</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Modal Créer Message */}
+      {showMessageModal && (
+        <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📢 Publier un Message Important</h2>
+              <Button variant="ghost" onClick={() => setShowMessageModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Titre</Label>
+                  <Input 
+                    value={messageForm.titre} 
+                    onChange={e => setMessageForm({...messageForm, titre: e.target.value})}
+                    placeholder="Ex: Maintenance système prévue"
+                  />
+                </div>
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Contenu</Label>
+                  <textarea
+                    className="form-textarea"
+                    value={messageForm.contenu}
+                    onChange={e => setMessageForm({...messageForm, contenu: e.target.value})}
+                    placeholder="Détails du message..."
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label>Priorité</Label>
+                  <select 
+                    className="form-select" 
+                    value={messageForm.priorite} 
+                    onChange={e => setMessageForm({...messageForm, priorite: e.target.value})}
+                  >
+                    <option value="info">Information</option>
+                    <option value="important">Important</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Date d'expiration (optionnel)</Label>
+                  <Input 
+                    type="date"
+                    value={messageForm.date_expiration} 
+                    onChange={e => setMessageForm({...messageForm, date_expiration: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowMessageModal(false)}>Annuler</Button>
+              <Button onClick={handleCreateMessage}>Publier</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Personnel Component complet
+const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
+  const [users, setUsers] = useState([]);
+  const [formations, setFormations] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showManageDisponibilitesModal, setShowManageDisponibilitesModal] = useState(false);
+  const [showEPIModal, setShowEPIModal] = useState(false);
+  const [showAddEPIModal, setShowAddEPIModal] = useState(false);
+  const [showEPIAccordion, setShowEPIAccordion] = useState(false);
+  const [showEditHeuresMaxModal, setShowEditHeuresMaxModal] = useState(false);
+  const [editHeuresMaxValue, setEditHeuresMaxValue] = useState(40);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDisponibilites, setUserDisponibilites] = useState([]);
+  const [userEPIs, setUserEPIs] = useState([]);
+  const [userValidations, setUserValidations] = useState([]);
+  const [showValidateCompetenceModal, setShowValidateCompetenceModal] = useState(false);
+  const [competences, setCompetences] = useState([]);
+  const [newValidation, setNewValidation] = useState({
+    competence_id: '',
+    justification: '',
+    date_validation: new Date().toISOString().split('T')[0]
+  });
+  
+  // Nouveaux états pour la refonte
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'cards'
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  const [exportScope, setExportScope] = useState('all'); // 'all' ou 'individual'
+  const [selectedPersonForExport, setSelectedPersonForExport] = useState('');
+  
+  const [newDisponibilite, setNewDisponibilite] = useState({
+    date: new Date().toISOString().split('T')[0],
+    heure_debut: '08:00',
+    heure_fin: '17:00',
+    statut: 'disponible',
+    recurrence: false,
+    type_recurrence: 'hebdomadaire',
+    jours_semaine: [],
+    bi_hebdomadaire: false,
+    date_fin: ''
+  });
+  const [editingEPIId, setEditingEPIId] = useState(null);
+  const [newEPI, setNewEPI] = useState({
+    type_epi: '',
+    taille: '',
+    date_attribution: new Date().toISOString().split('T')[0],
+    etat: 'Neuf',
+    date_expiration: '',
+    date_prochaine_inspection: '',
+    notes: ''
+  });
+  const [newUser, setNewUser] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
+    adresse: '',
+    contact_urgence: '',
+    grade: '',
+    fonction_superieur: false,
+    type_emploi: '',
+    numero_employe: '',
+    date_embauche: '',
+    taux_horaire: 0,
+    formations: [],
+    accepte_gardes_externes: true, // True par défaut
+    mot_de_passe: '',
+    // Tailles EPI (optionnelles)
+    taille_casque: '',
+    taille_bottes: '',
+    taille_veste_bunker: '',
+    taille_pantalon_bunker: '',
+    taille_gants: '',
+    taille_masque_apria: '',
+    taille_cagoule: ''
+  });
+  const { toast } = useToast();
+  const { tenantSlug } = useTenant();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!tenantSlug) return;
+      
+      try {
+        const [usersData, competencesData, gradesData] = await Promise.all([
+          apiGet(tenantSlug, '/users'),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, '/grades')
+        ]);
+        setUsers(usersData);
+        setFormations(competencesData);
+        setCompetences(competencesData);
+        setGrades(gradesData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [tenantSlug]);
+
+  const handleCreateUser = async () => {
+    if (!newUser.nom || !newUser.prenom || !newUser.email) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir Nom, Prénom et Email",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const userToCreate = {
+        ...newUser,
+        grade: newUser.grade || 'Pompier',
+        type_emploi: newUser.type_emploi || 'temps_plein',
+        role: 'employe',
+        numero_employe: newUser.numero_employe || `POM${String(Date.now()).slice(-3)}`,
+        date_embauche: newUser.date_embauche || new Date().toISOString().split('T')[0],
+        mot_de_passe: 'TempPassword123!'
+      };
+
+      await apiPost(tenantSlug, '/users', userToCreate);
+      toast({
+        title: "Pompier créé",
+        description: "Le nouveau pompier a été ajouté avec succès",
+        variant: "success"
+      });
+      
+      setShowCreateModal(false);
+      resetNewUser();
+      
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible de créer le pompier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetNewUser = () => {
+    setNewUser({
+      nom: '',
+      prenom: '',
+      email: '',
+      telephone: '',
+      adresse: '',
+      contact_urgence: '',
+      grade: '',
+      fonction_superieur: false,
+      type_emploi: '',
+      numero_employe: '',
+      date_embauche: new Date().toISOString().split('T')[0],
+      taux_horaire: 0,
+      formations: [],
+      mot_de_passe: ''
+    });
+  };
+
+  const handleViewUser = async (user) => {
+    setSelectedUser(user);
+    // Charger les EPI et validations de l'utilisateur
+    try {
+      const [episData, validationsData] = await Promise.all([
+        apiGet(tenantSlug, `/epi/employe/${user.id}`),
+        apiGet(tenantSlug, `/validations-competences/${user.id}`)
+      ]);
+      setUserEPIs(episData);
+      setUserValidations(validationsData || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      setUserEPIs([]);
+      setUserValidations([]);
+    }
+    setShowViewModal(true);
+  };
+
+  const handleValidateCompetence = async () => {
+    if (!newValidation.competence_id || !newValidation.justification) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez sélectionner une compétence et fournir une justification",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const validation = {
+        user_id: selectedUser.id,
+        competence_id: newValidation.competence_id,
+        justification: newValidation.justification,
+        date_validation: newValidation.date_validation
+      };
+
+      await apiPost(tenantSlug, '/validations-competences', validation);
+
+      toast({
+        title: "Succès",
+        description: "Compétence validée avec succès",
+        variant: "success"
+      });
+
+      // Recharger les validations
+      const validationsData = await apiGet(tenantSlug, `/validations-competences/${selectedUser.id}`);
+      setUserValidations(validationsData || []);
+
+      // Réinitialiser le formulaire
+      setNewValidation({
+        competence_id: '',
+        justification: '',
+        date_validation: new Date().toISOString().split('T')[0]
+      });
+      setShowValidateCompetenceModal(false);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible de valider la compétence",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteValidation = async (validationId) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette validation ?')) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, `/validations-competences/${validationId}`);
+
+      toast({
+        title: "Succès",
+        description: "Validation supprimée",
+        variant: "success"
+      });
+
+      // Recharger les validations
+      const validationsData = await apiGet(tenantSlug, `/validations-competences/${selectedUser.id}`);
+      setUserValidations(validationsData || []);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la validation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setNewUser({
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      telephone: user.telephone,
+      adresse: user.adresse || '',
+      contact_urgence: user.contact_urgence || '',
+      grade: user.grade,
+      fonction_superieur: user.fonction_superieur || false,
+      type_emploi: user.type_emploi,
+      numero_employe: user.numero_employe,
+      date_embauche: user.date_embauche,
+      taux_horaire: user.taux_horaire || 0,
+      heures_max_semaine: user.heures_max_semaine || 40,
+      formations: user.formations || [],
+      accepte_gardes_externes: user.accepte_gardes_externes !== false, // Default to true si pas défini
+      mot_de_passe: ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.grade || !newUser.type_emploi) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const userToUpdate = {
+        ...newUser,
+        heures_max_semaine: newUser.heures_max_semaine !== null && newUser.heures_max_semaine !== undefined 
+          ? parseInt(newUser.heures_max_semaine) 
+          : 40,
+        role: selectedUser.role, // Préserver le rôle existant
+        statut: selectedUser.statut, // Préserver le statut existant
+        mot_de_passe: newUser.mot_de_passe || 'unchanged' // Mot de passe optionnel
+      };
+
+      await apiPut(tenantSlug, `/users/${selectedUser.id}`, userToUpdate);
+      toast({
+        title: "Pompier mis à jour",
+        description: "Les informations ont été mises à jour avec succès",
+        variant: "success"
+      });
+      setShowEditModal(false);
+      
+      // Reload users list
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Erreur de modification",
+        description: error.detail || error.message || "Impossible de mettre à jour le pompier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce pompier ?")) return;
+
+    try {
+      await apiDelete(tenantSlug, `/users/${userId}`);
+      toast({
+        title: "Pompier supprimé",
+        description: "Le pompier a été supprimé avec succès",
+        variant: "success"
+      });
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le pompier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Ouvrir le modal d'export
+  const handleOpenExportModal = (type) => {
+    setExportType(type);
+    setExportScope('all'); // Par défaut, tout le personnel
+    setSelectedPersonForExport('');
+    setShowExportModal(true);
+  };
+
+  // Confirmer l'export après sélection dans le modal
+  const handleConfirmExport = async () => {
+    const userId = exportScope === 'individual' ? selectedPersonForExport : null;
+    
+    if (exportScope === 'individual' && !selectedPersonForExport) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner une personne à exporter",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
+      if (userId) {
+        const selectedUser = users.find(u => u.id === userId);
+        link.download = `fiche_${selectedUser?.prenom}_${selectedUser?.nom}${extension}`;
+      } else {
+        link.download = `liste_personnel${extension}`;
+      }
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: `Export ${exportType.toUpperCase()} téléchargé`,
+        variant: "success"
+      });
+      
+      setShowExportModal(false);
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  // Confirmer l'export après sélection dans le modal
+  const getFilteredUsers = () => {
+    if (!searchTerm) return users;
+    return users.filter(user => 
+      `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.grade?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const handleManageDisponibilites = async (user) => {
+    if (user.type_emploi !== 'temps_partiel') {
+      toast({
+        title: "Information",
+        description: "Les disponibilités ne concernent que les employés à temps partiel",
+        variant: "default"
+      });
+      return;
+    }
+
+    // Stocker l'utilisateur et naviguer vers le module disponibilités
+    setManagingUserDisponibilites(user);
+    setCurrentPage('disponibilites');
+  };
+
+  const handleAddDisponibilite = async () => {
+    if (!newDisponibilite.date || !newDisponibilite.heure_debut || !newDisponibilite.heure_fin) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validation pour récurrence
+    if (newDisponibilite.recurrence) {
+      if (!newDisponibilite.date_fin) {
+        toast({
+          title: "Date de fin requise",
+          description: "Veuillez spécifier une date de fin pour la récurrence",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (newDisponibilite.type_recurrence === 'hebdomadaire' && newDisponibilite.jours_semaine.length === 0) {
+        toast({
+          title: "Jours requis",
+          description: "Veuillez sélectionner au moins un jour de la semaine",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    try {
+      let disponibilitesToCreate = [];
+
+      if (newDisponibilite.recurrence) {
+        // Générer toutes les occurrences avec origine "recurrence"
+        disponibilitesToCreate = generateRecurringDisponibilites(newDisponibilite, selectedUser.id);
+        // Marquer toutes comme récurrence
+        disponibilitesToCreate = disponibilitesToCreate.map(d => ({...d, origine: 'recurrence'}));
+      } else {
+        // Disponibilité unique avec origine "manuelle"
+        disponibilitesToCreate = [{
+          date: newDisponibilite.date,
+          heure_debut: newDisponibilite.heure_debut,
+          heure_fin: newDisponibilite.heure_fin,
+          statut: newDisponibilite.statut,
+          user_id: selectedUser.id,
+          origine: 'manuelle'
+        }];
+      }
+
+      // Créer toutes les disponibilités
+      let successCount = 0;
+      let conflictCount = 0;
+      let errorCount = 0;
+      
+      for (const dispo of disponibilitesToCreate) {
+        try {
+          await apiPost(tenantSlug, '/disponibilites', dispo);
+          successCount++;
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            conflictCount++;
+            console.log(`Conflit détecté pour la date ${dispo.date}, ignoré et continué`);
+            // Continuer avec les autres disponibilités au lieu de s'arrêter
+          } else {
+            // Autre erreur
+            errorCount++;
+            console.error(`Erreur lors de la création de la disponibilité pour ${dispo.date}:`, error);
+            // Continuer aussi pour les autres erreurs
+          }
+        }
+      }
+
+      // Message récapitulatif
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} disponibilité(s) créée(s)`;
+      }
+      if (conflictCount > 0) {
+        message += (message ? ', ' : '') + `${conflictCount} ignorée(s) (conflit)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+
+      toast({
+        title: successCount > 0 ? "Disponibilité(s) ajoutée(s)" : "Attention",
+        description: message || "Aucune disponibilité créée",
+        variant: successCount > 0 ? "default" : "destructive"
+      });
+
+      // Recharger les disponibilités
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+      setUserDisponibilites(disponibilitesData);
+
+      // Réinitialiser le formulaire
+      setNewDisponibilite({
+        date: new Date().toISOString().split('T')[0],
+        heure_debut: '08:00',
+        heure_fin: '17:00',
+        statut: 'disponible',
+        recurrence: false,
+        type_recurrence: 'hebdomadaire',
+        jours_semaine: [],
+        bi_hebdomadaire: false,
+        date_fin: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la disponibilité",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Fonction pour résoudre les conflits de disponibilités
+  const handleResolveConflict = async (action) => {
+    try {
+      if (action === 'annuler') {
+        setShowConflictModal(false);
+        setConflictData({ conflicts: [], newItem: null, itemType: null });
+        return;
+      }
+
+      const conflict_ids = conflictData.conflicts.map(c => c.conflict_id);
+      
+      const response = await apiPost(tenantSlug, '/disponibilites/resolve-conflict', {
+        action: action,
+        new_item: conflictData.newItem,
+        conflict_ids: conflict_ids
+      });
+
+      toast({
+        title: "Résolution réussie",
+        description: response.message,
+        variant: "default"
+      });
+
+      // Recharger les disponibilités
+      if (selectedUser) {
+        const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+        setUserDisponibilites(disponibilitesData);
+      }
+
+      // Fermer le modal
+      setShowConflictModal(false);
+      setConflictData({ conflicts: [], newItem: null, itemType: null });
+
+      // Réinitialiser le formulaire
+      setNewDisponibilite({
+        date: new Date().toISOString().split('T')[0],
+        heure_debut: '08:00',
+        heure_fin: '17:00',
+        statut: 'disponible',
+        recurrence: false,
+        type_recurrence: 'hebdomadaire',
+        jours_semaine: [],
+        bi_hebdomadaire: false,
+        date_fin: ''
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de résoudre le conflit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Fonction pour générer les disponibilités récurrentes
+  const generateRecurringDisponibilites = (config, userId) => {
+    const disponibilites = [];
+    const startDate = new Date(config.date);
+    const endDate = new Date(config.date_fin);
+
+    if (config.type_recurrence === 'hebdomadaire') {
+      // Pour chaque jour sélectionné
+      config.jours_semaine.forEach(jourIndex => {
+        let currentDate = new Date(startDate);
+        
+        // Trouver le premier jour correspondant
+        while (currentDate.getDay() !== jourIndex) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        let weekCounter = 0;
+        // Générer les occurrences
+        while (currentDate <= endDate) {
+          // Si bi-hebdomadaire, ne créer qu'une semaine sur deux
+          if (!config.bi_hebdomadaire || weekCounter % 2 === 0) {
+            disponibilites.push({
+              date: currentDate.toISOString().split('T')[0],
+              heure_debut: config.heure_debut,
+              heure_fin: config.heure_fin,
+              statut: config.statut,
+              user_id: userId
+            });
+          }
+          // Avancer d'une semaine (7 jours)
+          currentDate.setDate(currentDate.getDate() + 7);
+          weekCounter++;
+        }
+      });
+    } else if (config.type_recurrence === 'mensuelle') {
+      // Récurrence mensuelle (même jour du mois)
+      let currentDate = new Date(startDate);
+      const dayOfMonth = startDate.getDate();
+
+      while (currentDate <= endDate) {
+        disponibilites.push({
+          date: currentDate.toISOString().split('T')[0],
+          heure_debut: config.heure_debut,
+          heure_fin: config.heure_fin,
+          statut: config.statut,
+          user_id: userId
+        });
+
+        // Passer au mois suivant
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        // Garder le même jour du mois
+        currentDate.setDate(dayOfMonth);
+      }
+    }
+
+    return disponibilites;
+  };
+
+  const handleDeleteDisponibilite = async (disponibiliteId) => {
+    try {
+      await apiDelete(tenantSlug, `/disponibilites/${disponibiliteId}`);
+
+      toast({
+        title: "Disponibilité supprimée",
+        description: "La disponibilité a été supprimée avec succès"
+      });
+
+      // Recharger les disponibilités
+      const disponibilitesData = await apiGet(tenantSlug, `/disponibilites/${selectedUser.id}`);
+      setUserDisponibilites(disponibilitesData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la disponibilité",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Fonctions de gestion des EPI
+  const handleViewEPI = async (user) => {
+    try {
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      setUserEPIs(episData);
+      setSelectedUser(user);
+      setShowEPIModal(true);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les EPI",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddEPI = () => {
+    setShowAddEPIModal(true);
+  };
+
+  const handleCreateEPI = async () => {
+    if (!newEPI.type_epi || !newEPI.taille || !newEPI.date_attribution || !newEPI.date_expiration) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await apiPost(tenantSlug, '/epi', {
+        ...newEPI,
+        employe_id: selectedUser.id
+      });
+      
+      toast({
+        title: "EPI ajouté",
+        description: "L'équipement a été ajouté avec succès",
+        variant: "success"
+      });
+      
+      setShowAddEPIModal(false);
+      resetNewEPI();
+      
+      // Recharger les EPI
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible d'ajouter l'EPI",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateEPITaille = async (epiId, newTaille) => {
+    try {
+      await apiPut(tenantSlug, `/epi/${epiId}`, {
+        taille: newTaille
+      });
+      
+      toast({
+        title: "Taille mise à jour",
+        description: "La taille de l'EPI a été modifiée",
+        variant: "success"
+      });
+      
+      // Recharger les EPI
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la taille",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteEPI = async (epiId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet EPI ?")) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, `/epi/${epiId}`);
+      
+      toast({
+        title: "EPI supprimé",
+        description: "L'équipement a été supprimé",
+        variant: "success"
+      });
+      
+      // Recharger les EPI
+      const episData = await apiGet(tenantSlug, `/epi/employe/${selectedUser.id}`);
+      setUserEPIs(episData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'EPI",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetNewEPI = () => {
+    setNewEPI({
+      type_epi: '',
+      taille: '',
+      date_attribution: new Date().toISOString().split('T')[0],
+      etat: 'Neuf',
+      date_expiration: '',
+      date_prochaine_inspection: '',
+      notes: ''
+    });
+  };
+
+  const getAllEPITypes = () => {
+    return [
+      { id: 'casque', nom: 'Casque', icone: '🪖' },
+      { id: 'bottes', nom: 'Bottes', icone: '👢' },
+      { id: 'veste_bunker', nom: 'Veste Bunker', icone: '🧥' },
+      { id: 'pantalon_bunker', nom: 'Pantalon Bunker', icone: '👖' },
+      { id: 'gants', nom: 'Gants', icone: '🧤' },
+      { id: 'masque_apria', nom: 'Facial APRIA', icone: '😷' },
+      { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+    ];
+  };
+
+  const getEPINom = (typeEpi) => {
+    const noms = {
+      'casque': 'Casque',
+      'bottes': 'Bottes',
+      'veste_bunker': 'Veste Bunker',
+      'pantalon_bunker': 'Pantalon Bunker',
+      'gants': 'Gants',
+      'masque_apria': 'Facial APRIA',
+      'cagoule': 'Cagoule Anti-Particules'
+    };
+    return noms[typeEpi] || typeEpi;
+  };
+
+  const getEPIIcone = (typeEpi) => {
+    const icones = {
+      'casque': '🪖',
+      'bottes': '👢',
+      'veste_bunker': '🧥',
+      'pantalon_bunker': '👖',
+      'gants': '🧤',
+      'masque_apria': '😷',
+      'cagoule': '🎭'
+    };
+    return icones[typeEpi] || '🛡️';
+  };
+
+  const getEtatColor = (etat) => {
+    const colors = {
+      'Neuf': '#10B981',
+      'Bon': '#3B82F6',
+      'À remplacer': '#F59E0B',
+      'Défectueux': '#EF4444'
+    };
+    return colors[etat] || '#6B7280';
+  };
+
+  const getEPITailleForType = (typeEpi) => {
+    const epi = userEPIs.find(e => e.type_epi === typeEpi);
+    return epi ? epi.taille : '';
+  };
+
+  const getFormationName = (formationId) => {
+    const formation = formations.find(f => f.id === formationId);
+    return formation ? formation.nom : formationId;
+  };
+
+  const handleFormationToggle = (formationId) => {
+    const updatedFormations = newUser.formations.includes(formationId)
+      ? newUser.formations.filter(id => id !== formationId)
+      : [...newUser.formations, formationId];
+    
+    setNewUser({...newUser, formations: updatedFormations});
+  };
+
+  const translateDay = (day) => {
+    const translations = {
+      'monday': 'Lundi', 'tuesday': 'Mardi', 'wednesday': 'Mercredi',
+      'thursday': 'Jeudi', 'friday': 'Vendredi', 'saturday': 'Samedi', 'sunday': 'Dimanche'
+    };
+    return translations[day] || day;
+  };
+
+  const getStatusColor = (statut) => statut === 'Actif' ? '#10B981' : '#EF4444';
+  const getGradeColor = (grade) => {
+    const colors = {
+      'Directeur': '#8B5CF6', 'Capitaine': '#3B82F6', 'Lieutenant': '#F59E0B', 'Pompier': '#10B981'
+    };
+    return colors[grade] || '#6B7280';
+  };
+
+  if (loading) return <div className="loading" data-testid="personnel-loading">Chargement...</div>;
+
+  const filteredUsers = getFilteredUsers();
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.statut === 'Actif').length;
+  const tempsPlein = users.filter(u => u.type_emploi === 'temps_plein').length;
+  const tempsPartiel = users.filter(u => u.type_emploi === 'temps_partiel').length;
+
+  return (
+    <div className="personnel-refonte">
+      {/* Header */}
+      <div className="module-header">
+        <div>
+          <h1>👥 Gestion du Personnel</h1>
+          <p>Liste complète des pompiers du service</p>
+        </div>
+        <Button 
+          onClick={() => setShowCreateModal(true)}
+          data-testid="add-personnel-btn"
+        >
+          ➕ Nouveau pompier
+        </Button>
+      </div>
+
+      {/* KPIs */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{totalUsers}</h3>
+          <p>Total Personnel</p>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{activeUsers}</h3>
+          <p>Personnel Actif</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{tempsPlein}</h3>
+          <p>Temps Plein</p>
+        </div>
+        <div className="kpi-card" style={{background: '#FEF3C7'}}>
+          <h3>{tempsPartiel}</h3>
+          <p>Temps Partiel</p>
+        </div>
+      </div>
+
+      {/* Barre de contrôles */}
+      <div className="personnel-controls">
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
+          <div style={{flex: 1, minWidth: '300px'}}>
+            <Input 
+              placeholder="🔍 Rechercher par nom, email, grade..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {/* Toggle Vue */}
+          <div className="view-toggle">
+            <button 
+              className={viewMode === 'list' ? 'active' : ''}
+              onClick={() => setViewMode('list')}
+              title="Vue Liste"
+            >
+              ☰
+            </button>
+            <button 
+              className={viewMode === 'cards' ? 'active' : ''}
+              onClick={() => setViewMode('cards')}
+              title="Vue Cartes"
+            >
+              ⊞
+            </button>
+          </div>
+
+          {/* Exports */}
+          <Button variant="outline" onClick={() => handleOpenExportModal('pdf')}>
+            📄 Export PDF
+          </Button>
+          <Button variant="outline" onClick={() => handleOpenExportModal('excel')}>
+            📊 Export Excel
+          </Button>
+        </div>
+      </div>
+
+      {/* Vue Liste */}
+      {viewMode === 'list' && (
+        <div className="personnel-table-modern">
+          <div className="table-header-modern">
+            <div>Pompier</div>
+            <div>Grade / N° Employé</div>
+            <div>Contact</div>
+            <div>Statut</div>
+            <div>Type Emploi</div>
+            <div>Actions</div>
+          </div>
+
+          {filteredUsers.map(user => (
+            <div key={user.id} className="table-row-modern" data-testid={`user-row-${user.id}`}>
+              <div className="user-cell-modern">
+                <div className="user-avatar-modern">👤</div>
+                <div>
+                  <p className="user-name-modern">{user.prenom} {user.nom}</p>
+                  <p className="user-detail-modern">Embauché le {user.date_embauche}</p>
+                </div>
+              </div>
+
+              <div className="cell-modern">
+                <p style={{fontWeight: '600'}}>{user.grade}</p>
+                <p className="user-detail-modern">N° {user.numero_employe}</p>
+              </div>
+
+              <div className="cell-modern">
+                <p className="email-truncated" title={user.email}>{user.email}</p>
+                <p className="user-detail-modern">{user.telephone}</p>
+              </div>
+
+              <div className="cell-modern">
+                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
+                  {user.statut}
+                </span>
+              </div>
+
+              <div className="cell-modern">
+                <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
+                  {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                </span>
+              </div>
+
+              <div className="actions-cell-modern">
+                <button onClick={() => { setSelectedUser(user); setShowViewModal(true); }} title="Voir">👁️</button>
+                <button onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }} title="Modifier">✏️</button>
+                <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
+                {user.type_emploi === 'temps_partiel' && (
+                  <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {filteredUsers.length === 0 && (
+            <div className="empty-state">
+              <p>Aucun pompier trouvé</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vue Cartes */}
+      {viewMode === 'cards' && (
+        <div className="personnel-cards-grid">
+          {filteredUsers.map(user => (
+            <div key={user.id} className="personnel-card" data-testid={`user-card-${user.id}`}>
+              <div className="card-header">
+                <div className="user-avatar-card">👤</div>
+                <div>
+                  <h3>{user.prenom} {user.nom}</h3>
+                  <p className="card-grade">{user.grade}</p>
+                </div>
+                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
+                  {user.statut}
+                </span>
+              </div>
+
+              <div className="card-body">
+                <div className="card-info-item">
+                  <span className="info-label">Email:</span>
+                  <span className="info-value">{user.email}</span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">Téléphone:</span>
+                  <span className="info-value">{user.telephone}</span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">Type emploi:</span>
+                  <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
+                    {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                  </span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">N° Employé:</span>
+                  <span className="info-value">{user.numero_employe}</span>
+                </div>
+              </div>
+
+              <div className="card-footer">
+                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setShowViewModal(true); }}>
+                  👁️ Voir
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }}>
+                  ✏️ Modifier
+                </Button>
+                {user.type_emploi === 'temps_partiel' && (
+                  <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
+                    📅 Dispo
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {filteredUsers.length === 0 && (
+            <div className="empty-state" style={{gridColumn: '1 / -1'}}>
+              <p>Aucun pompier trouvé</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Create User Modal - Version optimisée */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="create-user-modal">
+            <div className="modal-header">
+              <h3>🚒 Nouveau pompier</h3>
+              <Button variant="ghost" onClick={() => setShowCreateModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="personnel-form-grid">
+                {/* Section 1: Informations personnelles */}
+                <div className="form-section">
+                  <h4 className="section-title">👤 Informations personnelles</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Prénom *</Label>
+                      <Input
+                        value={newUser.prenom}
+                        onChange={(e) => setNewUser({...newUser, prenom: e.target.value})}
+                        placeholder="Ex: Pierre"
+                        data-testid="user-prenom-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Nom *</Label>
+                      <Input
+                        value={newUser.nom}
+                        onChange={(e) => setNewUser({...newUser, nom: e.target.value})}
+                        placeholder="Ex: Dupont"
+                        data-testid="user-nom-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      placeholder="ex: pierre.dupont@firemanager.ca"
+                      data-testid="user-email-input"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Téléphone</Label>
+                      <Input
+                        value={newUser.telephone}
+                        onChange={(e) => setNewUser({...newUser, telephone: e.target.value})}
+                        placeholder="Ex: 514-555-1234"
+                        data-testid="user-phone-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Adresse</Label>
+                      <Input
+                        value={newUser.adresse}
+                        onChange={(e) => setNewUser({...newUser, adresse: e.target.value})}
+                        placeholder="123 Rue Principale, Ville, Province"
+                        data-testid="user-address-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Contact d'urgence</Label>
+                    <Input
+                      value={newUser.contact_urgence}
+                      onChange={(e) => setNewUser({...newUser, contact_urgence: e.target.value})}
+                      placeholder="Nom et téléphone du contact d'urgence"
+                      data-testid="user-emergency-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Section 2: Informations professionnelles */}
+                <div className="form-section">
+                  <h4 className="section-title">🎖️ Informations professionnelles</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Grade *</Label>
+                      <select
+                        value={newUser.grade}
+                        onChange={(e) => setNewUser({...newUser, grade: e.target.value})}
+                        className="form-select"
+                        data-testid="user-grade-select"
+                      >
+                        <option value="">Sélectionner un grade</option>
+                        {grades.map(grade => (
+                          <option key={grade.id} value={grade.nom}>{grade.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <Label>Type d'emploi *</Label>
+                      <select
+                        value={newUser.type_emploi}
+                        onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value})}
+                        className="form-select"
+                        data-testid="user-employment-select"
+                      >
+                        <option value="">Sélectionner le type</option>
+                        <option value="temps_plein">Temps plein</option>
+                        <option value="temps_partiel">Temps partiel</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Option fonction supérieur pour les pompiers */}
+                  {newUser.grade === 'Pompier' && (
+                    <div className="form-field">
+                      <div className="fonction-superieur-option">
+                        <label className="fonction-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={newUser.fonction_superieur}
+                            onChange={(e) => setNewUser({...newUser, fonction_superieur: e.target.checked})}
+                            data-testid="user-fonction-superieur"
+                          />
+                          <div className="fonction-content">
+                            <span className="fonction-title">🎖️ Fonction supérieur</span>
+                            <span className="fonction-description">
+                              Ce pompier peut agir comme Lieutenant en dernier recours dans les affectations
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Numéro d'employé</Label>
+                      <Input
+                        value={newUser.numero_employe}
+                        onChange={(e) => setNewUser({...newUser, numero_employe: e.target.value})}
+                        placeholder="Ex: POM001 (automatique si vide)"
+                        data-testid="user-number-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Date d'embauche *</Label>
+                      <Input
+                        type="date"
+                        value={newUser.date_embauche}
+                        onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
+                        data-testid="user-hire-date-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Taux horaire ($/h)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={newUser.taux_horaire || ''}
+                        onChange={(e) => setNewUser({...newUser, taux_horaire: parseFloat(e.target.value) || 0})}
+                        placeholder="Ex: 25.50"
+                        data-testid="user-taux-horaire-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2.5: Préférences gardes externes */}
+                <div className="form-section">
+                  <h4 className="section-title">⚡ Préférences d'assignation</h4>
+                  <div className="form-field">
+                    <div className="garde-externe-option">
+                      <label className="garde-externe-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={newUser.accepte_gardes_externes !== false} // True par défaut
+                          onChange={(e) => setNewUser({...newUser, accepte_gardes_externes: e.target.checked})}
+                          data-testid="user-accepte-gardes-externes"
+                        />
+                        <div className="garde-externe-content">
+                          <span className="garde-externe-title">🏠 Accepter les gardes externes</span>
+                          <span className="garde-externe-description">
+                            {newUser.type_emploi === 'temps_partiel' 
+                              ? "Temps partiel: Requis pour être assigné aux gardes externes (en plus des disponibilités)"
+                              : newUser.type_emploi === 'temps_plein'
+                                ? "Temps plein: Permet d'être assigné automatiquement aux gardes externes"
+                                : "Permet d'être assigné aux gardes externes (astreinte à domicile)"
+                            }
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Compétences et formations - Version compacte */}
+                <div className="form-section">
+                  <h4 className="section-title">📜 Compétences et certifications</h4>
+                  <div className="formations-compact-grid">
+                    {formations.map(formation => (
+                      <label key={formation.id} className="formation-compact-item">
+                        <input
+                          type="checkbox"
+                          checked={newUser.formations.includes(formation.id)}
+                          onChange={() => handleFormationToggle(formation.id)}
+                          data-testid={`formation-${formation.id}`}
+                        />
+                        <div className="formation-compact-content">
+                          <div className="formation-compact-header">
+                            <span className="formation-compact-name">{formation.nom}</span>
+                            {formation.obligatoire && (
+                              <span className="compact-obligatoire">OBL</span>
+                            )}
+                          </div>
+                          <div className="formation-compact-meta">
+                            <span>{formation.heures_requises_annuelles || 0}h/an</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="formations-summary">
+                    <span className="summary-text">
+                      {newUser.formations.length} compétence(s) sélectionnée(s)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Section 4: EPI (Équipements de Protection Individuels) - Optionnel */}
+                <div className="form-section">
+                  <h4 className="section-title">🛡️ Tailles des EPI (Optionnel)</h4>
+                  <p className="section-description">Les tailles peuvent être saisies maintenant ou ajoutées plus tard</p>
+                  
+                  <div className="epi-tailles-grid-modal">
+                    {getAllEPITypes().map(epiType => (
+                      <div key={epiType.id} className="epi-taille-row">
+                        <span className="epi-taille-icon-modal">{epiType.icone}</span>
+                        <Label className="epi-taille-label-modal">{epiType.nom}</Label>
+                        <Input
+                          placeholder="Taille (optionnel)"
+                          value={newUser[`taille_${epiType.id}`] || ''}
+                          onChange={(e) => setNewUser({...newUser, [`taille_${epiType.id}`]: e.target.value})}
+                          className="epi-taille-input-modal"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="default" onClick={handleCreateUser} data-testid="submit-user-btn">
+                  🚒 Créer le pompier
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View User Modal - Version modernisée */}}
+      {showViewModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="view-user-modal">
+            <div className="modal-header">
+              <h3>👤 Profil de {selectedUser.prenom} {selectedUser.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowViewModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body modal-body-optimized">
+              <div className="user-profile-view">
+                {/* Header stylé */}
+                <div className="profile-summary-compact">
+                  <div className="profile-avatar-medium">
+                    <span className="avatar-icon-medium">👤</span>
+                  </div>
+                  <div className="profile-info-summary">
+                    <h4>{selectedUser.prenom} {selectedUser.nom}</h4>
+                    <div className="profile-badges">
+                      <span className="grade-badge" style={{ backgroundColor: getGradeColor(selectedUser.grade) }}>
+                        {selectedUser.grade}
+                      </span>
+                      <span className="employment-badge">
+                        {selectedUser.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                      </span>
+                      <span className={`status-badge ${selectedUser.statut.toLowerCase()}`}>
+                        {selectedUser.statut}
+                      </span>
+                    </div>
+                    <p className="employee-id">#{selectedUser.numero_employe}</p>
+                  </div>
+                </div>
+
+                {/* Grille 2 colonnes pour TOUTES les sections */}
+                <div className="profile-details-grid-optimized">
+                  {/* Colonne gauche */}
+                  <div className="detail-column" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <h5>📞 Contact</h5>
+                      <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Email</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.email}</span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Téléphone</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.telephone || 'Non renseigné'}</span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Adresse</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.adresse || 'Non renseignée'}</span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Contact d'urgence</span>
+                          <span className="detail-value emergency" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.contact_urgence || 'Non renseigné'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <h5>📜 Compétences</h5>
+                      {selectedUser.formations?.length > 0 ? (
+                        <div className="competences-view-optimized">
+                          {selectedUser.formations.map((formationId, index) => (
+                            <div key={index} className="competence-badge-optimized">
+                              <span className="competence-name">{getFormationName(formationId)}</span>
+                              <span className="competence-status">✅</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="no-data-text">Aucune compétence enregistrée</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Colonne droite */}
+                  <div className="detail-column" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <h5>🎖️ Professionnel</h5>
+                      <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Date d'embauche</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.date_embauche}</span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Ancienneté</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                            {(() => {
+                              const embauche = new Date(selectedUser.date_embauche.split('/').reverse().join('-'));
+                              const annees = Math.floor((new Date() - embauche) / (365.25 * 24 * 60 * 60 * 1000));
+                              return `${annees} an(s)`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Rôle système</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                            {selectedUser.role === 'admin' ? '👑 Administrateur' : 
+                             selectedUser.role === 'superviseur' ? '🎖️ Superviseur' : '👤 Employé'}
+                          </span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Taux horaire</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                            {selectedUser.taux_horaire ? `${selectedUser.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
+                          </span>
+                        </div>
+                        <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                          <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Heures max/semaine</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                            <span>{selectedUser.heures_max_semaine || 40}h</span>
+                            {selectedUser.type_emploi === 'temps_plein' && (
+                              <>
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Admin)</span>
+                                <button
+                                  onClick={() => {
+                                    setEditHeuresMaxValue(selectedUser.heures_max_semaine || 40);
+                                    setShowEditHeuresMaxModal(true);
+                                  }}
+                                  style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    fontSize: '14px',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.target.style.background = '#e2e8f0'}
+                                  onMouseOut={(e) => e.target.style.background = 'none'}
+                                  title="Modifier les heures max"
+                                >
+                                  ✏️
+                                </button>
+                              </>
+                            )}
+                            {selectedUser.type_emploi === 'temps_partiel' && (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Modifiable par l'employé)</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <h5>🛡️ Équipements (EPI)</h5>
+                      {userEPIs.length > 0 ? (
+                        <div className="epi-view-optimized">
+                          {userEPIs.map(epi => (
+                            <div key={epi.id} className="epi-item-optimized">
+                              <span className="epi-icon-opt">{getEPIIcone(epi.type_epi)}</span>
+                              <div className="epi-info-opt">
+                                <strong>{getEPINom(epi.type_epi)}</strong>
+                                <span className="epi-details-opt">Taille: {epi.taille} • {epi.etat}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="no-data-text">Aucun EPI enregistré</p>
+                      )}
+                    </div>
+
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h5 style={{ margin: 0 }}>✅ Validations Manuelles</h5>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setShowValidateCompetenceModal(true)}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        >
+                          ➕ Valider
+                        </Button>
+                      </div>
+                      {userValidations.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {userValidations.map(validation => {
+                            const competence = competences.find(c => c.id === validation.competence_id);
+                            return (
+                              <div key={validation.id} style={{
+                                padding: '0.75rem',
+                                background: '#f0fdf4',
+                                border: '1px solid #86efac',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'start'
+                              }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: '600', color: '#166534', marginBottom: '0.25rem' }}>
+                                    {competence?.nom || 'Compétence inconnue'}
+                                  </div>
+                                  <div style={{ fontSize: '0.813rem', color: '#15803d', marginBottom: '0.25rem' }}>
+                                    📝 {validation.justification}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#16a34a' }}>
+                                    📅 Validé le {new Date(validation.date_validation).toLocaleDateString('fr-FR')}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteValidation(validation.id)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '1rem',
+                                    color: '#dc2626',
+                                    padding: '0.25rem'
+                                  }}
+                                  title="Supprimer"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="no-data-text">Aucune validation manuelle</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions rapides */}
+                <div className="profile-actions">
+                  <Button 
+                    variant="default" 
+                    onClick={() => {
+                      setShowViewModal(false);
+                      handleEditUser(selectedUser);
+                    }}
+                    data-testid="quick-edit-user-btn"
+                  >
+                    ✏️ Modifier ce profil
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de gestion des disponibilités - Admin/Superviseur */}
+      {/* Modal supprimé - On utilise maintenant le module complet Mes Disponibilités */}
+      
+      {false && showManageDisponibilitesModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowManageDisponibilitesModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="manage-disponibilites-modal">
+            <div className="modal-header">
+              <h3>✏️ Gérer les disponibilités - {selectedUser.prenom} {selectedUser.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowManageDisponibilitesModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              {/* Formulaire d'ajout */}
+              <div className="add-disponibilite-form" style={{ marginBottom: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                <h4 style={{ marginBottom: '1rem' }}>➕ Ajouter une disponibilité</h4>
+                
+                {/* Première ligne : Date, heures, statut */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      {newDisponibilite.recurrence ? 'Date de début' : 'Date'}
+                    </label>
+                    <input
+                      type="date"
+                      value={newDisponibilite.date}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, date: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Heure début</label>
+                    <input
+                      type="time"
+                      value={newDisponibilite.heure_debut}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, heure_debut: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Heure fin</label>
+                    <input
+                      type="time"
+                      value={newDisponibilite.heure_fin}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, heure_fin: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Statut</label>
+                    <select
+                      value={newDisponibilite.statut}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, statut: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    >
+                      <option value="disponible">✅ Disponible</option>
+                      <option value="indisponible">❌ Indisponible</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Checkbox récurrence */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newDisponibilite.recurrence}
+                      onChange={(e) => setNewDisponibilite({...newDisponibilite, recurrence: e.target.checked})}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: '500', fontSize: '0.95rem' }}>📅 Récurrence (répéter cette disponibilité)</span>
+                  </label>
+                </div>
+
+                {/* Options de récurrence */}
+                {newDisponibilite.recurrence && (
+                  <div style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: '2px solid #3b82f6', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Type de récurrence</label>
+                        <select
+                          value={newDisponibilite.type_recurrence}
+                          onChange={(e) => setNewDisponibilite({...newDisponibilite, type_recurrence: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="hebdomadaire">📅 Hebdomadaire</option>
+                          <option value="mensuelle">📆 Mensuelle</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Date de fin *</label>
+                        <input
+                          type="date"
+                          value={newDisponibilite.date_fin}
+                          onChange={(e) => setNewDisponibilite({...newDisponibilite, date_fin: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sélection des jours pour hebdomadaire */}
+                    {newDisponibilite.type_recurrence === 'hebdomadaire' && (
+                      <>
+                        <div style={{ marginBottom: '1rem' }}>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                            Jours de la semaine *
+                          </label>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {[
+                              { label: 'Lun', value: 1 },
+                              { label: 'Mar', value: 2 },
+                              { label: 'Mer', value: 3 },
+                              { label: 'Jeu', value: 4 },
+                              { label: 'Ven', value: 5 },
+                              { label: 'Sam', value: 6 },
+                              { label: 'Dim', value: 0 }
+                            ].map(jour => (
+                              <label 
+                                key={jour.value}
+                                style={{ 
+                                  padding: '0.5rem 1rem', 
+                                  borderRadius: '6px', 
+                                  border: '2px solid',
+                                  borderColor: newDisponibilite.jours_semaine.includes(jour.value) ? '#3b82f6' : '#cbd5e1',
+                                  background: newDisponibilite.jours_semaine.includes(jour.value) ? '#dbeafe' : 'white',
+                                  cursor: 'pointer',
+                                  fontWeight: '500',
+                                  fontSize: '0.875rem'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={newDisponibilite.jours_semaine.includes(jour.value)}
+                                  onChange={(e) => {
+                                    const jours = e.target.checked 
+                                      ? [...newDisponibilite.jours_semaine, jour.value]
+                                      : newDisponibilite.jours_semaine.filter(j => j !== jour.value);
+                                    setNewDisponibilite({...newDisponibilite, jours_semaine: jours});
+                                  }}
+                                  style={{ display: 'none' }}
+                                />
+                                {jour.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Option bi-hebdomadaire */}
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={newDisponibilite.bi_hebdomadaire}
+                              onChange={(e) => setNewDisponibilite({...newDisponibilite, bi_hebdomadaire: e.target.checked})}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.875rem' }}>Une semaine sur deux (bi-hebdomadaire)</span>
+                          </label>
+                        </div>
+                      </>
+                    )}
+
+                    {newDisponibilite.type_recurrence === 'mensuelle' && (
+                      <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic' }}>
+                        💡 La disponibilité sera répétée le même jour chaque mois
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Bouton Ajouter */}
+                <Button onClick={handleAddDisponibilite} style={{ width: '100%' }}>
+                  {newDisponibilite.recurrence ? '➕ Créer les disponibilités récurrentes' : '➕ Ajouter'}
+                </Button>
+              </div>
+
+              {/* Liste des disponibilités existantes */}
+              <div className="disponibilites-list">
+                <h4 style={{ marginBottom: '1rem' }}>📋 Disponibilités existantes</h4>
+                {userDisponibilites.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {userDisponibilites.sort((a, b) => new Date(a.date) - new Date(b.date)).map(dispo => (
+                      <div key={dispo.id} style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '150px 120px 120px 150px auto', 
+                        gap: '1rem', 
+                        padding: '0.75rem', 
+                        background: 'white', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '6px',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <strong>{new Date(dispo.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          {dispo.heure_debut}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          {dispo.heure_fin}
+                        </div>
+                        <div>
+                          <span style={{ 
+                            padding: '0.25rem 0.75rem', 
+                            borderRadius: '12px', 
+                            fontSize: '0.875rem',
+                            background: dispo.statut === 'disponible' ? '#dcfce7' : '#fee2e2',
+                            color: dispo.statut === 'disponible' ? '#166534' : '#991b1b'
+                          }}>
+                            {dispo.statut === 'disponible' ? '✅ Disponible' : '❌ Indisponible'}
+                          </span>
+                        </div>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeleteDisponibilite(dispo.id)}
+                        >
+                          🗑️ Supprimer
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
+                    <p>Aucune disponibilité renseignée</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EPI Modal - Gestion des équipements */}
+      {showEPIModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowEPIModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="epi-modal">
+            <div className="modal-header">
+              <h3>🛡️ EPI - {selectedUser.prenom} {selectedUser.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowEPIModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="epi-management">
+                {/* Bouton d'ajout (Admin/Superviseur uniquement) */}
+                <div className="epi-header-actions">
+                  <Button 
+                    onClick={handleAddEPI}
+                    data-testid="add-epi-btn"
+                  >
+                    + Ajouter un EPI
+                  </Button>
+                </div>
+
+                {/* Liste des EPI */}
+                {userEPIs.length > 0 ? (
+                  <div className="epi-list">
+                    {userEPIs.map(epi => (
+                      <div key={epi.id} className="epi-item-card" data-testid={`epi-item-${epi.id}`}>
+                        <div className="epi-item-header">
+                          <div className="epi-item-icon">{getEPIIcone(epi.type_epi)}</div>
+                          <div className="epi-item-title">
+                            <h4>{getEPINom(epi.type_epi)}</h4>
+                            <span 
+                              className="epi-etat-badge" 
+                              style={{ backgroundColor: getEtatColor(epi.etat) }}
+                            >
+                              {epi.etat}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="epi-item-details">
+                          <div className="epi-detail-row">
+                            <span className="epi-label">Taille:</span>
+                            <span className="epi-value">{epi.taille}</span>
+                          </div>
+                          <div className="epi-detail-row">
+                            <span className="epi-label">Attribution:</span>
+                            <span className="epi-value">{epi.date_attribution}</span>
+                          </div>
+                          <div className="epi-detail-row">
+                            <span className="epi-label">Expiration:</span>
+                            <span className="epi-value">{epi.date_expiration}</span>
+                          </div>
+                          {epi.date_prochaine_inspection && (
+                            <div className="epi-detail-row">
+                              <span className="epi-label">Prochaine inspection:</span>
+                              <span className="epi-value">{epi.date_prochaine_inspection}</span>
+                            </div>
+                          )}
+                          {epi.notes && (
+                            <div className="epi-detail-row">
+                              <span className="epi-label">Notes:</span>
+                              <span className="epi-value">{epi.notes}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="epi-item-actions">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const newTaille = prompt("Nouvelle taille:", epi.taille);
+                              if (newTaille) handleUpdateEPITaille(epi.id, newTaille);
+                            }}
+                            data-testid={`update-taille-${epi.id}`}
+                          >
+                            ✏️ Modifier taille
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteEPI(epi.id)}
+                            data-testid={`delete-epi-${epi.id}`}
+                          >
+                            🗑️ Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-epi">
+                    <p>Aucun EPI enregistré pour cet employé</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add EPI Modal */}
+      {showAddEPIModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowAddEPIModal(false)}>
+          <div className="modal-content medium-modal" onClick={(e) => e.stopPropagation()} data-testid="add-epi-modal">
+            <div className="modal-header">
+              <h3>+ Ajouter un EPI</h3>
+              <Button variant="ghost" onClick={() => setShowAddEPIModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-field">
+                  <Label>Type d'EPI *</Label>
+                  <select
+                    value={newEPI.type_epi}
+                    onChange={(e) => setNewEPI({...newEPI, type_epi: e.target.value})}
+                    className="form-select"
+                    data-testid="new-epi-type-select"
+                  >
+                    <option value="">Sélectionnez un type</option>
+                    <option value="casque">🪖 Casque</option>
+                    <option value="bottes">👢 Bottes</option>
+                    <option value="veste_bunker">🧥 Veste Bunker</option>
+                    <option value="pantalon_bunker">👖 Pantalon Bunker</option>
+                    <option value="gants">🧤 Gants</option>
+                    <option value="masque_apria">😷 Facial APRIA</option>
+                    <option value="cagoule">🎭 Cagoule Anti-Particules</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <Label>Taille *</Label>
+                  <Input
+                    value={newEPI.taille}
+                    onChange={(e) => setNewEPI({...newEPI, taille: e.target.value})}
+                    placeholder="Ex: M, L, 42, etc."
+                    data-testid="new-epi-taille-input"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-field">
+                    <Label>Date d'attribution *</Label>
+                    <Input
+                      type="date"
+                      value={newEPI.date_attribution}
+                      onChange={(e) => setNewEPI({...newEPI, date_attribution: e.target.value})}
+                      data-testid="new-epi-attribution-input"
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <Label>État</Label>
+                    <select
+                      value={newEPI.etat}
+                      onChange={(e) => setNewEPI({...newEPI, etat: e.target.value})}
+                      className="form-select"
+                      data-testid="new-epi-etat-select"
+                    >
+                      <option value="Neuf">Neuf</option>
+                      <option value="Bon">Bon</option>
+                      <option value="À remplacer">À remplacer</option>
+                      <option value="Défectueux">Défectueux</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-field">
+                    <Label>Date d'expiration *</Label>
+                    <Input
+                      type="date"
+                      value={newEPI.date_expiration}
+                      onChange={(e) => setNewEPI({...newEPI, date_expiration: e.target.value})}
+                      data-testid="new-epi-expiration-input"
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Prochaine inspection</Label>
+                    <Input
+                      type="date"
+                      value={newEPI.date_prochaine_inspection}
+                      onChange={(e) => setNewEPI({...newEPI, date_prochaine_inspection: e.target.value})}
+                      data-testid="new-epi-inspection-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <Label>Notes</Label>
+                  <textarea
+                    value={newEPI.notes}
+                    onChange={(e) => setNewEPI({...newEPI, notes: e.target.value})}
+                    className="form-textarea"
+                    rows="3"
+                    placeholder="Remarques ou observations..."
+                    data-testid="new-epi-notes-input"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowAddEPIModal(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleCreateEPI} data-testid="create-epi-btn">
+                  Ajouter l'EPI
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal - Complet et fonctionnel */}
+      {showEditModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="edit-user-modal">
+            <div className="modal-header">
+              <h3>✏️ Modifier {selectedUser.prenom} {selectedUser.nom}</h3>
+              <Button variant="ghost" onClick={() => setShowEditModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="personnel-form-grid">
+                {/* Section 1: Informations personnelles */}
+                <div className="form-section">
+                  <h4 className="section-title">👤 Informations personnelles</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Prénom *</Label>
+                      <Input
+                        value={newUser.prenom}
+                        onChange={(e) => setNewUser({...newUser, prenom: e.target.value})}
+                        data-testid="edit-user-prenom-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Nom *</Label>
+                      <Input
+                        value={newUser.nom}
+                        onChange={(e) => setNewUser({...newUser, nom: e.target.value})}
+                        data-testid="edit-user-nom-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      data-testid="edit-user-email-input"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Téléphone</Label>
+                      <Input
+                        value={newUser.telephone}
+                        onChange={(e) => setNewUser({...newUser, telephone: e.target.value})}
+                        data-testid="edit-user-phone-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Adresse</Label>
+                      <Input
+                        value={newUser.adresse}
+                        onChange={(e) => setNewUser({...newUser, adresse: e.target.value})}
+                        placeholder="123 Rue Principale, Ville, Province"
+                        data-testid="edit-user-address-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-field">
+                    <Label>Contact d'urgence</Label>
+                    <Input
+                      value={newUser.contact_urgence}
+                      onChange={(e) => setNewUser({...newUser, contact_urgence: e.target.value})}
+                      placeholder="Nom et téléphone du contact d'urgence"
+                      data-testid="edit-user-emergency-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Section 2: Informations professionnelles */}
+                <div className="form-section">
+                  <h4 className="section-title">🎖️ Informations professionnelles</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Grade *</Label>
+                      <select
+                        value={newUser.grade}
+                        onChange={(e) => setNewUser({...newUser, grade: e.target.value})}
+                        className="form-select"
+                        data-testid="edit-user-grade-select"
+                      >
+                        {grades.map(grade => (
+                          <option key={grade.id} value={grade.nom}>{grade.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <Label>Type d'emploi *</Label>
+                      <select
+                        value={newUser.type_emploi}
+                        onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value})}
+                        className="form-select"
+                        data-testid="edit-user-employment-select"
+                      >
+                        <option value="temps_plein">Temps plein</option>
+                        <option value="temps_partiel">Temps partiel</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Option fonction supérieur pour les pompiers */}
+                  {newUser.grade === 'Pompier' && (
+                    <div className="form-field">
+                      <div className="fonction-superieur-option">
+                        <label className="fonction-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={newUser.fonction_superieur}
+                            onChange={(e) => setNewUser({...newUser, fonction_superieur: e.target.checked})}
+                            data-testid="edit-user-fonction-superieur"
+                          />
+                          <div className="fonction-content">
+                            <span className="fonction-title">🎖️ Fonction supérieur</span>
+                            <span className="fonction-description">
+                              Ce pompier peut agir comme Lieutenant en dernier recours dans les affectations
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Numéro d'employé</Label>
+                      <Input
+                        value={newUser.numero_employe}
+                        onChange={(e) => setNewUser({...newUser, numero_employe: e.target.value})}
+                        data-testid="edit-user-number-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Date d'embauche *</Label>
+                      <Input
+                        type="date"
+                        value={newUser.date_embauche}
+                        onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
+                        data-testid="edit-user-hire-date-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Taux horaire ($/h)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={newUser.taux_horaire || ''}
+                        onChange={(e) => setNewUser({...newUser, taux_horaire: parseFloat(e.target.value) || 0})}
+                        placeholder="Ex: 25.50"
+                        data-testid="edit-user-taux-horaire-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Heures maximum par semaine *</Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={newUser.heures_max_semaine !== null && newUser.heures_max_semaine !== undefined 
+                          ? newUser.heures_max_semaine 
+                          : 40}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Permettre seulement les chiffres ou champ vide
+                          if (value === '' || /^\d+$/.test(value)) {
+                            const numValue = value === '' ? null : parseInt(value);
+                            // Valider la plage 5-168
+                            if (numValue === null || (numValue >= 5 && numValue <= 168)) {
+                              setNewUser({...newUser, heures_max_semaine: numValue});
+                            }
+                          }
+                        }}
+                        placeholder="Ex: 40"
+                        data-testid="edit-user-heures-max-input"
+                        disabled={newUser.type_emploi === 'temps_partiel'}
+                      />
+                      <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.875rem' }}>
+                        {newUser.type_emploi === 'temps_plein' 
+                          ? "Limite d'heures hebdomadaires pour l'auto-attribution (modifiable par admin uniquement)"
+                          : "Les employés temps partiel modifient ce champ dans leur profil"}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2.5: Préférences gardes externes */}
+                <div className="form-section">
+                  <h4 className="section-title">⚡ Préférences d'assignation</h4>
+                  <div className="form-field">
+                    <div className="garde-externe-option">
+                      <label className="garde-externe-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={newUser.accepte_gardes_externes !== false} // True par défaut
+                          onChange={(e) => setNewUser({...newUser, accepte_gardes_externes: e.target.checked})}
+                          data-testid="edit-user-accepte-gardes-externes"
+                        />
+                        <div className="garde-externe-content">
+                          <span className="garde-externe-title">🏠 Accepter les gardes externes</span>
+                          <span className="garde-externe-description">
+                            {newUser.type_emploi === 'temps_partiel' 
+                              ? "Temps partiel: Requis pour être assigné aux gardes externes (en plus des disponibilités)"
+                              : newUser.type_emploi === 'temps_plein'
+                                ? "Temps plein: Permet d'être assigné automatiquement aux gardes externes"
+                                : "Permet d'être assigné aux gardes externes (astreinte à domicile)"
+                            }
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Compétences */}
+                <div className="form-section">
+                  <h4 className="section-title">📜 Compétences et certifications</h4>
+                  <div className="formations-compact-grid">
+                    {formations.map(formation => (
+                      <label key={formation.id} className="formation-compact-item">
+                        <input
+                          type="checkbox"
+                          checked={newUser.formations.includes(formation.id)}
+                          onChange={() => handleFormationToggle(formation.id)}
+                          data-testid={`edit-formation-${formation.id}`}
+                        />
+                        <div className="formation-compact-content">
+                          <div className="formation-compact-header">
+                            <span className="formation-compact-name">{formation.nom}</span>
+                            {formation.obligatoire && (
+                              <span className="compact-obligatoire">OBL</span>
+                            )}
+                          </div>
+                          <div className="formation-compact-meta">
+                            <span>{formation.heures_requises_annuelles || 0}h/an</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="formations-summary">
+                    <span className="summary-text">
+                      {newUser.formations.length} compétence(s) sélectionnée(s)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Section 4: EPI (Équipements de Protection Individuels) */}
+                <div className="form-section">
+                  <h4 className="section-title">🛡️ Tailles des EPI</h4>
+                  <p className="section-description">Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.</p>
+                  
+                  <div className="epi-tailles-grid-modal">
+                    {getAllEPITypes().map(epiType => {
+                      const existingEPI = userEPIs.find(e => e.type_epi === epiType.id);
+                      const currentValue = existingEPI ? existingEPI.taille : '';
+                      
+                      return (
+                        <div key={epiType.id} className="epi-taille-row">
+                          <span className="epi-taille-icon-modal">{epiType.icone}</span>
+                          <Label className="epi-taille-label-modal">{epiType.nom}</Label>
+                          <Input
+                            value={currentValue}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              if (existingEPI) {
+                                // Mettre à jour l'EPI existant
+                                const updatedEPIs = userEPIs.map(item => 
+                                  item.id === existingEPI.id ? {...item, taille: newValue} : item
+                                );
+                                setUserEPIs(updatedEPIs);
+                              } else if (newValue) {
+                                // Créer un nouvel EPI si une valeur est saisie
+                                const newEPI = {
+                                  id: `temp-${epiType.id}-${Date.now()}`,
+                                  type_epi: epiType.id,
+                                  taille: newValue,
+                                  user_id: selectedUser.id
+                                };
+                                setUserEPIs([...userEPIs, newEPI]);
+                              }
+                            }}
+                            placeholder="Saisir la taille"
+                            className="epi-taille-input-modal"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="epi-note-modal">
+                    💡 Pour attribuer ou gérer complètement les EPI, utilisez le <strong>Module EPI</strong> dans la sidebar
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="default" onClick={handleUpdateUser} data-testid="update-user-btn">
+                  💾 Sauvegarder les modifications
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Export - Choix entre tout ou individuel */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Options d'Export {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Que souhaitez-vous exporter ?
+              </p>
+              
+              {/* Choix : Tout le personnel */}
+              <label 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  padding: '1.5rem',
+                  border: exportScope === 'all' ? '2px solid #FCA5A5' : '2px solid #E5E7EB',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '1rem',
+                  background: exportScope === 'all' ? '#FEF2F2' : 'white',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="exportScope"
+                  value="all"
+                  checked={exportScope === 'all'}
+                  onChange={(e) => setExportScope(e.target.value)}
+                  style={{width: '20px', height: '20px', cursor: 'pointer'}}
+                />
+                <span style={{fontSize: '1.5rem'}}>📋</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: '600', fontSize: '1rem'}}>Tout le personnel</div>
+                  <div style={{fontSize: '0.875rem', color: '#64748b'}}>
+                    Exporter la liste complète ({users.length} pompier{users.length > 1 ? 's' : ''})
+                  </div>
+                </div>
+              </label>
+
+              {/* Choix : Une personne spécifique */}
+              <label 
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                  padding: '1.5rem',
+                  border: exportScope === 'individual' ? '2px solid #FCA5A5' : '2px solid #E5E7EB',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  background: exportScope === 'individual' ? '#FEF2F2' : 'white',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="exportScope"
+                  value="individual"
+                  checked={exportScope === 'individual'}
+                  onChange={(e) => setExportScope(e.target.value)}
+                  style={{width: '20px', height: '20px', cursor: 'pointer', marginTop: '0.25rem'}}
+                />
+                <span style={{fontSize: '1.5rem'}}>👤</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem'}}>
+                    Une personne spécifique
+                  </div>
+                  {exportScope === 'individual' && (
+                    <select
+                      value={selectedPersonForExport}
+                      onChange={(e) => setSelectedPersonForExport(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '6px',
+                        border: '1px solid #E5E7EB',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">-- Sélectionner une personne --</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.prenom} {user.nom} - {user.grade}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+
+              <div style={{marginTop: '1.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end'}}>
+                <Button variant="outline" onClick={() => setShowExportModal(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleConfirmExport}>
+                  {exportType === 'pdf' ? '📄' : '📊'} Exporter
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal d'édition des heures max (Admin uniquement pour temps plein) */}
+      {showEditHeuresMaxModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowEditHeuresMaxModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>⏰ Modifier les heures max/semaine</h3>
+              <Button variant="ghost" onClick={() => setShowEditHeuresMaxModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '1rem', color: '#64748b' }}>
+                Employé: <strong>{selectedUser.prenom} {selectedUser.nom}</strong>
+              </p>
+              <div className="form-field">
+                <Label>Heures maximum par semaine *</Label>
+                <Input
+                  type="number"
+                  min="5"
+                  max="168"
+                  value={editHeuresMaxValue}
+                  onChange={(e) => setEditHeuresMaxValue(parseInt(e.target.value))}
+                  data-testid="edit-heures-max-input"
+                />
+                <small className="text-muted">
+                  Limite d'heures hebdomadaires pour l'auto-attribution (5-168h).
+                </small>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowEditHeuresMaxModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await apiPut(tenantSlug, `/users/${selectedUser.id}`, {
+                      heures_max_semaine: editHeuresMaxValue
+                    });
+                    
+                    toast({
+                      title: "Heures max mises à jour",
+                      description: `Les heures max ont été modifiées à ${editHeuresMaxValue}h/semaine.`
+                    });
+                    
+                    // Refresh data
+                    const usersData = await apiGet(tenantSlug, '/users');
+                    setUsers(usersData);
+                    
+                    // Update selected user
+                    const updatedUser = usersData.find(u => u.id === selectedUser.id);
+                    setSelectedUser(updatedUser);
+                    
+                    setShowEditHeuresMaxModal(false);
+                  } catch (error) {
+                    toast({
+                      title: "Erreur",
+                      description: "Impossible de modifier les heures max.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                data-testid="save-heures-max-btn"
+              >
+                💾 Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de validation de compétence */}
+      {showValidateCompetenceModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowValidateCompetenceModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+            <div className="modal-header">
+              <h3>✅ Valider une Compétence</h3>
+              <Button variant="ghost" onClick={() => setShowValidateCompetenceModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', fontSize: '0.875rem' }}>
+                <strong>Employé:</strong> {selectedUser.prenom} {selectedUser.nom}
+              </p>
+              
+              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24' }}>
+                <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0 }}>
+                  ⚠️ <strong>Important:</strong> Cette validation manuelle permet de marquer qu'un employé a acquis une compétence 
+                  par un moyen externe (formation externe, équivalence, expérience, etc.). 
+                  Une justification est obligatoire pour la traçabilité.
+                </p>
+              </div>
+
+              <div className="form-field" style={{ marginBottom: '1rem' }}>
+                <Label>Compétence *</Label>
+                <select
+                  value={newValidation.competence_id}
+                  onChange={(e) => setNewValidation({...newValidation, competence_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="">-- Sélectionner une compétence --</option>
+                  {competences.map(comp => (
+                    <option key={comp.id} value={comp.id}>{comp.nom}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field" style={{ marginBottom: '1rem' }}>
+                <Label>Justification * (Formation externe, équivalence, etc.)</Label>
+                <textarea
+                  value={newValidation.justification}
+                  onChange={(e) => setNewValidation({...newValidation, justification: e.target.value})}
+                  placeholder="Ex: Formation externe suivie chez XYZ le 15/10/2024 - Certificat disponible"
+                  rows="4"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.875rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+                <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                  Décrivez précisément comment la compétence a été acquise (où, quand, document justificatif)
+                </small>
+              </div>
+
+              <div className="form-field" style={{ marginBottom: '1rem' }}>
+                <Label>Date de validation *</Label>
+                <Input
+                  type="date"
+                  value={newValidation.date_validation}
+                  onChange={(e) => setNewValidation({...newValidation, date_validation: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowValidateCompetenceModal(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleValidateCompetence}>
+                ✅ Valider la Compétence
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Planning Component optimisé - Vue moderne avec code couleur
+const Planning = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    const today = new Date();
+    // Utiliser UTC pour éviter les problèmes de fuseau horaire
+    const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const dayOfWeek = todayUTC.getUTCDay(); // 0 = dimanche, 1 = lundi, etc.
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(todayUTC);
+    monday.setUTCDate(todayUTC.getUTCDate() + daysToMonday);
+    return monday.toISOString().split('T')[0];
+  });
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [viewMode, setViewMode] = useState('mois'); // 'semaine' ou 'mois' - Défaut: mois
+  const [displayMode] = useState('calendrier'); // Vue calendrier uniquement (liste supprimée car moins lisible)
+  const [searchFilter, setSearchFilter] = useState('');
+  const [typeGardeFilter, setTypeGardeFilter] = useState('');
+  const [typesGarde, setTypesGarde] = useState([]);
+  const [assignations, setAssignations] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showGardeDetailsModal, setShowGardeDetailsModal] = useState(false);
+  const [showAdvancedAssignModal, setShowAdvancedAssignModal] = useState(false);
+  const [showAutoAttributionModal, setShowAutoAttributionModal] = useState(false);
+  const [autoAttributionConfig, setAutoAttributionConfig] = useState({
+    periode: 'semaine', // semaine ou mois
+    periodeLabel: '', // 'Semaine actuelle', 'Semaine suivante', 'Mois actuel', 'Mois suivant'
+    date: currentWeek,
+    mode: 'completer', // 'completer' ou 'reinitialiser'
+    mode: 'completer' // 'completer' ou 'reinitialiser'
+  });
+  const [advancedAssignConfig, setAdvancedAssignConfig] = useState({
+    user_id: '',
+    type_garde_ids: [], // Changé en array pour multi-sélection
+    recurrence_type: 'unique', // unique, hebdomadaire, bihebdomadaire, mensuelle, annuelle, personnalisee
+    jours_semaine: [], // pour récurrence hebdomadaire/bihebdomadaire (sélection multiple)
+    bi_hebdomadaire: false, // une semaine sur deux (obsolète, utilisé par bihebdomadaire maintenant)
+    recurrence_intervalle: 1, // pour personnalisée
+    recurrence_frequence: 'jours', // pour personnalisée: jours, semaines, mois, ans
+    date_debut: '',
+    date_fin: '',
+    exceptions: [] // dates d'exception
+  });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [quickAssignSearchQuery, setQuickAssignSearchQuery] = useState('');
+  const [showQuickAssignDropdown, setShowQuickAssignDropdown] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedGardeDetails, setSelectedGardeDetails] = useState(null);
+  const [attributionLoading, setAttributionLoading] = useState(false);
+  const [attributionStep, setAttributionStep] = useState('');
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [selectedAuditAssignation, setSelectedAuditAssignation] = useState(null);
+  const [auditNotesEdit, setAuditNotesEdit] = useState('');
+  const { toast } = useToast();
+
+  // Fonction pour calculer l'aperçu des dates de récurrence
+  const calculateRecurrenceDates = () => {
+    if (!advancedAssignConfig.date_debut || !advancedAssignConfig.recurrence_type) {
+      return [];
+    }
+
+    const dates = [];
+    const startDate = new Date(advancedAssignConfig.date_debut);
+    const endDate = advancedAssignConfig.date_fin 
+      ? new Date(advancedAssignConfig.date_fin)
+      : new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 an max pour aperçu
+    
+    let currentDate = new Date(startDate);
+    const maxDates = 10; // Afficher max 10 dates
+
+    // Mapper les jours
+    const dayMap = {
+      'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+      'friday': 5, 'saturday': 6, 'sunday': 0
+    };
+
+    if (advancedAssignConfig.recurrence_type === 'unique') {
+      dates.push(new Date(startDate));
+    } 
+    else if (advancedAssignConfig.jour_specifique) {
+      // Avec jour spécifique
+      const targetDay = dayMap[advancedAssignConfig.jour_specifique];
+      
+      if (advancedAssignConfig.recurrence_type === 'hebdomadaire') {
+        while (currentDate <= endDate && dates.length < maxDates) {
+          if (currentDate.getDay() === targetDay) {
+            dates.push(new Date(currentDate));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else if (advancedAssignConfig.recurrence_type === 'bihebdomadaire') {
+        let weekCount = 0;
+        let lastWeekStart = null;
+        
+        while (currentDate <= endDate && dates.length < maxDates) {
+          const weekStart = new Date(currentDate);
+          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+          
+          if (lastWeekStart === null || weekStart.getTime() !== lastWeekStart.getTime()) {
+            if (lastWeekStart !== null) weekCount++;
+            lastWeekStart = new Date(weekStart);
+          }
+          
+          if (currentDate.getDay() === targetDay && weekCount % 2 === 0) {
+            dates.push(new Date(currentDate));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else if (advancedAssignConfig.recurrence_type === 'personnalisee') {
+        const interval = advancedAssignConfig.recurrence_intervalle || 1;
+        const freq = advancedAssignConfig.recurrence_frequence || 'semaines';
+        
+        // Trouver le premier jour correspondant
+        while (currentDate.getDay() !== targetDay && currentDate <= endDate) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        while (currentDate <= endDate && dates.length < maxDates) {
+          dates.push(new Date(currentDate));
+          
+          if (freq === 'jours') {
+            currentDate.setDate(currentDate.getDate() + interval);
+          } else if (freq === 'semaines') {
+            currentDate.setDate(currentDate.getDate() + (interval * 7));
+          } else if (freq === 'mois') {
+            currentDate.setMonth(currentDate.getMonth() + interval);
+          } else if (freq === 'ans') {
+            currentDate.setFullYear(currentDate.getFullYear() + interval);
+          }
+        }
+      }
+    }
+
+    return dates;
+  };
+
+  // Fonction pour suggérer le prochain jour spécifique
+  const getSuggestedNextDay = () => {
+    if (!advancedAssignConfig.jour_specifique || !advancedAssignConfig.date_debut) {
+      return null;
+    }
+
+    const dayMap = {
+      'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+      'friday': 5, 'saturday': 6, 'sunday': 0
+    };
+    const dayNameMap = {
+      'monday': 'lundi', 'tuesday': 'mardi', 'wednesday': 'mercredi',
+      'thursday': 'jeudi', 'friday': 'vendredi', 'saturday': 'samedi', 'sunday': 'dimanche'
+    };
+
+    const startDate = new Date(advancedAssignConfig.date_debut);
+    const targetDay = dayMap[advancedAssignConfig.jour_specifique];
+    const startDay = startDate.getDay();
+
+    if (startDay === targetDay) {
+      return null; // Déjà le bon jour
+    }
+
+    // Calculer le prochain jour correspondant
+    let daysToAdd = targetDay - startDay;
+    if (daysToAdd < 0) daysToAdd += 7;
+
+    const suggestedDate = new Date(startDate);
+    suggestedDate.setDate(startDate.getDate() + daysToAdd);
+
+    return {
+      date: suggestedDate,
+      formatted: suggestedDate.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      dayName: dayNameMap[advancedAssignConfig.jour_specifique]
+    };
+  };
+
+  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const weekDaysEn = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const [year, month, day] = currentWeek.split('-').map(Number);
+    // Utiliser Date.UTC pour éviter les problèmes de fuseau horaire
+    const date = new Date(Date.UTC(year, month - 1, day + i));
+    return date;
+  });
+
+  // Générer les dates du mois pour la vue mois (calendrier commençant le lundi)
+  const monthDates = (() => {
+    if (viewMode !== 'mois') return [];
+    
+    const [year, month] = currentMonth.split('-').map(Number);
+    
+    // Utiliser UTC pour éviter les problèmes de fuseau horaire
+    const firstDay = new Date(Date.UTC(year, month - 1, 1));
+    const lastDay = new Date(Date.UTC(year, month, 0));
+    const dates = [];
+    
+    // Calculer le jour de la semaine du premier jour (0 = dimanche, 1 = lundi, etc.)
+    let firstDayOfWeek = firstDay.getUTCDay();
+    // Convertir pour que lundi = 0, dimanche = 6
+    firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    
+    // Ajouter les jours vides au début pour commencer à lundi
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      dates.push(null); // Jours vides
+    }
+    
+    // Ajouter tous les jours du mois en UTC
+    for (let day = 1; day <= lastDay.getUTCDate(); day++) {
+      dates.push(new Date(Date.UTC(year, month - 1, day, 12, 0, 0))); // Midi UTC pour éviter les décalages
+    }
+    
+    return dates;
+  })();
+
+  useEffect(() => {
+    fetchPlanningData();
+  }, [currentWeek, currentMonth, viewMode, tenantSlug]);
+
+  const fetchPlanningData = async () => {
+    if (!tenantSlug) return;
+    
+    setLoading(true);
+    try {
+      const dateRange = viewMode === 'mois' ? 
+        `${currentMonth}-01` : // Premier jour du mois
+        currentWeek;
+        
+      const [typesData, assignationsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/types-garde'),
+        apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
+        apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+      ]);
+      
+      setTypesGarde(typesData);
+      setAssignations(assignationsData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Erreur lors du chargement du planning:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le planning",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getGardeCoverage = (date, typeGarde) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const gardeAssignations = assignations.filter(a => 
+      a.date === dateStr && a.type_garde_id === typeGarde.id
+    );
+    
+    const assigned = gardeAssignations.length;
+    const required = typeGarde.personnel_requis;
+    
+    if (assigned === 0) return 'vacante';
+    if (assigned >= required) return 'complete';
+    return 'partielle';
+  };
+
+  const getCoverageColor = (coverage) => {
+    switch (coverage) {
+      case 'complete': return '#10B981'; // Vert
+      case 'partielle': return '#F59E0B'; // Jaune
+      case 'vacante': return '#EF4444'; // Rouge
+      default: return '#6B7280';
+    }
+  };
+
+  const handleAttributionAuto = async () => {
+    if (user.role === 'employe') return;
+
+    try {
+      // Activer l'overlay de chargement
+      setAttributionLoading(true);
+      setShowAutoAttributionModal(false);
+      setAttributionStep('📋 Initialisation...');
+      
+      // Calculer la plage de dates selon la période
+      let semaine_debut, semaine_fin;
+      
+      if (autoAttributionConfig.periode === 'semaine') {
+        // Pour une semaine: date de début = lundi, date de fin = dimanche
+        const monday = new Date(autoAttributionConfig.date);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        
+        semaine_debut = monday.toISOString().split('T')[0];
+        semaine_fin = sunday.toISOString().split('T')[0];
+      } else {
+        // Pour un mois: calculer toutes les semaines du mois
+        const [year, month] = autoAttributionConfig.date.split('-');
+        const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const lastDay = new Date(parseInt(year), parseInt(month), 0);
+        
+        // Trouver le lundi de la première semaine du mois
+        const firstMonday = new Date(firstDay);
+        firstMonday.setDate(firstDay.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
+        
+        // Trouver le dimanche de la dernière semaine du mois
+        const lastSunday = new Date(lastDay);
+        lastSunday.setDate(lastDay.getDate() + (7 - lastDay.getDay()) % 7);
+        
+        semaine_debut = firstMonday.toISOString().split('T')[0];
+        semaine_fin = lastSunday.toISOString().split('T')[0];
+      }
+      
+      // Lancer l'attribution automatique avec le paramètre reset
+      const resetParam = autoAttributionConfig.mode === 'reinitialiser' ? '&reset=True' : '';
+      const initResponse = await apiPost(
+        tenantSlug, 
+        `/planning/attribution-auto?semaine_debut=${semaine_debut}&semaine_fin=${semaine_fin}${resetParam}`, 
+        {}
+      );
+      
+      // Récupérer le task_id et l'URL du stream
+      const { task_id, stream_url } = initResponse;
+      
+      if (!task_id) {
+        throw new Error("Aucun task_id reçu du serveur");
+      }
+      
+      setAttributionStep('🚀 Attribution lancée - connexion au flux temps réel...');
+      
+      // Se connecter au flux SSE pour recevoir les mises à jour
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const eventSource = new EventSource(`${backendUrl}${stream_url}`);
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const progress = JSON.parse(event.data);
+          
+          // Mettre à jour l'affichage avec la progression en temps réel
+          setAttributionStep(
+            `${progress.current_step} (${progress.progress_percentage}% - ${progress.elapsed_time})`
+          );
+          
+          // Si terminé, fermer la connexion
+          if (progress.status === 'termine') {
+            eventSource.close();
+            
+            // Désactiver l'overlay
+            setAttributionLoading(false);
+            setAttributionStep('');
+            
+            // Message personnalisé selon le mode
+            const successMessage = autoAttributionConfig.mode === 'reinitialiser' 
+              ? `Planning réinitialisé ! ${progress.assignations_creees} assignation(s) créée(s)`
+              : `${progress.assignations_creees} assignation(s) créée(s) pour ${autoAttributionConfig.periodeLabel}`;
+            
+            toast({
+              title: autoAttributionConfig.mode === 'reinitialiser' ? "Planning réinitialisé" : "Attribution automatique réussie",
+              description: successMessage,
+              variant: "success"
+            });
+
+            // Réinitialiser la config
+            setAutoAttributionConfig({
+              periode: 'semaine',
+              periodeLabel: '',
+              date: currentWeek,
+              mode: 'completer'
+            });
+            fetchPlanningData();
+          }
+          
+          // Si erreur, fermer la connexion
+          if (progress.status === 'erreur') {
+            eventSource.close();
+            
+            setAttributionLoading(false);
+            setAttributionStep('');
+            
+            toast({
+              title: "Erreur d'attribution",
+              description: progress.error_message || "Une erreur s'est produite",
+              variant: "destructive"
+            });
+          }
+        } catch (parseError) {
+          console.error('Erreur parsing SSE:', parseError);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('Erreur SSE:', error);
+        eventSource.close();
+        
+        setAttributionLoading(false);
+        setAttributionStep('');
+        
+        toast({
+          title: "Erreur de connexion",
+          description: "La connexion au serveur a été interrompue",
+          variant: "destructive"
+        });
+      };
+      
+    } catch (error) {
+      // Désactiver l'overlay en cas d'erreur
+      setAttributionLoading(false);
+      setAttributionStep('');
+      
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de l'attribution automatique",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemoveAllPersonnelFromGarde = async () => {
+    console.log('selectedGardeDetails:', selectedGardeDetails);
+    console.log('assignations:', selectedGardeDetails.assignations);
+    
+    if (!selectedGardeDetails.assignations || selectedGardeDetails.assignations.length === 0) {
+      toast({
+        title: "Aucun personnel",
+        description: "Il n'y a aucun personnel assigné à cette garde",
+        variant: "default"
+      });
+      return;
+    }
+
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer TOUT le personnel de cette garde ?\n\nCela supprimera ${selectedGardeDetails.assignations.length} assignation(s) pour la ${selectedGardeDetails.typeGarde.nom} du ${selectedGardeDetails.date.toLocaleDateString('fr-FR')}.`)) {
+      return;
+    }
+
+    try {
+      // Vérifier que chaque assignation a un ID
+      const assignationsWithIds = selectedGardeDetails.assignations.filter(a => a.id);
+      
+      if (assignationsWithIds.length === 0) {
+        toast({
+          title: "Erreur technique",
+          description: "Les assignations n'ont pas d'ID - impossible de les supprimer",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Deleting assignations with IDs:', assignationsWithIds.map(a => a.id));
+
+      // Supprimer toutes les assignations de cette garde
+      const deletePromises = assignationsWithIds.map(assignation => 
+        apiDelete(tenantSlug, `/planning/assignation/${assignation.id}`)
+      );
+
+      await Promise.all(deletePromises);
+      
+      toast({
+        title: "Personnel supprimé",
+        description: `Tout le personnel (${assignationsWithIds.length} personne(s)) a été retiré de cette garde`,
+        variant: "success"
+      });
+
+      // Fermer le modal et recharger les données
+      setShowGardeDetailsModal(false);
+      fetchPlanningData();
+      
+    } catch (error) {
+      console.error('Error removing all personnel:', error);
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible de supprimer le personnel de cette garde",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemovePersonFromGarde = async (personId, gardeName) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir retirer cette personne de la garde ${gardeName} ?`)) {
+      return;
+    }
+
+    try {
+      // Trouver l'assignation à supprimer
+      const assignationToRemove = selectedGardeDetails.assignations.find(a => a.user_id === personId);
+      
+      if (!assignationToRemove) {
+        toast({
+          title: "Erreur",
+          description: "Assignation non trouvée",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await apiDelete(tenantSlug, `/planning/assignation/${assignationToRemove.id}`);
+      
+      toast({
+        title: "Personne retirée",
+        description: "La personne a été retirée de cette garde avec succès",
+        variant: "success"
+      });
+
+      // Fermer le modal et recharger les données
+      setShowGardeDetailsModal(false);
+      fetchPlanningData();
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible de retirer la personne",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAssignUser = async (userId, typeGardeId, date) => {
+    if (user.role === 'employe') return;
+
+    try {
+      await apiPost(tenantSlug, '/planning/assignation', {
+        user_id: userId,
+        type_garde_id: typeGardeId,
+        date: date,
+        assignation_type: "manuel"
+      });
+
+      toast({
+        title: "Attribution réussie",
+        description: "L'assignation a été créée avec succès",
+        variant: "success"
+      });
+
+      fetchPlanningData();
+      setShowAssignModal(false);
+    } catch (error) {
+      toast({
+        title: "Erreur d'attribution",
+        description: "Impossible de créer l'assignation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAdvancedAssignment = async () => {
+    if (user.role === 'employe') return;
+
+    // Validation des champs requis
+    if (!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires (utilisateur, au moins un type de garde, date de début)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validation spécifique pour récurrence hebdomadaire
+    if (advancedAssignConfig.recurrence_type === 'hebdomadaire' && advancedAssignConfig.jours_semaine.length === 0) {
+      toast({
+        title: "Jours requis",
+        description: "Veuillez sélectionner au moins un jour de la semaine",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérification des chevauchements d'horaires entre les types de garde sélectionnés
+    const selectedTypesGarde = typesGarde.filter(tg => advancedAssignConfig.type_garde_ids.includes(tg.id));
+    let hasOverlap = false;
+    
+    for (let i = 0; i < selectedTypesGarde.length; i++) {
+      for (let j = i + 1; j < selectedTypesGarde.length; j++) {
+        const tg1 = selectedTypesGarde[i];
+        const tg2 = selectedTypesGarde[j];
+        
+        // Vérifier si les horaires se chevauchent (si les champs existent)
+        if (tg1.heure_debut && tg1.heure_fin && tg2.heure_debut && tg2.heure_fin) {
+          const start1 = tg1.heure_debut;
+          const end1 = tg1.heure_fin;
+          const start2 = tg2.heure_debut;
+          const end2 = tg2.heure_fin;
+          
+          // Chevauchement si: start1 < end2 AND start2 < end1
+          if (start1 < end2 && start2 < end1) {
+            hasOverlap = true;
+            break;
+          }
+        }
+      }
+      if (hasOverlap) break;
+    }
+    
+    // Avertir si chevauchement mais permettre quand même
+    if (hasOverlap) {
+      toast({
+        title: "⚠️ Attention - Horaires qui se chevauchent",
+        description: "Certains types de garde sélectionnés ont des horaires qui se chevauchent. L'assignation sera quand même créée.",
+        variant: "warning",
+        duration: 5000
+      });
+    }
+
+    try {
+      // Créer une assignation pour chaque type de garde sélectionné
+      const promises = advancedAssignConfig.type_garde_ids.map(type_garde_id => {
+        const assignmentData = {
+          user_id: advancedAssignConfig.user_id,
+          type_garde_id: type_garde_id,
+          recurrence_type: advancedAssignConfig.recurrence_type,
+          date_debut: advancedAssignConfig.date_debut,
+          date_fin: advancedAssignConfig.date_fin || advancedAssignConfig.date_debut,
+          jours_semaine: advancedAssignConfig.jours_semaine,
+          bi_hebdomadaire: advancedAssignConfig.bi_hebdomadaire,
+          recurrence_intervalle: advancedAssignConfig.recurrence_intervalle,
+          recurrence_frequence: advancedAssignConfig.recurrence_frequence,
+          assignation_type: "manuel_avance"
+        };
+        
+        return apiPost(tenantSlug, '/planning/assignation-avancee', assignmentData);
+      });
+      
+      await Promise.all(promises);
+
+      const selectedUser = users.find(u => u.id === advancedAssignConfig.user_id);
+      const selectedTypesNames = selectedTypesGarde.map(tg => tg.nom).join(', ');
+      
+      toast({
+        title: "Assignations avancées créées",
+        description: `${selectedUser?.prenom} ${selectedUser?.nom} assigné(e) pour ${advancedAssignConfig.type_garde_ids.length} type(s) de garde: ${selectedTypesNames} (${advancedAssignConfig.recurrence_type})`,
+        variant: "success"
+      });
+
+      // Reset du formulaire
+      setAdvancedAssignConfig({
+        user_id: '',
+        type_garde_ids: [],
+        jour_specifique: '',
+        recurrence_type: 'unique',
+        jours_semaine: [],
+        bi_hebdomadaire: false,
+        recurrence_intervalle: 1,
+        recurrence_frequence: 'jours',
+        date_debut: '',
+        date_fin: '',
+        exceptions: []
+      });
+
+      setShowAdvancedAssignModal(false);
+      fetchPlanningData();
+    } catch (error) {
+      toast({
+        title: "Erreur d'assignation",
+        description: error.response?.data?.detail || "Impossible de créer l'assignation avancée",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getAssignationForSlot = (date, typeGardeId) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return assignations.find(a => a.date === dateStr && a.type_garde_id === typeGardeId);
+  };
+
+  const getUserById = (userId) => {
+    return users.find(u => u.id === userId);
+  };
+
+  const shouldShowTypeGardeForDay = (typeGarde, dayIndex) => {
+    // Si pas de jours d'application spécifiés, afficher tous les jours
+    if (!typeGarde.jours_application || typeGarde.jours_application.length === 0) {
+      return true;
+    }
+    
+    // Vérifier si le jour de la semaine est dans les jours d'application
+    const dayNameEn = weekDaysEn[dayIndex];
+    return typeGarde.jours_application.includes(dayNameEn);
+  };
+
+  const openGardeDetails = (date, typeGarde) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const gardeAssignations = assignations.filter(a => 
+      a.date === dateStr && a.type_garde_id === typeGarde.id
+    );
+    
+    const personnelAssigne = gardeAssignations
+      .map(a => {
+        const person = getUserById(a.user_id);
+        return person ? { ...person, assignation_id: a.id } : null;
+      })
+      .filter(p => p !== null);
+    
+    setSelectedGardeDetails({
+      date,
+      typeGarde,
+      personnelAssigne,
+      assignations: gardeAssignations
+    });
+    setShowGardeDetailsModal(true);
+  };
+
+  // Ouvrir le modal d'audit pour une assignation
+  const openAuditModal = (assignation, person) => {
+    console.log('openAuditModal appelé', { assignation, person });
+    
+    if (!assignation) {
+      console.error('Assignation manquante');
+      toast({
+        title: "Erreur",
+        description: "Assignation introuvable",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!assignation.justification) {
+      console.error('Justification manquante', assignation);
+      toast({
+        title: "Justification indisponible",
+        description: "Cette assignation ne contient pas de données d'audit. Elle a peut-être été créée avant l'activation de la fonctionnalité d'audit.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedAuditAssignation({
+      ...assignation,
+      person: person
+    });
+    setAuditNotesEdit(assignation.notes_admin || '');
+    setShowAuditModal(true);
+    console.log('Modal audit ouvert');
+  };
+
+  // Sauvegarder les notes admin
+  const handleSaveAuditNotes = async () => {
+    if (!selectedAuditAssignation) return;
+    
+    try {
+      await apiPut(
+        tenantSlug,
+        `/assignations/${selectedAuditAssignation.id}/notes`,
+        { notes: auditNotesEdit }
+      );
+      
+      toast({
+        title: "Notes enregistrées",
+        description: "Les notes admin ont été mises à jour avec succès",
+      });
+      
+      // Mettre à jour localement
+      setAssignations(prev => prev.map(a => 
+        a.id === selectedAuditAssignation.id 
+          ? { ...a, notes_admin: auditNotesEdit }
+          : a
+      ));
+      
+      // Mettre à jour l'assignation sélectionnée
+      setSelectedAuditAssignation(prev => ({
+        ...prev,
+        notes_admin: auditNotesEdit
+      }));
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde notes:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder les notes",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Télécharger le rapport d'audit
+  const handleDownloadAuditReport = async (format = 'pdf') => {
+    try {
+      const currentDate = new Date(currentWeek);
+      const mois = currentDate.toISOString().slice(0, 7); // YYYY-MM
+      
+      const response = await fetch(
+        `${BACKEND_URL}/api/${tenantSlug}/planning/rapport-audit?mois=${mois}&format=${format}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erreur téléchargement rapport');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_affectations_${mois}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Téléchargement réussi",
+        description: `Le rapport d'audit ${format.toUpperCase()} a été téléchargé`,
+      });
+    } catch (error) {
+      console.error('Erreur téléchargement rapport:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le rapport d'audit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openAssignModal = (date, typeGarde) => {
+    if (user.role === 'employe') return;
+    setSelectedSlot({ date, typeGarde });
+    setShowAssignModal(true);
+  };
+
+  // Nouvel état pour le sélecteur de période KPI
+  const [kpiPeriode, setKpiPeriode] = useState('actuel'); // 'actuel' ou 'suivant'
+
+  const navigateWeek = (direction) => {
+    const [year, month, day] = currentWeek.split('-').map(Number);
+    const newDate = new Date(Date.UTC(year, month - 1, day));
+    newDate.setUTCDate(newDate.getUTCDate() + (direction * 7));
+    setCurrentWeek(newDate.toISOString().split('T')[0]);
+  };
+
+  const navigateMonth = (direction) => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const newDate = new Date(year, month - 1 + direction, 1);
+    setCurrentMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  // Calcul des KPIs pour le mois sélectionné (actuel ou suivant)
+  const calculateKPIs = (periode = 'actuel') => {
+    const today = new Date();
+    let targetMonthStart, targetMonthEnd, monthLabel;
+    
+    if (periode === 'actuel') {
+      // Mois actuel
+      targetMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    } else {
+      // Mois suivant
+      targetMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    }
+    
+    // Filtrer les assignations du mois cible
+    const monthAssignations = assignations.filter(a => {
+      const assignDate = new Date(a.date);
+      return assignDate >= targetMonthStart && assignDate <= targetMonthEnd;
+    });
+    
+    // Calculer le total de gardes théoriques du mois ET les gardes couvertes
+    const daysInMonth = targetMonthEnd.getDate();
+    let totalGardesTheoriques = 0;
+    let gardesCouvertes = 0;
+    
+    // Pour chaque jour du mois
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(targetMonthStart.getFullYear(), targetMonthStart.getMonth(), day);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const dayIndex = currentDate.getUTCDay() === 0 ? 6 : currentDate.getUTCDay() - 1; // Lundi = 0
+      
+      // Pour chaque type de garde
+      typesGarde.forEach(typeGarde => {
+        // Vérifier si cette garde est applicable ce jour-là
+        const isApplicable = shouldShowTypeGardeForDay(typeGarde, dayIndex);
+        
+        if (isApplicable) {
+          // Compter cette garde dans le total théorique
+          totalGardesTheoriques++;
+          
+          // Vérifier si elle est couverte
+          const gardeAssignations = monthAssignations.filter(a => 
+            a.date === dateStr && a.type_garde_id === typeGarde.id
+          );
+          
+          const personnelRequis = typeGarde.personnel_requis || 1;
+          
+          // Une garde est couverte si elle a AU MOINS le nombre requis d'assignations
+          if (gardeAssignations.length >= personnelRequis) {
+            gardesCouvertes++;
+          }
+        }
+      });
+    }
+    
+    const gardesNonCouvertes = totalGardesTheoriques - gardesCouvertes;
+    
+    // Calculer les heures totales planifiées
+    const heuresTotales = monthAssignations.reduce((total, assignation) => {
+      const typeGarde = typesGarde.find(t => t.id === assignation.type_garde_id);
+      if (typeGarde && typeGarde.heure_debut && typeGarde.heure_fin) {
+        const [heureDebut] = typeGarde.heure_debut.split(':').map(Number);
+        const [heureFin] = typeGarde.heure_fin.split(':').map(Number);
+        const duree = heureFin > heureDebut ? heureFin - heureDebut : (24 - heureDebut) + heureFin;
+        return total + duree;
+      }
+      return total + 12; // Durée par défaut si non spécifiée
+    }, 0);
+    
+    // Calculer le taux de couverture
+    const tauxCouverture = totalGardesTheoriques > 0 
+      ? Math.round((gardesCouvertes / totalGardesTheoriques) * 100) 
+      : 0;
+    
+    return {
+      totalQuarts: totalGardesTheoriques,
+      quartsCouverts: gardesCouvertes,
+      quartsNonCouverts: gardesNonCouvertes,
+      heuresTotales,
+      tauxCouverture,
+      monthLabel // Ajouté pour affichage
+    };
+  };
+
+  const kpis = calculateKPIs(kpiPeriode);
+
+  // Fonctions d'export Planning
+  const handleExportPDFPlanning = async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      const url = `${backendUrl}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `planning_${viewMode}_${periode}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: "Export PDF téléchargé",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible d'exporter le PDF", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleExportExcelPlanning = async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      const url = `${backendUrl}/api/${tenantSlug}/planning/export-excel?periode=${periode}&type=${viewMode}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `planning_${viewMode}_${periode}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: "Export Excel téléchargé",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible d'exporter l'Excel", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  if (loading) return <div className="loading" data-testid="planning-loading">Chargement du planning...</div>;
+
+  return (
+    <div className="planning-refonte">
+      {/* Header Moderne */}
+      <div className="module-header">
+        <div>
+          <h1>📅 Planning des Gardes</h1>
+          <p>Gestion des quarts de travail et assignations du personnel</p>
+        </div>
+      </div>
+
+      {/* Sélecteur de période pour KPIs */}
+      <div style={{
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '1rem', 
+        marginBottom: '1.5rem',
+        padding: '1rem',
+        background: '#F9FAFB',
+        borderRadius: '8px',
+        border: '1px solid #E5E7EB'
+      }}>
+        <span style={{fontWeight: '600', color: '#374151'}}>📊 Statistiques pour:</span>
+        <div style={{display: 'flex', gap: '0.5rem'}}>
+          <button
+            onClick={() => setKpiPeriode('actuel')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: kpiPeriode === 'actuel' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
+              background: kpiPeriode === 'actuel' ? '#EFF6FF' : 'white',
+              color: kpiPeriode === 'actuel' ? '#1E40AF' : '#6B7280',
+              fontWeight: kpiPeriode === 'actuel' ? '600' : '400',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            📅 Mois actuel
+          </button>
+          <button
+            onClick={() => setKpiPeriode('suivant')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: kpiPeriode === 'suivant' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
+              background: kpiPeriode === 'suivant' ? '#EFF6FF' : 'white',
+              color: kpiPeriode === 'suivant' ? '#1E40AF' : '#6B7280',
+              fontWeight: kpiPeriode === 'suivant' ? '600' : '400',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            📆 Mois suivant
+          </button>
+        </div>
+        <span style={{
+          marginLeft: 'auto',
+          color: '#6B7280',
+          fontSize: '0.875rem',
+          fontWeight: '500'
+        }}>
+          {kpis.monthLabel}
+        </span>
+      </div>
+
+      {/* KPIs du Mois */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{kpis.totalQuarts}</h3>
+          <p>Total Quarts du Mois</p>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{kpis.quartsCouverts} / {kpis.quartsNonCouverts}</h3>
+          <p>Couverts / Non Couverts</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{kpis.heuresTotales}h</h3>
+          <p>Heures Totales Planifiées</p>
+        </div>
+        <div className="kpi-card" style={{background: '#FEF3C7'}}>
+          <h3>{kpis.tauxCouverture}%</h3>
+          <p>Taux de Couverture</p>
+        </div>
+      </div>
+
+      {/* Barre de Contrôles Harmonisée */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
+          {/* Recherche */}
+          <div style={{flex: 1, minWidth: '300px'}}>
+            <Input 
+              placeholder="🔍 Rechercher un pompier..."
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
+            />
+          </div>
+          
+          {/* Toggle Vue Semaine/Mois */}
+          <div className="view-toggle">
+            <button 
+              className={viewMode === 'semaine' ? 'active' : ''}
+              onClick={() => setViewMode('semaine')}
+              title="Vue Semaine"
+            >
+              📅 Semaine
+            </button>
+            <button 
+              className={viewMode === 'mois' ? 'active' : ''}
+              onClick={() => setViewMode('mois')}
+              title="Vue Mois"
+            >
+              📊 Mois
+            </button>
+          </div>
+
+          {/* Exports */}
+          <Button variant="outline" onClick={handleExportPDFPlanning}>
+            📄 Export PDF
+          </Button>
+          <Button variant="outline" onClick={handleExportExcelPlanning}>
+            📊 Export Excel
+          </Button>
+          
+          {/* Rapport d'audit (admin seulement) */}
+          {user.role === 'admin' && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button 
+                variant="outline" 
+                onClick={() => handleDownloadAuditReport('pdf')}
+                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+              >
+                🔍 Audit PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleDownloadAuditReport('excel')}
+                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+              >
+                🔍 Audit Excel
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* Indicateur de résultats de recherche */}
+        {searchFilter.trim() && (
+          <div style={{
+            marginTop: '1rem',
+            padding: '0.75rem 1rem',
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.95rem',
+            color: '#1E40AF'
+          }}>
+            <span>🔍</span>
+            <span>
+              {(() => {
+                // Compter le nombre total d'employés correspondant à la recherche dans toutes les assignations
+                const matchingAssignations = assignations.filter(a => {
+                  const u = getUserById(a.user_id);
+                  if (!u) return false;
+                  const searchLower = searchFilter.toLowerCase();
+                  return u.nom.toLowerCase().includes(searchLower) ||
+                         u.prenom.toLowerCase().includes(searchLower) ||
+                         (u.email && u.email.toLowerCase().includes(searchLower));
+                });
+                const uniqueUserIds = [...new Set(matchingAssignations.map(a => a.user_id))];
+                return uniqueUserIds.length > 0 
+                  ? `${uniqueUserIds.length} employé(s) trouvé(s) correspondant à "${searchFilter}"`
+                  : `Aucun employé trouvé correspondant à "${searchFilter}"`;
+              })()}
+            </span>
+            <button
+              onClick={() => setSearchFilter('')}
+              style={{
+                marginLeft: 'auto',
+                background: 'transparent',
+                border: 'none',
+                color: '#1E40AF',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                padding: '0 0.5rem'
+              }}
+              title="Effacer la recherche"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Boutons d'Assignation Mis en Évidence */}
+      {user.role !== 'employe' && (
+        <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center'}}>
+          <Button 
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+            }}
+            onClick={() => {
+              setAutoAttributionConfig({
+                periode: viewMode,
+                date: viewMode === 'semaine' ? currentWeek : currentMonth
+              });
+              setShowAutoAttributionModal(true);
+            }}
+            data-testid="auto-assign-btn"
+          >
+            ✨ Attribution Automatique
+          </Button>
+          <Button 
+            style={{
+              background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(252, 165, 165, 0.4)'
+            }}
+            onClick={() => setShowAdvancedAssignModal(true)}
+            data-testid="manual-assign-btn"
+          >
+            👤 Assignation Manuelle Avancée
+          </Button>
+        </div>
+      )}
+
+      {/* Navigation Temporelle */}
+      <div className="time-navigation" style={{
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '2rem',
+        padding: '1rem',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <Button 
+          variant="ghost" 
+          onClick={() => viewMode === 'mois' ? navigateMonth(-1) : navigateWeek(-1)}
+          data-testid="prev-period-btn"
+        >
+          ← {viewMode === 'mois' ? 'Mois précédent' : 'Semaine précédente'}
+        </Button>
+        <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
+          {viewMode === 'mois' ? (
+            new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+          ) : (
+            `Semaine du ${weekDates[0].toLocaleDateString('fr-FR', { timeZone: 'UTC' })} au ${weekDates[6].toLocaleDateString('fr-FR', { timeZone: 'UTC' })}`
+          )}
+        </h2>
+        <Button 
+          variant="ghost" 
+          onClick={() => viewMode === 'mois' ? navigateMonth(1) : navigateWeek(1)}
+          data-testid="next-period-btn"
+        >
+          {viewMode === 'mois' ? 'Mois suivant' : 'Semaine suivante'} →
+        </Button>
+      </div>
+
+      {/* Vue Calendrier */}
+      {viewMode === 'semaine' ? (
+        // Vue Semaine Calendrier
+        <div className="planning-moderne">
+          {typesGarde
+            .filter(typeGarde => {
+              // Afficher seulement les types qui ont au moins un jour applicable cette semaine
+              return weekDates.some((date, dayIndex) => 
+                shouldShowTypeGardeForDay(typeGarde, dayIndex)
+              );
+            })
+            .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
+            .map(typeGarde => (
+              <div key={typeGarde.id} className="garde-row-moderne">
+                <div className="garde-info-moderne">
+                  <h3>{typeGarde.nom}</h3>
+                  <div className="garde-meta">
+                    <span>⏰ {typeGarde.heure_debut} - {typeGarde.heure_fin}</span>
+                    <span>👥 {typeGarde.personnel_requis} requis</span>
+                    {typeGarde.officier_obligatoire && <span>🎖️ Officier</span>}
+                  </div>
+                </div>
+                
+                <div className="jours-garde-moderne">
+                  {weekDates.map((date, dayIndex) => {
+                    if (!shouldShowTypeGardeForDay(typeGarde, dayIndex)) {
+                      return null; // Ne pas afficher du tout
+                    }
+
+                    const coverage = getGardeCoverage(date, typeGarde);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const gardeAssignations = assignations.filter(a => 
+                      a.date === dateStr && a.type_garde_id === typeGarde.id
+                    );
+                    const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                    
+                    // Filtrer les utilisateurs selon la recherche
+                    const filteredUsers = searchFilter.trim() 
+                      ? assignedUsers.filter(u => 
+                          u.nom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                          u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                          (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
+                        )
+                      : assignedUsers;
+                    
+                    const assignedCount = assignedUsers.length;
+                    const requiredCount = typeGarde.personnel_requis;
+                    const hasSearchMatch = searchFilter.trim() ? filteredUsers.length > 0 : true;
+
+                    // Vérifier si c'est un quart de l'utilisateur actuel
+                    const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+
+                    return (
+                      <div
+                        key={dayIndex}
+                        className={`jour-garde-card ${coverage} ${isMyShift ? 'my-shift' : ''}`}
+                        style={{
+                          backgroundColor: isMyShift ? '#3B82F620' : getCoverageColor(coverage) + '20',
+                          borderColor: isMyShift ? '#3B82F6' : getCoverageColor(coverage),
+                          borderWidth: isMyShift ? '3px' : '2px'
+                        }}
+                        onClick={() => {
+                          if (assignedUsers.length > 0) {
+                            openGardeDetails(date, typeGarde);
+                          } else if (user.role !== 'employe') {
+                            openAssignModal(date, typeGarde);
+                          }
+                        }}
+                        data-testid={`garde-card-${dayIndex}-${typeGarde.id}`}
+                      >
+                        <div className="jour-header">
+                          <span className="jour-name">{weekDays[dayIndex]}</span>
+                          <span className="jour-date">{date.getUTCDate()}</span>
+                        </div>
+                        
+                        <div className="garde-content">
+                          {assignedUsers.length > 0 ? (
+                            <div className="assigned-info">
+                              {/* Si recherche active, afficher les résultats filtrés */}
+                              {searchFilter.trim() ? (
+                                filteredUsers.length > 0 ? (
+                                  filteredUsers.map((u, idx) => (
+                                    <div key={idx} className="assigned-name-item-compact">
+                                      <span 
+                                        className="assigned-name-compact" 
+                                        style={{
+                                          fontWeight: u.id === user.id ? 'bold' : 'normal',
+                                          backgroundColor: '#FEF3C7',
+                                          padding: '2px 4px',
+                                          borderRadius: '3px'
+                                        }}
+                                      >
+                                        {u.prenom.charAt(0)}. {u.nom.charAt(0)}. - {u.grade.substring(0, 6)}
+                                      </span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="vacant-info">
+                                    <span className="vacant-text" style={{fontSize: '0.75rem', color: '#6B7280'}}>
+                                      Aucune correspondance
+                                    </span>
+                                  </div>
+                                )
+                              ) : (
+                                /* Afficher TOUS les noms - Liste compacte */
+                                assignedUsers.map((u, idx) => (
+                                  <div key={idx} className="assigned-name-item-compact">
+                                    <span className="assigned-name-compact" style={{fontWeight: u.id === user.id ? 'bold' : 'normal'}}>
+                                      {u.prenom.charAt(0)}. {u.nom.charAt(0)}. - {u.grade.substring(0, 6)}
+                                    </span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          ) : (
+                            <div className="vacant-info">
+                              <span className="vacant-text">Vacant</span>
+                            </div>
+                          )}
+                          
+                          {/* Afficher le ratio en bas */}
+                          <div className="personnel-ratio" style={{
+                            marginTop: '8px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: coverage === 'complete' ? '#10b981' : coverage === 'partielle' ? '#f59e0b' : '#ef4444'
+                          }}>
+                            {assignedCount}/{requiredCount}
+                          </div>
+                        </div>
+                        
+                        <div className="coverage-indicator">
+                          <span className={`coverage-badge ${coverage}`}>
+                            {coverage === 'complete' ? '✅' : coverage === 'partielle' ? '⚠️' : '❌'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }).filter(Boolean)}
+                </div>
+              </div>
+            ))}
+        </div>
+        ) : (
+          // Vue Mois Calendrier
+        <div className="planning-mois">
+          <div className="mois-header">
+            <h3>📅 Planning mensuel - {new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</h3>
+          </div>
+          
+          <div className="calendrier-mois">
+            {monthDates.map((date, index) => {
+              // Si date est null, c'est un jour vide (avant le 1er du mois)
+              if (date === null) {
+                return <div key={`empty-${index}`} className="jour-mois jour-vide"></div>;
+              }
+
+              const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' });
+              const dayIndex = date.getUTCDay() === 0 ? 6 : date.getUTCDay() - 1; // Lundi = 0
+              
+              const gardesJour = typesGarde.filter(typeGarde => 
+                shouldShowTypeGardeForDay(typeGarde, dayIndex)
+              );
+
+              return (
+                <div key={date.toISOString().split('T')[0]} className="jour-mois">
+                  <div className="jour-mois-header">
+                    <span className="jour-mois-name">{dayName}</span>
+                    <span className="jour-mois-date">{date.getUTCDate()}</span>
+                  </div>
+                  
+                  <div className="gardes-jour-list">
+                    {gardesJour.map(typeGarde => {
+                      const coverage = getGardeCoverage(date, typeGarde);
+                      const dateStr = date.toISOString().split('T')[0];
+                      const gardeAssignations = assignations.filter(a => 
+                        a.date === dateStr && a.type_garde_id === typeGarde.id
+                      );
+                      const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                      const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                      
+                      return (
+                        <div
+                          key={typeGarde.id}
+                          className={`garde-mois-item ${coverage} ${isMyShift ? 'my-shift' : ''}`}
+                          style={{
+                            backgroundColor: isMyShift ? '#3B82F6' : getCoverageColor(coverage),
+                            opacity: coverage === 'vacante' ? 0.7 : 1
+                          }}
+                          onClick={() => openGardeDetails(date, typeGarde)}
+                          data-testid={`garde-mois-${date.getDate()}-${typeGarde.id}`}
+                          title={`${typeGarde.nom} - ${assignedUsers.length}/${typeGarde.personnel_requis}`}
+                        >
+                          <span className="garde-nom-complet">{typeGarde.nom}</span>
+                          <span className="coverage-icon">
+                            {coverage === 'complete' ? '✅' : coverage === 'partielle' ? '⚠️' : '❌'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Légende des Couleurs - En bas du planning */}
+      <div style={{
+        display: 'flex',
+        gap: '2rem',
+        justifyContent: 'center',
+        marginTop: '2rem',
+        padding: '1.25rem',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#10B981', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>✅ Complet</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#F59E0B', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>⚠️ Partiel</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <span style={{
+            width: '24px', 
+            height: '24px', 
+            background: '#EF4444', 
+            borderRadius: '6px', 
+            display: 'inline-block',
+            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+          }}></span>
+          <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>❌ Vacant</span>
+        </div>
+        {user.role === 'employe' && (
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+            <span style={{
+              width: '24px', 
+              height: '24px', 
+              background: '#3B82F6', 
+              borderRadius: '6px', 
+              display: 'inline-block',
+              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+            }}></span>
+            <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#1e293b'}}>👤 Mes Quarts</span>
+          </div>
+        )}
+      </div>
+
+      {/* Assignment Modal */}
+      {showAssignModal && selectedSlot && user.role !== 'employe' && (
+        <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="assign-modal">
+            <div className="modal-header">
+              <h3>Assigner une garde</h3>
+              <Button variant="ghost" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="assignment-details">
+                <p><strong>Garde:</strong> {selectedSlot.typeGarde.nom}</p>
+                <p><strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}</p>
+                <p><strong>Horaires:</strong> {selectedSlot.typeGarde.heure_debut} - {selectedSlot.typeGarde.heure_fin}</p>
+              </div>
+              
+              <div className="user-selection">
+                <h4>Rechercher un pompier:</h4>
+                <div style={{ position: 'relative', overflow: 'visible' }}>
+                  <Input
+                    type="text"
+                    placeholder="Tapez le nom ou prénom du pompier..."
+                    value={quickAssignSearchQuery}
+                    onChange={(e) => {
+                      setQuickAssignSearchQuery(e.target.value);
+                      setShowQuickAssignDropdown(true);
+                    }}
+                    onFocus={() => setShowQuickAssignDropdown(true)}
+                    style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+                    data-testid="quick-assign-search"
+                  />
+                  
+                  {showQuickAssignDropdown && quickAssignSearchQuery && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      background: 'white',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      marginTop: '4px',
+                      zIndex: 1050, // Increased z-index to be above modal
+                      boxShadow: '0 10px 15px rgba(0,0,0,0.15)', // Enhanced shadow for better visibility
+                      fontSize: '0.95rem' // Ensure readable text
+                    }}>
+                      {users
+                        .filter(userOption => {
+                          // Filtrer les utilisateurs déjà assignés
+                          const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                          const alreadyAssigned = assignations.some(a => 
+                            a.date === dateStr && 
+                            a.type_garde_id === selectedSlot.typeGarde.id && 
+                            a.user_id === userOption.id
+                          );
+                          
+                          // Filtrer par recherche
+                          const searchLower = quickAssignSearchQuery.toLowerCase();
+                          const matchesSearch = 
+                            `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
+                            userOption.grade.toLowerCase().includes(searchLower);
+                          
+                          return !alreadyAssigned && matchesSearch;
+                        })
+                        .map(userOption => (
+                          <div
+                            key={userOption.id}
+                            onClick={() => {
+                              handleAssignUser(userOption.id, selectedSlot.typeGarde.id, selectedSlot.date.toISOString().split('T')[0]);
+                              setQuickAssignSearchQuery('');
+                              setShowQuickAssignDropdown(false);
+                            }}
+                            style={{
+                              padding: '0.75rem',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f1f5f9',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                            data-testid={`quick-assign-user-${userOption.id}`}
+                          >
+                            <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>
+                              {userOption.prenom} {userOption.nom}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                              {userOption.grade} - {userOption.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {users.filter(userOption => {
+                        const dateStr = selectedSlot.date.toISOString().split('T')[0];
+                        const alreadyAssigned = assignations.some(a => 
+                          a.date === dateStr && 
+                          a.type_garde_id === selectedSlot.typeGarde.id && 
+                          a.user_id === userOption.id
+                        );
+                        const searchLower = quickAssignSearchQuery.toLowerCase();
+                        const matchesSearch = 
+                          `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
+                          userOption.grade.toLowerCase().includes(searchLower);
+                        return !alreadyAssigned && matchesSearch;
+                      }).length === 0 && (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                          Aucun pompier trouvé
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal détails d'une garde - Voir tout le personnel */}
+      {showGardeDetailsModal && selectedGardeDetails && (
+        <div className="modal-overlay" onClick={() => setShowGardeDetailsModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="garde-details-modal">
+            <div className="modal-header">
+              <h3>🚒 Détails de la garde - {selectedGardeDetails.date.toLocaleDateString('fr-FR')}</h3>
+              <Button variant="ghost" onClick={() => setShowGardeDetailsModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="garde-info-header">
+                <div className="garde-type-info">
+                  <h4>{selectedGardeDetails.typeGarde.nom}</h4>
+                  <div className="garde-details-meta">
+                    <span>⏰ {selectedGardeDetails.typeGarde.heure_debut} - {selectedGardeDetails.typeGarde.heure_fin}</span>
+                    <span>👥 {selectedGardeDetails.typeGarde.personnel_requis} personnel requis</span>
+                    {selectedGardeDetails.typeGarde.officier_obligatoire && (
+                      <span>🎖️ Officier obligatoire</span>
+                    )}
+                    {selectedGardeDetails.typeGarde.est_garde_externe && (
+                      <span className="badge-externe">🏠 Garde Externe</span>
+                    )}
+                  </div>
+                </div>
+                <div className="coverage-indicator">
+                  <span className="coverage-ratio">
+                    {selectedGardeDetails.personnelAssigne.length}/{selectedGardeDetails.typeGarde.personnel_requis}
+                  </span>
+                  <span className="coverage-label">Personnel assigné</span>
+                </div>
+              </div>
+
+              <div className="personnel-assigned">
+                <h4>👥 Personnel assigné</h4>
+                {selectedGardeDetails.personnelAssigne.length > 0 ? (
+                  <div className="personnel-list">
+                    {selectedGardeDetails.personnelAssigne.map((person, index) => (
+                      <div key={person.id} className="personnel-item">
+                        <div className="personnel-info">
+                          <div className="personnel-avatar">
+                            <span className="avatar-icon">👤</span>
+                          </div>
+                          <div className="personnel-details">
+                            <span className="personnel-name">{person.prenom} {person.nom}</span>
+                            <span className="personnel-grade">{person.grade}</span>
+                            <span className="personnel-type">{person.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}</span>
+                          </div>
+                        </div>
+                        <div className="personnel-actions">
+                          <span className="assignment-method">
+                            {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' ? '🤖 Auto' : '👤 Manuel'}
+                          </span>
+                          {user.role === 'admin' && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                console.log('Bouton Audit cliqué', selectedGardeDetails.assignations[index]);
+                                openAuditModal(selectedGardeDetails.assignations[index], person);
+                              }}
+                              style={{ marginLeft: '8px' }}
+                            >
+                              🔍 Audit
+                            </Button>
+                          )}
+                          {user.role !== 'employe' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleRemovePersonFromGarde(person.id, selectedGardeDetails.typeGarde.nom)}
+                              data-testid={`remove-person-${person.id}`}
+                            >
+                              ❌ Retirer
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-personnel">
+                    <p>Aucun personnel assigné à cette garde</p>
+                    {user.role !== 'employe' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowGardeDetailsModal(false);
+                          openAssignModal(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
+                        }}
+                        data-testid="assign-personnel-btn"
+                      >
+                        Assigner du personnel
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="garde-actions">
+                {user.role !== 'employe' && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowGardeDetailsModal(false);
+                        openAssignModal(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
+                      }}
+                      data-testid="add-more-personnel-btn"
+                    >
+                      ➕ Ajouter personnel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleRemoveAllPersonnelFromGarde}
+                      data-testid="remove-all-personnel-btn"
+                    >
+                      🗑️ Supprimer tout le personnel
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'assignation manuelle avancée avec récurrence */}
+      {showAdvancedAssignModal && user.role !== 'employe' && (
+        <div className="modal-overlay" onClick={() => setShowAdvancedAssignModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="advanced-assign-modal">
+            <div className="modal-header">
+              <h3>👤 Assignation manuelle avancée</h3>
+              <Button variant="ghost" onClick={() => setShowAdvancedAssignModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="advanced-assign-form">
+                {/* Section 1: Sélection personnel */}
+                <div className="assign-section">
+                  <h4>👥 Sélection du personnel</h4>
+                  <div className="form-field" style={{ position: 'relative' }}>
+                    <Label>Pompier à assigner *</Label>
+                    <Input
+                      type="text"
+                      placeholder="Tapez le nom du pompier..."
+                      value={userSearchQuery}
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        setShowUserDropdown(true);
+                      }}
+                      onFocus={() => setShowUserDropdown(true)}
+                      data-testid="advanced-user-search"
+                    />
+                    {showUserDropdown && userSearchQuery && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        background: 'white',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}>
+                        {users
+                          .filter(user => 
+                            `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                            user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                          )
+                          .map(user => (
+                            <div
+                              key={user.id}
+                              onClick={() => {
+                                setAdvancedAssignConfig({...advancedAssignConfig, user_id: user.id});
+                                setUserSearchQuery(`${user.prenom} ${user.nom}`);
+                                setShowUserDropdown(false);
+                              }}
+                              style={{
+                                padding: '0.75rem',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f1f5f9',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                            >
+                              <div style={{ fontWeight: '500' }}>{user.prenom} {user.nom}</div>
+                              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                {user.grade} - {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                              </div>
+                            </div>
+                          ))}
+                        {users.filter(user => 
+                          `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                          user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                            Aucun pompier trouvé
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 2: Type de garde */}
+                <div className="assign-section">
+                  <h4>🚒 Type(s) de garde</h4>
+                  <div className="form-field">
+                    <Label>Type(s) de garde * (sélection multiple)</Label>
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+                      💡 Vous pouvez sélectionner plusieurs types de garde pour la même assignation
+                    </p>
+                    
+                    {/* Multi-select avec checkboxes */}
+                    <div style={{
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      background: '#f8fafc'
+                    }}>
+                      {typesGarde.length === 0 && (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                          Aucun type de garde disponible
+                        </div>
+                      )}
+                      
+                      {typesGarde.map(type => {
+                        const isSelected = advancedAssignConfig.type_garde_ids.includes(type.id);
+                        
+                        return (
+                          <label
+                            key={type.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              padding: '0.75rem',
+                              margin: '0.25rem 0',
+                              border: '2px solid',
+                              borderColor: isSelected ? '#dc2626' : '#e2e8f0',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              background: isSelected ? '#fee2e2' : 'white',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = '#fafafa';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'white';
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  // Ajouter le type de garde
+                                  setAdvancedAssignConfig({
+                                    ...advancedAssignConfig,
+                                    type_garde_ids: [...advancedAssignConfig.type_garde_ids, type.id]
+                                  });
+                                } else {
+                                  // Retirer le type de garde
+                                  setAdvancedAssignConfig({
+                                    ...advancedAssignConfig,
+                                    type_garde_ids: advancedAssignConfig.type_garde_ids.filter(id => id !== type.id)
+                                  });
+                                }
+                              }}
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                cursor: 'pointer',
+                                accentColor: '#dc2626'
+                              }}
+                              data-testid={`type-garde-checkbox-${type.id}`}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: isSelected ? '600' : '500', color: '#1e293b' }}>
+                                {type.nom}
+                              </div>
+                              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                {type.heure_debut && type.heure_fin ? (
+                                  <>⏰ {type.heure_debut} - {type.heure_fin} ({type.duree_heures || 8}h)</>
+                                ) : (
+                                  <>⏰ Durée: {type.duree_heures || 8}h</>
+                                )}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div style={{ color: '#dc2626', fontSize: '1.2rem' }}>✓</div>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Résumé de la sélection */}
+                    {advancedAssignConfig.type_garde_ids.length > 0 && (
+                      <div style={{
+                        marginTop: '1rem',
+                        padding: '0.75rem',
+                        background: '#eff6ff',
+                        border: '1px solid #3b82f6',
+                        borderRadius: '8px'
+                      }}>
+                        <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.5rem' }}>
+                          📋 Sélection actuelle: {advancedAssignConfig.type_garde_ids.length} type(s) de garde
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+                          {typesGarde
+                            .filter(tg => advancedAssignConfig.type_garde_ids.includes(tg.id))
+                            .map(tg => tg.nom)
+                            .join(' + ')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 2.5: Sélection des jours (conditionnel selon type récurrence) */}
+                {advancedAssignConfig.recurrence_type !== 'unique' && advancedAssignConfig.recurrence_type !== 'mensuelle' && advancedAssignConfig.recurrence_type !== 'annuelle' && advancedAssignConfig.recurrence_type !== 'personnalisee' && (
+                  <div className="assign-section" style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', border: '2px solid #3b82f6' }}>
+                    <h4>📋 Jours de la semaine pour la récurrence</h4>
+                    <p style={{ fontSize: '0.875rem', color: '#1e40af', marginBottom: '1rem' }}>
+                      ✅ Sélectionnez un ou plusieurs jours pour créer des assignations récurrentes.
+                      <br />
+                      <strong>Exemple :</strong> Cochez Lundi + Mercredi + Vendredi pour créer des gardes ces 3 jours chaque semaine.
+                    </p>
+                    <div className="jours-selection">
+                      {[
+                        { value: 'monday', label: 'Lundi' },
+                        { value: 'tuesday', label: 'Mardi' },
+                        { value: 'wednesday', label: 'Mercredi' },
+                        { value: 'thursday', label: 'Jeudi' },
+                        { value: 'friday', label: 'Vendredi' },
+                        { value: 'saturday', label: 'Samedi' },
+                        { value: 'sunday', label: 'Dimanche' }
+                      ].map(jour => (
+                        <label key={jour.value} className="jour-checkbox" style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.75rem 1rem',
+                          margin: '0.25rem',
+                          border: '2px solid',
+                          borderColor: advancedAssignConfig.jours_semaine.includes(jour.value) ? '#3b82f6' : '#cbd5e1',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          background: advancedAssignConfig.jours_semaine.includes(jour.value) ? '#dbeafe' : 'white',
+                          fontWeight: advancedAssignConfig.jours_semaine.includes(jour.value) ? '600' : '400',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={advancedAssignConfig.jours_semaine.includes(jour.value)}
+                            onChange={(e) => {
+                              const newJours = e.target.checked
+                                ? [...advancedAssignConfig.jours_semaine, jour.value]
+                                : advancedAssignConfig.jours_semaine.filter(j => j !== jour.value);
+                              setAdvancedAssignConfig({...advancedAssignConfig, jours_semaine: newJours});
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <span>{jour.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {advancedAssignConfig.jours_semaine.length > 0 && (
+                      <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#059669', fontWeight: '600' }}>
+                        ✅ {advancedAssignConfig.jours_semaine.length} jour(s) sélectionné(s)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Section 3: Configuration récurrence */}
+                <div className="assign-section">
+                  <h4>🔄 Type de récurrence</h4>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <select
+                      value={advancedAssignConfig.recurrence_type}
+                      onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_type: e.target.value})}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                    >
+                      <option value="unique">📅 Assignation unique</option>
+                      <option value="hebdomadaire">🔁 Toutes les semaines (hebdomadaire)</option>
+                      <option value="bihebdomadaire">🔄 Toutes les deux semaines (bi-hebdomadaire)</option>
+                      <option value="mensuelle">📆 Tous les mois (mensuelle)</option>
+                      <option value="annuelle">🗓️ Tous les ans (annuelle)</option>
+                      <option value="personnalisee">⚙️ Personnalisée</option>
+                    </select>
+                  </div>
+
+                  {/* Options pour personnalisée */}
+                  {advancedAssignConfig.recurrence_type === 'personnalisee' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '6px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                          Tous les
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={advancedAssignConfig.recurrence_intervalle || 1}
+                          onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                          Type
+                        </label>
+                        <select
+                          value={advancedAssignConfig.recurrence_frequence || 'jours'}
+                          onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, recurrence_frequence: e.target.value})}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="jours">Jours</option>
+                          <option value="semaines">Semaines</option>
+                          <option value="mois">Mois</option>
+                          <option value="ans">Ans</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 4: Configuration dates */}
+                <div className="assign-section">
+                  <h4>📅 Période d'assignation</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>Date de début *</Label>
+                      <Input
+                        type="date"
+                        value={advancedAssignConfig.date_debut}
+                        onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, date_debut: e.target.value})}
+                        min={new Date().toISOString().split('T')[0]}
+                        data-testid="advanced-date-debut"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>Date de fin *</Label>
+                      <Input
+                        type="date"
+                        value={advancedAssignConfig.date_fin}
+                        onChange={(e) => setAdvancedAssignConfig({...advancedAssignConfig, date_fin: e.target.value})}
+                        min={advancedAssignConfig.date_debut || new Date().toISOString().split('T')[0]}
+                        data-testid="advanced-date-fin"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Suggestion de prochain jour si nécessaire */}
+                {advancedAssignConfig.jour_specifique && advancedAssignConfig.date_debut && getSuggestedNextDay() && (
+                  <div className="assign-section" style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <h4>💡 Suggestion</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                      La date de début sélectionnée n'est pas un {getSuggestedNextDay()?.dayName}.
+                    </p>
+                    <Button
+                      variant="outline"
+                      style={{ background: 'white', border: '2px solid #f59e0b', color: '#92400e', fontWeight: '500' }}
+                      onClick={() => {
+                        const suggested = getSuggestedNextDay();
+                        if (suggested) {
+                          const dateStr = suggested.date.toISOString().split('T')[0];
+                          setAdvancedAssignConfig({...advancedAssignConfig, date_debut: dateStr});
+                          toast({
+                            title: "Date ajustée",
+                            description: `Date de début changée au prochain ${suggested.dayName}`,
+                            variant: "success"
+                          });
+                        }
+                      }}
+                    >
+                      📅 Utiliser le prochain {getSuggestedNextDay()?.dayName} : {getSuggestedNextDay()?.formatted}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Aperçu des dates de récurrence */}
+                {advancedAssignConfig.date_debut && advancedAssignConfig.recurrence_type !== 'unique' && advancedAssignConfig.jour_specifique && (
+                  <div className="assign-section" style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '2px solid #22c55e' }}>
+                    <h4>👁️ Aperçu des dates (10 premières)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', marginTop: '0.75rem' }}>
+                      {calculateRecurrenceDates().map((date, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            padding: '0.5rem',
+                            background: 'white',
+                            borderRadius: '6px',
+                            border: '1px solid #86efac',
+                            fontSize: '0.875rem',
+                            textAlign: 'center'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#166534' }}>
+                            {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                          </div>
+                          <div style={{ color: '#15803d' }}>
+                            {date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {calculateRecurrenceDates().length === 0 && (
+                      <p style={{ textAlign: 'center', color: '#166534', marginTop: '0.5rem' }}>
+                        Aucune date à afficher. Vérifiez votre configuration.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Section 6: Résumé de l'assignation */}
+                <div className="assign-section">
+                  <h4>📊 Résumé de l'assignation</h4>
+                  <div className="assignment-summary">
+                    <div className="summary-row">
+                      <span className="summary-label">Personnel :</span>
+                      <span className="summary-value">
+                        {advancedAssignConfig.user_id ? 
+                          users.find(u => u.id === advancedAssignConfig.user_id)?.prenom + ' ' + 
+                          users.find(u => u.id === advancedAssignConfig.user_id)?.nom 
+                          : 'Non sélectionné'}
+                      </span>
+                    </div>
+                    <div className="summary-row">
+                      <span className="summary-label">Type(s) de garde :</span>
+                      <span className="summary-value">
+                        {advancedAssignConfig.type_garde_ids.length > 0 ?
+                          typesGarde
+                            .filter(t => advancedAssignConfig.type_garde_ids.includes(t.id))
+                            .map(t => t.nom)
+                            .join(' + ')
+                          : 'Non sélectionné'}
+                      </span>
+                    </div>
+                    <div className="summary-row">
+                      <span className="summary-label">Récurrence :</span>
+                      <span className="summary-value">
+                        {advancedAssignConfig.recurrence_type === 'unique' ? '📅 Assignation unique' :
+                         advancedAssignConfig.recurrence_type === 'hebdomadaire' ? 
+                           `🔁 Chaque semaine (${advancedAssignConfig.jours_semaine.length} jour(s) sélectionné(s))` :
+                         advancedAssignConfig.recurrence_type === 'bihebdomadaire' ?
+                           `🔄 Toutes les 2 semaines (${advancedAssignConfig.jours_semaine.length} jour(s) sélectionné(s))` :
+                         advancedAssignConfig.recurrence_type === 'mensuelle' ? '📆 Tous les mois' :
+                         advancedAssignConfig.recurrence_type === 'annuelle' ? '🗓️ Tous les ans' :
+                         `⚙️ Tous les ${advancedAssignConfig.recurrence_intervalle} ${advancedAssignConfig.recurrence_frequence}`}
+                      </span>
+                    </div>
+                    <div className="summary-row">
+                      <span className="summary-label">Période :</span>
+                      <span className="summary-value">
+                        {advancedAssignConfig.date_debut && advancedAssignConfig.date_fin ?
+                          `Du ${new Date(advancedAssignConfig.date_debut).toLocaleDateString('fr-FR')} au ${new Date(advancedAssignConfig.date_fin).toLocaleDateString('fr-FR')}`
+                          : 'Période non définie'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowAdvancedAssignModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleAdvancedAssignment}
+                  data-testid="create-advanced-assignment-btn"
+                  disabled={!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut}
+                >
+                  🚒 Créer l'assignation{advancedAssignConfig.type_garde_ids.length > 1 ? 's' : ''}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Modal Attribution Automatique - Version améliorée */}
+      {showAutoAttributionModal && (
+        <div className="modal-overlay" onClick={() => setShowAutoAttributionModal(false)}>
+          <div className="modal-content medium-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>✨ Attribution Automatique du Planning</h2>
+              <Button variant="ghost" onClick={() => setShowAutoAttributionModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <h3 style={{marginBottom: '1rem', fontSize: '1.1rem'}}>Pour quelle période?</h3>
+              
+              <div style={{display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(2, 1fr)'}}>
+                {/* Semaine actuelle */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                    const dateStr = monday.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'semaine',
+                      periodeLabel: 'Semaine actuelle',
+                      date: dateStr
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Semaine actuelle' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Semaine actuelle' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📅</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Semaine actuelle</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {(() => {
+                      const today = new Date();
+                      const monday = new Date(today);
+                      monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                      const sunday = new Date(monday);
+                      sunday.setDate(monday.getDate() + 6);
+                      return `${monday.toLocaleDateString('fr-CA')} au ${sunday.toLocaleDateString('fr-CA')}`;
+                    })()}
+                  </div>
+                </button>
+
+                {/* Semaine suivante */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const nextMonday = new Date(today);
+                    nextMonday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? 1 : 8));
+                    const dateStr = nextMonday.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'semaine',
+                      periodeLabel: 'Semaine suivante',
+                      date: dateStr
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Semaine suivante' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Semaine suivante' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📅</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Semaine suivante</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {(() => {
+                      const today = new Date();
+                      const nextMonday = new Date(today);
+                      nextMonday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? 1 : 8));
+                      const nextSunday = new Date(nextMonday);
+                      nextSunday.setDate(nextMonday.getDate() + 6);
+                      return `${nextMonday.toLocaleDateString('fr-CA')} au ${nextSunday.toLocaleDateString('fr-CA')}`;
+                    })()}
+                  </div>
+                </button>
+
+                {/* Mois actuel */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const dateStr = firstDay.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'mois',
+                      periodeLabel: 'Mois actuel',
+                      date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Mois actuel' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Mois actuel' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📆</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Mois actuel</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </div>
+                </button>
+
+                {/* Mois suivant */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                    const dateStr = nextMonth.toISOString().split('T')[0];
+                    setAutoAttributionConfig({
+                      ...autoAttributionConfig,
+                      periode: 'mois',
+                      periodeLabel: 'Mois suivant',
+                      date: `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`
+                    });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    border: autoAttributionConfig.periodeLabel === 'Mois suivant' ? '3px solid #3B82F6' : '2px solid #E5E7EB',
+                    borderRadius: '12px',
+                    background: autoAttributionConfig.periodeLabel === 'Mois suivant' ? '#EFF6FF' : 'white',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📆</div>
+                  <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>Mois suivant</div>
+                  <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </div>
+                </button>
+              </div>
+              
+              <div style={{marginTop: '1.5rem', padding: '1rem', background: '#EFF6FF', borderRadius: '8px'}}>
+                <p style={{margin: 0, fontSize: '0.875rem', color: '#1E40AF'}}>
+                  💡 L'attribution automatique créera les assignations selon les règles configurées dans Paramètres.
+                  {autoAttributionConfig.periode === 'mois' && ' Toutes les semaines du mois seront planifiées.'}
+                </p>
+              </div>
+
+              {/* Choix du mode : Compléter ou Réinitialiser */}
+              <div style={{marginTop: '1.5rem'}}>
+                <h3 style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>⚙️ Mode d'attribution</h3>
+                
+                <div style={{display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(2, 1fr)'}}>
+                  {/* Option A : Compléter */}
+                  <button
+                    onClick={() => setAutoAttributionConfig({...autoAttributionConfig, mode: 'completer'})}
+                    style={{
+                      padding: '1rem',
+                      border: autoAttributionConfig.mode === 'completer' ? '3px solid #10B981' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      background: autoAttributionConfig.mode === 'completer' ? '#ECFDF5' : 'white',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>✅</div>
+                    <div style={{fontWeight: '600', marginBottom: '0.25rem', color: '#10B981'}}>Compléter le planning</div>
+                    <div style={{fontSize: '0.8rem', color: '#6B7280'}}>
+                      Conserve les assignations existantes et complète les slots vides
+                    </div>
+                  </button>
+
+                  {/* Option B : Réinitialiser */}
+                  <button
+                    onClick={() => setAutoAttributionConfig({...autoAttributionConfig, mode: 'reinitialiser'})}
+                    style={{
+                      padding: '1rem',
+                      border: autoAttributionConfig.mode === 'reinitialiser' ? '3px solid #EF4444' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      background: autoAttributionConfig.mode === 'reinitialiser' ? '#FEF2F2' : 'white',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>🔄</div>
+                    <div style={{fontWeight: '600', marginBottom: '0.25rem', color: '#EF4444'}}>Réinitialiser complètement</div>
+                    <div style={{fontSize: '0.8rem', color: '#6B7280'}}>
+                      ⚠️ Supprime toutes les assignations AUTO et recommence
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowAutoAttributionModal(false)}>Annuler</Button>
+              <Button 
+                onClick={handleAttributionAuto}
+                disabled={!autoAttributionConfig.periodeLabel}
+                style={{
+                  opacity: !autoAttributionConfig.periodeLabel ? 0.5 : 1,
+                  background: autoAttributionConfig.mode === 'reinitialiser' ? '#EF4444' : '#3B82F6'
+                }}
+              >
+                {autoAttributionConfig.mode === 'reinitialiser' ? '🔄 Réinitialiser et Attribuer' : '✨ Lancer l\'attribution'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de chargement Attribution Automatique */}
+      {attributionLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '500px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            {/* Spinner animé */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 24px',
+              border: '6px solid #f3f4f6',
+              borderTop: '6px solid #dc2626',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            
+            {/* Message d'étape */}
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: '#1e293b',
+              marginBottom: '12px'
+            }}>
+              Attribution en cours...
+            </h2>
+            
+            <p style={{
+              fontSize: '1rem',
+              color: '#64748b',
+              marginBottom: '24px',
+              minHeight: '24px'
+            }}>
+              {attributionStep}
+            </p>
+            
+            {/* Barre de progression visuelle */}
+            <div style={{
+              width: '100%',
+              height: '4px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '2px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                height: '100%',
+                backgroundColor: '#dc2626',
+                animation: 'progress 2s ease-in-out infinite'
+              }}></div>
+            </div>
+            
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#94a3b8',
+              marginTop: '20px',
+              fontStyle: 'italic'
+            }}>
+              Veuillez patienter, cela peut prendre quelques instants...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'Audit de l'Affectation */}
+      {showAuditModal && selectedAuditAssignation && selectedAuditAssignation.justification && (
+        <div className="modal-overlay" onClick={() => setShowAuditModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h3>🔍 Audit de l'Affectation Automatique</h3>
+              <Button variant="ghost" onClick={() => setShowAuditModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              {/* En-tête de l'assignation */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                marginBottom: '1.5rem'
+              }}>
+                <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>
+                  {selectedAuditAssignation.person?.prenom} {selectedAuditAssignation.person?.nom}
+                </h3>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.95rem', opacity: 0.95 }}>
+                  <span>📅 {selectedAuditAssignation.date}</span>
+                  <span>🚒 {selectedAuditAssignation.justification.type_garde_info?.nom}</span>
+                  <span>⏱️ {selectedAuditAssignation.justification.type_garde_info?.duree_heures}h</span>
+                </div>
+              </div>
+
+              {/* Algorithme de sélection - Section explicative */}
+              <div style={{ 
+                marginBottom: '2rem',
+                padding: '1.5rem',
+                background: '#f0f9ff',
+                border: '2px solid #3b82f6',
+                borderRadius: '12px'
+              }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🤖 Algorithme d'assignation automatique
+                </h4>
+                <p style={{ fontSize: '0.9rem', color: '#1e40af', marginBottom: '1rem' }}>
+                  L'employé a été sélectionné en suivant ces étapes dans l'ordre :
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {[
+                    { num: 1, icon: '👤', title: 'Assignations manuelles privilégiées', desc: 'Les assignations manuelles ne sont jamais écrasées' },
+                    { num: 2, icon: '✅', title: 'Respecter les disponibilités', desc: 'Temps partiel : doit avoir déclaré une disponibilité. Temps plein : éligible automatiquement' },
+                    { num: 3, icon: '🎖️', title: 'Respecter les grades requis', desc: 'Assignation d\'un officier si configuré pour le type de garde' },
+                    { num: 4, icon: '⚖️', title: 'Rotation équitable du personnel', desc: 'Favorise les employés avec moins d\'heures dans le mois' },
+                    { num: 5, icon: '📅', title: 'Ancienneté des employés', desc: 'En cas d\'égalité d\'heures, privilégier l\'ancienneté (date d\'embauche)' }
+                  ].map((step) => (
+                    <div key={step.num} style={{ 
+                      display: 'flex', 
+                      alignItems: 'start', 
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid #bfdbfe'
+                    }}>
+                      <div style={{ 
+                        minWidth: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: '#3b82f6',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem'
+                      }}>
+                        {step.num}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.25rem' }}>
+                          {step.icon} {step.title}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          {step.desc}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scores informatifs (pas décisionnels) */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: '#1f2937' }}>📊 Scores Informatifs de l'Employé Sélectionné</h4>
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1rem', fontStyle: 'italic' }}>
+                  ⚠️ Ces scores sont informatifs uniquement. La sélection se base sur l'algorithme ci-dessus.
+                </p>
+                {['equite', 'anciennete', 'disponibilite', 'competences'].map(critere => {
+                  const score = selectedAuditAssignation.justification.assigned_user?.scores?.[critere] || 0;
+                  const maxScore = 100;
+                  const percentage = (score / maxScore) * 100;
+                  
+                  // Couleurs selon le score
+                  let barColor = '#ef4444'; // rouge
+                  if (percentage >= 75) barColor = '#10b981'; // vert
+                  else if (percentage >= 50) barColor = '#f59e0b'; // orange
+                  
+                  return (
+                    <div key={critere} style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: '500', textTransform: 'capitalize' }}>
+                          {critere === 'equite' && '⚖️ Équité'}
+                          {critere === 'anciennete' && '🎖️ Ancienneté'}
+                          {critere === 'disponibilite' && '✅ Disponibilité'}
+                          {critere === 'competences' && '💼 Compétences'}
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: barColor }}>{score.toFixed(1)}/100</span>
+                      </div>
+                      <div style={{ 
+                        width: '100%',
+                        height: '8px',
+                        background: '#e5e7eb',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          background: barColor,
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Score total */}
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '2px solid #8b5cf6'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Score Total (informatif)</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8b5cf6' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.scores?.total?.toFixed(1)}/400
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Détails de l'utilisateur */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>📋 Détails de l'Employé</h4>
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '1rem',
+                  padding: '1rem',
+                  background: '#f9fafb',
+                  borderRadius: '8px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Heures ce mois</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.heures_ce_mois || 0}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Moyenne équipe</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.moyenne_equipe || 0}h
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Années de service</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.justification.assigned_user?.details?.annees_service || 0} ans
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.25rem' }}>Grade</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                      {selectedAuditAssignation.person?.grade || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Autres candidats évalués */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1f2937' }}>
+                  👥 Autres Candidats Évalués ({selectedAuditAssignation.justification.other_candidates?.length || 0})
+                </h4>
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {selectedAuditAssignation.justification.other_candidates?.slice(0, 10).map((candidate, idx) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        padding: '0.75rem',
+                        marginBottom: '0.5rem',
+                        background: candidate.scores ? '#f0fdf4' : '#fef2f2',
+                        border: `1px solid ${candidate.scores ? '#86efac' : '#fca5a5'}`,
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                            {candidate.nom_complet} - {candidate.grade}
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                            {candidate.heures_ce_mois}h ce mois
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.9rem', 
+                            color: candidate.scores ? '#059669' : '#dc2626',
+                            marginTop: '0.25rem',
+                            fontWeight: '500'
+                          }}>
+                            {candidate.excluded_reason}
+                          </div>
+                        </div>
+                        {candidate.scores && (
+                          <div style={{ 
+                            padding: '0.5rem 0.75rem',
+                            background: 'white',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            color: '#8b5cf6'
+                          }}>
+                            {candidate.scores.total}/400
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes Admin (éditables) */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: '#1f2937' }}>📝 Notes de l'Administrateur</h4>
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                  Ajoutez vos commentaires sur cette affectation (optionnel)
+                </p>
+                <textarea
+                  value={auditNotesEdit}
+                  onChange={(e) => setAuditNotesEdit(e.target.value)}
+                  placeholder="Ex: Affectation validée, équilibre respecté..."
+                  style={{
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+                <Button 
+                  onClick={handleSaveAuditNotes}
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  💾 Enregistrer les notes
+                </Button>
+              </div>
+
+              {/* Statistiques globales */}
+              <div style={{
+                padding: '1rem',
+                background: '#eff6ff',
+                borderRadius: '8px',
+                border: '1px solid #93c5fd'
+              }}>
+                <div style={{ fontSize: '0.85rem', color: '#1e40af' }}>
+                  <strong>Candidats totaux évalués:</strong> {selectedAuditAssignation.justification.total_candidates_evaluated || 0}
+                  <br />
+                  <strong>Date d'attribution:</strong> {new Date(selectedAuditAssignation.justification.date_attribution).toLocaleString('fr-FR')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// Remplacements Component optimisé - Gestion complète remplacements et congés
+const Remplacements = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const [demandes, setDemandes] = useState([]);
+  const [demandesConge, setDemandesConge] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [typesGarde, setTypesGarde] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('remplacements');
+  const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'cartes'
+  const [filterStatut, setFilterStatut] = useState('tous'); // 'tous', 'en_attente', 'accepte', 'refuse'
+  const [showCreateRemplacementModal, setShowCreateRemplacementModal] = useState(false);
+  const [showCreateCongeModal, setShowCreateCongeModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  const [newDemande, setNewDemande] = useState({
+    type_garde_id: '',
+    date: '',
+    raison: '',
+    priorite: 'normale'
+  });
+  const [newConge, setNewConge] = useState({
+    type_conge: '',
+    date_debut: '',
+    date_fin: '',
+    raison: '',
+    priorite: 'normale'
+  });
+  const { toast } = useToast();
+
+  const typesConge = [
+    { value: 'maladie', label: '🏥 Maladie', description: 'Arrêt maladie avec justificatif' },
+    { value: 'vacances', label: '🏖️ Vacances', description: 'Congés payés annuels' },
+    { value: 'parental', label: '👶 Parental', description: 'Congé maternité/paternité' },
+    { value: 'personnel', label: '👤 Personnel', description: 'Congé exceptionnel sans solde' }
+  ];
+
+  const niveauxPriorite = [
+    { value: 'urgente', label: '🚨 Urgente', color: '#EF4444', description: 'Traitement immédiat requis' },
+    { value: 'haute', label: '🔥 Haute', color: '#F59E0B', description: 'Traitement prioritaire dans 24h' },
+    { value: 'normale', label: '📋 Normale', color: '#3B82F6', description: 'Traitement dans délai standard' },
+    { value: 'faible', label: '📝 Faible', color: '#6B7280', description: 'Traitement différé possible' }
+  ];
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const fetchData = async () => {
+    if (!tenantSlug) return;
+    
+    setLoading(true);
+    try {
+      const promises = [
+        apiGet(tenantSlug, '/remplacements'),
+        apiGet(tenantSlug, '/demandes-conge'),
+        apiGet(tenantSlug, '/types-garde')
+      ];
+      
+      if (user.role !== 'employe') {
+        promises.push(apiGet(tenantSlug, '/users'));
+      }
+
+      const responses = await Promise.all(promises);
+      setDemandes(responses[0]);
+      setDemandesConge(responses[1]);
+      setTypesGarde(responses[2]);
+      
+      if (responses[3]) {
+        setUsers(responses[3]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateRemplacement = async () => {
+    if (!newDemande.type_garde_id || !newDemande.date || !newDemande.raison.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await apiPost(tenantSlug, '/remplacements', newDemande);
+      toast({
+        title: "Demande créée",
+        description: "Votre demande de remplacement a été soumise et la recherche automatique va commencer",
+        variant: "success"
+      });
+      setShowCreateRemplacementModal(false);
+      setNewDemande({ type_garde_id: '', date: '', raison: '', priorite: 'normale' });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateConge = async () => {
+    if (!newConge.type_conge || !newConge.date_debut || !newConge.date_fin || !newConge.raison.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await apiPost(tenantSlug, '/demandes-conge', newConge);
+      toast({
+        title: "Demande de congé créée",
+        description: "Votre demande a été soumise et sera examinée par votre superviseur",
+        variant: "success"
+      });
+      setShowCreateCongeModal(false);
+      setNewConge({ type_conge: '', date_debut: '', date_fin: '', raison: '', priorite: 'normale' });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la demande de congé",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleApprouverConge = async (demandeId, action, commentaire = "") => {
+    if (user.role === 'employe') return;
+
+    try {
+      await apiPut(tenantSlug, `/demandes-conge/${demandeId}/approuver?action=${action}&commentaire=${commentaire}`, {});
+      toast({
+        title: action === 'approuver' ? "Congé approuvé" : "Congé refusé",
+        description: `La demande de congé a été ${action === 'approuver' ? 'approuvée' : 'refusée'}`,
+        variant: "success"
+      });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getStatutColor = (statut) => {
+    switch (statut) {
+      case 'en_cours': case 'en_attente': return '#F59E0B';
+      case 'approuve': return '#10B981';
+      case 'refuse': return '#EF4444';
+      default: return '#6B7280';
+    }
+  };
+
+  const getStatutLabel = (statut) => {
+    switch (statut) {
+      case 'en_cours': return 'En cours';
+      case 'en_attente': return 'En attente';
+      case 'approuve': return 'Approuvé';
+      case 'refuse': return 'Refusé';
+      default: return statut;
+    }
+  };
+
+  const getTypeGardeName = (typeGardeId) => {
+    const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+    return typeGarde ? typeGarde.nom : 'Type non spécifié';
+  };
+
+  const handleFilterUrgentConges = () => {
+    const congesUrgents = demandesConge.filter(d => d.priorite === 'urgente' && d.statut === 'en_attente');
+    if (congesUrgents.length > 0) {
+      toast({
+        title: "Congés urgents",
+        description: `${congesUrgents.length} demande(s) urgente(s) nécessite(nt) un traitement immédiat`,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Aucun congé urgent",
+        description: "Aucune demande urgente en attente",
+        variant: "default"
+      });
+    }
+  };
+
+  const handleExportConges = () => {
+    try {
+      // Simuler l'export (en production, ça générerait un fichier Excel/CSV)
+      const exportData = demandesConge.map(conge => ({
+        Demandeur: getUserName(conge.demandeur_id),
+        Type: conge.type_conge,
+        'Date début': conge.date_debut,
+        'Date fin': conge.date_fin,
+        'Nombre jours': conge.nombre_jours,
+        Priorité: conge.priorite,
+        Statut: conge.statut,
+        Raison: conge.raison
+      }));
+      
+      console.log('Export data:', exportData);
+      
+      toast({
+        title: "Export réussi",
+        description: `${demandesConge.length} demande(s) de congé exportée(s)`,
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter les données",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePlanningImpact = () => {
+    const congesApprouves = demandesConge.filter(d => d.statut === 'approuve');
+    const joursImpactes = congesApprouves.reduce((total, conge) => total + conge.nombre_jours, 0);
+    
+    toast({
+      title: "Impact sur le planning",
+      description: `${congesApprouves.length} congé(s) approuvé(s) = ${joursImpactes} jour(s) à remplacer dans le planning`,
+      variant: "default"
+    });
+  };
+
+  const getUserName = (userId) => {
+    const foundUser = users.find(u => u.id === userId);
+    return foundUser ? `${foundUser.prenom} ${foundUser.nom}` : `Employé #${userId?.slice(-4)}`;
+  };
+
+  const getPrioriteColor = (priorite) => {
+    const prioriteObj = niveauxPriorite.find(p => p.value === priorite);
+    return prioriteObj ? prioriteObj.color : '#6B7280';
+  };
+
+  if (loading) return <div className="loading" data-testid="replacements-loading">Chargement...</div>;
+
+  // Calculer les KPIs
+  const totalDemandes = demandes.length;
+  const enAttente = demandes.filter(d => d.statut === 'en_cours').length;
+  const acceptees = demandes.filter(d => d.statut === 'approuve').length;
+  const refusees = demandes.filter(d => d.statut === 'refuse').length;
+  const remplacementsTrouves = demandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length;
+  const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
+  const congesDuMois = demandesConge.length;
+
+  // Filtrer les demandes selon le rôle et le filtre
+  const getFilteredDemandes = () => {
+    let filtered = user.role === 'employe' 
+      ? demandes.filter(d => d.demandeur_id === user.id)
+      : demandes;
+    
+    if (filterStatut !== 'tous') {
+      const statutMap = {
+        'en_attente': 'en_cours',
+        'accepte': 'approuve',
+        'refuse': 'refuse'
+      };
+      filtered = filtered.filter(d => d.statut === statutMap[filterStatut]);
+    }
+    
+    return filtered;
+  };
+
+  const filteredDemandes = getFilteredDemandes();
+
+  return (
+    <div className="remplacements-refonte">
+      {/* Header Moderne */}
+      <div className="module-header">
+        <div>
+          <h1 data-testid="replacements-title">🔄 Remplacements & Congés</h1>
+          <p>Gestion des demandes de remplacement avec recherche automatique et suivi des congés</p>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+          <h3>{totalDemandes}</h3>
+          <p>Total Demandes</p>
+        </div>
+        <div className="kpi-card kpi-card-triple" style={{background: '#FEF3C7'}}>
+          <div className="kpi-triple-container">
+            <div className="kpi-triple-item">
+              <h3>{enAttente}</h3>
+              <p>En Attente</p>
+            </div>
+            <div className="kpi-triple-item">
+              <h3>{acceptees}</h3>
+              <p>Acceptées</p>
+            </div>
+            <div className="kpi-triple-item">
+              <h3>{refusees}</h3>
+              <p>Refusées</p>
+            </div>
+          </div>
+        </div>
+        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+          <h3>{remplacementsTrouves}</h3>
+          <p>Remplacements Trouvés</p>
+        </div>
+        <div className="kpi-card" style={{background: '#DBEAFE'}}>
+          <h3>{tauxSucces}%</h3>
+          <p>Taux de Succès</p>
+        </div>
+        <div className="kpi-card" style={{background: '#E9D5FF'}}>
+          <h3>{congesDuMois}</h3>
+          <p>Congés du Mois</p>
+        </div>
+      </div>
+
+      {/* Barre de Contrôles */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+          {/* Boutons d'action */}
+          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center'}}>
+            <Button 
+              variant="default" 
+              onClick={() => setShowCreateRemplacementModal(true)}
+              data-testid="create-replacement-btn"
+            >
+              🔄 Demande de Remplacement
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateCongeModal(true)}
+              data-testid="create-conge-btn"
+            >
+              🏖️ Demande de Congé
+            </Button>
+            
+            {/* Filtre par statut */}
+            <select 
+              value={filterStatut}
+              onChange={(e) => setFilterStatut(e.target.value)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="tous">📋 Tous les statuts</option>
+              <option value="en_attente">⏳ En attente</option>
+              <option value="accepte">✅ Acceptées</option>
+              <option value="refuse">❌ Refusées</option>
+            </select>
+
+            {/* Toggle Vue Liste/Cartes */}
+            <div className="view-toggle">
+              <button 
+                className={viewMode === 'liste' ? 'active' : ''}
+                onClick={() => setViewMode('liste')}
+                title="Vue Liste"
+              >
+                ☰
+              </button>
+              <button 
+                className={viewMode === 'cartes' ? 'active' : ''}
+                onClick={() => setViewMode('cartes')}
+                title="Vue Cartes"
+              >
+                ⊞
+              </button>
+            </div>
+          </div>
+
+          {/* Exports */}
+          <div style={{display: 'flex', gap: '1rem'}}>
+            <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
+              📄 Export PDF
+            </Button>
+            <Button variant="outline" onClick={() => { setExportType('excel'); setShowExportModal(true); }}>
+              📊 Export Excel
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Onglets Remplacements / Congés - Harmonisés */}
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '2rem',
+        borderBottom: '2px solid #E5E7EB',
+        paddingBottom: '0.5rem'
+      }}>
+        <button
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'remplacements' ? '#FCA5A5' : 'transparent',
+            color: activeTab === 'remplacements' ? 'white' : '#6B7280',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'remplacements' ? 'bold' : 'normal',
+            fontSize: '1rem',
+            transition: 'all 0.2s ease'
+          }}
+          onClick={() => setActiveTab('remplacements')}
+          data-testid="tab-remplacements"
+        >
+          🔄 Remplacements ({demandes.length})
+        </button>
+        <button
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'conges' ? '#FCA5A5' : 'transparent',
+            color: activeTab === 'conges' ? 'white' : '#6B7280',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'conges' ? 'bold' : 'normal',
+            fontSize: '1rem',
+            transition: 'all 0.2s ease'
+          }}
+          onClick={() => setActiveTab('conges')}
+          data-testid="tab-conges"
+        >
+          🏖️ Congés ({demandesConge.length})
+        </button>
+      </div>
+
+      {/* Contenu des onglets */}
+      <div className="tab-content">
+        {activeTab === 'remplacements' && (
+          <div className="remplacements-content">
+              <div style={{ 
+                background: '#eff6ff', 
+                border: '1px solid #3b82f6', 
+                borderRadius: '8px', 
+                padding: '1rem', 
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'start',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>💡</span>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: '#1e40af', display: 'block', marginBottom: '0.5rem' }}>
+                    Actions manuelles disponibles
+                  </strong>
+                  <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0, lineHeight: '1.5' }}>
+                    Les demandes de remplacement sont <strong>automatiquement traitées</strong> selon vos paramètres. 
+                    Les boutons ci-dessous permettent d'<strong>intervenir manuellement</strong> si nécessaire :
+                  </p>
+                  <ul style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 1.5rem', lineHeight: '1.6' }}>
+                    <li><strong>🔍 Recherche auto</strong> : Relancer la recherche si l'automatisation a échoué</li>
+                    <li><strong>✅ Approuver</strong> : Valider manuellement (remplaçant trouvé hors système)</li>
+                    <li><strong>❌ Rejeter</strong> : Annuler si la demande n'est plus nécessaire</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Liste des demandes de remplacement */}
+            <div className="demandes-list">
+              {demandes.length > 0 ? (
+                demandes.map(demande => (
+                  <div key={demande.id} className="demande-card" data-testid={`replacement-${demande.id}`}>
+                    <div className="demande-header">
+                      <div className="demande-info">
+                        <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
+                        <span className="demande-date">{new Date(demande.date).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                      <div className="demande-status">
+                        <span 
+                          className="status-badge" 
+                          style={{ backgroundColor: getStatutColor(demande.statut) }}
+                        >
+                          {getStatutLabel(demande.statut)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="demande-details">
+                      <p className="demande-raison">{demande.raison}</p>
+                      <div className="demande-meta">
+                        <span>Demandé par: {getUserName(demande.demandeur_id)}</span>
+                        <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    </div>
+                    {user.role !== 'employe' && demande.statut === 'en_cours' && (
+                      <div className="demande-actions">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          data-testid={`search-replacement-${demande.id}`}
+                          title="Relancer une recherche automatique de remplaçant si l'automatisation a échoué ou pour forcer une nouvelle recherche"
+                          style={{ position: 'relative' }}
+                        >
+                          🔍 Recherche auto
+                          <span style={{ 
+                            position: 'absolute', 
+                            top: '-8px', 
+                            right: '-8px', 
+                            background: '#3b82f6', 
+                            color: 'white', 
+                            borderRadius: '50%', 
+                            width: '18px', 
+                            height: '18px', 
+                            fontSize: '12px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            cursor: 'help'
+                          }} title="Relancer une recherche automatique">?</span>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          data-testid={`approve-replacement-${demande.id}`}
+                          title="Approuver manuellement cette demande (si remplaçant trouvé hors système ou validation manuelle requise)"
+                        >
+                          ✅
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="danger" 
+                          data-testid={`reject-replacement-${demande.id}`}
+                          title="Rejeter/Annuler cette demande (si plus nécessaire ou aucun remplaçant disponible)"
+                        >
+                          ❌
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <h3>Aucune demande de remplacement</h3>
+                  <p>Les demandes apparaîtront ici.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'conges' && (
+          <div className="conges-content">
+            {/* En-tête de gestion toujours visible pour admin/superviseur */}
+            {user.role !== 'employe' && (
+              <div className="management-header">
+                <div className="management-info">
+                  <h3>👑 Gestion des demandes de congé</h3>
+                  <p>
+                    {user.role === 'admin' ? 
+                      'Vous pouvez approuver toutes les demandes de congé (employés et superviseurs)' : 
+                      'Vous pouvez approuver les demandes des employés uniquement'}
+                  </p>
+                </div>
+                <div className="pending-indicator">
+                  <span className="pending-count">{demandesConge.filter(d => d.statut === 'en_attente').length}</span>
+                  <span className="pending-label">en attente d'approbation</span>
+                </div>
+              </div>
+            )}
+
+            {/* Boutons d'actions rapides pour admin/superviseur */}
+            {user.role !== 'employe' && (
+              <div className="management-actions">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleFilterUrgentConges}
+                  data-testid="filter-urgent-conges"
+                >
+                  🚨 Congés urgents
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportConges}
+                  data-testid="export-conges"
+                >
+                  📊 Exporter congés
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePlanningImpact}
+                  data-testid="planning-impact"
+                >
+                  📅 Impact planning
+                </Button>
+              </div>
+            )}
+
+            {/* Statistics Cards pour congés */}
+            <div className="conge-stats">
+              <div className="stat-card-conge pending">
+                <div className="stat-icon">⏳</div>
+                <div className="stat-content">
+                  <h3>En attente</h3>
+                  <p className="stat-number">{demandesConge.filter(d => d.statut === 'en_attente').length}</p>
+                  <p className="stat-label">À approuver</p>
+                </div>
+              </div>
+
+              <div className="stat-card-conge approved">
+                <div className="stat-icon">✅</div>
+                <div className="stat-content">
+                  <h3>Approuvés</h3>
+                  <p className="stat-number">{demandesConge.filter(d => d.statut === 'approuve').length}</p>
+                  <p className="stat-label">Ce mois</p>
+                </div>
+              </div>
+
+              <div className="stat-card-conge total">
+                <div className="stat-icon">📊</div>
+                <div className="stat-content">
+                  <h3>Total jours</h3>
+                  <p className="stat-number">{demandesConge.reduce((total, d) => total + (d.nombre_jours || 0), 0)}</p>
+                  <p className="stat-label">Jours de congé</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Liste des demandes de congé */}
+            <div className="conges-list">
+              {demandesConge.length > 0 ? (
+                demandesConge.map(conge => (
+                  <div key={conge.id} className="conge-card" data-testid={`conge-${conge.id}`}>
+                    <div className="conge-header">
+                      <div className="conge-type">
+                        <span className="type-badge">
+                          {typesConge.find(t => t.value === conge.type_conge)?.label || conge.type_conge}
+                        </span>
+                        <span 
+                          className="priorite-badge" 
+                          style={{ backgroundColor: getPrioriteColor(conge.priorite) }}
+                        >
+                          {niveauxPriorite.find(p => p.value === conge.priorite)?.label || conge.priorite}
+                        </span>
+                      </div>
+                      <div className="conge-status">
+                        <span 
+                          className="status-badge" 
+                          style={{ backgroundColor: getStatutColor(conge.statut) }}
+                        >
+                          {getStatutLabel(conge.statut)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="conge-details">
+                      <div className="conge-dates">
+                        <span className="date-range">
+                          {new Date(conge.date_debut).toLocaleDateString('fr-FR')} - {new Date(conge.date_fin).toLocaleDateString('fr-FR')}
+                        </span>
+                        <span className="jours-count">({conge.nombre_jours} jour{conge.nombre_jours > 1 ? 's' : ''})</span>
+                      </div>
+                      <p className="conge-raison">{conge.raison}</p>
+                      <div className="conge-meta">
+                        <span>Demandé par: {getUserName(conge.demandeur_id)}</span>
+                        <span>Le: {new Date(conge.created_at).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    </div>
+
+                    {user.role !== 'employe' && conge.statut === 'en_attente' && (
+                      <div className="conge-actions">
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => handleApprouverConge(conge.id, 'approuver')}
+                          data-testid={`approve-conge-${conge.id}`}
+                        >
+                          ✅ Approuver
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleApprouverConge(conge.id, 'refuser')}
+                          data-testid={`reject-conge-${conge.id}`}
+                        >
+                          ❌ Refuser
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          data-testid={`comment-conge-${conge.id}`}
+                        >
+                          💬 Commenter
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Affichage des infos d'approbation si déjà traitée */}
+                    {conge.statut !== 'en_attente' && conge.approuve_par && (
+                      <div className="approval-info">
+                        <div className="approval-details">
+                          <span className="approval-by">
+                            {conge.statut === 'approuve' ? '✅' : '❌'} 
+                            {conge.statut === 'approuve' ? 'Approuvé' : 'Refusé'} par {getUserName(conge.approuve_par)}
+                          </span>
+                          <span className="approval-date">le {conge.date_approbation}</span>
+                        </div>
+                        {conge.commentaire_approbation && (
+                          <div className="approval-comment">
+                            <strong>Commentaire :</strong> {conge.commentaire_approbation}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <h3>Aucune demande de congé</h3>
+                  <p>
+                    {user.role !== 'employe' 
+                      ? 'Les demandes de congé des employés apparaîtront ici pour approbation.' 
+                      : 'Vos demandes de congé apparaîtront ici.'}
+                  </p>
+                  {user.role !== 'employe' && (
+                    <div className="management-tips">
+                      <h4>💡 Conseils de gestion :</h4>
+                      <ul>
+                        <li>Les demandes urgentes nécessitent un traitement immédiat</li>
+                        <li>Vérifiez l'impact sur le planning avant d'approuver</li>
+                        <li>Ajoutez des commentaires pour justifier vos décisions</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Create Replacement Modal */}
+      {showCreateRemplacementModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateRemplacementModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="create-replacement-modal">
+            <div className="modal-header">
+              <h3>Nouvelle demande de remplacement</h3>
+              <Button variant="ghost" onClick={() => setShowCreateRemplacementModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-field">
+                <Label htmlFor="type-garde">Type de garde *</Label>
+                <select
+                  id="type-garde"
+                  value={newDemande.type_garde_id}
+                  onChange={(e) => setNewDemande({...newDemande, type_garde_id: e.target.value})}
+                  className="form-select"
+                  data-testid="select-garde-type"
+                >
+                  <option value="">Sélectionner un type de garde</option>
+                  {typesGarde.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.nom} ({type.heure_debut} - {type.heure_fin})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="date">Date de la garde *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newDemande.date}
+                  onChange={(e) => setNewDemande({...newDemande, date: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  data-testid="select-date"
+                />
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="priorite">Priorité</Label>
+                <select
+                  id="priorite"
+                  value={newDemande.priorite}
+                  onChange={(e) => setNewDemande({...newDemande, priorite: e.target.value})}
+                  className="form-select"
+                  data-testid="select-priority"
+                >
+                  {niveauxPriorite.map(niveau => (
+                    <option key={niveau.value} value={niveau.value}>
+                      {niveau.label} - {niveau.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="raison">Raison du remplacement *</Label>
+                <textarea
+                  id="raison"
+                  value={newDemande.raison}
+                  onChange={(e) => setNewDemande({...newDemande, raison: e.target.value})}
+                  placeholder="Expliquez la raison de votre demande de remplacement (ex: maladie, congé personnel, urgence familiale...)"
+                  rows="4"
+                  className="form-textarea"
+                  data-testid="replacement-reason"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCreateRemplacementModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleCreateRemplacement}
+                  data-testid="submit-replacement-btn"
+                >
+                  Créer la demande
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Conge Modal */}
+      {showCreateCongeModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateCongeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="create-conge-modal">
+            <div className="modal-header">
+              <h3>Nouvelle demande de congé</h3>
+              <Button variant="ghost" onClick={() => setShowCreateCongeModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-field">
+                <Label htmlFor="type-conge">Type de congé *</Label>
+                <select
+                  id="type-conge"
+                  value={newConge.type_conge}
+                  onChange={(e) => setNewConge({...newConge, type_conge: e.target.value})}
+                  className="form-select"
+                  data-testid="select-conge-type"
+                >
+                  <option value="">Sélectionner un type de congé</option>
+                  {typesConge.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label} - {type.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <div className="form-field">
+                  <Label htmlFor="date-debut">Date de début *</Label>
+                  <Input
+                    id="date-debut"
+                    type="date"
+                    value={newConge.date_debut}
+                    onChange={(e) => setNewConge({...newConge, date_debut: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    data-testid="select-date-debut"
+                  />
+                </div>
+                <div className="form-field">
+                  <Label htmlFor="date-fin">Date de fin *</Label>
+                  <Input
+                    id="date-fin"
+                    type="date"
+                    value={newConge.date_fin}
+                    onChange={(e) => setNewConge({...newConge, date_fin: e.target.value})}
+                    min={newConge.date_debut || new Date().toISOString().split('T')[0]}
+                    data-testid="select-date-fin"
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="priorite-conge">Priorité</Label>
+                <select
+                  id="priorite-conge"
+                  value={newConge.priorite}
+                  onChange={(e) => setNewConge({...newConge, priorite: e.target.value})}
+                  className="form-select"
+                  data-testid="select-conge-priority"
+                >
+                  {niveauxPriorite.map(niveau => (
+                    <option key={niveau.value} value={niveau.value}>
+                      {niveau.label} - {niveau.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="raison-conge">Raison du congé *</Label>
+                <textarea
+                  id="raison-conge"
+                  value={newConge.raison}
+                  onChange={(e) => setNewConge({...newConge, raison: e.target.value})}
+                  placeholder="Expliquez la raison de votre demande de congé..."
+                  rows="4"
+                  className="form-textarea"
+                  data-testid="conge-reason"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCreateCongeModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleCreateConge}
+                  data-testid="submit-conge-btn"
+                >
+                  Créer la demande
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de demande de remplacement avec priorité */}
+      {showCreateRemplacementModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateRemplacementModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="create-replacement-modal">
+            <div className="modal-header">
+              <h3>🔄 Nouvelle demande de remplacement</h3>
+              <Button variant="ghost" onClick={() => setShowCreateRemplacementModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="priority-section">
+                <h4>🎯 Niveau de priorité</h4>
+                <div className="priority-options">
+                  {niveauxPriorite.map(priorite => (
+                    <label key={priorite.value} className="priority-option">
+                      <input
+                        type="radio"
+                        name="priorite"
+                        value={priorite.value}
+                        checked={newDemande.priorite === priorite.value}
+                        onChange={(e) => setNewDemande({...newDemande, priorite: e.target.value})}
+                      />
+                      <div className="priority-content" style={{ borderColor: priorite.color }}>
+                        <span className="priority-label" style={{ color: priorite.color }}>{priorite.label}</span>
+                        <span className="priority-description">{priorite.description}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label>Type de garde *</Label>
+                <select
+                  value={newDemande.type_garde_id}
+                  onChange={(e) => setNewDemande({...newDemande, type_garde_id: e.target.value})}
+                  className="form-select"
+                  data-testid="replacement-type-garde-select"
+                >
+                  <option value="">Sélectionner un type de garde</option>
+                  {typesGarde.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.nom} ({type.heure_debut} - {type.heure_fin})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <Label>Date de la garde *</Label>
+                <Input
+                  type="date"
+                  value={newDemande.date}
+                  onChange={(e) => setNewDemande({...newDemande, date: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  data-testid="replacement-date-input"
+                />
+              </div>
+
+              <div className="form-field">
+                <Label>Raison du remplacement *</Label>
+                <textarea
+                  value={newDemande.raison}
+                  onChange={(e) => setNewDemande({...newDemande, raison: e.target.value})}
+                  placeholder="Expliquez la raison (maladie, urgence familiale, conflit horaire...)"
+                  rows="3"
+                  className="form-textarea"
+                  data-testid="replacement-reason-input"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCreateRemplacementModal(false)}>Annuler</Button>
+                <Button variant="default" onClick={handleCreateRemplacement} data-testid="submit-replacement-btn">
+                  Créer la demande
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de demande de congé avec priorité */}
+      {showCreateCongeModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateCongeModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="create-conge-modal">
+            <div className="modal-header">
+              <h3>🏖️ Nouvelle demande de congé</h3>
+              <Button variant="ghost" onClick={() => setShowCreateCongeModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="priority-section">
+                <h4>🎯 Niveau de priorité</h4>
+                <div className="priority-options">
+                  {niveauxPriorite.map(priorite => (
+                    <label key={priorite.value} className="priority-option">
+                      <input
+                        type="radio"
+                        name="priorite-conge"
+                        value={priorite.value}
+                        checked={newConge.priorite === priorite.value}
+                        onChange={(e) => setNewConge({...newConge, priorite: e.target.value})}
+                      />
+                      <div className="priority-content" style={{ borderColor: priorite.color }}>
+                        <span className="priority-label" style={{ color: priorite.color }}>{priorite.label}</span>
+                        <span className="priority-description">{priorite.description}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label>Type de congé *</Label>
+                <div className="conge-type-options">
+                  {typesConge.map(type => (
+                    <label key={type.value} className="conge-type-option">
+                      <input
+                        type="radio"
+                        name="type-conge"
+                        value={type.value}
+                        checked={newConge.type_conge === type.value}
+                        onChange={(e) => setNewConge({...newConge, type_conge: e.target.value})}
+                      />
+                      <div className="conge-type-content">
+                        <span className="conge-type-label">{type.label}</span>
+                        <span className="conge-type-description">{type.description}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-field">
+                  <Label>Date de début *</Label>
+                  <Input
+                    type="date"
+                    value={newConge.date_debut}
+                    onChange={(e) => setNewConge({...newConge, date_debut: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    data-testid="conge-date-debut-input"
+                  />
+                </div>
+                <div className="form-field">
+                  <Label>Date de fin *</Label>
+                  <Input
+                    type="date"
+                    value={newConge.date_fin}
+                    onChange={(e) => setNewConge({...newConge, date_fin: e.target.value})}
+                    min={newConge.date_debut || new Date().toISOString().split('T')[0]}
+                    data-testid="conge-date-fin-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label>Raison du congé *</Label>
+                <textarea
+                  value={newConge.raison}
+                  onChange={(e) => setNewConge({...newConge, raison: e.target.value})}
+                  placeholder="Décrivez la raison de votre demande de congé..."
+                  rows="3"
+                  className="form-textarea"
+                  data-testid="conge-reason-input"
+                />
+              </div>
+
+              <div className="workflow-info">
+                <h4>📋 Processus d'approbation</h4>
+                <div className="workflow-steps">
+                  <div className="workflow-step">
+                    <span className="step-number">1</span>
+                    <span>Soumission de la demande</span>
+                  </div>
+                  <div className="workflow-step">
+                    <span className="step-number">2</span>
+                    <span>
+                      {user.role === 'employe' ? 'Approbation superviseur' : 'Approbation administrateur'}
+                    </span>
+                  </div>
+                  <div className="workflow-step">
+                    <span className="step-number">3</span>
+                    <span>Notification et mise à jour planning</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCreateCongeModal(false)}>Annuler</Button>
+                <Button variant="default" onClick={handleCreateConge} data-testid="submit-conge-btn">
+                  Soumettre la demande
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Export - Remplacements */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Export Remplacements {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Que souhaitez-vous exporter ?
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+                      const token = localStorage.getItem('token');
+                      
+                      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+                      const url = `${backendUrl}/api/${tenantSlug}/remplacements/${endpoint}`;
+                      
+                      const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      
+                      if (!response.ok) throw new Error('Erreur export');
+                      
+                      const blob = await response.blob();
+                      const downloadUrl = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = downloadUrl;
+                      link.download = `remplacements_tous.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`;
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                      window.URL.revokeObjectURL(downloadUrl);
+                      
+                      toast({ title: "Succès", description: `Export ${exportType.toUpperCase()} téléchargé` });
+                      setShowExportModal(false);
+                    } catch (error) {
+                      toast({ title: "Erreur", description: "Impossible d'exporter", variant: "destructive" });
+                    }
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📋</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Toutes les demandes</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Exporter toutes les demandes de remplacement ({demandes.length} demandes)
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({ title: "Info", description: "Sélectionnez un pompier depuis le module Personnel pour exporter ses demandes" });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>👤</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Une personne spécifique</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Disponible depuis le module Personnel
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Formations Component complet - Planning de formations
+
+
+const Formations = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('formations');
+  const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
+  
+  const [formations, setFormations] = useState([]);
+  const [competences, setCompetences] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
+  const [selectedFormation, setSelectedFormation] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [rapportConformite, setRapportConformite] = useState(null);
+  const [monTauxPresence, setMonTauxPresence] = useState(null);
+  const [filtreNom, setFiltreNom] = useState('');
+  const [triPresence, setTriPresence] = useState('desc');
+  
+  // États pour les rapports avancés
+  const [rapportTab, setRapportTab] = useState('presence');  // 'presence' ou 'competences'
+  const [typeFormation, setTypeFormation] = useState('toutes');  // 'obligatoires' ou 'toutes'
+  const [rapportCompetences, setRapportCompetences] = useState(null);
+  const [filtrePersonne, setFiltrePersonne] = useState('');  // ID de la personne ou vide pour tous
+  const [personnel, setPersonnel] = useState([]);
+  
+  const [showFormationModal, setShowFormationModal] = useState(false);
+  const [showInscriptionsModal, setShowInscriptionsModal] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  
+  const [formationForm, setFormationForm] = useState({
+    nom: '',
+    competence_id: '',
+    description: '',
+    date_debut: '',
+    date_fin: '',
+    heure_debut: '09:00',
+    heure_fin: '17:00',
+    duree_heures: 8,
+    lieu: '',
+    instructeur: '',
+    places_max: 20,
+    obligatoire: false,
+    annee: new Date().getFullYear()
+  });
+  
+  useEffect(() => {
+    if (tenantSlug) loadData();
+  }, [tenantSlug, anneeSelectionnee]);
+  
+  useEffect(() => {
+    if (tenantSlug && activeTab === 'rapports' && rapportTab === 'competences') {
+      loadRapportCompetences();
+    }
+  }, [tenantSlug, activeTab, rapportTab, anneeSelectionnee, filtrePersonne]);
+  
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (user?.role === 'employe') {
+        const [formationsData, competencesData, tauxData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/mon-taux-presence?annee=${anneeSelectionnee}`)
+        ]);
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setMonTauxPresence(tauxData);
+      } else {
+        const [formationsData, competencesData, dashData, rapportData, personnelData] = await Promise.all([
+          apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/formations/rapports/dashboard?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, `/formations/rapports/conformite?annee=${anneeSelectionnee}`),
+          apiGet(tenantSlug, '/users')
+        ]);
+        setFormations(formationsData || []);
+        setCompetences(competencesData || []);
+        setDashboardData(dashData);
+        setRapportConformite(rapportData);
+        setPersonnel(personnelData || []);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+    setLoading(false);
+  };
+  
+  const loadRapportCompetences = async () => {
+    try {
+      const params = filtrePersonne ? `?annee=${anneeSelectionnee}&user_id=${filtrePersonne}` : `?annee=${anneeSelectionnee}`;
+      const data = await apiGet(tenantSlug, `/formations/rapports/competences${params}`);
+      setRapportCompetences(data);
+    } catch (error) {
+      console.error('Erreur chargement rapport compétences:', error);
+    }
+  };
+  
+  const handleExportPresence = async (format) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-presence?format=${format}&type_formation=${typeFormation}&annee=${anneeSelectionnee}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_presence_${typeFormation}_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de télécharger le rapport", variant: "destructive" });
+    }
+  };
+  
+  const handleExportCompetences = async (format) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const userParam = filtrePersonne ? `&user_id=${filtrePersonne}` : '';
+      const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-competences?format=${format}&annee=${anneeSelectionnee}${userParam}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_competences_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de télécharger le rapport", variant: "destructive" });
+    }
+  };
+  
+  const handleSaveFormation = async () => {
+    // Validation frontend
+    if (!formationForm.nom || !formationForm.nom.trim()) {
+      toast({ 
+        title: "Erreur", 
+        description: "Le nom de la formation est obligatoire", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!formationForm.competence_id) {
+      toast({ 
+        title: "Erreur", 
+        description: "Veuillez sélectionner une compétence associée", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!formationForm.date_debut) {
+      toast({ 
+        title: "Erreur", 
+        description: "La date de début est obligatoire", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // CALCUL AUTOMATIQUE de la durée depuis heure_debut et heure_fin
+    let formDataToSend = {...formationForm};
+    if (formationForm.heure_debut && formationForm.heure_fin) {
+      try {
+        const [debutH, debutM] = formationForm.heure_debut.split(':').map(Number);
+        const [finH, finM] = formationForm.heure_fin.split(':').map(Number);
+        const dureeCalculee = (finH + finM/60) - (debutH + debutM/60);
+        formDataToSend.duree_heures = Math.round(dureeCalculee * 100) / 100; // Arrondi à 2 décimales
+      } catch (error) {
+        console.error('Erreur calcul durée:', error);
+      }
+    }
+    
+    try {
+      if (selectedFormation) {
+        await apiPut(tenantSlug, `/formations/${selectedFormation.id}`, formDataToSend);
+        toast({ title: "Succès", description: "Formation modifiée" });
+      } else {
+        await apiPost(tenantSlug, '/formations', formDataToSend);
+        toast({ title: "Succès", description: "Formation créée" });
+      }
+      setShowFormationModal(false);
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur lors de la sauvegarde", variant: "destructive" });
+    }
+  };
+
+  // Charger les compétences à l'ouverture du modal
+  useEffect(() => {
+    if (showFormationModal && tenantSlug) {
+      const refreshCompetences = async () => {
+        try {
+          const competencesData = await apiGet(tenantSlug, '/competences');
+          setCompetences(competencesData || []);
+        } catch (error) {
+          console.error('Erreur chargement compétences:', error);
+        }
+      };
+      refreshCompetences();
+    }
+  }, [showFormationModal, tenantSlug]);
+  
+  const handleInscrire = async (formationId) => {
+    try {
+      const result = await apiPost(tenantSlug, `/formations/${formationId}/inscription`, {});
+      toast({
+        title: "Succès",
+        description: result.statut === 'inscrit' ? 'Inscription confirmée' : 'Ajouté à la liste d\'attente'
+      });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
+  const handleDesinscrire = async (formationId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir vous désinscrire de cette formation?")) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/formations/${formationId}/inscription`);
+      toast({
+        title: "Succès",
+        description: "Désinscription réussie"
+      });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
+  const handleValiderPresence = async (userId, statut) => {
+    try {
+      await apiPut(tenantSlug, `/formations/${selectedFormation.id}/presence/${userId}`, { statut, notes: '' });
+      toast({ title: "Succès", description: "Présence validée" });
+      loadInscriptions(selectedFormation.id);
+    } catch (error) {
+      toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
+    }
+  };
+  
+  const handleDeleteFormation = async (formationId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.")) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/formations/${formationId}`);
+      toast({ 
+        title: "Succès", 
+        description: "Formation supprimée avec succès",
+        variant: "success"
+      });
+      loadData();
+    } catch (error) {
+      toast({ 
+        title: "Erreur", 
+        description: error.response?.data?.detail || "Impossible de supprimer la formation", 
+        variant: "destructive" 
+      });
+    }
+  };
+  
+  const loadInscriptions = async (formationId) => {
+    try {
+      const data = await apiGet(tenantSlug, `/formations/${formationId}/inscriptions`);
+      setInscriptions(data || []);
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+  
+  const getCompetenceName = (id) => competences.find(c => c.id === id)?.nom || 'N/A';
+  
+  const getPompiersFiltreTri = () => {
+    if (!rapportConformite) return [];
+    let pompiers = [...rapportConformite.pompiers];
+    if (filtreNom) {
+      pompiers = pompiers.filter(p => `${p.prenom} ${p.nom}`.toLowerCase().includes(filtreNom.toLowerCase()));
+    }
+    pompiers.sort((a, b) => {
+      const tauxA = a.taux_presence || 0;
+      const tauxB = b.taux_presence || 0;
+      return triPresence === 'desc' ? tauxB - tauxA : tauxA - tauxB;
+    });
+    return pompiers;
+  };
+  
+  if (loading) {
+    return <div className="module-container"><div className="loading-spinner"></div><p>Chargement...</p></div>;
+  }
+  
+  return (
+    <div className="module-formations-nfpa">
+      <div className="module-header">
+        <div>
+          <h1>📚 Formations - NFPA 1500</h1>
+          <p>Gestion des formations et conformité réglementaire</p>
+        </div>
+        <div className="header-controls">
+          <select className="form-select" value={anneeSelectionnee} onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}>
+            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </div>
+      
+      {user?.role === 'employe' && monTauxPresence && (
+        <div className="mon-kpi-presence">
+          <h2>📊 Mon Taux de Présence {anneeSelectionnee}</h2>
+          <div className="kpi-personnel-grid">
+            <div className="kpi-card-large">
+              <div className="kpi-circle" style={{background: `conic-gradient(${monTauxPresence.conforme ? '#10B981' : '#EF4444'} ${monTauxPresence.taux_presence * 3.6}deg, #E5E7EB 0deg)`}}>
+                <div className="kpi-circle-inner">
+                  <h2>{monTauxPresence.taux_presence}%</h2>
+                  <p>Présence</p>
+                </div>
+              </div>
+              <div className="kpi-details">
+                <p><strong>Présences:</strong> {monTauxPresence.presences_validees}</p>
+                <p><strong>Absences:</strong> {monTauxPresence.absences}</p>
+                <p><strong>Total:</strong> {monTauxPresence.formations_passees}</p>
+              </div>
+            </div>
+            <div className={`statut-conformite ${monTauxPresence.conforme ? 'conforme' : 'non-conforme'}`}>
+              {monTauxPresence.conforme ? <><h3>✅ Conforme</h3><p>Taux de présence conforme</p></> : <><h3>❌ Non Conforme</h3><p>Améliorez votre présence</p></>}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {user?.role !== 'employe' && dashboardData && (
+        <div className="formations-dashboard">
+          <div className="kpi-grid">
+            <div className="kpi-card"><h3>{dashboardData.heures_planifiees}h</h3><p>Heures planifiées</p></div>
+            <div className="kpi-card" style={{background: '#D1FAE5'}}><h3>{dashboardData.heures_effectuees}h</h3><p>Heures effectuées</p></div>
+            <div className="kpi-card" style={{background: '#DBEAFE'}}><h3>{dashboardData.pourcentage_realisation}%</h3><p>Taux réalisation</p></div>
+            <div className="kpi-card" style={{background: '#FEF3C7'}}><h3>{dashboardData.pompiers_formes}/{dashboardData.total_pompiers}</h3><p>Pompiers formés</p></div>
+            <div className="kpi-card" style={{background: '#E0E7FF'}}><h3>{dashboardData.pourcentage_pompiers}%</h3><p>% Pompiers</p></div>
+          </div>
+        </div>
+      )}
+      
+      <div className="formations-tabs">
+        <button className={activeTab === 'formations' ? 'active' : ''} onClick={() => setActiveTab('formations')}>📋 Formations ({formations.length})</button>
+        {user?.role !== 'employe' && <button className={activeTab === 'rapports' ? 'active' : ''} onClick={() => setActiveTab('rapports')}>📊 Rapports</button>}
+      </div>
+      
+      {activeTab === 'formations' && (
+        <div className="formations-content">
+          {user?.role !== 'employe' && (
+            <div className="formations-actions"><Button onClick={() => { setSelectedFormation(null); setFormationForm({...formationForm, annee: anneeSelectionnee}); setShowFormationModal(true); }}>➕ Nouvelle Formation</Button></div>
+          )}
+          <div className="formations-grid">
+            {formations.map(f => (
+              <div key={f.id} className="formation-card">
+                <div className="formation-header">
+                  <h3>{f.nom}</h3>
+                  <span className={`statut-badge ${f.statut}`}>{f.statut}</span>
+                </div>
+                <div className="formation-body">
+                  <p><strong>📅 Date:</strong> {(() => {
+                    // Parser la date comme locale sans conversion timezone
+                    const [year, month, day] = f.date_debut.split('-');
+                    const date = new Date(year, month - 1, day);
+                    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                  })()}</p>
+                  <p><strong>🕐 Horaire:</strong> {f.heure_debut && f.heure_fin ? `${f.heure_debut} - ${f.heure_fin}` : 'Non précisé'}</p>
+                  <p><strong>📍 Lieu:</strong> {f.lieu || 'Non précisé'}</p>
+                  <p><strong>👨‍🏫 Instructeur:</strong> {f.instructeur || 'Non précisé'}</p>
+                  <p style={{fontSize: '0.9rem', color: '#6B7280'}}><strong>Compétence:</strong> {getCompetenceName(f.competence_id)}</p>
+                  
+                  {/* Barre visuelle des places */}
+                  <div style={{marginTop: '0.75rem'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem'}}>
+                      <span><strong>Places:</strong></span>
+                      <span style={{color: f.places_restantes === 0 ? '#DC2626' : '#059669'}}>
+                        {f.places_max - f.places_restantes}/{f.places_max}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '100%', 
+                      height: '8px', 
+                      background: '#F3F4F6', 
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${((f.places_max - f.places_restantes) / f.places_max) * 100}%`,
+                        height: '100%',
+                        background: f.places_restantes === 0 ? '#DC2626' : '#10B981',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="formation-actions" style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem 1.5rem'}}>
+                  {/* Bouton principal pour TOUS */}
+                  {f.user_inscrit ? (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleDesinscrire(f.id)}
+                      style={{width: '100%', fontSize: '0.95rem', padding: '0.75rem'}}
+                    >
+                      ❌ Je me désinscris
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => handleInscrire(f.id)} 
+                      disabled={f.places_restantes === 0}
+                      style={{width: '100%', fontSize: '0.95rem', padding: '0.75rem'}}
+                    >
+                      {f.places_restantes === 0 ? '🔒 Formation complète' : '✅ Je m\'inscris'}
+                    </Button>
+                  )}
+                  
+                  {/* Boutons de gestion pour admin/superviseur */}
+                  {user?.role !== 'employe' && (
+                    <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={async () => { 
+                          setSelectedFormation(f); 
+                          await loadInscriptions(f.id); 
+                          setShowInscriptionsModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
+                        👥 Inscrits ({f.places_max - f.places_restantes})
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={async () => { 
+                          setSelectedFormation(f); 
+                          await loadInscriptions(f.id); 
+                          setShowValidationModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
+                        ✅ Présences
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => { 
+                          setSelectedFormation(f); 
+                          setFormationForm({
+                            nom: f.nom,
+                            competence_id: f.competence_id,
+                            description: f.description,
+                            date_debut: f.date_debut,
+                            heure_debut: f.heure_debut,
+                            heure_fin: f.heure_fin,
+                            duree_heures: f.duree_heures,
+                            lieu: f.lieu,
+                            instructeur: f.instructeur,
+                            places_max: f.places_max,
+                            obligatoire: f.obligatoire,
+                            annee: f.annee
+                          }); 
+                          setShowFormationModal(true); 
+                        }}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
+                        ✏️ Modifier
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => handleDeleteFormation(f.id)}
+                        style={{flex: '1 1 calc(50% - 0.25rem)'}}
+                      >
+                        🗑️ Supprimer
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {formations.length === 0 && <div className="empty-state"><p>Aucune formation pour {anneeSelectionnee}</p></div>}
+        </div>
+      )}
+      
+      {activeTab === 'rapports' && rapportConformite && (
+        <div className="formations-rapports">
+          {/* Sous-onglets Rapports */}
+          <div className="rapports-sub-tabs" style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid #E5E7EB'}}>
+            <button 
+              className={rapportTab === 'presence' ? 'active-sub-tab' : 'sub-tab'} 
+              onClick={() => setRapportTab('presence')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: rapportTab === 'presence' ? '#FCA5A5' : 'transparent',
+                color: rapportTab === 'presence' ? 'white' : '#6B7280',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                fontWeight: rapportTab === 'presence' ? 'bold' : 'normal',
+                fontSize: '1rem'
+              }}
+            >
+              📊 Taux de Présence
+            </button>
+            <button 
+              className={rapportTab === 'competences' ? 'active-sub-tab' : 'sub-tab'} 
+              onClick={() => setRapportTab('competences')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: rapportTab === 'competences' ? '#FCA5A5' : 'transparent',
+                color: rapportTab === 'competences' ? 'white' : '#6B7280',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                fontWeight: rapportTab === 'competences' ? 'bold' : 'normal',
+                fontSize: '1rem'
+              }}
+            >
+              📈 Par Compétences
+            </button>
+          </div>
+          
+          {/* TAB TAUX DE PRÉSENCE */}
+          {rapportTab === 'presence' && (
+            <div>
+              <h2>📊 Conformité NFPA 1500 - {anneeSelectionnee}</h2>
+              
+              {/* Boutons d'export */}
+              <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <Label style={{minWidth: '120px'}}>Type formations:</Label>
+                  <select 
+                    className="form-select" 
+                    value={typeFormation} 
+                    onChange={e => setTypeFormation(e.target.value)}
+                    style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB'}}
+                  >
+                    <option value="toutes">Toutes</option>
+                    <option value="obligatoires">Obligatoires uniquement</option>
+                  </select>
+                </div>
+                <div style={{display: 'flex', gap: '0.5rem', marginLeft: 'auto'}}>
+                  <Button onClick={() => handleExportPresence('pdf')} variant="outline" style={{background: '#EF4444', color: 'white'}}>
+                    📄 Export PDF
+                  </Button>
+                  <Button onClick={() => handleExportPresence('excel')} variant="outline" style={{background: '#10B981', color: 'white'}}>
+                    📊 Export Excel
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="conformite-stats">
+                <div className="stat-card"><h3>{rapportConformite.total_pompiers}</h3><p>Total Pompiers</p></div>
+                <div className="stat-card" style={{background: '#D1FAE5', border: '2px solid #10B981'}}><h3>{rapportConformite.conformes}</h3><p>✅ Conformes</p></div>
+                <div className="stat-card" style={{background: '#FEE2E2', border: '2px solid #EF4444'}}><h3>{rapportConformite.non_conformes}</h3><p>❌ Non Conformes</p></div>
+                <div className="stat-card" style={{background: '#DBEAFE'}}><h3>{rapportConformite.pourcentage_conformite}%</h3><p>% Conformité</p></div>
+              </div>
+              
+              <div className="rapports-controls" style={{marginTop: '2rem'}}>
+                <div className="filtres-grid">
+                  <div><Label>Rechercher</Label><Input placeholder="Nom..." value={filtreNom} onChange={e => setFiltreNom(e.target.value)} /></div>
+                  <div><Label>Tri</Label><select className="form-select" value={triPresence} onChange={e => setTriPresence(e.target.value)}><option value="desc">Meilleur en premier</option><option value="asc">Faible en premier</option></select></div>
+                  <div style={{display: 'flex', alignItems: 'flex-end'}}>
+                    <Button 
+                      onClick={() => window.location.reload()} 
+                      variant="outline"
+                      style={{height: 'fit-content'}}
+                    >
+                      🔄 Rafraîchir
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pompiers-list">
+                {getPompiersFiltreTri().map(p => (
+                  <div key={p.id} className={`pompier-card ${p.conforme ? 'conforme' : 'non-conforme'}`}>
+                    <div className="pompier-info"><h4>{p.prenom} {p.nom}</h4><p>{p.grade}</p></div>
+                    <div className="pompier-heures">
+                      <div className="heures-bar">
+                        <div 
+                          className="heures-progress" 
+                          style={{
+                            width: `${Math.min(p.pourcentage, 100)}%`, 
+                            background: p.conforme ? '#10B981' : '#EF4444'
+                          }} 
+                        />
+                      </div>
+                      <p><strong>{p.total_heures}h</strong> / {p.heures_requises}h ({p.pourcentage}%)</p>
+                      <p style={{fontSize: '0.85rem', color: '#666'}}>Présence: {p.taux_presence}%</p>
+                      {p.formations_obligatoires_ratees && p.formations_obligatoires_ratees.length > 0 && (
+                        <p style={{fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem'}}>
+                          ⚠️ Formation(s) obligatoire(s) ratée(s): {p.formations_obligatoires_ratees.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="pompier-statut">
+                      {p.conforme ? (
+                        <span className="badge-conforme">✅ Conforme</span>
+                      ) : (
+                        <span className="badge-non-conforme">❌ Non conforme</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* TAB RAPPORTS PAR COMPÉTENCES */}
+          {rapportTab === 'competences' && (
+            <div>
+              <h2>📈 Rapports par Compétences - {anneeSelectionnee}</h2>
+              
+              {/* Filtres et exports */}
+              <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <Label style={{minWidth: '120px'}}>Filtrer par personne:</Label>
+                  <select 
+                    className="form-select" 
+                    value={filtrePersonne} 
+                    onChange={e => setFiltrePersonne(e.target.value)}
+                    style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB', minWidth: '200px'}}
+                  >
+                    <option value="">Tous les pompiers</option>
+                    {personnel.map(p => (
+                      <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{display: 'flex', gap: '0.5rem', marginLeft: 'auto'}}>
+                  <Button onClick={() => handleExportCompetences('pdf')} variant="outline" style={{background: '#EF4444', color: 'white'}}>
+                    📄 Export PDF
+                  </Button>
+                  <Button onClick={() => handleExportCompetences('excel')} variant="outline" style={{background: '#10B981', color: 'white'}}>
+                    📊 Export Excel
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Statistiques globales */}
+              {rapportCompetences && (
+                <>
+                  <div className="conformite-stats" style={{marginBottom: '2rem'}}>
+                    <div className="stat-card">
+                      <h3>{rapportCompetences.competences.length}</h3>
+                      <p>Compétences</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportCompetences.competences.reduce((sum, c) => sum + c.total_formations, 0)}</h3>
+                      <p>Formations</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#DBEAFE'}}>
+                      <h3>{rapportCompetences.competences.reduce((sum, c) => sum + c.total_heures_planifiees, 0)}h</h3>
+                      <p>Heures totales</p>
+                    </div>
+                    <div className="stat-card" style={{background: '#FEF3C7'}}>
+                      <h3>
+                        {rapportCompetences.competences.reduce((sum, c) => sum + c.total_inscriptions, 0) > 0
+                          ? Math.round(
+                              (rapportCompetences.competences.reduce((sum, c) => sum + c.presences, 0) /
+                                rapportCompetences.competences.reduce((sum, c) => sum + c.total_inscriptions, 0)) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </h3>
+                      <p>Taux présence moyen</p>
+                    </div>
+                  </div>
+                  
+                  {/* Liste des compétences */}
+                  <div className="competences-rapport-list">
+                    {rapportCompetences.competences.map(comp => (
+                      <div key={comp.competence_id} className="competence-rapport-card" style={{
+                        background: 'white',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '12px',
+                        padding: '1.5rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                      }}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem'}}>
+                          <div>
+                            <h3 style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#1F2937', marginBottom: '0.5rem'}}>
+                              {comp.competence_nom}
+                            </h3>
+                            <p style={{color: '#6B7280', fontSize: '0.9rem'}}>
+                              {comp.total_formations} formation{comp.total_formations > 1 ? 's' : ''} • {comp.total_heures_planifiees}h planifiées
+                            </p>
+                          </div>
+                          <div style={{textAlign: 'right'}}>
+                            <div style={{
+                              fontSize: '1.5rem',
+                              fontWeight: 'bold',
+                              color: comp.taux_presence >= 80 ? '#10B981' : '#EF4444'
+                            }}>
+                              {comp.taux_presence}%
+                            </div>
+                            <p style={{fontSize: '0.8rem', color: '#6B7280'}}>Taux présence</p>
+                          </div>
+                        </div>
+                        
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                          gap: '1rem',
+                          marginTop: '1rem'
+                        }}>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Inscrits</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#1F2937'}}>{comp.total_inscrits}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Présences</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#10B981'}}>{comp.presences}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Absences</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#EF4444'}}>{comp.absences}</p>
+                          </div>
+                          <div style={{padding: '0.75rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                            <p style={{fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>Heures effectuées</p>
+                            <p style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#3B82F6'}}>{comp.heures_effectuees}h</p>
+                          </div>
+                        </div>
+                        
+                        {/* Barre de progression */}
+                        <div style={{marginTop: '1rem'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.25rem'}}>
+                            <span>Réalisation</span>
+                            <span>{comp.taux_realisation}%</span>
+                          </div>
+                          <div style={{
+                            width: '100%',
+                            height: '8px',
+                            background: '#E5E7EB',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${Math.min(comp.taux_realisation, 100)}%`,
+                              height: '100%',
+                              background: comp.taux_realisation >= 80 ? '#10B981' : comp.taux_realisation >= 50 ? '#F59E0B' : '#EF4444',
+                              transition: 'width 0.3s ease'
+                            }} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {rapportCompetences.competences.length === 0 && (
+                    <div className="empty-state">
+                      <p>Aucune donnée de compétence pour {anneeSelectionnee}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {showFormationModal && (
+        <div className="modal-overlay" onClick={() => setShowFormationModal(false)}>
+          <div className="modal-content large-modal formation-modal-modern" onClick={e => e.stopPropagation()}>
+            <div className="modal-header modal-header-modern">
+              <h2 style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                {selectedFormation ? '✏️ Modifier la Formation' : '➕ Nouvelle Formation'}
+              </h2>
+              <Button variant="ghost" onClick={() => setShowFormationModal(false)} style={{fontSize: '1.5rem'}}>✕</Button>
+            </div>
+            <div className="modal-body modal-body-modern">
+              <div className="form-grid form-grid-modern">
+                <div className="form-field-modern">
+                  <Label>Nom de la formation *</Label>
+                  <Input 
+                    value={formationForm.nom} 
+                    onChange={e => setFormationForm({...formationForm, nom: e.target.value})} 
+                    placeholder="Ex: Formation incendie niveau 1"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Compétence associée *</Label>
+                  <select 
+                    className="form-select form-select-modern" 
+                    value={formationForm.competence_id} 
+                    onChange={e => setFormationForm({...formationForm, competence_id: e.target.value})}
+                  >
+                    <option value="">Sélectionner une compétence...</option>
+                    {competences.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
+                </div>
+                
+                <div className="form-row-full">
+                  <div className="form-field-modern">
+                    <Label>Date de la formation *</Label>
+                    <Input 
+                      type="date" 
+                      value={formationForm.date_debut} 
+                      onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})} 
+                    />
+                  </div>
+                  <div className="form-field-modern">
+                    <Label>Heure de début</Label>
+                    <Input 
+                      type="time" 
+                      value={formationForm.heure_debut} 
+                      onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})} 
+                    />
+                  </div>
+                  <div className="form-field-modern">
+                    <Label>Heure de fin</Label>
+                    <Input 
+                      type="time" 
+                      value={formationForm.heure_fin} 
+                      onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-field-modern">
+                  <Label>Nombre de places *</Label>
+                  <Input 
+                    type="number" 
+                    value={formationForm.places_max} 
+                    onChange={e => setFormationForm({...formationForm, places_max: parseInt(e.target.value) || 20})} 
+                    min="1"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Lieu</Label>
+                  <Input 
+                    value={formationForm.lieu} 
+                    onChange={e => setFormationForm({...formationForm, lieu: e.target.value})} 
+                    placeholder="Ex: Caserne principale"
+                  />
+                </div>
+                <div className="form-field-modern">
+                  <Label>Instructeur</Label>
+                  <Input 
+                    value={formationForm.instructeur} 
+                    onChange={e => setFormationForm({...formationForm, instructeur: e.target.value})} 
+                    placeholder="Nom de l'instructeur"
+                  />
+                </div>
+                
+                <div style={{gridColumn: '1 / -1'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#FEF2F2', borderRadius: '8px', cursor: 'pointer'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={formationForm.obligatoire} 
+                      onChange={e => setFormationForm({...formationForm, obligatoire: e.target.checked})} 
+                      style={{width: '20px', height: '20px', cursor: 'pointer'}} 
+                    />
+                    <strong style={{color: '#991B1B'}}>Formation obligatoire (NFPA 1500)</strong>
+                  </label>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1.5rem'}}>
+                <Label>Description</Label>
+                <textarea 
+                  className="form-textarea form-textarea-modern" 
+                  rows="4" 
+                  value={formationForm.description} 
+                  onChange={e => setFormationForm({...formationForm, description: e.target.value})} 
+                  placeholder="Décrivez le contenu et les objectifs de la formation..."
+                />
+              </div>
+            </div>
+            <div className="modal-actions modal-actions-modern">
+              <Button variant="outline" onClick={() => setShowFormationModal(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveFormation} style={{background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: 'white'}}>
+                {selectedFormation ? '💾 Sauvegarder' : '✅ Créer la formation'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showInscriptionsModal && selectedFormation && (
+        <div className="modal-overlay" onClick={() => setShowInscriptionsModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>👥 Inscrits - {selectedFormation.nom}</h2>
+              <Button variant="ghost" onClick={() => setShowInscriptionsModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div style={{marginBottom: '1.5rem', padding: '1rem', background: '#F9FAFB', borderRadius: '8px'}}>
+                <div style={{display: 'flex', gap: '2rem', justifyContent: 'center'}}>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#10B981'}}>
+                      {inscriptions.filter(i => i.statut === 'inscrit').length}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>Inscrits confirmés</div>
+                  </div>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#F59E0B'}}>
+                      {inscriptions.filter(i => i.statut === 'en_attente').length}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>En attente</div>
+                  </div>
+                  <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', fontWeight: '700', color: '#6B7280'}}>
+                      {selectedFormation.places_restantes}
+                    </div>
+                    <div style={{fontSize: '0.875rem', color: '#6B7280'}}>Places restantes</div>
+                  </div>
+                </div>
+              </div>
+
+              {inscriptions.length > 0 ? (
+                <div className="inscriptions-list" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                  {inscriptions.map(insc => (
+                    <div key={insc.id} className="inscription-item" style={{
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '1rem',
+                      borderBottom: '1px solid #E5E7EB',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div>
+                        <div style={{fontWeight: '600', fontSize: '0.95rem'}}>{insc.user_nom}</div>
+                        <div style={{fontSize: '0.813rem', color: '#6B7280', marginTop: '0.25rem'}}>
+                          Inscrit le {new Date(insc.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <span className={`badge-${insc.statut}`} style={{
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '6px',
+                        fontSize: '0.813rem',
+                        fontWeight: '600'
+                      }}>
+                        {insc.statut === 'inscrit' ? '✅ Inscrit' : 
+                         insc.statut === 'en_attente' ? '⏳ En attente' : 
+                         insc.statut === 'present' ? '✅ Présent' : '❌ Absent'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{textAlign: 'center', padding: '3rem', color: '#9CA3AF'}}>
+                  <div style={{fontSize: '3rem', marginBottom: '1rem'}}>👥</div>
+                  <p style={{fontSize: '1rem'}}>Aucun inscrit pour cette formation</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showValidationModal && selectedFormation && (
+        <div className="modal-overlay" onClick={() => setShowValidationModal(false)}>
+          <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h2>✅ Validation Présences - {selectedFormation.nom}</h2><Button variant="ghost" onClick={() => setShowValidationModal(false)}>✕</Button></div>
+            <div className="modal-body">
+              <p style={{marginBottom: '1.5rem'}}>Validez la présence. Seuls les présents seront crédités de {selectedFormation.duree_heures}h.</p>
+              <div className="validation-list">
+                {inscriptions.filter(i => i.statut === 'inscrit' || i.statut === 'present' || i.statut === 'absent').map(insc => (
+                  <div key={insc.id} className="validation-item">
+                    <div><strong>{insc.user_nom}</strong><p>{insc.user_grade}</p></div>
+                    <div className="validation-buttons">
+                      <Button size="sm" variant={insc.statut === 'present' ? 'default' : 'outline'} onClick={() => handleValiderPresence(insc.user_id, 'present')}>✅ Présent</Button>
+                      <Button size="sm" variant={insc.statut === 'absent' ? 'destructive' : 'outline'} onClick={() => handleValiderPresence(insc.user_id, 'absent')}>❌ Absent</Button>
+                    </div>
+                    {insc.heures_creditees > 0 && <span className="heures-creditees">{insc.heures_creditees}h</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  
+  // Déterminer quel utilisateur on gère (soi-même ou un autre)
+  const targetUser = managingUser || user;
+  const [userDisponibilites, setUserDisponibilites] = useState([]);
+  const [users, setUsers] = useState([]); // Liste de tous les utilisateurs pour les KPIs
+  const [typesGarde, setTypesGarde] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [savingDisponibilites, setSavingDisponibilites] = useState(false);
+  const [savingMessage, setSavingMessage] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
+  
+  // États pour le calendrier visuel mensuel
+  const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(new Date().getMonth());
+  const [calendarCurrentYear, setCalendarCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDayForDetail, setSelectedDayForDetail] = useState(null);
+  const [showDayDetailModal, setShowDayDetailModal] = useState(false);
+  const [dayDetailData, setDayDetailData] = useState({ disponibilites: [], indisponibilites: [] });
+  const [selectedDateDetails, setSelectedDateDetails] = useState(null);
+  const [pendingConfigurations, setPendingConfigurations] = useState([]);
+  const [availabilityConfig, setAvailabilityConfig] = useState({
+    type_garde_id: '',
+    heure_debut: '08:00',
+    heure_fin: '16:00',
+    statut: 'disponible',
+    // Pour mode récurrence
+    mode: 'calendrier', // 'calendrier' ou 'recurrence'
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    recurrence_type: 'hebdomadaire',
+    recurrence_frequence: 'jours',
+    recurrence_intervalle: 1,
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
+  });
+
+  // États pour la gestion des conflits
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictData, setConflictData] = useState({
+    conflicts: [],
+    newItem: null,
+    itemType: null
+  });
+  const [generationConfig, setGenerationConfig] = useState({
+    horaire_type: 'montreal',
+    equipe: 'Rouge',
+    date_debut: new Date().toISOString().split('T')[0],  // Date du jour
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],  // 31 décembre de l'année en cours
+    conserver_manuelles: true
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [indispoTab, setIndispoTab] = useState('generation'); // 'generation', 'manuelle_calendrier', 'manuelle_recurrence'
+  const [manualIndispoMode, setManualIndispoMode] = useState('calendrier'); // 'calendrier' ou 'recurrence'
+  const [manualIndispoConfig, setManualIndispoConfig] = useState({
+    // Pour mode calendrier (clics multiples)
+    dates: [],
+    
+    // Pour mode récurrence
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    heure_debut: '00:00',
+    heure_fin: '23:59',
+    
+    // Options de récurrence
+    recurrence_type: 'hebdomadaire', // 'hebdomadaire', 'bihebdomadaire', 'mensuelle', 'annuelle', 'personnalisee'
+    recurrence_frequence: 'jours', // Pour personnalisée: 'jours', 'semaines', 'mois', 'ans'
+    recurrence_intervalle: 1, // Tous les X (jours/semaines/mois/ans)
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
+  });
+  const [showReinitModal, setShowReinitModal] = useState(false);
+  const [reinitConfig, setReinitConfig] = useState({
+    periode: 'mois',
+    mode: 'generees_seulement',
+    type_entree: 'les_deux',
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date().toISOString().split('T')[0]
+  });
+  const [isReinitializing, setIsReinitializing] = useState(false);
+  const [reinitWarning, setReinitWarning] = useState(null);
+  
+  // Nouveau modal d'ajout rapide
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [quickAddType, setQuickAddType] = useState('disponibilite'); // 'disponibilite' ou 'indisponibilite'
+  const [quickAddConfig, setQuickAddConfig] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type_garde_id: '',
+    heure_debut: '08:00',
+    heure_fin: '16:00'
+  });
+  
+  // État pour le nouveau modal de résolution de conflits multiples
+  const [showBatchConflictModal, setShowBatchConflictModal] = useState(false);
+  const [batchConflicts, setBatchConflicts] = useState([]);
+  const [batchConflictSelections, setBatchConflictSelections] = useState({});
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchDisponibilites = async () => {
+      if (!tenantSlug) return;
+      
+      try {
+        const [dispoData, typesData, usersData] = await Promise.all([
+          apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
+          apiGet(tenantSlug, '/types-garde'),
+          apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+        ]);
+        setUserDisponibilites(dispoData);
+        setTypesGarde(typesData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des disponibilités:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les disponibilités",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (targetUser?.id && targetUser?.type_emploi === 'temps_partiel') {
+      fetchDisponibilites();
+    } else {
+      setLoading(false);
+    }
+  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug, user.role, toast]);
+
+  const handleTypeGardeChange = (typeGardeId) => {
+    const selectedType = typesGarde.find(t => t.id === typeGardeId);
+    
+    if (selectedType) {
+      // Auto-remplir les horaires du type de garde
+      setAvailabilityConfig({
+        ...availabilityConfig,
+        type_garde_id: typeGardeId,
+        heure_debut: selectedType.heure_debut,
+        heure_fin: selectedType.heure_fin
+      });
+    } else {
+      // "Tous les types" - garder les horaires personnalisés
+      setAvailabilityConfig({
+        ...availabilityConfig,
+        type_garde_id: typeGardeId
+      });
+    }
+  };
+
+
+
+  const handleAddConfiguration = () => {
+    if (selectedDates.length === 0) {
+      toast({
+        title: "Aucune date sélectionnée",
+        description: "Veuillez sélectionner au moins une date",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
+    const newConfig = {
+      id: Date.now(),
+      type_garde_id: availabilityConfig.type_garde_id,
+      type_garde_name: selectedType ? selectedType.nom : 'Tous les types',
+      couleur: selectedType ? selectedType.couleur : '#10B981',
+      heure_debut: selectedType ? selectedType.heure_debut : availabilityConfig.heure_debut,
+      heure_fin: selectedType ? selectedType.heure_fin : availabilityConfig.heure_fin,
+      statut: availabilityConfig.statut,
+      dates: [...selectedDates]
+    };
+
+    setPendingConfigurations([...pendingConfigurations, newConfig]);
+    setSelectedDates([]);
+    
+    toast({
+      title: "Configuration ajoutée",
+      description: `${newConfig.dates.length} jour(s) pour ${newConfig.type_garde_name}`,
+      variant: "success"
+    });
+  };
+
+  const handleRemoveConfiguration = (configId) => {
+    setPendingConfigurations(prev => prev.filter(c => c.id !== configId));
+  };
+
+  const handleSaveAllConfigurations = async () => {
+    if (pendingConfigurations.length === 0) {
+      toast({
+        title: "Aucune configuration",
+        description: "Veuillez ajouter au moins une configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Combiner avec les disponibilités existantes + nouvelles configurations
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: targetUser.id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut
+      }));
+
+      const newDispos = pendingConfigurations.flatMap(config => 
+        config.dates.map(date => ({
+          user_id: targetUser.id,
+          date: date.toISOString().split('T')[0],
+          type_garde_id: config.type_garde_id || null,
+          heure_debut: config.heure_debut,
+          heure_fin: config.heure_fin,
+          statut: config.statut
+        }))
+      );
+
+      const allDisponibilites = [...existingDispos, ...newDispos];
+
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "Toutes les disponibilités sauvegardées",
+        description: `${newDispos.length} nouvelles disponibilités ajoutées`,
+        variant: "success"
+      });
+      
+      setShowCalendarModal(false);
+      setPendingConfigurations([]);
+      
+      // Reload disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveAvailability = async () => {
+    try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des disponibilités...');
+      
+      let disponibilitesACreer = [];
+      
+      if (availabilityConfig.mode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (selectedDates.length === 0) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setSavingMessage(`Création de ${selectedDates.length} disponibilité(s)...`);
+        
+        // Créer une disponibilité pour chaque date sélectionnée
+        for (const date of selectedDates) {
+          disponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: date.toISOString().split('T')[0],
+            type_garde_id: availabilityConfig.type_garde_id || null,
+            heure_debut: availabilityConfig.heure_debut,
+            heure_fin: availabilityConfig.heure_fin,
+            statut: availabilityConfig.statut,
+            origine: 'manuelle' // Origine manuelle car sélection date par date via calendrier
+          });
+        }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        setSavingMessage('Calcul des dates de récurrence...');
+        
+        const dateDebut = new Date(availabilityConfig.date_debut);
+        const dateFin = new Date(availabilityConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (availabilityConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30;
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            if (availabilityConfig.recurrence_frequence === 'jours') {
+              intervalJours = availabilityConfig.recurrence_intervalle;
+            } else if (availabilityConfig.recurrence_frequence === 'semaines') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 7;
+            } else if (availabilityConfig.recurrence_frequence === 'mois') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 30;
+            } else if (availabilityConfig.recurrence_frequence === 'ans') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000;
+        
+        // Mapping des jours pour la vérification
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
+        // DEBUG: Afficher les jours sélectionnés
+        console.log('===== DEBUG RÉCURRENCE =====');
+        console.log('Date début:', dateDebut.toISOString().split('T')[0]);
+        console.log('Date fin:', dateFin.toISOString().split('T')[0]);
+        console.log('Jours sélectionnés:', availabilityConfig.jours_semaine);
+        console.log('DayMap:', dayMap);
+        console.log('============================');
+        
+        // Pour bi-hebdomadaire : Compteur de semaines depuis le début
+        let weeksFromStart = 0;
+        let lastWeekProcessed = -1;
+        
+        // Pour bi-hebdomadaire : calculer le numéro de semaine ISO de la date de début comme référence
+        const getWeekNumber = (date) => {
+          const tempDate = new Date(date);
+          tempDate.setHours(0, 0, 0, 0);
+          // Set to nearest Thursday: current date + 4 - current day number, make Sunday's day number 7
+          tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+          // Get first day of year
+          const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+          // Calculate full weeks to nearest Thursday
+          const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+          return weekNo;
+        };
+        
+        const referenceWeekNumber = getWeekNumber(dateDebut);
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          // Calculer le numéro de semaine ISO pour la date actuelle
+          const currentWeekNumber = getWeekNumber(currentDate);
+          // Calculer la différence de semaines depuis la référence
+          const weeksDifference = currentWeekNumber - referenceWeekNumber;
+          
+          // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés
+          let includeDate = false; // FIX: Par défaut false, includeDate devient true seulement si le jour correspond
+          if ((availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') 
+              && availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0) {
+            
+            const dayOfWeek = currentDate.getDay();
+            
+            // DEBUG: Log pour comprendre le problème
+            if (compteur < 10) {
+              console.log(`DEBUG Récurrence - Date: ${currentDate.toISOString().split('T')[0]}, getDay(): ${dayOfWeek}, Jours sélectionnés:`, availabilityConfig.jours_semaine);
+              availabilityConfig.jours_semaine.forEach(jour => {
+                console.log(`  ${jour} -> dayMap[${jour}] = ${dayMap[jour]}, match: ${dayMap[jour] === dayOfWeek}`);
+              });
+            }
+            
+            // Vérifier si ce jour est dans les jours sélectionnés
+            includeDate = availabilityConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+            
+            // Pour bi-hebdomadaire : ne garder que les semaines paires (0, 2, 4, 6...)
+            if (includeDate && availabilityConfig.recurrence_type === 'bihebdomadaire') {
+              includeDate = weeksDifference % 2 === 0;
+            }
+          }
+          
+          if (includeDate) {
+            disponibilitesACreer.push({
+              user_id: targetUser.id,
+              date: currentDate.toISOString().split('T')[0],
+              type_garde_id: availabilityConfig.type_garde_id || null,
+              heure_debut: availabilityConfig.heure_debut,
+              heure_fin: availabilityConfig.heure_fin,
+              statut: availabilityConfig.statut,
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
+            });
+          }
+          
+          // Avancer d'un jour (on vérifie tous les jours mais on filtre selon récurrence)
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + 1);
+          compteur++;
+        }
+      }
+      
+      setSavingMessage(`Enregistrement de ${disponibilitesACreer.length} disponibilité(s)...`);
+      
+      // Envoyer les disponibilités au backend - COLLECTER LES CONFLITS
+      let successCount = 0;
+      let collectedConflicts = [];
+      let errorCount = 0;
+      
+      for (let i = 0; i < disponibilitesACreer.length; i++) {
+        const dispo = disponibilitesACreer[i];
+        try {
+          await apiPost(tenantSlug, '/disponibilites', dispo);
+          successCount++;
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            const conflictDetails = error.response.data.detail;
+            const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+            
+            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
+            collectedConflicts.push({
+              newItem: dispo,
+              conflicts: conflictDetails.conflicts,
+              newType: typeGarde?.nom || 'Disponibilité',
+              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+              existingOrigine: conflictDetails.conflicts[0]?.origine
+            });
+          } else {
+            errorCount++;
+            console.error(`Erreur création disponibilité (${dispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+          }
+        }
+        
+        // Mettre à jour le message tous les 10 enregistrements
+        if ((i + 1) % 10 === 0 || i === disponibilitesACreer.length - 1) {
+          setSavingMessage(`Enregistrement... ${i + 1}/${disponibilitesACreer.length}`);
+        }
+      }
+      
+      setSavingMessage('Finalisation...');
+      setSavingDisponibilites(false);
+      
+      // Si des conflits ont été détectés, afficher le modal
+      if (collectedConflicts.length > 0) {
+        setBatchConflicts(collectedConflicts);
+        setBatchConflictSelections({});
+        setShowBatchConflictModal(true);
+        setShowCalendarModal(false);
+        
+        toast({
+          title: "Conflits détectés",
+          description: `${successCount} créée(s), ${collectedConflicts.length} conflit(s) à résoudre`,
+          variant: "default"
+        });
+        
+        return; // Ne pas fermer le modal ou recharger
+      }
+      
+      // Si pas de conflits, message de succès normal
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} disponibilité(s) créée(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Disponibilités enregistrées" : "Attention",
+        description: message || "Aucune disponibilité créée",
+        variant: successCount > 0 ? "success" : "destructive"
+      });
+      
+      setShowCalendarModal(false);
+      setSelectedDates([]);
+      
+      // Réinitialiser la config
+      setAvailabilityConfig({
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00',
+        statut: 'disponible',
+        mode: 'calendrier',
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1,
+        jours_semaine: []
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      setSavingDisponibilites(false);
+      
+    } catch (error) {
+      setSavingDisponibilites(false);
+      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les disponibilités";
+      console.error('Erreur sauvegarde disponibilités:', errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+
+  // Fonctions pour le calendrier visuel
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Convertir dimanche (0) en 6, lundi reste 0
+  };
+
+  const navigateMonth = (direction) => {
+    if (direction === 'prev') {
+      if (calendarCurrentMonth === 0) {
+        setCalendarCurrentMonth(11);
+        setCalendarCurrentYear(calendarCurrentYear - 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth - 1);
+      }
+    } else {
+      if (calendarCurrentMonth === 11) {
+        setCalendarCurrentMonth(0);
+        setCalendarCurrentYear(calendarCurrentYear + 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth + 1);
+      }
+    }
+  };
+
+  const getDisponibilitesForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return userDisponibilites.filter(d => d.date === dateStr);
+  };
+
+  const handleDayClick = (dayNumber) => {
+    const clickedDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+    
+    const disponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'disponible');
+    const indisponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'indisponible');
+    
+    setSelectedDayForDetail(clickedDate);
+    setDayDetailData({ disponibilites, indisponibilites });
+    setShowDayDetailModal(true);
+  };
+
+  // Fonction pour résoudre les conflits en batch
+  const handleResolveBatchConflicts = async () => {
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Traiter uniquement les conflits sélectionnés
+      for (let i = 0; i < batchConflicts.length; i++) {
+        const conflict = batchConflicts[i];
+        const isSelected = batchConflictSelections[i];
+        
+        if (isSelected) {
+          // Remplacer: supprimer l'ancien et créer le nouveau
+          try {
+            // Supprimer les conflits existants
+            for (const existingConflict of conflict.conflicts) {
+              await apiDelete(tenantSlug, `/disponibilites/${existingConflict.id}`);
+            }
+            
+            // Créer la nouvelle disponibilité
+            await apiPost(tenantSlug, '/disponibilites', conflict.newItem);
+            successCount++;
+          } catch (error) {
+            console.error(`Erreur lors du remplacement pour ${conflict.newItem.date}:`, error);
+            errorCount++;
+          }
+        }
+        // Si non sélectionné, on ignore simplement (ne crée pas)
+      }
+      
+      // Message récapitulatif
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} conflit(s) résolu(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      const ignoredCount = batchConflicts.length - Object.values(batchConflictSelections).filter(Boolean).length;
+      if (ignoredCount > 0) {
+        message += (message ? ', ' : '') + `${ignoredCount} ignoré(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Conflits résolus" : "Attention",
+        description: message || "Aucun conflit résolu",
+        variant: successCount > 0 ? "success" : "default"
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Fermer le modal et réinitialiser
+      setShowBatchConflictModal(false);
+      setBatchConflicts([]);
+      setBatchConflictSelections({});
+      
+    } catch (error) {
+      console.error('Erreur lors de la résolution des conflits:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de résoudre les conflits",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteDisponibilite = async (dispoId) => {
+    try {
+      await apiDelete(tenantSlug, `/disponibilites/${dispoId}`);
+      toast({
+        title: "Supprimé",
+        description: "Entrée supprimée avec succès",
+        variant: "success"
+      });
+      
+      // Recharger
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Mettre à jour le modal
+      const dateStr = selectedDayForDetail.toISOString().split('T')[0];
+      const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
+      const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
+      setDayDetailData({ disponibilites, indisponibilites });
+      
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getMonthName = (month) => {
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return months[month];
+  };
+
+
+  const handleGenerateIndisponibilites = async () => {
+    setIsGenerating(true);
+    
+    try {
+      const response = await apiPost(tenantSlug, '/disponibilites/generer', {
+        user_id: targetUser.id,
+        horaire_type: generationConfig.horaire_type,
+        equipe: generationConfig.equipe,
+        date_debut: generationConfig.date_debut,
+        date_fin: generationConfig.date_fin,
+        conserver_manuelles: generationConfig.conserver_manuelles
+      });
+      
+      toast({
+        title: "Génération réussie",
+        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe} (${generationConfig.date_debut} au ${generationConfig.date_fin})`,
+        variant: "success"
+      });
+      
+      setShowGenerationModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur génération:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de générer les indisponibilités",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleReinitialiser = async () => {
+    // Validation des dates pour période personnalisée
+    if (reinitConfig.periode === 'personnalisee') {
+      const dateDebut = new Date(reinitConfig.date_debut);
+      const dateFin = new Date(reinitConfig.date_fin);
+      
+      if (dateDebut > dateFin) {
+        toast({
+          title: "Erreur",
+          description: "La date de début doit être avant la date de fin",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Limiter à 1 an maximum
+      const diffTime = Math.abs(dateFin - dateDebut);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 365) {
+        toast({
+          title: "Erreur",
+          description: "La plage de dates ne peut pas dépasser 1 an",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Vérifier les dates bloquées si l'avertissement n'a pas déjà été confirmé
+      if (!reinitWarning) {
+        try {
+          const params = await apiGet(tenantSlug, '/parametres/disponibilites');
+          const joursBlocage = params.jour_blocage_dispos || 0;
+          
+          if (joursBlocage > 0) {
+            const today = new Date();
+            const dateBloquee = new Date(today);
+            dateBloquee.setDate(dateBloquee.getDate() + joursBlocage);
+            
+            // Vérifier si des dates sont dans la période bloquée
+            if (dateDebut < dateBloquee) {
+              setReinitWarning(`⚠️ Certaines dates sont dans la période bloquée (moins de ${joursBlocage} jours). Êtes-vous sûr de vouloir continuer?`);
+              return; // Afficher l'avertissement et attendre confirmation
+            }
+          }
+        } catch (error) {
+          console.error('Erreur vérification blocage:', error);
+        }
+      }
+    }
+    
+    setIsReinitializing(true);
+    setReinitWarning(null); // Réinitialiser l'avertissement
+    
+    try {
+      const requestBody = {
+        user_id: targetUser.id,
+        periode: reinitConfig.periode,
+        mode: reinitConfig.mode,
+        type_entree: reinitConfig.type_entree
+      };
+      
+      // Ajouter les dates si période personnalisée
+      if (reinitConfig.periode === 'personnalisee') {
+        requestBody.date_debut = reinitConfig.date_debut;
+        requestBody.date_fin = reinitConfig.date_fin;
+      }
+      
+      const response = await apiCall(tenantSlug, '/disponibilites/reinitialiser', {
+        method: 'DELETE',
+        body: JSON.stringify(requestBody)
+      });
+      
+      const periodeLabel = reinitConfig.periode === 'personnalisee'
+        ? `du ${reinitConfig.date_debut} au ${reinitConfig.date_fin}`
+        : {
+            'semaine': 'la semaine courante',
+            'mois': 'le mois courant',
+            'annee': "l'année courante"
+          }[reinitConfig.periode];
+      
+      const typeLabel = {
+        'disponibilites': 'disponibilités',
+        'indisponibilites': 'indisponibilités',
+        'les_deux': 'disponibilités et indisponibilités'
+      }[reinitConfig.type_entree];
+      
+      const modeLabel = reinitConfig.mode === 'tout' 
+        ? 'Toutes les' 
+        : 'Les entrées générées automatiquement de';
+      
+      toast({
+        title: "Réinitialisation réussie",
+        description: `${modeLabel} ${typeLabel} de ${periodeLabel} ont été supprimées (${response.nombre_supprimees} entrée(s))`,
+        variant: "success"
+      });
+      
+      setShowReinitModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur réinitialisation:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de réinitialiser",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReinitializing(false);
+    }
+  };
+
+  const handleSaveManualIndisponibilites = async () => {
+    try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des indisponibilités...');
+      
+      let indisponibilitesACreer = [];
+      
+      if (manualIndispoMode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (manualIndispoConfig.dates.length === 0) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setSavingMessage(`Création de ${manualIndispoConfig.dates.length} indisponibilité(s)...`);
+        
+        // Créer une indisponibilité pour chaque date sélectionnée
+        for (const date of manualIndispoConfig.dates) {
+          indisponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString().split('T')[0],
+            type_garde_id: null,
+            heure_debut: manualIndispoConfig.heure_debut,
+            heure_fin: manualIndispoConfig.heure_fin,
+            statut: 'indisponible',
+            origine: 'manuelle' // Origine manuelle car sélection date par date via calendrier
+          });
+        }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        setSavingMessage('Calcul des dates de récurrence...');
+        
+        const dateDebut = new Date(manualIndispoConfig.date_debut);
+        const dateFin = new Date(manualIndispoConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (manualIndispoConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30; // Approximation
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            // Calculer selon la fréquence et l'intervalle
+            if (manualIndispoConfig.recurrence_frequence === 'jours') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle;
+            } else if (manualIndispoConfig.recurrence_frequence === 'semaines') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 7;
+            } else if (manualIndispoConfig.recurrence_frequence === 'mois') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 30;
+            } else if (manualIndispoConfig.recurrence_frequence === 'ans') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000; // Sécurité pour éviter boucle infinie
+        
+        // Mapping des jours pour la vérification
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
+        // Pour bi-hebdomadaire : calculer le numéro de semaine ISO de la date de début comme référence
+        const getWeekNumber = (date) => {
+          const tempDate = new Date(date);
+          tempDate.setHours(0, 0, 0, 0);
+          // Set to nearest Thursday: current date + 4 - current day number, make Sunday's day number 7
+          tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+          // Get first day of year
+          const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+          // Calculate full weeks to nearest Thursday
+          const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+          return weekNo;
+        };
+        
+        const referenceWeekNumber = getWeekNumber(dateDebut);
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          // Calculer le numéro de semaine ISO pour la date actuelle
+          const currentWeekNumber = getWeekNumber(currentDate);
+          // Calculer la différence de semaines depuis la référence
+          const weeksDifference = currentWeekNumber - referenceWeekNumber;
+          
+          // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés, filtrer par jour
+          let includeDate = true;
+          if ((manualIndispoConfig.recurrence_type === 'hebdomadaire' || manualIndispoConfig.recurrence_type === 'bihebdomadaire') 
+              && manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0) {
+            const dayOfWeek = currentDate.getDay();
+            includeDate = manualIndispoConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+            
+            // Pour bi-hebdomadaire : ne garder que les semaines paires (0, 2, 4, 6...)
+            if (includeDate && manualIndispoConfig.recurrence_type === 'bihebdomadaire') {
+              includeDate = weeksDifference % 2 === 0;
+            }
+          }
+          
+          if (includeDate) {
+            indisponibilitesACreer.push({
+              user_id: targetUser.id,
+              date: currentDate.toISOString().split('T')[0],
+              type_garde_id: null,
+              heure_debut: manualIndispoConfig.heure_debut,
+              heure_fin: manualIndispoConfig.heure_fin,
+              statut: 'indisponible',
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
+            });
+          }
+          
+          // Avancer à la prochaine date
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + 1); // Toujours avancer de 1 jour pour vérifier tous les jours
+          compteur++;
+        }
+      }
+      
+      setSavingMessage(`Enregistrement de ${indisponibilitesACreer.length} indisponibilité(s)...`);
+      
+      // Envoyer les indisponibilités au backend - COLLECTER LES CONFLITS
+      let successCount = 0;
+      let collectedConflicts = [];
+      let errorCount = 0;
+      
+      for (let i = 0; i < indisponibilitesACreer.length; i++) {
+        const indispo = indisponibilitesACreer[i];
+        
+        try {
+          await apiPost(tenantSlug, '/disponibilites', indispo);
+          successCount++;
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            const conflictDetails = error.response.data.detail;
+            
+            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
+            collectedConflicts.push({
+              newItem: indispo,
+              conflicts: conflictDetails.conflicts,
+              newType: 'Indisponibilité',
+              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+              existingOrigine: conflictDetails.conflicts[0]?.origine
+            });
+          } else {
+            // Autre erreur
+            errorCount++;
+            console.error(`Erreur création indisponibilité (${indispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+          }
+        }
+        
+        // Mettre à jour le message tous les 10 enregistrements
+        if ((i + 1) % 10 === 0 || i === indisponibilitesACreer.length - 1) {
+          setSavingMessage(`Enregistrement... ${i + 1}/${indisponibilitesACreer.length}`);
+        }
+      }
+      
+      setSavingMessage('Finalisation...');
+      setSavingDisponibilites(false);
+      
+      // Si des conflits ont été détectés, afficher le modal
+      if (collectedConflicts.length > 0) {
+        setBatchConflicts(collectedConflicts);
+        setBatchConflictSelections({});
+        setShowBatchConflictModal(true);
+        setShowGenerationModal(false);
+        
+        toast({
+          title: "Conflits détectés",
+          description: `${successCount} créée(s), ${collectedConflicts.length} conflit(s) à résoudre`,
+          variant: "default"
+        });
+        
+        return; // Ne pas fermer le modal ou recharger
+      }
+      
+      // Si pas de conflits, message de succès normal
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} indisponibilité(s) créée(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Indisponibilités enregistrées" : "Attention",
+        description: message || "Aucune indisponibilité créée",
+        variant: successCount > 0 ? "success" : "destructive"
+      });
+      
+      setShowGenerationModal(false);
+      
+      // Réinitialiser la config
+      setManualIndispoConfig({
+        dates: [],
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        heure_debut: '00:00',
+        heure_fin: '23:59',
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1,
+        jours_semaine: []
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      setSavingDisponibilites(false);
+      
+    } catch (error) {
+      setSavingDisponibilites(false);
+      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les indisponibilités";
+      console.error('Erreur sauvegarde indisponibilités:', errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getTypeGardeName = (typeGardeId) => {
+    if (!typeGardeId) return 'Tous types';
+    const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+    return typeGarde ? typeGarde.nom : 'Type non spécifié';
+  };
+
+  const getAvailableDates = () => {
+    return userDisponibilites
+      .filter(d => d.statut === 'disponible')
+      .map(d => new Date(d.date));
+  };
+
+  const getColorByTypeGarde = (typeGardeId) => {
+    if (!typeGardeId) return '#10B981'; // Vert par défaut pour "Tous types"
+    const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+    return typeGarde ? typeGarde.couleur : '#10B981';
+  };
+
+  // Fonction pour sauvegarde rapide (ajout simple d'une dispo ou indispo)
+  const handleQuickAddSave = async () => {
+    try {
+      // Validation
+      if (!quickAddConfig.date) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner une date",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'entrée
+      const newEntry = {
+        user_id: targetUser.id,
+        date: quickAddConfig.date,
+        type_garde_id: quickAddConfig.type_garde_id || null,
+        heure_debut: quickAddConfig.heure_debut,
+        heure_fin: quickAddConfig.heure_fin,
+        statut: quickAddType === 'disponibilite' ? 'disponible' : 'indisponible',
+        origine: 'manuelle'
+      };
+
+      // Récupérer les disponibilités existantes
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: d.user_id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut,
+        origine: d.origine
+      }));
+
+      // Ajouter la nouvelle entrée
+      const allDisponibilites = [...existingDispos, newEntry];
+
+      // Sauvegarder
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "✅ Enregistré !",
+        description: quickAddType === 'disponibilite' 
+          ? `Disponibilité ajoutée pour le ${quickAddConfig.date}`
+          : `Indisponibilité ajoutée pour le ${quickAddConfig.date}`,
+        variant: "success"
+      });
+      
+      setShowQuickAddModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Réinitialiser le formulaire
+      setQuickAddConfig({
+        date: new Date().toISOString().split('T')[0],
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00'
+      });
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde rapide:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getDisponibiliteForDate = (date) => {
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return userDisponibilites.find(d => d.date === dateStr || d.date.startsWith(dateStr));
+  };
+
+  const handleDateClick = (date) => {
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const dispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
+    
+    console.log('Date cliquée:', dateStr, 'Disponibilités trouvées:', dispos.length);
+    
+    if (dispos.length > 0) {
+      // Afficher TOUTES les disponibilités pour cette date
+      setSelectedDateDetails({
+        date: normalizedDate,
+        disponibilites: dispos, // Tableau au lieu d'un seul objet
+        count: dispos.length
+      });
+    } else {
+      setSelectedDateDetails(null);
+    }
+  };
+
+  // Vérifier le type d'emploi de la personne dont on gère les disponibilités
+  if (targetUser?.type_emploi !== 'temps_partiel') {
+    return (
+      <div className="access-denied">
+        <h1>Module réservé aux employés temps partiel</h1>
+        <p>Ce module permet aux employés à temps partiel de gérer leurs disponibilités.</p>
+        {managingUser && (
+          <p style={{ marginTop: '10px', color: '#dc2626' }}>
+            ⚠️ <strong>{targetUser?.prenom} {targetUser?.nom}</strong> est un employé <strong>temps plein</strong> et ne peut pas gérer de disponibilités.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fonctions d'export Disponibilités
+  const handleExportDisponibilites = async (userId = null) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
+      link.download = userId 
+        ? `disponibilites_${userId}${extension}` 
+        : `disponibilites_tous${extension}`;
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ 
+        title: "Succès", 
+        description: `Export ${exportType.toUpperCase()} téléchargé`,
+        variant: "success"
+      });
+      
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  if (loading) return <div className="loading" data-testid="disponibilites-loading">Chargement...</div>;
+
+  // Ne pas afficher le module pour les utilisateurs temps plein (sauf si admin gère un autre utilisateur)
+  if (!managingUser && targetUser?.type_emploi !== 'temps_partiel') {
+    return null;
+  }
+
+  return (
+    <div className="disponibilites-refonte">
+      {/* Bouton retour si on gère un autre utilisateur */}
+      {managingUser && (
+        <div style={{ marginBottom: '20px' }}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setManagingUserDisponibilites(null);
+              setCurrentPage('personnel');
+            }}
+          >
+            ← Retour à Personnel
+          </Button>
+        </div>
+      )}
+
+      {/* Header Moderne */}
+      <div className="module-header">
+        <div>
+          <h1 data-testid="disponibilites-title">
+            {managingUser 
+              ? `📅 Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
+              : '📅 Mes Disponibilités'}
+          </h1>
+          <p>
+            {managingUser 
+              ? `Gérez les disponibilités de ${targetUser.prenom} ${targetUser.nom} pour les quarts de travail`
+              : 'Gérez vos disponibilités pour les quarts de travail temps partiel'}
+          </p>
+        </div>
+      </div>
+
+      {/* KPIs - Toujours affichés pour la personne en question */}
+      {!managingUser && (() => {
+        // Filtrer les disponibilités de l'utilisateur cible uniquement
+        const myDisponibilites = userDisponibilites.filter(d => d.user_id === targetUser.id && d.statut === 'disponible');
+        const myIndisponibilites = userDisponibilites.filter(d => d.user_id === targetUser.id && d.statut === 'indisponible');
+        
+        // Calculer les jours uniques avec disponibilités (ignorer les doublons)
+        const joursAvecDispo = [...new Set(myDisponibilites.map(d => d.date))].length;
+        
+        // Calculer le nombre de types de garde différents couverts
+        const typesGardeCouvert = [...new Set(myDisponibilites.map(d => d.type_garde_id))].length;
+        
+        return (
+          <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+            <div className="kpi-card" style={{background: '#D1FAE5'}}>
+              <h3>{myDisponibilites.length}</h3>
+              <p>Mes Disponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
+            </div>
+            <div className="kpi-card" style={{background: '#FCA5A5'}}>
+              <h3>{myIndisponibilites.length}</h3>
+              <p>Mes Indisponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
+            </div>
+            <div className="kpi-card" style={{background: '#DBEAFE'}}>
+              <h3>{joursAvecDispo}</h3>
+              <p>Jours Disponibles</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Jours uniques</small>
+            </div>
+            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+              <h3>{typesGardeCouvert}</h3>
+              <p>Types de Garde</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Couverts</small>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Barre de Contrôles */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+          {/* Boutons d'action */}
+          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+            <Button 
+              variant="default" 
+              onClick={() => setShowCalendarModal(true)}
+              data-testid="configure-availability-btn"
+            >
+              ✅ Mes Disponibilités
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGenerationModal(true)}
+              data-testid="generate-indisponibilites-btn"
+            >
+              ❌ Indisponibilités
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowReinitModal(true)}
+              data-testid="reinit-disponibilites-btn"
+            >
+              🗑️ Supprimer Tout
+            </Button>
+          </div>
+
+          {/* Exports - Uniquement pour Admin/Superviseur */}
+          {(user.role === 'admin' || user.role === 'superviseur') && (
+            <div style={{display: 'flex', gap: '1rem'}}>
+              <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
+                📄 Export PDF
+              </Button>
+              <Button variant="outline" onClick={() => { setExportType('excel'); setShowExportModal(true); }}>
+                📊 Export Excel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Module Disponibilités - Calendrier Visuel */}
+      <div className="disponibilites-visual-container">
+
+        {/* Barre de navigation du mois - Harmonisée */}
+        <div style={{
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '2rem',
+          padding: '1rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigateMonth('prev')}
+          >
+            ← Mois précédent
+          </Button>
+          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
+            {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
+          </h2>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigateMonth('next')}
+          >
+            Mois suivant →
+          </Button>
+        </div>
+
+        {/* Grand Calendrier Visuel */}
+        <div className="visual-calendar">
+          {/* Jours de la semaine */}
+          <div className="calendar-weekdays">
+            <div className="calendar-weekday">Lun</div>
+            <div className="calendar-weekday">Mar</div>
+            <div className="calendar-weekday">Mer</div>
+            <div className="calendar-weekday">Jeu</div>
+            <div className="calendar-weekday">Ven</div>
+            <div className="calendar-weekday">Sam</div>
+            <div className="calendar-weekday">Dim</div>
+          </div>
+
+          {/* Grille des jours */}
+          <div className="calendar-days-grid">
+            {/* Cases vides pour aligner le premier jour */}
+            {Array.from({ length: getFirstDayOfMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, index) => (
+              <div key={`empty-${index}`} className="calendar-day-cell empty"></div>
+            ))}
+
+            {/* Jours du mois */}
+            {Array.from({ length: getDaysInMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, dayIndex) => {
+              const dayNumber = dayIndex + 1;
+              const currentDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+              // Format YYYY-MM-DD sans conversion UTC
+              const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+              const today = new Date();
+              const isToday = currentDate.toDateString() === today.toDateString();
+              
+              const dayDispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
+              const disponibilites = dayDispos.filter(d => d.statut === 'disponible');
+              const hasIndisponibilite = dayDispos.some(d => d.statut === 'indisponible');
+
+              return (
+                <div 
+                  key={dayNumber} 
+                  className={`calendar-day-cell ${isToday ? 'today' : ''}`}
+                  onClick={() => handleDayClick(dayNumber)}
+                >
+                  <div className="calendar-day-number">{dayNumber}</div>
+                  <div className="calendar-day-content">
+                    {/* Indisponibilité: croix rouge */}
+                    {hasIndisponibilite && (
+                      <div className="calendar-indispo-marker">❌</div>
+                    )}
+
+                    {/* Disponibilités: pastilles colorées */}
+                    {!hasIndisponibilite && disponibilites.length > 0 && (
+                      <div className="calendar-dispo-pills">
+                        {disponibilites.slice(0, 2).map((dispo, idx) => {
+                          const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                          const color = typeGarde?.couleur || '#3b82f6';
+                          const typeName = typeGarde?.nom || 'Dispo';
+                          
+                          return (
+                            <div 
+                              key={idx}
+                              className="calendar-dispo-pill"
+                              style={{ backgroundColor: color }}
+                              title={`${typeName} ${dispo.heure_debut}-${dispo.heure_fin}`}
+                            >
+                              {typeName}
+                            </div>
+                          );
+                        })}
+                        {disponibilites.length > 2 && (
+                          <div className="calendar-dispo-more">+{disponibilites.length - 2}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Légende du calendrier */}
+        <div className="calendar-legend">
+          <div className="calendar-legend-item">
+            <span className="calendar-legend-icon">❌</span>
+            <span className="calendar-legend-label">Indisponible</span>
+          </div>
+          {typesGarde.map(type => (
+            <div key={type.id} className="calendar-legend-item">
+              <div 
+                className="calendar-legend-pill" 
+                style={{ backgroundColor: type.couleur }}
+              ></div>
+              <span className="calendar-legend-label">{type.nom}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal détail du jour */}
+      {showDayDetailModal && selectedDayForDetail && (
+        <div className="day-detail-modal" onClick={() => setShowDayDetailModal(false)}>
+          <div className="day-detail-content" onClick={(e) => e.stopPropagation()}>
+            <div className="day-detail-header">
+              <h3>📅 {selectedDayForDetail.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3>
+              <Button variant="ghost" onClick={() => setShowDayDetailModal(false)}>✕</Button>
+            </div>
+            
+            <div className="day-detail-body">
+              {/* Disponibilités */}
+              <div className="day-detail-section">
+                <h4>✅ Disponibilités ({dayDetailData.disponibilites.length})</h4>
+                {dayDetailData.disponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune disponibilité ce jour</div>
+                ) : (
+                  dayDetailData.disponibilites.map(dispo => {
+                    const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                    return (
+                      <div key={dispo.id} className="day-detail-item">
+                        <div className="day-detail-item-header">
+                          <span className="day-detail-item-type" style={{ color: typeGarde?.couleur || '#3b82f6' }}>
+                            {typeGarde?.nom || 'Disponibilité'}
+                          </span>
+                          <div className="day-detail-item-actions">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleDeleteDisponibilite(dispo.id)}
+                            >
+                              🗑️ Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="day-detail-item-info">
+                          ⏰ {dispo.heure_debut} - {dispo.heure_fin}
+                          {dispo.origine && <span> • Origine: {dispo.origine}</span>}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Indisponibilités */}
+              <div className="day-detail-section">
+                <h4>❌ Indisponibilités ({dayDetailData.indisponibilites.length})</h4>
+                {dayDetailData.indisponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune indisponibilité ce jour</div>
+                ) : (
+                  dayDetailData.indisponibilites.map(indispo => (
+                    <div key={indispo.id} className="day-detail-item">
+                      <div className="day-detail-item-header">
+                        <span className="day-detail-item-type" style={{ color: '#dc2626' }}>
+                          Indisponible
+                        </span>
+                        <div className="day-detail-item-actions">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleDeleteDisponibilite(indispo.id)}
+                          >
+                            🗑️ Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="day-detail-item-info">
+                        ⏰ {indispo.heure_debut} - {indispo.heure_fin}
+                        {indispo.origine && <span> • Origine: {indispo.origine}</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="day-detail-footer">
+              <Button variant="outline" onClick={() => setShowDayDetailModal(false)}>
+                Fermer
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={() => {
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '08:00',
+                      heure_fin: '16:00'
+                    });
+                    setQuickAddType('disponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
+                }}
+                style={{ background: '#16a34a', borderColor: '#16a34a' }}
+              >
+                ✅ Ajouter disponibilité
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '00:00',
+                      heure_fin: '23:59'
+                    });
+                    setQuickAddType('indisponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
+                }}
+              >
+                ❌ Ajouter indisponibilité
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOUVEAU : Modal d'ajout rapide */}
+      {showQuickAddModal && (
+        <div className="modal-overlay" onClick={() => setShowQuickAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </h3>
+              <Button variant="ghost" onClick={() => setShowQuickAddModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Date fixe - non modifiable */}
+              <div className="config-section" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <Label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#64748b' }}>📅 Date</Label>
+                <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0f172a', marginTop: '0.5rem' }}>
+                  {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              </div>
+
+              {/* Sélection du type de garde */}
+              <div className="config-section">
+                <Label>🚒 Type de garde</Label>
+                <select
+                  value={quickAddConfig.type_garde_id}
+                  onChange={(e) => {
+                    const selectedType = typesGarde.find(t => t.id === e.target.value);
+                    setQuickAddConfig({
+                      ...quickAddConfig,
+                      type_garde_id: e.target.value,
+                      heure_debut: selectedType ? selectedType.heure_debut : quickAddConfig.heure_debut,
+                      heure_fin: selectedType ? selectedType.heure_fin : quickAddConfig.heure_fin
+                    });
+                  }}
+                  className="form-select"
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  <option value="">
+                    {quickAddType === 'disponibilite' ? 'Tous les types de garde' : 'Toute la journée'}
+                  </option>
+                  {typesGarde.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.nom} ({type.heure_debut} - {type.heure_fin})
+                    </option>
+                  ))}
+                </select>
+                <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                  {quickAddConfig.type_garde_id 
+                    ? 'Les horaires du type de garde sont appliqués automatiquement'
+                    : quickAddType === 'disponibilite'
+                      ? 'Vous êtes disponible pour tous les types de garde avec les horaires ci-dessous'
+                      : 'Vous êtes indisponible toute la journée'
+                  }
+                </small>
+              </div>
+
+              {/* Horaires personnalisés si pas de type spécifique */}
+              <div className="config-section">
+                <Label>⏰ Horaires</Label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '0.5rem' }}>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de début</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_debut}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_debut: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de fin</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_fin}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_fin: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Résumé */}
+              <div style={{ 
+                background: quickAddType === 'disponibilite' ? '#f0fdf4' : '#fef2f2', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                border: quickAddType === 'disponibilite' ? '2px solid #16a34a' : '2px solid #dc2626',
+                marginTop: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626' }}>
+                  📋 Résumé
+                </div>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#0f172a' }}>
+                  {quickAddType === 'disponibilite' ? '✅ Vous serez disponible' : '❌ Vous serez indisponible'}<br/>
+                  📅 Le {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR')}<br/>
+                  ⏰ De {quickAddConfig.heure_debut} à {quickAddConfig.heure_fin}<br/>
+                  🚒 {quickAddConfig.type_garde_id 
+                    ? `Pour ${typesGarde.find(t => t.id === quickAddConfig.type_garde_id)?.nom}`
+                    : quickAddType === 'disponibilite' ? 'Pour tous les types de garde' : 'Toute la journée'
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowQuickAddModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={handleQuickAddSave}
+                style={{ 
+                  background: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626',
+                  borderColor: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626'
+                }}
+              >
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de configuration avancée */}
+      {showCalendarModal && (
+        <div className="modal-overlay" onClick={() => setShowCalendarModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="availability-config-modal">
+            <div className="modal-header">
+              <h3>✅ Gérer disponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowCalendarModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="availability-config-advanced">
+                {/* Sélecteur de mode */}
+                <div className="config-section" style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'calendrier'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'calendrier' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'calendrier' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'calendrier' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'calendrier' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      📅 Calendrier (Clics multiples)
+                    </button>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'recurrence'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'recurrence' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'recurrence' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'recurrence' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'recurrence' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      🔄 Avec récurrence
+                    </button>
+                  </div>
+                </div>
+
+                {/* Configuration du type de garde */}
+                <div className="config-section">
+                  <h4>🚒 Type de garde spécifique</h4>
+                  <div className="type-garde-selection">
+                    <Label>Pour quel type de garde êtes-vous disponible ?</Label>
+                    <select
+                      value={availabilityConfig.type_garde_id}
+                      onChange={(e) => handleTypeGardeChange(e.target.value)}
+                      className="form-select"
+                      data-testid="availability-type-garde-select"
+                    >
+                      <option value="">Tous les types de garde</option>
+                      {typesGarde.map(type => (
+                        <option key={type.id} value={type.id}>
+                          {type.nom} ({type.heure_debut} - {type.heure_fin})
+                        </option>
+                      ))}
+                    </select>
+                    <small>
+                      Sélectionnez un type spécifique ou laissez "Tous les types" pour une disponibilité générale
+                    </small>
+                  </div>
+                </div>
+
+                {/* Configuration des horaires - Seulement si "Tous les types" */}
+                {!availabilityConfig.type_garde_id && (
+                  <div className="config-section">
+                    <h4>⏰ Créneaux horaires personnalisés</h4>
+                    <p className="section-note">Définissez vos horaires de disponibilité générale</p>
+                    <div className="time-config-row">
+                      <div className="time-field">
+                        <Label>Heure de début</Label>
+                        <Input 
+                          type="time" 
+                          value={availabilityConfig.heure_debut}
+                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, heure_debut: e.target.value})}
+                          data-testid="availability-start-time"
+                        />
+                      </div>
+                      <div className="time-field">
+                        <Label>Heure de fin</Label>
+                        <Input 
+                          type="time" 
+                          value={availabilityConfig.heure_fin}
+                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, heure_fin: e.target.value})}
+                          data-testid="availability-end-time"
+                        />
+                      </div>
+                    </div>
+                    <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                      ℹ️ Les entrées créées ici seront automatiquement marquées comme "Disponible"
+                    </small>
+                  </div>
+                )}
+
+                {/* Horaires automatiques si type spécifique sélectionné */}
+                {availabilityConfig.type_garde_id && (
+                  <div className="config-section">
+                    <h4>⏰ Horaires du type de garde</h4>
+                    <div className="automatic-hours">
+                      <div className="hours-display">
+                        <span className="hours-label">Horaires automatiques :</span>
+                        <span className="hours-value">
+                          {(() => {
+                            const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
+                            return selectedType ? `${selectedType.heure_debut} - ${selectedType.heure_fin}` : 'Non défini';
+                          })()}
+                        </span>
+                      </div>
+                      <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                        ℹ️ Les disponibilités seront automatiquement enregistrées avec ces horaires
+                      </small>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE CALENDRIER - Sélection des dates */}
+                {availabilityConfig.mode === 'calendrier' && (
+                  <div className="config-section">
+                    <h4>📆 Sélection des dates</h4>
+                    <div className="calendar-instructions">
+                      <p>Cliquez sur les dates où vous êtes disponible :</p>
+                      <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                        ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
+                      </small>
+                    </div>
+                    
+                    <Calendar
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={setSelectedDates}
+                      className="interactive-calendar"
+                      disabled={(date) => date < new Date().setHours(0,0,0,0)}
+                      indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
+                    />
+                    
+                    <div className="selection-summary-advanced">
+                      <div className="summary-item">
+                        <strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}
+                      </div>
+                      <div className="summary-item">
+                        <strong>Dates sélectionnées :</strong> {selectedDates?.length || 0} jour(s)
+                      </div>
+                      <div className="summary-item">
+                        <strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE RÉCURRENCE - Période avec récurrence */}
+                {availabilityConfig.mode === 'recurrence' && (
+                  <>
+                    <div className="config-section">
+                      <h4>📅 Période</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <Label>Date de début</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_debut}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_debut: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Date de fin</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_fin}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_fin: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section">
+                      <h4>🔄 Récurrence</h4>
+                      <Label>Type de récurrence</Label>
+                      <select
+                        value={availabilityConfig.recurrence_type}
+                        onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_type: e.target.value})}
+                        className="form-select"
+                      >
+                        <option value="hebdomadaire">Toutes les semaines (hebdomadaire)</option>
+                        <option value="bihebdomadaire">Toutes les deux semaines (bihebdomadaire)</option>
+                        <option value="mensuelle">Tous les mois (mensuelle)</option>
+                        <option value="annuelle">Tous les ans (annuelle)</option>
+                        <option value="personnalisee">Personnalisée</option>
+                      </select>
+
+                      {availabilityConfig.recurrence_type === 'personnalisee' && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>⚙️ Configuration personnalisée</h5>
+                          <Label>Fréquence</Label>
+                          <select
+                            value={availabilityConfig.recurrence_frequence}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_frequence: e.target.value})}
+                            className="form-select"
+                            style={{ marginBottom: '10px' }}
+                          >
+                            <option value="jours">Jours</option>
+                            <option value="semaines">Semaines</option>
+                            <option value="mois">Mois</option>
+                            <option value="ans">Ans</option>
+                          </select>
+
+                          <Label>Intervalle : Tous les</Label>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={availabilityConfig.recurrence_intervalle}
+                              onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                              style={{ width: '100px' }}
+                            />
+                            <span>{availabilityConfig.recurrence_frequence}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                      {(availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                            {[
+                              { label: 'Lun', value: 'monday' },
+                              { label: 'Mar', value: 'tuesday' },
+                              { label: 'Mer', value: 'wednesday' },
+                              { label: 'Jeu', value: 'thursday' },
+                              { label: 'Ven', value: 'friday' },
+                              { label: 'Sam', value: 'saturday' },
+                              { label: 'Dim', value: 'sunday' }
+                            ].map(jour => (
+                              <label
+                                key={jour.value}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  border: `2px solid ${availabilityConfig.jours_semaine?.includes(jour.value) ? '#16a34a' : '#cbd5e1'}`,
+                                  background: availabilityConfig.jours_semaine?.includes(jour.value) ? '#dcfce7' : 'white',
+                                  cursor: 'pointer',
+                                  fontWeight: availabilityConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={availabilityConfig.jours_semaine?.includes(jour.value) || false}
+                                  onChange={(e) => {
+                                    const currentJours = availabilityConfig.jours_semaine || [];
+                                    const newJours = e.target.checked
+                                      ? [...currentJours, jour.value]
+                                      : currentJours.filter(j => j !== jour.value);
+                                    setAvailabilityConfig({...availabilityConfig, jours_semaine: newJours});
+                                  }}
+                                  style={{ marginRight: '6px' }}
+                                />
+                                {jour.label}
+                              </label>
+                            ))}
+                          </div>
+                          {availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0 && (
+                            <p style={{ marginTop: '10px', color: '#16a34a', fontSize: '0.9rem' }}>
+                              ✓ {availabilityConfig.jours_semaine.length} jour(s) sélectionné(s)
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Résumé pour le mode récurrence */}
+                    <div className="config-section" style={{ background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <h4 style={{ color: '#15803d', marginTop: 0 }}>📊 Résumé</h4>
+                      <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#15803d' }}>
+                        <li><strong>Mode :</strong> Récurrence</li>
+                        <li><strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}</li>
+                        <li><strong>Période :</strong> Du {new Date(availabilityConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(availabilityConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                        <li><strong>Récurrence :</strong> {
+                          availabilityConfig.recurrence_type === 'hebdomadaire' ? 'Toutes les semaines' :
+                          availabilityConfig.recurrence_type === 'bihebdomadaire' ? 'Toutes les 2 semaines' :
+                          availabilityConfig.recurrence_type === 'mensuelle' ? 'Tous les mois' :
+                          availabilityConfig.recurrence_type === 'annuelle' ? 'Tous les ans' :
+                          `Tous les ${availabilityConfig.recurrence_intervalle} ${availabilityConfig.recurrence_frequence}`
+                        }</li>
+                        <li><strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCalendarModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleSaveAvailability}
+                  data-testid="save-availability-btn"
+                  disabled={availabilityConfig.mode === 'calendrier' && (!selectedDates || selectedDates.length === 0)}
+                >
+                  {availabilityConfig.mode === 'calendrier' 
+                    ? `✅ Sauvegarder (${selectedDates?.length || 0} jour${selectedDates?.length > 1 ? 's' : ''})`
+                    : '✅ Générer les disponibilités'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de génération automatique d'indisponibilités */}
+      {showGenerationModal && (
+        <div className="modal-overlay" onClick={() => setShowGenerationModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>❌ Gérer indisponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowGenerationModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              {/* Onglets */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
+                <button
+                  onClick={() => setIndispoTab('generation')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'generation' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'generation' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'generation' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'generation' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  🚒 Génération automatique
+                </button>
+                <button
+                  onClick={() => setIndispoTab('manuelle')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'manuelle' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'manuelle' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'manuelle' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'manuelle' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  ✍️ Saisie manuelle
+                </button>
+              </div>
+
+              {/* Contenu de l'onglet Génération */}
+              {indispoTab === 'generation' && (
+              <div>
+              <div className="generation-config">
+                {/* Sélection du type d'horaire */}
+                <div className="config-section">
+                  <h4>📋 Type d'horaire</h4>
+                  <select
+                    value={generationConfig.horaire_type}
+                    onChange={(e) => setGenerationConfig({...generationConfig, horaire_type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="montreal">Montreal 7/24 (Cycle 28 jours)</option>
+                    <option value="quebec">Quebec 10/14 (Cycle 28 jours)</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {generationConfig.horaire_type === 'montreal' 
+                      ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
+                      : 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'}
+                  </small>
+                </div>
+
+                {/* Sélection de l'équipe */}
+                <div className="config-section">
+                  <h4>👥 Équipe</h4>
+                  <div className="equipe-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    {[
+                      {nom: 'Vert', numero: 1},
+                      {nom: 'Bleu', numero: 2},
+                      {nom: 'Jaune', numero: 3},
+                      {nom: 'Rouge', numero: 4}
+                    ].map(equipe => (
+                      <button
+                        key={equipe.nom}
+                        onClick={() => setGenerationConfig({...generationConfig, equipe: equipe.nom})}
+                        className={`equipe-button ${generationConfig.equipe === equipe.nom ? 'selected' : ''}`}
+                        style={{
+                          padding: '12px',
+                          border: generationConfig.equipe === equipe.nom ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          background: generationConfig.equipe === equipe.nom ? '#fef2f2' : 'white',
+                          cursor: 'pointer',
+                          fontWeight: generationConfig.equipe === equipe.nom ? 'bold' : 'normal'
+                        }}
+                      >
+                        {equipe.nom} (#{equipe.numero})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sélection des dates */}
+                <div className="config-section">
+                  <h4>📅 Période de génération</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de début</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_debut}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_debut: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de fin</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_fin}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_fin: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    Les indisponibilités seront générées entre ces deux dates
+                  </small>
+                </div>
+
+                {/* Option de conservation des modifications manuelles */}
+                <div className="config-section">
+                  <h4>⚠️ Gestion des données existantes</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                    <input
+                      type="checkbox"
+                      id="conserver-manuelles"
+                      checked={generationConfig.conserver_manuelles}
+                      onChange={(e) => setGenerationConfig({...generationConfig, conserver_manuelles: e.target.checked})}
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <label htmlFor="conserver-manuelles" style={{ cursor: 'pointer', color: '#78350f' }}>
+                      <strong>Conserver les modifications manuelles</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>
+                        {generationConfig.conserver_manuelles 
+                          ? 'Les disponibilités ajoutées manuellement seront préservées'
+                          : '⚠️ ATTENTION : Toutes les disponibilités existantes seront supprimées'}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Résumé de la génération */}
+                <div className="config-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                  <h4 style={{ color: '#1e40af', marginTop: 0 }}>📊 Résumé de la génération</h4>
+                  <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#1e40af' }}>
+                    <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
+                    <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
+                    <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                    <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
+                  </ul>
+                  <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
+                    💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe <strong>TRAVAILLE</strong> à son emploi principal selon le cycle sélectionné (vous ne serez donc pas disponible pour les gardes de pompiers ces jours-là).
+                  </p>
+                </div>
+              </div>
+
+                <div className="modal-actions">
+                  <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                    Annuler
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleGenerateIndisponibilites}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Génération en cours...' : '🚀 Générer les indisponibilités'}
+                  </Button>
+                </div>
+              </div>
+              )}
+
+              {/* Contenu de l'onglet Saisie manuelle */}
+              {indispoTab === 'manuelle' && (
+                <div>
+                  <div className="manual-indispo-config">
+                    {/* Sélecteur de mode */}
+                    <div className="config-section" style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => setManualIndispoMode('calendrier')}
+                          style={{
+                            padding: '10px 20px',
+                            border: manualIndispoMode === 'calendrier' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                            borderRadius: '8px',
+                            background: manualIndispoMode === 'calendrier' ? '#fef2f2' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: manualIndispoMode === 'calendrier' ? 'bold' : 'normal',
+                            color: manualIndispoMode === 'calendrier' ? '#dc2626' : '#64748b'
+                          }}
+                        >
+                          📅 Calendrier (Clics multiples)
+                        </button>
+                        <button
+                          onClick={() => setManualIndispoMode('recurrence')}
+                          style={{
+                            padding: '10px 20px',
+                            border: manualIndispoMode === 'recurrence' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                            borderRadius: '8px',
+                            background: manualIndispoMode === 'recurrence' ? '#fef2f2' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: manualIndispoMode === 'recurrence' ? 'bold' : 'normal',
+                            color: manualIndispoMode === 'recurrence' ? '#dc2626' : '#64748b'
+                          }}
+                        >
+                          🔄 Avec récurrence
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* MODE CALENDRIER */}
+                    {manualIndispoMode === 'calendrier' && (
+                      <>
+                        <div className="config-section">
+                          <h4>📆 Sélection des dates d'indisponibilité</h4>
+                          <Calendar
+                            mode="multiple"
+                            selected={manualIndispoConfig.dates}
+                            onSelect={(dates) => setManualIndispoConfig({...manualIndispoConfig, dates: dates || []})}
+                            className="availability-calendar-large"
+                            locale={fr}
+                            indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
+                          />
+                          <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                            📌 Cliquez sur plusieurs dates pour sélectionner vos jours d'indisponibilité
+                          </small>
+                          <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                            ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
+                          </small>
+                          {manualIndispoConfig.dates.length > 0 && (
+                            <p style={{ marginTop: '10px', color: '#dc2626', fontWeight: 'bold' }}>
+                              ✓ {manualIndispoConfig.dates.length} date(s) sélectionnée(s)
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* MODE RÉCURRENCE */}
+                    {manualIndispoMode === 'recurrence' && (
+                      <>
+                        <div className="config-section">
+                          <h4>📅 Période</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                              <Label>Date de début</Label>
+                              <Input
+                                type="date"
+                                value={manualIndispoConfig.date_debut}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, date_debut: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label>Date de fin</Label>
+                              <Input
+                                type="date"
+                                value={manualIndispoConfig.date_fin}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, date_fin: e.target.value})}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="config-section">
+                          <h4>🔄 Récurrence</h4>
+                          <Label>Type de récurrence</Label>
+                          <select
+                            value={manualIndispoConfig.recurrence_type}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_type: e.target.value})}
+                            className="form-select"
+                          >
+                            <option value="hebdomadaire">Toutes les semaines (hebdomadaire)</option>
+                            <option value="bihebdomadaire">Toutes les deux semaines (bihebdomadaire)</option>
+                            <option value="mensuelle">Tous les mois (mensuelle)</option>
+                            <option value="annuelle">Tous les ans (annuelle)</option>
+                            <option value="personnalisee">Personnalisée</option>
+                          </select>
+
+                          {manualIndispoConfig.recurrence_type === 'personnalisee' && (
+                            <div style={{ marginTop: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+                              <h5 style={{ marginTop: 0, marginBottom: '10px' }}>⚙️ Configuration personnalisée</h5>
+                              <Label>Fréquence</Label>
+                              <select
+                                value={manualIndispoConfig.recurrence_frequence}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_frequence: e.target.value})}
+                                className="form-select"
+                                style={{ marginBottom: '10px' }}
+                              >
+                                <option value="jours">Jours</option>
+                                <option value="semaines">Semaines</option>
+                                <option value="mois">Mois</option>
+                                <option value="ans">Ans</option>
+                              </select>
+
+                              <Label>Intervalle : Tous les</Label>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="365"
+                                  value={manualIndispoConfig.recurrence_intervalle}
+                                  onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                                  style={{ width: '100px' }}
+                                />
+                                <span>{manualIndispoConfig.recurrence_frequence}</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                          {(manualIndispoConfig.recurrence_type === 'hebdomadaire' || manualIndispoConfig.recurrence_type === 'bihebdomadaire') && (
+                            <div style={{ marginTop: '15px', padding: '15px', background: '#fef2f2', borderRadius: '8px' }}>
+                              <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                                {[
+                                  { label: 'Lun', value: 'monday' },
+                                  { label: 'Mar', value: 'tuesday' },
+                                  { label: 'Mer', value: 'wednesday' },
+                                  { label: 'Jeu', value: 'thursday' },
+                                  { label: 'Ven', value: 'friday' },
+                                  { label: 'Sam', value: 'saturday' },
+                                  { label: 'Dim', value: 'sunday' }
+                                ].map(jour => (
+                                  <label
+                                    key={jour.value}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      padding: '8px',
+                                      borderRadius: '8px',
+                                      border: `2px solid ${manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#dc2626' : '#cbd5e1'}`,
+                                      background: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#fee2e2' : 'white',
+                                      cursor: 'pointer',
+                                      fontWeight: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={manualIndispoConfig.jours_semaine?.includes(jour.value) || false}
+                                      onChange={(e) => {
+                                        const currentJours = manualIndispoConfig.jours_semaine || [];
+                                        const newJours = e.target.checked
+                                          ? [...currentJours, jour.value]
+                                          : currentJours.filter(j => j !== jour.value);
+                                        setManualIndispoConfig({...manualIndispoConfig, jours_semaine: newJours});
+                                      }}
+                                      style={{ marginRight: '6px' }}
+                                    />
+                                    {jour.label}
+                                  </label>
+                                ))}
+                              </div>
+                              {manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0 && (
+                                <p style={{ marginTop: '10px', color: '#dc2626', fontSize: '0.9rem' }}>
+                                  ✓ {manualIndispoConfig.jours_semaine.length} jour(s) sélectionné(s)
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Configuration des horaires (commun aux deux modes) */}
+                    <div className="config-section">
+                      <h4>⏰ Horaires d'indisponibilité</h4>
+                      <div className="time-config-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <Label>Heure de début</Label>
+                          <Input 
+                            type="time" 
+                            value={manualIndispoConfig.heure_debut}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_debut: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Heure de fin</Label>
+                          <Input 
+                            type="time" 
+                            value={manualIndispoConfig.heure_fin}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_fin: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                        💡 Par défaut : 00:00-23:59 (toute la journée)
+                      </small>
+                    </div>
+
+                    {/* Résumé */}
+                    <div className="config-section" style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                      <h4 style={{ color: '#991b1b', marginTop: 0 }}>📊 Résumé</h4>
+                      {manualIndispoMode === 'calendrier' ? (
+                        <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#991b1b' }}>
+                          <li><strong>Mode :</strong> Calendrier (clics multiples)</li>
+                          <li><strong>Dates sélectionnées :</strong> {manualIndispoConfig.dates.length} jour(s)</li>
+                          <li><strong>Horaires :</strong> {manualIndispoConfig.heure_debut} - {manualIndispoConfig.heure_fin}</li>
+                        </ul>
+                      ) : (
+                        <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#991b1b' }}>
+                          <li><strong>Mode :</strong> Récurrence</li>
+                          <li><strong>Période :</strong> Du {new Date(manualIndispoConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(manualIndispoConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                          <li><strong>Récurrence :</strong> {
+                            manualIndispoConfig.recurrence_type === 'hebdomadaire' ? 'Toutes les semaines' :
+                            manualIndispoConfig.recurrence_type === 'bihebdomadaire' ? 'Toutes les 2 semaines' :
+                            manualIndispoConfig.recurrence_type === 'mensuelle' ? 'Tous les mois' :
+                            manualIndispoConfig.recurrence_type === 'annuelle' ? 'Tous les ans' :
+                            `Tous les ${manualIndispoConfig.recurrence_intervalle} ${manualIndispoConfig.recurrence_frequence}`
+                          }</li>
+                          <li><strong>Horaires :</strong> {manualIndispoConfig.heure_debut} - {manualIndispoConfig.heure_fin}</li>
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="modal-actions">
+                    <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                      Annuler
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={handleSaveManualIndisponibilites}
+                      disabled={manualIndispoMode === 'calendrier' && manualIndispoConfig.dates.length === 0}
+                    >
+                      {manualIndispoMode === 'calendrier' 
+                        ? `✅ Enregistrer ${manualIndispoConfig.dates.length > 0 ? `(${manualIndispoConfig.dates.length} jour${manualIndispoConfig.dates.length > 1 ? 's' : ''})` : ''}`
+                        : '✅ Générer les indisponibilités'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de réinitialisation */}
+      {showReinitModal && (
+        <div className="modal-overlay" onClick={() => setShowReinitModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🗑️ Réinitialiser les disponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowReinitModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="reinit-config">
+                {/* Sélection de la période */}
+                <div className="config-section">
+                  <h4>📅 Période à réinitialiser</h4>
+                  <select
+                    value={reinitConfig.periode}
+                    onChange={(e) => {
+                      setReinitConfig({...reinitConfig, periode: e.target.value});
+                      setReinitWarning(null); // Réinitialiser l'avertissement lors du changement
+                    }}
+                    className="form-select"
+                  >
+                    <option value="semaine">Semaine courante</option>
+                    <option value="mois">Mois courant</option>
+                    <option value="annee">Année courante</option>
+                    <option value="personnalisee">Période personnalisée</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {reinitConfig.periode === 'semaine' && 'Du lundi au dimanche de la semaine en cours'}
+                    {reinitConfig.periode === 'mois' && 'Du 1er au dernier jour du mois en cours'}
+                    {reinitConfig.periode === 'annee' && 'Du 1er janvier au 31 décembre de l\'année en cours'}
+                    {reinitConfig.periode === 'personnalisee' && 'Sélectionnez une plage de dates personnalisée (max 1 an)'}
+                  </small>
+                  
+                  {/* Champs de dates pour période personnalisée */}
+                  {reinitConfig.periode === 'personnalisee' && (
+                    <div style={{ marginTop: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div>
+                          <Label>Date de début</Label>
+                          <Input
+                            type="date"
+                            value={reinitConfig.date_debut}
+                            onChange={(e) => {
+                              setReinitConfig({...reinitConfig, date_debut: e.target.value});
+                              setReinitWarning(null);
+                            }}
+                            max={reinitConfig.date_fin}
+                          />
+                        </div>
+                        <div>
+                          <Label>Date de fin</Label>
+                          <Input
+                            type="date"
+                            value={reinitConfig.date_fin}
+                            onChange={(e) => {
+                              setReinitConfig({...reinitConfig, date_fin: e.target.value});
+                              setReinitWarning(null);
+                            }}
+                            min={reinitConfig.date_debut}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Avertissement pour dates bloquées */}
+                      {reinitWarning && (
+                        <div style={{
+                          marginTop: '15px',
+                          padding: '12px',
+                          background: '#fef3c7',
+                          border: '2px solid #f59e0b',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                          <div style={{ flex: 1 }}>
+                            <strong style={{ display: 'block', marginBottom: '5px', color: '#92400e' }}>
+                              Attention - Dates bloquées
+                            </strong>
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#78350f' }}>
+                              {reinitWarning}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sélection du type d'entrées */}
+                <div className="config-section">
+                  <h4>📊 Type d'entrées à supprimer</h4>
+                  <select
+                    value={reinitConfig.type_entree}
+                    onChange={(e) => setReinitConfig({...reinitConfig, type_entree: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="les_deux">Disponibilités ET Indisponibilités</option>
+                    <option value="disponibilites">Disponibilités uniquement</option>
+                    <option value="indisponibilites">Indisponibilités uniquement</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {reinitConfig.type_entree === 'disponibilites' && '✅ Supprime uniquement les jours disponibles'}
+                    {reinitConfig.type_entree === 'indisponibilites' && '❌ Supprime uniquement les jours indisponibles'}
+                    {reinitConfig.type_entree === 'les_deux' && '🔄 Supprime tous les types d\'entrées'}
+                  </small>
+                </div>
+
+                {/* Sélection du mode */}
+                <div className="config-section">
+                  <h4>🎯 Mode de suppression</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <label style={{ 
+                      padding: '15px', 
+                      border: reinitConfig.mode === 'generees_seulement' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      background: reinitConfig.mode === 'generees_seulement' ? '#eff6ff' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="generees_seulement"
+                        checked={reinitConfig.mode === 'generees_seulement'}
+                        onChange={(e) => setReinitConfig({...reinitConfig, mode: e.target.value})}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <strong>Supprimer uniquement les entrées générées automatiquement</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '5px', marginLeft: '25px', color: '#64748b' }}>
+                        ✅ Préserve vos modifications manuelles (origine: manuelle)
+                      </div>
+                    </label>
+
+                    <label style={{ 
+                      padding: '15px', 
+                      border: reinitConfig.mode === 'tout' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      background: reinitConfig.mode === 'tout' ? '#fef2f2' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="tout"
+                        checked={reinitConfig.mode === 'tout'}
+                        onChange={(e) => setReinitConfig({...reinitConfig, mode: e.target.value})}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <strong>Supprimer TOUTES les entrées</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '5px', marginLeft: '25px', color: '#991b1b' }}>
+                        ⚠️ Supprime tout (manuelles + générées automatiquement)
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Résumé et confirmation */}
+                <div className="config-section" style={{ 
+                  background: reinitConfig.mode === 'tout' ? '#fef2f2' : '#eff6ff', 
+                  padding: '15px', 
+                  borderRadius: '8px', 
+                  border: `1px solid ${reinitConfig.mode === 'tout' ? '#dc2626' : '#3b82f6'}` 
+                }}>
+                  <h4 style={{ color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af', marginTop: 0 }}>
+                    ⚠️ Confirmation requise
+                  </h4>
+                  <p style={{ margin: '10px 0', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
+                    Vous êtes sur le point de <strong>
+                      {reinitConfig.mode === 'tout' 
+                        ? 'SUPPRIMER TOUTES LES' 
+                        : 'supprimer les entrées générées de'}
+                    </strong> {' '}
+                    <strong>
+                      {reinitConfig.type_entree === 'disponibilites' && 'DISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'indisponibilites' && 'INDISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'les_deux' && 'DISPONIBILITÉS ET INDISPONIBILITÉS'}
+                    </strong> {' de '}
+                    {reinitConfig.periode === 'semaine' && 'la semaine courante'}
+                    {reinitConfig.periode === 'mois' && 'du mois courant'}
+                    {reinitConfig.periode === 'annee' && 'de l\'année courante'}
+                  </p>
+                  <p style={{ margin: '10px 0', fontSize: '0.875rem', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
+                    {reinitConfig.mode === 'tout' 
+                      ? `🚨 Cette action supprimera toutes les ${reinitConfig.type_entree === 'disponibilites' ? 'disponibilités' : reinitConfig.type_entree === 'indisponibilites' ? 'indisponibilités' : 'entrées'} (manuelles et automatiques).`
+                      : '✅ Vos modifications manuelles seront préservées.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowReinitModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant={reinitConfig.mode === 'tout' ? 'destructive' : 'default'}
+                  onClick={handleReinitialiser}
+                  disabled={isReinitializing}
+                >
+                  {isReinitializing ? 'Suppression...' : '🗑️ Confirmer la suppression'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Export Disponibilités */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Export Disponibilités {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Que souhaitez-vous exporter ?
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={() => handleExportDisponibilites()}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📋</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Toutes les disponibilités</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Exporter les disponibilités de tous les pompiers temps partiel
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    // Pour l'instant, exporter une personne spécifique nécessiterait un select
+                    // On peut améliorer cela plus tard
+                    toast({ title: "Info", description: "Sélectionnez un pompier depuis le module Personnel pour exporter ses disponibilités" });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>👤</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Une personne spécifique</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Disponible depuis le module Personnel
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Overlay de chargement lors de l'enregistrement */}
+      {savingDisponibilites && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            minWidth: '400px',
+            maxWidth: '500px'
+          }}>
+            {/* Spinner animé */}
+            <div style={{
+              width: '60px',
+              height: '60px',
+              border: '4px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '4px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            
+            {/* Message */}
+            <div style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              {savingMessage}
+            </div>
+            
+            <div style={{
+              fontSize: '0.9rem',
+              opacity: 0.9,
+              textAlign: 'center'
+            }}>
+              Veuillez patienter...
+            </div>
+          </div>
+          
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+      )}
+
+      {/* Nouveau Modal de résolution de conflits multiples (batch) */}
+      {showBatchConflictModal && (
+        <div className="modal-overlay" onClick={() => setShowBatchConflictModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '800px', maxHeight: '80vh', overflow: 'auto'}}>
+            <div className="modal-header">
+              <h3>⚠️ Conflits Détectés ({batchConflicts.length})</h3>
+              <Button variant="ghost" onClick={() => setShowBatchConflictModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body" style={{padding: '1.5rem'}}>
+              <p style={{marginBottom: '1rem', color: '#64748b'}}>
+                Les disponibilités suivantes sont en conflit avec des entrées existantes. 
+                Sélectionnez les conflits que vous souhaitez remplacer :
+              </p>
+              
+              <div style={{marginBottom: '1rem', display: 'flex', gap: '0.5rem'}}>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    const allSelected = {};
+                    batchConflicts.forEach((_, idx) => allSelected[idx] = true);
+                    setBatchConflictSelections(allSelected);
+                  }}
+                >
+                  ✅ Tout sélectionner
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBatchConflictSelections({})}
+                >
+                  ❌ Tout désélectionner
+                </Button>
+              </div>
+              
+              <div style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}>
+                {batchConflicts.map((conflict, index) => {
+                  const isSelected = batchConflictSelections[index] || false;
+                  return (
+                    <div 
+                      key={index}
+                      style={{
+                        padding: '1rem',
+                        borderBottom: index < batchConflicts.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        background: isSelected ? '#fef3c7' : 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onClick={() => {
+                        setBatchConflictSelections(prev => ({
+                          ...prev,
+                          [index]: !prev[index]
+                        }));
+                      }}
+                    >
+                      <div style={{display: 'flex', alignItems: 'flex-start', gap: '1rem'}}>
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setBatchConflictSelections(prev => ({
+                              ...prev,
+                              [index]: e.target.checked
+                            }));
+                          }}
+                          style={{marginTop: '0.25rem', cursor: 'pointer'}}
+                        />
+                        <div style={{flex: 1}}>
+                          <div style={{fontWeight: '600', marginBottom: '0.5rem'}}>
+                            📅 {conflict.newItem.date}
+                          </div>
+                          <div style={{fontSize: '0.875rem', color: '#64748b'}}>
+                            <div style={{marginBottom: '0.25rem'}}>
+                              <strong>Existant:</strong> {conflict.existingType} {conflict.existingHours}
+                              {conflict.existingOrigine && <span style={{marginLeft: '0.5rem', fontSize: '0.75rem', padding: '0.125rem 0.5rem', background: '#e5e7eb', borderRadius: '4px'}}>{conflict.existingOrigine}</span>}
+                            </div>
+                            <div>
+                              <strong>Nouveau:</strong> {conflict.newType} {conflict.newItem.heure_debut}-{conflict.newItem.heure_fin}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#f3f4f6', borderRadius: '8px', fontSize: '0.875rem'}}>
+                <div style={{marginBottom: '0.5rem'}}>
+                  <strong>Résumé:</strong>
+                </div>
+                <div>
+                  • {Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) sélectionné(s) pour remplacement
+                </div>
+                <div>
+                  • {batchConflicts.length - Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) seront ignorés (existant conservé)
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowBatchConflictModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                variant="default"
+                onClick={async () => {
+                  await handleResolveBatchConflicts();
+                }}
+              >
+                ✅ Confirmer ({Object.values(batchConflictSelections).filter(Boolean).length} remplacements)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de résolution des conflits */}
+      {showConflictModal && (
+        <Suspense fallback={<LoadingComponent />}>
+          <ConflictResolutionModal
+            isOpen={showConflictModal}
+            onClose={() => {
+              setShowConflictModal(false);
+              setConflictData({ conflicts: [], newItem: null, itemType: null });
+            }}
+            conflicts={conflictData.conflicts}
+            newItem={conflictData.newItem}
+            itemType={conflictData.itemType}
+            onResolve={handleResolveConflict}
+          />
+        </Suspense>
+      )}
+    </div>
+  );
+};
+
+// Mon Profil Component épuré - sans disponibilités et remplacements
+// Mon Profil Component épuré - sans disponibilités et remplacements
+const MonProfil = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const [userProfile, setUserProfile] = useState(null);
+  const [formations, setFormations] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState({
+    gardes_ce_mois: 0,
+    heures_travaillees: 0,
+    certifications: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingEPI, setIsEditingEPI] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [profileData, setProfileData] = useState({});
+  const [myEPIs, setMyEPIs] = useState([]);
+  const [epiTailles, setEpiTailles] = useState({});
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!tenantSlug || !user?.id) {
+        return;
+      }
+      
+      console.log('🔍 Mon Profil - Début chargement:', {
+        tenantSlug,
+        userId: user.id,
+        token: localStorage.getItem('token') ? 'Présent' : 'Absent'
+      });
+      
+      try {
+        const [userData, formationsData, statsData, episData] = await Promise.all([
+          apiGet(tenantSlug, `/users/${user.id}`),
+          apiGet(tenantSlug, '/competences'),
+          apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`),
+          apiGet(tenantSlug, `/epi/employe/${user.id}`)
+        ]);
+        
+        console.log('📊 Mon Profil - userData chargé:', userData);
+        console.log('🔍 Champs critiques:', {
+          numero_employe: userData?.numero_employe,
+          taux_horaire: userData?.taux_horaire,
+          grade: userData?.grade,
+          date_embauche: userData?.date_embauche,
+          adresse: userData?.adresse
+        });
+        
+        setUserProfile(userData);
+        setFormations(formationsData);
+        setMonthlyStats(statsData);
+        setMyEPIs(episData);
+        
+        // Créer un objet de tailles pour l'édition
+        const tailles = {};
+        episData.forEach(epi => {
+          tailles[epi.type_epi] = epi.taille;
+        });
+        setEpiTailles(tailles);
+        
+        setProfileData({
+          nom: userData.nom,
+          prenom: userData.prenom,
+          email: userData.email,
+          telephone: userData.telephone,
+          adresse: userData.adresse || '',
+          contact_urgence: userData.contact_urgence || '',
+          numero_employe: userData.numero_employe || '',
+          taux_horaire: userData.taux_horaire || 0,
+          heures_max_semaine: userData.heures_max_semaine || 25
+        });
+
+      } catch (error) {
+        console.error('❌ Mon Profil - Erreur chargement:', {
+          error: error.message,
+          stack: error.stack,
+          tenantSlug,
+          userId: user?.id
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchUserProfile();
+    }
+  }, [user?.id, tenantSlug]);
+
+  const handleSaveProfile = async () => {
+    try {
+      // Utiliser l'endpoint spécial pour modification de son propre profil
+      const updateData = {
+        prenom: profileData.prenom,
+        nom: profileData.nom,
+        email: profileData.email,
+        telephone: profileData.telephone,
+        adresse: profileData.adresse,
+        contact_urgence: profileData.contact_urgence,
+        heures_max_semaine: profileData.heures_max_semaine !== null && profileData.heures_max_semaine !== undefined 
+          ? parseInt(profileData.heures_max_semaine) 
+          : 25
+      };
+
+      const updatedData = await apiPut(tenantSlug, '/users/mon-profil', updateData);
+      
+      // Mettre à jour le profil local avec la réponse
+      setUserProfile(updatedData);
+      
+      // Mettre à jour aussi profileData pour que les champs affichent les bonnes valeurs
+      setProfileData({
+        nom: updatedData.nom,
+        prenom: updatedData.prenom,
+        email: updatedData.email,
+        telephone: updatedData.telephone,
+        adresse: updatedData.adresse || '',
+        contact_urgence: updatedData.contact_urgence || '',
+        heures_max_semaine: updatedData.heures_max_semaine || 25
+      });
+      
+      toast({
+        title: "Profil mis à jour",
+        description: "Vos informations ont été sauvegardées et sont maintenant visibles dans Personnel.",
+        variant: "success"
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde profil:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de sauvegarder les modifications.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveEPITailles = async () => {
+    try {
+      const allEPITypes = getAllEPITypes();
+      const updatePromises = [];
+      const createPromises = [];
+      
+      // Pour chaque type d'EPI
+      for (const epiType of allEPITypes) {
+        const taille = epiTailles[epiType.id];
+        const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+        
+        // Si une taille est saisie
+        if (taille && taille.trim() !== '') {
+          if (existingEPI) {
+            // Mettre à jour l'EPI existant si la taille a changé
+            if (taille !== existingEPI.taille) {
+              updatePromises.push(
+                apiPut(tenantSlug, `/epi/${existingEPI.id}`, {
+                  taille: taille
+                })
+              );
+            }
+          } else {
+            // Créer un nouvel EPI
+            createPromises.push(
+              apiPost(tenantSlug, '/epi', {
+                user_id: user.id,
+                type_epi: epiType.id,
+                taille: taille,
+                numero_serie: `${epiType.id.toUpperCase()}-${user.id.substring(0, 8)}`,
+                date_attribution: new Date().toISOString().split('T')[0],
+                statut: 'En service',
+                etat: 'Neuf',
+                date_prochaine_inspection: '',
+                date_expiration: '',
+                notes: ''
+              })
+            );
+          }
+        }
+      }
+
+      // Exécuter toutes les mises à jour et créations
+      await Promise.all([...updatePromises, ...createPromises]);
+
+      // Recharger les EPI
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      setMyEPIs(episData);
+      
+      // Mettre à jour l'objet de tailles
+      const tailles = {};
+      episData.forEach(epi => {
+        tailles[epi.type_epi] = epi.taille;
+      });
+      setEpiTailles(tailles);
+
+      toast({
+        title: "Tailles mises à jour",
+        description: "Vos tailles d'EPI ont été sauvegardées et sont maintenant visibles dans le module Personnel",
+        variant: "success"
+      });
+
+      setIsEditingEPI(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde EPI:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de sauvegarder les tailles",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getEPINom = (typeEpi) => {
+    const noms = {
+      'casque': 'Casque',
+      'bottes': 'Bottes',
+      'veste_bunker': 'Veste Bunker',
+      'pantalon_bunker': 'Pantalon Bunker',
+      'gants': 'Gants',
+      'masque_apria': 'Facial APRIA',
+      'cagoule': 'Cagoule Anti-Particules'
+    };
+    return noms[typeEpi] || typeEpi;
+  };
+
+  const getAllEPITypes = () => {
+    return [
+      { id: 'casque', nom: 'Casque', icone: '🪖' },
+      { id: 'bottes', nom: 'Bottes', icone: '👢' },
+      { id: 'veste_bunker', nom: 'Veste Bunker', icone: '🧥' },
+      { id: 'pantalon_bunker', nom: 'Pantalon Bunker', icone: '👖' },
+      { id: 'gants', nom: 'Gants', icone: '🧤' },
+      { id: 'masque_apria', nom: 'Facial APRIA', icone: '😷' },
+      { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
+    ];
+  };
+  const getEPIIcone = (typeEpi) => {
+    const icones = {
+      'casque': '🪖',
+      'bottes': '👢',
+      'veste_bunker': '🧥',
+      'pantalon_bunker': '👖',
+      'gants': '🧤',
+      'masque_apria': '😷',
+      'cagoule': '🎭'
+    };
+    return icones[typeEpi] || '🛡️';
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordData.current_password || !passwordData.new_password || !passwordData.confirm_password) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast({
+        title: "Mots de passe différents",
+        description: "Le nouveau mot de passe et la confirmation ne correspondent pas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Appeler l'API backend pour changer le mot de passe
+      await axios.put(`${API}/${tenantSlug}/users/${user.id}/password`, {
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      });
+      
+      toast({
+        title: "Mot de passe modifié",
+        description: "Votre mot de passe a été mis à jour avec succès",
+        variant: "success"
+      });
+      setShowPasswordModal(false);
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || "Impossible de modifier le mot de passe";
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getFormationName = (formationId) => {
+    const formation = formations.find(f => f.id === formationId);
+    return formation ? formation.nom : formationId;
+  };
+
+  if (loading) return <div className="loading" data-testid="profile-loading">Chargement du profil...</div>;
+  
+  // Debug : Vérifier si user est chargé
+  if (!user || !user.id) {
+    return (
+      <div className="mon-profil">
+        <div className="profile-header">
+          <h1>Erreur</h1>
+          <p style={{color: 'red'}}>
+            ❌ Impossible de charger le profil utilisateur. user.id manquant.
+            <br/>
+            Debug: user = {JSON.stringify(user)}
+            <br/>
+            tenantSlug = {tenantSlug}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="module-epi-nfpa">
+      <div className="module-header">
+        <div>
+          <h1>👤 Mon Profil</h1>
+          <p>Gérez vos informations personnelles et paramètres de compte</p>
+        </div>
+      </div>
+
+      {/* Layout en 2 colonnes */}
+      <div className="profil-grid-layout">
+        {/* Colonne gauche - Informations principales */}
+        <div className="profil-main-column">
+          {/* Informations personnelles */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>📋 Informations personnelles</h3>
+              <Button
+                onClick={() => setIsEditing(!isEditing)}
+                variant={isEditing ? "outline" : "default"}
+                data-testid="edit-profile-btn"
+              >
+                {isEditing ? 'Annuler' : '✏️ Modifier'}
+              </Button>
+            </div>
+
+            <div className="profile-form">
+              <div className="form-row">
+                <div className="form-field">
+                  <Label>Prénom</Label>
+                  <Input
+                    value={profileData.prenom || ''}
+                    onChange={(e) => setProfileData({...profileData, prenom: e.target.value})}
+                    disabled={!isEditing}
+                    data-testid="profile-prenom-input"
+                  />
+                </div>
+                <div className="form-field">
+                  <Label>Nom</Label>
+                  <Input
+                    value={profileData.nom || ''}
+                    onChange={(e) => setProfileData({...profileData, nom: e.target.value})}
+                    disabled={!isEditing}
+                    data-testid="profile-nom-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-field">
+                  <Label>Email</Label>
+                  <Input
+                    value={profileData.email || ''}
+                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                    disabled={!isEditing}
+                    data-testid="profile-email-input"
+                  />
+                </div>
+                <div className="form-field">
+                  <Label>Téléphone</Label>
+                  <Input
+                    value={profileData.telephone || ''}
+                    onChange={(e) => setProfileData({...profileData, telephone: e.target.value})}
+                    disabled={!isEditing}
+                    data-testid="profile-phone-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label>Adresse</Label>
+                <Input
+                  value={profileData.adresse || ''}
+                  onChange={(e) => setProfileData({...profileData, adresse: e.target.value})}
+                  disabled={!isEditing}
+                  placeholder="123 Rue Principale, Ville, Province"
+                  data-testid="profile-address-input"
+                />
+              </div>
+
+              <div className="form-field">
+                <Label>Contact d'urgence</Label>
+                <Input
+                  value={profileData.contact_urgence || ''}
+                  onChange={(e) => setProfileData({...profileData, contact_urgence: e.target.value})}
+                  disabled={!isEditing}
+                  placeholder="Nom et téléphone du contact d'urgence"
+                  data-testid="profile-emergency-input"
+                />
+              </div>
+
+              {/* Heures maximum par semaine - Visible pour tous, modifiable pour temps partiel uniquement */}
+              <div className="form-field">
+                <Label>Heures maximum par semaine</Label>
+                <div className="heures-max-input">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="5"
+                    max="168"
+                    value={profileData.heures_max_semaine !== null && profileData.heures_max_semaine !== undefined 
+                      ? profileData.heures_max_semaine 
+                      : (userProfile?.heures_max_semaine || 40)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Permettre seulement les chiffres ou champ vide
+                      if (value === '' || /^\d+$/.test(value)) {
+                        const numValue = value === '' ? null : parseInt(value);
+                        // Valider la plage 5-168
+                        if (numValue === null || (numValue >= 5 && numValue <= 168)) {
+                          setProfileData({...profileData, heures_max_semaine: numValue});
+                        }
+                      }
+                    }}
+                    disabled={!isEditing || userProfile?.type_emploi === 'temps_plein'}
+                    data-testid="profile-heures-max-input"
+                  />
+                  <span className="heures-max-unit">heures/semaine</span>
+                </div>
+                <small className="heures-max-help">
+                  {userProfile?.type_emploi === 'temps_partiel' 
+                    ? "Indiquez le nombre maximum d'heures que vous souhaitez travailler par semaine (5-168h)."
+                    : "Limite d'heures hebdomadaires configurée par l'administrateur."}
+                </small>
+              </div>
+
+              {isEditing && (
+                <div className="form-actions">
+                  <Button onClick={handleSaveProfile} data-testid="save-profile-btn">
+                    💾 Sauvegarder les modifications
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mes Tailles EPI */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>🛡️ Mes Tailles EPI</h3>
+              <Button
+                onClick={() => setIsEditingEPI(!isEditingEPI)}
+                variant={isEditingEPI ? "outline" : "default"}
+                data-testid="edit-epi-tailles-btn"
+              >
+                {isEditingEPI ? 'Annuler' : '✏️ Modifier'}
+              </Button>
+            </div>
+
+            <div className="epi-content-wrapper">
+              <p style={{ marginBottom: '15px', fontSize: '14px', color: '#6B7280' }}>
+                Sélectionnez les tailles pour chaque équipement.
+              </p>
+
+              <div className="epi-tailles-grid-profile">
+                {getAllEPITypes().map(epiType => {
+                  const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+                  return (
+                    <div key={epiType.id} className="epi-taille-item-profile">
+                      <span className="epi-taille-icon-profile">{epiType.icone}</span>
+                      <div className="epi-taille-info-profile">
+                        <Label style={{fontSize: '13px'}}>{epiType.nom}</Label>
+                        <Input
+                          value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
+                          onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
+                          disabled={!isEditingEPI}
+                          placeholder="Taille"
+                          className="epi-taille-input-compact"
+                          data-testid={`epi-taille-${epiType.id}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {isEditingEPI && (
+                <div className="form-actions" style={{marginTop: '15px'}}>
+                  <Button onClick={handleSaveEPITailles} data-testid="save-epi-tailles-btn">
+                    💾 Sauvegarder les tailles
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Colonne droite - Infos complémentaires */}
+        <div className="profil-side-column">
+          {/* Informations d'emploi */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>💼 Emploi</h3>
+              <span className="statut-badge planifiee" style={{fontSize: '12px', background: '#FEE2E2', color: '#991B1B'}}>
+                🔒 Verrouillé
+              </span>
+            </div>
+            <div style={{padding: '1rem 1.5rem'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
+                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>N° Employé</span>
+                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-employee-id">{userProfile?.numero_employe}</span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
+                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Grade</span>
+                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-grade">
+                  {userProfile?.grade}
+                  {userProfile?.fonction_superieur && <span style={{fontSize: '0.75rem', color: '#EF4444', marginLeft: '0.5rem'}}> + Fonction sup.</span>}
+                </span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
+                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Type</span>
+                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-employment-type">
+                  {userProfile?.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                </span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
+                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Embauche</span>
+                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-hire-date">{userProfile?.date_embauche}</span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', gap: '1rem'}}>
+                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Taux horaire</span>
+                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-taux-horaire">
+                  {userProfile?.taux_horaire ? `${userProfile.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Formations et compétences */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>📚 Compétences</h3>
+              <span className="statut-badge planifiee" style={{fontSize: '11px', background: '#FEE2E2', color: '#991B1B'}}>
+                {userProfile?.formations?.length || 0}
+              </span>
+            </div>
+            <div style={{padding: '0.75rem 1.5rem'}}>
+              {userProfile?.formations?.length > 0 ? (
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+                  {userProfile.formations.map((formationId, index) => (
+                    <span key={index} className="formation-badge-compact">
+                      {getFormationName(formationId)} ✅
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={{textAlign: 'center', color: '#9CA3AF', fontSize: '14px', margin: 0}}>
+                  Aucune compétence
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Sécurité du compte */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>🔒 Sécurité</h3>
+            </div>
+            <div style={{padding: '1rem'}}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPasswordModal(true)}
+                data-testid="change-password-btn"
+                style={{width: '100%'}}
+              >
+                🔑 Changer le mot de passe
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de changement de mot de passe */}
+      {showPasswordModal && (
+        <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="change-password-modal">
+            <div className="modal-header">
+              <h3>🔒 Changer le mot de passe</h3>
+              <Button variant="ghost" onClick={() => setShowPasswordModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="password-form">
+                <div className="form-field">
+                  <Label>Mot de passe actuel *</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.current_password}
+                    onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                    data-testid="current-password-input"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Label>Nouveau mot de passe *</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.new_password}
+                    onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                    data-testid="new-password-input"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Label>Confirmer le nouveau mot de passe *</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.confirm_password}
+                    onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+                    data-testid="confirm-password-input"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowPasswordModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="default" onClick={handleChangePassword} data-testid="save-password-btn">
+                  Modifier le mot de passe
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ====================================================================
+// MODULE RAPPORTS AVANCÉS - INTERNES ET EXTERNES
+// ====================================================================
+
+const Rapports = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('internes'); // 'internes' ou 'externes'
+  const [activeRapport, setActiveRapport] = useState('dashboard'); // Type de rapport actif
+  
+  // États pour les données
+  const [dashboardData, setDashboardData] = useState(null);
+  const [rapportSalaires, setRapportSalaires] = useState(null);
+  const [rapportDisponibilite, setRapportDisponibilite] = useState(null);
+  const [rapportCoutsFormations, setRapportCoutsFormations] = useState(null);
+  const [rapportBudgetaire, setRapportBudgetaire] = useState(null);
+  const [rapportImmobilisations, setRapportImmobilisations] = useState(null);
+  const [budgets, setBudgets] = useState([]);
+  const [immobilisations, setImmobilisations] = useState([]);
+  
+  // États pour les filtres
+  const [dateDebut, setDateDebut] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [dateFin, setDateFin] = useState(new Date().toISOString().split('T')[0]);
+  const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
+  
+  // États pour les modals de saisie
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showImmobilisationModal, setShowImmobilisationModal] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
+  const [immobilisationForm, setImmobilisationForm] = useState({ 
+    type_immobilisation: 'vehicule', 
+    nom: '', 
+    date_acquisition: new Date().toISOString().split('T')[0], 
+    cout_acquisition: 0, 
+    cout_entretien_annuel: 0, 
+    etat: 'bon', 
+    notes: '' 
+  });
+
+  useEffect(() => {
+    if (user?.role === 'admin' && tenantSlug) {
+      loadData();
+    }
+  }, [user, tenantSlug, activeTab, activeRapport, anneeSelectionnee]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'internes') {
+        if (activeRapport === 'dashboard') {
+          const dashData = await apiGet(tenantSlug, '/rapports/dashboard-interne');
+          setDashboardData(dashData);
+        } else if (activeRapport === 'salaires') {
+          // Ne pas charger automatiquement, attendre que l'utilisateur clique sur "Générer"
+        } else if (activeRapport === 'disponibilite') {
+          // Ne pas charger automatiquement
+        } else if (activeRapport === 'formations') {
+          // Ne pas charger automatiquement
+        }
+      } else if (activeTab === 'externes') {
+        if (activeRapport === 'budgetaire') {
+          const [budgetsData] = await Promise.all([
+            apiGet(tenantSlug, `/rapports/budgets?annee=${anneeSelectionnee}`)
+          ]);
+          setBudgets(budgetsData || []);
+          
+          // Charger aussi le rapport budgétaire agrégé
+          try {
+            const rapportBudg = await apiGet(tenantSlug, `/rapports/tableau-bord-budgetaire?annee=${anneeSelectionnee}`);
+            setRapportBudgetaire(rapportBudg);
+          } catch (e) {
+            console.log('Pas de données budgétaires agrégées');
+          }
+        } else if (activeRapport === 'immobilisations') {
+          const [immobData, rapportImmob] = await Promise.all([
+            apiGet(tenantSlug, '/rapports/immobilisations'),
+            apiGet(tenantSlug, '/rapports/rapport-immobilisations')
+          ]);
+          setImmobilisations(immobData || []);
+          setRapportImmobilisations(rapportImmob);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({ title: "Erreur", description: "Impossible de charger les données", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleGenererRapportSalaires = async () => {
+    setLoading(true);
+    try {
+      const params = `date_debut=${dateDebut}&date_fin=${dateFin}`;
+      const rapport = await apiGet(tenantSlug, `/rapports/couts-salariaux?${params}`);
+      setRapportSalaires(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleGenererRapportDisponibilite = async () => {
+    setLoading(true);
+    try {
+      const params = `date_debut=${dateDebut}&date_fin=${dateFin}`;
+      const rapport = await apiGet(tenantSlug, `/rapports/disponibilite?${params}`);
+      setRapportDisponibilite(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleGenererRapportFormations = async () => {
+    setLoading(true);
+    try {
+      const rapport = await apiGet(tenantSlug, `/rapports/couts-formations?annee=${anneeSelectionnee}`);
+      setRapportCoutsFormations(rapport);
+      toast({ title: "Succès", description: "Rapport généré" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de générer le rapport", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  const handleSaveBudget = async () => {
+    try {
+      await apiPost(tenantSlug, '/rapports/budgets', budgetForm);
+      toast({ title: "Succès", description: "Budget ajouté" });
+      setShowBudgetModal(false);
+      setBudgetForm({ annee: new Date().getFullYear(), categorie: 'salaires', budget_alloue: 0, notes: '' });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter le budget", variant: "destructive" });
+    }
+  };
+
+  const handleSaveImmobilisation = async () => {
+    try {
+      await apiPost(tenantSlug, '/rapports/immobilisations', immobilisationForm);
+      toast({ title: "Succès", description: "Immobilisation ajoutée" });
+      setShowImmobilisationModal(false);
+      setImmobilisationForm({ 
+        type_immobilisation: 'vehicule', 
+        nom: '', 
+        date_acquisition: new Date().toISOString().split('T')[0], 
+        cout_acquisition: 0, 
+        cout_entretien_annuel: 0, 
+        etat: 'bon', 
+        notes: '' 
+      });
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter l'immobilisation", variant: "destructive" });
+    }
+  };
+
+  const handleExportPDF = async (typeRapport) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      let url = '';
+      if (typeRapport === 'dashboard') {
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-dashboard-pdf`;
+      } else if (typeRapport === 'salaires') {
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-salaires-pdf?date_debut=${dateDebut}&date_fin=${dateFin}`;
+      } else if (typeRapport === 'budgetaire') {
+        toast({ title: "Info", description: "Export PDF Budgétaire en développement" });
+        return;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_${typeRapport}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport PDF téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter le PDF", variant: "destructive" });
+    }
+  };
+
+  const handleExportExcel = async (typeRapport) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      let url = '';
+      if (typeRapport === 'salaires') {
+        url = `${backendUrl}/api/${tenantSlug}/rapports/export-salaires-excel?date_debut=${dateDebut}&date_fin=${dateFin}`;
+      } else {
+        toast({ title: "Info", description: "Export Excel en développement pour ce rapport" });
+        return;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `rapport_${typeRapport}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({ title: "Succès", description: `Rapport Excel téléchargé` });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter l'Excel", variant: "destructive" });
+    }
+  };
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="access-denied">
+        <h1>Accès refusé</h1>
+        <p>Cette section est réservée aux administrateurs.</p>
+      </div>
+    );
+  }
+
+  if (loading) return <div className="loading">Chargement des rapports...</div>;
+
+  return (
+    <div className="module-rapports-nfpa">
+      <div className="module-header">
+        <div>
+          <h1>📈 Rapports et Analyses</h1>
+          <p>Rapports internes et externes pour la gestion et la communication</p>
+        </div>
+      </div>
+
+      {/* Onglets principaux */}
+      <div className="rapports-tabs">
+        <button 
+          className={activeTab === 'internes' ? 'active' : ''} 
+          onClick={() => { setActiveTab('internes'); setActiveRapport('dashboard'); }}
+        >
+          📊 Rapports Internes
+        </button>
+        <button 
+          className={activeTab === 'externes' ? 'active' : ''} 
+          onClick={() => { setActiveTab('externes'); setActiveRapport('budgetaire'); }}
+        >
+          📈 Rapports Externes
+        </button>
+      </div>
+
+      {/* SECTION RAPPORTS INTERNES */}
+      {activeTab === 'internes' && (
+        <div className="rapports-internes">
+          {/* Sous-navigation */}
+          <div className="rapports-sub-nav">
+            <button className={activeRapport === 'dashboard' ? 'active' : ''} onClick={() => setActiveRapport('dashboard')}>
+              📊 Dashboard
+            </button>
+            <button className={activeRapport === 'salaires' ? 'active' : ''} onClick={() => setActiveRapport('salaires')}>
+              💰 Coûts Salariaux
+            </button>
+            <button className={activeRapport === 'disponibilite' ? 'active' : ''} onClick={() => setActiveRapport('disponibilite')}>
+              📅 Disponibilité
+            </button>
+            <button className={activeRapport === 'formations' ? 'active' : ''} onClick={() => setActiveRapport('formations')}>
+              🎓 Formations
+            </button>
+          </div>
+
+          {/* Dashboard Interne */}
+          {activeRapport === 'dashboard' && dashboardData && (
+            <div className="dashboard-interne">
+              <h2>📊 Dashboard Interne - {dashboardData.periode}</h2>
+              
+              <div className="kpi-grid">
+                <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                  <h3>{dashboardData.heures_travaillees_mois}h</h3>
+                  <p>Heures travaillées ce mois</p>
+                </div>
+                <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                  <h3>${dashboardData.cout_salarial_mois.toLocaleString()}</h3>
+                  <p>Coût salarial du mois</p>
+                </div>
+                <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                  <h3>{dashboardData.pompiers_disponibles}</h3>
+                  <p>Pompiers disponibles</p>
+                </div>
+                <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                  <h3>{dashboardData.total_pompiers}</h3>
+                  <p>Total pompiers</p>
+                </div>
+              </div>
+              
+              {/* Graphiques */}
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginTop: '2rem'}}>
+                {/* Graphique Donut - Disponibilité */}
+                <div style={{background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                  <h3 style={{marginBottom: '1rem'}}>Disponibilité du Personnel</h3>
+                  <Chart
+                    options={{
+                      chart: { type: 'donut' },
+                      labels: ['Disponibles', 'Non disponibles'],
+                      colors: ['#10B981', '#EF4444'],
+                      legend: { position: 'bottom' },
+                      dataLabels: { enabled: true },
+                      plotOptions: {
+                        pie: {
+                          donut: {
+                            labels: {
+                              show: true,
+                              total: {
+                                show: true,
+                                label: 'Total',
+                                formatter: () => dashboardData.total_pompiers
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    series={[dashboardData.pompiers_disponibles, dashboardData.total_pompiers - dashboardData.pompiers_disponibles]}
+                    type="donut"
+                    height={300}
+                  />
+                </div>
+
+                {/* Graphique Barres - Coûts */}
+                <div style={{background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                  <h3 style={{marginBottom: '1rem'}}>Évolution Coûts Mensuels</h3>
+                  <Chart
+                    options={{
+                      chart: { type: 'bar' },
+                      xaxis: { categories: ['Janv', 'Févr', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil', 'Août', 'Sept'] },
+                      colors: ['#FCA5A5'],
+                      plotOptions: {
+                        bar: {
+                          borderRadius: 8,
+                          dataLabels: { position: 'top' }
+                        }
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        formatter: (val) => `$${Math.round(val/1000)}k`,
+                        offsetY: -20,
+                        style: { fontSize: '12px', colors: ['#6B7280'] }
+                      }
+                    }}
+                    series={[{
+                      name: 'Coûts',
+                      data: [25000, 28000, 30000, 27000, 29000, 31000, 32000, 30000, dashboardData.cout_salarial_mois]
+                    }]}
+                    type="bar"
+                    height={300}
+                  />
+                </div>
+              </div>
+              
+              <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                <Button onClick={() => handleExportPDF('dashboard')}>📄 Export PDF</Button>
+                <Button variant="outline" onClick={() => handleExportExcel('dashboard')}>📊 Export Excel</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Rapport Coûts Salariaux */}
+          {activeRapport === 'salaires' && (
+            <div className="rapport-salaires">
+              <h2>💰 Rapport de Coûts Salariaux Détaillés</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Date début</Label>
+                  <Input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Date fin</Label>
+                  <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={handleGenererRapportSalaires}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              {rapportSalaires ? (
+                <div>
+                  {/* Résumé */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportSalaires.cout_total.toLocaleString()}</h3>
+                      <p>Coût Total</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportSalaires.nombre_employes}</h3>
+                      <p>Employés</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>
+                        {rapportSalaires.employes.reduce((sum, e) => sum + e.heures_travaillees, 0)}h
+                      </h3>
+                      <p>Total Heures</p>
+                    </div>
+                  </div>
+
+                  {/* Tableau détaillé */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Nom</div>
+                      <div className="header-cell">Matricule</div>
+                      <div className="header-cell">Type</div>
+                      <div className="header-cell">Heures</div>
+                      <div className="header-cell">Taux/h</div>
+                      <div className="header-cell">Coût Total</div>
+                    </div>
+                    {rapportSalaires.employes.map((emp, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{emp.nom}</div>
+                        <div className="table-cell">{emp.matricule}</div>
+                        <div className="table-cell">
+                          <span className={`badge ${emp.type_emploi}`}>
+                            {emp.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                          </span>
+                        </div>
+                        <div className="table-cell">{emp.heures_travaillees}h</div>
+                        <div className="table-cell">${emp.taux_horaire}/h</div>
+                        <div className="table-cell" style={{fontWeight: 'bold', color: '#DC2626'}}>
+                          ${emp.cout_total.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Exports */}
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('salaires')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('salaires')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Rapport Disponibilité */}
+          {activeRapport === 'disponibilite' && (
+            <div className="rapport-disponibilite">
+              <h2>📅 Rapport de Disponibilité/Indisponibilité</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Date début</Label>
+                  <Input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Date fin</Label>
+                  <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={handleGenererRapportDisponibilite}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              {rapportDisponibilite ? (
+                <div>
+                  {/* Résumé avec graphique */}
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem'}}>
+                    <div>
+                      <div className="kpi-grid" style={{gridTemplateColumns: '1fr 1fr'}}>
+                        <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                          <h3>{rapportDisponibilite.total_jours_disponibles}</h3>
+                          <p>Jours Disponibles</p>
+                        </div>
+                        <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                          <h3>{rapportDisponibilite.total_jours_indisponibles}</h3>
+                          <p>Jours Indisponibles</p>
+                        </div>
+                        <div className="kpi-card" style={{background: '#DBEAFE', gridColumn: 'span 2'}}>
+                          <h3>{rapportDisponibilite.taux_disponibilite_global}%</h3>
+                          <p>Taux de Disponibilité Global</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                      <Chart
+                        options={{
+                          chart: { type: 'pie' },
+                          labels: ['Disponibles', 'Indisponibles'],
+                          colors: ['#10B981', '#EF4444'],
+                          legend: { position: 'bottom' }
+                        }}
+                        series={[rapportDisponibilite.total_jours_disponibles, rapportDisponibilite.total_jours_indisponibles]}
+                        type="pie"
+                        height={250}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tableau par employé */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Nom</div>
+                      <div className="header-cell">Grade</div>
+                      <div className="header-cell">Jours Dispo.</div>
+                      <div className="header-cell">Jours Indispo.</div>
+                      <div className="header-cell">Taux %</div>
+                      <div className="header-cell">Motifs</div>
+                    </div>
+                    {rapportDisponibilite.employes.map((emp, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{emp.nom}</div>
+                        <div className="table-cell">{emp.grade}</div>
+                        <div className="table-cell" style={{color: '#10B981', fontWeight: 'bold'}}>{emp.jours_disponibles}</div>
+                        <div className="table-cell" style={{color: '#EF4444', fontWeight: 'bold'}}>{emp.jours_indisponibles}</div>
+                        <div className="table-cell">{emp.taux_disponibilite}%</div>
+                        <div className="table-cell" style={{fontSize: '0.85rem'}}>
+                          {Object.entries(emp.motifs_indisponibilite).map(([motif, count]) => (
+                            <span key={motif} style={{display: 'block'}}>{motif}: {count}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('disponibilite')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('disponibilite')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une période et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rapport Coûts Formations */}
+          {activeRapport === 'formations' && (
+            <div className="rapport-formations">
+              <h2>🎓 Rapport de Coûts de Formation</h2>
+              
+              <div className="filtres-grid" style={{marginBottom: '2rem'}}>
+                <div>
+                  <Label>Année</Label>
+                  <select 
+                    className="form-select" 
+                    value={anneeSelectionnee} 
+                    onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}
+                  >
+                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div style={{display: 'flex', alignItems: 'end'}}>
+                  <Button onClick={handleGenererRapportFormations}>Générer le rapport</Button>
+                </div>
+              </div>
+
+              {rapportCoutsFormations ? (
+                <div>
+                  {/* KPIs */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportCoutsFormations.cout_total.toLocaleString()}</h3>
+                      <p>Coût Total</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportCoutsFormations.nombre_formations}</h3>
+                      <p>Formations</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>{rapportCoutsFormations.nombre_total_participants}</h3>
+                      <p>Participants</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                      <h3>{rapportCoutsFormations.heures_totales}h</h3>
+                      <p>Heures Totales</p>
+                    </div>
+                  </div>
+
+                  {/* Tableau formations */}
+                  <div className="salaires-table">
+                    <div className="table-header">
+                      <div className="header-cell">Formation</div>
+                      <div className="header-cell">Date</div>
+                      <div className="header-cell">Durée</div>
+                      <div className="header-cell">Participants</div>
+                      <div className="header-cell">Coût Formation</div>
+                      <div className="header-cell">Coût Salarial</div>
+                    </div>
+                    {rapportCoutsFormations.formations.map((formation, idx) => (
+                      <div key={idx} className="table-row">
+                        <div className="table-cell">{formation.nom_formation}</div>
+                        <div className="table-cell">{new Date(formation.date).toLocaleDateString('fr-FR')}</div>
+                        <div className="table-cell">{formation.duree_heures}h</div>
+                        <div className="table-cell">{formation.nombre_participants}</div>
+                        <div className="table-cell">${formation.cout_formation.toLocaleString()}</div>
+                        <div className="table-cell" style={{fontWeight: 'bold', color: '#DC2626'}}>
+                          ${formation.cout_total.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('formations')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('formations')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Sélectionnez une année et cliquez sur "Générer le rapport"</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SECTION RAPPORTS EXTERNES */}
+      {activeTab === 'externes' && (
+        <div className="rapports-externes">
+          {/* Sous-navigation */}
+          <div className="rapports-sub-nav">
+            <button className={activeRapport === 'budgetaire' ? 'active' : ''} onClick={() => setActiveRapport('budgetaire')}>
+              💰 Tableau Budgétaire
+            </button>
+            <button className={activeRapport === 'immobilisations' ? 'active' : ''} onClick={() => setActiveRapport('immobilisations')}>
+              🚒 Immobilisations
+            </button>
+          </div>
+
+          {/* Tableau de Bord Budgétaire */}
+          {activeRapport === 'budgetaire' && (
+            <div className="rapport-budgetaire">
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                <h2>💰 Tableau de Bord Budgétaire - {anneeSelectionnee}</h2>
+                <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+                  <select 
+                    className="form-select" 
+                    value={anneeSelectionnee} 
+                    onChange={e => setAnneeSelectionnee(parseInt(e.target.value))}
+                  >
+                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <Button onClick={() => setShowBudgetModal(true)}>➕ Ajouter Budget</Button>
+                </div>
+              </div>
+
+              {budgets.length > 0 ? (
+                <div>
+                  <div className="budgets-grid">
+                    {budgets.map(budget => {
+                      const pourcentage = budget.budget_alloue > 0 ? (budget.budget_consomme / budget.budget_alloue * 100) : 0;
+                      return (
+                        <div key={budget.id} className="budget-card">
+                          <h3>{budget.categorie}</h3>
+                          <div className="budget-montants">
+                            <div>
+                              <p className="budget-label">Alloué</p>
+                              <p className="budget-value">${budget.budget_alloue.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="budget-label">Consommé</p>
+                              <p className="budget-value">${budget.budget_consomme.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="budget-bar">
+                            <div 
+                              className="budget-progress" 
+                              style={{
+                                width: `${Math.min(pourcentage, 100)}%`,
+                                background: pourcentage > 90 ? '#EF4444' : pourcentage > 75 ? '#F59E0B' : '#10B981'
+                              }}
+                            />
+                          </div>
+                          <p style={{fontSize: '0.9rem', color: '#6B7280', marginTop: '0.5rem'}}>
+                            {pourcentage.toFixed(1)}% utilisé
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Graphique Budget Global */}
+                  {rapportBudgetaire && (
+                    <div style={{marginTop: '2rem', background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E5E7EB'}}>
+                      <h3 style={{marginBottom: '1rem'}}>Vue d'ensemble Budgétaire - {anneeSelectionnee}</h3>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem'}}>
+                        <div>
+                          <Chart
+                            options={{
+                              chart: { type: 'donut' },
+                              labels: rapportBudgetaire.par_categorie.map(b => b.categorie),
+                              colors: ['#FCA5A5', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'],
+                              legend: { position: 'bottom' },
+                              plotOptions: {
+                                pie: {
+                                  donut: {
+                                    labels: {
+                                      show: true,
+                                      total: {
+                                        show: true,
+                                        label: 'Total Alloué',
+                                        formatter: () => `$${(rapportBudgetaire.budget_total_alloue/1000).toFixed(0)}k`
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                            series={rapportBudgetaire.par_categorie.map(b => b.budget_alloue)}
+                            type="donut"
+                            height={300}
+                          />
+                        </div>
+                        <div>
+                          <div className="kpi-grid" style={{gridTemplateColumns: '1fr 1fr'}}>
+                            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                              <h3>${rapportBudgetaire.budget_total_alloue.toLocaleString()}</h3>
+                              <p>Budget Alloué</p>
+                            </div>
+                            <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                              <h3>${rapportBudgetaire.budget_total_consomme.toLocaleString()}</h3>
+                              <p>Budget Consommé</p>
+                            </div>
+                            <div className="kpi-card" style={{background: '#D1FAE5', gridColumn: 'span 2'}}>
+                              <h3>{rapportBudgetaire.pourcentage_global}%</h3>
+                              <p>Taux d'utilisation global</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('budgetaire')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('budgetaire')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Aucun budget pour {anneeSelectionnee}. Cliquez sur "Ajouter Budget" pour commencer.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Immobilisations */}
+          {activeRapport === 'immobilisations' && (
+            <div className="rapport-immobilisations">
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                <h2>🚒 Rapport sur les Immobilisations</h2>
+                <Button onClick={() => setShowImmobilisationModal(true)}>➕ Ajouter Immobilisation</Button>
+              </div>
+
+              {rapportImmobilisations ? (
+                <div>
+                  {/* Statistiques globales */}
+                  <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+                    <div className="kpi-card" style={{background: '#FEF3C7'}}>
+                      <h3>{rapportImmobilisations.statistiques.nombre_vehicules}</h3>
+                      <p>Véhicules</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#D1FAE5'}}>
+                      <h3>{rapportImmobilisations.statistiques.nombre_equipements}</h3>
+                      <p>Équipements</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#FCA5A5'}}>
+                      <h3>${rapportImmobilisations.statistiques.cout_acquisition_total.toLocaleString()}</h3>
+                      <p>Coût Acquisition</p>
+                    </div>
+                    <div className="kpi-card" style={{background: '#DBEAFE'}}>
+                      <h3>${rapportImmobilisations.statistiques.cout_entretien_annuel_total.toLocaleString()}</h3>
+                      <p>Entretien Annuel</p>
+                    </div>
+                  </div>
+
+                  {/* Véhicules */}
+                  {rapportImmobilisations.vehicules.length > 0 && (
+                    <div style={{marginBottom: '2rem'}}>
+                      <h3 style={{marginBottom: '1rem'}}>🚒 Véhicules (Âge moyen: {rapportImmobilisations.statistiques.age_moyen_vehicules} ans)</h3>
+                      <div className="immobilisations-grid">
+                        {rapportImmobilisations.vehicules.map(vehicule => (
+                          <div key={vehicule.id} className="immobilisation-card">
+                            <h4>{vehicule.nom}</h4>
+                            <div className="immobilisation-details">
+                              <p><strong>Acquisition:</strong> {new Date(vehicule.date_acquisition).toLocaleDateString('fr-FR')}</p>
+                              <p><strong>Âge:</strong> {vehicule.age_annees} ans</p>
+                              <p><strong>État:</strong> <span className={`badge ${vehicule.etat}`}>{vehicule.etat}</span></p>
+                              <p><strong>Coût:</strong> ${vehicule.cout_acquisition.toLocaleString()}</p>
+                              <p><strong>Entretien:</strong> ${vehicule.cout_entretien_annuel.toLocaleString()}/an</p>
+                              {vehicule.date_remplacement_prevue && (
+                                <p><strong>Remplacement prévu:</strong> {new Date(vehicule.date_remplacement_prevue).toLocaleDateString('fr-FR')}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Équipements */}
+                  {rapportImmobilisations.equipements.length > 0 && (
+                    <div>
+                      <h3 style={{marginBottom: '1rem'}}>🔧 Équipements (Âge moyen: {rapportImmobilisations.statistiques.age_moyen_equipements} ans)</h3>
+                      <div className="immobilisations-grid">
+                        {rapportImmobilisations.equipements.map(equip => (
+                          <div key={equip.id} className="immobilisation-card">
+                            <h4>{equip.nom}</h4>
+                            <div className="immobilisation-details">
+                              <p><strong>Acquisition:</strong> {new Date(equip.date_acquisition).toLocaleDateString('fr-FR')}</p>
+                              <p><strong>Âge:</strong> {equip.age_annees} ans</p>
+                              <p><strong>État:</strong> <span className={`badge ${equip.etat}`}>{equip.etat}</span></p>
+                              <p><strong>Coût:</strong> ${equip.cout_acquisition.toLocaleString()}</p>
+                              <p><strong>Entretien:</strong> ${equip.cout_entretien_annuel.toLocaleString()}/an</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{marginTop: '2rem', display: 'flex', gap: '1rem'}}>
+                    <Button onClick={() => handleExportPDF('immobilisations')}>📄 Export PDF</Button>
+                    <Button variant="outline" onClick={() => handleExportExcel('immobilisations')}>📊 Export Excel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>Aucune immobilisation. Cliquez sur "Ajouter Immobilisation" pour commencer.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal Budget */}
+      {showBudgetModal && (
+        <div className="modal-overlay" onClick={() => setShowBudgetModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Ajouter un Budget</h2>
+              <Button variant="ghost" onClick={() => setShowBudgetModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Année</Label>
+                  <Input type="number" value={budgetForm.annee} onChange={e => setBudgetForm({...budgetForm, annee: parseInt(e.target.value)})} />
+                </div>
+                <div>
+                  <Label>Catégorie</Label>
+                  <select 
+                    className="form-select" 
+                    value={budgetForm.categorie} 
+                    onChange={e => setBudgetForm({...budgetForm, categorie: e.target.value})}
+                  >
+                    <option value="salaires">Salaires</option>
+                    <option value="formations">Formations</option>
+                    <option value="equipements">Équipements</option>
+                    <option value="carburant">Carburant</option>
+                    <option value="entretien">Entretien</option>
+                    <option value="autres">Autres</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Budget Alloué ($)</Label>
+                  <Input type="number" value={budgetForm.budget_alloue} onChange={e => setBudgetForm({...budgetForm, budget_alloue: parseFloat(e.target.value)})} />
+                </div>
+                <div>
+                  <Label>Notes</Label>
+                  <Input value={budgetForm.notes} onChange={e => setBudgetForm({...budgetForm, notes: e.target.value})} />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowBudgetModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveBudget}>Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Immobilisation */}
+      {showImmobilisationModal && (
+        <div className="modal-overlay" onClick={() => setShowImmobilisationModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Ajouter une Immobilisation</h2>
+              <Button variant="ghost" onClick={() => setShowImmobilisationModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label>Type</Label>
+                  <select 
+                    className="form-select" 
+                    value={immobilisationForm.type_immobilisation} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, type_immobilisation: e.target.value})}
+                  >
+                    <option value="vehicule">Véhicule</option>
+                    <option value="equipement_majeur">Équipement Majeur</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Nom</Label>
+                  <Input 
+                    value={immobilisationForm.nom} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, nom: e.target.value})} 
+                    placeholder="Ex: Camion-citerne 2024"
+                  />
+                </div>
+                <div>
+                  <Label>Date d'acquisition</Label>
+                  <Input 
+                    type="date" 
+                    value={immobilisationForm.date_acquisition} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, date_acquisition: e.target.value})} 
+                  />
+                </div>
+                <div>
+                  <Label>Coût d'acquisition ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={immobilisationForm.cout_acquisition} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, cout_acquisition: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>Coût entretien annuel ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={immobilisationForm.cout_entretien_annuel} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, cout_entretien_annuel: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>État</Label>
+                  <select 
+                    className="form-select" 
+                    value={immobilisationForm.etat} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, etat: e.target.value})}
+                  >
+                    <option value="bon">Bon</option>
+                    <option value="moyen">Moyen</option>
+                    <option value="mauvais">Mauvais</option>
+                  </select>
+                </div>
+                <div style={{gridColumn: 'span 2'}}>
+                  <Label>Notes</Label>
+                  <Input 
+                    value={immobilisationForm.notes} 
+                    onChange={e => setImmobilisationForm({...immobilisationForm, notes: e.target.value})} 
+                    placeholder="Notes additionnelles..."
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowImmobilisationModal(false)}>Annuler</Button>
+              <Button onClick={handleSaveImmobilisation}>Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Import Bâtiments Component - Support CSV, Excel et HTML
+const ImportBatiments = ({ onImportComplete }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [step, setStep] = useState(1); // 1: Upload, 2: Mapping, 3: Preview, 4: Conflicts, 5: Import
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileType, setFileType] = useState(null); // 'csv', 'excel', 'html'
+  const [csvData, setCsvData] = useState([]);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [defaultValues, setDefaultValues] = useState({}); // Valeurs par défaut pour saisie de masse
+  const [previewData, setPreviewData] = useState([]);
+  const [conflicts, setConflicts] = useState([]); // Doublons détectés
+  const [conflictResolutions, setConflictResolutions] = useState({}); // Actions choisies par l'utilisateur
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState(null);
+  const [showFieldEditor, setShowFieldEditor] = useState(false);
+  const [existingBatiments, setExistingBatiments] = useState([]); // Pour la détection de doublons
+
+  // Champs par défaut
+  const defaultFields = [
+    { key: 'nom_etablissement', label: 'Nom établissement', required: true },
+    { key: 'adresse_civique', label: 'Adresse civique', required: true },
+    { key: 'ville', label: 'Ville', required: false },
+    { key: 'code_postal', label: 'Code postal', required: false },
+    { key: 'cadastre_matricule', label: 'Cadastre/Matricule', required: false },
+    { key: 'proprietaire_nom', label: 'Propriétaire - Nom', required: false },
+    { key: 'proprietaire_telephone', label: 'Propriétaire - Téléphone', required: false },
+    { key: 'proprietaire_courriel', label: 'Propriétaire - Courriel', required: false },
+    { key: 'gerant_nom', label: 'Gérant - Nom', required: false },
+    { key: 'gerant_telephone', label: 'Gérant - Téléphone', required: false },
+    { key: 'gerant_courriel', label: 'Gérant - Courriel', required: false },
+    { key: 'groupe_occupation', label: 'Groupe occupation (C,E,F,I...)', required: false },
+    { key: 'description_activite', label: 'Description activité', required: false },
+    { key: 'notes_generales', label: 'Notes générales', required: false }
+  ];
+
+  // Charger les champs personnalisés depuis le localStorage ou utiliser les champs par défaut
+  const [availableFields, setAvailableFields] = useState(() => {
+    const savedFields = localStorage.getItem(`${tenantSlug}_import_fields`);
+    if (savedFields) {
+      const fields = JSON.parse(savedFields);
+      // Migration automatique: remplacer numero_lot_cadastre par cadastre_matricule
+      const migratedFields = fields.map(field => {
+        if (field.key === 'numero_lot_cadastre') {
+          return { ...field, key: 'cadastre_matricule', label: 'Cadastre/Matricule' };
+        }
+        return field;
+      });
+      // Sauvegarder la version migrée
+      localStorage.setItem(`${tenantSlug}_import_fields`, JSON.stringify(migratedFields));
+      return migratedFields;
+    }
+    return defaultFields;
+  });
+
+  // Sauvegarder les champs personnalisés
+  const saveCustomFields = (fields) => {
+    localStorage.setItem(`${tenantSlug}_import_fields`, JSON.stringify(fields));
+    setAvailableFields(fields);
+    toast({
+      title: "Champs sauvegardés",
+      description: "Vos champs personnalisés ont été enregistrés"
+    });
+  };
+
+  // Réinitialiser aux champs par défaut
+  const resetToDefaultFields = () => {
+    localStorage.removeItem(`${tenantSlug}_import_fields`);
+    setAvailableFields(defaultFields);
+    toast({
+      title: "Réinitialisation",
+      description: "Les champs ont été réinitialisés aux valeurs par défaut"
+    });
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!['csv', 'xlsx', 'xls', 'html', 'htm'].includes(fileExtension)) {
+      toast({
+        title: "Format non supporté",
+        description: "Formats acceptés : CSV, Excel (.xlsx, .xls) et HTML (.html, .htm)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadedFile(file);
+    setFileType(fileExtension === 'html' || fileExtension === 'htm' ? 'html' : fileExtension === 'csv' ? 'csv' : 'excel');
+    
+    if (fileExtension === 'html' || fileExtension === 'htm') {
+      parseHTML(file);
+    } else {
+      parseCSV(file);
+    }
+  };
+
+  const parseHTML = async (file) => {
+    try {
+      const text = await file.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/html');
+      
+      // Chercher le premier tableau
+      const table = doc.querySelector('table');
+      if (!table) {
+        throw new Error("Aucun tableau HTML trouvé dans le fichier");
+      }
+      
+      // Extraire les en-têtes
+      const headerRow = table.querySelector('thead tr, tr:first-child');
+      if (!headerRow) {
+        throw new Error("Aucune ligne d'en-tête trouvée");
+      }
+      
+      const headers = Array.from(headerRow.querySelectorAll('th, td')).map(cell => cell.textContent.trim());
+      setCsvHeaders(headers);
+      
+      // Extraire les données
+      const rows = Array.from(table.querySelectorAll('tbody tr, tr')).slice(headers.length > 0 ? 1 : 0);
+      const data = rows.map((row, index) => {
+        const cells = Array.from(row.querySelectorAll('td, th'));
+        const rowData = { _index: index };
+        headers.forEach((header, i) => {
+          rowData[header] = cells[i] ? cells[i].textContent.trim() : '';
+        });
+        return rowData;
+      });
+      
+      setCsvData(data);
+      setStep(2);
+      
+      toast({
+        title: "Fichier HTML analysé",
+        description: `${data.length} ligne(s) détectée(s) avec ${headers.length} colonne(s)`
+      });
+      
+    } catch (error) {
+      console.error('Erreur parsing HTML:', error);
+      toast({
+        title: "Erreur d'analyse HTML",
+        description: error.message || "Impossible d'analyser le fichier HTML",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const parseCSV = async (file) => {
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length < 2) {
+        throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
+      }
+
+      // Parse headers (première ligne)
+      const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
+      setCsvHeaders(headers);
+
+      // Parse data (lignes suivantes)
+      const data = lines.slice(1).map((line, index) => {
+        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const row = { _index: index };
+        headers.forEach((header, i) => {
+          row[header] = values[i] || '';
+        });
+        return row;
+      });
+
+      setCsvData(data);
+      setStep(2); // Passer au mapping
+      
+      toast({
+        title: "Fichier analysé",
+        description: `${data.length} ligne(s) détectée(s) avec ${headers.length} colonne(s)`
+      });
+
+    } catch (error) {
+      console.error('Erreur parsing CSV:', error);
+      toast({
+        title: "Erreur d'analyse",
+        description: error.message || "Impossible d'analyser le fichier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleColumnMapping = (csvColumn, fieldKey) => {
+    setColumnMapping(prev => ({
+      ...prev,
+      [fieldKey]: csvColumn
+    }));
+  };
+
+  const handleDefaultValue = (fieldKey, value) => {
+    setDefaultValues(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
+  };
+
+  const generatePreview = () => {
+    const preview = csvData.slice(0, 5).map(row => {
+      const mapped = {};
+      availableFields.forEach(field => {
+        // Priorité 1: Valeur par défaut (écrase tout)
+        if (defaultValues[field.key]) {
+          mapped[field.key] = defaultValues[field.key];
+        } 
+        // Priorité 2: Valeur du CSV
+        else {
+          const csvColumn = columnMapping[field.key];
+          mapped[field.key] = csvColumn ? row[csvColumn] : '';
+        }
+      });
+      return mapped;
+    });
+    setPreviewData(preview);
+    setStep(3);
+  };
+
+  // Détecter les doublons avant import
+  const detectConflicts = async () => {
+    try {
+      // Récupérer tous les bâtiments existants
+      const existingData = await apiGet(tenantSlug, '/prevention/batiments');
+      setExistingBatiments(existingData);
+      
+      // Mapper toutes les données CSV
+      const allMappedData = csvData.map(row => {
+        const mapped = {};
+        availableFields.forEach(field => {
+          if (defaultValues[field.key]) {
+            mapped[field.key] = defaultValues[field.key];
+          } else {
+            const csvColumn = columnMapping[field.key];
+            mapped[field.key] = csvColumn ? row[csvColumn] : '';
+          }
+        });
+        return mapped;
+      });
+      
+      // Détecter les conflits (adresse, matricule, cadastre)
+      const detectedConflicts = [];
+      allMappedData.forEach((newBat, index) => {
+        const duplicates = existingData.filter(existing => {
+          // Vérifier adresse
+          const sameAddress = existing.adresse_civique && newBat.adresse_civique && 
+            existing.adresse_civique.toLowerCase().trim() === newBat.adresse_civique.toLowerCase().trim();
+          
+          // Vérifier cadastre/matricule
+          const sameCadastre = existing.cadastre_matricule && newBat.cadastre_matricule &&
+            existing.cadastre_matricule.toLowerCase().trim() === newBat.cadastre_matricule.toLowerCase().trim();
+          
+          return sameAddress || sameCadastre;
+        });
+        
+        if (duplicates.length > 0) {
+          detectedConflicts.push({
+            index,
+            newData: newBat,
+            existing: duplicates[0], // Prendre le premier doublon
+            reasons: [
+              duplicates[0].adresse_civique === newBat.adresse_civique && 'Même adresse',
+              duplicates[0].cadastre_matricule === newBat.cadastre_matricule && 'Même cadastre'
+            ].filter(Boolean)
+          });
+        }
+      });
+      
+      if (detectedConflicts.length > 0) {
+        setConflicts(detectedConflicts);
+        // Initialiser les résolutions à "ignorer" par défaut
+        const initialResolutions = {};
+        detectedConflicts.forEach(c => {
+          initialResolutions[c.index] = 'ignorer';
+        });
+        setConflictResolutions(initialResolutions);
+        setStep(4); // Étape de résolution des conflits
+        
+        toast({
+          title: "⚠️ Doublons détectés",
+          description: `${detectedConflicts.length} conflit(s) trouvé(s). Veuillez choisir une action.`,
+          variant: "warning"
+        });
+      } else {
+        // Pas de conflits, passer directement à l'import
+        proceedWithImport();
+      }
+      
+    } catch (error) {
+      console.error('Erreur détection conflits:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de vérifier les doublons",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const validateMapping = () => {
+    const requiredFields = availableFields.filter(f => f.required);
+    const missingFields = requiredFields.filter(f => 
+      !columnMapping[f.key] && !defaultValues[f.key] // Valide si colonne CSV OU valeur par défaut
+    );
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Champs requis manquants",
+        description: `Veuillez mapper ou définir une valeur par défaut pour: ${missingFields.map(f => f.label).join(', ')}`,
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleImport = async () => {
+    if (!validateMapping()) return;
+
+    setImporting(true);
+    try {
+      const mappedData = csvData.map(row => {
+        const batiment = {};
+        availableFields.forEach(field => {
+          // Priorité 1: Valeur par défaut (saisie de masse écrase tout)
+          if (defaultValues[field.key]) {
+            batiment[field.key] = defaultValues[field.key];
+          }
+          // Priorité 2: Valeur du CSV
+          else {
+            const csvColumn = columnMapping[field.key];
+            batiment[field.key] = csvColumn ? (row[csvColumn] || '') : '';
+          }
+        });
+        return batiment;
+      });
+
+      // Extraire les champs requis personnalisés
+      const requiredFields = availableFields
+        .filter(f => f.required)
+        .map(f => ({ key: f.key, label: f.label }));
+
+      const response = await apiPost(tenantSlug, '/prevention/batiments/import-csv', {
+        batiments: mappedData,
+        required_fields: requiredFields  // Envoyer les champs requis
+      });
+
+      setImportResults(response);
+      setStep(4);
+
+      toast({
+        title: "Import terminé",
+        description: `${response.success_count} bâtiment(s) importé(s) avec succès`
+      });
+
+    } catch (error) {
+      console.error('Erreur import:', error);
+      toast({
+        title: "Erreur d'import",
+        description: error.message || "Une erreur s'est produite lors de l'import",
+        variant: "destructive"
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Composant éditeur de champs
+  const FieldEditor = () => {
+    const [editingFields, setEditingFields] = useState([...availableFields]);
+    const [newField, setNewField] = useState({ key: '', label: '', required: false });
+
+    const addField = () => {
+      if (!newField.key || !newField.label) {
+        toast({
+          title: "Validation",
+          description: "Veuillez remplir la clé et le label du champ",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Vérifier que la clé n'existe pas déjà
+      if (editingFields.some(f => f.key === newField.key)) {
+        toast({
+          title: "Erreur",
+          description: "Un champ avec cette clé existe déjà",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setEditingFields([...editingFields, { ...newField }]);
+      setNewField({ key: '', label: '', required: false });
+    };
+
+    const removeField = (key) => {
+      setEditingFields(editingFields.filter(f => f.key !== key));
+    };
+
+    const updateField = (key, updates) => {
+      setEditingFields(editingFields.map(f => 
+        f.key === key ? { ...f, ...updates } : f
+      ));
+    };
+
+    const handleSave = () => {
+      if (editingFields.length === 0) {
+        toast({
+          title: "Erreur",
+          description: "Vous devez avoir au moins un champ",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      saveCustomFields(editingFields);
+      setShowFieldEditor(false);
+    };
+
+    return (
+      <div className="field-editor-overlay">
+        <div className="field-editor-modal">
+          <div className="modal-header">
+            <h3>⚙️ Personnaliser les champs d'import</h3>
+            <button 
+              className="close-btn" 
+              onClick={() => setShowFieldEditor(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="modal-content">
+            {/* Liste des champs existants */}
+            <div className="existing-fields">
+              <h4>Champs actuels ({editingFields.length})</h4>
+              <p className="helper-text">💡 Cochez "Obligatoire" pour les champs qui doivent absolument être remplis lors de l'import.</p>
+              <div className="fields-list">
+                {editingFields.map((field, index) => (
+                  <div key={field.key} className={`field-item ${field.required ? 'required-field-item' : ''}`}>
+                    <div className="field-number">{index + 1}</div>
+                    <div className="field-details">
+                      <input
+                        type="text"
+                        value={field.label}
+                        onChange={(e) => updateField(field.key, { label: e.target.value })}
+                        placeholder="Label du champ"
+                        className="field-label-input"
+                      />
+                      <code className="field-key">{field.key}</code>
+                    </div>
+                    <label className={`field-required-toggle ${field.required ? 'required-active' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) => updateField(field.key, { required: e.target.checked })}
+                      />
+                      <span className="toggle-text">
+                        {field.required ? '✅ Obligatoire' : '⚪ Optionnel'}
+                      </span>
+                    </label>
+                    <button
+                      onClick={() => removeField(field.key)}
+                      className="remove-field-btn"
+                      title="Supprimer ce champ"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Ajouter un nouveau champ */}
+            <div className="add-field-section">
+              <h4>➕ Ajouter un nouveau champ</h4>
+              <div className="add-field-form">
+                <div className="add-field-inputs">
+                  <input
+                    type="text"
+                    value={newField.key}
+                    onChange={(e) => setNewField({ ...newField, key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                    placeholder="Clé (ex: contact_urgence)"
+                    className="field-key-input"
+                  />
+                  <input
+                    type="text"
+                    value={newField.label}
+                    onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+                    placeholder="Label (ex: Contact d'urgence)"
+                    className="field-label-input"
+                  />
+                </div>
+                <label className={`field-required-toggle ${newField.required ? 'required-active' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={newField.required}
+                    onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
+                  />
+                  <span className="toggle-text">
+                    {newField.required ? '✅ Obligatoire' : '⚪ Optionnel'}
+                  </span>
+                </label>
+                <Button size="sm" onClick={addField}>
+                  ➕ Ajouter
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <Button 
+              variant="outline" 
+              onClick={resetToDefaultFields}
+            >
+              🔄 Réinitialiser par défaut
+            </Button>
+            <div className="footer-actions">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFieldEditor(false)}
+              >
+                Annuler
+              </Button>
+              <Button onClick={handleSave}>
+                💾 Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>📁 Étape 1: Sélectionner le fichier</h3>
+              <p>Choisissez votre fichier CSV ou Excel contenant les données des bâtiments</p>
+            </div>
+
+            <div className="file-upload-area">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+                id="csv-upload"
+              />
+              <label htmlFor="csv-upload" className="file-upload-label">
+                <div className="upload-icon">📄</div>
+                <div className="upload-text">
+                  <strong>Cliquer pour sélectionner</strong> ou glisser votre fichier ici
+                  <br />
+                  <small>Formats acceptés: .csv, .xlsx, .xls</small>
+                </div>
+              </label>
+            </div>
+
+            <div className="import-tips">
+              <h4>💡 Conseils pour un import réussi:</h4>
+              <ul>
+                <li>La première ligne doit contenir les en-têtes de colonnes</li>
+                <li>Utilisez des noms de colonnes clairs (ex: "Nom", "Adresse", "Ville")</li>
+                <li>Les champs requis: Nom établissement, Adresse civique</li>
+                <li>Encodage recommandé: UTF-8</li>
+                <li><strong>💾 Nouveau:</strong> Vous pourrez définir des valeurs par défaut pour tous les bâtiments (ex: même ville pour tous)</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>🔗 Étape 2: Correspondance des colonnes</h3>
+              <p>Associez les colonnes de votre fichier aux champs du système</p>
+            </div>
+
+            <div className="mapping-container">
+              <div className="mapping-header">
+                <div className="file-info">
+                  📊 <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => setShowFieldEditor(true)}
+                >
+                  ⚙️ Personnaliser les champs
+                </Button>
+              </div>
+
+              <div className="mapping-info-box">
+                <p>💡 <strong>Astuce:</strong> Utilisez la colonne "Valeur par défaut" pour appliquer une même valeur à toutes les lignes importées. Par exemple, si tous vos bâtiments sont dans la même ville, entrez le nom de la ville dans "Valeur par défaut" au lieu de l'ajouter dans le CSV.</p>
+                <p><small>⚠️ La valeur par défaut écrase toujours les données du CSV si les deux sont renseignés.</small></p>
+              </div>
+
+              <div className="mapping-table">
+                <div className="mapping-row header">
+                  <div className="field-column">Champ système</div>
+                  <div className="arrow-column">➡️</div>
+                  <div className="csv-column">Colonne CSV</div>
+                  <div className="default-value-column">💾 Valeur par défaut (saisie de masse)</div>
+                  <div className="preview-column">Aperçu données</div>
+                </div>
+
+                {availableFields.map(field => (
+                  <div key={field.key} className="mapping-row">
+                    <div className="field-column">
+                      <span className={field.required ? 'required-field' : 'optional-field'}>
+                        {field.label}
+                        {field.required && <span className="required-star"> *</span>}
+                      </span>
+                    </div>
+                    <div className="arrow-column">➡️</div>
+                    <div className="csv-column">
+                      <select
+                        value={columnMapping[field.key] || ''}
+                        onChange={(e) => handleColumnMapping(e.target.value, field.key)}
+                        className="mapping-select"
+                        disabled={!!defaultValues[field.key]}
+                      >
+                        <option value="">-- Sélectionner une colonne --</option>
+                        {csvHeaders.map(header => (
+                          <option key={header} value={header}>{header}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="default-value-column">
+                      <input
+                        type="text"
+                        value={defaultValues[field.key] || ''}
+                        onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                        placeholder="Ex: Montréal (appliqué à toutes les lignes)"
+                        className="default-value-input"
+                      />
+                    </div>
+                    <div className="preview-column">
+                      {defaultValues[field.key] ? (
+                        <span className="preview-data default-preview">
+                          <strong>{defaultValues[field.key]}</strong> (toutes)
+                        </span>
+                      ) : columnMapping[field.key] && csvData[0] ? (
+                        <span className="preview-data">
+                          {csvData[0][columnMapping[field.key]] || '(vide)'}
+                        </span>
+                      ) : (
+                        <span className="no-preview">-</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mapping-actions">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  ← Retour
+                </Button>
+                <Button onClick={generatePreview}>
+                  Aperçu données →
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>👀 Étape 3: Aperçu des données</h3>
+              <p>Vérifiez que les données sont correctement mappées avant l'import</p>
+            </div>
+
+            <div className="preview-container">
+              <div className="preview-info">
+                📋 Aperçu des <strong>5 premières lignes</strong> sur {csvData.length} total
+              </div>
+
+              <div className="preview-table-wrapper">
+                <table className="preview-table-enhanced">
+                  <thead>
+                    <tr>
+                      <th className="row-number-header">#</th>
+                      {availableFields.map(field => (
+                        <th key={field.key} className={field.required ? 'required-header' : ''}>
+                          {field.label}
+                          {field.required && <span className="required-star"> *</span>}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((row, index) => (
+                      <tr key={index}>
+                        <td className="row-number">{index + 1}</td>
+                        {availableFields.map(field => (
+                          <td key={field.key} className="preview-data-cell">
+                            {row[field.key] ? (
+                              <span className={defaultValues[field.key] ? 'default-value-indicator' : 'csv-value-indicator'}>
+                                {row[field.key]}
+                              </span>
+                            ) : (
+                              <span className="empty-cell">(vide)</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="preview-legend">
+                <div className="legend-item">
+                  <span className="legend-badge default-badge">Bleu</span>
+                  <span>Valeur par défaut (appliquée à toutes les lignes)</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-badge csv-badge">Vert</span>
+                  <span>Valeur du fichier CSV</span>
+                </div>
+              </div>
+
+              <div className="preview-actions">
+                <Button variant="outline" onClick={() => setStep(2)}>
+                  ← Modifier mapping
+                </Button>
+                <Button 
+                  onClick={handleImport}
+                  disabled={importing}
+                  className="import-confirm-btn"
+                >
+                  {importing ? '⏳ Import en cours...' : '✅ Confirmer import'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="import-step">
+            <div className="step-header">
+              <h3>🎉 Import terminé</h3>
+            </div>
+
+            {importResults && (
+              <div className="import-results">
+                <div className="results-summary">
+                  <div className="result-stat success">
+                    <div className="stat-number">{importResults.success_count}</div>
+                    <div className="stat-label">Importés avec succès</div>
+                  </div>
+                  {importResults.error_count > 0 && (
+                    <div className="result-stat error">
+                      <div className="stat-number">{importResults.error_count}</div>
+                      <div className="stat-label">Erreurs</div>
+                    </div>
+                  )}
+                </div>
+
+                {importResults.errors && importResults.errors.length > 0 && (
+                  <div className="import-errors">
+                    <h4>⚠️ Lignes avec erreurs:</h4>
+                    <ul>
+                      {importResults.errors.map((error, index) => (
+                        <li key={index}>
+                          Ligne {error.row}: {error.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="final-actions">
+                  <Button 
+                    onClick={onImportComplete}
+                    className="finish-btn"
+                  >
+                    📋 Voir les bâtiments
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setStep(1);
+                      setCsvFile(null);
+                      setCsvData([]);
+                      setColumnMapping({});
+                      setImportResults(null);
+                    }}
+                  >
+                    🔄 Nouvel import
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      default:
+        return <div>Étape inconnue</div>;
+    }
+  };
+
+  return (
+    <div className="import-csv-container">
+      {showFieldEditor && <FieldEditor />}
+      
+      <div className="import-progress">
+        <div className="progress-steps">
+          {[1, 2, 3, 4].map(stepNum => (
+            <div 
+              key={stepNum} 
+              className={`progress-step ${step >= stepNum ? 'active' : ''} ${step === stepNum ? 'current' : ''}`}
+            >
+              <div className="step-circle">{stepNum}</div>
+              <div className="step-label">
+                {stepNum === 1 && 'Upload'}
+                {stepNum === 2 && 'Mapping'}
+                {stepNum === 3 && 'Preview'}
+                {stepNum === 4 && 'Import'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="import-content">
+        {renderStep()}
+      </div>
+    </div>
+  );
+};
+
+// Gestion des Grilles d'Inspection
+const EditerGrille = ({ grille, onClose, onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: grille.nom,
+    groupe_occupation: grille.groupe_occupation || '',
+    sections: grille.sections || [],
+    actif: grille.actif !== false,
+    version: grille.version || '1.0'
+  });
+  const [saving, setSaving] = useState(false);
+
+  const addSection = () => {
+    setFormData({
+      ...formData,
+      sections: [...formData.sections, { titre: '', questions: [] }]
+    });
+  };
+
+  const removeSection = (index) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateSection = (index, field, value) => {
+    const newSections = [...formData.sections];
+    newSections[index] = { ...newSections[index], [field]: value };
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const addQuestion = (sectionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = [...(newSections[sectionIndex].questions || []), ''];
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const removeQuestion = (sectionIndex, questionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex);
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const updateQuestion = (sectionIndex, questionIndex, value) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions[questionIndex] = value;
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const handleSave = async () => {
+    if (!formData.nom) {
+      toast({
+        title: "Validation",
+        description: "Le nom de la grille est requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.sections.length === 0) {
+      toast({
+        title: "Validation",
+        description: "La grille doit contenir au moins une section",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, formData);
+      
+      toast({
+        title: "Succès",
+        description: "Grille mise à jour avec succès"
+      });
+      
+      onSave();
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la grille",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="editer-grille-container">
+      <div className="page-header">
+        <h2>✏️ Modifier la Grille: {grille.nom}</h2>
+        <div className="header-actions">
+          <Button variant="outline" onClick={onClose}>
+            ✕ Annuler
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Sauvegarde...' : '💾 Enregistrer'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grille-form">
+        {/* Informations générales */}
+        <div className="form-section">
+          <h3>Informations Générales</h3>
+          <div className="form-grid">
+            <div className="form-field">
+              <label>Nom de la grille *</label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                className="form-input"
+                placeholder="Ex: Grille Résidentielle Personnalisée"
+              />
+            </div>
+            <div className="form-field">
+              <label>Groupe d'occupation</label>
+              <select
+                value={formData.groupe_occupation}
+                onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
+                className="form-select"
+              >
+                <option value="">-- Sélectionner --</option>
+                <option value="A">A - Habitation</option>
+                <option value="B">B - Soins et détention</option>
+                <option value="C">C - Résidentiel</option>
+                <option value="D">D - Affaires</option>
+                <option value="E">E - Commerce</option>
+                <option value="F">F - Industriel</option>
+                <option value="I">I - Assemblée</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Version</label>
+              <input
+                type="text"
+                value={formData.version}
+                onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                className="form-input"
+                placeholder="1.0"
+              />
+            </div>
+            <div className="form-field checkbox-field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.actif}
+                  onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
+                />
+                <span>Grille active</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="form-section">
+          <div className="section-header">
+            <h3>Sections ({formData.sections.length})</h3>
+            <Button size="sm" onClick={addSection}>
+              ➕ Ajouter une section
+            </Button>
+          </div>
+
+          <div className="sections-list">
+            {formData.sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="section-editor">
+                <div className="section-editor-header">
+                  <h4>Section {sectionIndex + 1}</h4>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => removeSection(sectionIndex)}
+                  >
+                    🗑️ Supprimer section
+                  </Button>
+                </div>
+
+                <div className="section-editor-content">
+                  <div className="form-field">
+                    <label>Titre de la section *</label>
+                    <input
+                      type="text"
+                      value={section.titre}
+                      onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
+                      className="form-input"
+                      placeholder="Ex: Voies d'évacuation"
+                    />
+                  </div>
+
+                  <div className="questions-editor">
+                    <div className="questions-header">
+                      <label>Questions ({section.questions?.length || 0})</label>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => addQuestion(sectionIndex)}
+                      >
+                        ➕ Ajouter question
+                      </Button>
+                    </div>
+
+                    <div className="questions-list-editor">
+                      {(section.questions || []).map((question, questionIndex) => (
+                        <div key={questionIndex} className="question-editor-item">
+                          <span className="question-number">{questionIndex + 1}.</span>
+                          <input
+                            type="text"
+                            value={question}
+                            onChange={(e) => updateQuestion(sectionIndex, questionIndex, e.target.value)}
+                            className="question-input"
+                            placeholder="Entrez votre question..."
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeQuestion(sectionIndex, questionIndex)}
+                            className="remove-question-btn"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {formData.sections.length === 0 && (
+            <div className="empty-state">
+              <p>Aucune section. Cliquez sur "Ajouter une section" pour commencer.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GrillesInspection = () => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [grilles, setGrilles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editingGrille, setEditingGrille] = useState(null);
+
+  const fetchGrilles = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+      setGrilles(data);
+    } catch (error) {
+      console.error('Erreur chargement grilles:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les grilles d'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGrilles();
+  }, [tenantSlug]);
+
+  const handleDeleteGrille = async (grilleId) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette grille ?')) return;
+    
+    try {
+      await apiDelete(tenantSlug, `/prevention/grilles-inspection/${grilleId}`);
+      toast({
+        title: "Succès",
+        description: "Grille supprimée avec succès"
+      });
+      fetchGrilles();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la grille",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (editingGrille) {
+    return <EditerGrille grille={editingGrille} onClose={() => setEditingGrille(null)} onSave={() => { setEditingGrille(null); fetchGrilles(); }} />;
+  }
+
+  if (loading) {
+    return <div className="loading">Chargement des grilles...</div>;
+  }
+
+  return (
+    <div className="grilles-inspection-container">
+      {/* Grilles par défaut */}
+      <div className="default-grilles-section">
+        <h3>📋 Grilles Templates par Groupe d'Occupation</h3>
+        <p>Grilles d'inspection pré-configurées selon le Code de sécurité du Québec</p>
+        
+        <div className="default-grilles-grid">
+          {DEFAULT_GRILLES_TEMPLATES.map(template => (
+            <div key={template.groupe} className="template-card">
+              <div className="template-header">
+                <h4>Groupe {template.groupe}</h4>
+                <span className="groupe-badge">{template.groupe}</span>
+              </div>
+              <div className="template-info">
+                <p><strong>{template.nom}</strong></p>
+                <p>{template.description}</p>
+                <div className="template-stats">
+                  <span className="stat">{template.sections.length} sections</span>
+                  <span className="stat">{template.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions</span>
+                </div>
+              </div>
+              <div className="template-actions">
+                <Button 
+                  size="sm" 
+                  onClick={() => window.location.href = `#grille-${template.groupe}`}
+                >
+                  👀 Aperçu
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => createGrilleFromTemplate(template)}
+                >
+                  📝 Utiliser
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Grilles personnalisées */}
+      <div className="custom-grilles-section">
+        <h3>🛠️ Grilles Personnalisées</h3>
+        
+        {grilles.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucune grille personnalisée créée</p>
+            <p><small>Utilisez les templates ci-dessus ou créez une grille from scratch</small></p>
+          </div>
+        ) : (
+          <div className="custom-grilles-grid">
+            {grilles.map(grille => (
+              <div key={grille.id} className="grille-card">
+                <div className="grille-header">
+                  <h4>{grille.nom}</h4>
+                  <span className="groupe-badge">{grille.groupe_occupation}</span>
+                </div>
+                <div className="grille-info">
+                  <p>Version: {grille.version}</p>
+                  <p>Sections: {grille.sections.length}</p>
+                  <p>Statut: {grille.actif ? '✅ Actif' : '❌ Inactif'}</p>
+                </div>
+                <div className="grille-actions">
+                  <Button size="sm" onClick={() => setEditingGrille(grille)}>Modifier</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDeleteGrille(grille.id)}
+                  >
+                    Supprimer
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Aperçu des grilles templates */}
+      <div className="templates-preview">
+        {DEFAULT_GRILLES_TEMPLATES.map(template => (
+          <div key={`preview-${template.groupe}`} id={`grille-${template.groupe}`} className="template-preview">
+            <div className="preview-header">
+              <h3>📋 Grille Template - Groupe {template.groupe}: {template.nom}</h3>
+              <p>{template.description}</p>
+            </div>
+            
+            <div className="sections-preview">
+              {template.sections.map((section, sectionIndex) => (
+                <div key={sectionIndex} className="section-preview">
+                  <h4>{section.titre}</h4>
+                  <p><em>{section.description}</em></p>
+                  
+                  <div className="questions-preview">
+                    {section.questions.slice(0, 3).map((question, qIndex) => (
+                      <div key={qIndex} className="question-preview">
+                        <span className="question-text">{question.question}</span>
+                        <span className="question-type">({question.type})</span>
+                      </div>
+                    ))}
+                    {section.questions.length > 3 && (
+                      <p className="more-questions">... et {section.questions.length - 3} autres questions</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  async function createGrilleFromTemplate(template) {
+    try {
+      const grilleData = {
+        nom: template.nom,
+        groupe_occupation: template.groupe,
+        sections: template.sections,
+        actif: true,
+        version: "1.0"
+      };
+
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', grilleData);
+      
+      toast({
+        title: "Succès",
+        description: `Grille "${template.nom}" créée avec succès`
+      });
+      
+      fetchGrilles();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la grille",
+        variant: "destructive"
+      });
+    }
+  }
+};
+
+const CreateGrilleInspection = ({ onSave, onViewTemplates }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: '',
+    groupe_occupation: '',
+    sections: [],
+    actif: true,
+    version: '1.0'
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!formData.nom || !formData.groupe_occupation) {
+      toast({
+        title: "Validation",
+        description: "Veuillez remplir tous les champs requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
+      
+      toast({
+        title: "Succès",
+        description: "Grille créée avec succès"
+      });
+      
+      onSave();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la grille",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="create-grille-container">
+      <div className="grille-form">
+        <div className="form-section">
+          <h3>ℹ️ Informations de base</h3>
+          <div className="form-fields">
+            <div className="form-field">
+              <label>Nom de la grille *</label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                placeholder="Ex: Inspection Commerciale Détaillée"
+              />
+            </div>
+            <div className="form-field">
+              <label>Groupe d'occupation *</label>
+              <select
+                value={formData.groupe_occupation}
+                onChange={(e) => setFormData({...formData, groupe_occupation: e.target.value})}
+              >
+                <option value="">Sélectionner un groupe</option>
+                <option value="A">Groupe A - Résidentiel unifamilial</option>
+                <option value="B">Groupe B - Soins et détention</option>
+                <option value="C">Groupe C - Résidentiel</option>
+                <option value="D">Groupe D - Affaires et services personnels</option>
+                <option value="E">Groupe E - Commerce</option>
+                <option value="F">Groupe F - Industriel</option>
+                <option value="G">Groupe G - Garages et stations-service</option>
+                <option value="H">Groupe H - Risques élevés</option>
+                <option value="I">Groupe I - Assemblée</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>📝 Recommandation</h3>
+          <div className="recommendation-note">
+            <p>💡 <strong>Pour commencer rapidement :</strong></p>
+            <p>Nous recommandons d'utiliser les <strong>grilles templates</strong> pré-configurées selon le Code de sécurité du Québec. Vous pourrez ensuite les personnaliser selon vos besoins.</p>
+            <Button 
+              variant="outline"
+              onClick={onViewTemplates}
+            >
+              📋 Voir les templates disponibles
+            </Button>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <Button variant="outline" onClick={onSave}>
+            Annuler
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Création...' : 'Créer la grille'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Templates de grilles d'inspection par défaut
+const DEFAULT_GRILLES_TEMPLATES = [
+  {
+    groupe: "C",
+    nom: "Résidentiel - Habitation",
+    description: "Maisons unifamiliales, duplex, immeubles résidentiels",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Identification complète de l'établissement et des responsables",
+        questions: [
+          { question: "Plan de mesures d'urgence en cas d'incendie affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan à jour et exercé dans la dernière année?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis d'occupation valide affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Notes générales", type: "texte" },
+          { question: "Photos", type: "photos" }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Vérification de la documentation obligatoire",
+        questions: [
+          { question: "Plans d'évacuation affichés et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registres d'entretien tenus à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Notes sur la documentation", type: "texte" }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Vérification des moyens d'évacuation et de leur accessibilité",
+        questions: [
+          { question: "Nombre de sorties suffisant et bien réparties?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Panneaux 'SORTIE' clairs et éclairés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes de sortie faciles à ouvrir de l'intérieur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Dégagements libres de tout encombrement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de sécurité fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des voies d'évacuation", type: "photos" }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Vérification des équipements de protection contre l'incendie",
+        questions: [
+          { question: "Détecteurs de fumée présents et fonctionnels?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Date de fabrication des détecteurs < 10 ans?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détecteurs CO présents si applicable?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs présents et accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Inspection mensuelle extincteurs à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des équipements", type: "photos" }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Évaluation des risques particuliers selon l'occupation",
+        questions: [
+          { question: "Dégagement libre devant panneau électrique (1m)?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aucun fil électrique dénudé visible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Appareils à combustible: dégagements respectés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Conduits d'évacuation en bon état?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Photos des risques identifiés", type: "photos" }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Vérification de l'accessibilité pour les véhicules d'urgence",
+        questions: [
+          { question: "Adresse civique visible de la rue?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Voie d'accès dégagée pour véhicules d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Poteau d'incendie dégagé et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "E",
+    nom: "Commerce - Établissements commerciaux",
+    description: "Magasins, centres commerciaux, bureaux commerciaux",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Identification complète de l'établissement commercial",
+        questions: [
+          { question: "Plan de mesures d'urgence affiché et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Responsable sécurité incendie identifié?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis d'occupation commercial valide?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Formation du personnel sur évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation spécifique aux établissements commerciaux",
+        questions: [
+          { question: "Plans d'évacuation affichés à chaque étage?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Certificats des systèmes de protection à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Moyens d'évacuation pour occupation commerciale",
+        questions: [
+          { question: "Sorties de secours dégagées et signalisées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Largeur des dégagements conforme au nombre d'occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes équipées de dispositifs anti-panique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage d'urgence testé mensuellement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aucun stockage dans les dégagements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Systèmes de protection spécifiques aux commerces",
+        questions: [
+          { question: "Système d'alarme incendie fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détecteurs de fumée dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs appropriés au type de risque?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de gicleurs (si requis) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Robinets d'incendie armés accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques particuliers aux activités commerciales",
+        questions: [
+          { question: "Stockage respecte les distances de sécurité?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Piles de marchandises stables et limitées en hauteur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Séparation des produits incompatibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Zones de livraison dégagées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système électrique conforme et entretenu?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès pour intervention en milieu commercial",
+        questions: [
+          { question: "Signalisation claire pour identification du bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Accès véhicules lourds possible et dégagé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Boîte à clés (Knox Box) installée si requise?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan d'intervention disponible sur site?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "F",
+    nom: "Industriel - Établissements industriels",
+    description: "Usines, ateliers, entrepôts industriels",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Information sur l'établissement industriel et ses activités",
+        questions: [
+          { question: "Plan d'intervention d'urgence détaillé disponible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Équipe de sécurité incendie formée et désignée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis pour matières dangereuses à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Formation du personnel sur les risques spécifiques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation technique et réglementaire",
+        questions: [
+          { question: "Fiches de données de sécurité (FDS) disponibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plans des installations avec localisation des risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registres de maintenance des équipements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Permis de travaux à chaud à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Moyens d'évacuation pour milieu industriel",
+        questions: [
+          { question: "Sorties d'urgence adaptées aux effectifs?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Chemins d'évacuation clairement marqués?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes coupe-feu maintenues fermées automatiquement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de sécurité conforme aux zones à risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Points de rassemblement extérieurs identifiés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Systèmes de protection industrielle",
+        questions: [
+          { question: "Système d'alarme automatique fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de détection adapté aux risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs spécialisés selon les risques présents?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système fixe d'extinction (mousse, CO2) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Réseau de gicleurs industriel fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Colonne sèche et raccords normalisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques industriels particuliers",
+        questions: [
+          { question: "Matières dangereuses stockées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aires de stockage avec rétention appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Équipements électriques adaptés aux zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de ventilation et évacuation des fumées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Travaux à chaud avec surveillance appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Nettoyage régulier des zones d'accumulation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès spécialisé pour intervention industrielle",
+        questions: [
+          { question: "Accès pompiers avec véhicules spécialisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan d'intervention détaillé remis aux pompiers?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de communication d'urgence opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Moyens d'approvisionnement en eau suffisants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  },
+  {
+    groupe: "I",
+    nom: "Assemblée - Lieux de rassemblement",
+    description: "Écoles, théâtres, centres communautaires, églises",
+    sections: [
+      {
+        titre: "1. Informations Générales & Contacts",
+        description: "Gestion sécurité pour lieux d'assemblée",
+        questions: [
+          { question: "Plan d'évacuation affiché dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Responsable évacuation désigné pour chaque événement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Capacité maximale d'occupation respectée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Personnel formé aux procédures d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "2. Documentation & Plans",
+        description: "Documentation pour gestion des foules",
+        questions: [
+          { question: "Plans d'évacuation adaptés au type d'assemblée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Procédures d'urgence communiquées au public?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "3. Voies d'Évacuation & Sorties",
+        description: "Évacuation sécuritaire des grandes assemblées",
+        questions: [
+          { question: "Nombre de sorties conforme à l'occupation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Largeur des sorties proportionnelle aux occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Portes s'ouvrent dans le sens de l'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage d'urgence sur tous les parcours?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Aisles et dégagements libres pendant les événements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "4. Moyens de Protection Incendie",
+        description: "Protection adaptée aux assemblées",
+        questions: [
+          { question: "Système d'alarme audible dans tout le bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de sonorisation pour annonces d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Détection automatique dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Extincteurs accessibles et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Système de gicleurs dans les zones de rassemblement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "5. Risques Spécifiques",
+        description: "Risques liés aux activités d'assemblée",
+        questions: [
+          { question: "Sièges et rangées fixées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Scène et décors avec matériaux ignifuges?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Éclairage de scène avec protection thermique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Cuisine (si présente) avec système d'extinction?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Contrôle du tabagisme respecté?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      },
+      {
+        titre: "6. Accessibilité Services d'Incendie",
+        description: "Accès pour intervention lors d'assemblées",
+        questions: [
+          { question: "Accès prioritaire maintenu libre en tout temps?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Communication directe avec services d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Plan du site remis aux services d'incendie?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
+          { question: "Stationnement d'urgence réservé et signalisé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
+        ]
+      }
+    ]
+  }
+];
+
+// Gestion des Préventionnistes
+const GestionPreventionnistes = () => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [users, setUsers] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [preventionnistes, setPreventionnistes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, batimentsData] = await Promise.all([
+        apiGet(tenantSlug, '/users'),
+        apiGet(tenantSlug, '/prevention/batiments')
+      ]);
+      
+      setUsers(usersData);
+      setBatiments(batimentsData);
+      
+      // Filtrer les préventionnistes (utilisateurs avec des bâtiments assignés)
+      const preventionnistesActifs = usersData.filter(user => 
+        batimentsData.some(batiment => batiment.preventionniste_assigne_id === user.id)
+      );
+      setPreventionnistes(preventionnistesActifs);
+      
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const handleRemoveAssignment = async (batimentId) => {
+    try {
+      await apiPut(tenantSlug, `/prevention/batiments/${batimentId}`, {
+        preventionniste_assigne_id: null
+      });
+      
+      toast({
+        title: "Succès",
+        description: "Assignation supprimée"
+      });
+      
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'assignation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement...</div>;
+  }
+
+  return (
+    <div className="gestion-preventionnistes">
+      {/* Vue d'ensemble */}
+      <div className="overview-cards">
+        <div className="overview-card">
+          <div className="card-icon">👨‍🚒</div>
+          <div className="card-content">
+            <div className="card-number">{preventionnistes.length}</div>
+            <div className="card-label">Préventionnistes actifs</div>
+          </div>
+        </div>
+        <div className="overview-card">
+          <div className="card-icon">🏢</div>
+          <div className="card-content">
+            <div className="card-number">{batiments.filter(b => b.preventionniste_assigne_id).length}</div>
+            <div className="card-label">Bâtiments assignés</div>
+          </div>
+        </div>
+        <div className="overview-card">
+          <div className="card-icon">⚠️</div>
+          <div className="card-content">
+            <div className="card-number">{batiments.filter(b => !b.preventionniste_assigne_id).length}</div>
+            <div className="card-label">Sans préventionniste</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Liste des préventionnistes */}
+      <div className="preventionnistes-section">
+        <h3>👨‍🚒 Préventionnistes Actifs</h3>
+        
+        {preventionnistes.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucun préventionniste assigné</p>
+            <p><small>Assignez des bâtiments aux employés pour créer des préventionnistes</small></p>
+          </div>
+        ) : (
+          <div className="preventionnistes-grid">
+            {preventionnistes.map(preventionniste => {
+              const batimentsAssignes = batiments.filter(b => b.preventionniste_assigne_id === preventionniste.id);
+              
+              return (
+                <div key={preventionniste.id} className="preventionniste-card">
+                  <div className="preventionniste-header">
+                    <div className="preventionniste-info">
+                      <h4>{preventionniste.prenom} {preventionniste.nom}</h4>
+                      <p>{preventionniste.email}</p>
+                      <span className="grade-badge">{preventionniste.grade}</span>
+                    </div>
+                    <div className="preventionniste-stats">
+                      <div className="stat-item">
+                        <span className="stat-number">{batimentsAssignes.length}</span>
+                        <span className="stat-label">bâtiments</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="batiments-assignes">
+                    <h5>🏢 Bâtiments assignés:</h5>
+                    {batimentsAssignes.length === 0 ? (
+                      <p className="no-batiments">Aucun bâtiment assigné</p>
+                    ) : (
+                      <div className="batiments-list">
+                        {batimentsAssignes.slice(0, 3).map(batiment => (
+                          <div key={batiment.id} className="batiment-item">
+                            <span className="batiment-name">{batiment.nom_etablissement}</span>
+                            <button 
+                              onClick={() => handleRemoveAssignment(batiment.id)}
+                              className="remove-btn"
+                              title="Supprimer l'assignation"
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                        {batimentsAssignes.length > 3 && (
+                          <p className="more-batiments">
+                            ... et {batimentsAssignes.length - 3} autres
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Bâtiments sans préventionniste */}
+      <div className="batiments-section">
+        <h3>⚠️ Bâtiments Sans Préventionniste</h3>
+        
+        {batiments.filter(b => !b.preventionniste_assigne_id).length === 0 ? (
+          <div className="success-state">
+            <p>✅ Tous les bâtiments ont un préventionniste assigné</p>
+          </div>
+        ) : (
+          <div className="batiments-sans-preventionniste">
+            {batiments
+              .filter(b => !b.preventionniste_assigne_id)
+              .slice(0, 10)
+              .map(batiment => (
+              <div key={batiment.id} className="batiment-sans-preventionniste">
+                <div className="batiment-details">
+                  <h4>{batiment.nom_etablissement}</h4>
+                  <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                  <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                </div>
+                <div className="assign-actions">
+                  <p><small>Besoin d'un préventionniste</small></p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AssignerPreventionniste = ({ onAssign }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [users, setUsers] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedBatiments, setSelectedBatiments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, batimentsData] = await Promise.all([
+        apiGet(tenantSlug, '/users'),
+        apiGet(tenantSlug, '/prevention/batiments')
+      ]);
+      
+      setUsers(usersData.filter(u => u.role === 'admin' || u.role === 'superviseur'));
+      setBatiments(batimentsData);
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const handleBatimentToggle = (batimentId) => {
+    setSelectedBatiments(prev => 
+      prev.includes(batimentId) 
+        ? prev.filter(id => id !== batimentId)
+        : [...prev, batimentId]
+    );
+  };
+
+  const handleAssign = async () => {
+    if (!selectedUser || selectedBatiments.length === 0) {
+      toast({
+        title: "Validation",
+        description: "Veuillez sélectionner un préventionniste et au moins un bâtiment",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      
+      // Assigner le préventionniste à tous les bâtiments sélectionnés
+      await Promise.all(
+        selectedBatiments.map(batimentId =>
+          apiPut(tenantSlug, `/prevention/batiments/${batimentId}`, {
+            preventionniste_assigne_id: selectedUser
+          })
+        )
+      );
+
+      toast({
+        title: "Succès",
+        description: `${selectedBatiments.length} bâtiment(s) assigné(s) avec succès`
+      });
+
+      onAssign();
+    } catch (error) {
+      console.error('Erreur assignation:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de l'assignation",
+        variant: "destructive"
+      });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement...</div>;
+  }
+
+  const selectedUserInfo = users.find(u => u.id === selectedUser);
+
+  return (
+    <div className="assigner-preventionniste">
+      <div className="assignment-steps">
+        {/* Étape 1: Sélectionner préventionniste */}
+        <div className="step-section">
+          <h3>👤 Étape 1: Sélectionner le préventionniste</h3>
+          <div className="users-grid">
+            {users.map(user => (
+              <label key={user.id} className="user-option">
+                <input
+                  type="radio"
+                  name="preventionniste"
+                  value={user.id}
+                  checked={selectedUser === user.id}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                />
+                <div className="user-card">
+                  <div className="user-info">
+                    <h4>{user.prenom} {user.nom}</h4>
+                    <p>{user.email}</p>
+                    <div className="user-badges">
+                      <span className={`role-badge ${user.role}`}>{user.role}</span>
+                      {user.grade && <span className="grade-badge">{user.grade}</span>}
+                    </div>
+                  </div>
+                  <div className="user-stats">
+                    <span className="current-assignments">
+                      {batiments.filter(b => b.preventionniste_assigne_id === user.id).length} bâtiments actuels
+                    </span>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Étape 2: Sélectionner bâtiments */}
+        {selectedUser && (
+          <div className="step-section">
+            <h3>🏢 Étape 2: Sélectionner les bâtiments ({selectedBatiments.length} sélectionnés)</h3>
+            <div className="batiments-selection">
+              {batiments
+                .filter(b => !b.preventionniste_assigne_id || b.preventionniste_assigne_id === selectedUser)
+                .map(batiment => (
+                <label key={batiment.id} className="batiment-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedBatiments.includes(batiment.id)}
+                    onChange={() => handleBatimentToggle(batiment.id)}
+                  />
+                  <div className="batiment-card">
+                    <div className="batiment-info">
+                      <h4>{batiment.nom_etablissement}</h4>
+                      <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                      <div className="batiment-meta">
+                        <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                        {batiment.preventionniste_assigne_id === selectedUser && (
+                          <span className="assigned-badge">Déjà assigné</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Résumé et confirmation */}
+        {selectedUser && selectedBatiments.length > 0 && (
+          <div className="step-section confirmation">
+            <h3>✅ Confirmation de l'assignation</h3>
+            <div className="assignment-summary">
+              <div className="summary-item">
+                <strong>Préventionniste:</strong> {selectedUserInfo?.prenom} {selectedUserInfo?.nom}
+              </div>
+              <div className="summary-item">
+                <strong>Bâtiments à assigner:</strong> {selectedBatiments.length}
+              </div>
+            </div>
+
+            <div className="confirmation-actions">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSelectedUser('');
+                  setSelectedBatiments([]);
+                }}
+              >
+                🔄 Recommencer
+              </Button>
+              <Button 
+                onClick={handleAssign}
+                disabled={assigning}
+                className="confirm-btn"
+              >
+                {assigning ? '⏳ Assignation...' : '✅ Confirmer l\'assignation'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==================== COMPOSANTS INSPECTIONS ====================
+
+// Composant d'upload de photos
+const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (photos.length + files.length > maxPhotos) {
+      toast({
+        title: "Limite atteinte",
+        description: `Maximum ${maxPhotos} photos`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        // Convertir en base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result;
+          
+          try {
+            const response = await apiPost(tenantSlug, '/prevention/upload-photo', {
+              photo_base64: base64,
+              filename: file.name
+            });
+            
+            setPhotos(prev => [...prev, response.url]);
+            
+            toast({
+              title: "Photo ajoutée",
+              description: file.name
+            });
+          } catch (error) {
+            console.error('Erreur upload:', error);
+            toast({
+              title: "Erreur",
+              description: `Impossible d'uploader ${file.name}`,
+              variant: "destructive"
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = (index) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="photo-uploader">
+      <div className="upload-header">
+        <label>📸 Photos ({photos.length}/{maxPhotos})</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          disabled={uploading || photos.length >= maxPhotos}
+          className="file-input"
+          id="photo-upload"
+          style={{ display: 'none' }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => document.getElementById('photo-upload').click()}
+          disabled={uploading || photos.length >= maxPhotos}
+        >
+          {uploading ? '⏳ Upload...' : '📷 Ajouter photos'}
+        </Button>
+      </div>
+
+      {photos.length > 0 && (
+        <div className="photos-grid">
+          {photos.map((photoUrl, index) => (
+            <div key={index} className="photo-item">
+              <img 
+                src={photoUrl.includes('data:') ? photoUrl : `${process.env.REACT_APP_BACKEND_URL}${photoUrl}`} 
+                alt={`Photo ${index + 1}`}
+                className="photo-thumbnail"
+              />
+              <button
+                onClick={() => removePhoto(index)}
+                className="remove-photo-btn"
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ListeInspections = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [inspections, setInspections] = useState([]);
+  const [batiments, setBatiments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // all, conforme, non_conforme
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [inspectionsData, batimentsData, usersData] = await Promise.all([
+        apiGet(tenantSlug, '/prevention/inspections'),
+        apiGet(tenantSlug, '/prevention/batiments'),
+        apiGet(tenantSlug, '/users')
+      ]);
+      
+      setInspections(inspectionsData);
+      setBatiments(batimentsData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les inspections",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantSlug]);
+
+  const getBatimentName = (batimentId) => {
+    const batiment = batiments.find(b => b.id === batimentId);
+    return batiment?.nom_etablissement || 'Inconnu';
+  };
+
+  const getPreventionnisteName = (userId) => {
+    const preventionniste = users.find(u => u.id === userId);
+    return preventionniste ? `${preventionniste.prenom} ${preventionniste.nom}` : 'Inconnu';
+  };
+
+  const handleDeleteInspection = async (inspectionId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette inspection ?')) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, `/prevention/inspections/${inspectionId}`);
+      toast({
+        title: "Succès",
+        description: "Inspection supprimée avec succès",
+        variant: "default"
+      });
+      // Recharger la liste
+      fetchData();
+    } catch (error) {
+      console.error('Erreur suppression inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'inspection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredInspections = inspections.filter(insp => {
+    if (filter === 'all') return true;
+    if (filter === 'conforme') return insp.statut_global === 'conforme';
+    if (filter === 'non_conforme') return insp.statut_global !== 'conforme';
+    return true;
+  });
+
+  const handleDownloadPDF = async (inspectionId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/inspections/${inspectionId}/rapport-pdf`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur téléchargement');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_inspection_${inspectionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Succès",
+        description: "Rapport téléchargé"
+      });
+    } catch (error) {
+      console.error('Erreur téléchargement PDF:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le rapport",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement des inspections...</div>;
+  }
+
+  return (
+    <div className="inspections-container">
+      <div className="page-header">
+        <h2>📋 Liste des Inspections</h2>
+        <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+          ➕ Nouvelle Inspection
+        </Button>
+      </div>
+
+      <div className="inspections-filters">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+        >
+          Toutes ({inspections.length})
+        </Button>
+        <Button
+          variant={filter === 'conforme' ? 'default' : 'outline'}
+          onClick={() => setFilter('conforme')}
+        >
+          ✅ Conformes ({inspections.filter(i => i.statut_global === 'conforme').length})
+        </Button>
+        <Button
+          variant={filter === 'non_conforme' ? 'default' : 'outline'}
+          onClick={() => setFilter('non_conforme')}
+        >
+          ⚠️ Non-conformes ({inspections.filter(i => i.statut_global !== 'conforme').length})
+        </Button>
+      </div>
+
+      {filteredInspections.length === 0 ? (
+        <div className="empty-state">
+          <p>Aucune inspection trouvée</p>
+          <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+            Créer la première inspection
+          </Button>
+        </div>
+      ) : (
+        <div className="inspections-list">
+          {filteredInspections.map(inspection => (
+            <div key={inspection.id} className="inspection-card">
+              <div className="inspection-header">
+                <div>
+                  <h4>{getBatimentName(inspection.batiment_id)}</h4>
+                  <p className="inspection-date">{inspection.date_inspection}</p>
+                </div>
+                <span className={`statut-badge ${inspection.statut_global}`}>
+                  {inspection.statut_global === 'conforme' ? '✅ Conforme' : '⚠️ Non-conforme'}
+                </span>
+              </div>
+              
+              <div className="inspection-details">
+                <div className="detail-item">
+                  <span className="label">Préventionniste:</span>
+                  <span>{getPreventionnisteName(inspection.preventionniste_id)}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Type:</span>
+                  <span>{inspection.type_inspection}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Score:</span>
+                  <span className="score">{inspection.score_conformite}%</span>
+                </div>
+              </div>
+              
+              <div className="inspection-actions">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleDownloadPDF(inspection.id)}
+                >
+                  📄 Rapport PDF
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    localStorage.setItem('detail_inspection_id', inspection.id);
+                    setCurrentView('detail-inspection');
+                  }}
+                >
+                  👁️ Voir détails
+                </Button>
+                {(user.role === 'admin' || user.role === 'superviseur') && (
+                  <Button 
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDeleteInspection(inspection.id)}
+                  >
+                    🗑️ Supprimer
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NouvelleInspection = ({ setCurrentView, batiments, selectedBatiment, onBatimentSelected }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [grilles, setGrilles] = useState([]);
+  const [formData, setFormData] = useState({
+    batiment_id: selectedBatiment?.id || '',
+    grille_inspection_id: '',
+    date_inspection: new Date().toISOString().split('T')[0],
+    type_inspection: 'reguliere'
+  });
+
+  // Mettre à jour le bâtiment si selectedBatiment change
+  useEffect(() => {
+    if (selectedBatiment?.id) {
+      setFormData(prev => ({ ...prev, batiment_id: selectedBatiment.id }));
+    }
+  }, [selectedBatiment]);
+
+  useEffect(() => {
+    const fetchGrilles = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+        setGrilles(data);
+      } catch (error) {
+        console.error('Erreur chargement grilles:', error);
+      }
+    };
+    fetchGrilles();
+  }, [tenantSlug]);
+
+  const handleSubmit = async () => {
+    if (!formData.batiment_id || !formData.grille_inspection_id) {
+      toast({
+        title: "Validation",
+        description: "Veuillez sélectionner un bâtiment et une grille",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const inspection = await apiPost(tenantSlug, '/prevention/inspections', {
+        ...formData,
+        preventionniste_id: user.id,
+        heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+        resultats: {},
+        statut_global: 'en_cours',
+        score_conformite: 0
+      });
+
+      toast({
+        title: "Succès",
+        description: "Inspection créée"
+      });
+
+      // Rediriger vers la réalisation de l'inspection
+      localStorage.setItem('current_inspection_id', inspection.id);
+      setCurrentView('realiser-inspection');
+    } catch (error) {
+      console.error('Erreur création inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="nouvelle-inspection-container">
+      <div className="page-header">
+        <h2>🔍 Nouvelle Inspection</h2>
+        <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+          ← Retour
+        </Button>
+      </div>
+
+      <div className="inspection-form">
+        <div className="form-section">
+          <label>Bâtiment à inspecter *</label>
+          <select
+            value={formData.batiment_id}
+            onChange={(e) => setFormData({ ...formData, batiment_id: e.target.value })}
+            className="form-select"
+          >
+            <option value="">-- Sélectionner un bâtiment --</option>
+            {batiments.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.nom_etablissement} - {b.adresse_civique}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-section">
+          <label>Grille d'inspection *</label>
+          <select
+            value={formData.grille_inspection_id}
+            onChange={(e) => setFormData({ ...formData, grille_inspection_id: e.target.value })}
+            className="form-select"
+          >
+            <option value="">-- Sélectionner une grille --</option>
+            {grilles.map(g => (
+              <option key={g.id} value={g.id}>
+                {g.nom} {g.groupe_occupation ? `(Groupe ${g.groupe_occupation})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-section">
+          <label>Date d'inspection *</label>
+          <input
+            type="date"
+            value={formData.date_inspection}
+            onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+            className="form-input"
+          />
+        </div>
+
+        <div className="form-section">
+          <label>Type d'inspection</label>
+          <select
+            value={formData.type_inspection}
+            onChange={(e) => setFormData({ ...formData, type_inspection: e.target.value })}
+            className="form-select"
+          >
+            <option value="reguliere">Régulière</option>
+            <option value="suivi">Suivi</option>
+            <option value="urgence">Urgence</option>
+            <option value="plainte">Suite à plainte</option>
+          </select>
+        </div>
+
+        <div className="form-actions">
+          <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+            Annuler
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Création...' : 'Démarrer l\'inspection'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RealiserInspection = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [inspection, setInspection] = useState(null);
+  const [grille, setGrille] = useState(null);
+  const [batiment, setBatiment] = useState(null);
+  const [resultats, setResultats] = useState({});
+  const [nonConformites, setNonConformites] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [notes, setNotes] = useState('');
+  const [recommandations, setRecommandations] = useState('');
+
+  useEffect(() => {
+    const loadInspection = async () => {
+      try {
+        const inspectionId = localStorage.getItem('current_inspection_id');
+        if (!inspectionId) {
+          setCurrentView('inspections');
+          return;
+        }
+
+        const inspData = await apiGet(tenantSlug, `/prevention/inspections/${inspectionId}`);
+        setInspection(inspData);
+        setResultats(inspData.resultats || {});
+
+        const [grilleData, batimentData] = await Promise.all([
+          apiGet(tenantSlug, `/prevention/grilles-inspection/${inspData.grille_inspection_id}`),
+          apiGet(tenantSlug, `/prevention/batiments/${inspData.batiment_id}`)
+        ]);
+
+        setGrille(grilleData);
+        setBatiment(batimentData);
+      } catch (error) {
+        console.error('Erreur chargement inspection:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger l'inspection",
+          variant: "destructive"
+        });
+        // Rediriger vers la liste des inspections en cas d'erreur
+        setCurrentView('inspections');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInspection();
+  }, [tenantSlug]);
+
+  const handleReponse = (sectionIndex, questionIndex, valeur) => {
+    setResultats(prev => ({
+      ...prev,
+      [`section_${sectionIndex}_question_${questionIndex}`]: valeur
+    }));
+  };
+
+  const handleSaveInspection = async (statut = 'brouillon') => {
+    try {
+      // Calculer le score de conformité
+      const totalQuestions = grille.sections.reduce((acc, section) => acc + section.questions.length, 0);
+      const reponsesConformes = Object.values(resultats).filter(r => r === 'conforme' || r === 'oui').length;
+      const score = totalQuestions > 0 ? Math.round((reponsesConformes / totalQuestions) * 100) : 0;
+
+      const statutGlobal = score >= 80 ? 'conforme' : score >= 50 ? 'partiellement_conforme' : 'non_conforme';
+
+      await apiPut(tenantSlug, `/prevention/inspections/${inspection.id}`, {
+        ...inspection,
+        resultats,
+        score_conformite: score,
+        statut_global: statutGlobal,
+        photos: photos,
+        notes_inspection: notes,
+        recommandations: recommandations,
+        heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // Créer les non-conformités si nécessaire
+      for (const nc of nonConformites) {
+        await apiPost(tenantSlug, '/prevention/non-conformites', {
+          ...nc,
+          inspection_id: inspection.id,
+          batiment_id: inspection.batiment_id
+        });
+      }
+
+      toast({
+        title: "Succès",
+        description: statut === 'brouillon' ? "Inspection sauvegardée" : "Inspection terminée"
+      });
+
+      localStorage.removeItem('current_inspection_id');
+      setCurrentView('inspections');
+    } catch (error) {
+      console.error('Erreur sauvegarde inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder l'inspection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const ajouterNonConformite = (sectionIndex, questionIndex, question) => {
+    setNonConformites(prev => [...prev, {
+      titre: question,
+      section_grille: `Section ${sectionIndex + 1}`,
+      description: '',
+      gravite: 'moyen',
+      statut: 'ouverte'
+    }]);
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement de l'inspection...</div>;
+  }
+
+  if (!inspection || !grille || !batiment) {
+    return <div>Erreur: Données manquantes</div>;
+  }
+
+  return (
+    <div className="realiser-inspection-container">
+      <div className="page-header">
+        <div>
+          <h2>🔍 Inspection en cours</h2>
+          <p className="inspection-subtitle">{batiment.nom_etablissement} - {batiment.adresse_civique}</p>
+        </div>
+        <div className="header-actions">
+          <Button variant="outline" onClick={() => handleSaveInspection('brouillon')}>
+            💾 Sauvegarder brouillon
+          </Button>
+          <Button onClick={() => handleSaveInspection('termine')}>
+            ✅ Terminer l'inspection
+          </Button>
+        </div>
+      </div>
+
+      <div className="grille-inspection-content">
+        {grille.sections.map((section, sectionIdx) => (
+          <div key={sectionIdx} className="grille-section">
+            <h3>{section.titre}</h3>
+            
+            <div className="questions-list">
+              {section.questions.map((question, questionIdx) => (
+                <div key={questionIdx} className="question-item">
+                  <label className="question-text">{question}</label>
+                  
+                  <div className="question-reponses">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="conforme"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'conforme'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>✅ Conforme</span>
+                    </label>
+                    
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="non_conforme"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>⚠️ Non-conforme</span>
+                    </label>
+                    
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name={`section_${sectionIdx}_question_${questionIdx}`}
+                        value="na"
+                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'na'}
+                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
+                      />
+                      <span>⊘ N/A</span>
+                    </label>
+                  </div>
+
+                  {resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => ajouterNonConformite(sectionIdx, questionIdx, question)}
+                      className="add-nc-btn"
+                    >
+                      ➕ Ajouter non-conformité
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {nonConformites.length > 0 && (
+        <div className="non-conformites-preview">
+          <h3>⚠️ Non-conformités identifiées ({nonConformites.length})</h3>
+          <div className="nc-list-preview">
+            {nonConformites.map((nc, idx) => (
+              <div key={idx} className="nc-preview-item">
+                <span className="nc-number">#{idx + 1}</span>
+                <span>{nc.titre}</span>
+                <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="inspection-documentation">
+        <div className="doc-section">
+          <h3>📸 Photos de l'inspection</h3>
+          <PhotoUploader photos={photos} setPhotos={setPhotos} maxPhotos={20} />
+        </div>
+
+        <div className="doc-section">
+          <h3>📝 Notes d'inspection</h3>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes, observations, commentaires..."
+            className="notes-textarea"
+            rows={4}
+          />
+        </div>
+
+        <div className="doc-section">
+          <h3>💡 Recommandations</h3>
+          <textarea
+            value={recommandations}
+            onChange={(e) => setRecommandations(e.target.value)}
+            placeholder="Recommandations pour améliorer la conformité..."
+            className="notes-textarea"
+            rows={4}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DetailInspection = ({ inspectionId, setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [inspection, setInspection] = useState(null);
+  const [batiment, setBatiment] = useState(null);
+  const [grille, setGrille] = useState(null);
+  const [preventionniste, setPreventionniste] = useState(null);
+  const [nonConformites, setNonConformites] = useState([]);
+
+  useEffect(() => {
+    const loadDetails = async () => {
+      try {
+        const inspData = await apiGet(tenantSlug, `/prevention/inspections/${inspectionId}`);
+        setInspection(inspData);
+
+        const [batData, grilleData, prevData, ncData] = await Promise.all([
+          apiGet(tenantSlug, `/prevention/batiments/${inspData.batiment_id}`),
+          apiGet(tenantSlug, `/prevention/grilles-inspection/${inspData.grille_inspection_id}`),
+          apiGet(tenantSlug, `/users`).then(users => users.find(u => u.id === inspData.preventionniste_id)),
+          apiGet(tenantSlug, `/prevention/non-conformites?inspection_id=${inspectionId}`)
+        ]);
+
+        setBatiment(batData);
+        setGrille(grilleData);
+        setPreventionniste(prevData);
+        setNonConformites(ncData);
+      } catch (error) {
+        console.error('Erreur chargement détails:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les détails",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDetails();
+  }, [inspectionId, tenantSlug]);
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement...</div>;
+  }
+
+  if (!inspection || !batiment) {
+    return <div>Erreur: Données manquantes</div>;
+  }
+
+  return (
+    <div className="detail-inspection-container">
+      <div className="page-header">
+        <h2>🔍 Détails de l'Inspection</h2>
+        <div className="header-actions">
+          <Button variant="outline" onClick={() => setCurrentView('inspections')}>
+            ← Retour à la liste
+          </Button>
+          <Button onClick={() => {
+            window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/inspections/${inspectionId}/rapport-pdf`, '_blank');
+          }}>
+            📄 Télécharger PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="detail-content">
+        {/* Résumé */}
+        <div className="detail-card">
+          <h3>📊 Résumé</h3>
+          <div className="summary-grid">
+            <div className="summary-item">
+              <span className="label">Statut:</span>
+              <span className={`statut-badge ${inspection.statut_global}`}>
+                {inspection.statut_global === 'conforme' ? '✅ Conforme' : '⚠️ Non-conforme'}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Score:</span>
+              <span className="score-badge">{inspection.score_conformite}%</span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Date:</span>
+              <span>{inspection.date_inspection}</span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Type:</span>
+              <span>{inspection.type_inspection}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bâtiment */}
+        <div className="detail-card">
+          <h3>🏢 Bâtiment Inspecté</h3>
+          <div className="info-grid">
+            <div className="info-item">
+              <span className="label">Nom:</span>
+              <span>{batiment.nom_etablissement}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Adresse:</span>
+              <span>{batiment.adresse_civique}, {batiment.ville}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Groupe occupation:</span>
+              <span>{batiment.groupe_occupation}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Préventionniste */}
+        {preventionniste && (
+          <div className="detail-card">
+            <h3>👨‍🚒 Préventionniste</h3>
+            <p><strong>{preventionniste.prenom} {preventionniste.nom}</strong></p>
+            <p>{preventionniste.email}</p>
+          </div>
+        )}
+
+        {/* Grille utilisée */}
+        {grille && (
+          <div className="detail-card">
+            <h3>📋 Grille d'Inspection</h3>
+            <p><strong>{grille.nom}</strong></p>
+            {grille.groupe_occupation && <p>Groupe {grille.groupe_occupation}</p>}
+          </div>
+        )}
+
+        {/* Non-conformités */}
+        {nonConformites.length > 0 && (
+          <div className="detail-card">
+            <h3>⚠️ Non-Conformités ({nonConformites.length})</h3>
+            <div className="nc-detail-list">
+              {nonConformites.map((nc, idx) => (
+                <div key={nc.id} className="nc-detail-item">
+                  <div className="nc-detail-header">
+                    <span className="nc-number">#{idx + 1}</span>
+                    <h4>{nc.titre}</h4>
+                    <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span>
+                    <span className={`statut-badge ${nc.statut}`}>{nc.statut}</span>
+                  </div>
+                  {nc.description && <p className="nc-description">{nc.description}</p>}
+                  {nc.delai_correction && (
+                    <p className="nc-delai">
+                      <strong>Délai:</strong> {nc.delai_correction}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Photos */}
+        {inspection.photos && inspection.photos.length > 0 && (
+          <div className="detail-card">
+            <h3>📸 Photos ({inspection.photos.length})</h3>
+            <div className="photos-grid">
+              {inspection.photos.map((photoUrl, idx) => (
+                <div key={idx} className="photo-item-view">
+                  <img 
+                    src={photoUrl.includes('data:') ? photoUrl : `${process.env.REACT_APP_BACKEND_URL}${photoUrl}`}
+                    alt={`Photo ${idx + 1}`}
+                    className="photo-detail"
+                    onClick={() => window.open(photoUrl, '_blank')}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {inspection.notes_inspection && (
+          <div className="detail-card">
+            <h3>📝 Notes d'Inspection</h3>
+            <p className="note-text">{inspection.notes_inspection}</p>
+          </div>
+        )}
+
+        {/* Recommandations */}
+        {inspection.recommandations && (
+          <div className="detail-card">
+            <h3>💡 Recommandations</h3>
+            <p className="note-text">{inspection.recommandations}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const GestionNonConformites = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [nonConformites, setNonConformites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchNonConformites = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/non-conformites');
+        setNonConformites(data);
+      } catch (error) {
+        console.error('Erreur chargement non-conformités:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les non-conformités",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNonConformites();
+  }, [tenantSlug]);
+
+  const handleUpdateStatut = async (ncId, newStatut) => {
+    try {
+      await apiPatch(tenantSlug, `/prevention/non-conformites/${ncId}/statut`, {
+        statut: newStatut
+      });
+
+      setNonConformites(prev => 
+        prev.map(nc => nc.id === ncId ? { ...nc, statut: newStatut } : nc)
+      );
+
+      toast({
+        title: "Succès",
+        description: "Statut mis à jour"
+      });
+    } catch (error) {
+      console.error('Erreur mise à jour statut:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredNC = nonConformites.filter(nc => {
+    if (filter === 'all') return true;
+    if (filter === 'ouverte') return nc.statut === 'ouverte' || nc.statut === 'en_cours';
+    if (filter === 'corrigee') return nc.statut === 'corrigee' || nc.statut === 'fermee';
+    return true;
+  });
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement...</div>;
+  }
+
+  return (
+    <div className="non-conformites-container">
+      <div className="page-header">
+        <h2>⚠️ Gestion des Non-Conformités</h2>
+      </div>
+
+      <div className="nc-filters">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+        >
+          Toutes ({nonConformites.length})
+        </Button>
+        <Button
+          variant={filter === 'ouverte' ? 'default' : 'outline'}
+          onClick={() => setFilter('ouverte')}
+        >
+          🔴 Ouvertes ({nonConformites.filter(nc => nc.statut === 'ouverte' || nc.statut === 'en_cours').length})
+        </Button>
+        <Button
+          variant={filter === 'corrigee' ? 'default' : 'outline'}
+          onClick={() => setFilter('corrigee')}
+        >
+          ✅ Corrigées ({nonConformites.filter(nc => nc.statut === 'corrigee' || nc.statut === 'fermee').length})
+        </Button>
+      </div>
+
+      {filteredNC.length === 0 ? (
+        <div className="empty-state">
+          <p>Aucune non-conformité trouvée</p>
+        </div>
+      ) : (
+        <div className="nc-list">
+          {filteredNC.map(nc => (
+            <div key={nc.id} className="nc-card">
+              <div className="nc-header">
+                <h4>{nc.titre}</h4>
+                <span className={`statut-badge ${nc.statut}`}>{nc.statut}</span>
+              </div>
+              
+              <div className="nc-details">
+                <p><strong>Description:</strong> {nc.description || 'N/A'}</p>
+                <p><strong>Gravité:</strong> <span className={`gravite-badge ${nc.gravite}`}>{nc.gravite}</span></p>
+                {nc.delai_correction && (
+                  <p><strong>Délai correction:</strong> {nc.delai_correction}</p>
+                )}
+              </div>
+
+              <div className="nc-actions">
+                <select
+                  value={nc.statut}
+                  onChange={(e) => handleUpdateStatut(nc.id, e.target.value)}
+                  className="statut-select"
+                >
+                  <option value="ouverte">Ouverte</option>
+                  <option value="en_cours">En cours</option>
+                  <option value="corrigee">Corrigée</option>
+                  <option value="fermee">Fermée</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CalendrierInspections = ({ setCurrentView, batiments, filteredBatimentId, setFilteredBatimentId }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    const fetchInspections = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/inspections');
+        setInspections(data);
+      } catch (error) {
+        console.error('Erreur chargement inspections:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les inspections",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInspections();
+  }, [tenantSlug]);
+
+  // Filtrer les inspections par bâtiment si spécifié
+  const filteredInspections = filteredBatimentId 
+    ? inspections.filter(insp => insp.batiment_id === filteredBatimentId)
+    : inspections;
+
+  const filteredBatiment = filteredBatimentId ? batiments.find(b => b.id === filteredBatimentId) : null;
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const getInspectionsForDay = (day) => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    return filteredInspections.filter(insp => insp.date_inspection === dateStr);
+  };
+
+  const getBatimentName = (batimentId) => {
+    const batiment = batiments.find(b => b.id === batimentId);
+    return batiment?.nom_etablissement || 'Inconnu';
+  };
+
+  const getSuggestedInspections = () => {
+    // Bâtiments sans inspection dans les 3 derniers mois
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    return batiments.filter(batiment => {
+      const batimentInspections = filteredInspections.filter(insp => insp.batiment_id === batiment.id);
+      if (batimentInspections.length === 0) return true;
+      
+      const lastInspection = batimentInspections.sort((a, b) => 
+        new Date(b.date_inspection) - new Date(a.date_inspection)
+      )[0];
+      
+      return new Date(lastInspection.date_inspection) < threeMonthsAgo;
+    });
+  };
+
+  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentMonth);
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+  const previousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const today = new Date();
+  const isToday = (day) => {
+    return today.getDate() === day && 
+           today.getMonth() === month && 
+           today.getFullYear() === year;
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement du calendrier...</div>;
+  }
+
+  return (
+    <div className="calendrier-container">
+      <div className="page-header">
+        <h2>📅 Calendrier des Inspections</h2>
+        <Button onClick={() => setCurrentView('nouvelle-inspection')}>
+          ➕ Planifier une inspection
+        </Button>
+      </div>
+
+      {filteredBatiment && (
+        <div style={{ 
+          backgroundColor: '#eff6ff', 
+          border: '2px solid #3b82f6',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <strong>🏢 Filtré par bâtiment:</strong> {filteredBatiment.nom_etablissement || 'Sans nom'} - {filteredBatiment.adresse_civique}
+          </div>
+          <Button size="sm" onClick={() => setFilteredBatimentId(null)} variant="outline">
+            ❌ Retirer filtre
+          </Button>
+        </div>
+      )}
+
+      {/* Navigation du calendrier */}
+      <div className="calendar-nav">
+        <Button variant="outline" onClick={previousMonth}>
+          ← Mois précédent
+        </Button>
+        <h3>{monthNames[month]} {year}</h3>
+        <Button variant="outline" onClick={nextMonth}>
+          Mois suivant →
+        </Button>
+      </div>
+
+      {/* Grille du calendrier */}
+      <div className="calendar-grid">
+        {/* En-têtes des jours */}
+        {dayNames.map(day => (
+          <div key={day} className="calendar-day-header">
+            {day}
+          </div>
+        ))}
+        
+        {/* Jours vides au début */}
+        {Array.from({ length: startingDayOfWeek }).map((_, index) => (
+          <div key={`empty-${index}`} className="calendar-day empty"></div>
+        ))}
+        
+        {/* Jours du mois */}
+        {Array.from({ length: daysInMonth }).map((_, index) => {
+          const day = index + 1;
+          const dayInspections = getInspectionsForDay(day);
+          
+          return (
+            <div 
+              key={day} 
+              className={`calendar-day ${isToday(day) ? 'today' : ''} ${dayInspections.length > 0 ? 'has-inspections' : ''}`}
+            >
+              <div className="day-number">{day}</div>
+              {dayInspections.length > 0 && (
+                <div className="day-inspections">
+                  {dayInspections.slice(0, 2).map(insp => (
+                    <div 
+                      key={insp.id} 
+                      className={`inspection-badge ${insp.statut_global}`}
+                      title={getBatimentName(insp.batiment_id)}
+                    >
+                      {getBatimentName(insp.batiment_id).substring(0, 15)}...
+                    </div>
+                  ))}
+                  {dayInspections.length > 2 && (
+                    <div className="more-inspections">
+                      +{dayInspections.length - 2} autre(s)
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Inspections à venir suggérées */}
+      <div className="suggested-inspections">
+        <h3>🔔 Inspections Suggérées</h3>
+        <p className="subtitle">Bâtiments sans inspection depuis plus de 3 mois</p>
+        
+        {getSuggestedInspections().length === 0 ? (
+          <div className="empty-state">
+            ✅ Tous les bâtiments sont à jour dans leurs inspections
+          </div>
+        ) : (
+          <div className="suggested-list">
+            {getSuggestedInspections().slice(0, 10).map(batiment => (
+              <div key={batiment.id} className="suggested-item">
+                <div className="suggested-info">
+                  <h4>{batiment.nom_etablissement}</h4>
+                  <p>{batiment.adresse_civique}</p>
+                  {batiment.groupe_occupation && (
+                    <span className="groupe-badge">Groupe {batiment.groupe_occupation}</span>
+                  )}
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    // Pre-remplir le formulaire avec ce bâtiment
+                    setCurrentView('nouvelle-inspection');
+                  }}
+                >
+                  Planifier
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Légende */}
+      <div className="calendar-legend">
+        <h4>Légende</h4>
+        <div className="legend-items">
+          <div className="legend-item">
+            <div className="legend-color today-marker"></div>
+            <span>Aujourd'hui</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color conforme"></div>
+            <span>Inspection conforme</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color non_conforme"></div>
+            <span>Inspection non-conforme</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModuleRapports = ({ setCurrentView }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [tendances, setTendances] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const fetchTendances = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/prevention/rapports/tendances');
+        setTendances(data.tendances);
+      } catch (error) {
+        console.error('Erreur chargement tendances:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les tendances",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTendances();
+  }, [tenantSlug]);
+
+  const handleExport = async (type) => {
+    try {
+      setExporting(true);
+      
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=${type}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur export');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `export_${type}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Succès",
+        description: "Export Excel téléchargé avec succès"
+      });
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter les données",
+        variant: "destructive"
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading-spinner">Chargement des rapports...</div>;
+  }
+
+  return (
+    <div className="rapports-container">
+      <div className="page-header">
+        <h2>📊 Rapports et Analyses</h2>
+      </div>
+
+      {/* Exports Excel */}
+      <div className="rapport-section">
+        <h3>📥 Exports Excel</h3>
+        <p className="section-description">Téléchargez vos données en format Excel pour analyses approfondies</p>
+        
+        <div className="export-cards">
+          <div className="export-card">
+            <div className="export-icon">📋</div>
+            <h4>Inspections</h4>
+            <p>Toutes les inspections avec dates, statuts, scores et non-conformités</p>
+            <Button 
+              onClick={() => handleExport('inspections')}
+              disabled={exporting}
+            >
+              {exporting ? 'Export...' : 'Télécharger Excel'}
+            </Button>
+          </div>
+
+          <div className="export-card">
+            <div className="export-icon">🏢</div>
+            <h4>Bâtiments</h4>
+            <p>Liste complète des bâtiments avec informations et historiques d'inspections</p>
+            <Button 
+              onClick={() => handleExport('batiments')}
+              disabled={exporting}
+            >
+              {exporting ? 'Export...' : 'Télécharger Excel'}
+            </Button>
+          </div>
+
+          <div className="export-card">
+            <div className="export-icon">⚠️</div>
+            <h4>Non-Conformités</h4>
+            <p>Toutes les non-conformités détectées avec statuts et délais de correction</p>
+            <Button 
+              onClick={() => handleExport('non_conformites')}
+              disabled={exporting}
+            >
+              {exporting ? 'Export...' : 'Télécharger Excel'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Graphiques de tendances */}
+      {tendances && (
+        <div className="rapport-section">
+          <h3>📈 Tendances sur 6 mois</h3>
+          <p className="section-description">Évolution des inspections et de la conformité</p>
+          
+          <div className="tendances-grid">
+            {/* Graphique inspections */}
+            <div className="tendance-card">
+              <h4>Nombre d'Inspections</h4>
+              <div className="chart-bars">
+                {tendances.map((month, idx) => (
+                  <div key={idx} className="chart-bar-wrapper">
+                    <div className="chart-bar-label">{month.mois.split(' ')[0]}</div>
+                    <div className="chart-bar-container">
+                      <div 
+                        className="chart-bar"
+                        style={{ 
+                          height: `${Math.max((month.inspections_total / Math.max(...tendances.map(m => m.inspections_total))) * 100, 5)}%` 
+                        }}
+                        title={`${month.inspections_total} inspections`}
+                      >
+                        <span className="bar-value">{month.inspections_total}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Graphique taux conformité */}
+            <div className="tendance-card">
+              <h4>Taux de Conformité (%)</h4>
+              <div className="chart-bars">
+                {tendances.map((month, idx) => (
+                  <div key={idx} className="chart-bar-wrapper">
+                    <div className="chart-bar-label">{month.mois.split(' ')[0]}</div>
+                    <div className="chart-bar-container">
+                      <div 
+                        className="chart-bar conformite-bar"
+                        style={{ height: `${month.taux_conformite}%` }}
+                        title={`${month.taux_conformite}% conforme`}
+                      >
+                        <span className="bar-value">{month.taux_conformite}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Graphique NC */}
+            <div className="tendance-card">
+              <h4>Nouvelles Non-Conformités</h4>
+              <div className="chart-bars">
+                {tendances.map((month, idx) => (
+                  <div key={idx} className="chart-bar-wrapper">
+                    <div className="chart-bar-label">{month.mois.split(' ')[0]}</div>
+                    <div className="chart-bar-container">
+                      <div 
+                        className="chart-bar nc-bar"
+                        style={{ 
+                          height: `${Math.max((month.non_conformites_nouvelles / Math.max(...tendances.map(m => m.non_conformites_nouvelles || 1))) * 100, 5)}%` 
+                        }}
+                        title={`${month.non_conformites_nouvelles} NC`}
+                      >
+                        <span className="bar-value">{month.non_conformites_nouvelles}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tableau récapitulatif */}
+      {tendances && (
+        <div className="rapport-section">
+          <h3>📊 Tableau Récapitulatif</h3>
+          <div className="recap-table-wrapper">
+            <table className="recap-table">
+              <thead>
+                <tr>
+                  <th>Période</th>
+                  <th>Inspections</th>
+                  <th>Conformes</th>
+                  <th>Taux Conformité</th>
+                  <th>Nouvelles NC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tendances.map((month, idx) => (
+                  <tr key={idx}>
+                    <td>{month.mois}</td>
+                    <td>{month.inspections_total}</td>
+                    <td>{month.inspections_conformes}</td>
+                    <td>
+                      <span className={`taux-badge ${month.taux_conformite >= 80 ? 'good' : month.taux_conformite >= 50 ? 'medium' : 'bad'}`}>
+                        {month.taux_conformite}%
+                      </span>
+                    </td>
+                    <td>{month.non_conformites_nouvelles}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Module Prévention - Gestion des inspections et bâtiments
+const Prevention = () => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [batiments, setBatiments] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedBatiment, setSelectedBatiment] = useState(null);
+  const [filteredBatimentId, setFilteredBatimentId] = useState(null); // Pour filtrer inspections/plans par bâtiment
+  const [showBatimentModal, setShowBatimentModal] = useState(false);
+  const [grilles, setGrilles] = useState([]);
+  const [selectedInspection, setSelectedInspection] = useState(null);
+
+  const fetchBatiments = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGet(tenantSlug, '/prevention/batiments');
+      setBatiments(data);
+    } catch (error) {
+      console.error('Erreur chargement bâtiments:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les bâtiments",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/statistiques');
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur chargement statistiques:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/notifications');
+      setNotifications(data.notifications || []);
+    } catch (error) {
+      console.error('Erreur chargement notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchBatiments();
+    fetchStats();
+    fetchNotifications();
+    fetchGrilles();
+  }, [tenantSlug]);
+
+  const fetchGrilles = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+      setGrilles(data);
+    } catch (error) {
+      console.error('Erreur chargement grilles:', error);
+    }
+  };
+
+  // Déterminer la grille par défaut selon le type de bâtiment
+  const getDefaultGrille = (batiment) => {
+    if (!grilles || grilles.length === 0) return null;
+    
+    // Si une seule grille, la retourner
+    if (grilles.length === 1) return grilles[0];
+    
+    // Mapping type de bâtiment → grille
+    const grilleMapping = {
+      'C': 'residentiel',
+      'A-1': 'residentiel',
+      'A-2': 'soins',
+      'B': 'soins',
+      'D': 'commercial',
+      'E': 'commercial',
+      'F-1': 'industriel_elevé',
+      'F-2': 'industriel_moyen',
+      'F-3': 'industriel_faible',
+      'I': 'assemblée'
+    };
+    
+    const key = batiment.sous_groupe || batiment.groupe_occupation;
+    const grilleType = grilleMapping[key];
+    
+    // Chercher une grille correspondante
+    const grille = grilles.find(g => 
+      g.nom.toLowerCase().includes(grilleType) ||
+      g.type_batiment === grilleType
+    );
+    
+    // Si pas trouvé, retourner la première grille générique
+    return grille || grilles.find(g => g.nom.toLowerCase().includes('générique')) || grilles[0];
+  };
+
+  // Créer inspection directement et ouvrir la fiche
+  const handleInspectBatiment = async (batiment) => {
+    try {
+      setLoading(true);
+      
+      // Déterminer la grille par défaut
+      const grille = getDefaultGrille(batiment);
+      
+      if (!grille) {
+        toast({
+          title: "Erreur",
+          description: "Aucune grille d'inspection disponible. Créez-en une dans les paramètres.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'inspection automatiquement
+      const inspectionData = {
+        batiment_id: batiment.id,
+        grille_inspection_id: grille.id,
+        date_inspection: new Date().toISOString().split('T')[0],
+        type_inspection: 'reguliere',
+        inspecteur_id: user.id,
+        // Pré-remplir les infos du bâtiment
+        adresse: `${batiment.adresse_civique}, ${batiment.ville}`,
+        contact_nom: batiment.proprietaire_nom || batiment.gerant_nom || '',
+        contact_telephone: batiment.proprietaire_telephone || batiment.gerant_telephone || '',
+        contact_courriel: batiment.proprietaire_courriel || batiment.gerant_courriel || ''
+      };
+
+      const newInspection = await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+
+      // Afficher un toast de succès
+      toast({
+        title: "Inspection créée",
+        description: `Inspection pour ${batiment.nom_etablissement || batiment.adresse_civique} créée avec succès`
+      });
+
+      // Rediriger vers la liste des inspections ou rester sur le dashboard
+      setCurrentView('inspections');
+      // Recharger les données
+      loadInspections();
+
+    } catch (error) {
+      console.error('Erreur création inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'inspection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    switch(currentView) {
+      case 'dashboard':
+        return (
+          <div className="prevention-dashboard">
+            {/* Notifications en haut */}
+            {notifications.length > 0 && (
+              <div className="notifications-section">
+                <h3>🔔 Notifications ({notifications.length})</h3>
+                <div className="notifications-list">
+                  {notifications.slice(0, 5).map(notif => (
+                    <div key={notif.id} className={`notification-item priority-${notif.priority}`}>
+                      <div className="notif-icon">
+                        {notif.priority === 'urgent' && '🚨'}
+                        {notif.priority === 'high' && '⚠️'}
+                        {notif.priority === 'medium' && '📌'}
+                      </div>
+                      <div className="notif-content">
+                        <h4>{notif.titre}</h4>
+                        <p>{notif.description}</p>
+                        {notif.jours_retard && (
+                          <span className="notif-badge retard">{notif.jours_retard} jours de retard</span>
+                        )}
+                        {notif.jours_restants !== undefined && (
+                          <span className="notif-badge warning">{notif.jours_restants} jours restants</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {notifications.length > 5 && (
+                    <div className="more-notifications">
+                      +{notifications.length - 5} notification(s) supplémentaire(s)
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <div className="stat-icon">🏢</div>
+                <div className="stat-content">
+                  <div className="stat-number">{stats?.batiments?.total || batiments.length}</div>
+                  <div className="stat-label">Bâtiments</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📋</div>
+                <div className="stat-content">
+                  <div className="stat-number">{stats?.inspections?.total || 0}</div>
+                  <div className="stat-label">Inspections totales</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">⚠️</div>
+                <div className="stat-content">
+                  <div className="stat-number">{stats?.non_conformites?.ouvertes || 0}</div>
+                  <div className="stat-label">Non-conformités ouvertes</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📈</div>
+                <div className="stat-content">
+                  <div className="stat-number">{stats?.inspections?.taux_conformite || 100}%</div>
+                  <div className="stat-label">Taux conformité</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="quick-actions">
+              <h3>Actions rapides</h3>
+              <div className="action-buttons">
+                <Button 
+                  onClick={() => setCurrentView('batiments')}
+                  className="action-button"
+                >
+                  📋 Gérer les bâtiments
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('calendrier')}
+                  className="action-button"
+                >
+                  📅 Calendrier d'inspections
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('inspections')}
+                  className="action-button"
+                >
+                  🔍 Voir les inspections
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('rapports')}
+                  className="action-button"
+                >
+                  📊 Rapports et Analyses
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('nouvelle-inspection')}
+                  className="action-button"
+                >
+                  ➕ Nouvelle inspection
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('non-conformites')}
+                  className="action-button"
+                >
+                  ⚠️ Non-conformités
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('import')}
+                  className="action-button"
+                >
+                  📊 Import CSV/Excel
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'batiments':
+        return (
+          <div className="prevention-batiments">
+            <div className="page-header">
+              <h2>🏢 Gestion des Bâtiments</h2>
+              <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                ➕ Nouveau Bâtiment
+              </Button>
+            </div>
+            
+            {loading ? (
+              <div className="loading">Chargement des bâtiments...</div>
+            ) : (
+              <div className="batiments-list">
+                {batiments.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Aucun bâtiment enregistré</p>
+                    <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                      Ajouter le premier bâtiment
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="batiments-grid">
+                    {batiments.map(batiment => (
+                      <div key={batiment.id} className="batiment-card">
+                        <div className="batiment-header">
+                          <h4>{batiment.nom_etablissement || 'Sans nom'}</h4>
+                          <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                        </div>
+                        <div className="batiment-info">
+                          <p>{batiment.adresse_civique}</p>
+                          <p>{batiment.ville}</p>
+                        </div>
+                        <div className="batiment-actions">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatiment(batiment);
+                              setShowBatimentModal(true);
+                            }}
+                          >
+                            Voir
+                          </Button>
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBatiment(batiment);
+                              setCurrentView('nouvelle-inspection');
+                            }}
+                          >
+                            Inspecter
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'preventionnistes':
+        return (
+          <div className="prevention-preventionnistes">
+            <div className="page-header">
+              <h2>👨‍🚒 Gestion des Préventionnistes</h2>
+              <Button onClick={() => setCurrentView('assigner-preventionniste')}>
+                ➕ Assigner Préventionniste
+              </Button>
+            </div>
+            
+            <GestionPreventionnistes />
+          </div>
+        );
+      
+      case 'assigner-preventionniste':
+        return (
+          <div className="prevention-assigner">
+            <div className="page-header">
+              <h2>👤 Assigner un Préventionniste</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('preventionnistes')}
+              >
+                ← Retour
+              </Button>
+            </div>
+            
+            <AssignerPreventionniste onAssign={() => {
+              setCurrentView('preventionnistes');
+            }} />
+          </div>
+        );
+
+      case 'grilles':
+        return (
+          <div className="prevention-grilles">
+            <div className="page-header">
+              <h2>📋 Grilles d'Inspection</h2>
+              <Button onClick={() => setCurrentView('nouvelle-grille')}>
+                ➕ Nouvelle Grille
+              </Button>
+            </div>
+            
+            <GrillesInspection />
+          </div>
+        );
+      
+      case 'nouvelle-grille':
+        return (
+          <div className="prevention-nouvelle-grille">
+            <div className="page-header">
+              <h2>📝 Créer une Grille d'Inspection</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('grilles')}
+              >
+                ← Retour aux grilles
+              </Button>
+            </div>
+            
+            <CreateGrilleInspection 
+              onSave={() => setCurrentView('grilles')} 
+              onViewTemplates={() => setCurrentView('grilles')}
+            />
+          </div>
+        );
+
+      case 'import':
+        return (
+          <div className="prevention-import">
+            <div className="page-header">
+              <h2>🏢 Importer des bâtiments</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView('dashboard')}
+              >
+                ← Retour
+              </Button>
+            </div>
+            
+            <ImportBatiments onImportComplete={() => {
+              setCurrentView('batiments');
+              fetchBatiments();
+            }} />
+          </div>
+        );
+      
+      case 'inspections':
+        return <ListeInspections setCurrentView={setCurrentView} />;
+      
+      case 'detail-inspection':
+        return <DetailInspection inspectionId={localStorage.getItem('detail_inspection_id')} setCurrentView={setCurrentView} />;
+      
+      case 'nouvelle-inspection':
+        return (
+          <NouvelleInspection 
+            setCurrentView={setCurrentView}
+            batiments={batiments}
+            selectedBatiment={selectedBatiment}
+            onBatimentSelected={setSelectedBatiment}
+          />
+        );
+      
+      case 'realiser-inspection':
+        return (
+          <RealiserInspection 
+            setCurrentView={setCurrentView}
+          />
+        );
+      
+      case 'non-conformites':
+        return <GestionNonConformites setCurrentView={setCurrentView} />;
+      
+      case 'calendrier':
+        return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
+      
+      case 'plans-intervention':
+        return <PlansIntervention tenantSlug={tenantSlug} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
+      
+      case 'rapports':
+        return <ModuleRapports setCurrentView={setCurrentView} />;
+      
+      case 'nouveau-batiment':
+        // Ouvrir le modal de création de bâtiment et retourner la vue batiments
+        if (!showBatimentModal) {
+          setShowBatimentModal(true);
+          setSelectedBatiment(null); // null pour créer un nouveau
+        }
+        // Retourner la vue batiments (avec le modal ouvert)
+        return (
+          <div className="prevention-content">
+            <div className="page-header">
+              <div>
+                <h2>🏢 Gestion des bâtiments</h2>
+                <p>Cadastre des bâtiments à risque</p>
+              </div>
+            </div>
+            <div className="batiments-grid">
+              {batiments.map(batiment => (
+                <div key={batiment.id} className="batiment-card" onClick={() => {
+                  setSelectedBatiment(batiment);
+                  setShowBatimentModal(true);
+                }}>
+                  <h3>{batiment.nom_etablissement || 'Sans nom'}</h3>
+                  <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      default:
+        return <div>Vue en développement...</div>;
+    }
+  };
+
+  return (
+    <div className="prevention-container">
+      <div className="prevention-header">
+        <div className="header-content">
+          <h1>🔥 Module Prévention</h1>
+          <p>Gestion des inspections et de la sécurité incendie</p>
+        </div>
+        
+        <div className="prevention-nav">
+          <Button 
+            variant={currentView === 'dashboard' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('dashboard')}
+          >
+            📊 Tableau de bord
+          </Button>
+          <Button 
+            variant={currentView === 'batiments' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('batiments')}
+          >
+            🏢 Bâtiments
+          </Button>
+          <Button 
+            variant={currentView === 'preventionnistes' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('preventionnistes')}
+          >
+            👨‍🚒 Préventionnistes
+          </Button>
+          <Button 
+            variant={currentView === 'inspections' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('inspections')}
+          >
+            📋 Inspections
+          </Button>
+          <Button 
+            variant={currentView === 'grilles' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('grilles')}
+          >
+            📋 Grilles d'Inspection
+          </Button>
+          <Button 
+            variant={currentView === 'rapports' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('rapports')}
+          >
+            📈 Rapports
+          </Button>
+          <Button 
+            variant={currentView === 'plans-intervention' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('plans-intervention')}
+          >
+            🗺️ Plans d'Intervention
+          </Button>
+        </div>
+      </div>
+      
+      <div className="prevention-content">
+        {renderContent()}
+      </div>
+
+      {/* Modal détails bâtiment moderne */}
+      {showBatimentModal && (
+        <Suspense fallback={<div>Chargement...</div>}>
+          <BatimentDetailModal
+            batiment={selectedBatiment}
+            onClose={() => {
+              setShowBatimentModal(false);
+              setSelectedBatiment(null);
+              if (currentView === 'nouveau-batiment') {
+                setCurrentView('batiments');
+              }
+            }}
+            onCreate={async (newBatimentData) => {
+              try {
+                await apiPost(tenantSlug, `/prevention/batiments`, newBatimentData);
+                await fetchBatiments();
+                setShowBatimentModal(false);
+                setSelectedBatiment(null);
+                setCurrentView('batiments');
+                toast({
+                  title: "Succès",
+                  description: "Bâtiment créé avec succès"
+                });
+              } catch (error) {
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de créer le bâtiment",
+                  variant: "destructive"
+                });
+              }
+            }}
+            onUpdate={async (updatedData) => {
+              try {
+                await apiPut(tenantSlug, `/prevention/batiments/${selectedBatiment.id}`, updatedData);
+                await fetchBatiments();
+                setSelectedBatiment(updatedData);
+                toast({
+                  title: "Succès",
+                  description: "Bâtiment mis à jour avec succès"
+                });
+              } catch (error) {
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de mettre à jour le bâtiment",
+                  variant: "destructive"
+                });
+              }
+            }}
+            onInspect={() => {
+              setShowBatimentModal(false);
+              handleInspectBatiment(selectedBatiment);
+            }}
+            onCreatePlan={() => {
+              setShowBatimentModal(false);
+              setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
+              setCurrentView('plans-intervention');
+            }}
+            onViewHistory={() => {
+              setShowBatimentModal(false);
+              setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
+              setCurrentView('calendrier'); // Vue inspections
+            }}
+            onGenerateReport={() => {
+              // TODO: Générer rapport pour ce bâtiment
+              toast({
+                title: "Fonctionnalité à venir",
+                description: "Génération de rapport en développement"
+              });
+            }}
+            onDelete={async () => {
+              if (!window.confirm(`Supprimer le bâtiment ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}?`)) {
+                return;
+              }
+              try {
+                await apiDelete(tenantSlug, `/prevention/batiments/${selectedBatiment.id}`);
+                await fetchBatiments();
+                setShowBatimentModal(false);
+                setSelectedBatiment(null);
+                toast({
+                  title: "Succès",
+                  description: "Bâtiment supprimé"
+                });
+              } catch (error) {
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de supprimer le bâtiment",
+                  variant: "destructive"
+                });
+              }
+            }}
+            canEdit={['admin', 'superviseur'].includes(user?.role) || user?.type_emploi === 'preventionniste'}
+            tenantSlug={tenantSlug}
+          />
+        </Suspense>
+      )}
+    </div>
+  );
+};
+
+// Main Application Layout
+const AppLayout = () => {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'personnel':
+        return <Personnel 
+          setCurrentPage={setCurrentPage}
+          setManagingUserDisponibilites={setManagingUserDisponibilites}
+        />;
+      case 'epi':
+        return <ModuleEPI user={user} />;
+      case 'planning':
+        return <Planning />;
+      case 'remplacements':
+        return <Remplacements />;
+      case 'disponibilites':
+        return <MesDisponibilites 
+          user={user}
+          managingUser={managingUserDisponibilites}
+          setCurrentPage={setCurrentPage}
+          setManagingUserDisponibilites={setManagingUserDisponibilites}
+        />;
+      case 'formations':
+        return <Formations />;
+      case 'prevention':
+        return <Prevention />;
+      case 'rapports':
+        return <Rapports />;
+      case 'parametres':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <Parametres user={user} tenantSlug={tenantSlug} />
+          </Suspense>
+        );
+      case 'mesepi':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <MesEPI user={user} />
+          </Suspense>
+        );
+      case 'monprofil':
+        return <MonProfil />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} tenant={tenant} />
+      <main className="main-content">
+        {renderCurrentPage()}
+      </main>
+    </div>
+  );
+};
+
+// Main App Component
+const App = () => {
+  const { user, tenant, loading, logout } = useAuth();
+  const { isSuperAdmin } = useTenant();
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner">Chargement...</div>
+      </div>
+    );
+  }
+
+  // Si l'utilisateur est un Super-Admin, afficher le dashboard super-admin
+  if (user && isSuperAdmin) {
+    return (
+      <div className="App">
+        <Suspense fallback={<LoadingComponent />}>
+          <SuperAdminDashboard onLogout={logout} />
+        </Suspense>
+        <Toaster />
+      </div>
+    );
+  }
+
+  // Sinon, afficher l'interface normale
+  return (
+    <div className="App">
+      {user ? <AppLayout /> : <Login />}
+      <Toaster />
+    </div>
+  );
+};
+
+// Root App with Providers
+const AppWithProviders = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/:tenant/reset-password" element={
+          <AuthProvider>
+            <ResetPassword />
+            <Toaster />
+          </AuthProvider>
+        } />
+        <Route path="*" element={
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        } />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+export default AppWithProviders;

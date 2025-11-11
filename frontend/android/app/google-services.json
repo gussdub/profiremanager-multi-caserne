@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "598997641399",
+    "project_id": "profiremanager",
+    "storage_bucket": "profiremanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598997641399:android:891b740b2580d7ec968532",
+        "android_client_info": {
+          "package_name": "com.profiremanager.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7eGaD1n6BaaTw3dHdi6LVlBp6xKaHuPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
