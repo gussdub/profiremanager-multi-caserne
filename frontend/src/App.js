@@ -14510,12 +14510,11 @@ const MonProfil = () => {
                 type_epi: epiType.id,
                 taille: taille,
                 numero_serie: `${epiType.id.toUpperCase()}-${user.id.substring(0, 8)}`,
-                date_attribution: new Date().toISOString().split('T')[0],
+                marque: 'N/A',
+                modele: 'N/A',
+                date_mise_en_service: new Date().toISOString().split('T')[0],
                 statut: 'En service',
-                etat: 'Neuf',
-                date_prochaine_inspection: '',
-                date_expiration: '',
-                notes: ''
+                notes: 'Taille déclarée par l\'employé'
               })
             );
           }
