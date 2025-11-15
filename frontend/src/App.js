@@ -3766,7 +3766,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   const handleViewUser = async (user) => {
     console.log('👁️ [handleViewUser] Début - User ID:', user.id);
-    setSelectedUser(user);
     
     // Charger les EPI et validations de l'utilisateur
     try {
@@ -3778,15 +3777,28 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       console.log('✅ [handleViewUser] EPIs chargés depuis API:', episData);
       console.log('📊 [handleViewUser] Nombre EPIs:', episData ? episData.length : 0);
       
-      // Utiliser viewUserEPIs pour le modal View
-      setViewUserEPIs(episData || []);
+      // Créer un objet combiné avec l'utilisateur et ses EPIs
+      const userWithData = {
+        ...user,
+        epis: episData || [],
+        validations: validationsData || []
+      };
+      
+      console.log('💾 [handleViewUser] Objet userWithData créé:', userWithData);
+      console.log('📦 [handleViewUser] userWithData.epis.length:', userWithData.epis.length);
+      
+      // Mettre à jour le state avec l'objet complet
+      setSelectedUserWithEPIs(userWithData);
       setUserValidations(validationsData || []);
+      
+      // Ouvrir le modal
+      setShowViewModal(true);
     } catch (error) {
       console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
-      setViewUserEPIs([]);
+      setSelectedUserWithEPIs({...user, epis: [], validations: []});
       setUserValidations([]);
+      setShowViewModal(true);
     }
-    setShowViewModal(true);
   };
 
   const handleValidateCompetence = async () => {
