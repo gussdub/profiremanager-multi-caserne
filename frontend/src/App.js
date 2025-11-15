@@ -3612,6 +3612,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
+  const [viewUserEPIs, setViewUserEPIs] = useState([]); // State séparé pour modal View
   const [userValidations, setUserValidations] = useState([]);
   const [showValidateCompetenceModal, setShowValidateCompetenceModal] = useState(false);
   const [competences, setCompetences] = useState([]);
