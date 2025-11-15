@@ -10298,6 +10298,13 @@ const Formations = () => {
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [showInscriptionsModal, setShowInscriptionsModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showValidateCompetenceModal, setShowValidateCompetenceModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newValidation, setNewValidation] = useState({
+    competence_id: '',
+    justification: '',
+    date_validation: new Date().toISOString().split('T')[0]
+  });
   
   const [formationForm, setFormationForm] = useState({
     nom: '',
