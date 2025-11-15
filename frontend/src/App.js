@@ -3787,14 +3787,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       console.log('💾 [handleViewUser] Objet userWithData créé:', userWithData);
       console.log('📦 [handleViewUser] userWithData.epis.length:', userWithData.epis.length);
       
-      // Mettre à jour le state avec l'objet complet
-      setSelectedUserWithEPIs(userWithData);
+      // Mettre à jour les states
+      setSelectedUser(user); // Pour les données de base du modal
+      setSelectedUserWithEPIs(userWithData); // Pour les EPIs
       setUserValidations(validationsData || []);
       
       // Ouvrir le modal
       setShowViewModal(true);
     } catch (error) {
       console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
+      setSelectedUser(user);
       setSelectedUserWithEPIs({...user, epis: [], validations: []});
       setUserValidations([]);
       setShowViewModal(true);
