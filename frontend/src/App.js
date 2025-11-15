@@ -3773,12 +3773,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       ]);
       setUserEPIs(episData || []);
       setUserValidations(validationsData || []);
+      // Ouvrir le modal APRÈS avoir mis à jour les states
+      setShowViewModal(true);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des EPIs:', error);
       setUserEPIs([]);
       setUserValidations([]);
+      setShowViewModal(true);
     }
-    setShowViewModal(true);
   };
 
   const handleValidateCompetence = async () => {
