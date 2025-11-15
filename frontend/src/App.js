@@ -10406,6 +10406,51 @@ const Formations = () => {
     }
   };
   
+  const handleValidateCompetence = async () => {
+    if (!newValidation.competence_id || !newValidation.justification) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez sélectionner une compétence et fournir une justification",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const validation = {
+        user_id: selectedUser.id,
+        competence_id: newValidation.competence_id,
+        justification: newValidation.justification,
+        date_validation: newValidation.date_validation
+      };
+
+      await apiPost(tenantSlug, '/validations-competences', validation);
+
+      toast({
+        title: "Succès",
+        description: "Rattrapage enregistré avec succès",
+        variant: "success"
+      });
+
+      // Réinitialiser le formulaire
+      setNewValidation({
+        competence_id: '',
+        justification: '',
+        date_validation: new Date().toISOString().split('T')[0]
+      });
+      setShowValidateCompetenceModal(false);
+      
+      // Recharger les données du rapport
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.detail || error.message || "Impossible d'enregistrer le rattrapage",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const handleExportCompetences = async (format) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
