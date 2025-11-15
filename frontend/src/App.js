@@ -3610,9 +3610,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [showEditHeuresMaxModal, setShowEditHeuresMaxModal] = useState(false);
   const [editHeuresMaxValue, setEditHeuresMaxValue] = useState(40);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserWithEPIs, setSelectedUserWithEPIs] = useState(null); // Objet combiné user + EPIs
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
-  const [viewUserEPIs, setViewUserEPIs] = useState([]); // State séparé pour modal View
   const [userValidations, setUserValidations] = useState([]);
   const [showValidateCompetenceModal, setShowValidateCompetenceModal] = useState(false);
   const [competences, setCompetences] = useState([]);
