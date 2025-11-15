@@ -3802,14 +3802,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       setSelectedUserWithEPIs(userWithData); // Pour les EPIs
       setUserValidations(validationsData || []);
       
-      // Ouvrir le modal
-      setShowViewModal(true);
+      // Activer le flag pour que useEffect ouvre le modal
+      console.log('🎯 [handleViewUser] Activation flag shouldOpenViewModal');
+      setShouldOpenViewModal(true);
+      
     } catch (error) {
       console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
       setSelectedUser(user);
       setSelectedUserWithEPIs({...user, epis: [], validations: []});
       setUserValidations([]);
-      setShowViewModal(true);
+      setShouldOpenViewModal(true);
     }
   };
 
