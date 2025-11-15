@@ -4640,8 +4640,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="actions-cell-modern">
-                <button onClick={() => { setSelectedUser(user); setShowViewModal(true); }} title="Voir">👁️</button>
-                <button onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }} title="Modifier">✏️</button>
+                <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
+                <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
                 <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
                 {user.type_emploi === 'temps_partiel' && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
