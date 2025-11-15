@@ -3766,15 +3766,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   const handleViewUser = async (user) => {
     console.log('👁️ [handleViewUser] Début - User ID:', user.id);
-    
-    // Fermer d'abord le modal s'il est ouvert
-    setShowViewModal(false);
-    
-    // Réinitialiser les states
-    setUserEPIs([]);
-    setUserValidations([]);
-    
-    // Définir l'utilisateur sélectionné
     setSelectedUser(user);
     
     // Charger les EPI et validations de l'utilisateur
@@ -3787,28 +3778,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       console.log('✅ [handleViewUser] EPIs chargés depuis API:', episData);
       console.log('📊 [handleViewUser] Nombre EPIs:', episData ? episData.length : 0);
       
-      // Mettre à jour les states avec les données chargées
-      const epis = episData || [];
-      const validations = validationsData || [];
-      
-      console.log('💾 [handleViewUser] Mise à jour state userEPIs avec:', epis);
-      
-      // Important: Utiliser un callback pour s'assurer que le state est mis à jour
-      setUserEPIs(epis);
-      setUserValidations(validations);
-      
-      // Utiliser setTimeout pour s'assurer que React a fini de mettre à jour les states
-      setTimeout(() => {
-        console.log('🚪 [handleViewUser] Ouverture du modal après mise à jour states');
-        setShowViewModal(true);
-      }, 50);
-      
+      // Utiliser viewUserEPIs pour le modal View
+      setViewUserEPIs(episData || []);
+      setUserValidations(validationsData || []);
     } catch (error) {
       console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
-      setUserEPIs([]);
+      setViewUserEPIs([]);
       setUserValidations([]);
-      setShowViewModal(true);
     }
+    setShowViewModal(true);
   };
 
   const handleValidateCompetence = async () => {
