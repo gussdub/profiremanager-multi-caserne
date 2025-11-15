@@ -1072,10 +1072,10 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         tenant_slug: Slug de la caserne
         periode: Période concernée (ex: "janvier 2025")
     """
-    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    resend_api_key = os.environ.get('RESEND_API_KEY')
     
-    if not sendgrid_api_key or sendgrid_api_key == 'your-sendgrid-api-key-here-test':
-        print(f"[WARNING] SENDGRID_API_KEY non configurée - Email NON envoyé à {user_email}")
+    if not resend_api_key:
+        print(f"[WARNING] RESEND_API_KEY non configurée - Email NON envoyé à {user_email}")
         return False
     
     try:
