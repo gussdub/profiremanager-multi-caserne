@@ -14820,7 +14820,11 @@ const MonProfil = () => {
             <div className="formation-header">
               <h3>🛡️ Mes Tailles EPI</h3>
               <Button
-                onClick={() => setIsEditingEPI(!isEditingEPI)}
+                onClick={() => {
+                  console.log('🔘 [Mon Profil EPI] Bouton Modifier cliqué, isEditingEPI avant:', isEditingEPI);
+                  setIsEditingEPI(!isEditingEPI);
+                  console.log('🔘 [Mon Profil EPI] isEditingEPI après:', !isEditingEPI);
+                }}
                 variant={isEditingEPI ? "outline" : "default"}
                 data-testid="edit-epi-tailles-btn"
               >
@@ -14830,12 +14834,17 @@ const MonProfil = () => {
 
             <div className="epi-content-wrapper">
               <p style={{ marginBottom: '15px', fontSize: '14px', color: '#6B7280' }}>
-                Sélectionnez les tailles pour chaque équipement.
+                {isEditingEPI 
+                  ? '✏️ Mode édition activé - Vous pouvez maintenant modifier les tailles' 
+                  : '👉 Cliquez sur "Modifier" pour éditer vos tailles d\'EPI'}
               </p>
 
               <div className="epi-tailles-grid-profile">
                 {getAllEPITypes().map(epiType => {
                   const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
+                  const isDisabled = !isEditingEPI;
+                  console.log(`[${epiType.nom}] disabled=${isDisabled}, isEditingEPI=${isEditingEPI}`);
+                  
                   return (
                     <div key={epiType.id} className="epi-taille-item-profile">
                       <span className="epi-taille-icon-profile">{epiType.icone}</span>
@@ -14843,11 +14852,15 @@ const MonProfil = () => {
                         <Label style={{fontSize: '13px'}}>{epiType.nom}</Label>
                         <Input
                           value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
-                          onChange={(e) => setEpiTailles({...epiTailles, [epiType.id]: e.target.value})}
-                          disabled={!isEditingEPI}
+                          onChange={(e) => {
+                            console.log(`✏️ [${epiType.nom}] onChange déclenché:`, e.target.value);
+                            setEpiTailles({...epiTailles, [epiType.id]: e.target.value});
+                          }}
+                          disabled={isDisabled}
                           placeholder="Taille"
                           className="epi-taille-input-compact"
                           data-testid={`epi-taille-${epiType.id}`}
+                          style={isDisabled ? {cursor: 'not-allowed', opacity: 0.6} : {}}
                         />
                       </div>
                     </div>
