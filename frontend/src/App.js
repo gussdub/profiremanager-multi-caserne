@@ -4696,10 +4696,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="card-footer">
-                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setShowViewModal(true); }}>
+                <Button size="sm" variant="outline" onClick={() => handleViewUser(user)}>
                   👁️ Voir
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setNewUser(user); setShowEditModal(true); }}>
+                <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
                   ✏️ Modifier
                 </Button>
                 {user.type_emploi === 'temps_partiel' && (
