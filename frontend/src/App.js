@@ -3767,14 +3767,17 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     setSelectedUser(user);
     // Charger les EPI et validations de l'utilisateur
     try {
+      console.log('🔍 Chargement EPIs pour utilisateur:', user.id);
       const [episData, validationsData] = await Promise.all([
         apiGet(tenantSlug, `/epi/employe/${user.id}`),
         apiGet(tenantSlug, `/validations-competences/${user.id}`)
       ]);
-      setUserEPIs(episData);
+      console.log('✅ EPIs chargés:', episData);
+      console.log('📊 Nombre EPIs:', episData ? episData.length : 0);
+      setUserEPIs(episData || []);
       setUserValidations(validationsData || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
+      console.error('❌ Erreur lors du chargement des EPIs:', error);
       setUserEPIs([]);
       setUserValidations([]);
     }
