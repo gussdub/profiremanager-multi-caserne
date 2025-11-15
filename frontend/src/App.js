@@ -3764,23 +3764,37 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleViewUser = async (user) => {
+    console.log('👁️ [handleViewUser] Début - User ID:', user.id);
     setSelectedUser(user);
+    
     // Charger les EPI et validations de l'utilisateur
     try {
-      console.log('🔍 Chargement EPIs pour utilisateur:', user.id);
+      console.log('🔍 [handleViewUser] Chargement EPIs pour utilisateur:', user.id);
       const [episData, validationsData] = await Promise.all([
         apiGet(tenantSlug, `/epi/employe/${user.id}`),
         apiGet(tenantSlug, `/validations-competences/${user.id}`)
       ]);
-      console.log('✅ EPIs chargés:', episData);
-      console.log('📊 Nombre EPIs:', episData ? episData.length : 0);
-      setUserEPIs(episData || []);
-      setUserValidations(validationsData || []);
+      console.log('✅ [handleViewUser] EPIs chargés depuis API:', episData);
+      console.log('📊 [handleViewUser] Nombre EPIs:', episData ? episData.length : 0);
+      
+      // Mettre à jour les states
+      const epis = episData || [];
+      const validations = validationsData || [];
+      
+      console.log('💾 [handleViewUser] Mise à jour state userEPIs avec:', epis);
+      setUserEPIs(epis);
+      setUserValidations(validations);
+      
+      // Attendre un court instant pour que le state soit mis à jour
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('🚪 [handleViewUser] Ouverture du modal');
+      
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des EPIs:', error);
+      console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
       setUserEPIs([]);
       setUserValidations([]);
     }
+    
     setShowViewModal(true);
   };
 
