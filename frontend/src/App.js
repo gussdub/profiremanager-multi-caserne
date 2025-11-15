@@ -3867,7 +3867,27 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleEditUser = async (user) => {
-    setSelectedUser(user);
+    // Charger les EPIs de l'utilisateur AVANT d'ouvrir le modal
+    try {
+      console.log('🔍 [Edit Modal] Chargement EPIs pour utilisateur:', user.id);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      console.log('✅ [Edit Modal] EPIs chargés:', episData);
+      
+      // Créer un objet user avec les EPIs attachés
+      const userWithEPIs = {
+        ...user,
+        _epis: episData || []
+      };
+      
+      setSelectedUser(userWithEPIs);
+      setUserEPIs(episData || []); // Garder aussi dans userEPIs pour le formulaire
+      
+    } catch (error) {
+      console.error('❌ [Edit Modal] Erreur lors du chargement des EPIs:', error);
+      setSelectedUser({...user, _epis: []});
+      setUserEPIs([]);
+    }
+    
     setNewUser({
       nom: user.nom,
       prenom: user.prenom,
@@ -3883,20 +3903,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       taux_horaire: user.taux_horaire || 0,
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
-      accepte_gardes_externes: user.accepte_gardes_externes !== false, // Default to true si pas défini
+      accepte_gardes_externes: user.accepte_gardes_externes !== false,
       mot_de_passe: ''
     });
-    
-    // Charger les EPIs de l'utilisateur pour les afficher dans la section Tailles EPI
-    try {
-      console.log('🔍 [Edit Modal] Chargement EPIs pour utilisateur:', user.id);
-      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
-      console.log('✅ [Edit Modal] EPIs chargés:', episData);
-      setUserEPIs(episData || []);
-    } catch (error) {
-      console.error('❌ [Edit Modal] Erreur lors du chargement des EPIs:', error);
-      setUserEPIs([]);
-    }
     
     setShowEditModal(true);
   };
