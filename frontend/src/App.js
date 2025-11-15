@@ -3610,22 +3610,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [showEditHeuresMaxModal, setShowEditHeuresMaxModal] = useState(false);
   const [editHeuresMaxValue, setEditHeuresMaxValue] = useState(40);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedUserWithEPIs, setSelectedUserWithEPIs] = useState(null); // Objet combiné user + EPIs
-  const [shouldOpenViewModal, setShouldOpenViewModal] = useState(false); // Flag pour ouvrir le modal
   const [userDisponibilites, setUserDisponibilites] = useState([]);
   const [userEPIs, setUserEPIs] = useState([]);
   const [userValidations, setUserValidations] = useState([]);
   const [showValidateCompetenceModal, setShowValidateCompetenceModal] = useState(false);
   const [competences, setCompetences] = useState([]);
-  
-  // useEffect pour ouvrir le modal View une fois que selectedUserWithEPIs est chargé
-  useEffect(() => {
-    if (shouldOpenViewModal && selectedUserWithEPIs && selectedUserWithEPIs.epis) {
-      console.log('🚪 [useEffect] Ouverture modal View avec EPIs:', selectedUserWithEPIs.epis.length);
-      setShowViewModal(true);
-      setShouldOpenViewModal(false); // Reset le flag
-    }
-  }, [shouldOpenViewModal, selectedUserWithEPIs]);
   const [newValidation, setNewValidation] = useState({
     competence_id: '',
     justification: '',
