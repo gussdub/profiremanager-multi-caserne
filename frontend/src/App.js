@@ -5106,7 +5106,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
                       </p>
-                      {userEPIs.length > 0 ? (
+                      {userEPIs && userEPIs.length > 0 ? (
                         <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {userEPIs.map(epi => (
                             <div key={epi.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
@@ -5115,32 +5115,13 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                                 {getEPINom(epi.type_epi)}
                               </span>
                               <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, fontWeight: '600', color: '#1F2937' }}>
-                                {epi.taille}
+                                {epi.taille || 'Non renseignée'}
                               </span>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <p className="no-data-text">Aucune taille renseignée</p>
-                      )}
-                    </div>
-
-                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
-                      <h5>🛡️ Équipements (EPI)</h5>
-                      {userEPIs.length > 0 ? (
-                        <div className="epi-view-optimized">
-                          {userEPIs.map(epi => (
-                            <div key={epi.id} className="epi-item-optimized">
-                              <span className="epi-icon-opt">{getEPIIcone(epi.type_epi)}</span>
-                              <div className="epi-info-opt">
-                                <strong>{getEPINom(epi.type_epi)}</strong>
-                                <span className="epi-details-opt">Taille: {epi.taille} • {epi.etat}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="no-data-text">Aucun EPI enregistré</p>
                       )}
                     </div>
 
