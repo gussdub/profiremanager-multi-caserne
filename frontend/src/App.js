@@ -3764,34 +3764,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleViewUser = async (user) => {
+    setSelectedUser(user);
     // Charger les EPI et validations de l'utilisateur
     try {
       const [episData, validationsData] = await Promise.all([
         apiGet(tenantSlug, `/epi/employe/${user.id}`),
         apiGet(tenantSlug, `/validations-competences/${user.id}`)
       ]);
-      
-      // Créer un objet user avec les EPIs attachés
-      const userWithEPIs = {
-        ...user,
-        _epis: episData || [], // Préfixe _ pour éviter conflit avec les props user
-        _validations: validationsData || []
-      };
-      
-      console.log('✅ [handleViewUser] User avec EPIs:', userWithEPIs._epis.length);
-      
-      // Mettre TOUT dans selectedUser (user + EPIs)
-      setSelectedUser(userWithEPIs);
+      setUserEPIs(episData || []);
       setUserValidations(validationsData || []);
-      
-      // Ouvrir le modal
-      setShowViewModal(true);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des EPIs:', error);
-      setSelectedUser({...user, _epis: [], _validations: []});
+      setUserEPIs([]);
       setUserValidations([]);
-      setShowViewModal(true);
     }
+    setShowViewModal(true);
   };
 
   const handleValidateCompetence = async () => {
