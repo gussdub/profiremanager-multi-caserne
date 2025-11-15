@@ -14427,6 +14427,16 @@ const MonProfil = () => {
 
   const handleSaveProfile = async () => {
     try {
+      // Valider heures_max_semaine avant sauvegarde
+      let heuresMax = profileData.heures_max_semaine;
+      if (heuresMax === '' || heuresMax === null || heuresMax === undefined) {
+        heuresMax = 25;
+      } else {
+        heuresMax = parseInt(heuresMax);
+        if (heuresMax < 5) heuresMax = 5;
+        if (heuresMax > 168) heuresMax = 168;
+      }
+
       // Utiliser l'endpoint spécial pour modification de son propre profil
       const updateData = {
         prenom: profileData.prenom,
@@ -14435,9 +14445,7 @@ const MonProfil = () => {
         telephone: profileData.telephone,
         adresse: profileData.adresse,
         contact_urgence: profileData.contact_urgence,
-        heures_max_semaine: profileData.heures_max_semaine !== null && profileData.heures_max_semaine !== undefined 
-          ? parseInt(profileData.heures_max_semaine) 
-          : 25
+        heures_max_semaine: heuresMax
       };
 
       const updatedData = await apiPut(tenantSlug, '/users/mon-profil', updateData);
