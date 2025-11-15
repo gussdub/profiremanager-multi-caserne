@@ -878,10 +878,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   // Jouer un son quand il y a de nouvelles notifications
   useEffect(() => {
     if (unreadCount > 0) {
-      // Son de notification (vous pouvez personnaliser)
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZjTkIHGy57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3Qt');
-      audio.volume = 0.3;
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      playNotificationSound();
     }
   }, [unreadCount]);
 
