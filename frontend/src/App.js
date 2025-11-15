@@ -758,6 +758,18 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [showRemplacementModal, setShowRemplacementModal] = useState(false);
   const [selectedDemandeRemplacement, setSelectedDemandeRemplacement] = useState(null);
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  
+  // Paramètres de notifications (localStorage)
+  const [notificationSettings, setNotificationSettings] = useState(() => {
+    const saved = localStorage.getItem('notificationSettings');
+    return saved ? JSON.parse(saved) : {
+      soundEnabled: true,
+      soundType: 'default',
+      volume: 50,
+      pushEnabled: true
+    };
+  });
 
   // Charger les notifications
   const loadNotifications = async () => {
