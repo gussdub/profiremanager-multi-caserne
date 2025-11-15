@@ -5130,34 +5130,22 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
                       </p>
-                      {(() => {
-                        console.log('🔍 [Modal Voir] selectedUserWithEPIs:', selectedUserWithEPIs);
-                        console.log('🔍 [Modal Voir] selectedUserWithEPIs.epis:', selectedUserWithEPIs?.epis);
-                        console.log('🔍 [Modal Voir] selectedUserWithEPIs.epis.length:', selectedUserWithEPIs?.epis?.length);
-                        return null;
-                      })()}
-                      {selectedUserWithEPIs?.epis && selectedUserWithEPIs.epis.length > 0 ? (
+                      {userEPIs && userEPIs.length > 0 ? (
                         <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {selectedUserWithEPIs.epis.map(epi => {
-                            console.log('📦 [Modal Voir] Affichage EPI:', epi);
-                            return (
-                              <div key={epi.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                                <span className="detail-label" style={{ minWidth: '140px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <span>{getEPIIcone(epi.type_epi)}</span>
-                                  {getEPINom(epi.type_epi)}
-                                </span>
-                                <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, fontWeight: '600', color: '#1F2937' }}>
-                                  {epi.taille || 'Non renseignée'}
-                                </span>
-                              </div>
-                            );
-                          })}
+                          {userEPIs.map(epi => (
+                            <div key={epi.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                              <span className="detail-label" style={{ minWidth: '140px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>{getEPIIcone(epi.type_epi)}</span>
+                                {getEPINom(epi.type_epi)}
+                              </span>
+                              <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, fontWeight: '600', color: '#1F2937' }}>
+                                {epi.taille || 'Non renseignée'}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       ) : (
-                        <>
-                          {console.log('⚠️ [Modal Voir] Pas d\'EPIs à afficher')}
-                          <p className="no-data-text">Aucune taille renseignée</p>
-                        </>
+                        <p className="no-data-text">Aucune taille renseignée</p>
                       )}
                     </div>
 
