@@ -1030,29 +1030,30 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
         </html>
         """
         
-        # Envoyer l'email via SendGrid
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        # Envoyer l'email via Resend
+        resend_api_key = os.environ.get('RESEND_API_KEY')
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         
-        if not sendgrid_api_key:
-            print(f"[WARNING] SENDGRID_API_KEY non configurée - Email non envoyé à {user_email}")
+        if not resend_api_key:
+            print(f"[WARNING] RESEND_API_KEY non configurée - Email non envoyé à {user_email}")
             return False
         
-        message = Mail(
-            from_email=sender_email,
-            to_emails=user_email,
-            subject=subject,
-            html_content=html_content
-        )
+        # Configurer Resend
+        resend.api_key = resend_api_key
         
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        
-        if response.status_code in [200, 201, 202]:
-            print(f"✅ Email de bienvenue super admin envoyé avec succès à {user_email}")
+        try:
+            params = {
+                "from": f"ProFireManager <{sender_email}>",
+                "to": [user_email],
+                "subject": subject,
+                "html": html_content
+            }
+            
+            response = resend.Emails.send(params)
+            print(f"✅ Email de bienvenue super admin envoyé avec succès à {user_email} via Resend (ID: {response.get('id', 'N/A')})")
             return True
-        else:
-            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
+        except Exception as resend_error:
+            print(f"⚠️ Erreur Resend pour {user_email}: {str(resend_error)}")
             return False
                 
     except Exception as e:
