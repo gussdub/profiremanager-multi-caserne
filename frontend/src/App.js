@@ -10909,12 +10909,18 @@ const Formations = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setSelectedUser(personnel.find(u => u.id === p.id));
+                          console.log('🎖️ Clic Rattrapage - User ID:', p.id);
+                          const userToSelect = personnel.find(u => u.id === p.id);
+                          console.log('👤 User trouvé:', userToSelect);
+                          console.log('📚 Competences disponibles:', competences.length);
+                          setSelectedUser(userToSelect);
+                          console.log('✅ setSelectedUser appelé');
                           setShowValidateCompetenceModal(true);
+                          console.log('🚪 Modal ouvert:', true);
                         }}
-                        title="Ajouter une validation manuelle"
+                        title="Enregistrer un rattrapage de formation"
                       >
-                        + Valider
+                        🎖️ Rattrapage
                       </Button>
                     </div>
                   </div>
