@@ -1161,22 +1161,19 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         </html>
         """
         
-        message = Mail(
-            from_email=sender_email,
-            to_emails=user_email,
-            subject=subject,
-            html_content=html_content
-        )
+        # Configurer Resend
+        resend.api_key = resend_api_key
         
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
+        params = {
+            "from": f"ProFireManager <{sender_email}>",
+            "to": [user_email],
+            "subject": subject,
+            "html": html_content
+        }
         
-        if response.status_code in [200, 201, 202]:
-            print(f"✅ Email de gardes envoyé avec succès à {user_email}")
-            return True
-        else:
-            print(f"⚠️ Erreur SendGrid (code {response.status_code}) pour {user_email}")
-            return False
+        response = resend.Emails.send(params)
+        print(f"✅ Email de gardes envoyé avec succès à {user_email} via Resend (ID: {response.get('id', 'N/A')})")
+        return True
             
     except Exception as e:
         print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
