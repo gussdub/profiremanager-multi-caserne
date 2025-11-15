@@ -4992,7 +4992,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       )}
 
       {/* View User Modal - Version modernisée */}}
-      {showViewModal && selectedUserWithEPIs && (
+      {showViewModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
           <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="view-user-modal">
             <div className="modal-header">
