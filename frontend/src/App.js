@@ -902,6 +902,38 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       console.error('Erreur marquage toutes notifications:', error);
     }
   };
+  
+  // Jouer le son de notification
+  const playNotificationSound = () => {
+    if (!notificationSettings.soundEnabled) return;
+    
+    try {
+      const audio = new Audio();
+      
+      // Sons disponibles
+      const sounds = {
+        default: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZjTkIHGy57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3Qt',
+        chime: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAkAAAAAAAAA4T+j6wK',
+        bell: 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=='
+      };
+      
+      audio.src = sounds[notificationSettings.soundType] || sounds.default;
+      audio.volume = notificationSettings.volume / 100;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.error('Erreur lecture son:', error);
+    }
+  };
+  
+  // Sauvegarder les paramètres
+  const saveNotificationSettings = (newSettings) => {
+    setNotificationSettings(newSettings);
+    localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+    toast({
+      title: "✅ Paramètres sauvegardés",
+      description: "Vos préférences de notification ont été enregistrées"
+    });
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: '📊', roles: ['admin', 'superviseur', 'employe'] },
