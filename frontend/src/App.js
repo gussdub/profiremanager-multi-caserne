@@ -10958,12 +10958,23 @@ const Formations = () => {
                         </p>
                       )}
                     </div>
-                    <div className="pompier-statut">
+                    <div className="pompier-statut" style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
                       {p.conforme ? (
                         <span className="badge-conforme">✅ Conforme</span>
                       ) : (
                         <span className="badge-non-conforme">❌ Non conforme</span>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedUser(personnel.find(u => u.id === p.id));
+                          setShowValidateCompetenceModal(true);
+                        }}
+                        title="Ajouter une validation manuelle"
+                      >
+                        + Valider
+                      </Button>
                     </div>
                   </div>
                 ))}
