@@ -3856,7 +3856,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
-  const handleEditUser = (user) => {
+  const handleEditUser = async (user) => {
     setSelectedUser(user);
     setNewUser({
       nom: user.nom,
@@ -3876,6 +3876,18 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       accepte_gardes_externes: user.accepte_gardes_externes !== false, // Default to true si pas défini
       mot_de_passe: ''
     });
+    
+    // Charger les EPIs de l'utilisateur pour les afficher dans la section Tailles EPI
+    try {
+      console.log('🔍 [Edit Modal] Chargement EPIs pour utilisateur:', user.id);
+      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
+      console.log('✅ [Edit Modal] EPIs chargés:', episData);
+      setUserEPIs(episData || []);
+    } catch (error) {
+      console.error('❌ [Edit Modal] Erreur lors du chargement des EPIs:', error);
+      setUserEPIs([]);
+    }
+    
     setShowEditModal(true);
   };
 
