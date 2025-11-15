@@ -5139,14 +5139,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
                       </p>
                       {(() => {
-                        console.log('🔍 [Modal Voir] viewUserEPIs:', viewUserEPIs);
-                        console.log('🔍 [Modal Voir] viewUserEPIs.length:', viewUserEPIs?.length);
-                        console.log('🔍 [Modal Voir] selectedUser.id:', selectedUser?.id);
+                        console.log('🔍 [Modal Voir] selectedUserWithEPIs:', selectedUserWithEPIs);
+                        console.log('🔍 [Modal Voir] selectedUserWithEPIs.epis:', selectedUserWithEPIs?.epis);
+                        console.log('🔍 [Modal Voir] selectedUserWithEPIs.epis.length:', selectedUserWithEPIs?.epis?.length);
                         return null;
                       })()}
-                      {viewUserEPIs && viewUserEPIs.length > 0 ? (
+                      {selectedUserWithEPIs?.epis && selectedUserWithEPIs.epis.length > 0 ? (
                         <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {viewUserEPIs.map(epi => {
+                          {selectedUserWithEPIs.epis.map(epi => {
                             console.log('📦 [Modal Voir] Affichage EPI:', epi);
                             return (
                               <div key={epi.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
