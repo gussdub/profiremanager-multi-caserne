@@ -984,12 +984,102 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           <div className="notifications-dropdown">
             <div className="notifications-header">
               <h3>Notifications</h3>
-              {unreadCount > 0 && (
-                <button onClick={marquerToutesLues} className="mark-all-read">
-                  Tout marquer comme lu
+              <div style={{display: 'flex', gap: '0.5rem'}}>
+                <button 
+                  onClick={() => setShowNotificationSettings(!showNotificationSettings)} 
+                  className="notification-settings-btn"
+                  title="Paramètres des notifications"
+                >
+                  ⚙️
                 </button>
-              )}
+                {unreadCount > 0 && (
+                  <button onClick={marquerToutesLues} className="mark-all-read">
+                    Tout marquer comme lu
+                  </button>
+                )}
+              </div>
             </div>
+            
+            {/* Section Paramètres */}
+            {showNotificationSettings && (
+              <div className="notification-settings" style={{
+                padding: '1rem',
+                background: '#f8fafc',
+                borderBottom: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                margin: '0.5rem'
+              }}>
+                <h4 style={{marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600'}}>⚙️ Paramètres des notifications</h4>
+                
+                <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                  {/* Activer/Désactiver le son */}
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input
+                      type="checkbox"
+                      checked={notificationSettings.soundEnabled}
+                      onChange={(e) => saveNotificationSettings({...notificationSettings, soundEnabled: e.target.checked})}
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                    />
+                    <span style={{fontSize: '0.85rem'}}>🔔 Activer les sons</span>
+                  </label>
+                  
+                  {/* Choix du son */}
+                  {notificationSettings.soundEnabled && (
+                    <>
+                      <div>
+                        <label style={{fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem'}}>🎵 Type de son</label>
+                        <select
+                          value={notificationSettings.soundType}
+                          onChange={(e) => {
+                            const newSettings = {...notificationSettings, soundType: e.target.value};
+                            saveNotificationSettings(newSettings);
+                            // Jouer un aperçu
+                            setTimeout(() => playNotificationSound(), 100);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          <option value="default">Son par défaut</option>
+                          <option value="chime">Carillon</option>
+                          <option value="bell">Cloche</option>
+                        </select>
+                      </div>
+                      
+                      {/* Volume */}
+                      <div>
+                        <label style={{fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem'}}>
+                          🔊 Volume ({notificationSettings.volume}%)
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={notificationSettings.volume}
+                          onChange={(e) => saveNotificationSettings({...notificationSettings, volume: parseInt(e.target.value)})}
+                          style={{width: '100%'}}
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Notifications push */}
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input
+                      type="checkbox"
+                      checked={notificationSettings.pushEnabled}
+                      onChange={(e) => saveNotificationSettings({...notificationSettings, pushEnabled: e.target.checked})}
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                    />
+                    <span style={{fontSize: '0.85rem'}}>📱 Notifications push du navigateur</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             <div className="notifications-list">
               {notifications.length === 0 ? (
