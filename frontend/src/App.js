@@ -3775,44 +3775,22 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleViewUser = async (user) => {
-    console.log('👁️ [handleViewUser] Début - User ID:', user.id);
-    
+    setSelectedUser(user);
     // Charger les EPI et validations de l'utilisateur
     try {
-      console.log('🔍 [handleViewUser] Chargement EPIs pour utilisateur:', user.id);
       const [episData, validationsData] = await Promise.all([
         apiGet(tenantSlug, `/epi/employe/${user.id}`),
         apiGet(tenantSlug, `/validations-competences/${user.id}`)
       ]);
-      console.log('✅ [handleViewUser] EPIs chargés depuis API:', episData);
-      console.log('📊 [handleViewUser] Nombre EPIs:', episData ? episData.length : 0);
-      
-      // Créer un objet combiné avec l'utilisateur et ses EPIs
-      const userWithData = {
-        ...user,
-        epis: episData || [],
-        validations: validationsData || []
-      };
-      
-      console.log('💾 [handleViewUser] Objet userWithData créé:', userWithData);
-      console.log('📦 [handleViewUser] userWithData.epis.length:', userWithData.epis.length);
-      
-      // Mettre à jour les states
-      setSelectedUser(user); // Pour les données de base du modal
-      setSelectedUserWithEPIs(userWithData); // Pour les EPIs
+      // Utiliser le MÊME state userEPIs que le modal Edit (qui fonctionne)
+      setUserEPIs(episData || []);
       setUserValidations(validationsData || []);
-      
-      // Activer le flag pour que useEffect ouvre le modal
-      console.log('🎯 [handleViewUser] Activation flag shouldOpenViewModal');
-      setShouldOpenViewModal(true);
-      
     } catch (error) {
-      console.error('❌ [handleViewUser] Erreur lors du chargement des EPIs:', error);
-      setSelectedUser(user);
-      setSelectedUserWithEPIs({...user, epis: [], validations: []});
+      console.error('❌ Erreur lors du chargement des EPIs:', error);
+      setUserEPIs([]);
       setUserValidations([]);
-      setShouldOpenViewModal(true);
     }
+    setShowViewModal(true);
   };
 
   const handleValidateCompetence = async () => {
