@@ -14478,6 +14478,10 @@ const MonProfil = () => {
 
   const handleSaveEPITailles = async () => {
     try {
+      console.log('💾 [Mon Profil] Début sauvegarde tailles EPI');
+      console.log('📋 [Mon Profil] Tailles actuelles:', epiTailles);
+      console.log('📦 [Mon Profil] EPIs existants:', myEPIs);
+      
       const allEPITypes = getAllEPITypes();
       const updatePromises = [];
       const createPromises = [];
@@ -14487,19 +14491,28 @@ const MonProfil = () => {
         const taille = epiTailles[epiType.id];
         const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
         
+        console.log(`🔍 [${epiType.nom}] Taille: ${taille}, EPI existant:`, existingEPI ? `Oui (${existingEPI.taille})` : 'Non');
+        
         // Si une taille est saisie
         if (taille && taille.trim() !== '') {
           if (existingEPI) {
             // Mettre à jour l'EPI existant si la taille a changé
             if (taille !== existingEPI.taille) {
+              console.log(`✏️ [${epiType.nom}] Mise à jour: ${existingEPI.taille} → ${taille}`);
               updatePromises.push(
                 apiPut(tenantSlug, `/epi/${existingEPI.id}`, {
                   taille: taille
+                }).catch(err => {
+                  console.error(`❌ Erreur PUT /epi/${existingEPI.id}:`, err);
+                  throw err;
                 })
               );
+            } else {
+              console.log(`⏭️ [${epiType.nom}] Aucun changement, skip`);
             }
           } else {
             // Créer un nouvel EPI
+            console.log(`➕ [${epiType.nom}] Création nouvel EPI avec taille: ${taille}`);
             createPromises.push(
               apiPost(tenantSlug, '/epi', {
                 user_id: user.id,
@@ -14511,12 +14524,17 @@ const MonProfil = () => {
                 date_mise_en_service: new Date().toISOString().split('T')[0],
                 statut: 'En service',
                 notes: 'Taille déclarée par l\'employé'
+              }).catch(err => {
+                console.error(`❌ Erreur POST /epi:`, err);
+                throw err;
               })
             );
           }
         }
       }
 
+      console.log(`📊 [Mon Profil] ${updatePromises.length} mise(s) à jour, ${createPromises.length} création(s)`);
+      
       // Exécuter toutes les mises à jour et créations
       await Promise.all([...updatePromises, ...createPromises]);
 
