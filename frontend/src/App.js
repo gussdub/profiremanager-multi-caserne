@@ -5751,12 +5751,28 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                     <div className="form-field">
                       <Label>Date d'embauche *</Label>
-                      <Input
-                        type="date"
-                        value={newUser.date_embauche}
-                        onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
-                        data-testid="edit-user-hire-date-input"
-                      />
+                      <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                        <select
+                          value={newUser.date_embauche ? newUser.date_embauche.split('-')[0] : new Date().getFullYear()}
+                          onChange={(e) => {
+                            const currentDate = newUser.date_embauche || `${new Date().getFullYear()}-01-01`;
+                            const parts = currentDate.split('-');
+                            setNewUser({...newUser, date_embauche: `${e.target.value}-${parts[1]}-${parts[2]}`});
+                          }}
+                          style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.875rem'}}
+                        >
+                          {Array.from({length: 50}, (_, i) => new Date().getFullYear() - i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <Input
+                          type="date"
+                          value={newUser.date_embauche}
+                          onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
+                          data-testid="edit-user-hire-date-input"
+                          style={{flex: 1}}
+                        />
+                      </div>
                     </div>
                     <div className="form-field">
                       <Label>Taux horaire ($/h)</Label>
