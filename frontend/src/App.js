@@ -14722,9 +14722,7 @@ const MonProfil = () => {
                 <Label>Heures maximum par semaine</Label>
                 <div className="heures-max-input">
                   <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    type="number"
                     min="5"
                     max="168"
                     value={profileData.heures_max_semaine !== null && profileData.heures_max_semaine !== undefined 
@@ -14732,13 +14730,22 @@ const MonProfil = () => {
                       : (userProfile?.heures_max_semaine || 40)}
                     onChange={(e) => {
                       const value = e.target.value;
-                      // Permettre seulement les chiffres ou champ vide
-                      if (value === '' || /^\d+$/.test(value)) {
-                        const numValue = value === '' ? null : parseInt(value);
-                        // Valider la plage 5-168
-                        if (numValue === null || (numValue >= 5 && numValue <= 168)) {
-                          setProfileData({...profileData, heures_max_semaine: numValue});
-                        }
+                      // Permettre champ vide ou nombre valide
+                      if (value === '') {
+                        setProfileData({...profileData, heures_max_semaine: ''});
+                      } else {
+                        const numValue = parseInt(value);
+                        // Accepter toute valeur pendant la saisie pour permettre l'effacement
+                        setProfileData({...profileData, heures_max_semaine: numValue});
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Valider à la sortie du champ
+                      const value = e.target.value;
+                      if (value === '' || value < 5) {
+                        setProfileData({...profileData, heures_max_semaine: 5});
+                      } else if (value > 168) {
+                        setProfileData({...profileData, heures_max_semaine: 168});
                       }
                     }}
                     disabled={!isEditing || userProfile?.type_emploi === 'temps_plein'}
