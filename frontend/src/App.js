@@ -5147,65 +5147,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         <p className="no-data-text">Aucune taille renseignée</p>
                       )}
                     </div>
-
-                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h5 style={{ margin: 0 }}>✅ Validations Manuelles</h5>
-                        <Button 
-                          size="sm" 
-                          onClick={() => setShowValidateCompetenceModal(true)}
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                        >
-                          ➕ Valider
-                        </Button>
-                      </div>
-                      {userValidations.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {userValidations.map(validation => {
-                            const competence = competences.find(c => c.id === validation.competence_id);
-                            return (
-                              <div key={validation.id} style={{
-                                padding: '0.75rem',
-                                background: '#f0fdf4',
-                                border: '1px solid #86efac',
-                                borderRadius: '6px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'start'
-                              }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: '600', color: '#166534', marginBottom: '0.25rem' }}>
-                                    {competence?.nom || 'Compétence inconnue'}
-                                  </div>
-                                  <div style={{ fontSize: '0.813rem', color: '#15803d', marginBottom: '0.25rem' }}>
-                                    📝 {validation.justification}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#16a34a' }}>
-                                    📅 Validé le {new Date(validation.date_validation).toLocaleDateString('fr-FR')}
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => handleDeleteValidation(validation.id)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontSize: '1rem',
-                                    color: '#dc2626',
-                                    padding: '0.25rem'
-                                  }}
-                                  title="Supprimer"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="no-data-text">Aucune validation manuelle</p>
-                      )}
-                    </div>
                   </div>
                 </div>
 
