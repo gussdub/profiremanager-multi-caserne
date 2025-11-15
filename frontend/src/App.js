@@ -14843,7 +14843,10 @@ const MonProfil = () => {
                 {getAllEPITypes().map(epiType => {
                   const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
                   const isDisabled = !isEditingEPI;
-                  console.log(`[${epiType.nom}] disabled=${isDisabled}, isEditingEPI=${isEditingEPI}`);
+                  // Utiliser ?? au lieu de || pour permettre les chaînes vides
+                  const currentValue = epiTailles[epiType.id] ?? (existingEPI ? existingEPI.taille : '');
+                  
+                  console.log(`[${epiType.nom}] disabled=${isDisabled}, value="${currentValue}", epiTailles[${epiType.id}]="${epiTailles[epiType.id]}"`);
                   
                   return (
                     <div key={epiType.id} className="epi-taille-item-profile">
@@ -14851,10 +14854,11 @@ const MonProfil = () => {
                       <div className="epi-taille-info-profile">
                         <Label style={{fontSize: '13px'}}>{epiType.nom}</Label>
                         <Input
-                          value={epiTailles[epiType.id] || (existingEPI ? existingEPI.taille : '')}
+                          value={currentValue}
                           onChange={(e) => {
-                            console.log(`✏️ [${epiType.nom}] onChange déclenché:`, e.target.value);
-                            setEpiTailles({...epiTailles, [epiType.id]: e.target.value});
+                            const newValue = e.target.value;
+                            console.log(`✏️ [${epiType.nom}] onChange: "${currentValue}" → "${newValue}"`);
+                            setEpiTailles({...epiTailles, [epiType.id]: newValue});
                           }}
                           disabled={isDisabled}
                           placeholder="Taille"
