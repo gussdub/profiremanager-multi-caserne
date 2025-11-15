@@ -11414,6 +11414,67 @@ const Formations = () => {
           </div>
         </div>
       )}
+      
+      {/* Modal de validation de compétence / rattrapage */}
+      {showValidateCompetenceModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowValidateCompetenceModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+            <div className="modal-header">
+              <h3>🎖️ Enregistrer un Rattrapage</h3>
+              <Button variant="ghost" onClick={() => setShowValidateCompetenceModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              <p style={{ marginBottom: '1rem', color: '#64748b' }}>
+                Employé: <strong>{selectedUser.prenom} {selectedUser.nom}</strong>
+              </p>
+              
+              <div className="form-field">
+                <Label>Compétence</Label>
+                <select
+                  value={newValidation.competence_id}
+                  onChange={(e) => setNewValidation({...newValidation, competence_id: e.target.value})}
+                  className="form-select"
+                >
+                  <option value="">Sélectionner une compétence</option>
+                  {competences.map(comp => (
+                    <option key={comp.id} value={comp.id}>{comp.nom}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-field">
+                <Label>Justification</Label>
+                <textarea
+                  value={newValidation.justification}
+                  onChange={(e) => setNewValidation({...newValidation, justification: e.target.value})}
+                  placeholder="Expliquez pourquoi cette compétence doit être validée manuellement..."
+                  rows="4"
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-field">
+                <Label>Date de validation</Label>
+                <Input
+                  type="date"
+                  value={newValidation.date_validation}
+                  onChange={(e) => setNewValidation({...newValidation, date_validation: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowValidateCompetenceModal(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleValidateCompetence}>
+                ✅ Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
