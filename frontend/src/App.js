@@ -5751,28 +5751,52 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                     <div className="form-field">
                       <Label>Date d'embauche *</Label>
-                      <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                        <select
-                          value={newUser.date_embauche ? newUser.date_embauche.split('-')[0] : new Date().getFullYear()}
-                          onChange={(e) => {
-                            const currentDate = newUser.date_embauche || `${new Date().getFullYear()}-01-01`;
-                            const parts = currentDate.split('-');
-                            setNewUser({...newUser, date_embauche: `${e.target.value}-${parts[1]}-${parts[2]}`});
-                          }}
-                          style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.875rem'}}
-                        >
-                          {Array.from({length: 50}, (_, i) => new Date().getFullYear() - i).map(year => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
-                        <Input
-                          type="date"
-                          value={newUser.date_embauche}
-                          onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
-                          data-testid="edit-user-hire-date-input"
-                          style={{flex: 1}}
-                        />
-                      </div>
+                      <Input
+                        type="text"
+                        placeholder="JJ/MM/AAAA (ex: 01/11/2015)"
+                        value={newUser.date_embauche ? (() => {
+                          const parts = newUser.date_embauche.split('-');
+                          return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
+                        })() : ''}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/[^\d]/g, '');
+                          
+                          // Auto-format avec /
+                          if (value.length >= 2) {
+                            value = value.slice(0, 2) + '/' + value.slice(2);
+                          }
+                          if (value.length >= 5) {
+                            value = value.slice(0, 5) + '/' + value.slice(5, 9);
+                          }
+                          
+                          // Mettre à jour l'affichage
+                          e.target.value = value;
+                          
+                          // Si format complet (JJ/MM/AAAA), convertir en ISO
+                          if (value.length === 10) {
+                            const [jour, mois, annee] = value.split('/');
+                            const isoDate = `${annee}-${mois}-${jour}`;
+                            
+                            // Valider la date
+                            const testDate = new Date(isoDate);
+                            if (!isNaN(testDate.getTime()) && 
+                                testDate.getFullYear() == annee && 
+                                (testDate.getMonth() + 1) == parseInt(mois) &&
+                                testDate.getDate() == parseInt(jour)) {
+                              setNewUser({...newUser, date_embauche: isoDate});
+                            }
+                          } else if (value.length < 10) {
+                            // Pendant la saisie, stocker temporairement
+                            setNewUser({...newUser, date_embauche: value});
+                          }
+                        }}
+                        maxLength="10"
+                        data-testid="edit-user-hire-date-input"
+                        style={{fontFamily: 'monospace', fontSize: '0.95rem'}}
+                      />
+                      <small style={{color: '#6B7280', fontSize: '0.75rem', marginTop: '0.25rem'}}>
+                        Format: Jour/Mois/Année (ex: 01/11/2015)
+                      </small>
                     </div>
                     <div className="form-field">
                       <Label>Taux horaire ($/h)</Label>
