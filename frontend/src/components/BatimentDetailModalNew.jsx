@@ -208,6 +208,9 @@ const BatimentForm = ({
   const handleAddressSelect = async (suggestion) => {
     const { title, geometry } = suggestion;
     
+    // Marquer qu'on vient de sélectionner une adresse pour éviter de relancer la recherche
+    addressJustSelected.current = true;
+    
     // Parser l'adresse - Format: "Numéro Rue, Ville, Province" (PAS de code postal dans cette API)
     const addressParts = title.split(',').map(p => p.trim());
     const streetAddress = addressParts[0] || '';
