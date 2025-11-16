@@ -18171,79 +18171,87 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
 
   }, [map, batiments, infoWindow]);
 
-  if (error) {
-    return (
-      <div style={{
-        width: '100%',
-        height: '100%',
-        minHeight: '500px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        background: '#f9fafb',
-        borderRadius: '8px',
-        border: '1px solid #ddd'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
-        <div style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444', marginBottom: '10px' }}>
-          Erreur de chargement
-        </div>
-        <div style={{ fontSize: '14px', color: '#6b7280' }}>
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div style={{
-        width: '100%',
-        height: '100%',
-        minHeight: '500px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        background: '#f9fafb',
-        borderRadius: '8px',
-        border: '1px solid #ddd'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
-        <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6', marginBottom: '10px' }}>
-          Chargement de la carte...
-        </div>
-        <div style={{ 
-          width: '200px', 
-          height: '4px', 
-          background: '#e5e7eb', 
-          borderRadius: '2px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: '50%',
-            height: '100%',
-            background: '#3b82f6',
-            animation: 'loading 1.5s ease-in-out infinite'
-          }} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div 
-      ref={mapRef} 
-      style={{ 
-        width: '100%', 
-        height: '100%',
-        minHeight: '500px',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        background: '#f0f0f0'
-      }}
-    />
+    <div style={{ width: '100%', height: '100%', minHeight: '500px', position: 'relative' }}>
+      {/* Carte Google Maps - toujours rendue pour que le mapRef soit attaché */}
+      <div 
+        ref={mapRef} 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          minHeight: '500px',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          background: '#f0f0f0',
+          display: (isLoading || error) ? 'none' : 'block'
+        }}
+      />
+      
+      {/* Overlay de chargement */}
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          background: '#f9fafb',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          zIndex: 10
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
+          <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6', marginBottom: '10px' }}>
+            Chargement de la carte...
+          </div>
+          <div style={{ 
+            width: '200px', 
+            height: '4px', 
+            background: '#e5e7eb', 
+            borderRadius: '2px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '50%',
+              height: '100%',
+              background: '#3b82f6',
+              animation: 'loading 1.5s ease-in-out infinite'
+            }} />
+          </div>
+        </div>
+      )}
+      
+      {/* Overlay d'erreur */}
+      {error && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          background: '#f9fafb',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          zIndex: 10
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
+          <div style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444', marginBottom: '10px' }}>
+            Erreur de chargement
+          </div>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>
+            {error}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
