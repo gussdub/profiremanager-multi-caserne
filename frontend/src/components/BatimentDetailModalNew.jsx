@@ -294,37 +294,103 @@ const BatimentForm = ({
     }
   }, [editData.latitude, editData.longitude, editData.adresse_civique, editData.ville]);
 
-  const generateStreetViewUrl = () => {
-    // On utilise maintenant une mini-carte Leaflet au lieu d'une image statique
-    // Donc on définit juste un flag pour indiquer qu'on a des coordonnées
+  const generateStreetViewUrl = async () => {
+    // Chercher une photo réelle du bâtiment via Mapillary
     if (editData.latitude && editData.longitude) {
-      setStreetViewUrl('SHOW_MAP'); // Flag pour afficher la mini-carte
+      await fetchMapillaryPhoto(editData.latitude, editData.longitude);
     } else if (editData.adresse_civique && editData.ville) {
       // Si pas de coordonnées, tenter un geocoding pour obtenir les coordonnées
       const address = encodeURIComponent(`${editData.adresse_civique}, ${editData.ville}, ${editData.province || 'QC'}, Canada`);
       
-      // Utiliser Nominatim pour obtenir les coordonnées
-      fetch(`https://nominatim.openstreetmap.org/search?q=${address}&format=json&limit=1`, {
-        headers: {
-          'User-Agent': 'ProFireManager/1.0'
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            const lat = parseFloat(data[0].lat);
-            const lon = parseFloat(data[0].lon);
-            // Mettre à jour les coordonnées dans editData
-            setEditData(prev => ({
-              ...prev,
-              latitude: lat,
-              longitude: lon
-            }));
-            setStreetViewUrl('SHOW_MAP');
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${address}&format=json&limit=1`, {
+          headers: {
+            'User-Agent': 'ProFireManager/1.0'
           }
-        })
-        .catch(err => console.log('Erreur geocoding:', err));
+        });
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          // Mettre à jour les coordonnées dans editData
+          setEditData(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lon
+          }));
+          await fetchMapillaryPhoto(lat, lon);
+        }
+      } catch (err) {
+        console.log('Erreur geocoding:', err);
+      }
     }
+  };
+  
+  const fetchMapillaryPhoto = async (lat, lng) => {
+    setPhotoLoading(true);
+    try {
+      // Chercher des images Mapillary dans un rayon de 50m
+      const radius = 50;
+      const url = `https://graph.mapillary.com/images?access_token=MLY|5824985657540538|2ca5e88149fc6be2e9edeae0c17a24e2&fields=id,thumb_2048_url,captured_at&bbox=${lng-0.001},${lat-0.001},${lng+0.001},${lat+0.001}&limit=1`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.data && data.data.length > 0) {
+        // Photo trouvée !
+        setBuildingPhoto({
+          url: data.data[0].thumb_2048_url,
+          source: 'mapillary',
+          capturedAt: data.data[0].captured_at
+        });
+      } else {
+        // Pas de photo Mapillary, afficher le placeholder
+        setBuildingPhoto(null);
+      }
+    } catch (error) {
+      console.log('Erreur Mapillary:', error);
+      setBuildingPhoto(null);
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+  
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Vérifier que c'est une image
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+    
+    // Convertir en base64 pour stockage
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64Image = e.target.result;
+      
+      try {
+        // Sauvegarder la photo dans le bâtiment
+        await axios.put(buildApiUrl(`${tenantSlug}/prevention/batiments/${batiment.id}`), {
+          ...editData,
+          photo_url: base64Image
+        });
+        
+        setBuildingPhoto({
+          url: base64Image,
+          source: 'uploaded',
+          capturedAt: new Date().toISOString()
+        });
+        
+        alert('Photo enregistrée avec succès !');
+      } catch (error) {
+        console.error('Erreur upload photo:', error);
+        alert('Erreur lors de l\'enregistrement de la photo');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const validateAddress = () => {
