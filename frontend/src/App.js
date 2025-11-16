@@ -20462,7 +20462,7 @@ const Prevention = () => {
                 </div>
               </div>
               
-              {/* Carte principale - Google Maps */}
+              {/* Carte principale - Google Maps avec marqueurs */}
               <div style={{
                 flex: 1,
                 background: '#f9fafb',
@@ -20471,23 +20471,19 @@ const Prevention = () => {
                 overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}>
-                <iframe
-                  width="100%"
-                  height="100%"
-                  style={{border: 0, borderRadius: '8px'}}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCq84cjoMWos0rBmcnMHWy2EYs-XZTtL_k&center=45.4042,-71.8929&zoom=13&maptype=satellite"
-                ></iframe>
+                {/* Carte Google Maps via script */}
+                <div 
+                  id="secteurs-map" 
+                  style={{width: '100%', height: '100%', borderRadius: '8px'}}
+                ></div>
                 
-                {/* Message de développement en cours */}
+                {/* Message de développement */}
                 <div style={{
                   position: 'absolute',
                   top: '1rem',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  background: 'rgba(59, 130, 246, 0.95)',
+                  background: 'rgba(16, 185, 129, 0.95)',
                   color: '#fff',
                   padding: '0.75rem 1.5rem',
                   borderRadius: '6px',
@@ -20496,8 +20492,109 @@ const Prevention = () => {
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                   zIndex: 1000
                 }}>
-                  🚧 Phase 1: Carte Google Maps satellite intégrée - Marqueurs & interactions à venir
+                  ✅ Phase 2: Marqueurs des bâtiments - Cliquez sur un marqueur pour voir les détails
                 </div>
+                
+                {/* Initialisation de la carte */}
+                {typeof window !== 'undefined' && (() => {
+                  // Fonction pour initialiser la carte
+                  setTimeout(() => {
+                    if (!window.google || document.getElementById('secteurs-map').hasChildNodes()) return;
+                    
+                    const map = new window.google.maps.Map(document.getElementById('secteurs-map'), {
+                      center: {lat: 45.4042, lng: -71.8929},
+                      zoom: 13,
+                      mapTypeId: 'satellite',
+                      mapTypeControl: true,
+                      mapTypeControlOptions: {
+                        style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                        position: window.google.maps.ControlPosition.TOP_LEFT,
+                      },
+                      streetViewControl: true,
+                      fullscreenControl: true,
+                      zoomControl: true
+                    });
+                    
+                    // Couleurs par préventionniste (mockup)
+                    const couleurs = {
+                      'Jean Tremblay': '#ef4444',
+                      'Marie Dubois': '#3b82f6',
+                      'Pierre Gagnon': '#10b981',
+                      'Non assigné': '#9ca3af'
+                    };
+                    
+                    // Bâtiments mockup avec positions
+                    const batimentsMockup = [
+                      {nom: 'École primaire', adresse: '123 Rue Principale, Shefford', lat: 45.4042, lng: -71.8929, preventionniste: 'Jean Tremblay', type: 'Éducation'},
+                      {nom: 'Centre commercial', adresse: '456 Av du Commerce', lat: 45.4102, lng: -71.8859, preventionniste: 'Marie Dubois', type: 'Commercial'},
+                      {nom: 'Résidence seniors', adresse: '789 Bd des Aînés', lat: 45.3982, lng: -71.8999, preventionniste: 'Pierre Gagnon', type: 'Résidentiel'},
+                      {nom: 'Usine textile', adresse: '321 Rue Industrielle', lat: 45.4122, lng: -71.8789, preventionniste: 'Jean Tremblay', type: 'Industriel'},
+                      {nom: 'Église St-Joseph', adresse: '654 Rue de l\'Église', lat: 45.3962, lng: -71.9029, preventionniste: 'Non assigné', type: 'Assemblée'},
+                      {nom: 'Hôpital régional', adresse: '987 Bd Santé', lat: 45.4162, lng: -71.8719, preventionniste: 'Marie Dubois', type: 'Santé'},
+                      {nom: 'Restaurant Le Gourmet', adresse: '147 Rue Gourmande', lat: 45.4022, lng: -71.8949, preventionniste: 'Pierre Gagnon', type: 'Commercial'},
+                      {nom: 'Caserne pompiers', adresse: '258 Rue des Héros', lat: 45.4082, lng: -71.8889, preventionniste: 'Jean Tremblay', type: 'Service public'}
+                    ];
+                    
+                    // Créer les marqueurs
+                    batimentsMockup.forEach(batiment => {
+                      const marker = new window.google.maps.Marker({
+                        position: {lat: batiment.lat, lng: batiment.lng},
+                        map: map,
+                        title: batiment.nom || batiment.adresse,
+                        icon: {
+                          path: window.google.maps.SymbolPath.CIRCLE,
+                          scale: 10,
+                          fillColor: couleurs[batiment.preventionniste],
+                          fillOpacity: 0.9,
+                          strokeColor: '#fff',
+                          strokeWeight: 2
+                        }
+                      });
+                      
+                      // InfoWindow au clic
+                      const infoWindow = new window.google.maps.InfoWindow({
+                        content: `
+                          <div style="padding: 0.5rem; max-width: 250px;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; font-weight: 600;">
+                              ${batiment.nom || batiment.adresse}
+                            </h4>
+                            <div style="font-size: 0.813rem; color: #6b7280; margin-bottom: 0.5rem;">
+                              📫 ${batiment.adresse}
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.813rem;">
+                              <div><strong>Type:</strong> ${batiment.type}</div>
+                              <div><strong>Préventionniste:</strong> 
+                                <span style="color: ${couleurs[batiment.preventionniste]}; font-weight: 600;">
+                                  ${batiment.preventionniste}
+                                </span>
+                              </div>
+                            </div>
+                            <button onclick="alert('Voir détails - À implémenter')" style="
+                              margin-top: 0.75rem;
+                              padding: 0.5rem 1rem;
+                              background: #3b82f6;
+                              color: white;
+                              border: none;
+                              border-radius: 4px;
+                              cursor: pointer;
+                              font-size: 0.813rem;
+                              width: 100%;
+                            ">
+                              👁️ Voir les détails
+                            </button>
+                          </div>
+                        `
+                      });
+                      
+                      marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                      });
+                    });
+                    
+                  }, 500);
+                  
+                  return null;
+                })()}
                 
                 {/* Légende en bas */}
                 <div style={{
