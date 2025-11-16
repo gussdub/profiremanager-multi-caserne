@@ -18012,10 +18012,13 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [infoWindow, setInfoWindow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const hasInitialized = React.useRef(false);
   
   // Simple initialization without complex useEffect
   React.useEffect(() => {
-    if (!mapRef.current || map) return;
+    if (!mapRef.current || hasInitialized.current) return;
+    
+    hasInitialized.current = true;
     
     const initializeMap = () => {
       // Load script if not already loaded
@@ -18056,7 +18059,7 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
     };
     
     setTimeout(initializeMap, 500);
-  }, [map]);
+  }, []);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
   useEffect(() => {
