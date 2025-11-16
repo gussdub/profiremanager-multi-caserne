@@ -18018,34 +18018,40 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
       try {
         // Vérifier si Google Maps est disponible
         if (!window.google || !window.google.maps) {
-          setError('Google Maps API non chargée');
-          setIsLoading(false);
+          console.log('⏳ En attente de Google Maps...');
+          setTimeout(initMap, 500); // Réessayer après 500ms
           return;
         }
         
-        // Centre par défaut (Montréal) si pas de bâtiments
-        const defaultCenter = { lat: 45.5017, lng: -73.5673 };
+        console.log('✅ Google Maps chargé, initialisation de la carte...');
+        
+        // Centre par défaut (Shefford) si pas de bâtiments
+        const defaultCenter = { lat: 45.4042, lng: -71.8929 };
         
         // Calculer le centre basé sur les bâtiments s'ils existent
         let center = defaultCenter;
         if (batiments && batiments.length > 0) {
           const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
+          console.log(`📍 ${batimentsAvecCoords.length} bâtiments avec coordonnées`);
+          
           if (batimentsAvecCoords.length > 0) {
             const avgLat = batimentsAvecCoords.reduce((sum, b) => sum + b.latitude, 0) / batimentsAvecCoords.length;
             const avgLng = batimentsAvecCoords.reduce((sum, b) => sum + b.longitude, 0) / batimentsAvecCoords.length;
             center = { lat: avgLat, lng: avgLng };
+            console.log(`📍 Centre calculé: ${center.lat}, ${center.lng}`);
           }
         }
 
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           center: center,
-          zoom: 12,
+          zoom: 13,
           mapTypeControl: true,
           streetViewControl: true,
           fullscreenControl: true,
           zoomControl: true
         });
 
+        console.log('✅ Carte initialisée');
         setMap(mapInstance);
         setIsLoading(false);
         
@@ -18054,32 +18060,16 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
         setInfoWindow(infoWindowInstance);
 
       } catch (error) {
-        console.error('Erreur initialisation Google Maps:', error);
-        setError('Erreur lors de l\'initialisation de la carte');
+        console.error('❌ Erreur initialisation Google Maps:', error);
+        setError(`Erreur: ${error.message}`);
         setIsLoading(false);
       }
     };
 
-    // Charger Google Maps si pas déjà chargé
-    if (!window.google || !window.google.maps) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if (mapRef.current && !map) {
-          initMap();
-        }
-      };
-      script.onerror = () => {
-        setError('Impossible de charger Google Maps');
-        setIsLoading(false);
-      };
-      document.head.appendChild(script);
-    } else if (mapRef.current && !map) {
+    if (mapRef.current && !map) {
       initMap();
     }
-  }, [mapRef.current]);
+  }, [mapRef.current, batiments]);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
   useEffect(() => {
