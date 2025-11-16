@@ -170,6 +170,7 @@ const BatimentForm = ({
   // Autocomplétion d'adresse avec API Adresse Québec (gratuite et fiable)
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const addressJustSelected = useRef(false);
   const [isSearching, setIsSearching] = useState(false);
   
   const searchAddress = async (query) => {
