@@ -381,8 +381,8 @@ const BatimentForm = ({
             )}
           </div>
           
-          {/* Vignette Carte de Localisation */}
-          {streetViewUrl && (
+          {/* Mini-carte Leaflet de Localisation */}
+          {streetViewUrl && editData.latitude && editData.longitude && (
             <div style={{
               width: '400px',
               height: '250px',
@@ -391,13 +391,10 @@ const BatimentForm = ({
               border: '3px solid rgba(255, 255, 255, 0.3)',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
             }}>
-              <img 
-                src={streetViewUrl} 
-                alt="Carte de localisation du bâtiment" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
+              <MiniMapPreview 
+                latitude={editData.latitude} 
+                longitude={editData.longitude}
+                address={editData.adresse_civique}
               />
             </div>
           )}
