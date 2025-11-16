@@ -901,22 +901,46 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   };
   
   // Jouer le son de notification
-  const playNotificationSound = () => {
-    if (!notificationSettings.soundEnabled) return;
+  const playNotificationSound = (customSettings = null) => {
+    const settings = customSettings || notificationSettings;
+    
+    if (!settings.soundEnabled) return;
     
     try {
-      const audio = new Audio();
+      // Sons simples générés
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
       
-      // Sons disponibles
-      const sounds = {
-        default: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZjTkIHGy57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3QtBSh+y/HajzsIHGu57OihUhELTKXh8bllHgU2jdXty3Qt',
-        chime: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAkAAAAAAAAA4T+j6wK',
-        bell: 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=='
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Fréquences selon le type
+      const frequencies = {
+        default: [523.25, 659.25, 783.99], // Do-Mi-Sol
+        chime: [659.25, 783.99, 1046.50], // Mi-Sol-Do aigu
+        bell: [830.61, 987.77] // Sol#-Si
       };
       
-      audio.src = sounds[notificationSettings.soundType] || sounds.default;
-      audio.volume = notificationSettings.volume / 100;
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      const freqs = frequencies[settings.soundType] || frequencies.default;
+      
+      // Volume
+      gainNode.gain.setValueAtTime(settings.volume / 200, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      // Jouer les notes
+      freqs.forEach((freq, index) => {
+        setTimeout(() => {
+          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+          if (index === 0) {
+            oscillator.start(audioContext.currentTime);
+          }
+        }, index * 100);
+      });
+      
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      console.log('🔊 Son joué:', settings.soundType, 'volume:', settings.volume);
     } catch (error) {
       console.error('Erreur lecture son:', error);
     }
