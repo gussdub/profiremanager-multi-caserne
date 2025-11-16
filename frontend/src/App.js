@@ -18004,6 +18004,154 @@ const DEFAULT_GRILLES_TEMPLATES = [
   }
 ];
 
+// MapComponent pour afficher les bâtiments sur Google Maps
+const MapComponent = ({ batiments, onBatimentClick }) => {
+  const mapRef = React.useRef(null);
+  const [map, setMap] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const [infoWindow, setInfoWindow] = useState(null);
+
+  useEffect(() => {
+    const initMap = async () => {
+      try {
+        // Dynamically import the Google Maps API Loader
+        const { Loader } = await import('@googlemaps/js-api-loader');
+        
+        const loader = new Loader({
+          apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+          version: 'weekly',
+          libraries: ['places', 'drawing', 'geometry']
+        });
+
+        const google = await loader.load();
+        
+        // Centre par défaut (Montréal) si pas de bâtiments
+        const defaultCenter = { lat: 45.5017, lng: -73.5673 };
+        
+        // Calculer le centre basé sur les bâtiments s'ils existent
+        let center = defaultCenter;
+        if (batiments && batiments.length > 0) {
+          const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
+          if (batimentsAvecCoords.length > 0) {
+            const avgLat = batimentsAvecCoords.reduce((sum, b) => sum + b.latitude, 0) / batimentsAvecCoords.length;
+            const avgLng = batimentsAvecCoords.reduce((sum, b) => sum + b.longitude, 0) / batimentsAvecCoords.length;
+            center = { lat: avgLat, lng: avgLng };
+          }
+        }
+
+        const mapInstance = new google.maps.Map(mapRef.current, {
+          center: center,
+          zoom: 12,
+          mapTypeControl: true,
+          streetViewControl: true,
+          fullscreenControl: true,
+          zoomControl: true
+        });
+
+        setMap(mapInstance);
+        
+        // Créer une infowindow réutilisable
+        const infoWindowInstance = new google.maps.InfoWindow();
+        setInfoWindow(infoWindowInstance);
+
+      } catch (error) {
+        console.error('Erreur initialisation Google Maps:', error);
+      }
+    };
+
+    if (mapRef.current && !map) {
+      initMap();
+    }
+  }, [mapRef.current]);
+
+  // Gérer les marqueurs quand la carte et les bâtiments changent
+  useEffect(() => {
+    if (!map || !batiments) return;
+
+    // Supprimer les anciens marqueurs
+    markers.forEach(marker => marker.setMap(null));
+
+    const newMarkers = [];
+
+    batiments.forEach(batiment => {
+      if (!batiment.latitude || !batiment.longitude) return;
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: batiment.latitude, lng: batiment.longitude },
+        map: map,
+        title: batiment.nom_etablissement,
+        icon: {
+          url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+        }
+      });
+
+      // Ajouter un listener pour afficher l'infobulle au clic
+      marker.addListener('click', () => {
+        const content = `
+          <div style="padding: 10px; max-width: 300px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">
+              ${batiment.nom_etablissement || 'Sans nom'}
+            </h3>
+            <p style="margin: 5px 0; font-size: 14px;">
+              <strong>Adresse:</strong> ${batiment.adresse_civique || 'N/A'}
+            </p>
+            <p style="margin: 5px 0; font-size: 14px;">
+              <strong>Ville:</strong> ${batiment.ville || 'N/A'}
+            </p>
+            <p style="margin: 5px 0; font-size: 14px;">
+              <strong>Groupe:</strong> ${batiment.groupe_occupation || 'N/A'}
+            </p>
+            ${batiment.preventionniste_assigne_id ? 
+              '<p style="margin: 5px 0; font-size: 14px; color: green;"><strong>✓ Préventionniste assigné</strong></p>' : 
+              '<p style="margin: 5px 0; font-size: 14px; color: orange;"><strong>⚠ Sans préventionniste</strong></p>'
+            }
+          </div>
+        `;
+        
+        infoWindow.setContent(content);
+        infoWindow.open(map, marker);
+        
+        // Appeler le callback si fourni
+        if (onBatimentClick) {
+          onBatimentClick(batiment);
+        }
+      });
+
+      newMarkers.push(marker);
+    });
+
+    setMarkers(newMarkers);
+
+    // Ajuster les limites de la carte pour afficher tous les marqueurs
+    if (newMarkers.length > 0) {
+      const bounds = new window.google.maps.LatLngBounds();
+      newMarkers.forEach(marker => {
+        bounds.extend(marker.getPosition());
+      });
+      map.fitBounds(bounds);
+      
+      // Limiter le zoom maximum après fitBounds
+      const listener = window.google.maps.event.addListener(map, "idle", function() { 
+        if (map.getZoom() > 16) map.setZoom(16); 
+        window.google.maps.event.removeListener(listener); 
+      });
+    }
+
+  }, [map, batiments, infoWindow]);
+
+  return (
+    <div 
+      ref={mapRef} 
+      style={{ 
+        width: '100%', 
+        height: '600px',
+        borderRadius: '8px',
+        border: '1px solid #ddd'
+      }}
+    />
+  );
+};
+
 // Gestion des Préventionnistes
 const GestionPreventionnistes = () => {
   const { tenantSlug } = useTenant();
