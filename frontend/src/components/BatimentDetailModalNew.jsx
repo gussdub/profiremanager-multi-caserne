@@ -527,23 +527,139 @@ const BatimentForm = ({
             )}
           </div>
           
-          {/* Mini-carte Leaflet de Localisation */}
-          {streetViewUrl && editData.latitude && editData.longitude && (
-            <div style={{
-              width: '400px',
-              height: '250px',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: '3px solid rgba(255, 255, 255, 0.3)',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-            }}>
-              <MiniMapPreview 
-                latitude={editData.latitude} 
-                longitude={editData.longitude}
-                address={editData.adresse_civique}
-              />
-            </div>
-          )}
+          {/* Photo du Bâtiment */}
+          <div style={{
+            width: '400px',
+            height: '250px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            background: '#f0f0f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative'
+          }}>
+            {photoLoading ? (
+              <div style={{ textAlign: 'center', color: 'white' }}>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>📷</div>
+                <div>Recherche d'une photo...</div>
+              </div>
+            ) : buildingPhoto ? (
+              <>
+                <img 
+                  src={buildingPhoto.url} 
+                  alt="Photo du bâtiment" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '5px',
+                  right: '5px',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontSize: '11px'
+                }}>
+                  {buildingPhoto.source === 'mapillary' ? '© Mapillary' : 'Photo uploadée'}
+                </div>
+                <button
+                  onClick={() => setShowPhotoUpload(true)}
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    background: 'rgba(255,255,255,0.9)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  📷 Changer
+                </button>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                <div style={{ fontSize: '64px', marginBottom: '15px' }}>🏢</div>
+                <div style={{ marginBottom: '15px', fontSize: '14px' }}>
+                  Aucune photo disponible pour ce bâtiment
+                </div>
+                <label style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  fontSize: '14px'
+                }}>
+                  📷 Ajouter une photo
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            )}
+            
+            {showPhotoUpload && buildingPhoto && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.9)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+              }}>
+                <div style={{ color: 'white', marginBottom: '15px' }}>
+                  Remplacer la photo actuelle ?
+                </div>
+                <label style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  marginBottom: '10px'
+                }}>
+                  📷 Choisir une nouvelle photo
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      handlePhotoUpload(e);
+                      setShowPhotoUpload(false);
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <button
+                  onClick={() => setShowPhotoUpload(false)}
+                  style={{
+                    background: 'transparent',
+                    color: 'white',
+                    border: '1px solid white',
+                    padding: '10px 20px',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+          </div>
           
           <Button 
             variant="ghost" 
