@@ -61,8 +61,6 @@ const BatimentForm = ({
   const autocompleteInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
-  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-
   // Types de bâtiment avec sous-catégories
   const typesBatiment = {
     'Résidentiel': ['Unifamiliale', 'Bifamiliale', 'Multifamiliale (3-8 logements)', 'Multifamiliale (9+ logements)', 'Copropriété', 'Maison mobile'],
