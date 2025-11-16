@@ -152,22 +152,21 @@ const BatimentForm = ({
     const lat = geometry?.coordinates?.[1] || null;
     const lng = geometry?.coordinates?.[0] || null;
     
-    // Obtenir le code postal via reverse geocoding Google
+    // Obtenir le code postal via reverse geocoding Nominatim (OpenStreetMap)
     let postalCode = '';
     if (lat && lng) {
       try {
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
-        const response = await fetch(geocodeUrl);
+        // Utiliser Nominatim API (gratuite, sans clé)
+        const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+        const response = await fetch(geocodeUrl, {
+          headers: {
+            'User-Agent': 'ProFireManager/1.0'
+          }
+        });
         const data = await response.json();
         
-        if (data.results && data.results[0]) {
-          const addressComponents = data.results[0].address_components;
-          const postalComponent = addressComponents.find(component => 
-            component.types.includes('postal_code')
-          );
-          if (postalComponent) {
-            postalCode = postalComponent.long_name;
-          }
+        if (data && data.address && data.address.postcode) {
+          postalCode = data.address.postcode;
         }
       } catch (error) {
         console.error('Erreur récupération code postal:', error);
