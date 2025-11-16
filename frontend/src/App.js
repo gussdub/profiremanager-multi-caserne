@@ -18014,28 +18014,49 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [error, setError] = useState(null);
   const hasInitialized = React.useRef(false);
   
+  console.log('[MapComponent] RENDER - Batiments:', batiments?.length || 0, 'Loading:', isLoading, 'Error:', error);
+  
   // Simple initialization without complex useEffect
   React.useEffect(() => {
-    if (!mapRef.current || hasInitialized.current) return;
+    console.log('[MapComponent] useEffect DEBUT - mapRef.current:', !!mapRef.current, 'hasInitialized:', hasInitialized.current);
+    
+    if (!mapRef.current || hasInitialized.current) {
+      console.log('[MapComponent] useEffect SKIP');
+      return;
+    }
     
     hasInitialized.current = true;
+    console.log('[MapComponent] Initialisation commencée');
     
     const initializeMap = () => {
+      console.log('[MapComponent] initializeMap appelé - Google disponible:', !!(window.google?.maps));
+      
       // Load script if not already loaded
       if (!window.google || !window.google.maps) {
         if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+          console.log('[MapComponent] Chargement du script Google Maps...');
           const script = document.createElement('script');
           script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
           script.async = true;
-          script.onload = () => setTimeout(initializeMap, 100);
+          script.onload = () => {
+            console.log('[MapComponent] Script chargé avec succès!');
+            setTimeout(initializeMap, 100);
+          };
+          script.onerror = (e) => {
+            console.error('[MapComponent] Erreur chargement script:', e);
+            setError('Impossible de charger Google Maps');
+            setIsLoading(false);
+          };
           document.head.appendChild(script);
         } else {
+          console.log('[MapComponent] Script en cours de chargement, réessai...');
           setTimeout(initializeMap, 500);
         }
         return;
       }
       
       try {
+        console.log('[MapComponent] Création de la carte...');
         // Center default (Shefford)
         const center = { lat: 45.4042, lng: -71.8929 };
         
@@ -18048,11 +18069,13 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
           zoomControl: true
         });
 
+        console.log('[MapComponent] Carte créée avec succès!');
         setMap(mapInstance);
         setIsLoading(false);
         setInfoWindow(new window.google.maps.InfoWindow());
         
       } catch (err) {
+        console.error('[MapComponent] Erreur création carte:', err);
         setError(err.message);
         setIsLoading(false);
       }
