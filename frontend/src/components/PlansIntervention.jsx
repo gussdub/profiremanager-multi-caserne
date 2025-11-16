@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import axios from 'axios';
 import { buildApiUrl } from '../utils/api';
-import PlanInterventionBuilder from './PlanInterventionBuilder';
+// import PlanInterventionBuilder from './PlanInterventionBuilder'; // Désactivé temporairement (dépendance Google Maps)
 
 const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatimentId }) => {
   const [plans, setPlans] = useState([]);
