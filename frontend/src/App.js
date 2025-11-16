@@ -18004,253 +18004,156 @@ const DEFAULT_GRILLES_TEMPLATES = [
   }
 ];
 
-// MapComponent pour afficher les bâtiments sur Google Maps - VERSION SIMPLIFIÉE
+// MapComponent avec Leaflet + OpenStreetMap (GRATUIT, sans clé API)
 const MapComponent = ({ batiments, onBatimentClick }) => {
-  const mapRef = React.useRef(null);
-  const [map, setMap] = useState(null);
-  const [markers, setMarkers] = useState([]);
-  const [infoWindow, setInfoWindow] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const hasInitialized = React.useRef(false);
+  const [mapReady, setMapReady] = useState(false);
   
-  console.log('[MapComponent] RENDER - Batiments:', batiments?.length || 0, 'Loading:', isLoading, 'Error:', error);
-  
-  // Simple initialization without complex useEffect
+  // Importer Leaflet CSS
   React.useEffect(() => {
-    console.log('[MapComponent] useEffect DEBUT - mapRef.current:', !!mapRef.current, 'hasInitialized:', hasInitialized.current);
+    // Ajouter le CSS de Leaflet
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+    link.crossOrigin = '';
+    document.head.appendChild(link);
     
-    if (hasInitialized.current) {
-      console.log('[MapComponent] useEffect SKIP - Already initialized');
-      return;
-    }
+    setMapReady(true);
     
-    // Wait a bit for the DOM to be ready
-    const checkAndInit = () => {
-      if (!mapRef.current) {
-        console.log('[MapComponent] mapRef not ready yet, retrying in 100ms...');
-        setTimeout(checkAndInit, 100);
-        return;
-      }
-      
-      hasInitialized.current = true;
-      console.log('[MapComponent] Initialisation commencée - mapRef is ready!');
-      
-      const initializeMap = () => {
-      console.log('[MapComponent] initializeMap appelé - Google disponible:', !!(window.google?.maps));
-      
-      // Load script if not already loaded
-      if (!window.google || !window.google.maps) {
-        if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
-          console.log('[MapComponent] Chargement du script Google Maps...');
-          const script = document.createElement('script');
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
-          script.async = true;
-          script.onload = () => {
-            console.log('[MapComponent] Script chargé avec succès!');
-            setTimeout(initializeMap, 100);
-          };
-          script.onerror = (e) => {
-            console.error('[MapComponent] Erreur chargement script:', e);
-            setError('Impossible de charger Google Maps');
-            setIsLoading(false);
-          };
-          document.head.appendChild(script);
-        } else {
-          console.log('[MapComponent] Script en cours de chargement, réessai...');
-          setTimeout(initializeMap, 500);
-        }
-        return;
-      }
-      
-      try {
-        console.log('[MapComponent] Création de la carte...');
-        // Center default (Shefford)
-        const center = { lat: 45.4042, lng: -71.8929 };
-        
-        const mapInstance = new window.google.maps.Map(mapRef.current, {
-          center: center,
-          zoom: 13,
-          mapTypeControl: true,
-          streetViewControl: true,
-          fullscreenControl: true,
-          zoomControl: true
-        });
-
-        console.log('[MapComponent] Carte créée avec succès!');
-        setMap(mapInstance);
-        setIsLoading(false);
-        setInfoWindow(new window.google.maps.InfoWindow());
-        
-      } catch (err) {
-        console.error('[MapComponent] Erreur création carte:', err);
-        setError(err.message);
-        setIsLoading(false);
-      }
+    return () => {
+      document.head.removeChild(link);
     };
-    
-    setTimeout(initializeMap, 500);
-  };
-    
-    // Start the initialization check
-    checkAndInit();
   }, []);
-
-  // Gérer les marqueurs quand la carte et les bâtiments changent
-  useEffect(() => {
-    if (!map || !batiments) return;
-
-    // Supprimer les anciens marqueurs
-    markers.forEach(marker => marker.setMap(null));
-
-    const newMarkers = [];
-
-    batiments.forEach(batiment => {
-      if (!batiment.latitude || !batiment.longitude) return;
-
-      const marker = new window.google.maps.Marker({
-        position: { lat: batiment.latitude, lng: batiment.longitude },
-        map: map,
-        title: batiment.nom_etablissement,
-        icon: {
-          url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-        }
-      });
-
-      // Ajouter un listener pour afficher l'infobulle au clic
-      marker.addListener('click', () => {
-        const content = `
-          <div style="padding: 10px; max-width: 300px;">
-            <h3 style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">
-              ${batiment.nom_etablissement || 'Sans nom'}
-            </h3>
-            <p style="margin: 5px 0; font-size: 14px;">
-              <strong>Adresse:</strong> ${batiment.adresse_civique || 'N/A'}
-            </p>
-            <p style="margin: 5px 0; font-size: 14px;">
-              <strong>Ville:</strong> ${batiment.ville || 'N/A'}
-            </p>
-            <p style="margin: 5px 0; font-size: 14px;">
-              <strong>Groupe:</strong> ${batiment.groupe_occupation || 'N/A'}
-            </p>
-            ${batiment.preventionniste_assigne_id ? 
-              '<p style="margin: 5px 0; font-size: 14px; color: green;"><strong>✓ Préventionniste assigné</strong></p>' : 
-              '<p style="margin: 5px 0; font-size: 14px; color: orange;"><strong>⚠ Sans préventionniste</strong></p>'
-            }
-          </div>
-        `;
-        
-        infoWindow.setContent(content);
-        infoWindow.open(map, marker);
-        
-        // Appeler le callback si fourni
-        if (onBatimentClick) {
-          onBatimentClick(batiment);
-        }
-      });
-
-      newMarkers.push(marker);
-    });
-
-    setMarkers(newMarkers);
-
-    // Ajuster les limites de la carte pour afficher tous les marqueurs
-    if (newMarkers.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      newMarkers.forEach(marker => {
-        bounds.extend(marker.getPosition());
-      });
-      map.fitBounds(bounds);
-      
-      // Limiter le zoom maximum après fitBounds
-      const listener = window.google.maps.event.addListener(map, "idle", function() { 
-        if (map.getZoom() > 16) map.setZoom(16); 
-        window.google.maps.event.removeListener(listener); 
-      });
+  
+  if (!mapReady) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        minHeight: '500px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f9fafb',
+        borderRadius: '8px',
+        border: '1px solid #ddd'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
+        <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>
+          Chargement de la carte...
+        </div>
+      </div>
+    );
+  }
+  
+  // Calculer le centre basé sur les bâtiments
+  let center = [45.4042, -71.8929]; // Shefford par défaut
+  
+  if (batiments && batiments.length > 0) {
+    const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
+    if (batimentsAvecCoords.length > 0) {
+      const avgLat = batimentsAvecCoords.reduce((sum, b) => sum + b.latitude, 0) / batimentsAvecCoords.length;
+      const avgLng = batimentsAvecCoords.reduce((sum, b) => sum + b.longitude, 0) / batimentsAvecCoords.length;
+      center = [avgLat, avgLng];
     }
-
-  }, [map, batiments, infoWindow]);
-
+  }
+  
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '500px', position: 'relative' }}>
-      {/* Carte Google Maps - toujours rendue pour que le mapRef soit attaché */}
-      <div 
-        ref={mapRef} 
-        style={{ 
-          width: '100%', 
-          height: '100%',
-          minHeight: '500px',
-          borderRadius: '8px',
-          border: '1px solid #ddd',
-          background: '#f0f0f0',
-          display: (isLoading || error) ? 'none' : 'block'
-        }}
-      />
-      
-      {/* Overlay de chargement */}
-      {isLoading && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          background: '#f9fafb',
-          borderRadius: '8px',
-          border: '1px solid #ddd',
-          zIndex: 10
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
-          <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6', marginBottom: '10px' }}>
-            Chargement de la carte...
-          </div>
-          <div style={{ 
-            width: '200px', 
-            height: '4px', 
-            background: '#e5e7eb', 
-            borderRadius: '2px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: '50%',
-              height: '100%',
-              background: '#3b82f6',
-              animation: 'loading 1.5s ease-in-out infinite'
-            }} />
-          </div>
-        </div>
-      )}
-      
-      {/* Overlay d'erreur */}
-      {error && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          background: '#f9fafb',
-          borderRadius: '8px',
-          border: '1px solid #ddd',
-          zIndex: 10
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
-          <div style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444', marginBottom: '10px' }}>
-            Erreur de chargement
-          </div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>
-            {error}
-          </div>
-        </div>
-      )}
+    <LeafletMap 
+      batiments={batiments}
+      center={center}
+      onBatimentClick={onBatimentClick}
+    />
+  );
+};
+
+// Composant Leaflet séparé
+const LeafletMap = ({ batiments, center, onBatimentClick }) => {
+  const { MapContainer, TileLayer, Marker, Popup, useMap } = require('react-leaflet');
+  const L = require('leaflet');
+  
+  // Fix pour les icônes Leaflet
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  });
+  
+  // Composant pour ajuster la vue aux marqueurs
+  const FitBounds = ({ batiments }) => {
+    const map = useMap();
+    
+    React.useEffect(() => {
+      if (batiments && batiments.length > 0) {
+        const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
+        if (batimentsAvecCoords.length > 0) {
+          const bounds = batimentsAvecCoords.map(b => [b.latitude, b.longitude]);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+      }
+    }, [batiments, map]);
+    
+    return null;
+  };
+  
+  return (
+    <div style={{ width: '100%', height: '100%', minHeight: '500px', borderRadius: '8px', overflow: 'hidden' }}>
+      <MapContainer
+        center={center}
+        zoom={13}
+        style={{ width: '100%', height: '100%', minHeight: '500px' }}
+        scrollWheelZoom={true}
+      >
+        {/* OpenStreetMap tiles */}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {/* Marqueurs pour chaque bâtiment */}
+        {batiments && batiments.filter(b => b.latitude && b.longitude).map(batiment => (
+          <Marker 
+            key={batiment.id}
+            position={[batiment.latitude, batiment.longitude]}
+            eventHandlers={{
+              click: () => {
+                if (onBatimentClick) {
+                  onBatimentClick(batiment);
+                }
+              }
+            }}
+          >
+            <Popup>
+              <div style={{ padding: '5px', maxWidth: '250px' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 'bold' }}>
+                  {batiment.nom_etablissement || 'Sans nom'}
+                </h3>
+                <p style={{ margin: '5px 0', fontSize: '13px' }}>
+                  <strong>Adresse:</strong> {batiment.adresse_civique || 'N/A'}
+                </p>
+                <p style={{ margin: '5px 0', fontSize: '13px' }}>
+                  <strong>Ville:</strong> {batiment.ville || 'N/A'}
+                </p>
+                <p style={{ margin: '5px 0', fontSize: '13px' }}>
+                  <strong>Groupe:</strong> {batiment.groupe_occupation || 'N/A'}
+                </p>
+                {batiment.preventionniste_assigne_id ? (
+                  <p style={{ margin: '5px 0', fontSize: '13px', color: 'green' }}>
+                    <strong>✓ Préventionniste assigné</strong>
+                  </p>
+                ) : (
+                  <p style={{ margin: '5px 0', fontSize: '13px', color: 'orange' }}>
+                    <strong>⚠ Sans préventionniste</strong>
+                  </p>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        
+        <FitBounds batiments={batiments} />
+      </MapContainer>
     </div>
   );
 };
