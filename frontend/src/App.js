@@ -18020,15 +18020,23 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   React.useEffect(() => {
     console.log('[MapComponent] useEffect DEBUT - mapRef.current:', !!mapRef.current, 'hasInitialized:', hasInitialized.current);
     
-    if (!mapRef.current || hasInitialized.current) {
-      console.log('[MapComponent] useEffect SKIP');
+    if (hasInitialized.current) {
+      console.log('[MapComponent] useEffect SKIP - Already initialized');
       return;
     }
     
-    hasInitialized.current = true;
-    console.log('[MapComponent] Initialisation commencée');
-    
-    const initializeMap = () => {
+    // Wait a bit for the DOM to be ready
+    const checkAndInit = () => {
+      if (!mapRef.current) {
+        console.log('[MapComponent] mapRef not ready yet, retrying in 100ms...');
+        setTimeout(checkAndInit, 100);
+        return;
+      }
+      
+      hasInitialized.current = true;
+      console.log('[MapComponent] Initialisation commencée - mapRef is ready!');
+      
+      const initializeMap = () => {
       console.log('[MapComponent] initializeMap appelé - Google disponible:', !!(window.google?.maps));
       
       // Load script if not already loaded
