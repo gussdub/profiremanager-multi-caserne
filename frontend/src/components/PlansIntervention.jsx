@@ -167,12 +167,11 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
 
   if (showBuilder) {
     return (
-      <PlanInterventionBuilder
-        batimentId={selectedBatiment}
-        tenantSlug={tenantSlug}
-        planId={selectedPlan?.id}
-        onClose={handleClosBuilder}
-      />
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>Fonctionnalité Plans d'Intervention temporairement désactivée</h3>
+        <p>En cours de migration vers Leaflet/OpenStreetMap</p>
+        <Button onClick={handleClosBuilder}>Retour</Button>
+      </div>
     );
   }
 
