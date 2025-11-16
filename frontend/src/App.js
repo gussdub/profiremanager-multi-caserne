@@ -20478,7 +20478,7 @@ const Prevention = () => {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/view?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY || import.meta.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'AIzaSyCq84cjoMWos0rBmcnMHWy2EYs-XZTtL_k'}&center=45.4042,-71.8929&zoom=13&maptype=satellite`}
+                  src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCq84cjoMWos0rBmcnMHWy2EYs-XZTtL_k&center=45.4042,-71.8929&zoom=13&maptype=satellite"
                 ></iframe>
                 
                 {/* Message de développement en cours */}
