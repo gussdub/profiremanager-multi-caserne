@@ -18376,34 +18376,36 @@ const GestionPreventionnistes = () => {
         )}
       </div>
 
-      {/* Bâtiments sans préventionniste */}
-      <div className="batiments-section">
-        <h3>⚠️ Bâtiments Sans Préventionniste</h3>
-        
-        {batiments.filter(b => !b.preventionniste_assigne_id).length === 0 ? (
-          <div className="success-state">
-            <p>✅ Tous les bâtiments ont un préventionniste assigné</p>
-          </div>
-        ) : (
-          <div className="batiments-sans-preventionniste">
-            {batiments
-              .filter(b => !b.preventionniste_assigne_id)
-              .slice(0, 10)
-              .map(batiment => (
-              <div key={batiment.id} className="batiment-sans-preventionniste">
-                <div className="batiment-details">
-                  <h4>{batiment.nom_etablissement}</h4>
-                  <p>{batiment.adresse_civique}, {batiment.ville}</p>
-                  <span className="groupe-badge">{batiment.groupe_occupation}</span>
-                </div>
-                <div className="assign-actions">
-                  <p><small>Besoin d'un préventionniste</small></p>
-                </div>
+          {/* Bâtiments sans préventionniste */}
+          <div className="batiments-section">
+            <h3>⚠️ Bâtiments Sans Préventionniste</h3>
+            
+            {batiments.filter(b => !b.preventionniste_assigne_id).length === 0 ? (
+              <div className="success-state">
+                <p>✅ Tous les bâtiments ont un préventionniste assigné</p>
               </div>
-            ))}
+            ) : (
+              <div className="batiments-sans-preventionniste">
+                {batiments
+                  .filter(b => !b.preventionniste_assigne_id)
+                  .slice(0, 10)
+                  .map(batiment => (
+                  <div key={batiment.id} className="batiment-sans-preventionniste">
+                    <div className="batiment-details">
+                      <h4>{batiment.nom_etablissement}</h4>
+                      <p>{batiment.adresse_civique}, {batiment.ville}</p>
+                      <span className="groupe-badge">{batiment.groupe_occupation}</span>
+                    </div>
+                    <div className="assign-actions">
+                      <p><small>Besoin d'un préventionniste</small></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
