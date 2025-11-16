@@ -15955,10 +15955,17 @@ async def create_batiment(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    batiment_dict = batiment.dict()
-    batiment_dict["tenant_id"] = tenant.id
-    batiment_dict["id"] = str(uuid.uuid4())  # Générer un UUID pour le nouveau bâtiment
-    batiment_obj = Batiment(**batiment_dict)
+    try:
+        batiment_dict = batiment.dict()
+        print(f"🔍 DEBUG - Données reçues du frontend: {batiment_dict}")
+        batiment_dict["tenant_id"] = tenant.id
+        batiment_dict["id"] = str(uuid.uuid4())  # Générer un UUID pour le nouveau bâtiment
+        print(f"🔍 DEBUG - Données avec tenant_id et id: {batiment_dict}")
+        batiment_obj = Batiment(**batiment_dict)
+        print(f"✅ DEBUG - Objet Batiment créé avec succès")
+    except Exception as e:
+        print(f"❌ DEBUG - Erreur création Batiment: {e}")
+        raise HTTPException(status_code=422, detail=f"Erreur validation: {str(e)}")
     
     await db.batiments.insert_one(batiment_obj.dict())
     return clean_mongo_doc(batiment_obj.dict())
