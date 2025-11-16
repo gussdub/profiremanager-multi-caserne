@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import axios from 'axios';
