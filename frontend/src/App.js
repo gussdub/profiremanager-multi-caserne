@@ -18012,6 +18012,8 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [infoWindow, setInfoWindow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  console.log('🗺️ MapComponent rendu - Bâtiments:', batiments ? batiments.length : 'null');
 
   useEffect(() => {
     let retryCount = 0;
