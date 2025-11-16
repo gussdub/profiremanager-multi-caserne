@@ -19938,6 +19938,8 @@ const Prevention = () => {
   const [grilles, setGrilles] = useState([]);
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'carte'
+  const [googleMap, setGoogleMap] = useState(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   const fetchBatiments = async () => {
     try {
