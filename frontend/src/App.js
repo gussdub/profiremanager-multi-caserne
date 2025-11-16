@@ -19937,6 +19937,7 @@ const Prevention = () => {
   const [showBatimentModal, setShowBatimentModal] = useState(false);
   const [grilles, setGrilles] = useState([]);
   const [selectedInspection, setSelectedInspection] = useState(null);
+  const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'carte'
 
   const fetchBatiments = async () => {
     try {
