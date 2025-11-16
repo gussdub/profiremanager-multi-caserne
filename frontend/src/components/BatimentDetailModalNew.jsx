@@ -472,6 +472,15 @@ const BatimentForm = ({
         dataToSave.risques = [];
       }
       
+      // Si pas de nom, générer un nom basé sur l'adresse
+      if (!dataToSave.nom_etablissement || dataToSave.nom_etablissement.trim() === '') {
+        if (dataToSave.adresse_civique) {
+          dataToSave.nom_etablissement = `Bâtiment ${dataToSave.adresse_civique}`;
+        } else {
+          dataToSave.nom_etablissement = 'Bâtiment sans nom';
+        }
+      }
+      
       console.log('Données à sauvegarder:', dataToSave);
       
       if (isCreating) {
