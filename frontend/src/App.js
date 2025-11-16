@@ -20204,9 +20204,50 @@ const Prevention = () => {
           <div className="prevention-batiments">
             <div className="page-header">
               <h2>🏢 Gestion des Bâtiments</h2>
-              <Button onClick={() => setCurrentView('nouveau-batiment')}>
-                ➕ Nouveau Bâtiment
-              </Button>
+              <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                <div style={{
+                  display: 'flex',
+                  background: '#f3f4f6',
+                  borderRadius: '6px',
+                  padding: '2px'
+                }}>
+                  <button
+                    onClick={() => setViewMode('carte')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: 'none',
+                      background: viewMode === 'carte' ? '#fff' : 'transparent',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: viewMode === 'carte' ? '600' : 'normal',
+                      boxShadow: viewMode === 'carte' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    title="Vue carte"
+                  >
+                    🗺️
+                  </button>
+                  <button
+                    onClick={() => setViewMode('liste')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: 'none',
+                      background: viewMode === 'liste' ? '#fff' : 'transparent',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: viewMode === 'liste' ? '600' : 'normal',
+                      boxShadow: viewMode === 'liste' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    title="Vue liste"
+                  >
+                    📋
+                  </button>
+                </div>
+                <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                  ➕ Nouveau Bâtiment
+                </Button>
+              </div>
             </div>
             
             {loading ? (
