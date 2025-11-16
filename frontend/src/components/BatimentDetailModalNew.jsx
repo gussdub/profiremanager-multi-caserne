@@ -222,6 +222,30 @@ const BatimentForm = ({
       const height = 250;
       const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${editData.latitude},${editData.longitude}&zoom=${zoom}&size=${width}x${height}&markers=${editData.latitude},${editData.longitude},red-pushpin`;
       setStreetViewUrl(url);
+    } else if (editData.adresse_civique && editData.ville) {
+      // Si pas de coordonnées, utiliser une image placeholder avec l'adresse
+      // Ou tenter un geocoding pour obtenir les coordonnées
+      const address = encodeURIComponent(`${editData.adresse_civique}, ${editData.ville}, ${editData.province || 'QC'}, Canada`);
+      
+      // Utiliser Nominatim pour obtenir les coordonnées
+      fetch(`https://nominatim.openstreetmap.org/search?q=${address}&format=json&limit=1`, {
+        headers: {
+          'User-Agent': 'ProFireManager/1.0'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            const zoom = 16;
+            const width = 400;
+            const height = 250;
+            const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lon},red-pushpin`;
+            setStreetViewUrl(url);
+          }
+        })
+        .catch(err => console.log('Erreur geocoding:', err));
     }
   };
 
