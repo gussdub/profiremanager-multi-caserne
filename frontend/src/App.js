@@ -18126,14 +18126,14 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
     };
 
     // Attendre un peu avant d'initialiser pour s'assurer que le DOM est prêt
-    const timer = setTimeout(() => {
-      if (!map) {
+    if (!map) {
+      const timer = setTimeout(() => {
         initMap();
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [batiments, map]);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
   useEffect(() => {
