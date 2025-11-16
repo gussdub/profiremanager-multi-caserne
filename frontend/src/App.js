@@ -20462,7 +20462,7 @@ const Prevention = () => {
                 </div>
               </div>
               
-              {/* Carte principale - MOCKUP */}
+              {/* Carte principale - Google Maps */}
               <div style={{
                 flex: 1,
                 background: '#f9fafb',
@@ -20471,42 +20471,32 @@ const Prevention = () => {
                 overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}>
-                {/* Placeholder pour Google Maps */}
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{border: 0, borderRadius: '8px'}}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/view?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY || import.meta.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'AIzaSyCq84cjoMWos0rBmcnMHWy2EYs-XZTtL_k'}&center=45.4042,-71.8929&zoom=13&maptype=satellite`}
+                ></iframe>
+                
+                {/* Message de développement en cours */}
                 <div style={{
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff'
+                  position: 'absolute',
+                  top: '1rem',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(59, 130, 246, 0.95)',
+                  color: '#fff',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  zIndex: 1000
                 }}>
-                  <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🗺️</div>
-                  <h3 style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>Carte Interactive</h3>
-                  <p style={{fontSize: '0.875rem', opacity: 0.9, marginBottom: '2rem'}}>Google Maps avec marqueurs des bâtiments</p>
-                  
-                  {/* Fonctionnalités mockup */}
-                  <div style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(10px)',
-                    padding: '1.5rem',
-                    borderRadius: '8px',
-                    maxWidth: '500px'
-                  }}>
-                    <div style={{fontSize: '0.875rem', marginBottom: '1rem'}}>
-                      <strong>✨ Fonctionnalités prévues:</strong>
-                    </div>
-                    <ul style={{fontSize: '0.813rem', lineHeight: '1.8', paddingLeft: '1.5rem'}}>
-                      <li>Marqueurs colorés par préventionniste</li>
-                      <li>Dessin de polygones pour créer des secteurs</li>
-                      <li>Sélection multiple de bâtiments</li>
-                      <li>Drag & drop pour réattribution</li>
-                      <li>Sauvegarde des secteurs</li>
-                      <li>Filtres par type de bâtiment</li>
-                      <li>Vue statistiques par secteur</li>
-                    </ul>
-                  </div>
+                  🚧 Phase 1: Carte Google Maps satellite intégrée - Marqueurs & interactions à venir
                 </div>
                 
                 {/* Légende en bas */}
