@@ -453,6 +453,26 @@ const BatimentForm = ({
       // Supprimer les champs qui ne doivent pas être envoyés
       delete dataToSave._id;
       delete dataToSave.__v;
+      delete dataToSave.created_at;
+      delete dataToSave.updated_at;
+      
+      // S'assurer que les champs numériques sont bien des nombres ou null
+      if (dataToSave.latitude !== undefined && dataToSave.latitude !== null) {
+        dataToSave.latitude = parseFloat(dataToSave.latitude);
+      }
+      if (dataToSave.longitude !== undefined && dataToSave.longitude !== null) {
+        dataToSave.longitude = parseFloat(dataToSave.longitude);
+      }
+      if (dataToSave.valeur_fonciere !== undefined && dataToSave.valeur_fonciere !== null && dataToSave.valeur_fonciere !== '') {
+        dataToSave.valeur_fonciere = parseFloat(dataToSave.valeur_fonciere);
+      }
+      
+      // S'assurer que risques est un array
+      if (!Array.isArray(dataToSave.risques)) {
+        dataToSave.risques = [];
+      }
+      
+      console.log('Données à sauvegarder:', dataToSave);
       
       if (isCreating) {
         await onCreate(dataToSave);
@@ -461,8 +481,9 @@ const BatimentForm = ({
       }
       setIsEditing(false);
     } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde du bâtiment. Vérifiez les champs requis.');
+      console.error('Erreur sauvegarde complète:', error);
+      console.error('Détails erreur:', error.response?.data || error.message);
+      alert(`Erreur lors de la sauvegarde du bâtiment: ${error.response?.data?.detail || error.message || 'Vérifiez les champs requis.'}`);
     } finally {
       setSaving(false);
     }
