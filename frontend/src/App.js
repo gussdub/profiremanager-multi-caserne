@@ -20252,16 +20252,78 @@ const Prevention = () => {
             
             {loading ? (
               <div className="loading">Chargement des bâtiments...</div>
+            ) : batiments.length === 0 ? (
+              <div className="empty-state">
+                <p>Aucun bâtiment enregistré</p>
+                <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                  Ajouter le premier bâtiment
+                </Button>
+              </div>
+            ) : viewMode === 'liste' ? (
+              <div className="batiments-table" style={{background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                  <thead>
+                    <tr style={{background: '#f9fafb', borderBottom: '2px solid #e5e7eb'}}>
+                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📫 Adresse</th>
+                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>🏢 Type</th>
+                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📅 Dernière inspection</th>
+                      <th style={{padding: '1rem', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem'}}>⚡ Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batiments.map(batiment => (
+                      <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
+                        <td style={{padding: '1rem'}}>
+                          <div>
+                            <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>{batiment.nom_etablissement || batiment.adresse_civique}</div>
+                            <div style={{fontSize: '0.813rem', color: '#6b7280'}}>{batiment.ville}</div>
+                          </div>
+                        </td>
+                        <td style={{padding: '1rem'}}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            background: '#dbeafe',
+                            color: '#1e40af',
+                            borderRadius: '12px',
+                            fontSize: '0.813rem',
+                            fontWeight: '500'
+                          }}>
+                            {batiment.groupe_occupation}
+                          </span>
+                        </td>
+                        <td style={{padding: '1rem', fontSize: '0.875rem', color: '#6b7280'}}>
+                          {batiment.derniere_inspection ? new Date(batiment.derniere_inspection).toLocaleDateString('fr-FR') : 'Aucune'}
+                        </td>
+                        <td style={{padding: '1rem'}}>
+                          <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedBatiment(batiment);
+                                setShowBatimentModal(true);
+                              }}
+                            >
+                              👁️ Voir
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBatiment(batiment);
+                                setCurrentView('modifier-batiment');
+                              }}
+                            >
+                              ✏️
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="batiments-list">
-                {batiments.length === 0 ? (
-                  <div className="empty-state">
-                    <p>Aucun bâtiment enregistré</p>
-                    <Button onClick={() => setCurrentView('nouveau-batiment')}>
-                      Ajouter le premier bâtiment
-                    </Button>
-                  </div>
-                ) : (
                   <div className="batiments-grid">
                     {batiments.map(batiment => (
                       <div key={batiment.id} className="batiment-card">
