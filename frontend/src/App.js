@@ -20368,13 +20368,205 @@ const Prevention = () => {
         return (
           <div className="prevention-preventionnistes">
             <div className="page-header">
-              <h2>👨‍🚒 Gestion des Préventionnistes</h2>
-              <Button onClick={() => setCurrentView('assigner-preventionniste')}>
-                ➕ Assigner Préventionniste
-              </Button>
+              <h2>🗺️ Gestion des Secteurs & Préventionnistes</h2>
+              <div style={{display: 'flex', gap: '0.5rem'}}>
+                <Button variant="outline">
+                  📊 Statistiques
+                </Button>
+                <Button onClick={() => setCurrentView('assigner-preventionniste')}>
+                  ➕ Créer un Secteur
+                </Button>
+              </div>
             </div>
             
-            <GestionPreventionnistes />
+            {/* PROTOTYPE - Interface de gestion des secteurs */}
+            <div style={{display: 'flex', gap: '1rem', height: 'calc(100vh - 250px)'}}>
+              {/* Panel gauche - Préventionnistes et contrôles */}
+              <div style={{
+                width: '350px',
+                background: '#fff',
+                borderRadius: '8px',
+                padding: '1rem',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                overflowY: 'auto'
+              }}>
+                <h3 style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>👨‍🚒 Préventionnistes</h3>
+                
+                {/* Outils de dessin */}
+                <div style={{
+                  padding: '1rem',
+                  background: '#f0f9ff',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  <div style={{fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem'}}>🎨 Outils</div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                    <button style={{
+                      padding: '0.5rem',
+                      background: '#3b82f6',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.813rem'
+                    }}>
+                      ✏️ Dessiner un secteur
+                    </button>
+                    <button style={{
+                      padding: '0.5rem',
+                      background: '#fff',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.813rem'
+                    }}>
+                      ☑️ Sélection multiple
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Liste des préventionnistes - MOCKUP */}
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                  {[
+                    {nom: 'Jean Tremblay', color: '#ef4444', batiments: 45, inspections: 12},
+                    {nom: 'Marie Dubois', color: '#3b82f6', batiments: 38, inspections: 8},
+                    {nom: 'Pierre Gagnon', color: '#10b981', batiments: 52, inspections: 15},
+                    {nom: 'Non assignés', color: '#9ca3af', batiments: 23, inspections: 0}
+                  ].map((prev, idx) => (
+                    <div key={idx} style={{
+                      padding: '0.75rem',
+                      background: '#fff',
+                      border: `2px solid ${prev.color}`,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                          <div style={{
+                            width: '12px',
+                            height: '12px',
+                            background: prev.color,
+                            borderRadius: '50%'
+                          }}></div>
+                          <span style={{fontWeight: '600', fontSize: '0.875rem'}}>{prev.nom}</span>
+                        </div>
+                      </div>
+                      <div style={{display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#6b7280'}}>
+                        <span>🏢 {prev.batiments} bâtiments</span>
+                        <span>📋 {prev.inspections} à faire</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Carte principale - MOCKUP */}
+              <div style={{
+                flex: 1,
+                background: '#f9fafb',
+                borderRadius: '8px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                {/* Placeholder pour Google Maps */}
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff'
+                }}>
+                  <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🗺️</div>
+                  <h3 style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>Carte Interactive</h3>
+                  <p style={{fontSize: '0.875rem', opacity: 0.9, marginBottom: '2rem'}}>Google Maps avec marqueurs des bâtiments</p>
+                  
+                  {/* Fonctionnalités mockup */}
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    padding: '1.5rem',
+                    borderRadius: '8px',
+                    maxWidth: '500px'
+                  }}>
+                    <div style={{fontSize: '0.875rem', marginBottom: '1rem'}}>
+                      <strong>✨ Fonctionnalités prévues:</strong>
+                    </div>
+                    <ul style={{fontSize: '0.813rem', lineHeight: '1.8', paddingLeft: '1.5rem'}}>
+                      <li>Marqueurs colorés par préventionniste</li>
+                      <li>Dessin de polygones pour créer des secteurs</li>
+                      <li>Sélection multiple de bâtiments</li>
+                      <li>Drag & drop pour réattribution</li>
+                      <li>Sauvegarde des secteurs</li>
+                      <li>Filtres par type de bâtiment</li>
+                      <li>Vue statistiques par secteur</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                {/* Légende en bas */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '1rem',
+                  right: '1rem',
+                  background: '#fff',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  fontSize: '0.75rem'
+                }}>
+                  <div style={{fontWeight: '600', marginBottom: '0.5rem'}}>📍 Légende</div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                      <div style={{width: '10px', height: '10px', background: '#ef4444', borderRadius: '50%'}}></div>
+                      <span>Jean Tremblay</span>
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                      <div style={{width: '10px', height: '10px', background: '#3b82f6', borderRadius: '50%'}}></div>
+                      <span>Marie Dubois</span>
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                      <div style={{width: '10px', height: '10px', background: '#10b981', borderRadius: '50%'}}></div>
+                      <span>Pierre Gagnon</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Section statistiques en bas */}
+            <div style={{
+              marginTop: '1rem',
+              padding: '1rem',
+              background: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <h4 style={{marginBottom: '1rem', fontSize: '0.95rem', fontWeight: '600'}}>📊 Aperçu des statistiques</h4>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
+                <div style={{textAlign: 'center'}}>
+                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#3b82f6'}}>158</div>
+                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Bâtiments totaux</div>
+                </div>
+                <div style={{textAlign: 'center'}}>
+                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#10b981'}}>135</div>
+                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Assignés</div>
+                </div>
+                <div style={{textAlign: 'center'}}>
+                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b'}}>35</div>
+                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Inspections dues</div>
+                </div>
+                <div style={{textAlign: 'center'}}>
+                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#8b5cf6'}}>3</div>
+                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Secteurs actifs</div>
+                </div>
+              </div>
+            </div>
           </div>
         );
       
