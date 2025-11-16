@@ -20676,7 +20676,7 @@ const Prevention = () => {
         );
       
       case 'preventionnistes':
-        console.log('🎯 RENDU DE LA VUE PREVENTIONNISTES', { nbBatiments: batiments.length });
+        console.log('DEBUG: RENDU DE LA VUE PREVENTIONNISTES', 'Batiments:', batiments.length);
         return (
           <div className="prevention-preventionnistes">
             <div className="page-header">
