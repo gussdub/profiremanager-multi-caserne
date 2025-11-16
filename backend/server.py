@@ -8116,6 +8116,10 @@ class Batiment(BaseModel):
     description_activite: str = ""
     niveau_risque: str = ""  # Faible, Moyen, Élevé, Très élevé (selon Tableau A1)
     
+    # Géolocalisation
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    
     # Métadonnées
     statut: str = "actif"  # actif, inactif, demolition
     notes_generales: str = ""
