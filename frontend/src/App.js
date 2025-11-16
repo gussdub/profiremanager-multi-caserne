@@ -18004,7 +18004,7 @@ const DEFAULT_GRILLES_TEMPLATES = [
   }
 ];
 
-// MapComponent pour afficher les bâtiments sur Google Maps
+// MapComponent pour afficher les bâtiments sur Google Maps - VERSION SIMPLIFIÉE
 const MapComponent = ({ batiments, onBatimentClick }) => {
   const mapRef = React.useRef(null);
   const [map, setMap] = useState(null);
@@ -18013,94 +18013,29 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  console.log('🗺️ MapComponent rendu - Bâtiments:', batiments ? batiments.length : 'null');
-
-  useEffect(() => {
-    let retryCount = 0;
-    const maxRetries = 20;
-    let scriptLoaded = false;
+  // Simple initialization without complex useEffect
+  React.useEffect(() => {
+    if (!mapRef.current || map) return;
     
-    const loadGoogleMapsScript = () => {
-      // Vérifier si le script est déjà chargé
-      if (window.google && window.google.maps) {
-        console.log('Google Maps déjà chargé');
-        return Promise.resolve();
+    const initializeMap = () => {
+      // Load script if not already loaded
+      if (!window.google || !window.google.maps) {
+        if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
+          script.async = true;
+          script.onload = () => setTimeout(initializeMap, 100);
+          document.head.appendChild(script);
+        } else {
+          setTimeout(initializeMap, 500);
+        }
+        return;
       }
       
-      // Vérifier si le script est déjà en cours de chargement
-      if (document.querySelector('script[src*="maps.googleapis.com"]')) {
-        console.log('Script Google Maps déjà ajouté au DOM');
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (window.google && window.google.maps) {
-              clearInterval(checkInterval);
-              resolve();
-            }
-          }, 100);
-        });
-      }
-      
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          console.log('Script Google Maps chargé');
-          scriptLoaded = true;
-          resolve();
-        };
-        script.onerror = () => {
-          console.error('Erreur de chargement du script Google Maps');
-          reject(new Error('Impossible de charger Google Maps'));
-        };
-        document.head.appendChild(script);
-      });
-    };
-    
-    const initMap = async () => {
       try {
-        if (!mapRef.current) {
-          console.log('mapRef.current est null');
-          return;
-        }
+        // Center default (Shefford)
+        const center = { lat: 45.4042, lng: -71.8929 };
         
-        // Charger le script si nécessaire
-        await loadGoogleMapsScript();
-        
-        // Vérifier si Google Maps est disponible
-        if (!window.google || !window.google.maps) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            console.log(`En attente de Google Maps... (tentative ${retryCount}/${maxRetries})`);
-            setTimeout(initMap, 500);
-          } else {
-            setError('Délai d\'attente dépassé pour le chargement de Google Maps');
-            setIsLoading(false);
-          }
-          return;
-        }
-        
-        console.log('Google Maps chargé, initialisation de la carte...');
-        console.log('Nombre de bâtiments:', batiments ? batiments.length : 0);
-        
-        // Centre par défaut (Shefford) si pas de bâtiments
-        const defaultCenter = { lat: 45.4042, lng: -71.8929 };
-        
-        // Calculer le centre basé sur les bâtiments s'ils existent
-        let center = defaultCenter;
-        if (batiments && batiments.length > 0) {
-          const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
-          console.log(`${batimentsAvecCoords.length} bâtiments avec coordonnées`);
-          
-          if (batimentsAvecCoords.length > 0) {
-            const avgLat = batimentsAvecCoords.reduce((sum, b) => sum + b.latitude, 0) / batimentsAvecCoords.length;
-            const avgLng = batimentsAvecCoords.reduce((sum, b) => sum + b.longitude, 0) / batimentsAvecCoords.length;
-            center = { lat: avgLat, lng: avgLng };
-            console.log(`Centre calculé: ${center.lat}, ${center.lng}`);
-          }
-        }
-
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           center: center,
           zoom: 13,
@@ -18110,30 +18045,18 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
           zoomControl: true
         });
 
-        console.log('Carte initialisée avec succès');
         setMap(mapInstance);
         setIsLoading(false);
+        setInfoWindow(new window.google.maps.InfoWindow());
         
-        // Créer une infowindow réutilisable
-        const infoWindowInstance = new window.google.maps.InfoWindow();
-        setInfoWindow(infoWindowInstance);
-
-      } catch (error) {
-        console.error('Erreur initialisation Google Maps:', error);
-        setError(`Erreur: ${error.message}`);
+      } catch (err) {
+        setError(err.message);
         setIsLoading(false);
       }
     };
-
-    // Attendre un peu avant d'initialiser pour s'assurer que le DOM est prêt
-    if (!map) {
-      const timer = setTimeout(() => {
-        initMap();
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    
+    setTimeout(initializeMap, 500);
+  }, [map]);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
   useEffect(() => {
