@@ -279,6 +279,12 @@ const BatimentForm = ({
   };
   
   useEffect(() => {
+    // Ne pas rechercher si on vient de sélectionner une adresse
+    if (addressJustSelected.current) {
+      addressJustSelected.current = false;
+      return;
+    }
+    
     const timeoutId = setTimeout(() => {
       if (isEditing && editData.adresse_civique) {
         searchAddress(editData.adresse_civique);
