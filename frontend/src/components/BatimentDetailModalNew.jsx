@@ -215,16 +215,12 @@ const BatimentForm = ({
   }, [editData.latitude, editData.longitude, editData.adresse_civique, editData.ville]);
 
   const generateStreetViewUrl = () => {
+    // On utilise maintenant une mini-carte Leaflet au lieu d'une image statique
+    // Donc on définit juste un flag pour indiquer qu'on a des coordonnées
     if (editData.latitude && editData.longitude) {
-      // Utiliser l'API de carte statique OpenStreetMap
-      const zoom = 16;
-      const width = 400;
-      const height = 250;
-      const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${editData.latitude},${editData.longitude}&zoom=${zoom}&size=${width}x${height}&markers=${editData.latitude},${editData.longitude},red-pushpin`;
-      setStreetViewUrl(url);
+      setStreetViewUrl('SHOW_MAP'); // Flag pour afficher la mini-carte
     } else if (editData.adresse_civique && editData.ville) {
-      // Si pas de coordonnées, utiliser une image placeholder avec l'adresse
-      // Ou tenter un geocoding pour obtenir les coordonnées
+      // Si pas de coordonnées, tenter un geocoding pour obtenir les coordonnées
       const address = encodeURIComponent(`${editData.adresse_civique}, ${editData.ville}, ${editData.province || 'QC'}, Canada`);
       
       // Utiliser Nominatim pour obtenir les coordonnées
@@ -238,11 +234,13 @@ const BatimentForm = ({
           if (data && data.length > 0) {
             const lat = parseFloat(data[0].lat);
             const lon = parseFloat(data[0].lon);
-            const zoom = 16;
-            const width = 400;
-            const height = 250;
-            const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lon},red-pushpin`;
-            setStreetViewUrl(url);
+            // Mettre à jour les coordonnées dans editData
+            setEditData(prev => ({
+              ...prev,
+              latitude: lat,
+              longitude: lon
+            }));
+            setStreetViewUrl('SHOW_MAP');
           }
         })
         .catch(err => console.log('Erreur geocoding:', err));
