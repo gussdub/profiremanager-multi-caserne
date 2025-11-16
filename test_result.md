@@ -1295,3 +1295,21 @@ agent_communication:
       - working: true
         agent: "testing"
         comment: "🎉 MIGRATION SENDGRID VERS RESEND ENTIÈREMENT RÉUSSIE! Comprehensive testing completed successfully with PERFECT 100% success rate (4/4 tests passed). TOUS LES CRITÈRES DE SUCCÈS ATTEINTS: ✅ Test 1 - Forgot Password: POST /api/shefford/auth/forgot-password fonctionne parfaitement avec Resend, email_sent=true, message de succès 'Si cet email existe dans notre système, vous recevrez un lien de réinitialisation', ✅ Test 2 - Reset Password par Admin: PUT /api/shefford/users/{user_id}/password fonctionne avec Resend, email_sent=true, message 'Mot de passe modifié avec succès', ✅ Test 3 - Logs Resend Verification: Backend logs montrent 6 mentions 'Resend', 0 mentions 'SendGrid', 3 messages 'Email envoyé avec succès', ✅ Test 4 - Configuration API Resend: Clé API re_6BuFZ8Ut_PNXyQuTA3m9jrCLdmaKRa51A fonctionne correctement. VÉRIFICATION LOGS DÉTAILLÉE: Backend stdout logs confirment les IDs de messages Resend (format UUID): '✅ Email de réinitialisation envoyé avec succès à test.admin.reset@gmail.com via Resend (ID: a3549ee8-1c38-43d0-8594-ad80548fd793)', '✅ Email de réinitialisation de mot de passe envoyé avec succès à test.resend@gmail.com via Resend (ID: 577921ac-cf2d-4751-9864-aa60d78e3577)'. MIGRATION COMPLÈTE: Toutes les fonctions d'email (send_welcome_email, send_temporary_password_email, send_password_reset_email, send_super_admin_welcome_email, send_gardes_notification_email) utilisent maintenant Resend au lieu de SendGrid. Authentification réussie avec admin@firemanager.ca / Admin123! pour tenant shefford. Système prêt pour production avec Resend!"
+
+
+metadata:
+  created_by: "main_agent"
+  version: "1.1"
+  test_sequence: 1
+
+test_plan:
+  current_focus:
+    - "Vue Préventionnistes - MapComponent mapRef Issue"
+  stuck_tasks:
+    - "Vue Préventionnistes - MapComponent mapRef Issue"
+  test_all: false
+  test_priority: "critical_first"
+
+agent_communication:
+  - agent: "testing"
+    message: "PROBLÈME CRITIQUE DÉTECTÉ dans la vue Préventionnistes: Le MapComponent ne peut pas s'attacher au mapRef, causant une boucle infinie de retry. 398 tentatives en 20 secondes sans succès. Les logs 'mapRef is ready!' et 'Carte créée avec succès!' ne sont jamais générés. Le conteneur de carte est absent du DOM. La fonctionnalité Préventionnistes est complètement inutilisable. RECOMMANDATION: Vérifier l'implémentation du mapRef dans le MapComponent et s'assurer que l'élément DOM existe avant d'essayer de s'y attacher."
