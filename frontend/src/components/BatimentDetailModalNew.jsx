@@ -440,14 +440,29 @@ const BatimentForm = ({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Préparer les données à envoyer (nettoyer les champs non nécessaires)
+      const dataToSave = { ...editData };
+      
+      // Si on a une photo uploadée, s'assurer que photo_url est une string
+      if (buildingPhoto && buildingPhoto.url) {
+        dataToSave.photo_url = buildingPhoto.url;
+      } else if (!dataToSave.photo_url) {
+        dataToSave.photo_url = '';
+      }
+      
+      // Supprimer les champs qui ne doivent pas être envoyés
+      delete dataToSave._id;
+      delete dataToSave.__v;
+      
       if (isCreating) {
-        await onCreate(editData);
+        await onCreate(dataToSave);
       } else {
-        await onUpdate(editData);
+        await onUpdate(dataToSave);
       }
       setIsEditing(false);
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde du bâtiment. Vérifiez les champs requis.');
     } finally {
       setSaving(false);
     }
