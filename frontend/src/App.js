@@ -18090,6 +18090,10 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
     };
     
     setTimeout(initializeMap, 500);
+  };
+    
+    // Start the initialization check
+    checkAndInit();
   }, []);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
