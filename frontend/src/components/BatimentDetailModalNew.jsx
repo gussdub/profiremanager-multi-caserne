@@ -361,7 +361,7 @@ const BatimentForm = ({
             )}
           </div>
           
-          {/* Vignette Street View */}
+          {/* Vignette Carte de Localisation */}
           {streetViewUrl && (
             <div style={{
               width: '400px',
@@ -373,7 +373,7 @@ const BatimentForm = ({
             }}>
               <img 
                 src={streetViewUrl} 
-                alt="Street View" 
+                alt="Carte de localisation du bâtiment" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => {
                   e.target.style.display = 'none';
