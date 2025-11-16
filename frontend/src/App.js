@@ -18010,20 +18010,18 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [infoWindow, setInfoWindow] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const initMap = async () => {
+    const initMap = () => {
       try {
-        // Dynamically import the Google Maps API Loader
-        const { Loader } = await import('@googlemaps/js-api-loader');
-        
-        const loader = new Loader({
-          apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-          version: 'weekly',
-          libraries: ['places', 'drawing', 'geometry']
-        });
-
-        const google = await loader.load();
+        // Vérifier si Google Maps est disponible
+        if (!window.google || !window.google.maps) {
+          setError('Google Maps API non chargée');
+          setIsLoading(false);
+          return;
+        }
         
         // Centre par défaut (Montréal) si pas de bâtiments
         const defaultCenter = { lat: 45.5017, lng: -73.5673 };
@@ -18039,7 +18037,7 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
           }
         }
 
-        const mapInstance = new google.maps.Map(mapRef.current, {
+        const mapInstance = new window.google.maps.Map(mapRef.current, {
           center: center,
           zoom: 12,
           mapTypeControl: true,
@@ -18049,17 +18047,36 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
         });
 
         setMap(mapInstance);
+        setIsLoading(false);
         
         // Créer une infowindow réutilisable
-        const infoWindowInstance = new google.maps.InfoWindow();
+        const infoWindowInstance = new window.google.maps.InfoWindow();
         setInfoWindow(infoWindowInstance);
 
       } catch (error) {
         console.error('Erreur initialisation Google Maps:', error);
+        setError('Erreur lors de l\'initialisation de la carte');
+        setIsLoading(false);
       }
     };
 
-    if (mapRef.current && !map) {
+    // Charger Google Maps si pas déjà chargé
+    if (!window.google || !window.google.maps) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (mapRef.current && !map) {
+          initMap();
+        }
+      };
+      script.onerror = () => {
+        setError('Impossible de charger Google Maps');
+        setIsLoading(false);
+      };
+      document.head.appendChild(script);
+    } else if (mapRef.current && !map) {
       initMap();
     }
   }, [mapRef.current]);
