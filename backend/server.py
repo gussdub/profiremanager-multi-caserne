@@ -8134,6 +8134,7 @@ class BatimentCreate(BaseModel):
     nom_etablissement: str = ""
     adresse_civique: str = ""
     ville: str = ""
+    province: str = "QC"
     code_postal: str = ""
     cadastre_matricule: str = ""  # Renommé
     valeur_fonciere: Optional[float] = None  # Nouveau
@@ -8150,6 +8151,9 @@ class BatimentCreate(BaseModel):
     sous_groupe: str = ""
     description_activite: str = ""
     risques: List[str] = []  # Nouveau
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    photo_url: Optional[str] = ""
     statut: str = "actif"
     notes_generales: str = ""
     preventionniste_assigne_id: Optional[str] = None
