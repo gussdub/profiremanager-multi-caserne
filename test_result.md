@@ -1,4 +1,20 @@
-# ProFireManager Backend Testing Results
+# ProFireManager Testing Results
+
+frontend:
+  - task: "Vue Préventionnistes - MapComponent mapRef Issue"
+    implemented: true
+    working: false
+    file: "frontend/src/App.js"
+    stuck_count: 1
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Test de la vue Préventionnistes pour vérifier si le mapRef est maintenant attaché. Recherche des logs '[MapComponent] mapRef is ready!' et '[MapComponent] Carte créée avec succès!' après 20 secondes d'attente."
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME CRITIQUE IDENTIFIÉ - MapComponent ne peut pas s'attacher au mapRef. Test effectué: 1) ✅ Login réussi (admin@firemanager.ca / Admin123!), 2) ✅ Accès module Prévention réussi, 3) ✅ Clic sur Préventionnistes réussi, 4) ❌ ÉCHEC CRITIQUE: 398 logs '[MapComponent] mapRef not ready yet, retrying in 100ms...' capturés pendant 20 secondes, 5) ❌ Aucun des logs critiques trouvé ('mapRef is ready!' et 'Carte créée avec succès!'), 6) ❌ Conteneur de carte absent du DOM. ROOT CAUSE: Le mapRef ne s'attache jamais au DOM, causant une boucle infinie de retry toutes les 100ms. La carte ne peut pas s'initialiser car l'élément DOM référencé par mapRef n'existe pas ou n'est pas accessible. IMPACT: Fonctionnalité Préventionnistes complètement inutilisable - la carte ne se charge jamais."
 
 backend:
   - task: "Authentication System"
