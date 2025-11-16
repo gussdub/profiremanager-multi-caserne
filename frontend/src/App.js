@@ -19560,7 +19560,7 @@ const CalendrierInspections = ({ setCurrentView, batiments, filteredBatimentId, 
           alignItems: 'center'
         }}>
           <div>
-            <strong>🏢 Filtré par bâtiment:</strong> {filteredBatiment.nom_etablissement || 'Sans nom'} - {filteredBatiment.adresse_civique}
+            <strong>🏢 Filtré par bâtiment:</strong> {filteredBatiment.nom_etablissement || filteredBatiment.adresse_civique}
           </div>
           <Button size="sm" onClick={() => setFilteredBatimentId(null)} variant="outline">
             ❌ Retirer filtre
