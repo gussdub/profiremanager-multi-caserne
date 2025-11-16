@@ -20593,14 +20593,14 @@ const Prevention = () => {
                   📊 Statistiques
                 </Button>
                 <Button onClick={() => setCurrentView('assigner-preventionniste')}>
-                  ➕ Créer un Secteur
+                  ➕ Assigner des bâtiments
                 </Button>
               </div>
             </div>
             
-            {/* PROTOTYPE - Interface de gestion des secteurs */}
+            {/* Interface de gestion des secteurs avec vraies données */}
             <div style={{display: 'flex', gap: '1rem', height: 'calc(100vh - 250px)'}}>
-              {/* Panel gauche - Préventionnistes et contrôles */}
+              {/* Panel gauche - Préventionnistes */}
               <div style={{
                 width: '350px',
                 background: '#fff',
@@ -20611,7 +20611,7 @@ const Prevention = () => {
               }}>
                 <h3 style={{marginBottom: '1rem', fontSize: '1rem', fontWeight: '600'}}>👨‍🚒 Préventionnistes</h3>
                 
-                {/* Outils de dessin */}
+                {/* Outils à venir */}
                 <div style={{
                   padding: '1rem',
                   background: '#f0f9ff',
@@ -20619,69 +20619,84 @@ const Prevention = () => {
                   marginBottom: '1rem',
                   border: '1px solid #bfdbfe'
                 }}>
-                  <div style={{fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem'}}>🎨 Outils</div>
+                  <div style={{fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem'}}>🎨 Outils (Phase 3)</div>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
-                    <button style={{
-                      padding: '0.5rem',
-                      background: '#3b82f6',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.813rem'
-                    }}>
+                    <button 
+                      disabled
+                      style={{
+                        padding: '0.5rem',
+                        background: '#e5e7eb',
+                        color: '#9ca3af',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'not-allowed',
+                        fontSize: '0.813rem'
+                      }}
+                    >
                       ✏️ Dessiner un secteur
                     </button>
-                    <button style={{
-                      padding: '0.5rem',
-                      background: '#fff',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.813rem'
-                    }}>
+                    <button 
+                      disabled
+                      style={{
+                        padding: '0.5rem',
+                        background: '#f3f4f6',
+                        color: '#9ca3af',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '4px',
+                        cursor: 'not-allowed',
+                        fontSize: '0.813rem'
+                      }}
+                    >
                       ☑️ Sélection multiple
                     </button>
                   </div>
                 </div>
                 
-                {/* Liste des préventionnistes - MOCKUP */}
+                {/* Statistiques rapides */}
                 <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-                  {[
-                    {nom: 'Jean Tremblay', color: '#ef4444', batiments: 45, inspections: 12},
-                    {nom: 'Marie Dubois', color: '#3b82f6', batiments: 38, inspections: 8},
-                    {nom: 'Pierre Gagnon', color: '#10b981', batiments: 52, inspections: 15},
-                    {nom: 'Non assignés', color: '#9ca3af', batiments: 23, inspections: 0}
-                  ].map((prev, idx) => (
-                    <div key={idx} style={{
-                      padding: '0.75rem',
-                      background: '#fff',
-                      border: `2px solid ${prev.color}`,
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                          <div style={{
-                            width: '12px',
-                            height: '12px',
-                            background: prev.color,
-                            borderRadius: '50%'
-                          }}></div>
-                          <span style={{fontWeight: '600', fontSize: '0.875rem'}}>{prev.nom}</span>
-                        </div>
-                      </div>
-                      <div style={{display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#6b7280'}}>
-                        <span>🏢 {prev.batiments} bâtiments</span>
-                        <span>📋 {prev.inspections} à faire</span>
-                      </div>
+                  <div style={{
+                    padding: '0.75rem',
+                    background: '#fff',
+                    border: '2px solid #10b981',
+                    borderRadius: '6px'
+                  }}>
+                    <div style={{fontWeight: '600', fontSize: '0.875rem', color: '#10b981', marginBottom: '0.5rem'}}>
+                      ✅ Bâtiments assignés
                     </div>
-                  ))}
+                    <div style={{fontSize: '1.5rem', fontWeight: '700'}}>
+                      {batiments.filter(b => b.preventionniste_assigne_id).length}
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: '0.75rem',
+                    background: '#fff',
+                    border: '2px solid #f59e0b',
+                    borderRadius: '6px'
+                  }}>
+                    <div style={{fontWeight: '600', fontSize: '0.875rem', color: '#f59e0b', marginBottom: '0.5rem'}}>
+                      ⚠️ Sans préventionniste
+                    </div>
+                    <div style={{fontSize: '1.5rem', fontWeight: '700'}}>
+                      {batiments.filter(b => !b.preventionniste_assigne_id).length}
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: '0.75rem',
+                    background: '#fff',
+                    border: '2px solid #3b82f6',
+                    borderRadius: '6px'
+                  }}>
+                    <div style={{fontWeight: '600', fontSize: '0.875rem', color: '#3b82f6', marginBottom: '0.5rem'}}>
+                      🏢 Total bâtiments
+                    </div>
+                    <div style={{fontSize: '1.5rem', fontWeight: '700'}}>
+                      {batiments.length}
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              {/* Carte principale - Google Maps avec marqueurs */}
+              {/* Carte principale avec MapComponent */}
               <div style={{
                 flex: 1,
                 background: '#f9fafb',
@@ -20690,13 +20705,7 @@ const Prevention = () => {
                 overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}>
-                {/* Carte Google Maps via script */}
-                <div 
-                  id="secteurs-map" 
-                  style={{width: '100%', height: '100%', borderRadius: '8px'}}
-                ></div>
-                
-                {/* Message de développement */}
+                {/* Message de statut */}
                 <div style={{
                   position: 'absolute',
                   top: '1rem',
@@ -20714,163 +20723,13 @@ const Prevention = () => {
                   ✅ Phase 2: Marqueurs des bâtiments - Cliquez sur un marqueur pour voir les détails
                 </div>
                 
-                {/* Initialisation de la carte */}
-                {typeof window !== 'undefined' && (() => {
-                  // Fonction pour initialiser la carte
-                  setTimeout(() => {
-                    if (!window.google || document.getElementById('secteurs-map').hasChildNodes()) return;
-                    
-                    const map = new window.google.maps.Map(document.getElementById('secteurs-map'), {
-                      center: {lat: 45.4042, lng: -71.8929},
-                      zoom: 13,
-                      mapTypeId: 'satellite',
-                      mapTypeControl: true,
-                      mapTypeControlOptions: {
-                        style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                        position: window.google.maps.ControlPosition.TOP_LEFT,
-                      },
-                      streetViewControl: true,
-                      fullscreenControl: true,
-                      zoomControl: true
-                    });
-                    
-                    // Couleurs par préventionniste (mockup)
-                    const couleurs = {
-                      'Jean Tremblay': '#ef4444',
-                      'Marie Dubois': '#3b82f6',
-                      'Pierre Gagnon': '#10b981',
-                      'Non assigné': '#9ca3af'
-                    };
-                    
-                    // Bâtiments mockup avec positions
-                    const batimentsMockup = [
-                      {nom: 'École primaire', adresse: '123 Rue Principale, Shefford', lat: 45.4042, lng: -71.8929, preventionniste: 'Jean Tremblay', type: 'Éducation'},
-                      {nom: 'Centre commercial', adresse: '456 Av du Commerce', lat: 45.4102, lng: -71.8859, preventionniste: 'Marie Dubois', type: 'Commercial'},
-                      {nom: 'Résidence seniors', adresse: '789 Bd des Aînés', lat: 45.3982, lng: -71.8999, preventionniste: 'Pierre Gagnon', type: 'Résidentiel'},
-                      {nom: 'Usine textile', adresse: '321 Rue Industrielle', lat: 45.4122, lng: -71.8789, preventionniste: 'Jean Tremblay', type: 'Industriel'},
-                      {nom: 'Église St-Joseph', adresse: '654 Rue de l\'Église', lat: 45.3962, lng: -71.9029, preventionniste: 'Non assigné', type: 'Assemblée'},
-                      {nom: 'Hôpital régional', adresse: '987 Bd Santé', lat: 45.4162, lng: -71.8719, preventionniste: 'Marie Dubois', type: 'Santé'},
-                      {nom: 'Restaurant Le Gourmet', adresse: '147 Rue Gourmande', lat: 45.4022, lng: -71.8949, preventionniste: 'Pierre Gagnon', type: 'Commercial'},
-                      {nom: 'Caserne pompiers', adresse: '258 Rue des Héros', lat: 45.4082, lng: -71.8889, preventionniste: 'Jean Tremblay', type: 'Service public'}
-                    ];
-                    
-                    // Créer les marqueurs
-                    batimentsMockup.forEach(batiment => {
-                      const marker = new window.google.maps.Marker({
-                        position: {lat: batiment.lat, lng: batiment.lng},
-                        map: map,
-                        title: batiment.nom || batiment.adresse,
-                        icon: {
-                          path: window.google.maps.SymbolPath.CIRCLE,
-                          scale: 10,
-                          fillColor: couleurs[batiment.preventionniste],
-                          fillOpacity: 0.9,
-                          strokeColor: '#fff',
-                          strokeWeight: 2
-                        }
-                      });
-                      
-                      // InfoWindow au clic
-                      const infoWindow = new window.google.maps.InfoWindow({
-                        content: `
-                          <div style="padding: 0.5rem; max-width: 250px;">
-                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; font-weight: 600;">
-                              ${batiment.nom || batiment.adresse}
-                            </h4>
-                            <div style="font-size: 0.813rem; color: #6b7280; margin-bottom: 0.5rem;">
-                              📫 ${batiment.adresse}
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.813rem;">
-                              <div><strong>Type:</strong> ${batiment.type}</div>
-                              <div><strong>Préventionniste:</strong> 
-                                <span style="color: ${couleurs[batiment.preventionniste]}; font-weight: 600;">
-                                  ${batiment.preventionniste}
-                                </span>
-                              </div>
-                            </div>
-                            <button onclick="alert('Voir détails - À implémenter')" style="
-                              margin-top: 0.75rem;
-                              padding: 0.5rem 1rem;
-                              background: #3b82f6;
-                              color: white;
-                              border: none;
-                              border-radius: 4px;
-                              cursor: pointer;
-                              font-size: 0.813rem;
-                              width: 100%;
-                            ">
-                              👁️ Voir les détails
-                            </button>
-                          </div>
-                        `
-                      });
-                      
-                      marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
-                      });
-                    });
-                    
-                  }, 500);
-                  
-                  return null;
-                })()}
-                
-                {/* Légende en bas */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '1rem',
-                  right: '1rem',
-                  background: '#fff',
-                  padding: '0.75rem',
-                  borderRadius: '6px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  fontSize: '0.75rem'
-                }}>
-                  <div style={{fontWeight: '600', marginBottom: '0.5rem'}}>📍 Légende</div>
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                      <div style={{width: '10px', height: '10px', background: '#ef4444', borderRadius: '50%'}}></div>
-                      <span>Jean Tremblay</span>
-                    </div>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                      <div style={{width: '10px', height: '10px', background: '#3b82f6', borderRadius: '50%'}}></div>
-                      <span>Marie Dubois</span>
-                    </div>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                      <div style={{width: '10px', height: '10px', background: '#10b981', borderRadius: '50%'}}></div>
-                      <span>Pierre Gagnon</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Section statistiques en bas */}
-            <div style={{
-              marginTop: '1rem',
-              padding: '1rem',
-              background: '#fff',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <h4 style={{marginBottom: '1rem', fontSize: '0.95rem', fontWeight: '600'}}>📊 Aperçu des statistiques</h4>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
-                <div style={{textAlign: 'center'}}>
-                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#3b82f6'}}>158</div>
-                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Bâtiments totaux</div>
-                </div>
-                <div style={{textAlign: 'center'}}>
-                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#10b981'}}>135</div>
-                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Assignés</div>
-                </div>
-                <div style={{textAlign: 'center'}}>
-                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b'}}>35</div>
-                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Inspections dues</div>
-                </div>
-                <div style={{textAlign: 'center'}}>
-                  <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#8b5cf6'}}>3</div>
-                  <div style={{fontSize: '0.75rem', color: '#6b7280'}}>Secteurs actifs</div>
-                </div>
+                {/* Carte Google Maps avec MapComponent */}
+                <MapComponent 
+                  batiments={batiments}
+                  onBatimentClick={(batiment) => {
+                    console.log('Bâtiment cliqué:', batiment);
+                  }}
+                />
               </div>
             </div>
           </div>
