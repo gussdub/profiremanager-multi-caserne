@@ -20225,7 +20225,7 @@ const Prevention = () => {
                     {batiments.map(batiment => (
                       <div key={batiment.id} className="batiment-card">
                         <div className="batiment-header">
-                          <h4>{batiment.nom_etablissement || 'Sans nom'}</h4>
+                          <h4>{batiment.nom_etablissement || batiment.adresse_civique}</h4>
                           <span className="groupe-badge">{batiment.groupe_occupation}</span>
                         </div>
                         <div className="batiment-info">
