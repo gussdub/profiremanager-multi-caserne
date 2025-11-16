@@ -8120,6 +8120,9 @@ class Batiment(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     
+    # Photo
+    photo_url: Optional[str] = ""  # URL ou base64 de la photo du bâtiment
+    
     # Métadonnées
     statut: str = "actif"  # actif, inactif, demolition
     notes_generales: str = ""
