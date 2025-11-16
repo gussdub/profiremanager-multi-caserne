@@ -18160,6 +18160,7 @@ const GestionPreventionnistes = () => {
   const [batiments, setBatiments] = useState([]);
   const [preventionnistes, setPreventionnistes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'map'
 
   const fetchData = async () => {
     try {
