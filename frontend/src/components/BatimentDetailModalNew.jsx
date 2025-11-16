@@ -130,6 +130,9 @@ const BatimentForm = ({
   } : {});
   
   const [streetViewUrl, setStreetViewUrl] = useState('');
+  const [buildingPhoto, setBuildingPhoto] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const [addressValidated, setAddressValidated] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [saving, setSaving] = useState(false);
