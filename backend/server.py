@@ -15957,6 +15957,7 @@ async def create_batiment(
     
     batiment_dict = batiment.dict()
     batiment_dict["tenant_id"] = tenant.id
+    batiment_dict["id"] = str(uuid.uuid4())  # Générer un UUID pour le nouveau bâtiment
     batiment_obj = Batiment(**batiment_dict)
     
     await db.batiments.insert_one(batiment_obj.dict())
