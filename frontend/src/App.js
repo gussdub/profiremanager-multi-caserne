@@ -18014,16 +18014,31 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 20;
+    
     const initMap = () => {
       try {
+        if (!mapRef.current) {
+          console.log('⚠️ mapRef.current est null');
+          return;
+        }
+        
         // Vérifier si Google Maps est disponible
         if (!window.google || !window.google.maps) {
-          console.log('⏳ En attente de Google Maps...');
-          setTimeout(initMap, 500); // Réessayer après 500ms
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`⏳ En attente de Google Maps... (tentative ${retryCount}/${maxRetries})`);
+            setTimeout(initMap, 500);
+          } else {
+            setError('Délai d\'attente dépassé pour le chargement de Google Maps');
+            setIsLoading(false);
+          }
           return;
         }
         
         console.log('✅ Google Maps chargé, initialisation de la carte...');
+        console.log('📊 Nombre de bâtiments:', batiments ? batiments.length : 0);
         
         // Centre par défaut (Shefford) si pas de bâtiments
         const defaultCenter = { lat: 45.4042, lng: -71.8929 };
@@ -18051,7 +18066,7 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
           zoomControl: true
         });
 
-        console.log('✅ Carte initialisée');
+        console.log('✅ Carte initialisée avec succès');
         setMap(mapInstance);
         setIsLoading(false);
         
@@ -18066,10 +18081,15 @@ const MapComponent = ({ batiments, onBatimentClick }) => {
       }
     };
 
-    if (mapRef.current && !map) {
-      initMap();
-    }
-  }, [mapRef.current, batiments]);
+    // Attendre un peu avant d'initialiser pour s'assurer que le DOM est prêt
+    const timer = setTimeout(() => {
+      if (!map) {
+        initMap();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [batiments, map]);
 
   // Gérer les marqueurs quand la carte et les bâtiments changent
   useEffect(() => {
