@@ -4,6 +4,83 @@ import { Card } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl } from '../utils/api';
 
+// Mini-carte Leaflet pour l'aperçu dans le modal
+const MiniMapPreview = ({ latitude, longitude, address }) => {
+  const [mapReady, setMapReady] = useState(false);
+  
+  useEffect(() => {
+    // Charger le CSS de Leaflet si pas déjà fait
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    setMapReady(true);
+  }, []);
+  
+  if (!mapReady) {
+    return (
+      <div style={{ 
+        width: '100%', 
+        height: '100%', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: '#f0f0f0'
+      }}>
+        <span>Chargement de la carte...</span>
+      </div>
+    );
+  }
+  
+  try {
+    const { MapContainer, TileLayer, Marker, Popup } = require('react-leaflet');
+    const L = require('leaflet');
+    
+    // Fix pour les icônes Leaflet
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    });
+    
+    return (
+      <MapContainer
+        center={[latitude, longitude]}
+        zoom={16}
+        style={{ width: '100%', height: '100%' }}
+        scrollWheelZoom={false}
+        dragging={false}
+        zoomControl={false}
+        attributionControl={false}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={[latitude, longitude]}>
+          <Popup>{address || 'Bâtiment'}</Popup>
+        </Marker>
+      </MapContainer>
+    );
+  } catch (err) {
+    return (
+      <div style={{ 
+        width: '100%', 
+        height: '100%', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: '#f0f0f0',
+        color: '#666'
+      }}>
+        <span>📍 Carte non disponible</span>
+      </div>
+    );
+  }
+};
+
 // Composant principal du formulaire de bâtiment
 const BatimentForm = ({ 
   batiment, 
