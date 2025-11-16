@@ -20405,7 +20405,7 @@ const Prevention = () => {
                   setSelectedBatiment(batiment);
                   setShowBatimentModal(true);
                 }}>
-                  <h3>{batiment.nom_etablissement || 'Sans nom'}</h3>
+                  <h3>{batiment.nom_etablissement || batiment.adresse_civique}</h3>
                   <p>{batiment.adresse_civique}, {batiment.ville}</p>
                 </div>
               ))}
