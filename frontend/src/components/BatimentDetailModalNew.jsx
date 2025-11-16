@@ -188,9 +188,13 @@ const BatimentForm = ({
     setAddressValidated(true);
     setShowSuggestions(false);
     
-    // Générer Street View si on a les coordonnées
+    // Générer carte statique OpenStreetMap si on a les coordonnées
     if (lat && lng) {
-      const url = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
+      // Utiliser l'API de carte statique OpenStreetMap
+      const zoom = 16;
+      const width = 400;
+      const height = 250;
+      const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lng},red-pushpin`;
       setStreetViewUrl(url);
     }
   };
@@ -205,7 +209,7 @@ const BatimentForm = ({
     return () => clearTimeout(timeoutId);
   }, [editData.adresse_civique, isEditing]);
 
-  // Générer Street View URL quand l'adresse change ou au chargement initial
+  // Générer URL de carte statique quand l'adresse change ou au chargement initial
   useEffect(() => {
     if (editData.adresse_civique && editData.ville) {
       generateStreetViewUrl();
@@ -214,11 +218,11 @@ const BatimentForm = ({
 
   const generateStreetViewUrl = () => {
     if (editData.latitude && editData.longitude) {
-      const url = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${editData.latitude},${editData.longitude}&key=${GOOGLE_MAPS_API_KEY}`;
-      setStreetViewUrl(url);
-    } else if (editData.adresse_civique && editData.ville) {
-      const address = encodeURIComponent(`${editData.adresse_civique}, ${editData.ville}, ${editData.province}`);
-      const url = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${address}&key=${GOOGLE_MAPS_API_KEY}`;
+      // Utiliser l'API de carte statique OpenStreetMap
+      const zoom = 16;
+      const width = 400;
+      const height = 250;
+      const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${editData.latitude},${editData.longitude}&zoom=${zoom}&size=${width}x${height}&markers=${editData.latitude},${editData.longitude},red-pushpin`;
       setStreetViewUrl(url);
     }
   };
