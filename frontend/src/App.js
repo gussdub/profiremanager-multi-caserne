@@ -1058,7 +1058,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             const newSettings = {...notificationSettings, soundType: e.target.value};
                             saveNotificationSettings(newSettings);
                             // Jouer un aperçu
-                            setTimeout(() => playNotificationSound(), 100);
+                            setTimeout(() => playNotificationSound(newSettings), 100);
                           }}
                           style={{
                             width: '100%',
