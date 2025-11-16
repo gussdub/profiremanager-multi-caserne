@@ -18247,8 +18247,74 @@ const GestionPreventionnistes = () => {
         </div>
       </div>
 
-      {/* Liste des préventionnistes */}
-      <div className="preventionnistes-section">
+      {/* Toggle Vue Liste / Carte */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: '10px', 
+        margin: '20px 0',
+        padding: '10px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <button
+          onClick={() => setViewMode('list')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: viewMode === 'list' ? '#2563eb' : '#fff',
+            color: viewMode === 'list' ? '#fff' : '#333',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'list' ? 'bold' : 'normal',
+            transition: 'all 0.3s'
+          }}
+        >
+          📋 Vue Liste
+        </button>
+        <button
+          onClick={() => setViewMode('map')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: viewMode === 'map' ? '#2563eb' : '#fff',
+            color: viewMode === 'map' ? '#fff' : '#333',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'map' ? 'bold' : 'normal',
+            transition: 'all 0.3s'
+          }}
+        >
+          🗺️ Vue Carte
+        </button>
+      </div>
+
+      {/* Vue Carte */}
+      {viewMode === 'map' && (
+        <div className="map-section" style={{ marginBottom: '20px' }}>
+          <h3 style={{ marginBottom: '15px' }}>🗺️ Carte des Bâtiments</h3>
+          <MapComponent 
+            batiments={batiments}
+            onBatimentClick={(batiment) => {
+              console.log('Bâtiment cliqué:', batiment);
+            }}
+          />
+          <p style={{ 
+            marginTop: '10px', 
+            fontSize: '14px', 
+            color: '#666',
+            textAlign: 'center'
+          }}>
+            Cliquez sur un marqueur pour voir les détails du bâtiment
+          </p>
+        </div>
+      )}
+
+      {/* Vue Liste */}
+      {viewMode === 'list' && (
+        <>
+          {/* Liste des préventionnistes */}
+          <div className="preventionnistes-section">
         <h3>👨‍🚒 Préventionnistes Actifs</h3>
         
         {preventionnistes.length === 0 ? (
