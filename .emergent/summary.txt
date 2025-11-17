@@ -1,90 +1,90 @@
 <analysis>
-The AI engineer's work in this trajectory primarily focused on refining the ProFireManager application, tackling a range of front-end UI/UX issues, backend logic adjustments, and external API integrations. Initial efforts centered on resolving persistent Google Maps API key errors caused by a double-loading conflict, eventually fixed by centralizing the  in . This evolved into addressing the deprecation of , leading to a strategic shift from Google Places API (New) to the  for address autocompletion, requiring subsequent fixes for Street View display and postal code extraction using Google's reverse geocoding.
+The user's primary language is French. The next agent MUST respond in French.
 
-Simultaneously, the engineer resolved critical authentication and data display bugs within the SuperAdmin Dashboard and Debogage module, particularly fixing  handling and enabling Ctrl+V screenshot uploads. A significant portion of the work involved the Formation module, rectifying a date display bug (timezone conversion), implementing a manual competence validation feature, and iteratively adjusting complex conformity reporting logic (from 3-level to 2-level statuses) based on user feedback. The trajectory concludes with the engineer in the process of simplifying the frontend's conformity statistics display, following the user's request to revert to a Conforme and Non conforme status.
+This trajectory details a complex development and debugging cycle for the ProFireManager application, focusing on the Prévention (Prevention) module. The initial task was to implement a map-based system for managing fire prevention officer sectors.
+
+The first major effort involved implementing this feature with the Google Maps API. This was fraught with persistent issues, including React lifecycle problems (, ), incorrect DOM element attachment, and recurring  and  errors, despite multiple attempts by the user to configure the API key correctly in the Google Cloud Console.
+
+Following these failures, a strategic pivot was made to Leaflet and OpenStreetMap. This migration was successful, resulting in a functional, key-less interactive map displaying building markers.
+
+Work then shifted to a series of user-reported bugs. First, the building photo feature in the Bâtiment modal was broken because it relied on the now-removed Google Street View API. This was fixed by migrating to a placeholder system designed for Mapillary and manual uploads, which involved creating a dynamic mini-Leaflet map preview inside the modal. Second, a UI bug causing the address autocomplete dropdown to reappear after selection was fixed.
+
+The final and current task is resolving a critical bug preventing the creation of new buildings. After extensive debugging involving frontend data sanitization, backend logging, and user-provided console screenshots, the root cause was identified: the frontend sends a data payload with several fields that are missing from the backend's  Pydantic model, causing a  validation error. The immediate next step is to update this backend model.
 </analysis>
 
 <product_requirements>
-The ProFireManager application is a fire safety management solution with modules for Prévention (inspections, non-conformities, reporting), a mobile app, and customizable CSV imports. The trajectory addressed several enhancements and bug fixes:
-1.  **EPI Replacement Module**: A functional modal for approving EPI replacement requests.
-2.  **CSV Import Harmonization**: Aligning fields for EPI, Personnel, and Rapports imports.
-3.  **Module Visibility Control**: Prévention module visibility dynamically controlled by tenant admin settings.
-4.  **Availability Recurrence Logic**: Correcting bi-weekly recurrence assignment.
-5.  **UI Responsiveness**: Fixing overflow in EPI tabs and Planning calendar.
-6.  **Dashboard KPI Accuracy & Employee Search**: Correcting KPI calculations and implementing functional employee search in Planning.
-7.  **Planning Module Assignment Logic**: Refining automatic assignment for part-time employees.
-8.  **Debugging/Feature Request Module**: Created a Débogage tab in SuperAdmin dashboard with CRUD, status tracking, comments, Ctrl+V screenshot upload, and email notifications. This module also received functionality for editing existing bug reports with all fields pre-filled.
-9.  **Multi-Tenant Isolation**: Separate user sessions for different tenants.
-10. **Building Modal Redesign**: Redesigned Créer un Bâtiment modal with logical field order, Google Street View vignette, and address autocompletion (initially Google Maps, then transitioned to API Adresse Québec with Google reverse geocoding for postal codes).
-11. **Formation Module - Date Correction**: Fix timezone issue where a training created for Nov 9 displays as Nov 8.
-12. **Formation Module - Compliance Logic**: Initially implemented Conforme, Peut satisfaire, Non conforme statuses with manual validation, later reverted to simplified Conforme/Non conforme based on presence rate (formations present / passed to date) and mandatory trainings, with manual regularization via Personnel module.
-13. **Mes EPI Module - UI Fix**: Ensure Remplacement button text is fully visible in EPI cards without truncation.
+The ProFireManager application is a comprehensive tool for managing fire department operations, including personnel, training, and building prevention inspections.
+
+**Core Feature: Prevention Officer Sector Management**
+The primary goal is to build a system allowing administrators to visually manage geographic sectors for fire prevention officers.
+-   **Phase 1 (Implicit):** Setup and planning.
+-   **Phase 2 (Completed):** Display interactive building markers on a map. This was successfully implemented using Leaflet/OpenStreetMap after abandoning a problematic Google Maps integration.
+-   **Phase 3 (Pending):** Implement map drawing tools (e.g., polygons) to define sectors.
+-   **Phase 4 & 5 (Pending):** Assign sectors to officers and create backend logic to persist this data.
+
+**Recent Bug Fixes & Enhancements:**
+-   **Building Photo Display:** The building detail modal initially used Google Street View. This was replaced with a system that first attempts to find a photo from Mapillary and, if unsuccessful, displays a placeholder with an Add Photo button. The display was further refined to show a mini-interactive Leaflet map and finally the placeholder.
+-   **Address Autocomplete:** A UI bug that caused the address suggestion list to immediately reopen after a selection was resolved.
+-   **Building Creation (In-Progress Fix):** A critical bug preventing users from creating new buildings is currently being addressed. The root cause is a mismatch between the data sent by the frontend and the fields defined in the backend's Pydantic creation model.
 </product_requirements>
 
 <key_technical_concepts>
--   **FastAPI**: Python backend, Pydantic for data validation.
--   **React**: JavaScript frontend, component architecture.
--   **MongoDB**: NoSQL database (UUIDs for IDs).
--   **Google Maps Platform**: Maps JavaScript API, Geocoding API, Street View Static API, Places API (New/Deprecated).
--   **@vis.gl/react-google-maps**: React library for Google Maps.
--   **API Adresse Québec**: Canadian address autocompletion service.
--   **Supervisor**: Process control for frontend/backend services.
--   **JWT Tokens**: Authentication.
--   **LocalStorage**: For multi-tenant session isolation.
+- **Frameworks:** React (Vite) frontend, FastAPI backend.
+- **Database:** MongoDB.
+- **Architecture:** Monolithic frontend () with some logic extracted into components (). Backend is a single  file.
+- **Mapping Technology:** Migrated from Google Maps API to **Leaflet** with **OpenStreetMap** tiles, using  and .
+- **API & Data Validation:** **Pydantic** models are used for strict data validation on the backend, which was the source of the current create building bug.
+- **Geocoding:** Migrated from Google Geocoding to **Nominatim** (OpenStreetMap's free geocoding service).
 </key_technical_concepts>
 
 <code_architecture>
-The application uses a React/FastAPI/MongoDB stack.
+The application uses a React frontend and a FastAPI backend. The code is organized as follows:
 
+-   ****
+    -   **Importance:** This remains the central file for the frontend, containing the main application layout, routing, and the  component which houses the mapping feature.
+    -   **Summary of Changes:** The Google Maps  was entirely replaced with a new  component that uses  and is prepared for  integration. It renders the main map in the Préventionnistes view.
 
+-   ****
+    -   **Importance:** This component is critical for creating and editing buildings. It handles address autocomplete, photo display, and form submission. It has been the focus of multiple recent bug fixes.
+    -   **Summary of Changes:**
+        -   All Google Maps dependencies (, Street View API calls) were removed.
+        -   Address search was migrated to the free Nominatim API.
+        -   An address autocomplete UI bug was fixed using a  flag to prevent re-fetching on selection.
+        -   The photo display was changed multiple times, finally settling on a system that attempts to fetch a Mapillary image and shows a placeholder with an upload button if none is found.
+        -   The  function was modified to prepare data for submission, but it's the source of the current bug where it sends fields not expected by the backend.
 
--   ****:
-    -   **Importance**: Central API logic, database interaction.
-    -   **Changes Made**: Added Pydantic model . Implemented CRUD endpoints for manual competence validations (). Modified  logic to: calculate training duration from /; update compliance statuses (initially 3-level, reverted to 2-level conforme/non_conforme); removed restrictive  filter from . Added a debug endpoint. Expanded bug modification capabilities with a new  endpoint. Corrected field names in  model (, , , ).
--   ****:
-    -   **Importance**: Main React app, routing, global state.
-    -   **Changes Made**: Corrected  usage for  to prevent timezone issues. Modified compliance logic display from 3-level to 2-level (conforme/non_conforme) for Formation module reports and KPI display. Added states and logic for manual competence validation within  component. Added a refresh button to the Formation module. Fixed  key for admin token in multi-tenant setup (specifically ).
--   ****:
-    -   **Importance**: Global styling.
-    -   **Changes Made**: Added  to  to ensure EPI action buttons wrap correctly, preventing truncation.
--   ****:
-    -   **Importance**: Original building details modal.
-    -   **Changes Made**: Removed local  instance after global provider was introduced in .
--   ****:
-    -   **Importance**: Redesigned building modal with Google Maps integration.
-    -   **Changes Made**: Removed local . Migrated from  to  (then deprecated by user). Switched to  for autocompletion, manually integrating Google's reverse geocoding for postal codes. Modified  to initialize and display Street View correctly on load and when editing. Cleaned up debug s.
--   ****:
-    -   **Importance**: Intervention plan builder.
-    -   **Changes Made**: Removed local . Integrated Google Maps  library for tracing routes (polylines) and danger zones (polygons).
--   ****:
-    -   **Importance**: Centralized API calls.
-    -   **Changes Made**: Modified  to correctly retrieve  for the 'admin' tenant.
--   ****:
-    -   **Importance**: Root React component.
-    -   **Changes Made**: Added a global  from  to centralize Google Maps API loading.
--   ****:
-    -   **Importance**: Super Admin interface.
-    -   **Changes Made**: Implemented  helper to correctly fetch  from  for API calls, resolving  error.
--   ****:
-    -   **Importance**: Bug/feature request module.
-    -   **Changes Made**: Modified  to use  for screenshot uploads. Implemented  state, , , and updated  to handle both bug creation and modification. Added Modifier button in detail modal. Standardized field names (, , , ) for consistency between frontend and backend during bug editing.
--   ****:
-    -   **Importance**: Employee EPI management.
-    -   **Changes Made**: N/A (CSS fix in  affected this component's display).
+-   ****
+    -   **Importance:** Contains all backend API endpoints, database logic, and Pydantic data models.
+    -   **Summary of Changes:**
+        -   The  Pydantic model is the source of the current critical bug. It is missing several fields that the frontend sends upon creation (e.g., , , ).
+        -   The  endpoint () was updated to correctly add a  to the new document's uid=0(root) gid=0(root) groups=0(root) field.
+        -   Debug  statements were added to this endpoint to capture the raw incoming request body to diagnose the 422 error.
+
+-   ** & **
+    -   **Importance:** Store environment variables.
+    -   **Summary of Changes:** The  was added, updated several times, and finally removed from both files as part of the migration to Leaflet.
 </code_architecture>
 
 <pending_tasks>
--   Frontend Implementation for Prevention Module Enhancements: Fully implement the interactive and visual aspects of  components regarding map integration.
--   Complete  functionality: Parse HTML data and fully implement the UI for conflict resolution.
--   Finish simplifying conformity logic in frontend : Complete the simplification of global statistics display to align with the 2-level Conforme/Non conforme logic.
+- **Immediate:** Fix the critical create building bug by updating the  Pydantic model in  to include all fields sent by the frontend.
+- **Continue Feature:** Implement **Phase 3** of the Sector Management feature: activate the  tools to allow users to draw, edit, and save polygon sectors on the map.
+- **Implement Upload:** Add the file upload logic for the 📷 Ajouter une photo button in the building modal.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was in the Formation module, actively simplifying the conformity reporting logic as per the user's request. The user asked to revert the compliance status system from three levels (Conforme, Peut satisfaire, Non conforme) back to two levels (Conforme and Non conforme). The AI engineer had already begun this process in the backend () and was in the middle of simplifying the frontend code in .
+The work is focused on fixing a critical bug that prevents the creation of new buildings. When a user fills out the Nouveau Bâtiment form and clicks Créer, the request fails with a  error from the backend.
 
-The last action recorded was a command to edit  to simplify the global statistics, specifically for the Formation module, to remove the 3-level status display and align with the new 2-level system requested by the user. This edit was for the UI components that display overall compliance statistics. The system logs indicate the edit instruction was for Et les statistiques globales :. The trajectory abruptly ends at this point, implying the edit for global statistics was initiated but not necessarily completed or tested.
+**Debugging Journey:**
+1.  The user reported the error with a screenshot showing the failed toast message.
+2.  Initial analysis of backend logs showed the  error but not the specific validation failure.
+3.  A  test confirmed that the backend endpoint could create a building if the payload was correct, proving the issue was with the data being sent by the frontend.
+4.  Debug logs were added to the backend  endpoint to print the raw incoming request body.
+5.  The user triggered the error again and provided a screenshot of the frontend's browser console, which showed the exact JSON payload being sent in the  request.
+
+**Root Cause Identified:**
+The user's screenshot revealed the problem. The frontend is sending a payload containing numerous fields (e.g., , , , ) that are **not** defined in the  Pydantic model within . Pydantic, by default, rejects unknown fields, leading to the  validation error. The very last step was identifying this mismatch as the definitive cause of the bug.
 </current_work>
 
 <optional_next_step>
-Continue the simplification of the frontend global statistics display in  for the Formation module.
+Update the  Pydantic model in  to include all the missing fields that the frontend is sending. This will resolve the  error and allow successful creation of new buildings.
 </optional_next_step>

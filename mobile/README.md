@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://fire-zones.preview.emergentagent.com
+- **URL** : https://mapfire.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://fire-zones.preview.emergentagent.com"
+  "apiUrl": "https://mapfire.preview.emergentagent.com"
 }
 ```
 
