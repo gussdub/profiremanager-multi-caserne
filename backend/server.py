@@ -8236,6 +8236,40 @@ class BatimentCreate(BaseModel):
     class Config:
         extra = "ignore"  # Ignorer les champs supplémentaires
 
+class SecteurGeographique(BaseModel):
+    """Secteur géographique pour l'assignation des préventionnistes"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    
+    # Informations du secteur
+    nom: str  # Ex: "Secteur Nord", "Zone industrielle Est"
+    description: str = ""
+    couleur: str = "#3b82f6"  # Couleur d'affichage sur la carte (hex)
+    
+    # Géométrie (polygone GeoJSON)
+    geometry: Dict[str, Any]  # Format GeoJSON: {"type": "Polygon", "coordinates": [[[lng, lat], ...]]}
+    
+    # Assignation
+    preventionniste_assigne_id: Optional[str] = None  # ID de l'employé préventionniste
+    
+    # Métadonnées
+    actif: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SecteurGeographiqueCreate(BaseModel):
+    """Modèle pour la création d'un secteur géographique"""
+    nom: str
+    description: str = ""
+    couleur: str = "#3b82f6"
+    geometry: Dict[str, Any]
+    preventionniste_assigne_id: Optional[str] = None
+    actif: bool = True
+    
+    class Config:
+        extra = "ignore"
+
+
 class GrilleInspection(BaseModel):
     """Template de grille d'inspection selon le groupe d'occupation"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
