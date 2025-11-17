@@ -8095,17 +8095,44 @@ class Batiment(BaseModel):
     nom_etablissement: str = ""
     adresse_civique: str = ""
     ville: str = ""
+    province: str = "QC"
     code_postal: str = ""
     cadastre_matricule: str = ""  # Renommé de numero_lot_cadastre
-    valeur_fonciere: Optional[float] = None  # Nouveau champ
+    valeur_fonciere: Optional[str] = ""  # String car peut être vide
     
-    # Contacts
+    # Informations sur le bâtiment
+    type_batiment: str = ""
+    sous_type_batiment: str = ""
+    annee_construction: str = ""
+    nombre_etages: str = ""
+    superficie_totale_m2: str = ""
+    
+    # Contacts - Propriétaire
     proprietaire_nom: str = ""
+    proprietaire_prenom: str = ""
     proprietaire_telephone: str = ""
     proprietaire_courriel: str = ""
+    
+    # Contacts - Gérant/Gestionnaire
     gerant_nom: str = ""
     gerant_telephone: str = ""
     gerant_courriel: str = ""
+    gestionnaire_nom: str = ""  # Alias pour compatibilité frontend
+    gestionnaire_prenom: str = ""
+    gestionnaire_telephone: str = ""
+    gestionnaire_courriel: str = ""
+    
+    # Contacts - Locataire
+    localaire_nom: str = ""  # Orthographe originale conservée
+    localaire_prenom: str = ""
+    localaire_telephone: str = ""
+    localaire_courriel: str = ""
+    locataire_nom: str = ""  # Alias pour compatibilité frontend
+    locataire_prenom: str = ""
+    locataire_telephone: str = ""
+    locataire_courriel: str = ""
+    
+    # Contacts - Responsable sécurité
     responsable_securite_nom: str = ""
     responsable_securite_telephone: str = ""
     responsable_securite_courriel: str = ""
@@ -8115,6 +8142,11 @@ class Batiment(BaseModel):
     sous_groupe: str = ""  # A-1, A-2, B-1, F-1, F-2, F-3, etc.
     description_activite: str = ""
     niveau_risque: str = ""  # Faible, Moyen, Élevé, Très élevé (selon Tableau A1)
+    
+    # Risques
+    risques: List[str] = []
+    risques_identifes: List[str] = []  # Orthographe originale conservée
+    risques_identifies: List[str] = []  # Alias pour compatibilité frontend
     
     # Géolocalisation
     latitude: Optional[float] = None
@@ -8126,6 +8158,7 @@ class Batiment(BaseModel):
     # Métadonnées
     statut: str = "actif"  # actif, inactif, demolition
     notes_generales: str = ""
+    notes: str = ""  # Alias pour compatibilité frontend
     preventionniste_assigne_id: Optional[str] = None  # ID de l'employé préventionniste
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
