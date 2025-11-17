@@ -18664,6 +18664,216 @@ const GestionPreventionnistes = () => {
 
       {/* Modal de configuration de secteur */}
       {showSecteurModal && (
+
+
+// Formulaire de secteur
+const SecteurForm = ({ secteur, users, onSave, onDelete, onCancel }) => {
+  const [formData, setFormData] = useState({
+    nom: secteur?.nom || '',
+    description: secteur?.description || '',
+    couleur: secteur?.couleur || '#3b82f6',
+    preventionniste_assigne_id: secteur?.preventionniste_assigne_id || '',
+    actif: secteur?.actif !== false
+  });
+
+  const couleursPredefinies = [
+    { nom: 'Bleu', valeur: '#3b82f6' },
+    { nom: 'Vert', valeur: '#10b981' },
+    { nom: 'Rouge', valeur: '#ef4444' },
+    { nom: 'Orange', valeur: '#f97316' },
+    { nom: 'Violet', valeur: '#8b5cf6' },
+    { nom: 'Rose', valeur: '#ec4899' },
+    { nom: 'Jaune', valeur: '#eab308' },
+    { nom: 'Cyan', valeur: '#06b6d4' }
+  ];
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.nom.trim()) {
+      alert('Veuillez entrer un nom pour le secteur');
+      return;
+    }
+    
+    onSave(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+          Nom du secteur *
+        </label>
+        <input
+          type="text"
+          name="nom"
+          value={formData.nom}
+          onChange={handleChange}
+          placeholder="Ex: Secteur Nord, Zone industrielle..."
+          required
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid #d1d5db',
+            fontSize: '14px'
+          }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+          Description
+        </label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Description du secteur..."
+          rows="3"
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid #d1d5db',
+            fontSize: '14px',
+            resize: 'vertical'
+          }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+          Couleur
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          {couleursPredefinies.map(c => (
+            <button
+              key={c.valeur}
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, couleur: c.valeur }))}
+              style={{
+                padding: '10px',
+                borderRadius: '6px',
+                border: formData.couleur === c.valeur ? '3px solid #000' : '2px solid #d1d5db',
+                backgroundColor: c.valeur,
+                cursor: 'pointer',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              {c.nom}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+          Préventionniste assigné
+        </label>
+        <select
+          name="preventionniste_assigne_id"
+          value={formData.preventionniste_assigne_id}
+          onChange={handleChange}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid #d1d5db',
+            fontSize: '14px',
+            backgroundColor: '#fff'
+          }}
+        >
+          <option value="">-- Sélectionner un préventionniste --</option>
+          {users.map(user => (
+            <option key={user.id} value={user.id}>
+              {user.prenom} {user.nom} ({user.grade})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', fontSize: '14px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            name="actif"
+            checked={formData.actif}
+            onChange={handleChange}
+            style={{ marginRight: '8px', cursor: 'pointer' }}
+          />
+          Secteur actif
+        </label>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '30px' }}>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#dc2626',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginRight: 'auto'
+            }}
+          >
+            🗑️ Supprimer
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#6b7280',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}
+        >
+          Annuler
+        </button>
+        <button
+          type="submit"
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#2563eb',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}
+        >
+          {secteur ? 'Mettre à jour' : 'Créer'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
         <div style={{
           position: 'fixed',
           top: 0,
