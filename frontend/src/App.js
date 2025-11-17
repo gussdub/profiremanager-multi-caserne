@@ -18411,6 +18411,159 @@ const GestionPreventionnistes = () => {
         </div>
       )}
 
+
+      {/* Vue Secteurs */}
+      {viewMode === 'secteurs' && (
+        <div className="secteurs-section" style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0 }}>🗺️ Gestion des Secteurs Géographiques</h3>
+            <button
+              onClick={() => setEditMode(!editMode)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: editMode ? '#dc2626' : '#10b981',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              {editMode ? '❌ Quitter le mode édition' : '✏️ Activer le mode édition'}
+            </button>
+          </div>
+          
+          {editMode && (
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #3b82f6',
+              borderRadius: '6px',
+              marginBottom: '15px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1e40af' }}>
+                📝 Mode édition activé
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#1e40af' }}>
+                <li>Cliquez sur l'icône polygone en haut à droite pour dessiner un secteur</li>
+                <li>Cliquez sur l'icône crayon pour modifier un secteur existant</li>
+                <li>Cliquez sur l'icône corbeille pour supprimer un secteur</li>
+              </ul>
+            </div>
+          )}
+          
+          <SecteursMap
+            batiments={batiments}
+            secteurs={secteurs.map(s => ({
+              ...s,
+              preventionniste_assigne_nom: users.find(u => u.id === s.preventionniste_assigne_id)
+                ? `${users.find(u => u.id === s.preventionniste_assigne_id).prenom} ${users.find(u => u.id === s.preventionniste_assigne_id).nom}`
+                : null
+            }))}
+            center={[45.4042, -71.8929]}
+            onBatimentClick={(batiment) => {
+              console.log('Bâtiment cliqué:', batiment);
+            }}
+            onSecteurCreate={handleSecteurCreate}
+            onSecteurClick={handleSecteurClick}
+            editMode={editMode}
+          />
+          
+          <p style={{ 
+            marginTop: '10px', 
+            fontSize: '14px', 
+            color: '#666',
+            textAlign: 'center'
+          }}>
+            {editMode ? 'Utilisez les outils en haut à droite pour créer, modifier ou supprimer des secteurs' : 'Cliquez sur un secteur pour voir ses détails'}
+          </p>
+          
+          {/* Liste des secteurs */}
+          <div style={{ marginTop: '30px' }}>
+            <h4 style={{ marginBottom: '15px' }}>📋 Secteurs configurés ({secteurs.length})</h4>
+            {secteurs.length === 0 ? (
+              <div style={{
+                padding: '20px',
+                textAlign: 'center',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                color: '#666'
+              }}>
+                <p>Aucun secteur créé</p>
+                <p style={{ fontSize: '14px', marginTop: '8px' }}>
+                  Activez le mode édition et dessinez votre premier secteur sur la carte
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+                {secteurs.map(secteur => {
+                  const preventionniste = users.find(u => u.id === secteur.preventionniste_assigne_id);
+                  return (
+                    <div
+                      key={secteur.id}
+                      onClick={() => handleSecteurClick(secteur)}
+                      style={{
+                        padding: '15px',
+                        borderLeft: `4px solid ${secteur.couleur || '#3b82f6'}`,
+                        backgroundColor: '#fff',
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.15)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <h5 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
+                        {secteur.nom}
+                      </h5>
+                      {secteur.description && (
+                        <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
+                          {secteur.description}
+                        </p>
+                      )}
+                      <div style={{ fontSize: '14px', marginTop: '8px' }}>
+                        {preventionniste ? (
+                          <span style={{ 
+                            display: 'inline-block',
+                            padding: '4px 8px',
+                            backgroundColor: '#d1fae5',
+                            color: '#065f46',
+                            borderRadius: '4px',
+                            fontSize: '13px'
+                          }}>
+                            👨‍🚒 {preventionniste.prenom} {preventionniste.nom}
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            display: 'inline-block',
+                            padding: '4px 8px',
+                            backgroundColor: '#fef3c7',
+                            color: '#92400e',
+                            borderRadius: '4px',
+                            fontSize: '13px'
+                          }}>
+                            ⚠ Sans préventionniste
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+
       {/* Vue Liste */}
       {viewMode === 'list' && (
         <>
