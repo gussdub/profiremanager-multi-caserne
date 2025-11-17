@@ -18229,6 +18229,76 @@ const GestionPreventionnistes = () => {
     }
   };
 
+  // Gestion des secteurs
+  const handleSecteurCreate = (geometry) => {
+    setPendingGeometry(geometry);
+    setCurrentSecteur(null);
+    setShowSecteurModal(true);
+  };
+
+  const handleSecteurClick = (secteur) => {
+    setCurrentSecteur(secteur);
+    setPendingGeometry(null);
+    setShowSecteurModal(true);
+  };
+
+  const handleSaveSecteur = async (secteurData) => {
+    try {
+      if (currentSecteur) {
+        // Mise à jour
+        await apiPut(tenantSlug, `/prevention/secteurs/${currentSecteur.id}`, secteurData);
+        toast({
+          title: "Succès",
+          description: "Secteur mis à jour"
+        });
+      } else {
+        // Création
+        await apiPost(tenantSlug, '/prevention/secteurs', {
+          ...secteurData,
+          geometry: pendingGeometry
+        });
+        toast({
+          title: "Succès",
+          description: "Secteur créé"
+        });
+      }
+      setShowSecteurModal(false);
+      setCurrentSecteur(null);
+      setPendingGeometry(null);
+      fetchData();
+    } catch (error) {
+      console.error('Erreur sauvegarde secteur:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder le secteur",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSecteur = async (secteurId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce secteur ?')) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/prevention/secteurs/${secteurId}`);
+      toast({
+        title: "Succès",
+        description: "Secteur supprimé"
+      });
+      setShowSecteurModal(false);
+      setCurrentSecteur(null);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le secteur",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return <div className="loading">Chargement...</div>;
   }
