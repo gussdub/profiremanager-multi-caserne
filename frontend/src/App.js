@@ -18164,20 +18164,27 @@ const GestionPreventionnistes = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState([]);
   const [batiments, setBatiments] = useState([]);
+  const [secteurs, setSecteurs] = useState([]);
   const [preventionnistes, setPreventionnistes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'map'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'map' ou 'secteurs'
+  const [editMode, setEditMode] = useState(false);
+  const [showSecteurModal, setShowSecteurModal] = useState(false);
+  const [currentSecteur, setCurrentSecteur] = useState(null);
+  const [pendingGeometry, setPendingGeometry] = useState(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [usersData, batimentsData] = await Promise.all([
+      const [usersData, batimentsData, secteursData] = await Promise.all([
         apiGet(tenantSlug, '/users'),
-        apiGet(tenantSlug, '/prevention/batiments')
+        apiGet(tenantSlug, '/prevention/batiments'),
+        apiGet(tenantSlug, '/prevention/secteurs').catch(() => [])
       ]);
       
       setUsers(usersData);
       setBatiments(batimentsData);
+      setSecteurs(secteursData || []);
       
       // Filtrer les préventionnistes (utilisateurs avec des bâtiments assignés)
       const preventionnistesActifs = usersData.filter(user => 
