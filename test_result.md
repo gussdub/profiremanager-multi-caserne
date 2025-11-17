@@ -980,6 +980,21 @@ backend:
         agent: "testing"
         comment: "✅ BOTH FIXES VERIFIED AND WORKING - Comprehensive backend testing completed successfully (3/3 tests passed, 100% success rate): 1) ✅ Test 1 - heures_max_semaine Modification: Successfully tested PUT /api/shefford/users/mon-profil endpoint with admin@firemanager.ca user, updated heures_max_semaine from 40 to 30, verified change was saved correctly, tested limits (minimum 5: ✅, maximum 168: ✅), restored original value. The mon-profil endpoint works correctly and accepts heures_max_semaine updates. 2) ✅ Test 2 - EPI Endpoint for Personnel: Successfully tested GET /api/shefford/epi/employe/{user_id} endpoint, created test EPI (casque MSA Medium) via POST /api/shefford/epi, verified EPI retrieval with correct data structure including all required fields (id, type_epi, taille, user_id, statut), confirmed EPI data is available for Personnel module display. 3) ✅ Part-time Users Verification: Found 25 part-time users in Shefford tenant, all with type_emploi='temps_partiel' and various heures_max_semaine values (including one user with 27777777 confirming field is modifiable). Authentication successful with admin@firemanager.ca / Admin123! credentials. Both backend fixes are working correctly and ready for frontend integration."
 
+  - task: "Prevention Module - Building Creation (Bug 422 Fix)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Comprehensive testing of Prevention module building creation after bug 422 fix. Testing Pydantic models Batiment and BatimentCreate updated to include ALL fields sent by frontend. Tests required: 1) Admin authentication with admin@firemanager.ca / admin123, 2) Verify Prevention module is activated for Shefford tenant, 3) Test simple building creation with minimal payload (nom_etablissement, adresse_civique, ville, province, code_postal), 4) Test complete building creation with all fields including aliases (locataire/localaire, gestionnaire, risques_identifies/risques_identifes, notes/notes_generales), 5) Verify building retrieval and cleanup. Expected success: Status 200, UUID returned, no 422 errors, all fields stored correctly."
+      - working: true
+        agent: "testing"
+        comment: "🎉 PREVENTION MODULE BUILDING CREATION FULLY FUNCTIONAL - BUG 422 COMPLETELY FIXED! Comprehensive testing completed successfully with PERFECT 100% success rate (5/5 tests passed). CRITICAL SUCCESS: No 422 validation errors encountered during building creation - the Pydantic model fixes are working perfectly! DETAILED TEST RESULTS: 1) ✅ Admin Authentication: Successfully authenticated with admin@firemanager.ca / Admin123! credentials for Shefford tenant, 2) ✅ Prevention Module Access: Module activated and accessible, found 10 existing buildings confirming module is working, 3) ✅ Simple Building Creation: POST /api/shefford/prevention/batiments with minimal payload (nom_etablissement='Test Bâtiment Création', adresse_civique='123 Rue Test', ville='Shefford', province='QC', code_postal='J2H 1A1') returned 200 OK with valid UUID (7f6fb1c4-fc20-44da-8f92-b2be9586efe0), 4) ✅ Complete Building Creation: POST with ALL fields including aliases successfully created building with UUID (567d78c1-51af-412e-8146-38c9eb276b7c), verified all fields stored correctly including locataire_nom='Martin', gestionnaire_nom='Tremblay', risques_identifies=['Électricité', 'Chauffage'], notes='Notes de test', latitude=45.4042, longitude=-72.7311, 5) ✅ Building Retrieval: GET /api/shefford/prevention/batiments successfully retrieved both created buildings with all required fields present, 6) ✅ Cleanup: Successfully deleted both test buildings via DELETE endpoint. BUG 422 RESOLUTION CONFIRMED: The Pydantic models Batiment and BatimentCreate now correctly handle ALL fields sent by frontend including aliases (locataire/localaire, risques_identifies/risques_identifes, notes/notes_generales). No validation errors occur during creation. System ready for production use."
+
 frontend:
   - task: "Frontend Integration"
     implemented: true
