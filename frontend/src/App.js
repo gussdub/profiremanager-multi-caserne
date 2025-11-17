@@ -18660,6 +18660,51 @@ const GestionPreventionnistes = () => {
           </div>
         </>
       )}
+
+
+      {/* Modal de configuration de secteur */}
+      {showSecteurModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+              {currentSecteur ? '✏️ Modifier le secteur' : '📍 Nouveau secteur'}
+            </h3>
+            
+            <SecteurForm
+              secteur={currentSecteur}
+              users={users.filter(u => u.role !== 'employe')} // Filtrer pour avoir que les préventionnistes potentiels
+              onSave={handleSaveSecteur}
+              onDelete={currentSecteur ? () => handleDeleteSecteur(currentSecteur.id) : null}
+              onCancel={() => {
+                setShowSecteurModal(false);
+                setCurrentSecteur(null);
+                setPendingGeometry(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
