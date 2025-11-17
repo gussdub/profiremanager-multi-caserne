@@ -16351,6 +16351,132 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+# ==================== SECTEURS GÉOGRAPHIQUES ====================
+
+@api_router.get("/{tenant_slug}/prevention/secteurs")
+async def get_secteurs(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les secteurs géographiques"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    secteurs = await db.secteurs_geographiques.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(secteur) for secteur in secteurs]
+
+@api_router.post("/{tenant_slug}/prevention/secteurs")
+async def create_secteur(
+    tenant_slug: str,
+    secteur: SecteurGeographiqueCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau secteur géographique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    secteur_dict = secteur.dict()
+    secteur_dict["tenant_id"] = tenant.id
+    secteur_dict["id"] = str(uuid.uuid4())
+    secteur_dict["created_at"] = datetime.now(timezone.utc)
+    secteur_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    secteur_obj = SecteurGeographique(**secteur_dict)
+    await db.secteurs_geographiques.insert_one(secteur_obj.dict())
+    
+    return clean_mongo_doc(secteur_obj.dict())
+
+@api_router.get("/{tenant_slug}/prevention/secteurs/{secteur_id}")
+async def get_secteur(
+    tenant_slug: str,
+    secteur_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un secteur géographique spécifique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    secteur = await db.secteurs_geographiques.find_one({"id": secteur_id, "tenant_id": tenant.id})
+    if not secteur:
+        raise HTTPException(status_code=404, detail="Secteur non trouvé")
+    
+    return clean_mongo_doc(secteur)
+
+@api_router.put("/{tenant_slug}/prevention/secteurs/{secteur_id}")
+async def update_secteur(
+    tenant_slug: str,
+    secteur_id: str,
+    secteur_update: SecteurGeographiqueCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un secteur géographique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    existing = await db.secteurs_geographiques.find_one({"id": secteur_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Secteur non trouvé")
+    
+    update_dict = secteur_update.dict()
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.secteurs_geographiques.update_one(
+        {"id": secteur_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    updated = await db.secteurs_geographiques.find_one({"id": secteur_id, "tenant_id": tenant.id})
+    return clean_mongo_doc(updated)
+
+@api_router.delete("/{tenant_slug}/prevention/secteurs/{secteur_id}")
+async def delete_secteur(
+    tenant_slug: str,
+    secteur_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un secteur géographique"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.secteurs_geographiques.delete_one({"id": secteur_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Secteur non trouvé")
+    
+    return {"message": "Secteur supprimé avec succès"}
+
+
+
 @api_router.get("/{tenant_slug}/prevention/meta/niveaux-risque")
 async def get_niveaux_risque(
     tenant_slug: str,
