@@ -9,6 +9,7 @@ import { Calendar } from "./components/ui/calendar";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
 import { useTenant } from "./contexts/TenantContext";
+import SecteursMap from "./components/SecteursMap";
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
