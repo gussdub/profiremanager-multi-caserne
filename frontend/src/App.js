@@ -18330,7 +18330,7 @@ const GestionPreventionnistes = () => {
         </div>
       </div>
 
-      {/* Toggle Vue Liste / Carte */}
+      {/* Toggle Vue Liste / Carte / Secteurs */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
@@ -18369,6 +18369,24 @@ const GestionPreventionnistes = () => {
           }}
         >
           🗺️ Vue Carte
+        </button>
+        <button
+          onClick={() => {
+            setViewMode('secteurs');
+            setEditMode(false);
+          }}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: viewMode === 'secteurs' ? '#2563eb' : '#fff',
+            color: viewMode === 'secteurs' ? '#fff' : '#333',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'secteurs' ? 'bold' : 'normal',
+            transition: 'all 0.3s'
+          }}
+        >
+          🗺️ Secteurs ({secteurs.length})
         </button>
       </div>
 
