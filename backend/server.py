@@ -8136,27 +8136,41 @@ class BatimentCreate(BaseModel):
     ville: str = ""
     province: str = "QC"
     code_postal: str = ""
-    cadastre_matricule: str = ""  # Renommé
-    valeur_fonciere: Optional[float] = None  # Nouveau
+    cadastre_matricule: str = ""
+    valeur_fonciere: Optional[str] = ""  # String car peut être vide
     proprietaire_nom: str = ""
     proprietaire_telephone: str = ""
     proprietaire_courriel: str = ""
+    proprietaire_prenom: str = ""
     gerant_nom: str = ""
     gerant_telephone: str = ""
     gerant_courriel: str = ""
     responsable_securite_nom: str = ""
     responsable_securite_telephone: str = ""
     responsable_securite_courriel: str = ""
+    localaire_nom: str = ""
+    localaire_prenom: str = ""
+    localaire_telephone: str = ""
+    localaire_courriel: str = ""
     groupe_occupation: str = ""
     sous_groupe: str = ""
     description_activite: str = ""
-    risques: List[str] = []  # Nouveau
+    type_batiment: str = ""
+    sous_type_batiment: str = ""
+    annee_construction: str = ""
+    nombre_etages: str = ""
+    superficie_totale_m2: str = ""
+    risques: List[str] = []
+    risques_identifes: List[str] = []  # Alias pour risques
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     photo_url: Optional[str] = ""
     statut: str = "actif"
     notes_generales: str = ""
     preventionniste_assigne_id: Optional[str] = None
+    
+    class Config:
+        extra = "ignore"  # Ignorer les champs supplémentaires
 
 class GrilleInspection(BaseModel):
     """Template de grille d'inspection selon le groupe d'occupation"""
