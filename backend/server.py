@@ -8171,35 +8171,66 @@ class BatimentCreate(BaseModel):
     code_postal: str = ""
     cadastre_matricule: str = ""
     valeur_fonciere: Optional[str] = ""  # String car peut être vide
-    proprietaire_nom: str = ""
-    proprietaire_telephone: str = ""
-    proprietaire_courriel: str = ""
-    proprietaire_prenom: str = ""
-    gerant_nom: str = ""
-    gerant_telephone: str = ""
-    gerant_courriel: str = ""
-    responsable_securite_nom: str = ""
-    responsable_securite_telephone: str = ""
-    responsable_securite_courriel: str = ""
-    localaire_nom: str = ""
-    localaire_prenom: str = ""
-    localaire_telephone: str = ""
-    localaire_courriel: str = ""
-    groupe_occupation: str = ""
-    sous_groupe: str = ""
-    description_activite: str = ""
+    
+    # Informations sur le bâtiment
     type_batiment: str = ""
     sous_type_batiment: str = ""
     annee_construction: str = ""
     nombre_etages: str = ""
     superficie_totale_m2: str = ""
+    
+    # Contacts - Propriétaire
+    proprietaire_nom: str = ""
+    proprietaire_prenom: str = ""
+    proprietaire_telephone: str = ""
+    proprietaire_courriel: str = ""
+    
+    # Contacts - Gérant/Gestionnaire
+    gerant_nom: str = ""
+    gerant_telephone: str = ""
+    gerant_courriel: str = ""
+    gestionnaire_nom: str = ""  # Alias pour compatibilité frontend
+    gestionnaire_prenom: str = ""
+    gestionnaire_telephone: str = ""
+    gestionnaire_courriel: str = ""
+    
+    # Contacts - Locataire
+    localaire_nom: str = ""  # Orthographe originale conservée
+    localaire_prenom: str = ""
+    localaire_telephone: str = ""
+    localaire_courriel: str = ""
+    locataire_nom: str = ""  # Alias pour compatibilité frontend
+    locataire_prenom: str = ""
+    locataire_telephone: str = ""
+    locataire_courriel: str = ""
+    
+    # Contacts - Responsable sécurité
+    responsable_securite_nom: str = ""
+    responsable_securite_telephone: str = ""
+    responsable_securite_courriel: str = ""
+    
+    # Classification
+    groupe_occupation: str = ""
+    sous_groupe: str = ""
+    description_activite: str = ""
+    niveau_risque: str = ""
+    
+    # Risques
     risques: List[str] = []
-    risques_identifes: List[str] = []  # Alias pour risques
+    risques_identifes: List[str] = []  # Orthographe originale conservée
+    risques_identifies: List[str] = []  # Alias pour compatibilité frontend
+    
+    # Géolocalisation
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    
+    # Photo
     photo_url: Optional[str] = ""
+    
+    # Métadonnées
     statut: str = "actif"
     notes_generales: str = ""
+    notes: str = ""  # Alias pour compatibilité frontend
     preventionniste_assigne_id: Optional[str] = None
     
     class Config:
