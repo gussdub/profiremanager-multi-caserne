@@ -19289,7 +19289,7 @@ async def create_borne(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur appartient au tenant et a les permissions
-    if current_user.tenant_id != tenant["id"]:
+    if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     if current_user.role not in ["admin", "superviseur"]:
@@ -19297,7 +19297,7 @@ async def create_borne(
     
     # Créer la borne
     borne = BorneIncendie(
-        tenant_id=tenant["id"],
+        tenant_id=tenant.id,
         **borne_data.dict()
     )
     
