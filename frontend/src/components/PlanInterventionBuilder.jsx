@@ -334,6 +334,62 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
         </div>
 
+        {/* Palette de symboles */}
+        {showSymbolPalette && (
+          <Card style={{ marginBottom: '20px' }}>
+            <CardHeader>
+              <CardTitle>🎨 Palette de Symboles - Cliquez pour placer sur la carte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.entries(symbolCategories).map(([category, symbols]) => (
+                <div key={category} style={{ marginBottom: '20px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
+                    {category}
+                  </h4>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {symbols.map((symbol, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSymbolClick(symbol)}
+                        style={{
+                          padding: '12px',
+                          border: `2px solid ${symbol.color}`,
+                          borderRadius: '8px',
+                          backgroundColor: selectedSymbol?.emoji === symbol.emoji ? `${symbol.color}20` : 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '5px',
+                          transition: 'all 0.2s',
+                          textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div style={{ fontSize: '28px' }}>{symbol.emoji}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2' }}>
+                          {symbol.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '20px' }}>
           {/* Carte */}
           <Card>
