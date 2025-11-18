@@ -33,6 +33,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [layers, setLayers] = useState([]);
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
+  const [mapType, setMapType] = useState('street'); // 'street' ou 'satellite'
 
   // Centre la carte sur le bâtiment
   const center = batiment?.latitude && batiment?.longitude 
