@@ -524,16 +524,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                         onClick={() => handleSymbolClick(symbol)}
                         style={{
                           padding: '12px',
-                          border: `2px solid ${symbol.color}`,
+                          border: selectedSymbol?.emoji === symbol.emoji ? `3px solid ${symbol.color}` : `2px solid ${symbol.color}`,
                           borderRadius: '8px',
-                          backgroundColor: selectedSymbol?.emoji === symbol.emoji ? `${symbol.color}20` : 'white',
+                          backgroundColor: selectedSymbol?.emoji === symbol.emoji ? `${symbol.color}30` : 'white',
                           cursor: 'grab',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           gap: '5px',
                           transition: 'all 0.2s',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          boxShadow: selectedSymbol?.emoji === symbol.emoji ? `0 0 10px ${symbol.color}` : 'none'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'scale(1.05)';
