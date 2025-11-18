@@ -19481,3 +19481,17 @@ body {
 .leaflet-popup-pane {
   z-index: 3000 !important;
 }
+
+/* Masquer les tooltips/instructions de Leaflet Draw */
+.leaflet-draw-tooltip {
+  display: none !important;
+}
+
+.leaflet-draw-guide-dash {
+  display: none !important;
+}
+
+.leaflet-draw-tooltip-single,
+.leaflet-draw-tooltip-subtext {
+  display: none !important;
+}
