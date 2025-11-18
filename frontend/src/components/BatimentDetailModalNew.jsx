@@ -702,7 +702,8 @@ const BatimentForm = ({
                   borderRadius: '6px',
                   cursor: 'pointer',
                   display: 'inline-block',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  marginBottom: '10px'
                 }}>
                   📷 Ajouter une photo
                   <input 
@@ -712,6 +713,9 @@ const BatimentForm = ({
                     style={{ display: 'none' }}
                   />
                 </label>
+                <div style={{ fontSize: '12px', color: '#999' }}>
+                  ou utilisez Ctrl+V pour coller une capture d'écran
+                </div>
               </div>
             )}
             
