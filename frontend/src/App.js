@@ -18674,7 +18674,7 @@ const GestionPreventionnistes = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 9999
+          zIndex: 99999
         }}>
           <div style={{
             backgroundColor: '#fff',
