@@ -373,7 +373,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         {showSymbolPalette && (
           <Card style={{ marginBottom: '20px' }}>
             <CardHeader>
-              <CardTitle>🎨 Palette de Symboles - Cliquez pour placer sur la carte</CardTitle>
+              <CardTitle>🎨 Palette de Symboles</CardTitle>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
+                Glissez-déposez sur la carte ou cliquez puis placez
+              </p>
             </CardHeader>
             <CardContent>
               {Object.entries(symbolCategories).map(([category, symbols]) => (
