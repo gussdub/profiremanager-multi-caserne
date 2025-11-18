@@ -8269,6 +8269,27 @@ class SecteurGeographiqueCreate(BaseModel):
     class Config:
         extra = "ignore"
 
+class SymbolePersonnalise(BaseModel):
+    """Symbole personnalisé pour les plans d'intervention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Borne-fontaine personnalisée"
+    categorie: str = "Personnalisé"  # Catégorie du symbole
+    image_base64: str  # Image en base64
+    couleur: str = "#3b82f6"  # Couleur de bordure dans la palette
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: str  # ID de l'utilisateur qui a créé
+
+class SymbolePersonnaliseCreate(BaseModel):
+    """Modèle pour la création d'un symbole personnalisé"""
+    nom: str
+    categorie: str = "Personnalisé"
+    image_base64: str
+    couleur: str = "#3b82f6"
+    
+    class Config:
+        extra = "ignore"
+
 
 class GrilleInspection(BaseModel):
     """Template de grille d'inspection selon le groupe d'occupation"""
