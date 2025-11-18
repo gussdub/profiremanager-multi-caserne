@@ -128,7 +128,19 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       });
     }
 
-    const marker = L.marker(latlng, { icon }).addTo(map);
+    const marker = L.marker(latlng, { 
+      icon,
+      draggable: true  // Permet de déplacer le marqueur
+    }).addTo(map);
+
+    // Gérer le déplacement du marqueur
+    marker.on('dragend', (e) => {
+      const newLatLng = e.target.getLatLng();
+      console.log('Symbole déplacé vers:', newLatLng);
+      
+      // Mettre à jour les données (vous pouvez ajouter plus de logique ici si nécessaire)
+      // Pour l'instant, le marqueur est simplement déplacé visuellement
+    });
     
     const symbolDisplay = symbol.isCustom && symbol.image 
       ? `<img src="${symbol.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
