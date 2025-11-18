@@ -8844,6 +8844,22 @@ class PlanInterventionCreate(BaseModel):
     centre_lat: float
     centre_lng: float
     notes_generales: str = ""
+    
+    # Champs optionnels pour permettre la sauvegarde depuis le builder
+    layers: Optional[List[Dict[str, Any]]] = []
+    hydrants: Optional[List[HydrantElement]] = []
+    sorties: Optional[List[SortieElement]] = []
+    matieres_dangereuses: Optional[List[MatiereDangereuse]] = []
+    generatrices: Optional[List[GeneratriceElement]] = []
+    gaz_naturel: Optional[List[GazNaturelElement]] = []
+    reservoirs_propane: Optional[List[ReservoirPropaneElement]] = []
+    vehicules: Optional[List[VehiculeElement]] = []
+    routes_acces: Optional[List[RouteAcces]] = []
+    zones_danger: Optional[List[ZoneDanger]] = []
+    secteurs: Optional[List[SecteurPlan]] = []
+    plans_etages: Optional[List[PlanEtage]] = []
+    photos: Optional[List[PhotoPlanIntervention]] = []
+    instructions_particulieres: str = ""
 
 class PlanInterventionUpdate(BaseModel):
     nom: Optional[str] = None
