@@ -404,34 +404,46 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         </div>
       </div>
 
-        {/* Palette de symboles */}
-        {showSymbolPalette && (
-          <Card style={{ marginBottom: '20px' }}>
-            <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <CardTitle>🎨 Palette de Symboles</CardTitle>
-                {selectedSymbol ? (
-                  <p style={{ fontSize: '13px', color: '#2563eb', marginTop: '5px', fontWeight: 'bold' }}>
-                    ✨ Symbole "{selectedSymbol.label}" sélectionné - Cliquez sur la carte pour placer
-                  </p>
-                ) : (
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
-                    Glissez-déposez sur la carte ou cliquez puis placez
-                  </p>
-                )}
-              </div>
-              <Button
-                onClick={() => setShowAddSymbolModal(true)}
-                style={{
-                  backgroundColor: '#8b5cf6',
-                  color: 'white',
-                  padding: '8px 16px',
-                  fontSize: '13px'
-                }}
-              >
-                ➕ Ajouter Symbole
-              </Button>
-            </CardHeader>
+      {/* Layout 3 colonnes */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Colonne gauche - Palette de symboles (300px) */}
+        <div style={{ 
+          width: '300px', 
+          backgroundColor: '#fff', 
+          borderRight: '1px solid #e5e7eb',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
+              🎨 Palette de Symboles
+            </h3>
+            {selectedSymbol ? (
+              <p style={{ fontSize: '12px', color: '#2563eb', margin: 0, fontWeight: 'bold' }}>
+                ✨ "{selectedSymbol.label}" sélectionné
+              </p>
+            ) : (
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                Drag & drop ou clic
+              </p>
+            )}
+            <Button
+              onClick={() => setShowAddSymbolModal(true)}
+              style={{
+                backgroundColor: '#8b5cf6',
+                color: 'white',
+                padding: '6px 12px',
+                fontSize: '12px',
+                marginTop: '10px',
+                width: '100%'
+              }}
+            >
+              ➕ Ajouter Symbole
+            </Button>
+          </div>
+          
+          <div style={{ padding: '15px', flex: 1, overflowY: 'auto' }}>
             <CardContent>
               {/* Symboles personnalisés en premier */}
               {customSymbols.length > 0 && (
