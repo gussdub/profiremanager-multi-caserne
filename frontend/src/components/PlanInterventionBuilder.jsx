@@ -34,6 +34,41 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
   const [mapType, setMapType] = useState('street'); // 'street' ou 'satellite'
+  const [showSymbolPalette, setShowSymbolPalette] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState(null);
+
+  // Palette de symboles pour les plans d'intervention
+  const symbolCategories = {
+    'Dangers & Risques': [
+      { emoji: '⚡', label: 'Électricité / Hydro-Québec', color: '#fbbf24' },
+      { emoji: '⛽', label: 'Essence', color: '#ef4444' },
+      { emoji: '🛢️', label: 'Diesel / Mazout', color: '#7c2d12' },
+      { emoji: '🔥', label: 'Gaz naturel / Propane', color: '#f97316' },
+      { emoji: '☢️', label: 'Matières dangereuses', color: '#dc2626' },
+      { emoji: '💥', label: 'Explosifs', color: '#991b1b' },
+      { emoji: '⚠️', label: 'Zone à risque', color: '#eab308' },
+    ],
+    'Sécurité & Équipements': [
+      { emoji: '🚪', label: 'Sortie d\'urgence', color: '#10b981' },
+      { emoji: '🧯', label: 'Extincteur', color: '#dc2626' },
+      { emoji: '🚨', label: 'Alarme incendie', color: '#ef4444' },
+      { emoji: '💧', label: 'Borne-fontaine', color: '#3b82f6' },
+      { emoji: '🚿', label: 'Gicleurs / Sprinklers', color: '#0ea5e9' },
+      { emoji: '🚰', label: 'Robinet d\'incendie (RIA)', color: '#2563eb' },
+      { emoji: '🪜', label: 'Échelle fixe', color: '#6b7280' },
+      { emoji: '🚑', label: 'Premiers soins', color: '#ef4444' },
+    ],
+    'Points Stratégiques': [
+      { emoji: '📍', label: 'Point de rassemblement', color: '#10b981' },
+      { emoji: '🚒', label: 'Accès pompiers', color: '#dc2626' },
+      { emoji: '🔌', label: 'Panneau électrique', color: '#f59e0b' },
+      { emoji: '🔒', label: 'Vanne d\'arrêt gaz', color: '#f97316' },
+      { emoji: '💧', label: 'Vanne d\'arrêt eau', color: '#3b82f6' },
+      { emoji: '🚪', label: 'Entrée principale', color: '#059669' },
+      { emoji: '🏢', label: 'Bâtiment', color: '#64748b' },
+      { emoji: '🅿️', label: 'Stationnement', color: '#6b7280' },
+    ],
+  };
 
   // Centre la carte sur le bâtiment
   const center = batiment?.latitude && batiment?.longitude 
