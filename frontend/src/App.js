@@ -18377,27 +18377,6 @@ const GestionPreventionnistes = () => {
       </div>
 
       {/* Vue Carte */}
-      {viewMode === 'map' && (
-        <div className="map-section" style={{ marginBottom: '20px' }}>
-          <h3 style={{ marginBottom: '15px' }}>🗺️ Carte des Bâtiments</h3>
-          <MapComponent 
-            batiments={batiments}
-            onBatimentClick={(batiment) => {
-              console.log('Bâtiment cliqué:', batiment);
-            }}
-          />
-          <p style={{ 
-            marginTop: '10px', 
-            fontSize: '14px', 
-            color: '#666',
-            textAlign: 'center'
-          }}>
-            Cliquez sur un marqueur pour voir les détails du bâtiment
-          </p>
-        </div>
-      )}
-
-
       {/* Vue Secteurs */}
       {viewMode === 'secteurs' && (
         <div className="secteurs-section" style={{ marginBottom: '20px' }}>
