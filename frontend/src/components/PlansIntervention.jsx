@@ -15,9 +15,11 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
   const [filterStatut, setFilterStatut] = useState('');
 
   useEffect(() => {
-    fetchPlans();
-    fetchBatiments();
-  }, []);
+    if (tenantSlug) {
+      fetchPlans();
+      fetchBatiments();
+    }
+  }, [tenantSlug]);
 
   const fetchPlans = async () => {
     try {
