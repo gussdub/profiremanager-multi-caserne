@@ -1805,6 +1805,7 @@ class Vehicule(BaseModel):
     vin: Optional[str] = None  # Numéro d'identification du véhicule
     statut: str = "actif"  # actif, maintenance, retraite
     date_mise_service: Optional[str] = None  # Date format YYYY-MM-DD
+    modele_inventaire_id: Optional[str] = None  # Modèle d'inventaire assigné
     photos: List[str] = []  # URLs ou base64 des photos
     documents: List[Dict[str, str]] = []  # [{nom: "doc.pdf", url: "..."}]
     notes: Optional[str] = None
