@@ -283,10 +283,18 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   style={{ width: '100%', height: '100%' }}
                   whenCreated={setMap}
                 >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  {mapType === 'street' ? (
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                  ) : (
+                    <TileLayer
+                      attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                      maxZoom={19}
+                    />
+                  )}
 
                   {/* Marqueur du bâtiment */}
                   {batiment?.latitude && batiment?.longitude && (
