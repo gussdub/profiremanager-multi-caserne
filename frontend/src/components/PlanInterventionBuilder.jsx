@@ -578,15 +578,11 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             </h3>
           </div>
           <div style={{ flex: 1, position: 'relative' }}>
-            <CardHeader>
-              <CardTitle>🗺️ Carte Interactive</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div 
-                style={{ height: '600px', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}
-                onDragOver={handleMapDragOver}
-                onDrop={handleMapDrop}
-              >
+            <div 
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              onDragOver={handleMapDragOver}
+              onDrop={handleMapDrop}
+            >
                 {/* Toggle Vue Carte / Satellite - intégré sur la carte */}
                 <div style={{ 
                   position: 'absolute', 
