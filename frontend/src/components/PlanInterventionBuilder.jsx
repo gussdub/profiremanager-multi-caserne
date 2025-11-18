@@ -394,13 +394,97 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         {/* Palette de symboles */}
         {showSymbolPalette && (
           <Card style={{ marginBottom: '20px' }}>
-            <CardHeader>
-              <CardTitle>🎨 Palette de Symboles</CardTitle>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
-                Glissez-déposez sur la carte ou cliquez puis placez
-              </p>
+            <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <CardTitle>🎨 Palette de Symboles</CardTitle>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
+                  Glissez-déposez sur la carte ou cliquez puis placez
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowAddSymbolModal(true)}
+                style={{
+                  backgroundColor: '#8b5cf6',
+                  color: 'white',
+                  padding: '8px 16px',
+                  fontSize: '13px'
+                }}
+              >
+                ➕ Ajouter Symbole
+              </Button>
             </CardHeader>
             <CardContent>
+              {/* Symboles personnalisés en premier */}
+              {customSymbols.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
+                    🎨 Symboles Personnalisés
+                  </h4>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {customSymbols.map((symbol) => (
+                      <button
+                        key={symbol.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, { 
+                          emoji: null, 
+                          image: symbol.image_base64,
+                          label: symbol.nom, 
+                          color: symbol.couleur,
+                          isCustom: true
+                        })}
+                        onClick={() => handleSymbolClick({ 
+                          emoji: null, 
+                          image: symbol.image_base64,
+                          label: symbol.nom, 
+                          color: symbol.couleur,
+                          isCustom: true
+                        })}
+                        style={{
+                          padding: '12px',
+                          border: `2px solid ${symbol.couleur}`,
+                          borderRadius: '8px',
+                          backgroundColor: 'white',
+                          cursor: 'grab',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '5px',
+                          transition: 'all 0.2s',
+                          textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <img 
+                          src={symbol.image_base64} 
+                          alt={symbol.nom}
+                          style={{ 
+                            width: '32px', 
+                            height: '32px',
+                            objectFit: 'contain',
+                            pointerEvents: 'none'
+                          }} 
+                        />
+                        <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
+                          {symbol.nom}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Symboles standards */}
               {Object.entries(symbolCategories).map(([category, symbols]) => (
                 <div key={category} style={{ marginBottom: '20px' }}>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
