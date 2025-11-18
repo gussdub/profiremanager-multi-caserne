@@ -21494,6 +21494,12 @@ const AppLayout = () => {
         />;
       case 'epi':
         return <ModuleEPI user={user} />;
+      case 'actifs':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <GestionActifs />
+          </Suspense>
+        );
       case 'planning':
         return <Planning />;
       case 'remplacements':
