@@ -16433,6 +16433,77 @@ async def delete_batiment_photo(
     
     return {"message": "Photo supprimée avec succès"}
 
+# ==================== SYMBOLES PERSONNALISÉS ====================
+
+@api_router.get("/{tenant_slug}/prevention/symboles-personnalises")
+async def get_symboles_personnalises(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les symboles personnalisés du tenant"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    symboles = await db.symboles_personnalises.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(symbole) for symbole in symboles]
+
+@api_router.post("/{tenant_slug}/prevention/symboles-personnalises")
+async def create_symbole_personnalise(
+    tenant_slug: str,
+    symbole: SymbolePersonnaliseCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau symbole personnalisé"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que l'image est au bon format base64
+    if not symbole.image_base64.startswith('data:image/'):
+        raise HTTPException(status_code=400, detail="Format d'image invalide (doit être base64 data URL)")
+    
+    symbole_dict = symbole.dict()
+    symbole_dict["tenant_id"] = tenant.id
+    symbole_dict["id"] = str(uuid.uuid4())
+    symbole_dict["created_at"] = datetime.now(timezone.utc)
+    symbole_dict["created_by"] = current_user.id
+    
+    symbole_obj = SymbolePersonnalise(**symbole_dict)
+    await db.symboles_personnalises.insert_one(symbole_obj.dict())
+    
+    return clean_mongo_doc(symbole_obj.dict())
+
+@api_router.delete("/{tenant_slug}/prevention/symboles-personnalises/{symbole_id}")
+async def delete_symbole_personnalise(
+    tenant_slug: str,
+    symbole_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un symbole personnalisé"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.symboles_personnalises.delete_one({"id": symbole_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Symbole non trouvé")
+    
+    return {"message": "Symbole supprimé avec succès"}
+
 
 
 # ==================== SECTEURS GÉOGRAPHIQUES ====================
