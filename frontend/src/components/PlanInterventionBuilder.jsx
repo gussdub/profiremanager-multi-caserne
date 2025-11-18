@@ -389,13 +389,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                     {symbols.map((symbol, idx) => (
                       <button
                         key={idx}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, symbol)}
                         onClick={() => handleSymbolClick(symbol)}
                         style={{
                           padding: '12px',
                           border: `2px solid ${symbol.color}`,
                           borderRadius: '8px',
                           backgroundColor: selectedSymbol?.emoji === symbol.emoji ? `${symbol.color}20` : 'white',
-                          cursor: 'pointer',
+                          cursor: 'grab',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -411,9 +413,12 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                           e.currentTarget.style.transform = 'scale(1)';
                           e.currentTarget.style.boxShadow = 'none';
                         }}
+                        onDragEnd={(e) => {
+                          e.currentTarget.style.cursor = 'grab';
+                        }}
                       >
-                        <div style={{ fontSize: '28px' }}>{symbol.emoji}</div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2' }}>
+                        <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{symbol.emoji}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
                           {symbol.label}
                         </div>
                       </button>
