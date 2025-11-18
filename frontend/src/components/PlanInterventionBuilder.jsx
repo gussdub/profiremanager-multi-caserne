@@ -221,23 +221,59 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               <CardTitle>🗺️ Carte Interactive</CardTitle>
             </CardHeader>
             <CardContent>
-              <div style={{ 
-                marginBottom: '15px',
-                padding: '12px',
-                backgroundColor: '#eff6ff',
-                border: '1px solid #3b82f6',
-                borderRadius: '6px'
-              }}>
-                <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
-                  📝 Instructions :
-                </p>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#1e40af' }}>
-                  <li>Utilisez les outils à droite pour dessiner sur la carte</li>
-                  <li>📍 Marqueur = Point d'accès ou équipement</li>
-                  <li>🔴 Cercle = Zone dangereuse</li>
-                  <li>🟦 Polygone = Bâtiment ou zone</li>
-                  <li>➡️ Ligne = Itinéraire d'accès</li>
-                </ul>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <div style={{ 
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #3b82f6',
+                  borderRadius: '6px'
+                }}>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
+                    📝 Instructions :
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#1e40af' }}>
+                    <li>Utilisez les outils à droite pour dessiner sur la carte</li>
+                    <li>📍 Marqueur = Point d'accès ou équipement</li>
+                    <li>🔴 Cercle = Zone dangereuse</li>
+                    <li>🟦 Polygone = Bâtiment ou zone</li>
+                    <li>➡️ Ligne = Itinéraire d'accès</li>
+                  </ul>
+                </div>
+                
+                {/* Toggle Vue Carte / Satellite */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <button
+                    onClick={() => setMapType('street')}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: mapType === 'street' ? '#2563eb' : '#fff',
+                      color: mapType === 'street' ? '#fff' : '#333',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: mapType === 'street' ? 'bold' : 'normal'
+                    }}
+                  >
+                    🗺️ Carte
+                  </button>
+                  <button
+                    onClick={() => setMapType('satellite')}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: mapType === 'satellite' ? '#2563eb' : '#fff',
+                      color: mapType === 'satellite' ? '#fff' : '#333',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: mapType === 'satellite' ? 'bold' : 'normal'
+                    }}
+                  >
+                    🛰️ Satellite
+                  </button>
+                </div>
               </div>
 
               <div style={{ height: '600px', borderRadius: '8px', overflow: 'hidden' }}>
