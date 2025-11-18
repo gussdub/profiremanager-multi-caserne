@@ -19202,7 +19202,7 @@ async def update_vehicule(
     
     # Récupérer et retourner le véhicule mis à jour
     updated_vehicule = await db.vehicules.find_one(
-        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"id": vehicule_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
     
