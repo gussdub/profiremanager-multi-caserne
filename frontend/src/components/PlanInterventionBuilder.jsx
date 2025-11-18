@@ -630,7 +630,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   zoom={18}
                   maxZoom={19}
                   style={{ width: '100%', height: '100%' }}
-                  whenCreated={setMap}
+                  ref={setMap}
                 >
                   {mapType === 'street' ? (
                     <TileLayer
