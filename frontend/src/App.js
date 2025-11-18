@@ -18246,14 +18246,17 @@ const GestionPreventionnistes = () => {
   const handleSaveSecteur = async (secteurData) => {
     try {
       if (currentSecteur) {
-        // Mise à jour
-        await apiPut(tenantSlug, `/prevention/secteurs/${currentSecteur.id}`, secteurData);
+        // Mise à jour - conserver la géométrie existante
+        await apiPut(tenantSlug, `/prevention/secteurs/${currentSecteur.id}`, {
+          ...secteurData,
+          geometry: currentSecteur.geometry  // Garder la géométrie existante
+        });
         toast({
           title: "Succès",
           description: "Secteur mis à jour"
         });
       } else {
-        // Création
+        // Création - utiliser la géométrie nouvellement dessinée
         await apiPost(tenantSlug, '/prevention/secteurs', {
           ...secteurData,
           geometry: pendingGeometry
