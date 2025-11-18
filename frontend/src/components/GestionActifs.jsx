@@ -62,7 +62,7 @@ const GestionActifs = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/modeles`,
+        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/modeles`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setModeles(response.data);
@@ -77,7 +77,7 @@ const GestionActifs = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/inspections`,
+        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/inspections`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setInspections(response.data);
