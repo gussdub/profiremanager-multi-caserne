@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const GestionActifs = () => {
-  const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules' ou 'bornes'
+  const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules', 'bornes', ou 'inventaires'
   const [vehicules, setVehicules] = useState([]);
   const [bornes, setBornes] = useState([]);
+  const [modeles, setModeles] = useState([]);
+  const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
@@ -18,8 +20,11 @@ const GestionActifs = () => {
   useEffect(() => {
     if (activeTab === 'vehicules') {
       fetchVehicules();
-    } else {
+    } else if (activeTab === 'bornes') {
       fetchBornes();
+    } else if (activeTab === 'inventaires') {
+      fetchModeles();
+      fetchInspections();
     }
   }, [activeTab]);
 
