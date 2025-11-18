@@ -16482,6 +16482,42 @@ async def create_symbole_personnalise(
     
     return clean_mongo_doc(symbole_obj.dict())
 
+@api_router.put("/{tenant_slug}/prevention/symboles-personnalises/{symbole_id}")
+async def update_symbole_personnalise(
+    tenant_slug: str,
+    symbole_id: str,
+    symbole: SymbolePersonnaliseCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifier un symbole personnalisé"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le symbole existe
+    existing = await db.symboles_personnalises.find_one({"id": symbole_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Symbole non trouvé")
+    
+    # Vérifier que l'image est au bon format si elle est fournie
+    if symbole.image_base64 and not symbole.image_base64.startswith('data:image/'):
+        raise HTTPException(status_code=400, detail="Format d'image invalide (doit être base64 data URL)")
+    
+    update_dict = symbole.dict()
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.symboles_personnalises.update_one(
+        {"id": symbole_id, "tenant_id": tenant.id},
+        {"$set": update_dict}
+    )
+    
+    updated = await db.symboles_personnalises.find_one({"id": symbole_id, "tenant_id": tenant.id})
+    return clean_mongo_doc(updated)
+
 @api_router.delete("/{tenant_slug}/prevention/symboles-personnalises/{symbole_id}")
 async def delete_symbole_personnalise(
     tenant_slug: str,
