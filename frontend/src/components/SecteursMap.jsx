@@ -26,6 +26,7 @@ const SecteursMap = ({
   editMode = false
 }) => {
   const [map, setMap] = useState(null);
+  const [mapType, setMapType] = useState('street'); // 'street' ou 'satellite'
 
   // Composant pour ajuster la vue aux marqueurs
   const FitBounds = ({ batiments }) => {
