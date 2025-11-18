@@ -17232,7 +17232,7 @@ const ImportBatiments = ({ onImportComplete }) => {
                     variant="outline"
                     onClick={() => {
                       setStep(1);
-                      setCsvFile(null);
+                      setUploadedFile(null);
                       setCsvData([]);
                       setColumnMapping({});
                       setImportResults(null);
