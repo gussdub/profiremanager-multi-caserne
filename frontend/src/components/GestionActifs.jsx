@@ -222,6 +222,21 @@ const GestionActifs = () => {
         >
           💧 Bornes d'incendie
         </button>
+        <button
+          onClick={() => setActiveTab('inventaires')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: activeTab === 'inventaires' ? '#e74c3c' : 'transparent',
+            color: activeTab === 'inventaires' ? 'white' : '#333',
+            border: 'none',
+            borderBottom: activeTab === 'inventaires' ? '3px solid #e74c3c' : 'none',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          📋 Inventaires
+        </button>
       </div>
 
       {/* Content */}
