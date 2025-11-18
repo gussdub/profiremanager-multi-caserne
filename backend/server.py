@@ -19102,12 +19102,13 @@ async def initialize_production_data():
 # ==================== GESTION DES ACTIFS - VÉHICULES ENDPOINTS ====================
 
 @api_router.get("/{tenant_slug}/actifs/vehicules", response_model=List[Vehicule])
-async def get_vehicules(tenant_slug: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_vehicules(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère la liste de tous les véhicules du tenant"""
-    verify_token(credentials.credentials)
-    tenant = await db.tenants.find_one({"slug": tenant_slug})
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant["id"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     vehicules = await db.vehicules.find(
         {"tenant_id": tenant["id"]},
