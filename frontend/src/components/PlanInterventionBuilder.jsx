@@ -704,6 +704,262 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
         </div>
       </div>
+
+      {/* Modal Ajouter Symbole Personnalisé */}
+      {showAddSymbolModal && (
+        <AddCustomSymbolModal
+          tenantSlug={tenantSlug}
+          onClose={() => setShowAddSymbolModal(false)}
+          onSymbolAdded={(newSymbol) => {
+            setCustomSymbols(prev => [...prev, newSymbol]);
+            setShowAddSymbolModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Modal pour ajouter un symbole personnalisé
+const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
+  const [nom, setNom] = useState('');
+  const [imageBase64, setImageBase64] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleImageUpload = (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('L\'image est trop volumineuse (max 2 Mo)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageBase64(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    handleImageUpload(file);
+  };
+
+  // Gérer Ctrl+V
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  const handleSave = async () => {
+    if (!nom.trim()) {
+      alert('Veuillez entrer un nom pour le symbole');
+      return;
+    }
+
+    if (!imageBase64) {
+      alert('Veuillez ajouter une image');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = getTenantToken();
+
+      const response = await axios.post(
+        buildApiUrl(tenantSlug, '/prevention/symboles-personnalises'),
+        {
+          nom,
+          image_base64: imageBase64,
+          categorie: 'Personnalisé',
+          couleur: '#8b5cf6'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert('Symbole ajouté avec succès ! 🎨');
+      onSymbolAdded(response.data);
+    } catch (error) {
+      console.error('Erreur ajout symbole:', error);
+      alert('Erreur lors de l\'ajout du symbole');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100000
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        padding: '30px',
+        maxWidth: '500px',
+        width: '90%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+          🎨 Ajouter un Symbole Personnalisé
+        </h3>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            Nom du symbole *
+          </label>
+          <input
+            type="text"
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            placeholder="Ex: Borne-fontaine rouge"
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            Image du symbole *
+          </label>
+          
+          {imageBase64 ? (
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <img 
+                src={imageBase64} 
+                alt="Aperçu" 
+                style={{ 
+                  maxWidth: '100px', 
+                  maxHeight: '100px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '10px'
+                }} 
+              />
+              <div>
+                <button
+                  onClick={() => setImageBase64('')}
+                  style={{
+                    marginTop: '10px',
+                    padding: '6px 12px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              border: '2px dashed #d1d5db',
+              borderRadius: '8px',
+              padding: '30px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>🖼️</div>
+              <label style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-block',
+                fontSize: '14px',
+                marginBottom: '10px'
+              }}>
+                📂 Choisir une image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                ou utilisez Ctrl+V pour coller
+              </div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+                Max 2 Mo - PNG, JPG, GIF
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              opacity: loading ? 0.5 : 1
+            }}
+          >
+            {loading ? '⏳ Ajout...' : '✅ Ajouter'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
