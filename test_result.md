@@ -1327,6 +1327,18 @@ agent_communication:
         comment: "🎉 MIGRATION SENDGRID VERS RESEND ENTIÈREMENT RÉUSSIE! Comprehensive testing completed successfully with PERFECT 100% success rate (4/4 tests passed). TOUS LES CRITÈRES DE SUCCÈS ATTEINTS: ✅ Test 1 - Forgot Password: POST /api/shefford/auth/forgot-password fonctionne parfaitement avec Resend, email_sent=true, message de succès 'Si cet email existe dans notre système, vous recevrez un lien de réinitialisation', ✅ Test 2 - Reset Password par Admin: PUT /api/shefford/users/{user_id}/password fonctionne avec Resend, email_sent=true, message 'Mot de passe modifié avec succès', ✅ Test 3 - Logs Resend Verification: Backend logs montrent 6 mentions 'Resend', 0 mentions 'SendGrid', 3 messages 'Email envoyé avec succès', ✅ Test 4 - Configuration API Resend: Clé API re_6BuFZ8Ut_PNXyQuTA3m9jrCLdmaKRa51A fonctionne correctement. VÉRIFICATION LOGS DÉTAILLÉE: Backend stdout logs confirment les IDs de messages Resend (format UUID): '✅ Email de réinitialisation envoyé avec succès à test.admin.reset@gmail.com via Resend (ID: a3549ee8-1c38-43d0-8594-ad80548fd793)', '✅ Email de réinitialisation de mot de passe envoyé avec succès à test.resend@gmail.com via Resend (ID: 577921ac-cf2d-4751-9864-aa60d78e3577)'. MIGRATION COMPLÈTE: Toutes les fonctions d'email (send_welcome_email, send_temporary_password_email, send_password_reset_email, send_super_admin_welcome_email, send_gardes_notification_email) utilisent maintenant Resend au lieu de SendGrid. Authentification réussie avec admin@firemanager.ca / Admin123! pour tenant shefford. Système prêt pour production avec Resend!"
 
 
+  - task: "Custom Symbol Management - Edit & Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, frontend/src/components/PlanInterventionBuilder.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Gestion des symboles personnalisés (édition et suppression). Backend: Endpoint PUT /{tenant_slug}/prevention/symboles-personnalises/{symbole_id} existe déjà (ligne 16485), endpoint DELETE /{tenant_slug}/prevention/symboles-personnalises/{symbole_id} existe avec vérification ajoutée pour détecter si le symbole est utilisé dans des plans (ligne 16521). Si le symbole est utilisé, erreur 409 est retournée avec le nombre de plans utilisant le symbole. Frontend: Ajout des boutons Edit (✏️) et Delete (🗑️) sur chaque symbole personnalisé dans la palette (apparaissent au survol), création du modal EditCustomSymbolModal pour modifier le nom et l'image d'un symbole, création du modal DeleteConfirmModal pour confirmer la suppression avec un avertissement, ajout de la logique pour stocker symbolId dans les layers lors du placement d'un symbole. Fonctionnalités: Modification d'un symbole met à jour le symbole globalement dans tous les plans, tentative de suppression d'un symbole utilisé affiche un avertissement, l'endpoint DELETE rejette la suppression si le symbole est utilisé. NEEDS COMPREHENSIVE BACKEND TESTING."
+
 metadata:
   created_by: "main_agent"
   version: "1.1"
@@ -1334,7 +1346,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Vue Préventionnistes - MapComponent mapRef Issue"
+    - "Custom Symbol Management - Edit & Delete"
   stuck_tasks:
     - "Vue Préventionnistes - MapComponent mapRef Issue"
   test_all: false
