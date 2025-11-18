@@ -19241,12 +19241,13 @@ async def delete_vehicule(
 # ==================== GESTION DES ACTIFS - BORNES D'INCENDIE ENDPOINTS ====================
 
 @api_router.get("/{tenant_slug}/actifs/bornes", response_model=List[BorneIncendie])
-async def get_bornes(tenant_slug: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_bornes(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère la liste de toutes les bornes d'incendie du tenant"""
-    verify_token(credentials.credentials)
-    tenant = await db.tenants.find_one({"slug": tenant_slug})
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant["id"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     bornes = await db.bornes_incendie.find(
         {"tenant_id": tenant["id"]},
