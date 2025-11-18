@@ -29,7 +29,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
 
   const fetchPlans = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       const response = await axios.get(
         buildApiUrl(tenantSlug, '/prevention/plans-intervention'),
         { headers: { Authorization: `Bearer ${token}` } }
@@ -44,7 +44,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
 
   const fetchBatiments = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       const response = await axios.get(
         buildApiUrl(tenantSlug, '/prevention/batiments'),
         { headers: { Authorization: `Bearer ${token}` } }
