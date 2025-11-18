@@ -190,14 +190,19 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
   const handleSymbolClick = (symbol) => {
     setSelectedSymbol(symbol);
-    setShowSymbolPalette(false);
-    alert(`Symbole sélectionné: ${symbol.emoji} ${symbol.label}\n\nCliquez sur la carte pour placer ce symbole.`);
+    // NE PAS fermer la palette pour permettre la sélection
+    // setShowSymbolPalette(false);
     
     // Activer le mode placement sur la carte
     if (map) {
+      // Changer le curseur
+      map.getContainer().style.cursor = 'crosshair';
+      
       map.once('click', (e) => {
         placeSymbolOnMap(symbol, e.latlng);
         setSelectedSymbol(null);
+        // Remettre le curseur normal
+        map.getContainer().style.cursor = '';
       });
     }
   };
