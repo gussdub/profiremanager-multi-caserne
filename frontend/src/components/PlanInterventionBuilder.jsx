@@ -36,6 +36,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [mapType, setMapType] = useState('street'); // 'street' ou 'satellite'
   const [showSymbolPalette, setShowSymbolPalette] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
+  const [customSymbols, setCustomSymbols] = useState([]);
+  const [showAddSymbolModal, setShowAddSymbolModal] = useState(false);
 
   // Palette de symboles pour les plans d'intervention
   const symbolCategories = {
