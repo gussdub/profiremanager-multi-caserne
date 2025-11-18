@@ -1888,6 +1888,81 @@ class BorneIncendieUpdate(BaseModel):
     schemas: Optional[List[str]] = None
     notes_importantes: Optional[str] = None
 
+# ==================== INVENTAIRES VÉHICULES MODELS ====================
+
+class ItemInventaire(BaseModel):
+    """Un item dans une section d'inventaire"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str  # Ex: "Masque bleu chirurgical"
+    type_item: str = "checkbox"  # checkbox, text, number
+    obligatoire: bool = False
+    ordre: int = 0  # Pour l'affichage
+
+class SectionInventaire(BaseModel):
+    """Une section dans un modèle d'inventaire"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str  # Ex: "Cabine"
+    description: Optional[str] = None
+    photos_reference: List[str] = []  # Photos du compartiment pour guider
+    items: List[ItemInventaire] = []
+    ordre: int = 0
+
+class ModeleInventaire(BaseModel):
+    """Template d'inventaire pour un type de véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Inventaire Autopompe 391"
+    description: Optional[str] = None
+    type_vehicule: Optional[str] = None  # Pour filtrer
+    sections: List[SectionInventaire] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ModeleInventaireCreate(BaseModel):
+    nom: str
+    description: Optional[str] = None
+    type_vehicule: Optional[str] = None
+    sections: List[SectionInventaire] = []
+
+class ModeleInventaireUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    type_vehicule: Optional[str] = None
+    sections: Optional[List[SectionInventaire]] = None
+
+class ResultatItemInspection(BaseModel):
+    """Résultat pour un item lors d'une inspection"""
+    item_id: str
+    section_id: str
+    statut: str  # "present", "absent", "non_applicable"
+    notes: Optional[str] = None
+    photo_url: Optional[str] = None  # Photo de l'item si problème
+
+class InspectionInventaire(BaseModel):
+    """Inspection d'inventaire d'un véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    vehicule_id: str
+    modele_inventaire_id: str
+    inspecteur_id: str  # User qui fait l'inspection
+    inspecteur_nom: Optional[str] = None
+    date_inspection: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    statut: str = "en_cours"  # en_cours, complete
+    resultats: List[ResultatItemInspection] = []
+    notes_generales: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = None
+
+class InspectionInventaireCreate(BaseModel):
+    vehicule_id: str
+    modele_inventaire_id: str
+    inspecteur_id: str
+
+class InspectionInventaireUpdate(BaseModel):
+    statut: Optional[str] = None
+    resultats: Optional[List[ResultatItemInspection]] = None
+    notes_generales: Optional[str] = None
+
 # Helper functions
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
