@@ -23,6 +23,7 @@ const MesEPI = lazy(() => import("./components/MesEPI"));
 const PlansIntervention = lazy(() => import("./components/PlansIntervention"));
 const BatimentDetailModal = lazy(() => import("./components/BatimentDetailModalNew"));
 const ConflictResolutionModal = lazy(() => import("./components/ConflictResolutionModal"));
+const GestionActifs = lazy(() => import("./components/GestionActifs"));
 
 // Composant de chargement
 const LoadingComponent = () => (
