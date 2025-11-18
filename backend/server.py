@@ -19144,13 +19144,17 @@ async def get_vehicule(
 async def create_vehicule(
     tenant_slug: str,
     vehicule_data: VehiculeCreate,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau véhicule"""
-    verify_token(credentials.credentials)
-    tenant = await db.tenants.find_one({"slug": tenant_slug})
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant et a les permissions
+    if current_user.tenant_id != tenant["id"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
     
     # Créer le véhicule
     vehicule = Vehicule(
