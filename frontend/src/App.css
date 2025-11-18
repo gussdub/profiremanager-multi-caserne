@@ -19453,3 +19453,31 @@ body {
   font-size: 0.7em;
 }
 
+
+/* Fix z-index pour toasts et modals au-dessus des cartes Leaflet */
+[data-radix-toast-viewport],
+[role="alert"],
+.toast,
+[class*="toast"] {
+  z-index: 100000 !important;
+}
+
+/* Leaflet map container */
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+/* Leaflet controls (zoom buttons, etc.) */
+.leaflet-control-container {
+  z-index: 1000 !important;
+}
+
+/* Leaflet draw toolbar */
+.leaflet-draw-toolbar {
+  z-index: 2000 !important;
+}
+
+/* Leaflet popups */
+.leaflet-popup-pane {
+  z-index: 3000 !important;
+}
