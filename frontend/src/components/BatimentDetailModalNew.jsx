@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import axios from 'axios';
-import { buildApiUrl } from '../utils/api';
+import { buildApiUrl, getTenantToken } from '../utils/api';
 
 // Mini-carte Leaflet pour l'aperçu dans le modal
 const MiniMapPreview = ({ latitude, longitude, address }) => {
