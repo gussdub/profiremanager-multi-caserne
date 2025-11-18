@@ -58,6 +58,36 @@ const GestionActifs = () => {
     }
   };
 
+  const fetchModeles = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${backendUrl}/api/${tenantSlug}/actifs/modeles`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setModeles(response.data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des modèles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInspections = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${backendUrl}/api/${tenantSlug}/actifs/inspections`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setInspections(response.data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des inspections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedItem(null);
