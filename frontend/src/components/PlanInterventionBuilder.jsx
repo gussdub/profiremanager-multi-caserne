@@ -777,16 +777,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                       }}
                     />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
 
             {/* Résumé des éléments */}
-            <Card>
-              <CardHeader>
-                <CardTitle>📊 Éléments du Plan</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div style={{ marginTop: '20px' }}>
+              <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', fontWeight: 'bold' }}>
+                📊 Éléments du Plan
+              </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ padding: '10px', backgroundColor: '#f0f9ff', borderRadius: '6px' }}>
                     <div style={{ fontWeight: '600', fontSize: '13px', color: '#1e40af' }}>
