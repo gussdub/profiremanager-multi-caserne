@@ -250,11 +250,22 @@ const GestionActifs = () => {
               onEdit={openEditModal} 
               onDelete={handleDelete}
             />
-          ) : (
+          ) : activeTab === 'bornes' ? (
             <BornesTab 
               bornes={bornes} 
               onEdit={openEditModal} 
               onDelete={handleDelete}
+            />
+          ) : (
+            <InventairesTab 
+              modeles={modeles}
+              inspections={inspections}
+              vehicules={vehicules}
+              fetchModeles={fetchModeles}
+              fetchInspections={fetchInspections}
+              backendUrl={backendUrl}
+              token={token}
+              tenantSlug={tenantSlug}
             />
           )}
         </div>
