@@ -106,15 +106,27 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   };
 
   const placeSymbolOnMap = (symbol, latlng) => {
-    const note = prompt(`Ajouter une note pour ce symbole (${symbol.emoji} ${symbol.label}):`);
+    const note = prompt(`Ajouter une note pour ce symbole (${symbol.label}):`);
     
-    // Créer un marqueur personnalisé avec l'emoji
-    const icon = L.divIcon({
-      html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${symbol.emoji}</div>`,
-      className: 'custom-emoji-marker',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
-    });
+    // Créer un marqueur personnalisé avec l'emoji ou l'image
+    let icon;
+    if (symbol.isCustom && symbol.image) {
+      // Symbole personnalisé avec image
+      icon = L.divIcon({
+        html: `<img src="${symbol.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
+        className: 'custom-image-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    } else {
+      // Symbole emoji standard
+      icon = L.divIcon({
+        html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${symbol.emoji}</div>`,
+        className: 'custom-emoji-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+    }
 
     const marker = L.marker(latlng, { icon }).addTo(map);
     
