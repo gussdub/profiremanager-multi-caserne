@@ -17027,7 +17027,7 @@ const ImportBatiments = ({ onImportComplete }) => {
             <div className="mapping-container">
               <div className="mapping-header">
                 <div className="file-info">
-                  📊 <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
+                  📊 <strong>{uploadedFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
                 </div>
                 <Button 
                   size="sm" 
