@@ -98,19 +98,75 @@ const SecteursMap = ({
   };
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '500px', borderRadius: '8px', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>
+      {/* Toggle Vue Carte / Satellite */}
+      <div style={{ 
+        position: 'absolute', 
+        top: '10px', 
+        left: '10px', 
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px',
+        backgroundColor: 'white',
+        padding: '5px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+      }}>
+        <button
+          onClick={() => setMapType('street')}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: mapType === 'street' ? '#2563eb' : '#fff',
+            color: mapType === 'street' ? '#fff' : '#333',
+            border: '1px solid #d1d5db',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: mapType === 'street' ? 'bold' : 'normal'
+          }}
+        >
+          🗺️ Carte
+        </button>
+        <button
+          onClick={() => setMapType('satellite')}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: mapType === 'satellite' ? '#2563eb' : '#fff',
+            color: mapType === 'satellite' ? '#fff' : '#333',
+            border: '1px solid #d1d5db',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: mapType === 'satellite' ? 'bold' : 'normal'
+          }}
+        >
+          🛰️ Satellite
+        </button>
+      </div>
+
       <MapContainer
         center={center}
         zoom={13}
+        maxZoom={21}
         style={{ width: '100%', height: '100%', minHeight: '500px' }}
         scrollWheelZoom={true}
         whenCreated={setMap}
       >
-        {/* OpenStreetMap tiles */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {/* Tuiles de carte selon le type */}
+        {mapType === 'street' ? (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+        ) : (
+          <TileLayer
+            attribution='Tiles &copy; Esri'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            maxZoom={21}
+          />
+        )}
         
         {/* Secteurs géographiques existants */}
         {secteurs && secteurs.map(secteur => {
