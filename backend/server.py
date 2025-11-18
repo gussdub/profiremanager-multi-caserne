@@ -16533,6 +16533,27 @@ async def delete_symbole_personnalise(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
+    # Vérifier si le symbole existe
+    symbole = await db.symboles_personnalises.find_one({"id": symbole_id, "tenant_id": tenant.id})
+    if not symbole:
+        raise HTTPException(status_code=404, detail="Symbole non trouvé")
+    
+    # Vérifier si le symbole est utilisé dans des plans d'intervention
+    # Les plans peuvent stocker les symboles dans les layers (format GeoJSON)
+    plans_utilisant = await db.plans_intervention.count_documents({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"layers.properties.symbolId": symbole_id},
+            {"layers": {"$elemMatch": {"properties.symbolId": symbole_id}}}
+        ]
+    })
+    
+    if plans_utilisant > 0:
+        raise HTTPException(
+            status_code=409, 
+            detail=f"Impossible de supprimer ce symbole. Il est utilisé dans {plans_utilisant} plan(s) d'intervention."
+        )
+    
     result = await db.symboles_personnalises.delete_one({"id": symbole_id, "tenant_id": tenant.id})
     
     if result.deleted_count == 0:
