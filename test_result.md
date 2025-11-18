@@ -1349,7 +1349,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Custom Symbol Management - Edit & Delete"
+    - "Système Automatisé de Remplacement"
   stuck_tasks:
     - "Vue Préventionnistes - MapComponent mapRef Issue"
   test_all: false
