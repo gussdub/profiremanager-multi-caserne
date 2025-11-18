@@ -8815,6 +8815,9 @@ class PlanIntervention(BaseModel):
     plans_etages: List[PlanEtage] = []
     photos: List[PhotoPlanIntervention] = []
     
+    # Layers GeoJSON pour le plan interactif (depuis le builder)
+    layers: List[Dict[str, Any]] = []
+    
     # Vue aérienne
     centre_lat: float
     centre_lng: float
