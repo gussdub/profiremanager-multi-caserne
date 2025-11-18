@@ -450,11 +450,11 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                 <h4 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
                   🎨 Symboles Personnalisés
                 </h4>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                    gap: '10px'
-                  }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '8px'
+                }}>
                     {customSymbols.map((symbol) => (
                       <button
                         key={symbol.id}
@@ -521,11 +521,11 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
                     {category}
                   </h4>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                    gap: '10px'
-                  }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '8px'
+                }}>
                     {symbols.map((symbol, idx) => (
                       <button
                         key={idx}
