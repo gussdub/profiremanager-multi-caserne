@@ -315,11 +315,21 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       setSaving(true);
       const token = getTenantToken();
 
+      // Nettoyer les layers pour enlever toute référence circulaire ou objet non sérialisable
+      const cleanLayers = layers.map(layer => ({
+        id: layer.id,
+        type: layer.type,
+        geometry: layer.geometry,
+        properties: layer.properties
+      }));
+
       const planData = {
         ...formData,
         batiment_id: batiment.id,
-        layers: layers
+        layers: cleanLayers
       };
+
+      console.log('📤 Envoi du plan:', planData);
 
       let response;
       if (existingPlan) {
@@ -338,12 +348,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         );
       }
 
-      alert('Plan d\'intervention sauvegardé avec succès!');
+      alert('Plan d\'intervention sauvegardé avec succès! 🎉');
       if (onSave) onSave(response.data);
       if (onClose) onClose();
     } catch (error) {
-      console.error('Erreur sauvegarde plan:', error);
-      alert('Erreur lors de la sauvegarde du plan');
+      console.error('❌ Erreur sauvegarde plan:', error);
+      console.error('Détails:', error.response?.data);
+      alert(`Erreur lors de la sauvegarde du plan: ${error.response?.data?.detail || error.message}`);
     } finally {
       setSaving(false);
     }
