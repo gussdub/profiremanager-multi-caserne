@@ -1870,7 +1870,7 @@ class BorneIncendieCreate(BaseModel):
     date_derniere_inspection: Optional[str] = None
     lien_maps: Optional[str] = None
     photos: List[str] = []
-    schema: List[str] = []
+    schemas: List[str] = []
     notes_importantes: Optional[str] = None
 
 class BorneIncendieUpdate(BaseModel):
