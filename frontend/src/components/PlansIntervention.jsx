@@ -174,12 +174,18 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
   };
 
   if (showBuilder) {
+    const batiment = batiments.find(b => b.id === selectedBatiment);
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h3>Fonctionnalité Plans d'Intervention temporairement désactivée</h3>
-        <p>En cours de migration vers Leaflet/OpenStreetMap</p>
-        <Button onClick={handleClosBuilder}>Retour</Button>
-      </div>
+      <PlanInterventionBuilder
+        tenantSlug={tenantSlug}
+        batiment={batiment}
+        existingPlan={selectedPlan}
+        onClose={handleClosBuilder}
+        onSave={(plan) => {
+          console.log('Plan sauvegardé:', plan);
+          handleClosBuilder();
+        }}
+      />
     );
   }
 
