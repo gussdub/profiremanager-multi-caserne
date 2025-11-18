@@ -179,7 +179,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         symbol: symbol.emoji,
         label: symbol.label,
         note: note || '',
-        color: symbol.color
+        color: symbol.color,
+        symbolId: symbol.symbolId || null,  // ID du symbole personnalisé si applicable
+        isCustom: symbol.isCustom || false
       }
     };
 
