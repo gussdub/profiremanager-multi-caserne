@@ -18331,7 +18331,7 @@ const GestionPreventionnistes = () => {
         </div>
       </div>
 
-      {/* Toggle Vue Liste / Carte / Secteurs */}
+      {/* Toggle Vue Liste / Secteurs */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
@@ -18355,21 +18355,6 @@ const GestionPreventionnistes = () => {
           }}
         >
           📋 Vue Liste
-        </button>
-        <button
-          onClick={() => setViewMode('map')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: viewMode === 'map' ? '#2563eb' : '#fff',
-            color: viewMode === 'map' ? '#fff' : '#333',
-            border: '1px solid #ddd',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: viewMode === 'map' ? 'bold' : 'normal',
-            transition: 'all 0.3s'
-          }}
-        >
-          🗺️ Vue Carte
         </button>
         <button
           onClick={() => {
