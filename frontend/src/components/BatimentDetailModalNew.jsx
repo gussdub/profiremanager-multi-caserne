@@ -366,10 +366,7 @@ const BatimentForm = ({
     }
   };
   
-  const handlePhotoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
+  const uploadPhotoFromFile = async (file) => {
     // Vérifier que c'est une image
     if (!file.type.startsWith('image/')) {
       alert('Veuillez sélectionner une image');
@@ -427,6 +424,36 @@ const BatimentForm = ({
     };
     reader.readAsDataURL(file);
   };
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    uploadPhotoFromFile(file);
+  };
+
+  // Gérer le collage d'images (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            uploadPhotoFromFile(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [batiment]); // Re-créer le listener si le bâtiment change
 
   const validateAddress = () => {
     // Fonction simplifiée - l'autocomplétion gère tout automatiquement
