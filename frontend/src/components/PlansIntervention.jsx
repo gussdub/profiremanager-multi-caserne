@@ -79,7 +79,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     if (!window.confirm('Approuver ce plan d\'intervention?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       await axios.post(
         buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/approuver`),
         { commentaires: '' },
@@ -98,7 +98,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     if (!commentaires) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       await axios.post(
         buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/rejeter`),
         { commentaires_rejet: commentaires },
@@ -114,7 +114,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
 
   const handleGeneratePDF = async (planId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       const response = await axios.get(
         buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/export-pdf`),
         { 
