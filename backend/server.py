@@ -19098,6 +19098,258 @@ async def initialize_production_data():
             detail=f"Erreur lors de l'initialisation: {str(e)}"
         )
 
+
+# ==================== GESTION DES ACTIFS - VÉHICULES ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/actifs/vehicules", response_model=List[Vehicule])
+async def get_vehicules(tenant_slug: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Récupère la liste de tous les véhicules du tenant"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    vehicules = await db.vehicules.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return vehicules
+
+@api_router.get("/{tenant_slug}/actifs/vehicules/{vehicule_id}", response_model=Vehicule)
+async def get_vehicule(
+    tenant_slug: str,
+    vehicule_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Récupère un véhicule spécifique"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    vehicule = await db.vehicules.find_one(
+        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"_id": 0}
+    )
+    
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    return vehicule
+
+@api_router.post("/{tenant_slug}/actifs/vehicules", response_model=Vehicule)
+async def create_vehicule(
+    tenant_slug: str,
+    vehicule_data: VehiculeCreate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Crée un nouveau véhicule"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Créer le véhicule
+    vehicule = Vehicule(
+        tenant_id=tenant["id"],
+        **vehicule_data.dict()
+    )
+    
+    await db.vehicules.insert_one(vehicule.dict())
+    
+    return vehicule
+
+@api_router.put("/{tenant_slug}/actifs/vehicules/{vehicule_id}", response_model=Vehicule)
+async def update_vehicule(
+    tenant_slug: str,
+    vehicule_id: str,
+    vehicule_data: VehiculeUpdate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Met à jour un véhicule"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que le véhicule existe
+    vehicule = await db.vehicules.find_one(
+        {"id": vehicule_id, "tenant_id": tenant["id"]}
+    )
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Préparer les données à mettre à jour (seulement les champs fournis)
+    update_data = {k: v for k, v in vehicule_data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    # Mettre à jour
+    await db.vehicules.update_one(
+        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"$set": update_data}
+    )
+    
+    # Récupérer et retourner le véhicule mis à jour
+    updated_vehicule = await db.vehicules.find_one(
+        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"_id": 0}
+    )
+    
+    return updated_vehicule
+
+@api_router.delete("/{tenant_slug}/actifs/vehicules/{vehicule_id}")
+async def delete_vehicule(
+    tenant_slug: str,
+    vehicule_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Supprime un véhicule"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que le véhicule existe
+    vehicule = await db.vehicules.find_one(
+        {"id": vehicule_id, "tenant_id": tenant["id"]}
+    )
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # TODO: Vérifier si le véhicule est utilisé dans des inspections/inventaires
+    # Pour l'instant, on permet la suppression
+    
+    await db.vehicules.delete_one({"id": vehicule_id, "tenant_id": tenant["id"]})
+    
+    return {"message": "Véhicule supprimé avec succès"}
+
+# ==================== GESTION DES ACTIFS - BORNES D'INCENDIE ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/actifs/bornes", response_model=List[BorneIncendie])
+async def get_bornes(tenant_slug: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Récupère la liste de toutes les bornes d'incendie du tenant"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    bornes = await db.bornes_incendie.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return bornes
+
+@api_router.get("/{tenant_slug}/actifs/bornes/{borne_id}", response_model=BorneIncendie)
+async def get_borne(
+    tenant_slug: str,
+    borne_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Récupère une borne d'incendie spécifique"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    borne = await db.bornes_incendie.find_one(
+        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"_id": 0}
+    )
+    
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne d'incendie non trouvée")
+    
+    return borne
+
+@api_router.post("/{tenant_slug}/actifs/bornes", response_model=BorneIncendie)
+async def create_borne(
+    tenant_slug: str,
+    borne_data: BorneIncendieCreate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Crée une nouvelle borne d'incendie"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Créer la borne
+    borne = BorneIncendie(
+        tenant_id=tenant["id"],
+        **borne_data.dict()
+    )
+    
+    await db.bornes_incendie.insert_one(borne.dict())
+    
+    return borne
+
+@api_router.put("/{tenant_slug}/actifs/bornes/{borne_id}", response_model=BorneIncendie)
+async def update_borne(
+    tenant_slug: str,
+    borne_id: str,
+    borne_data: BorneIncendieUpdate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Met à jour une borne d'incendie"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que la borne existe
+    borne = await db.bornes_incendie.find_one(
+        {"id": borne_id, "tenant_id": tenant["id"]}
+    )
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne d'incendie non trouvée")
+    
+    # Préparer les données à mettre à jour (seulement les champs fournis)
+    update_data = {k: v for k, v in borne_data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    # Mettre à jour
+    await db.bornes_incendie.update_one(
+        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"$set": update_data}
+    )
+    
+    # Récupérer et retourner la borne mise à jour
+    updated_borne = await db.bornes_incendie.find_one(
+        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"_id": 0}
+    )
+    
+    return updated_borne
+
+@api_router.delete("/{tenant_slug}/actifs/bornes/{borne_id}")
+async def delete_borne(
+    tenant_slug: str,
+    borne_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Supprime une borne d'incendie"""
+    verify_token(credentials.credentials)
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que la borne existe
+    borne = await db.bornes_incendie.find_one(
+        {"id": borne_id, "tenant_id": tenant["id"]}
+    )
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne d'incendie non trouvée")
+    
+    # TODO: Vérifier si la borne est utilisée dans des inspections
+    # Pour l'instant, on permet la suppression
+    
+    await db.bornes_incendie.delete_one({"id": borne_id, "tenant_id": tenant["id"]})
+    
+    return {"message": "Borne d'incendie supprimée avec succès"}
+
+
 # Include the router in the main app
 
 # Endpoint public pour lister les tenants (pour l'app mobile)
