@@ -16401,20 +16401,33 @@ const ImportBatiments = ({ onImportComplete }) => {
     if (!file) return;
 
     const fileExtension = file.name.split('.').pop().toLowerCase();
-    if (!['csv', 'xlsx', 'xls', 'html', 'htm'].includes(fileExtension)) {
+    if (!['csv', 'xlsx', 'xls', 'html', 'htm', 'xml'].includes(fileExtension)) {
       toast({
         title: "Format non supporté",
-        description: "Formats acceptés : CSV, Excel (.xlsx, .xls) et HTML (.html, .htm)",
+        description: "Formats acceptés : CSV, Excel (.xlsx, .xls), HTML (.html, .htm) et XML (.xml)",
         variant: "destructive"
       });
       return;
     }
 
     setUploadedFile(file);
-    setFileType(fileExtension === 'html' || fileExtension === 'htm' ? 'html' : fileExtension === 'csv' ? 'csv' : 'excel');
+    
+    let type;
+    if (fileExtension === 'html' || fileExtension === 'htm') {
+      type = 'html';
+    } else if (fileExtension === 'xml') {
+      type = 'xml';
+    } else if (fileExtension === 'csv') {
+      type = 'csv';
+    } else {
+      type = 'excel';
+    }
+    setFileType(type);
     
     if (fileExtension === 'html' || fileExtension === 'htm') {
       parseHTML(file);
+    } else if (fileExtension === 'xml') {
+      parseXML(file);
     } else {
       parseCSV(file);
     }
