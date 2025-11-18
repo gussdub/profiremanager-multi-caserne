@@ -387,6 +387,39 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     }
   };
 
+  const handleEditSymbol = (symbol) => {
+    setSymbolToEdit(symbol);
+    setShowEditSymbolModal(true);
+  };
+
+  const handleDeleteSymbol = (symbol) => {
+    setSymbolToDelete(symbol);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const confirmDeleteSymbol = async () => {
+    if (!symbolToDelete) return;
+
+    try {
+      const token = getTenantToken();
+      
+      await axios.delete(
+        buildApiUrl(tenantSlug, `/prevention/symboles-personnalises/${symbolToDelete.id}`),
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Retirer le symbole de la liste
+      setCustomSymbols(prev => prev.filter(s => s.id !== symbolToDelete.id));
+      setShowDeleteConfirmModal(false);
+      setSymbolToDelete(null);
+      alert('Symbole supprimé avec succès! ✅');
+    } catch (error) {
+      console.error('Erreur suppression symbole:', error);
+      const errorMessage = error.response?.data?.detail || error.message;
+      alert(`Erreur lors de la suppression: ${errorMessage}`);
+    }
+  };
+
   return (
     <div style={{ 
       position: 'fixed',
