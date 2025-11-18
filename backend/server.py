@@ -19373,7 +19373,7 @@ async def delete_borne(
     # TODO: Vérifier si la borne est utilisée dans des inspections
     # Pour l'instant, on permet la suppression
     
-    await db.bornes_incendie.delete_one({"id": borne_id, "tenant_id": tenant["id"]})
+    await db.bornes_incendie.delete_one({"id": borne_id, "tenant_id": tenant.id})
     
     return {"message": "Borne d'incendie supprimée avec succès"}
 
