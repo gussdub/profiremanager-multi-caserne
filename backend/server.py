@@ -19218,7 +19218,7 @@ async def delete_vehicule(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur appartient au tenant et a les permissions
-    if current_user.tenant_id != tenant["id"]:
+    if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     if current_user.role not in ["admin", "superviseur"]:
@@ -19226,7 +19226,7 @@ async def delete_vehicule(
     
     # Vérifier que le véhicule existe
     vehicule = await db.vehicules.find_one(
-        {"id": vehicule_id, "tenant_id": tenant["id"]}
+        {"id": vehicule_id, "tenant_id": tenant.id}
     )
     if not vehicule:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
@@ -19234,7 +19234,7 @@ async def delete_vehicule(
     # TODO: Vérifier si le véhicule est utilisé dans des inspections/inventaires
     # Pour l'instant, on permet la suppression
     
-    await db.vehicules.delete_one({"id": vehicule_id, "tenant_id": tenant["id"]})
+    await db.vehicules.delete_one({"id": vehicule_id, "tenant_id": tenant.id})
     
     return {"message": "Véhicule supprimé avec succès"}
 
