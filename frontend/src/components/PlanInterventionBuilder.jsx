@@ -313,6 +313,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSymbolPalette(!showSymbolPalette)}
+              style={{ backgroundColor: showSymbolPalette ? '#eff6ff' : 'white' }}
+            >
+              🎨 Symboles
+            </Button>
             <Button variant="outline" onClick={onClose}>
               ❌ Annuler
             </Button>
