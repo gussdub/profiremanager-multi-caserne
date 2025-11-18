@@ -1787,6 +1787,107 @@ class Statistiques(BaseModel):
     heures_travaillees: int
     remplacements_effectues: int
 
+# ==================== GESTION DES ACTIFS MODELS ====================
+
+class LocalisationGPS(BaseModel):
+    lat: float
+    lng: float
+
+class Vehicule(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Nom/Identifiant du véhicule (ex: "391", "Autopompe 1")
+    type_vehicule: Optional[str] = None  # ex: Autopompe, Citerne, Pick-up, Échelle
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    annee: Optional[int] = None
+    kilometrage: Optional[float] = None
+    vin: Optional[str] = None  # Numéro d'identification du véhicule
+    statut: str = "actif"  # actif, maintenance, retraite
+    date_mise_service: Optional[str] = None  # Date format YYYY-MM-DD
+    photos: List[str] = []  # URLs ou base64 des photos
+    documents: List[Dict[str, str]] = []  # [{nom: "doc.pdf", url: "..."}]
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VehiculeCreate(BaseModel):
+    nom: str
+    type_vehicule: Optional[str] = None
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    annee: Optional[int] = None
+    kilometrage: Optional[float] = None
+    vin: Optional[str] = None
+    statut: str = "actif"
+    date_mise_service: Optional[str] = None
+    photos: List[str] = []
+    documents: List[Dict[str, str]] = []
+    notes: Optional[str] = None
+
+class VehiculeUpdate(BaseModel):
+    nom: Optional[str] = None
+    type_vehicule: Optional[str] = None
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    annee: Optional[int] = None
+    kilometrage: Optional[float] = None
+    vin: Optional[str] = None
+    statut: Optional[str] = None
+    date_mise_service: Optional[str] = None
+    photos: Optional[List[str]] = None
+    documents: Optional[List[Dict[str, str]]] = None
+    notes: Optional[str] = None
+
+class BorneIncendie(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Nom de la borne (ex: "Allen", "Borne Wallace")
+    type_borne: str  # "seche" ou "fontaine"
+    localisation_gps: Optional[LocalisationGPS] = None
+    adresse: Optional[str] = None
+    transversale: Optional[str] = None  # Chemin transversal
+    municipalite: Optional[str] = None
+    debit: Optional[str] = None  # Débit en GPM ou autre
+    statut: str = "operationnelle"  # operationnelle, hors_service, a_verifier
+    date_derniere_inspection: Optional[str] = None  # Date format YYYY-MM-DD
+    lien_maps: Optional[str] = None  # Lien Google Maps
+    photos: List[str] = []  # URLs ou base64 des photos
+    schema: List[str] = []  # Schémas techniques
+    notes_importantes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BorneIncendieCreate(BaseModel):
+    nom: str
+    type_borne: str  # "seche" ou "fontaine"
+    localisation_gps: Optional[LocalisationGPS] = None
+    adresse: Optional[str] = None
+    transversale: Optional[str] = None
+    municipalite: Optional[str] = None
+    debit: Optional[str] = None
+    statut: str = "operationnelle"
+    date_derniere_inspection: Optional[str] = None
+    lien_maps: Optional[str] = None
+    photos: List[str] = []
+    schema: List[str] = []
+    notes_importantes: Optional[str] = None
+
+class BorneIncendieUpdate(BaseModel):
+    nom: Optional[str] = None
+    type_borne: Optional[str] = None
+    localisation_gps: Optional[LocalisationGPS] = None
+    adresse: Optional[str] = None
+    transversale: Optional[str] = None
+    municipalite: Optional[str] = None
+    debit: Optional[str] = None
+    statut: Optional[str] = None
+    date_derniere_inspection: Optional[str] = None
+    lien_maps: Optional[str] = None
+    photos: Optional[List[str]] = None
+    schema: Optional[List[str]] = None
+    notes_importantes: Optional[str] = None
+
 # Helper functions
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
