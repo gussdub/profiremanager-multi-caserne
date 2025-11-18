@@ -970,6 +970,35 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           }}
         />
       )}
+
+      {/* Modal Modifier Symbole Personnalisé */}
+      {showEditSymbolModal && symbolToEdit && (
+        <EditCustomSymbolModal
+          tenantSlug={tenantSlug}
+          symbol={symbolToEdit}
+          onClose={() => {
+            setShowEditSymbolModal(false);
+            setSymbolToEdit(null);
+          }}
+          onSymbolUpdated={(updatedSymbol) => {
+            setCustomSymbols(prev => prev.map(s => s.id === updatedSymbol.id ? updatedSymbol : s));
+            setShowEditSymbolModal(false);
+            setSymbolToEdit(null);
+          }}
+        />
+      )}
+
+      {/* Modal Confirmation Suppression */}
+      {showDeleteConfirmModal && symbolToDelete && (
+        <DeleteConfirmModal
+          symbol={symbolToDelete}
+          onConfirm={confirmDeleteSymbol}
+          onCancel={() => {
+            setShowDeleteConfirmModal(false);
+            setSymbolToDelete(null);
+          }}
+        />
+      )}
     </div>
   );
 };
