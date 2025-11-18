@@ -83,6 +83,84 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     }));
   };
 
+  const handleSymbolClick = (symbol) => {
+    setSelectedSymbol(symbol);
+    setShowSymbolPalette(false);
+    alert(`Symbole sélectionné: ${symbol.emoji} ${symbol.label}\n\nCliquez sur la carte pour placer ce symbole.`);
+    
+    // Activer le mode placement sur la carte
+    if (map) {
+      map.once('click', (e) => {
+        const note = prompt(`Ajouter une note pour ce symbole (${symbol.emoji} ${symbol.label}):`);
+        
+        // Créer un marqueur personnalisé avec l'emoji
+        const icon = L.divIcon({
+          html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${symbol.emoji}</div>`,
+          className: 'custom-emoji-marker',
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
+        });
+
+        const marker = L.marker(e.latlng, { icon }).addTo(map);
+        
+        if (note) {
+          marker.bindPopup(`
+            <div style="min-width: 150px;">
+              <div style="font-size: 24px; text-align: center; margin-bottom: 8px;">${symbol.emoji}</div>
+              <strong>${symbol.label}</strong><br/>
+              <div style="margin-top: 8px; color: #666; font-size: 13px;">${note}</div>
+            </div>
+          `);
+        } else {
+          marker.bindPopup(`
+            <div style="text-align: center;">
+              <div style="font-size: 24px; margin-bottom: 5px;">${symbol.emoji}</div>
+              <strong>${symbol.label}</strong>
+            </div>
+          `);
+        }
+
+        // Ajouter aux données
+        const layerData = {
+          id: Date.now().toString(),
+          type: 'symbol',
+          geometry: {
+            type: 'Point',
+            coordinates: [e.latlng.lng, e.latlng.lat]
+          },
+          properties: {
+            symbol: symbol.emoji,
+            label: symbol.label,
+            note: note || '',
+            color: symbol.color
+          }
+        };
+
+        setLayers(prev => [...prev, layerData]);
+
+        // Catégoriser selon le type
+        if (symbol.label.includes('urgence') || symbol.label.includes('Accès')) {
+          setFormData(prev => ({
+            ...prev,
+            points_acces: [...prev.points_acces, { description: `${symbol.emoji} ${symbol.label}${note ? ': ' + note : ''}`, geometry: layerData.geometry }]
+          }));
+        } else if (symbol.label.includes('risque') || symbol.label.includes('danger') || symbol.label.includes('Explosifs') || symbol.label.includes('Matières')) {
+          setFormData(prev => ({
+            ...prev,
+            zones_dangereuses: [...prev.zones_dangereuses, { description: `${symbol.emoji} ${symbol.label}${note ? ': ' + note : ''}`, geometry: layerData.geometry }]
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            equipements: [...prev.equipements, { description: `${symbol.emoji} ${symbol.label}${note ? ': ' + note : ''}`, type: 'autre', geometry: layerData.geometry }]
+          }));
+        }
+
+        setSelectedSymbol(null);
+      });
+    }
+  };
+
   const handleCreated = (e) => {
     const { layerType, layer } = e;
     const geojson = layer.toGeoJSON();
