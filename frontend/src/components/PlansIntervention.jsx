@@ -31,7 +31,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        buildApiUrl(`/${tenantSlug}/prevention/plans-intervention`),
+        buildApiUrl(tenantSlug, '/prevention/plans-intervention'),
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setPlans(response.data);
@@ -46,7 +46,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        buildApiUrl(`/${tenantSlug}/prevention/batiments`),
+        buildApiUrl(tenantSlug, '/prevention/batiments'),
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log('Bâtiments chargés:', response.data);
