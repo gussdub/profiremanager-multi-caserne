@@ -19127,11 +19127,11 @@ async def get_vehicule(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur appartient au tenant
-    if current_user.tenant_id != tenant["id"]:
+    if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     vehicule = await db.vehicules.find_one(
-        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"id": vehicule_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
     
