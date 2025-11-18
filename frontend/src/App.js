@@ -21162,6 +21162,7 @@ const Prevention = () => {
         return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
       
       case 'plans-intervention':
+        console.log('🎯 Prevention - Rendu PlansIntervention avec tenantSlug:', tenantSlug);
         return <PlansIntervention tenantSlug={tenantSlug} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
       
       case 'rapports':
