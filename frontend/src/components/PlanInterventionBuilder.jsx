@@ -418,9 +418,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <CardTitle>🎨 Palette de Symboles</CardTitle>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
-                  Glissez-déposez sur la carte ou cliquez puis placez
-                </p>
+                {selectedSymbol ? (
+                  <p style={{ fontSize: '13px', color: '#2563eb', marginTop: '5px', fontWeight: 'bold' }}>
+                    ✨ Symbole "{selectedSymbol.label}" sélectionné - Cliquez sur la carte pour placer
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '5px' }}>
+                    Glissez-déposez sur la carte ou cliquez puis placez
+                  </p>
+                )}
               </div>
               <Button
                 onClick={() => setShowAddSymbolModal(true)}
