@@ -18168,7 +18168,7 @@ const GestionPreventionnistes = () => {
   const [secteurs, setSecteurs] = useState([]);
   const [preventionnistes, setPreventionnistes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'map' ou 'secteurs'
+  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'secteurs'
   const [editMode, setEditMode] = useState(false);
   const [showSecteurModal, setShowSecteurModal] = useState(false);
   const [currentSecteur, setCurrentSecteur] = useState(null);
