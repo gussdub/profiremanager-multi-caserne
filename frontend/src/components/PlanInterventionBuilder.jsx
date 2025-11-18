@@ -717,11 +717,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
           
           <div style={{ padding: '15px', flex: 1 }}>
-              <CardHeader>
-                <CardTitle>📋 Informations du Plan</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '14px' }}>
                       Titre
