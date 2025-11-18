@@ -16982,7 +16982,7 @@ const ImportBatiments = ({ onImportComplete }) => {
           <div className="import-step">
             <div className="step-header">
               <h3>📁 Étape 1: Sélectionner le fichier</h3>
-              <p>Choisissez votre fichier CSV ou Excel contenant les données des bâtiments</p>
+              <p>Choisissez votre fichier CSV, Excel, XML ou HTML contenant les données des bâtiments</p>
             </div>
 
             <div className="file-upload-area">
