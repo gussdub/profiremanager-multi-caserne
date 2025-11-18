@@ -479,60 +479,142 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   gap: '8px'
                 }}>
                     {customSymbols.map((symbol) => (
-                      <button
+                      <div
                         key={symbol.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, { 
-                          emoji: null, 
-                          image: symbol.image_base64,
-                          label: symbol.nom, 
-                          color: symbol.couleur,
-                          isCustom: true
-                        })}
-                        onClick={() => handleSymbolClick({ 
-                          emoji: null, 
-                          image: symbol.image_base64,
-                          label: symbol.nom, 
-                          color: symbol.couleur,
-                          isCustom: true
-                        })}
-                        style={{
-                          padding: '12px',
-                          border: selectedSymbol?.label === symbol.nom ? `3px solid ${symbol.couleur}` : `2px solid ${symbol.couleur}`,
-                          borderRadius: '8px',
-                          backgroundColor: selectedSymbol?.label === symbol.nom ? `${symbol.couleur}30` : 'white',
-                          cursor: 'grab',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '5px',
-                          transition: 'all 0.2s',
-                          textAlign: 'center',
-                          boxShadow: selectedSymbol?.label === symbol.nom ? `0 0 10px ${symbol.couleur}` : 'none'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'scale(1.05)';
-                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'scale(1)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
+                        style={{ position: 'relative' }}
                       >
-                        <img 
-                          src={symbol.image_base64} 
-                          alt={symbol.nom}
-                          style={{ 
-                            width: '32px', 
-                            height: '32px',
-                            objectFit: 'contain',
-                            pointerEvents: 'none'
-                          }} 
-                        />
-                        <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
-                          {symbol.nom}
+                        <button
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, { 
+                            emoji: null, 
+                            image: symbol.image_base64,
+                            label: symbol.nom, 
+                            color: symbol.couleur,
+                            isCustom: true,
+                            symbolId: symbol.id
+                          })}
+                          onClick={() => handleSymbolClick({ 
+                            emoji: null, 
+                            image: symbol.image_base64,
+                            label: symbol.nom, 
+                            color: symbol.couleur,
+                            isCustom: true,
+                            symbolId: symbol.id
+                          })}
+                          style={{
+                            padding: '12px',
+                            border: selectedSymbol?.label === symbol.nom ? `3px solid ${symbol.couleur}` : `2px solid ${symbol.couleur}`,
+                            borderRadius: '8px',
+                            backgroundColor: selectedSymbol?.label === symbol.nom ? `${symbol.couleur}30` : 'white',
+                            cursor: 'grab',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '5px',
+                            transition: 'all 0.2s',
+                            textAlign: 'center',
+                            boxShadow: selectedSymbol?.label === symbol.nom ? `0 0 10px ${symbol.couleur}` : 'none',
+                            width: '100%'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                            // Afficher les boutons Edit/Delete
+                            const parent = e.currentTarget.parentElement;
+                            const actionButtons = parent.querySelector('.action-buttons');
+                            if (actionButtons) {
+                              actionButtons.style.display = 'flex';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = 'none';
+                            // Cacher les boutons Edit/Delete
+                            const parent = e.currentTarget.parentElement;
+                            const actionButtons = parent.querySelector('.action-buttons');
+                            if (actionButtons) {
+                              actionButtons.style.display = 'none';
+                            }
+                          }}
+                        >
+                          <img 
+                            src={symbol.image_base64} 
+                            alt={symbol.nom}
+                            style={{ 
+                              width: '32px', 
+                              height: '32px',
+                              objectFit: 'contain',
+                              pointerEvents: 'none'
+                            }} 
+                          />
+                          <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
+                            {symbol.nom}
+                          </div>
+                        </button>
+                        
+                        {/* Boutons Edit/Delete */}
+                        <div 
+                          className="action-buttons"
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            right: '2px',
+                            display: 'none',
+                            gap: '2px',
+                            zIndex: 10
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.display = 'flex';
+                          }}
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditSymbol(symbol);
+                            }}
+                            title="Modifier"
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              backgroundColor: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 0
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSymbol(symbol);
+                            }}
+                            title="Supprimer"
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 0
+                            }}
+                          >
+                            🗑️
+                          </button>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
