@@ -681,7 +681,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                         circlemarker: false,
                         marker: true,
                         polyline: true,
-                        polygon: true
+                        polygon: {
+                          allowIntersection: false,
+                          showArea: true,
+                          drawError: {
+                            color: '#e1e100',
+                            message: ''
+                          },
+                          shapeOptions: {
+                            color: '#3b82f6'
+                          }
+                        }
                       }}
                       edit={{
                         remove: true,
