@@ -16988,7 +16988,7 @@ const ImportBatiments = ({ onImportComplete }) => {
             <div className="file-upload-area">
               <input
                 type="file"
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.xml,.html,.htm"
                 onChange={handleFileUpload}
                 style={{ display: 'none' }}
                 id="csv-upload"
