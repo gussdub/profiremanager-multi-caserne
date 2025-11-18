@@ -826,6 +826,9 @@ const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
   const [imageBase64, setImageBase64] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Import nécessaire pour React hooks
+  const { useState: _useState, useEffect: _useEffect } = React;
+
   const handleImageUpload = (file) => {
     if (!file) return;
 
