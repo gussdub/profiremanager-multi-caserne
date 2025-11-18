@@ -1885,7 +1885,7 @@ class BorneIncendieUpdate(BaseModel):
     date_derniere_inspection: Optional[str] = None
     lien_maps: Optional[str] = None
     photos: Optional[List[str]] = None
-    schema: Optional[List[str]] = None
+    schemas: Optional[List[str]] = None
     notes_importantes: Optional[str] = None
 
 # Helper functions
