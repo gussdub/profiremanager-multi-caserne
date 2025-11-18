@@ -697,13 +697,26 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                     />
                   </FeatureGroup>
                 </MapContainer>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
 
-          {/* Formulaire */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <Card>
+        {/* Colonne droite - Formulaire (300px) */}
+        <div style={{ 
+          width: '300px', 
+          backgroundColor: '#fff', 
+          borderLeft: '1px solid #e5e7eb',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+              📋 Informations du Plan
+            </h3>
+          </div>
+          
+          <div style={{ padding: '15px', flex: 1 }}>
               <CardHeader>
                 <CardTitle>📋 Informations du Plan</CardTitle>
               </CardHeader>
