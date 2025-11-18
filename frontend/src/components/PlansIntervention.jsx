@@ -14,10 +14,16 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [filterStatut, setFilterStatut] = useState('');
 
+  console.log('🔍 PlansIntervention - tenantSlug reçu:', tenantSlug, 'Type:', typeof tenantSlug);
+
   useEffect(() => {
+    console.log('🔄 PlansIntervention useEffect - tenantSlug:', tenantSlug);
     if (tenantSlug) {
+      console.log('✅ TenantSlug valide, chargement des données...');
       fetchPlans();
       fetchBatiments();
+    } else {
+      console.warn('⚠️ TenantSlug undefined, skip chargement');
     }
   }, [tenantSlug]);
 
