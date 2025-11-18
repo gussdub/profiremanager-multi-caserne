@@ -19324,7 +19324,7 @@ async def update_borne(
     
     # Vérifier que la borne existe
     borne = await db.bornes_incendie.find_one(
-        {"id": borne_id, "tenant_id": tenant["id"]}
+        {"id": borne_id, "tenant_id": tenant.id}
     )
     if not borne:
         raise HTTPException(status_code=404, detail="Borne d'incendie non trouvée")
@@ -19335,13 +19335,13 @@ async def update_borne(
     
     # Mettre à jour
     await db.bornes_incendie.update_one(
-        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"id": borne_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
     # Récupérer et retourner la borne mise à jour
     updated_borne = await db.bornes_incendie.find_one(
-        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"id": borne_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
     
@@ -19365,7 +19365,7 @@ async def delete_borne(
     
     # Vérifier que la borne existe
     borne = await db.bornes_incendie.find_one(
-        {"id": borne_id, "tenant_id": tenant["id"]}
+        {"id": borne_id, "tenant_id": tenant.id}
     )
     if not borne:
         raise HTTPException(status_code=404, detail="Borne d'incendie non trouvée")
