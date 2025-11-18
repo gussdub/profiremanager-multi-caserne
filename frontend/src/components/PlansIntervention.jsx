@@ -81,7 +81,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        buildApiUrl(`/${tenantSlug}/prevention/plans-intervention/${planId}/approuver`),
+        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/approuver`),
         { commentaires: '' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -100,7 +100,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        buildApiUrl(`/${tenantSlug}/prevention/plans-intervention/${planId}/rejeter`),
+        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/rejeter`),
         { commentaires_rejet: commentaires },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -116,7 +116,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        buildApiUrl(`/${tenantSlug}/prevention/plans-intervention/${planId}/export-pdf`),
+        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}/export-pdf`),
         { 
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
