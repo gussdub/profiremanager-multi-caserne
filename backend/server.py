@@ -19121,13 +19121,14 @@ async def get_vehicules(tenant_slug: str, current_user: User = Depends(get_curre
 async def get_vehicule(
     tenant_slug: str,
     vehicule_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: User = Depends(get_current_user)
 ):
     """Récupère un véhicule spécifique"""
-    verify_token(credentials.credentials)
-    tenant = await db.tenants.find_one({"slug": tenant_slug})
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant["id"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant["id"]},
