@@ -16483,6 +16483,108 @@ const ImportBatiments = ({ onImportComplete }) => {
     }
   };
 
+
+  const parseXML = async (file) => {
+    try {
+      const text = await file.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, 'text/xml');
+      
+      // Vérifier les erreurs de parsing
+      const parserError = xmlDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error("Le fichier XML n'est pas valide");
+      }
+      
+      // Extraire tous les éléments récursifs du XML
+      // Pour un XML municipal québécois, on cherche les éléments répétitifs
+      const extractAllElements = (node, prefix = '') => {
+        const result = {};
+        
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const path = prefix ? `${prefix}/${node.nodeName}` : node.nodeName;
+          
+          // Si l'élément a du texte et pas d'enfants éléments
+          if (node.childNodes.length === 1 && node.childNodes[0].nodeType === Node.TEXT_NODE) {
+            const value = node.textContent.trim();
+            if (value) {
+              result[path] = value;
+            }
+          }
+          
+          // Parcourir les enfants
+          Array.from(node.children).forEach(child => {
+            const childData = extractAllElements(child, path);
+            Object.assign(result, childData);
+          });
+        }
+        
+        return result;
+      };
+      
+      // Trouver les éléments qui se répètent (probablement les bâtiments/adresses)
+      // Pour le format municipal québécois, c'est généralement CE02 qui se répète
+      const findRepeatingElements = (xmlDoc) => {
+        // Essayer de détecter automatiquement l'élément parent qui se répète
+        const commonParents = ['CE02', 'CEx', 'batiment', 'adresse', 'record', 'row'];
+        
+        for (const parentName of commonParents) {
+          const elements = xmlDoc.getElementsByTagName(parentName);
+          if (elements.length > 0) {
+            return Array.from(elements);
+          }
+        }
+        
+        // Si aucun élément commun trouvé, prendre tous les enfants directs de la racine
+        return Array.from(xmlDoc.documentElement.children);
+      };
+      
+      const repeatingElements = findRepeatingElements(xmlDoc);
+      
+      if (repeatingElements.length === 0) {
+        throw new Error("Aucun élément répétitif trouvé dans le XML");
+      }
+      
+      // Extraire les données de chaque élément
+      const data = repeatingElements.map((element, index) => {
+        const rowData = { _index: index };
+        const extracted = extractAllElements(element);
+        Object.assign(rowData, extracted);
+        return rowData;
+      });
+      
+      // Extraire tous les chemins uniques comme en-têtes
+      const allPaths = new Set();
+      data.forEach(row => {
+        Object.keys(row).forEach(key => {
+          if (key !== '_index') {
+            allPaths.add(key);
+          }
+        });
+      });
+      
+      const headers = Array.from(allPaths).sort();
+      
+      setCsvHeaders(headers);
+      setCsvData(data);
+      setStep(2);
+      
+      toast({
+        title: "Fichier XML analysé",
+        description: `${data.length} élément(s) détecté(s) avec ${headers.length} champ(s) disponible(s)`
+      });
+      
+    } catch (error) {
+      console.error('Erreur parsing XML:', error);
+      toast({
+        title: "Erreur d'analyse XML",
+        description: error.message || "Impossible d'analyser le fichier XML",
+        variant: "destructive"
+      });
+    }
+  };
+
+
   const parseCSV = async (file) => {
     try {
       const text = await file.text();
