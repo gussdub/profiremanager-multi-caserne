@@ -19266,11 +19266,11 @@ async def get_borne(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur appartient au tenant
-    if current_user.tenant_id != tenant["id"]:
+    if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     borne = await db.bornes_incendie.find_one(
-        {"id": borne_id, "tenant_id": tenant["id"]},
+        {"id": borne_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
     
