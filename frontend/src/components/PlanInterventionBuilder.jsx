@@ -564,16 +564,20 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                         </div>
                       </button>
                     ))}
-                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+              </div>
+            ))}
+          </div>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '20px' }}>
-          {/* Carte */}
-          <Card>
+        {/* Colonne centrale - Carte (flexible) */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', position: 'relative' }}>
+          <div style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+              🗺️ Carte Interactive
+            </h3>
+          </div>
+          <div style={{ flex: 1, position: 'relative' }}>
             <CardHeader>
               <CardTitle>🗺️ Carte Interactive</CardTitle>
             </CardHeader>
