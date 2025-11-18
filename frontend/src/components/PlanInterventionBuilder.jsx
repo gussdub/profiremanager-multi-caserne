@@ -367,50 +367,42 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: '#fff',
+      backgroundColor: '#f9fafb',
       zIndex: 10000,
-      overflow: 'auto',
-      padding: '20px'
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '20px',
-          paddingBottom: '15px',
-          borderBottom: '2px solid #e5e7eb'
-        }}>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>
-              🗺️ {existingPlan ? 'Modifier' : 'Créer'} un Plan d'Intervention
-            </h1>
-            <p style={{ color: '#6b7280', fontSize: '14px' }}>
-              🏢 {batiment?.nom_etablissement || batiment?.adresse_civique}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowSymbolPalette(!showSymbolPalette)}
-              style={{ backgroundColor: showSymbolPalette ? '#eff6ff' : 'white' }}
-            >
-              🎨 Symboles
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              ❌ Annuler
-            </Button>
-            <Button onClick={handleSavePlan} disabled={saving}>
-              {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
-            </Button>
-            {existingPlan && existingPlan.statut === 'brouillon' && (
-              <Button onClick={handleSubmitForValidation} disabled={saving}>
-                ✅ Soumettre pour validation
-              </Button>
-            )}
-          </div>
+      {/* Header */}
+      <div style={{ 
+        backgroundColor: '#fff',
+        borderBottom: '2px solid #e5e7eb',
+        padding: '15px 20px',
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, marginBottom: '3px' }}>
+            🗺️ {existingPlan ? 'Modifier' : 'Créer'} un Plan d'Intervention
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: '13px', margin: 0 }}>
+            🏢 {batiment?.nom_etablissement || batiment?.adresse_civique}
+          </p>
         </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="outline" onClick={onClose}>
+            ❌ Annuler
+          </Button>
+          <Button onClick={handleSavePlan} disabled={saving}>
+            {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
+          </Button>
+          {existingPlan && existingPlan.statut === 'brouillon' && (
+            <Button onClick={handleSubmitForValidation} disabled={saving}>
+              ✅ Soumettre pour validation
+            </Button>
+          )}
+        </div>
+      </div>
 
         {/* Palette de symboles */}
         {showSymbolPalette && (
