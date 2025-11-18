@@ -562,25 +562,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               <CardTitle>🗺️ Carte Interactive</CardTitle>
             </CardHeader>
             <CardContent>
-              <div style={{ 
-                marginBottom: '15px',
-                padding: '12px',
-                backgroundColor: '#eff6ff',
-                border: '1px solid #3b82f6',
-                borderRadius: '6px'
-              }}>
-                <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
-                  📝 Instructions :
-                </p>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#1e40af' }}>
-                  <li>Utilisez les outils à droite pour dessiner sur la carte</li>
-                  <li>📍 Marqueur = Point d'accès ou équipement</li>
-                  <li>🔴 Cercle = Zone dangereuse</li>
-                  <li>🟦 Polygone = Bâtiment ou zone</li>
-                  <li>➡️ Ligne = Itinéraire d'accès</li>
-                </ul>
-              </div>
-
               <div 
                 style={{ height: '600px', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}
                 onDragOver={handleMapDragOver}
