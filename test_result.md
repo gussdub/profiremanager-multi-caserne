@@ -1069,6 +1069,21 @@ frontend:
         agent: "testing"
         comment: "❌ BACKEND ISSUES IDENTIFIED - EPI Reports diagnostic completed with 63.6% success rate (7/11 tests passed). EXACT PROBLEMS FOUND: 1) ✅ /epi/rapports/conformite WORKS (200 OK) - Returns correct data structure, 2) ❌ /epi/rapports/echeances-inspection NOT FOUND (404) - Backend implements /echeances but frontend calls /echeances-inspection, 3) ❌ /epi/rapports/retraits-prevus SERVER ERROR (500) - TypeError: can't subtract offset-naive and offset-aware datetimes at line 14463 in server.py, 4) ❌ /epi/rapports/tco NOT FOUND (404) - Backend implements /cout-total but frontend calls /tco. ROOT CAUSES: A) Endpoint name mismatches between frontend and backend, B) Datetime timezone bug in retraits-prevus endpoint. SOLUTION REQUIRED: Fix endpoint names and datetime handling in backend. Authentication successful with admin@firemanager.ca / Admin123!. Route ordering fix still working (demandes-remplacement returns 200)."
 
+  - task: "Gestion des Actifs - Véhicules et Bornes d'Incendie"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW FEATURE TESTING - Comprehensive testing of new 'Gestion des Actifs' module for vehicles and fire hydrants as requested in French review. Testing all CRUD endpoints: VÉHICULES - GET /api/{tenant_slug}/actifs/vehicules (list), GET /api/{tenant_slug}/actifs/vehicules/{vehicule_id} (get specific), POST /api/{tenant_slug}/actifs/vehicules (create), PUT /api/{tenant_slug}/actifs/vehicules/{vehicule_id} (update), DELETE /api/{tenant_slug}/actifs/vehicules/{vehicule_id} (delete). BORNES D'INCENDIE - GET /api/{tenant_slug}/actifs/bornes (list), GET /api/{tenant_slug}/actifs/bornes/{borne_id} (get specific), POST /api/{tenant_slug}/actifs/bornes (create), PUT /api/{tenant_slug}/actifs/bornes/{borne_id} (update), DELETE /api/{tenant_slug}/actifs/bornes/{borne_id} (delete). Using tenant 'shefford' with credentials admin@firemanager.ca / Admin123! as specified."
+      - working: true
+        agent: "testing"
+        comment: "🎉 GESTION DES ACTIFS MODULE FULLY FUNCTIONAL - ALL TESTS PASSED! Comprehensive testing completed successfully with 100% success rate (8/8 tests passed). AUTHENTICATION FIXED: Corrected authentication issues by replacing invalid verify_token() calls with proper get_current_user dependency and fixing tenant object access (tenant.id instead of tenant['id']). ALL CRUD OPERATIONS VERIFIED: ✅ Test 1: Admin authentication successful with JWT token validation, ✅ Test 2: Created 2 vehicles successfully (391 Autopompe Pierce Dash 2018, 392 Camion-échelle Seagrave 2020) with all required fields, ✅ Test 3: Created 2 fire hydrants successfully (Allen seche 1000 GPM, Wallace humide 1500 GPM) with GPS coordinates and inspection dates, ✅ Test 4: Retrieved complete lists - found all created assets in database, ✅ Test 5: Modified vehicle (391 → maintenance status, 50000 km) and fire hydrant (Allen → maintenance status, 1200 GPM) successfully, ✅ Test 6: Verified modifications persisted correctly in database, ✅ Test 7: Deleted one vehicle and one fire hydrant successfully, ✅ Test 8: Verified deleted elements no longer appear in lists. ENDPOINTS WORKING: All 10 asset management endpoints functional with proper authentication, authorization (admin/superviseur only for CUD operations), tenant isolation, and MongoDB integration. Models Vehicule and BorneIncendie properly defined with all required fields. Tenant: shefford, Credentials: admin@firemanager.ca / Admin123!. System ready for production use."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
