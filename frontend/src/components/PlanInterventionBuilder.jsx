@@ -1003,6 +1003,347 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   );
 };
 
+// Modal pour modifier un symbole personnalisé
+const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated }) => {
+  const [nom, setNom] = useState(symbol.nom);
+  const [imageBase64, setImageBase64] = useState(symbol.image_base64);
+  const [loading, setLoading] = useState(false);
+
+  const handleImageUpload = (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('L\'image est trop volumineuse (max 2 Mo)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageBase64(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    handleImageUpload(file);
+  };
+
+  // Gérer Ctrl+V
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  const handleSave = async () => {
+    if (!nom.trim()) {
+      alert('Veuillez entrer un nom pour le symbole');
+      return;
+    }
+
+    if (!imageBase64) {
+      alert('Veuillez ajouter une image');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = getTenantToken();
+
+      const response = await axios.put(
+        buildApiUrl(tenantSlug, `/prevention/symboles-personnalises/${symbol.id}`),
+        {
+          nom,
+          image_base64: imageBase64,
+          couleur: symbol.couleur
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert('Symbole modifié avec succès ! ✏️');
+      onSymbolUpdated(response.data);
+    } catch (error) {
+      console.error('Erreur modification symbole:', error);
+      alert('Erreur lors de la modification du symbole');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100000
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        padding: '30px',
+        maxWidth: '500px',
+        width: '90%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+          ✏️ Modifier le Symbole
+        </h3>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            Nom du symbole *
+          </label>
+          <input
+            type="text"
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            placeholder="Ex: Borne-fontaine rouge"
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            Image du symbole *
+          </label>
+          
+          {imageBase64 ? (
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <img 
+                src={imageBase64} 
+                alt="Aperçu" 
+                style={{ 
+                  maxWidth: '100px', 
+                  maxHeight: '100px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '10px'
+                }} 
+              />
+              <div>
+                <label style={{
+                  marginTop: '10px',
+                  padding: '6px 12px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  display: 'inline-block',
+                  marginRight: '10px'
+                }}>
+                  📂 Changer l'image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              border: '2px dashed #d1d5db',
+              borderRadius: '8px',
+              padding: '30px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>🖼️</div>
+              <label style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-block',
+                fontSize: '14px',
+                marginBottom: '10px'
+              }}>
+                📂 Choisir une image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                ou utilisez Ctrl+V pour coller
+              </div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+                Max 2 Mo - PNG, JPG, GIF
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              opacity: loading ? 0.5 : 1
+            }}
+          >
+            {loading ? '⏳ Modification...' : '✅ Modifier'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal de confirmation de suppression
+const DeleteConfirmModal = ({ symbol, onConfirm, onCancel }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100000
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        padding: '30px',
+        maxWidth: '450px',
+        width: '90%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>
+          ⚠️ Confirmer la suppression
+        </h3>
+
+        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+          <img 
+            src={symbol.image_base64} 
+            alt={symbol.nom}
+            style={{ 
+              maxWidth: '80px', 
+              maxHeight: '80px',
+              border: '2px solid #e5e7eb',
+              borderRadius: '8px',
+              padding: '10px'
+            }} 
+          />
+        </div>
+
+        <p style={{ marginBottom: '15px', fontSize: '14px', color: '#4b5563' }}>
+          Êtes-vous sûr de vouloir supprimer le symbole <strong>"{symbol.nom}"</strong> ?
+        </p>
+
+        <div style={{
+          backgroundColor: '#fef3c7',
+          border: '1px solid #fbbf24',
+          borderRadius: '6px',
+          padding: '12px',
+          marginBottom: '20px'
+        }}>
+          <p style={{ margin: 0, fontSize: '13px', color: '#92400e' }}>
+            ⚠️ <strong>Attention:</strong> Si ce symbole est utilisé dans des plans d'intervention existants, 
+            ces plans seront également affectés par cette suppression.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#dc2626',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            🗑️ Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Modal pour ajouter un symbole personnalisé
 const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
   const [nom, setNom] = useState('');
