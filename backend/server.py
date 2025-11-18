@@ -16351,6 +16351,69 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+@api_router.post("/{tenant_slug}/prevention/batiments/{batiment_id}/photo")
+async def upload_batiment_photo(
+    tenant_slug: str,
+    batiment_id: str,
+    photo_base64: str = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Uploader/Mettre à jour la photo d'un bâtiment (en base64)"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le bâtiment existe
+    existing = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Vérifier que la photo est au bon format base64
+    if not photo_base64.startswith('data:image/'):
+        raise HTTPException(status_code=400, detail="Format de photo invalide (doit être base64 data URL)")
+    
+    # Mettre à jour la photo
+    await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"$set": {"photo_url": photo_base64, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Photo mise à jour avec succès", "photo_url": photo_base64}
+
+@api_router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}/photo")
+async def delete_batiment_photo(
+    tenant_slug: str,
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer la photo d'un bâtiment"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Mettre à jour pour retirer la photo
+    result = await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"$set": {"photo_url": "", "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return {"message": "Photo supprimée avec succès"}
+
+
+
 # ==================== SECTEURS GÉOGRAPHIQUES ====================
 
 @api_router.get("/{tenant_slug}/prevention/secteurs")
