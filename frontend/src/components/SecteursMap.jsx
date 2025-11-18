@@ -148,7 +148,7 @@ const SecteursMap = ({
       <MapContainer
         center={center}
         zoom={13}
-        maxZoom={21}
+        maxZoom={19}
         style={{ width: '100%', height: '100%', minHeight: '500px' }}
         scrollWheelZoom={true}
         whenCreated={setMap}
@@ -164,7 +164,7 @@ const SecteursMap = ({
           <TileLayer
             attribution='Tiles &copy; Esri'
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={21}
+            maxZoom={19}
           />
         )}
         
