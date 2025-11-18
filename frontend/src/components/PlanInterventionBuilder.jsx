@@ -472,16 +472,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                         })}
                         style={{
                           padding: '12px',
-                          border: `2px solid ${symbol.couleur}`,
+                          border: selectedSymbol?.label === symbol.nom ? `3px solid ${symbol.couleur}` : `2px solid ${symbol.couleur}`,
                           borderRadius: '8px',
-                          backgroundColor: 'white',
+                          backgroundColor: selectedSymbol?.label === symbol.nom ? `${symbol.couleur}30` : 'white',
                           cursor: 'grab',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           gap: '5px',
                           transition: 'all 0.2s',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          boxShadow: selectedSymbol?.label === symbol.nom ? `0 0 10px ${symbol.couleur}` : 'none'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'scale(1.05)';
