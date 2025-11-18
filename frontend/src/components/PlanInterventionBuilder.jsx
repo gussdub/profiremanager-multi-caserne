@@ -288,8 +288,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                 </div>
                 <MapContainer
                   center={center}
-                  zoom={19}
-                  maxZoom={21}
+                  zoom={18}
+                  maxZoom={19}
                   style={{ width: '100%', height: '100%' }}
                   whenCreated={setMap}
                 >
@@ -301,9 +301,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                     />
                   ) : (
                     <TileLayer
-                      attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                      attribution='Tiles &copy; Esri'
                       url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                      maxZoom={21}
+                      maxZoom={19}
                     />
                   )}
 
