@@ -130,10 +130,14 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
     const marker = L.marker(latlng, { icon }).addTo(map);
     
+    const symbolDisplay = symbol.isCustom && symbol.image 
+      ? `<img src="${symbol.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
+      : `<div style="font-size: 24px;">${symbol.emoji}</div>`;
+    
     if (note) {
       marker.bindPopup(`
         <div style="min-width: 150px;">
-          <div style="font-size: 24px; text-align: center; margin-bottom: 8px;">${symbol.emoji}</div>
+          <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
           <strong>${symbol.label}</strong><br/>
           <div style="margin-top: 8px; color: #666; font-size: 13px;">${note}</div>
         </div>
@@ -141,7 +145,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     } else {
       marker.bindPopup(`
         <div style="text-align: center;">
-          <div style="font-size: 24px; margin-bottom: 5px;">${symbol.emoji}</div>
+          <div style="margin-bottom: 5px;">${symbolDisplay}</div>
           <strong>${symbol.label}</strong>
         </div>
       `);
