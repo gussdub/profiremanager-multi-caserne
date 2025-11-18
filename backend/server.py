@@ -19177,7 +19177,7 @@ async def update_vehicule(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur appartient au tenant et a les permissions
-    if current_user.tenant_id != tenant["id"]:
+    if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     if current_user.role not in ["admin", "superviseur"]:
@@ -19185,7 +19185,7 @@ async def update_vehicule(
     
     # Vérifier que le véhicule existe
     vehicule = await db.vehicules.find_one(
-        {"id": vehicule_id, "tenant_id": tenant["id"]}
+        {"id": vehicule_id, "tenant_id": tenant.id}
     )
     if not vehicule:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
@@ -19196,7 +19196,7 @@ async def update_vehicule(
     
     # Mettre à jour
     await db.vehicules.update_one(
-        {"id": vehicule_id, "tenant_id": tenant["id"]},
+        {"id": vehicule_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
