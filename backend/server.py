@@ -1836,6 +1836,7 @@ class VehiculeUpdate(BaseModel):
     vin: Optional[str] = None
     statut: Optional[str] = None
     date_mise_service: Optional[str] = None
+    modele_inventaire_id: Optional[str] = None
     photos: Optional[List[str]] = None
     documents: Optional[List[Dict[str, str]]] = None
     notes: Optional[str] = None
