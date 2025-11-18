@@ -77,6 +77,26 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     ? [batiment.latitude, batiment.longitude]
     : [45.4042, -71.8929]; // Défaut
 
+  // Charger les symboles personnalisés
+  useEffect(() => {
+    const fetchCustomSymbols = async () => {
+      try {
+        const token = getTenantToken();
+        const response = await axios.get(
+          buildApiUrl(tenantSlug, '/prevention/symboles-personnalises'),
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCustomSymbols(response.data || []);
+      } catch (error) {
+        console.error('Erreur chargement symboles personnalisés:', error);
+      }
+    };
+
+    if (tenantSlug) {
+      fetchCustomSymbols();
+    }
+  }, [tenantSlug]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
