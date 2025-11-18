@@ -444,13 +444,12 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
           
           <div style={{ padding: '15px', flex: 1, overflowY: 'auto' }}>
-            <CardContent>
-              {/* Symboles personnalisés en premier */}
-              {customSymbols.length > 0 && (
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
-                    🎨 Symboles Personnalisés
-                  </h4>
+            {/* Symboles personnalisés en premier */}
+            {customSymbols.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#374151' }}>
+                  🎨 Symboles Personnalisés
+                </h4>
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
