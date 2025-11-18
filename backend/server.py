@@ -19474,6 +19474,310 @@ async def delete_borne(
     return {"message": "Borne d'incendie supprimée avec succès"}
 
 
+# ==================== INVENTAIRES VÉHICULES ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/actifs/inventaires/modeles", response_model=List[ModeleInventaire])
+async def get_modeles_inventaire(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère la liste des modèles d'inventaire du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    modeles = await db.modeles_inventaire.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return modeles
+
+@api_router.get("/{tenant_slug}/actifs/inventaires/modeles/{modele_id}", response_model=ModeleInventaire)
+async def get_modele_inventaire(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère un modèle d'inventaire spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    modele = await db.modeles_inventaire.find_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inventaire non trouvé")
+    
+    return modele
+
+@api_router.post("/{tenant_slug}/actifs/inventaires/modeles", response_model=ModeleInventaire)
+async def create_modele_inventaire(
+    tenant_slug: str,
+    modele_data: ModeleInventaireCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée un nouveau modèle d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    modele = ModeleInventaire(
+        tenant_id=tenant.id,
+        **modele_data.dict()
+    )
+    
+    await db.modeles_inventaire.insert_one(modele.dict())
+    
+    return modele
+
+@api_router.put("/{tenant_slug}/actifs/inventaires/modeles/{modele_id}", response_model=ModeleInventaire)
+async def update_modele_inventaire(
+    tenant_slug: str,
+    modele_id: str,
+    modele_data: ModeleInventaireUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un modèle d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    modele = await db.modeles_inventaire.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inventaire non trouvé")
+    
+    update_data = {k: v for k, v in modele_data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.modeles_inventaire.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    updated_modele = await db.modeles_inventaire.find_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    return updated_modele
+
+@api_router.delete("/{tenant_slug}/actifs/inventaires/modeles/{modele_id}")
+async def delete_modele_inventaire(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime un modèle d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    modele = await db.modeles_inventaire.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inventaire non trouvé")
+    
+    # Vérifier si le modèle est utilisé par des véhicules
+    vehicules_utilisant = await db.vehicules.count_documents({
+        "tenant_id": tenant.id,
+        "modele_inventaire_id": modele_id
+    })
+    
+    if vehicules_utilisant > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ce modèle est utilisé par {vehicules_utilisant} véhicule(s) et ne peut pas être supprimé"
+        )
+    
+    await db.modeles_inventaire.delete_one({"id": modele_id, "tenant_id": tenant.id})
+    
+    return {"message": "Modèle d'inventaire supprimé avec succès"}
+
+# ==================== INSPECTIONS INVENTAIRE ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/actifs/inventaires/inspections", response_model=List[InspectionInventaire])
+async def get_inspections_inventaire(
+    tenant_slug: str,
+    vehicule_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère la liste des inspections d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    query = {"tenant_id": tenant.id}
+    
+    # Filtrer par véhicule si spécifié
+    if vehicule_id:
+        query["vehicule_id"] = vehicule_id
+    
+    # Les employés ne voient que leurs propres inspections
+    if current_user.role == "employe":
+        query["inspecteur_id"] = current_user.id
+    
+    inspections = await db.inspections_inventaire.find(
+        query,
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=None)
+    
+    return inspections
+
+@api_router.get("/{tenant_slug}/actifs/inventaires/inspections/{inspection_id}", response_model=InspectionInventaire)
+async def get_inspection_inventaire(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère une inspection d'inventaire spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    inspection = await db.inspections_inventaire.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Les employés ne peuvent voir que leurs propres inspections
+    if current_user.role == "employe" and inspection["inspecteur_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    return inspection
+
+@api_router.post("/{tenant_slug}/actifs/inventaires/inspections", response_model=InspectionInventaire)
+async def create_inspection_inventaire(
+    tenant_slug: str,
+    inspection_data: InspectionInventaireCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée une nouvelle inspection d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicule = await db.vehicules.find_one({
+        "id": inspection_data.vehicule_id,
+        "tenant_id": tenant.id
+    })
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Vérifier que le modèle d'inventaire existe
+    modele = await db.modeles_inventaire.find_one({
+        "id": inspection_data.modele_inventaire_id,
+        "tenant_id": tenant.id
+    })
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inventaire non trouvé")
+    
+    # Récupérer le nom de l'inspecteur
+    inspecteur = await db.users.find_one({"id": inspection_data.inspecteur_id})
+    inspecteur_nom = f"{inspecteur.get('prenom', '')} {inspecteur.get('nom', '')}".strip() if inspecteur else None
+    
+    inspection = InspectionInventaire(
+        tenant_id=tenant.id,
+        inspecteur_nom=inspecteur_nom,
+        **inspection_data.dict()
+    )
+    
+    await db.inspections_inventaire.insert_one(inspection.dict())
+    
+    return inspection
+
+@api_router.put("/{tenant_slug}/actifs/inventaires/inspections/{inspection_id}", response_model=InspectionInventaire)
+async def update_inspection_inventaire(
+    tenant_slug: str,
+    inspection_id: str,
+    inspection_data: InspectionInventaireUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une inspection d'inventaire (progression ou complétion)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    inspection = await db.inspections_inventaire.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id}
+    )
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Les employés ne peuvent modifier que leurs propres inspections
+    if current_user.role == "employe" and inspection["inspecteur_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    update_data = {k: v for k, v in inspection_data.dict(exclude_unset=True).items() if v is not None}
+    
+    # Si le statut passe à "complete", enregistrer la date de complétion
+    if inspection_data.statut == "complete" and inspection.get("statut") != "complete":
+        update_data["completed_at"] = datetime.now(timezone.utc)
+    
+    await db.inspections_inventaire.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    updated_inspection = await db.inspections_inventaire.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    return updated_inspection
+
+@api_router.delete("/{tenant_slug}/actifs/inventaires/inspections/{inspection_id}")
+async def delete_inspection_inventaire(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une inspection d'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    inspection = await db.inspections_inventaire.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id}
+    )
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    await db.inspections_inventaire.delete_one({"id": inspection_id, "tenant_id": tenant.id})
+    
+    return {"message": "Inspection supprimée avec succès"}
+
+
+
 # Include the router in the main app
 
 # Endpoint public pour lister les tenants (pour l'app mobile)
