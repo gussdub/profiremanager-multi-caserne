@@ -1853,7 +1853,7 @@ class BorneIncendie(BaseModel):
     date_derniere_inspection: Optional[str] = None  # Date format YYYY-MM-DD
     lien_maps: Optional[str] = None  # Lien Google Maps
     photos: List[str] = []  # URLs ou base64 des photos
-    schema: List[str] = []  # Schémas techniques
+    schemas: List[str] = []  # Schémas techniques
     notes_importantes: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
