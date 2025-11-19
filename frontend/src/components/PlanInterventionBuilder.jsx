@@ -920,7 +920,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
                   {/* Afficher les layers sauvegardés */}
                   {layers.map((layer, index) => {
-                    console.log('🎨 Rendu du layer', index, layer);
+                    console.log('🎨 Rendu du layer', index, '- Type:', layer.type, '- Geometry:', layer.geometry);
+                    console.log('🎨 Layer complet:', JSON.stringify(layer, null, 2));
                     
                     if (layer.type === 'marker' && layer.geometry?.coordinates) {
                       const [lng, lat] = layer.geometry.coordinates;
