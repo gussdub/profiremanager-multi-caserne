@@ -11404,6 +11404,23 @@ async def reinitialiser_disponibilites(
             else:
                 next_month = today.replace(month=today.month + 1, day=1)
                 date_fin = next_month - timedelta(days=1)
+        elif reinit_data.periode == "mois_prochain":
+            # Mois prochain : 1er du mois prochain à dernier jour du mois prochain
+            if today.month == 12:
+                # Si on est en décembre, mois prochain = janvier de l'année suivante
+                date_debut = today.replace(year=today.year + 1, month=1, day=1)
+                next_next_month = date_debut.replace(month=2, day=1)
+                date_fin = next_next_month - timedelta(days=1)
+            else:
+                # Mois prochain
+                date_debut = today.replace(month=today.month + 1, day=1)
+                # Dernier jour du mois prochain
+                if today.month == 11:
+                    # Si on est en novembre, mois prochain = décembre
+                    date_fin = date_debut.replace(day=31)
+                else:
+                    next_next_month = today.replace(month=today.month + 2, day=1)
+                    date_fin = next_next_month - timedelta(days=1)
         elif reinit_data.periode == "annee":
             # Année courante : 1er janvier à 31 décembre
             date_debut = today.replace(month=1, day=1)
