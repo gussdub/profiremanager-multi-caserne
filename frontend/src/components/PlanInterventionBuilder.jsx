@@ -37,6 +37,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
   const markersRef = useRef([]);
+  
+  // États pour la palette de symboles et modals
+  const [mapType, setMapType] = useState('satellite');
+  const [showSymbolPalette, setShowSymbolPalette] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState(null);
+  const [customSymbols, setCustomSymbols] = useState([]);
+  const [showAddSymbolModal, setShowAddSymbolModal] = useState(false);
+  const [showEditSymbolModal, setShowEditSymbolModal] = useState(false);
+  const [symbolToEdit, setSymbolToEdit] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [symbolToDelete, setSymbolToDelete] = useState(null);
 
   // Charger les layers depuis existingPlan au montage ou quand il change
   useEffect(() => {
