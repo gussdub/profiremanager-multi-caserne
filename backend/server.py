@@ -18163,6 +18163,14 @@ async def update_plan_intervention(
     
     # Mettre à jour les champs fournis
     update_dict = {k: v for k, v in plan_update.dict(exclude_unset=True).items() if v is not None}
+    
+    # Debug logs
+    import logging
+    logger = logging.getLogger(__name__)
+    if 'layers' in update_dict:
+        logger.info(f"📥 UPDATE - Layers reçus: {len(update_dict.get('layers', []))} layers")
+        logger.info(f"📥 UPDATE - Détails layers: {update_dict.get('layers', [])}")
+    
     update_dict["updated_at"] = datetime.now(timezone.utc)
     update_dict["date_derniere_maj"] = datetime.now(timezone.utc)
     
@@ -18175,6 +18183,10 @@ async def update_plan_intervention(
         raise HTTPException(status_code=404, detail="Plan non trouvé")
     
     updated = await db.plans_intervention.find_one({"id": plan_id})
+    
+    if updated and 'layers' in updated:
+        logger.info(f"✅ UPDATE - Layers dans résultat: {len(updated.get('layers', []))} layers")
+    
     return clean_mongo_doc(updated)
 
 @api_router.delete("/{tenant_slug}/prevention/plans-intervention/{plan_id}")
