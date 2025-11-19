@@ -346,6 +346,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       };
 
       console.log('📤 Envoi du plan:', planData);
+      console.log('📤 Nombre de layers à sauvegarder:', cleanLayers.length);
+      console.log('📤 Layers détaillés:', JSON.stringify(cleanLayers, null, 2));
 
       let response;
       if (existingPlan) {
