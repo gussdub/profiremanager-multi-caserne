@@ -175,20 +175,22 @@ const GestionActifs = () => {
     <div className="gestion-actifs" style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>🚒 Gestion des Actifs</h1>
-        <button 
-          onClick={openCreateModal}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
-        </button>
+        {activeTab !== 'inventaires' && (
+          <button 
+            onClick={openCreateModal}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
