@@ -18063,6 +18063,13 @@ async def create_plan_intervention(
     numero_plan = f"PI-{current_year}-{str(count + 1).zfill(3)}"
     
     plan_dict = plan.dict()
+    
+    # Debug logs
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"📥 Layers reçus dans plan_dict: {len(plan_dict.get('layers', []))} layers")
+    logger.info(f"📥 Détails layers reçus: {plan_dict.get('layers', [])}")
+    
     plan_dict["tenant_id"] = tenant.id
     plan_dict["numero_plan"] = numero_plan
     plan_dict["created_by_id"] = current_user.id
@@ -18070,9 +18077,17 @@ async def create_plan_intervention(
     
     plan_obj = PlanIntervention(**plan_dict)
     
-    await db.plans_intervention.insert_one(plan_obj.dict())
+    logger.info(f"📤 Layers dans plan_obj après conversion: {len(plan_obj.layers)} layers")
     
-    return clean_mongo_doc(plan_obj.dict())
+    plan_to_insert = plan_obj.dict()
+    logger.info(f"💾 Layers avant insertion MongoDB: {len(plan_to_insert.get('layers', []))} layers")
+    
+    await db.plans_intervention.insert_one(plan_to_insert)
+    
+    result = clean_mongo_doc(plan_to_insert)
+    logger.info(f"✅ Layers dans résultat final: {len(result.get('layers', []))} layers")
+    
+    return result
 
 @api_router.get("/{tenant_slug}/prevention/plans-intervention")
 async def get_plans_intervention(
