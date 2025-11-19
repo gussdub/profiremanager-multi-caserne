@@ -560,7 +560,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       const token = getTenantToken();
 
       await axios.post(
-        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${existingPlan.id}/soumettre`),
+        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${existingPlan.id}/valider`),
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
