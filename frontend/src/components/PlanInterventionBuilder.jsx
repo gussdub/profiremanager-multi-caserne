@@ -78,8 +78,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             let icon;
             
             // Recréer l'icône selon le type de symbole
-            if (props.isCustom && props.symbolId) {
-              // Symbole personnalisé - chercher l'image dans customSymbols
+            if (props.isCustom && props.image) {
+              // Symbole personnalisé - utiliser l'image sauvegardée
+              icon = L.divIcon({
+                html: `<img src="${props.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
+                className: 'custom-image-marker',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+              });
+              console.log('✅ Icône personnalisée restaurée depuis image sauvegardée');
+            } else if (props.isCustom && props.symbolId) {
+              // Fallback : chercher l'image dans customSymbols si pas d'image sauvegardée
               const customSymbol = customSymbols.find(s => s.symbolId === props.symbolId);
               if (customSymbol?.image) {
                 icon = L.divIcon({
@@ -88,7 +97,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   iconSize: [32, 32],
                   iconAnchor: [16, 16]
                 });
-                console.log('✅ Icône personnalisée restaurée');
+                console.log('✅ Icône personnalisée restaurée depuis customSymbols');
               }
             } else if (props.symbol) {
               // Symbole emoji standard
