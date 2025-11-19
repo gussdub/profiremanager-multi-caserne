@@ -311,7 +311,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         note: note || '',
         color: symbol.color,
         symbolId: symbol.symbolId || null,  // ID du symbole personnalisé si applicable
-        isCustom: symbol.isCustom || false
+        isCustom: symbol.isCustom || false,
+        image: symbol.image || null  // Sauvegarder l'image pour les symboles personnalisés
       }
     };
 
