@@ -10868,7 +10868,7 @@ async def import_disponibilites_csv(
     
     for index, dispo_data in enumerate(disponibilites):
         try:
-            # 1. Trouver l'utilisateur
+            # 1. Trouver l'utilisateur avec matching intelligent
             employe_str = dispo_data.get("Employé", "").strip()
             if not employe_str:
                 results["errors"].append({
@@ -10877,16 +10877,45 @@ async def import_disponibilites_csv(
                 })
                 continue
             
-            # Extraire le numéro d'employé entre parenthèses (ex: "(981)")
+            # Extraire le nom sans le numéro entre parenthèses
+            # Ex: "Bernard Sébastien (981)" → "Bernard Sébastien"
+            nom_complet = employe_str.split("(")[0].strip()
+            
+            # Essayer de trouver l'utilisateur
             user_obj = None
+            
+            # Tentative 1: Par numéro d'employé (si présent et fiable)
             if "(" in employe_str and ")" in employe_str:
                 num_employe = employe_str.split("(")[1].split(")")[0].strip()
                 user_obj = users_by_num.get(num_employe)
             
-            # Si pas trouvé par numéro, chercher par nom
-            if not user_obj:
-                nom_complet = employe_str.split("(")[0].strip().lower()
-                user_obj = users_by_name.get(nom_complet)
+            # Tentative 2: Matching flexible par nom (avec normalisation)
+            if not user_obj and nom_complet:
+                normalized_name = normalize_string(nom_complet)
+                user_obj = users_by_name.get(normalized_name)
+            
+            # Tentative 3: Recherche plus approfondie si toujours pas trouvé
+            if not user_obj and nom_complet:
+                # Essayer de parser le nom en parties
+                parts = nom_complet.split()
+                if len(parts) >= 2:
+                    # Essayer toutes les combinaisons possibles
+                    for i in range(len(parts)):
+                        possible_prenom = " ".join(parts[:i+1])
+                        possible_nom = " ".join(parts[i+1:])
+                        
+                        if possible_nom:
+                            # Chercher avec cette combinaison
+                            test_key = normalize_string(f"{possible_prenom} {possible_nom}")
+                            if test_key in users_by_name:
+                                user_obj = users_by_name[test_key]
+                                break
+                            
+                            # Essayer l'ordre inversé
+                            test_key2 = normalize_string(f"{possible_nom} {possible_prenom}")
+                            if test_key2 in users_by_name:
+                                user_obj = users_by_name[test_key2]
+                                break
             
             if not user_obj:
                 results["errors"].append({
