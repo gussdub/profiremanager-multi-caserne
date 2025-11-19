@@ -299,18 +299,21 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
             
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition">
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <Label htmlFor="csv-upload" className="cursor-pointer">
-                <span className="text-blue-600 hover:text-blue-700 font-medium">
-                  Cliquez pour sélectionner un fichier
-                </span>
+              <div className="space-y-4">
+                <Label htmlFor="csv-upload" className="cursor-pointer block">
+                  <span className="text-blue-600 hover:text-blue-700 font-medium">
+                    Cliquez pour sélectionner un fichier
+                  </span>
+                </Label>
                 <Input
                   id="csv-upload"
                   type="file"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-              </Label>
-              <p className="text-sm text-gray-500 mt-2">ou glissez-déposez votre fichier ici</p>
+                <p className="text-sm text-gray-500">Formats acceptés: CSV, XLS, XLSX</p>
+                <p className="text-xs text-gray-400">Si votre fichier XLS ne s'ouvre pas, essayez de le sauvegarder en XLSX depuis Excel</p>
+              </div>
             </div>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
