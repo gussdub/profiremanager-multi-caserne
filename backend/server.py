@@ -11457,7 +11457,7 @@ async def reinitialiser_disponibilites(
         else:
             raise HTTPException(
                 status_code=400,
-                detail="periode doit être 'semaine', 'mois', 'annee' ou 'personnalisee'"
+                detail="periode doit être 'semaine', 'mois', 'mois_prochain', 'annee' ou 'personnalisee'"
             )
         
         # Construire la requête de suppression
