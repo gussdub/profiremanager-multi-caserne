@@ -389,12 +389,16 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               </p>
             </div>
             
-            <div className="overflow-x-auto border rounded-lg">
+            <div className="overflow-x-auto border rounded-lg" style={{ maxHeight: '400px' }}>
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0">
                   <tr>
                     {availableFields.map(field => (
-                      <th key={field.key} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th 
+                        key={field.key} 
+                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
+                        style={{ minWidth: '120px' }}
+                      >
                         {field.label}
                       </th>
                     ))}
@@ -402,9 +406,13 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {previewData.map((row, idx) => (
-                    <tr key={idx}>
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       {availableFields.map(field => (
-                        <td key={field.key} className="px-4 py-3 text-sm text-gray-900">
+                        <td 
+                          key={field.key} 
+                          className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap"
+                          style={{ minWidth: '120px' }}
+                        >
                           {row[field.key] || '-'}
                         </td>
                       ))}
