@@ -110,8 +110,8 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const arrayBuffer = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           
           // Prendre la première feuille
           const firstSheetName = workbook.SheetNames[0];
@@ -129,7 +129,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
           setCsvHeaders(headers);
           
           // Extraire les données
-          const data = jsonData.slice(1)
+          const parsedData = jsonData.slice(1)
             .filter(row => row.some(cell => cell !== '')) // Ignorer les lignes vides
             .map((row, index) => {
               const rowData = { _index: index };
