@@ -549,6 +549,138 @@ def validate_complex_password(password: str) -> bool:
     
     return has_uppercase and has_digit and has_special
 
+
+def normalize_string_for_matching(s: str) -> str:
+    """
+    Normalise une chaîne pour le matching intelligent :
+    - Enlève les accents (é → e, à → a, etc.)
+    - Convertit en minuscules
+    - Strip les espaces
+    
+    Utilisé pour matcher des noms/prénoms de façon flexible dans les imports CSV.
+    
+    Exemple:
+        "Sébastien BERNARD" → "sebastien bernard"
+        "Dupont Jean-Pierre" → "dupont jean-pierre"
+    """
+    import unicodedata
+    # Enlever les accents (NFD = décompose, puis filtre les marques diacritiques)
+    s = ''.join(c for c in unicodedata.normalize('NFD', s) 
+                if unicodedata.category(c) != 'Mn')
+    # Minuscules et strip
+    return s.lower().strip()
+
+
+def create_user_matching_index(users_list: list) -> dict:
+    """
+    Crée un index de matching pour recherche rapide d'utilisateurs.
+    
+    Gère automatiquement :
+    - Ordre normal (Prénom Nom)
+    - Ordre inversé (Nom Prénom)
+    - Normalisation (accents, casse)
+    
+    Args:
+        users_list: Liste d'utilisateurs avec 'prenom' et 'nom'
+    
+    Returns:
+        dict: Index {nom_normalisé: user_object}
+        
+    Exemple:
+        users = [{"prenom": "Sébastien", "nom": "Bernard"}]
+        index = create_user_matching_index(users)
+        # index["sebastien bernard"] → user
+        # index["bernard sebastien"] → user (ordre inversé aussi)
+    """
+    index = {}
+    for user in users_list:
+        prenom = user.get('prenom', '').strip()
+        nom = user.get('nom', '').strip()
+        
+        if prenom and nom:
+            # Index 1: Prénom Nom (ordre normal)
+            key1 = normalize_string_for_matching(f"{prenom} {nom}")
+            index[key1] = user
+            
+            # Index 2: Nom Prénom (ordre inversé)
+            key2 = normalize_string_for_matching(f"{nom} {prenom}")
+            index[key2] = user
+    
+    return index
+
+
+def find_user_intelligent(
+    search_string: str, 
+    users_by_name: dict, 
+    users_by_num: dict = None,
+    numero_field: str = "numero_employe"
+) -> dict:
+    """
+    Recherche intelligente d'un utilisateur avec matching flexible.
+    
+    Stratégie de recherche (par ordre de priorité) :
+    1. Par numéro d'employé (si présent entre parenthèses et fiable)
+    2. Par nom normalisé (ordre normal ou inversé)
+    3. Par parsing approfondi (noms composés)
+    
+    Args:
+        search_string: Chaîne de recherche (ex: "Bernard Sébastien (981)")
+        users_by_name: Index créé par create_user_matching_index()
+        users_by_num: Index optionnel {numero: user}
+        numero_field: Nom du champ contenant le numéro (défaut: "numero_employe")
+    
+    Returns:
+        dict: User object si trouvé, None sinon
+        
+    Exemples:
+        find_user_intelligent("Bernard Sébastien (981)", index)
+        find_user_intelligent("BERNARD Sebastien", index)
+        find_user_intelligent("Jean-Pierre Dubois", index)
+    """
+    if not search_string:
+        return None
+    
+    # Extraire le nom sans le numéro entre parenthèses
+    nom_complet = search_string.split("(")[0].strip()
+    
+    # Tentative 1: Par numéro d'employé
+    if users_by_num and "(" in search_string and ")" in search_string:
+        try:
+            num = search_string.split("(")[1].split(")")[0].strip()
+            if num and num in users_by_num:
+                return users_by_num[num]
+        except:
+            pass
+    
+    # Tentative 2: Matching flexible par nom normalisé
+    if nom_complet:
+        normalized = normalize_string_for_matching(nom_complet)
+        if normalized in users_by_name:
+            return users_by_name[normalized]
+    
+    # Tentative 3: Parsing approfondi pour noms composés
+    if nom_complet:
+        parts = nom_complet.split()
+        if len(parts) >= 2:
+            # Essayer toutes les combinaisons
+            for i in range(len(parts)):
+                possible_prenom = " ".join(parts[:i+1])
+                possible_nom = " ".join(parts[i+1:])
+                
+                if possible_nom:
+                    # Ordre normal
+                    test_key = normalize_string_for_matching(f"{possible_prenom} {possible_nom}")
+                    if test_key in users_by_name:
+                        return users_by_name[test_key]
+                    
+                    # Ordre inversé
+                    test_key2 = normalize_string_for_matching(f"{possible_nom} {possible_prenom}")
+                    if test_key2 in users_by_name:
+                        return users_by_name[test_key2]
+    
+    return None
+
+
 def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_password: str, tenant_slug: str = ""):
     """
     Envoie un email de bienvenue avec les informations de connexion
