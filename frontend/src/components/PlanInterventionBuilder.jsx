@@ -54,37 +54,35 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
   // Restaurer les layers sur la carte Leaflet
   useEffect(() => {
-    // TEMPORAIREMENT DÉSACTIVÉ pour débug
-    if (!map || layers.length === 0) return;
+    if (!map) return;
     
-    console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
-    console.log('⚠️ Fonctionnalité de restauration temporairement désactivée');
+    console.log('🗺️ useEffect déclenché, layers:', layers.length);
     
-    // TODO: Réactiver la restauration des layers
-    return;
-    
-    /*
-    // Nettoyer les anciens markers
+    // Nettoyer tous les anciens markers
     if (markersRef.current && markersRef.current.length > 0) {
+      console.log('🧹 Nettoyage de', markersRef.current.length, 'markers');
       markersRef.current.forEach(marker => {
         try {
-          if (map.hasLayer(marker)) {
+          if (map && map.hasLayer(marker)) {
             map.removeLayer(marker);
           }
         } catch (e) {
-          console.log('Marker déjà supprimé');
+          // Ignorer les erreurs
         }
       });
       markersRef.current = [];
     }
     
     // Si pas de layers, on s'arrête là
-    if (layers.length === 0) return;
+    if (!layers || layers.length === 0) {
+      console.log('⚠️ Aucun layer à restaurer');
+      return;
+    }
     
-    
-    // Fonction pour créer les markers (commentée temporairement)
-    const createMarkers = () => {
-      /*
+    // Créer les markers après un court délai
+    const timeoutId = setTimeout(() => {
+      console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
+      
       layers.forEach((layer, index) => {
         try {
           console.log('🔄 Restauration du layer', index, ':', layer);
