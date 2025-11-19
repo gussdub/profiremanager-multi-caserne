@@ -10840,7 +10840,28 @@ async def import_disponibilites_csv(
     # Précharger les utilisateurs et types de garde pour optimisation
     users_list = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
     users_by_num = {u.get("numero_employe"): u for u in users_list if u.get("numero_employe")}
-    users_by_name = {f"{u.get('prenom', '')} {u.get('nom', '')}".strip().lower(): u for u in users_list}
+    
+    # Fonction pour normaliser les chaînes (enlever accents, minuscules)
+    def normalize_string(s):
+        import unicodedata
+        # Enlever les accents
+        s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+        # Minuscules et strip
+        return s.lower().strip()
+    
+    # Créer plusieurs index pour matching flexible
+    users_by_name = {}
+    for u in users_list:
+        prenom = u.get('prenom', '').strip()
+        nom = u.get('nom', '').strip()
+        if prenom and nom:
+            # Index 1: Prénom Nom (ordre normal)
+            key1 = normalize_string(f"{prenom} {nom}")
+            users_by_name[key1] = u
+            
+            # Index 2: Nom Prénom (ordre inversé)
+            key2 = normalize_string(f"{nom} {prenom}")
+            users_by_name[key2] = u
     
     types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
     types_garde_by_name = {tg.get("nom", "").strip().lower(): tg for tg in types_garde_list}
