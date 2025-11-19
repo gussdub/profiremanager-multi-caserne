@@ -36,9 +36,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
   // Charger les layers depuis existingPlan au montage ou quand il change
   useEffect(() => {
+    console.log('🔍 useEffect déclenché - existingPlan:', existingPlan);
+    console.log('🔍 existingPlan?.layers:', existingPlan?.layers);
+    console.log('🔍 Nombre de layers dans existingPlan:', existingPlan?.layers?.length || 0);
+    
     if (existingPlan?.layers && existingPlan.layers.length > 0) {
       console.log('📥 Chargement des layers depuis existingPlan:', existingPlan.layers);
       setLayers(existingPlan.layers);
+    } else {
+      console.log('⚠️ Aucun layer à charger depuis existingPlan');
     }
   }, [existingPlan]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
