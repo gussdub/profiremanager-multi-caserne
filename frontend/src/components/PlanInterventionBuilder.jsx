@@ -58,10 +58,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
     
     // Stocker les markers créés pour pouvoir les supprimer
-    let createdMarkers = [];
+    const createdMarkers = [];
     
-    // Attendre un peu que la carte soit complètement prête
-    const timeoutId = setTimeout(() => {
+    // Fonction pour créer les markers
+    const createMarkers = () => {
       layers.forEach((layer, index) => {
         try {
           console.log('🔄 Restauration du layer', index, ':', layer);
