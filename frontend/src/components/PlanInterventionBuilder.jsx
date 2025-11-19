@@ -51,6 +51,77 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       console.log('⚠️ Aucun layer à charger depuis existingPlan');
     }
   }, [existingPlan]);
+
+  // Restaurer les layers sur la carte Leaflet
+  useEffect(() => {
+    if (!map || layers.length === 0) return;
+    
+    console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
+    
+    // Attendre un peu que la carte soit complètement prête
+    setTimeout(() => {
+      layers.forEach((layer, index) => {
+        try {
+          console.log('🔄 Restauration du layer', index, ':', layer);
+          
+          if (layer.type === 'marker' && layer.geometry?.coordinates) {
+            const [lng, lat] = layer.geometry.coordinates;
+            const iconUrl = layer.properties?.icon;
+            
+            let leafletMarker;
+            if (iconUrl) {
+              const customIcon = L.icon({
+                iconUrl: iconUrl,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+              });
+              leafletMarker = L.marker([lat, lng], { icon: customIcon });
+            } else {
+              leafletMarker = L.marker([lat, lng]);
+            }
+            
+            if (layer.properties?.label) {
+              leafletMarker.bindPopup(layer.properties.label);
+            }
+            
+            leafletMarker.addTo(map);
+            console.log('✅ Marker ajouté à la carte');
+          }
+          
+          if (layer.type === 'polygon' && layer.geometry?.coordinates) {
+            const positions = layer.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+            const polygon = L.polygon(positions, {
+              color: layer.properties?.color || '#3b82f6'
+            });
+            polygon.addTo(map);
+            console.log('✅ Polygon ajouté à la carte');
+          }
+          
+          if (layer.type === 'polyline' && layer.geometry?.coordinates) {
+            const positions = layer.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            const polyline = L.polyline(positions, {
+              color: layer.properties?.color || '#3b82f6'
+            });
+            polyline.addTo(map);
+            console.log('✅ Polyline ajouté à la carte');
+          }
+          
+          if (layer.type === 'circle' && layer.geometry?.coordinates) {
+            const [lng, lat] = layer.geometry.coordinates;
+            const circle = L.circle([lat, lng], {
+              radius: layer.properties?.radius || 50,
+              color: layer.properties?.color || '#3b82f6'
+            });
+            circle.addTo(map);
+            console.log('✅ Circle ajouté à la carte');
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de la restauration du layer', index, ':', error);
+        }
+      });
+    }, 500);
+  }, [map, layers]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
   const [showSymbolPalette, setShowSymbolPalette] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
