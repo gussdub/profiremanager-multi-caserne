@@ -136,7 +136,8 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
       alert('PDF téléchargé avec succès!');
     } catch (error) {
       console.error('Erreur génération PDF:', error);
-      alert('Erreur lors de la génération PDF');
+      const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
+      alert(`Erreur lors de la génération du PDF: ${errorMsg}`);
     }
   };
 
