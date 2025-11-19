@@ -153,71 +153,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       const newMarkers = [];
       
       layers.forEach((layer) => {
-        try {
-          console.log('🔄 Restauration du layer', index, ':', layer);
-          console.log('🔍 Type du layer:', layer.type);
-          console.log('🔍 Geometry:', layer.geometry);
-          
-          // Gestion des symboles/markers (type: "symbol" avec geometry.type: "Point")
-          if ((layer.type === 'symbol' || layer.type === 'marker') && 
-              layer.geometry?.type === 'Point' && 
-              layer.geometry?.coordinates) {
-            const [lng, lat] = layer.geometry.coordinates;
-            const props = layer.properties || {};
-            
-            console.log('📍 Création marker/symbol à position:', [lat, lng]);
-            console.log('🎨 Properties:', props);
-            
-            let icon;
-            
-            // Recréer l'icône selon le type de symbole
-            if (props.isCustom && props.image) {
-              // Symbole personnalisé - utiliser l'image sauvegardée
-              icon = L.divIcon({
-                html: `<img src="${props.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
-                className: 'custom-image-marker',
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-              });
-              console.log('✅ Icône personnalisée restaurée depuis image sauvegardée');
-            } else if (props.isCustom && props.symbolId) {
-              // Fallback : chercher l'image dans customSymbols si pas d'image sauvegardée
-              const customSymbol = customSymbols.find(s => s.symbolId === props.symbolId);
-              if (customSymbol?.image) {
-                icon = L.divIcon({
-                  html: `<img src="${customSymbol.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
-                  className: 'custom-image-marker',
-                  iconSize: [32, 32],
-                  iconAnchor: [16, 16]
-                });
-                console.log('✅ Icône personnalisée restaurée depuis customSymbols');
-              }
-            } else if (props.symbol) {
-              // Symbole emoji standard
-              icon = L.divIcon({
-                html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${props.symbol}</div>`,
-                className: 'custom-emoji-marker',
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
-              });
-              console.log('✅ Icône emoji restaurée:', props.symbol);
-            }
-            
-            // Créer le marker
-            const leafletMarker = icon 
-              ? L.marker([lat, lng], { icon, draggable: true })
-              : L.marker([lat, lng], { draggable: true });
-            
-            // Stocker l'ID du layer dans le marker pour pouvoir le supprimer
-            leafletMarker.layerId = layer.id;
-            
-            // Ajouter un événement de clic droit pour supprimer
-            leafletMarker.on('contextmenu', function(e) {
-              if (window.confirm('🗑️ Supprimer ce symbole ?')) {
-                // Supprimer du state
-                setLayers(prevLayers => prevLayers.filter(l => l.id !== layer.id));
-                // Supprimer de la carte
-                map.removeLayer(leafletMarker);
+        const marker = createMarkerFromLayer(layer);
+        if (marker) {
+          marker.addTo(map);
+          newMarkers.push(marker);
                 console.log('✅ Symbole supprimé:', layer.id);
               }
             });
