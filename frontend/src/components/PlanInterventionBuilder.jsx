@@ -70,33 +70,60 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               layer.geometry?.type === 'Point' && 
               layer.geometry?.coordinates) {
             const [lng, lat] = layer.geometry.coordinates;
-            const iconUrl = layer.properties?.icon;
+            const props = layer.properties || {};
             
             console.log('📍 Création marker/symbol à position:', [lat, lng]);
-            console.log('🎨 Icon URL:', iconUrl);
+            console.log('🎨 Properties:', props);
             
-            let leafletMarker;
-            if (iconUrl) {
-              try {
-                const customIcon = L.icon({
-                  iconUrl: iconUrl,
+            let icon;
+            
+            // Recréer l'icône selon le type de symbole
+            if (props.isCustom && props.symbolId) {
+              // Symbole personnalisé - chercher l'image dans customSymbols
+              const customSymbol = customSymbols.find(s => s.symbolId === props.symbolId);
+              if (customSymbol?.image) {
+                icon = L.divIcon({
+                  html: `<img src="${customSymbol.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
+                  className: 'custom-image-marker',
                   iconSize: [32, 32],
-                  iconAnchor: [16, 32],
-                  popupAnchor: [0, -32]
+                  iconAnchor: [16, 16]
                 });
-                leafletMarker = L.marker([lat, lng], { icon: customIcon });
-                console.log('✅ Marker créé avec icône personnalisée');
-              } catch (iconError) {
-                console.warn('⚠️ Erreur création icône personnalisée, utilisation icône par défaut:', iconError);
-                leafletMarker = L.marker([lat, lng]);
+                console.log('✅ Icône personnalisée restaurée');
               }
-            } else {
-              leafletMarker = L.marker([lat, lng]);
-              console.log('✅ Marker créé avec icône par défaut');
+            } else if (props.symbol) {
+              // Symbole emoji standard
+              icon = L.divIcon({
+                html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${props.symbol}</div>`,
+                className: 'custom-emoji-marker',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+              });
+              console.log('✅ Icône emoji restaurée:', props.symbol);
             }
             
-            if (layer.properties?.label) {
-              leafletMarker.bindPopup(layer.properties.label);
+            // Créer le marker
+            const leafletMarker = icon 
+              ? L.marker([lat, lng], { icon, draggable: true })
+              : L.marker([lat, lng], { draggable: true });
+            
+            // Recréer le popup si nécessaire
+            if (props.label) {
+              const symbolDisplay = props.isCustom 
+                ? `<div style="font-size: 24px;">${props.symbol || '📍'}</div>`
+                : `<div style="font-size: 24px;">${props.symbol}</div>`;
+              
+              const popupContent = props.note 
+                ? `<div style="min-width: 150px;">
+                     <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
+                     <strong>${props.label}</strong><br/>
+                     <div style="margin-top: 8px; color: #666; font-size: 13px;">${props.note}</div>
+                   </div>`
+                : `<div style="text-align: center;">
+                     <div style="margin-bottom: 5px;">${symbolDisplay}</div>
+                     <strong>${props.label}</strong>
+                   </div>`;
+              
+              leafletMarker.bindPopup(popupContent);
             }
             
             leafletMarker.addTo(map);
