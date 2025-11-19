@@ -62,6 +62,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       layers.forEach((layer, index) => {
         try {
           console.log('🔄 Restauration du layer', index, ':', layer);
+          console.log('🔍 Type du layer:', layer.type);
+          console.log('🔍 Geometry:', layer.geometry);
+          console.log('🔍 Structure complète:', JSON.stringify(layer, null, 2));
           
           if (layer.type === 'marker' && layer.geometry?.coordinates) {
             const [lng, lat] = layer.geometry.coordinates;
