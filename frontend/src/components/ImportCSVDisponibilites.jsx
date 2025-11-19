@@ -392,18 +392,19 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
             <div 
               style={{ 
                 width: '100%',
-                overflowX: 'scroll',
+                overflowX: 'auto',
                 overflowY: 'auto',
                 maxHeight: '400px',
                 border: '1px solid #e5e7eb',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                WebkitOverflowScrolling: 'touch'
               }}
             >
               <table 
                 style={{ 
-                  width: 'auto',
-                  minWidth: '100%',
-                  borderCollapse: 'collapse'
+                  width: 'max-content',
+                  borderCollapse: 'collapse',
+                  tableLayout: 'auto'
                 }}
               >
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f9fafb' }}>
