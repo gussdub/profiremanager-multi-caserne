@@ -366,6 +366,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         );
       }
 
+      console.log('📥 Réponse du serveur après sauvegarde:', response.data);
+      console.log('📥 Layers dans la réponse:', response.data?.layers);
+      
       alert('Plan d\'intervention sauvegardé avec succès! 🎉');
       if (onSave) onSave(response.data);
       if (onClose) onClose();
