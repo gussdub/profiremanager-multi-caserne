@@ -170,7 +170,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             }
             
             leafletMarker.addTo(map);
-            createdMarkers.push(leafletMarker);
+            markersRef.current.push(leafletMarker);
             console.log('✅ Symbol/Marker ajouté à la carte');
           }
           
