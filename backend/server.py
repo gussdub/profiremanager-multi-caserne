@@ -12714,12 +12714,102 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         available_users = pompiers_fonction_sup
                     # Priorité 3: Si aucun des deux, garde reste non assignée (available_users vide)
                 
-                # ÉTAPE 4: Prioriser temps_partiel avant temps_plein
-                # Trier par: 1) type_emploi (temps_partiel first), 2) heures mensuelles, 3) ancienneté
-                available_users.sort(key=lambda u: (
-                    0 if u["type_emploi"] == "temps_partiel" else 1,  # temps_partiel en premier
-                    user_monthly_hours_externes.get(u["id"], 0) if type_garde.get("est_garde_externe", False) else user_monthly_hours_internes.get(u["id"], 0)
+                # ÉTAPE 4: NOUVELLE LOGIQUE D'ATTRIBUTION PAR PRIORITÉ
+                # Séparer les candidats en 4 catégories de priorité
+                
+                # Catégorie 1: Temps partiel DISPONIBLES (ont déclaré une disponibilité)
+                tp_disponibles = []
+                # Catégorie 2: Temps partiel STAND-BY (rien déclaré, ni dispo ni indispo)
+                tp_standby = []
+                # Catégorie 3: Temps plein INCOMPLETS (< heures_max_semaine)
+                tf_incomplets = []
+                # Catégorie 4: Temps plein COMPLETS (≥ heures_max_semaine)
+                tf_complets = []
+                
+                for u in available_users:
+                    if u["type_emploi"] == "temps_partiel":
+                        # Vérifier si a déclaré une disponibilité
+                        has_dispo = (
+                            u["id"] in dispos_lookup and
+                            date_str in dispos_lookup[u["id"]] and
+                            type_garde["id"] in dispos_lookup[u["id"]][date_str]
+                        )
+                        
+                        # Vérifier si a déclaré une indisponibilité (déjà filtré normalement, mais double vérification)
+                        has_indispo = (
+                            u["id"] in indispos_lookup and
+                            date_str in indispos_lookup[u["id"]]
+                        )
+                        
+                        if has_dispo:
+                            tp_disponibles.append(u)
+                        elif not has_indispo:  # Ni dispo ni indispo = stand-by
+                            tp_standby.append(u)
+                        # Si indispo, ne rien faire (exclu)
+                    else:  # temps_plein
+                        # Calculer les heures de la semaine actuelle pour cet utilisateur
+                        heures_semaine_actuelle = 0
+                        for assignation in existing_assignations:
+                            if assignation["user_id"] == u["id"]:
+                                type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
+                                if type_g and not type_g.get("est_garde_externe", False):
+                                    heures_semaine_actuelle += type_g.get("duree_heures", 8)
+                        
+                        heures_max_user = u.get("heures_max_semaine", 40)
+                        
+                        if heures_semaine_actuelle < heures_max_user:
+                            tf_incomplets.append(u)
+                        else:
+                            tf_complets.append(u)
+                
+                # Trier chaque catégorie par équité (heures du mois) puis ancienneté
+                def sort_by_equity_and_seniority(users_list):
+                    if type_garde.get("est_garde_externe", False):
+                        users_list.sort(key=lambda u: (
+                            user_monthly_hours_externes.get(u["id"], 0),  # Équité mensuelle
+                            -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()  # Ancienneté (plus ancien = priorité)
+                        ))
+                    else:
+                        users_list.sort(key=lambda u: (
+                            user_monthly_hours_internes.get(u["id"], 0),  # Équité mensuelle
+                            -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()  # Ancienneté
+                        ))
+                
+                # Fonction helper pour parse_date_flexible
+                def parse_date_flexible(date_str):
+                    try:
+                        return datetime.strptime(date_str, "%Y-%m-%d")
+                    except:
+                        try:
+                            return datetime.strptime(date_str, "%d/%m/%Y")
+                        except:
+                            return datetime(1900, 1, 1)
+                
+                sort_by_equity_and_seniority(tp_disponibles)
+                sort_by_equity_and_seniority(tp_standby)
+                
+                # Pour temps plein incomplets : trier par heures manquantes (plus loin de limite = priorité)
+                tf_incomplets.sort(key=lambda u: (
+                    # Heures manquantes (plus c'est élevé, plus prioritaire)
+                    -(u.get("heures_max_semaine", 40) - sum(
+                        next((t.get("duree_heures", 8) for t in types_garde if t["id"] == a["type_garde_id"]), 0)
+                        for a in existing_assignations 
+                        if a["user_id"] == u["id"] and not next((t.get("est_garde_externe", False) for t in types_garde if t["id"] == a["type_garde_id"]), False)
+                    )),
+                    user_monthly_hours_externes.get(u["id"], 0) if type_garde.get("est_garde_externe", False) else user_monthly_hours_internes.get(u["id"], 0),
+                    -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()
                 ))
+                
+                sort_by_equity_and_seniority(tf_complets)
+                
+                # Reconstruire available_users dans l'ordre de priorité
+                available_users = tp_disponibles + tp_standby + tf_incomplets + tf_complets
+                
+                logging.info(f"📊 [PRIORITÉ] {type_garde['nom']} - {date_str}:")
+                logging.info(f"    TP Disponibles: {len(tp_disponibles)}")
+                logging.info(f"    TP Stand-by: {len(tp_standby)}")
+                logging.info(f"    TF Incomplets: {len(tf_incomplets)}")
+                logging.info(f"    TF Complets: {len(tf_complets)}")
                 
                 # ÉTAPE 5: Ancienneté - among users with same hours and type, prioritize by ancienneté
                 users_with_min_hours = []
