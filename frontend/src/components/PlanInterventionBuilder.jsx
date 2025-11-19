@@ -54,12 +54,24 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
   // Restaurer les layers sur la carte Leaflet
   useEffect(() => {
-    if (!map || layers.length === 0) return;
+    if (!map) return;
     
     console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
     
-    // Stocker les markers créés pour pouvoir les supprimer
-    const createdMarkers = [];
+    // Nettoyer les anciens markers
+    markersRef.current.forEach(marker => {
+      try {
+        if (map.hasLayer(marker)) {
+          map.removeLayer(marker);
+        }
+      } catch (e) {
+        console.log('Marker déjà supprimé');
+      }
+    });
+    markersRef.current = [];
+    
+    // Si pas de layers, on s'arrête là
+    if (layers.length === 0) return;
     
     // Fonction pour créer les markers
     const createMarkers = () => {
