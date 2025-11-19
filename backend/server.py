@@ -12638,15 +12638,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             continue  # Skip si n'accepte pas les gardes externes
                     
                     if user["type_emploi"] == "temps_partiel":
-                        # ⚡ OPTIMIZED: Utiliser le dictionnaire préchargé au lieu d'une requête DB
-                        has_dispo = (
-                            user["id"] in dispos_lookup and
-                            date_str in dispos_lookup[user["id"]] and
-                            type_garde["id"] in dispos_lookup[user["id"]][date_str]
+                        # Vérifier si a déclaré une INDISPONIBILITÉ (exclusion totale)
+                        has_indispo = (
+                            user["id"] in indispos_lookup and
+                            date_str in indispos_lookup[user["id"]]
                         )
                         
-                        if not has_dispo:
-                            continue  # Skip temps partiel si pas de disponibilité déclarée
+                        if has_indispo:
+                            continue  # Skip temps partiel si INDISPONIBLE
+                        
+                        # Note: Les temps partiel sans dispo (stand-by) sont maintenant inclus
+                        # Ils seront triés en priorité 2 dans l'étape 4
                     
                     # Temps plein : éligibles automatiquement pour gardes vacantes (backup)
                     # Note: Les temps plein sont traités après les temps partiel pour priorité
