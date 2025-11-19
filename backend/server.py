@@ -10988,45 +10988,13 @@ async def import_disponibilites_csv(
                 })
                 continue
             
-            # Extraire le nom sans le numéro entre parenthèses
-            # Ex: "Bernard Sébastien (981)" → "Bernard Sébastien"
-            nom_complet = employe_str.split("(")[0].strip()
-            
-            # Essayer de trouver l'utilisateur
-            user_obj = None
-            
-            # Tentative 1: Par numéro d'employé (si présent et fiable)
-            if "(" in employe_str and ")" in employe_str:
-                num_employe = employe_str.split("(")[1].split(")")[0].strip()
-                user_obj = users_by_num.get(num_employe)
-            
-            # Tentative 2: Matching flexible par nom (avec normalisation)
-            if not user_obj and nom_complet:
-                normalized_name = normalize_string(nom_complet)
-                user_obj = users_by_name.get(normalized_name)
-            
-            # Tentative 3: Recherche plus approfondie si toujours pas trouvé
-            if not user_obj and nom_complet:
-                # Essayer de parser le nom en parties
-                parts = nom_complet.split()
-                if len(parts) >= 2:
-                    # Essayer toutes les combinaisons possibles
-                    for i in range(len(parts)):
-                        possible_prenom = " ".join(parts[:i+1])
-                        possible_nom = " ".join(parts[i+1:])
-                        
-                        if possible_nom:
-                            # Chercher avec cette combinaison
-                            test_key = normalize_string(f"{possible_prenom} {possible_nom}")
-                            if test_key in users_by_name:
-                                user_obj = users_by_name[test_key]
-                                break
-                            
-                            # Essayer l'ordre inversé
-                            test_key2 = normalize_string(f"{possible_nom} {possible_prenom}")
-                            if test_key2 in users_by_name:
-                                user_obj = users_by_name[test_key2]
-                                break
+            # Utiliser la fonction de matching intelligent
+            user_obj = find_user_intelligent(
+                search_string=employe_str,
+                users_by_name=users_by_name,
+                users_by_num=users_by_num,
+                numero_field="numero_employe"
+            )
             
             if not user_obj:
                 results["errors"].append({
