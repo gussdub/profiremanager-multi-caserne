@@ -387,18 +387,6 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
                         📍 {batiment?.adresse_civique}, {batiment?.ville}
                       </p>
 
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '1rem', 
-                        fontSize: '0.875rem',
-                        marginTop: '0.75rem'
-                      }}>
-                        <span>💧 {plan.hydrants?.length || 0} hydrants</span>
-                        <span>🚪 {plan.sorties?.length || 0} sorties</span>
-                        <span>⚠️ {plan.matieres_dangereuses?.length || 0} mat. dang.</span>
-                        <span>🚒 {plan.vehicules?.length || 0} véhicules</span>
-                      </div>
-
                       {plan.distance_caserne_km && (
                         <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
                           📏 Distance caserne: {plan.distance_caserne_km.toFixed(2)} km 
