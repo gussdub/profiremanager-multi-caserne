@@ -30,7 +30,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     notes_tactiques: existingPlan?.notes_tactiques || '',
   });
 
-  const [layers, setLayers] = useState([]);
+  const [layers, setLayers] = useState(existingPlan?.layers || []);
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
