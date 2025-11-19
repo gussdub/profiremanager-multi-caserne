@@ -30,16 +30,23 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
     if (!file) return;
     
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.csv') && !fileName.endsWith('.xls') && !fileName.endsWith('.xlsx')) {
-      alert('Seuls les fichiers CSV, XLS et XLSX sont acceptés');
+    
+    // Vérifier l'extension
+    const isCSV = fileName.endsWith('.csv');
+    const isXLS = fileName.endsWith('.xls');
+    const isXLSX = fileName.endsWith('.xlsx');
+    
+    if (!isCSV && !isXLS && !isXLSX) {
+      alert('Seuls les fichiers CSV, XLS et XLSX sont acceptés.\n\nVotre fichier: ' + file.name);
       return;
     }
     
     setCsvFile(file);
     
-    if (fileName.endsWith('.csv')) {
+    if (isCSV) {
       parseCSV(file);
     } else {
+      // Pour XLS et XLSX
       parseExcel(file);
     }
   };
