@@ -19,6 +19,9 @@ L.Icon.Default.mergeOptions({
 });
 
 const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, onSave }) => {
+  console.log('🚀 PlanInterventionBuilder monté avec existingPlan:', existingPlan);
+  console.log('🚀 Layers dans existingPlan au montage:', existingPlan?.layers);
+  
   const [formData, setFormData] = useState({
     titre: existingPlan?.titre || `Plan d'intervention - ${batiment?.nom_etablissement || batiment?.adresse_civique}`,
     description: existingPlan?.description || '',
