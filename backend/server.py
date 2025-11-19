@@ -12474,6 +12474,27 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 dispos_lookup[user_id][date] = {}
             dispos_lookup[user_id][date][type_garde_id] = True
         
+        # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
+        all_indisponibilites = await db.disponibilites.find({
+            "date": {
+                "$gte": semaine_debut,
+                "$lte": semaine_fin
+            },
+            "statut": "indisponible",
+            "tenant_id": tenant.id
+        }).to_list(10000)
+        
+        # Créer un index pour les indisponibilités
+        # Structure: {user_id: {date: True}}
+        indispos_lookup = {}
+        for indispo in all_indisponibilites:
+            user_id = indispo.get("user_id")
+            date = indispo.get("date")
+            
+            if user_id not in indispos_lookup:
+                indispos_lookup[user_id] = {}
+            indispos_lookup[user_id][date] = True
+        
         # Récupérer les paramètres d'équité
         params_planning = await db.parametres_validation_planning.find_one({"tenant_id": tenant.id})
         periode_equite = params_planning.get("periode_equite", "mensuel") if params_planning else "mensuel"
