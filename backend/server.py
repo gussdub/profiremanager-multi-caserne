@@ -6962,6 +6962,11 @@ class ParametresValidationPlanning(BaseModel):
     periode_couverte: str = "mois_suivant"  # mois_suivant, mois_en_cours
     envoi_automatique: bool = True  # Activer/désactiver l'envoi automatique
     derniere_notification: Optional[str] = None  # Dernière exécution (ISO datetime)
+    
+    # Paramètres d'équité des gardes
+    periode_equite: str = "mensuel"  # hebdomadaire, bi-hebdomadaire, mensuel, personnalise
+    periode_equite_jours: int = 30  # Nombre de jours pour période personnalisée
+    
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # ==================== CONFIGURATION IMPORTS CSV ====================
