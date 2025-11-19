@@ -2347,6 +2347,30 @@ const Parametres = ({ user, tenantSlug }) => {
                 />
               </div>
 
+              {/* Import Disponibilités */}
+              <div className="import-section">
+                <h3 style={{ 
+                  fontSize: '1.25rem', 
+                  fontWeight: '600', 
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  📅 Import Disponibilités
+                </h3>
+                <ImportCSVDisponibilites 
+                  tenantSlug={tenantSlug}
+                  onImportComplete={(results) => {
+                    toast({
+                      title: "Import terminé",
+                      description: `${results.created} créées, ${results.updated} mises à jour, ${results.errors?.length || 0} erreurs`,
+                      variant: results.errors?.length > 0 ? "warning" : "success"
+                    });
+                  }}
+                />
+              </div>
+
               {/* Note d'information */}
               <div className="imports-info-section">
                 <div className="info-card" style={{
