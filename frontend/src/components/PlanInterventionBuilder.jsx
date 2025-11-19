@@ -360,7 +360,24 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     } catch (error) {
       console.error('❌ Erreur sauvegarde plan:', error);
       console.error('Détails:', error.response?.data);
-      alert(`Erreur lors de la sauvegarde du plan: ${error.response?.data?.detail || error.message}`);
+      
+      // Gérer les différents types de détails d'erreur
+      let errorMessage = 'Erreur lors de la sauvegarde du plan';
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (Array.isArray(detail)) {
+          // Erreur de validation Pydantic
+          errorMessage += ':\n' + detail.map(err => `- ${err.loc?.join('.') || 'champ'}: ${err.msg}`).join('\n');
+        } else if (typeof detail === 'object') {
+          errorMessage += ': ' + JSON.stringify(detail);
+        } else {
+          errorMessage += ': ' + detail;
+        }
+      } else {
+        errorMessage += ': ' + error.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
