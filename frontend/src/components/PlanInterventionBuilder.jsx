@@ -36,6 +36,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [layers, setLayers] = useState([]);
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
+  const markersRef = useRef([]);
 
   // Charger les layers depuis existingPlan au montage ou quand il change
   useEffect(() => {
