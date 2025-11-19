@@ -213,14 +213,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           console.error('❌ Erreur lors de la restauration du layer', index, ':', error);
         }
       });
-    };
+    }, 100);
     
-    // Attendre que la carte soit prête avant de créer les markers
-    const timeoutId = setTimeout(createMarkers, 500);
-    
-    // Cleanup : nettoyer le timeout seulement
+    // Cleanup
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [map, layers, customSymbols]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
