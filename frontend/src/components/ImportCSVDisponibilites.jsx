@@ -107,21 +107,78 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
 
   const parseExcel = async (file) => {
     try {
-      // Pour Excel, on va utiliser FileReader pour lire les données binaires
-      // puis les convertir en CSV côté backend
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        const arrayBuffer = e.target.result;
-        const bytes = new Uint8Array(arrayBuffer);
-        
-        // On pourrait utiliser une bibliothèque comme xlsx ici
-        // Mais pour simplifier, on demande à l'utilisateur d'exporter en CSV
-        alert('Pour les fichiers Excel, veuillez d\'abord les sauvegarder en format CSV.\n\nDans Excel: Fichier > Enregistrer sous > Format: CSV');
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Prendre la première feuille
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Convertir en JSON
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+          
+          if (jsonData.length < 2) {
+            throw new Error("Le fichier doit contenir au moins un en-tête et une ligne");
+          }
+          
+          // Extraire les headers
+          const headers = jsonData[0].map(h => String(h).trim());
+          setCsvHeaders(headers);
+          
+          // Extraire les données
+          const data = jsonData.slice(1)
+            .filter(row => row.some(cell => cell !== '')) // Ignorer les lignes vides
+            .map((row, index) => {
+              const rowData = { _index: index };
+              headers.forEach((header, i) => {
+                // Gérer les dates Excel
+                let value = row[i];
+                if (value !== undefined && value !== null) {
+                  // Si c'est un nombre et qu'il ressemble à une date Excel
+                  if (typeof value === 'number' && value > 40000 && value < 60000) {
+                    // Convertir le nombre Excel en date
+                    const excelDate = XLSX.SSF.parse_date_code(value);
+                    value = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')} ${String(excelDate.H || 0).padStart(2, '0')}:${String(excelDate.M || 0).padStart(2, '0')}`;
+                  }
+                }
+                rowData[header] = String(value || '').trim();
+              });
+              return rowData;
+            });
+          
+          setCsvData(data);
+          
+          // Auto-mapping si les colonnes correspondent
+          const autoMapping = {};
+          availableFields.forEach(field => {
+            const matchingHeader = headers.find(h => 
+              h.toLowerCase() === field.key.toLowerCase() ||
+              h.toLowerCase().includes(field.key.toLowerCase())
+            );
+            if (matchingHeader) {
+              autoMapping[field.key] = matchingHeader;
+            }
+          });
+          setColumnMapping(autoMapping);
+          
+          setStep(2);
+        } catch (error) {
+          console.error('Erreur parse Excel:', error);
+          alert('Erreur lors de l\'analyse du fichier Excel: ' + error.message);
+        }
       };
+      
+      reader.onerror = () => {
+        alert('Erreur lors de la lecture du fichier');
+      };
+      
       reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error('Erreur parse Excel:', error);
-      alert('Erreur lors de la lecture du fichier Excel');
+      alert('Erreur lors de la lecture du fichier Excel: ' + error.message);
     }
   };
 
