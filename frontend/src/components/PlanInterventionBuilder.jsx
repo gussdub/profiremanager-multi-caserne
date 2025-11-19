@@ -81,8 +81,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     // Si pas de layers, on s'arrête là
     if (layers.length === 0) return;
     
-    // Fonction pour créer les markers
+    
+    // Fonction pour créer les markers (commentée temporairement)
     const createMarkers = () => {
+      /*
       layers.forEach((layer, index) => {
         try {
           console.log('🔄 Restauration du layer', index, ':', layer);
