@@ -12480,6 +12480,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         periode_equite_jours = params_planning.get("periode_equite_jours", 30) if params_planning else 30
         
         # Calculer la date de début de la période d'équité
+        start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
         date_debut_periode = start_date
         if periode_equite == "hebdomadaire":
             # Début de la semaine (lundi)
