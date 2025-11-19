@@ -3563,11 +3563,32 @@ async def import_users_csv(
                 })
                 continue
             
-            # Vérifier si l'utilisateur existe déjà (par email)
-            existing_user = await db.users.find_one({
-                "email": user_data["email"],
-                "tenant_id": tenant.id
-            })
+            # Vérifier si l'utilisateur existe déjà (stratégie multi-niveaux)
+            existing_user = None
+            
+            # Niveau 1 : Par email (priorité haute - identifiant unique)
+            if user_data.get("email"):
+                email_normalized = user_data["email"].lower().strip()
+                existing_user = users_by_email.get(email_normalized)
+            
+            # Niveau 2 : Par numéro d'employé (si email absent ou pas trouvé)
+            if not existing_user and user_data.get("numero_employe"):
+                num_employe = user_data["numero_employe"].strip()
+                existing_user = users_by_num.get(num_employe)
+            
+            # Niveau 3 : Par nom complet avec matching intelligent (fallback)
+            if not existing_user and user_data.get("prenom") and user_data.get("nom"):
+                # Construire la chaîne de recherche
+                search_string = f"{user_data['prenom']} {user_data['nom']}"
+                if user_data.get("numero_employe"):
+                    search_string += f" ({user_data['numero_employe']})"
+                
+                existing_user = find_user_intelligent(
+                    search_string=search_string,
+                    users_by_name=users_by_name,
+                    users_by_num=users_by_num,
+                    numero_field="numero_employe"
+                )
             
             if existing_user:
                 results["duplicates"].append({
