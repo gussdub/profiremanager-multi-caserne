@@ -385,6 +385,28 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     }
   };
 
+  const handleDeletePlan = async () => {
+    if (!window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer définitivement ce plan d\'intervention ?')) return;
+
+    try {
+      setSaving(true);
+      const token = getTenantToken();
+      
+      await axios.delete(
+        buildApiUrl(tenantSlug, `/prevention/plans-intervention/${existingPlan.id}`),
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert('Plan d\'intervention supprimé avec succès! 🗑️');
+      if (onClose) onClose();
+    } catch (error) {
+      console.error('❌ Erreur suppression plan:', error);
+      alert(`Erreur lors de la suppression: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmitForValidation = async () => {
     if (!window.confirm('Soumettre ce plan pour validation?')) return;
     
