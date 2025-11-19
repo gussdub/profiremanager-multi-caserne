@@ -192,20 +192,23 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           console.error('❌ Erreur lors de la restauration du layer', index, ':', error);
         }
       });
-      
-      // Cleanup function stored for later
-      return () => {
-        createdMarkers.forEach(marker => {
-          if (map && map.hasLayer(marker)) {
-            map.removeLayer(marker);
-          }
-        });
-      };
-    }, 500);
+    };
+    
+    // Attendre que la carte soit prête avant de créer les markers
+    const timeoutId = setTimeout(createMarkers, 500);
     
     // Cleanup : nettoyer le timeout et les markers
     return () => {
       clearTimeout(timeoutId);
+      createdMarkers.forEach(marker => {
+        try {
+          if (map && map.hasLayer(marker)) {
+            map.removeLayer(marker);
+          }
+        } catch (e) {
+          console.log('Marker déjà supprimé');
+        }
+      });
     };
   }, [map, layers, customSymbols]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
