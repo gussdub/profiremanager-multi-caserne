@@ -1576,6 +1576,44 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 )}
 
+                <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #e2e8f0' }} />
+
+                <h3 style={{ marginBottom: '15px', color: '#1e293b', fontSize: '16px' }}>⚖️ Équité des Gardes</h3>
+                
+                <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                    Période d'équité
+                  </label>
+                  <select 
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                    value={validationParams.periode_equite || 'mensuel'}
+                    onChange={(e) => handleValidationChange('periode_equite', e.target.value)}
+                  >
+                    <option value="hebdomadaire">Hebdomadaire (7 jours)</option>
+                    <option value="bi-hebdomadaire">Bi-hebdomadaire (14 jours)</option>
+                    <option value="mensuel">Mensuelle (mois en cours)</option>
+                    <option value="personnalise">Personnalisée</option>
+                  </select>
+                  <small style={{ color: '#64748b' }}>Période sur laquelle calculer l'équité de distribution des gardes</small>
+                </div>
+
+                {validationParams.periode_equite === 'personnalise' && (
+                  <div className="param-card" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                      Nombre de jours
+                    </label>
+                    <input 
+                      type="number"
+                      min="1"
+                      max="365"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      value={validationParams.periode_equite_jours || 30}
+                      onChange={(e) => handleValidationChange('periode_equite_jours', parseInt(e.target.value))}
+                    />
+                    <small style={{ color: '#64748b' }}>Période glissante en jours (ex: 30 = dernier mois)</small>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <Button 
                     variant="outline"
