@@ -18432,15 +18432,16 @@ async def export_plan_intervention_pdf(
     # Contenu du PDF
     elements = []
     
-    # En-tête
+    # En-tête avec titre du plan
     elements.append(Paragraph(f"🔥 Plan d'Intervention", title_style))
-    elements.append(Paragraph(f"<b>{plan.get('nom_plan', 'Sans titre')}</b>", heading_style))
+    plan_title = plan.get('titre') or plan.get('nom_plan') or f"Plan - {batiment.get('nom_etablissement', 'Sans titre') if batiment else 'Sans titre'}"
+    elements.append(Paragraph(f"<b>{plan_title}</b>", heading_style))
     elements.append(Spacer(1, 0.2*inch))
     
     # Informations générales
     info_data = [
-        ['Version:', plan.get('version', '1.0')],
-        ['Statut:', plan.get('statut', 'brouillon').capitalize()],
+        ['Numéro de plan:', plan.get('numero_plan', 'N/A')],
+        ['Statut:', plan.get('statut', 'brouillon').replace('_', ' ').capitalize()],
         ['Date de création:', plan.get('created_at', '')[:10] if plan.get('created_at') else 'N/A'],
     ]
     
@@ -18448,7 +18449,10 @@ async def export_plan_intervention_pdf(
         info_data.append(['Date de validation:', plan['date_validation'][:10] if isinstance(plan['date_validation'], str) else 'N/A'])
     
     if batiment:
-        info_data.append(['Bâtiment:', f"{batiment.get('nom_etablissement', 'N/A')} - {batiment.get('adresse_civique', 'N/A')}"])
+        info_data.append(['Bâtiment:', f"{batiment.get('nom_etablissement', 'N/A')}"])
+        info_data.append(['Adresse:', batiment.get('adresse_civique', 'N/A')])
+        if batiment.get('type_batiment'):
+            info_data.append(['Type de bâtiment:', batiment['type_batiment']])
     
     info_table = Table(info_data, colWidths=[2*inch, 4*inch])
     info_table.setStyle(TableStyle([
@@ -18465,56 +18469,99 @@ async def export_plan_intervention_pdf(
     elements.append(Spacer(1, 0.3*inch))
     
     # Description
-    if plan.get('description'):
+    description = plan.get('description') or plan.get('notes_generales')
+    if description:
         elements.append(Paragraph("<b>📋 Description</b>", heading_style))
-        elements.append(Paragraph(plan['description'], normal_style))
+        elements.append(Paragraph(description, normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
-    # Éléments du plan
-    if plan.get('elements') and len(plan['elements']) > 0:
-        elements.append(Paragraph("<b>📍 Éléments du Plan</b>", heading_style))
+    # Notes Tactiques
+    notes_tactiques = plan.get('notes_tactiques') or plan.get('instructions_particulieres')
+    if notes_tactiques:
+        elements.append(Paragraph("<b>⚠️ Notes Tactiques</b>", heading_style))
+        elements.append(Paragraph(notes_tactiques, normal_style))
+        elements.append(Spacer(1, 0.2*inch))
+    
+    # Symboles/Layers sur la carte
+    layers = plan.get('layers', [])
+    if layers and len(layers) > 0:
+        elements.append(Paragraph(f"<b>🗺️ Symboles sur la Carte ({len(layers)} éléments)</b>", heading_style))
         
-        elem_data = [['Type', 'Étage', 'Description']]
-        for elem in plan['elements']:
-            elem_data.append([
-                elem.get('type', 'N/A'),
-                elem.get('etage', 'N/A'),
-                elem.get('description', '-')[:50] + '...' if len(elem.get('description', '')) > 50 else elem.get('description', '-')
+        symbol_data = [['#', 'Type', 'Label', 'Note']]
+        for idx, layer in enumerate(layers, 1):
+            props = layer.get('properties', {})
+            symbol_data.append([
+                str(idx),
+                props.get('symbol', '📍'),
+                props.get('label', 'N/A'),
+                props.get('note', '-')[:40] + '...' if len(props.get('note', '')) > 40 else props.get('note', '-')
             ])
         
-        elem_table = Table(elem_data, colWidths=[1.5*inch, 1*inch, 3.5*inch])
-        elem_table.setStyle(TableStyle([
+        symbol_table = Table(symbol_data, colWidths=[0.5*inch, 1*inch, 2*inch, 2.5*inch])
+        symbol_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
             ('TOPPADDING', (0, 0), (-1, 0), 10),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
             ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')]),
         ]))
-        elements.append(elem_table)
+        elements.append(symbol_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Points d'accès
+    points_acces = plan.get('points_acces', [])
+    if points_acces and len(points_acces) > 0:
+        elements.append(Paragraph(f"<b>📍 Points d'Accès ({len(points_acces)})</b>", heading_style))
+        for idx, point in enumerate(points_acces, 1):
+            elements.append(Paragraph(f"{idx}. {point.get('description', 'N/A')}", normal_style))
+        elements.append(Spacer(1, 0.2*inch))
+    else:
+        elements.append(Paragraph("<b>📍 Points d'Accès</b>", heading_style))
+        elements.append(Paragraph("Aucun point d'accès défini", normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
-    # Parcours d'évacuation
-    if plan.get('parcours_evacuation') and len(plan['parcours_evacuation']) > 0:
-        elements.append(Paragraph("<b>🚪 Parcours d'Évacuation</b>", heading_style))
-        parcours_text = f"<b>{len(plan['parcours_evacuation'])} parcours définis</b>"
-        elements.append(Paragraph(parcours_text, normal_style))
+    # Zones dangereuses
+    zones_danger = plan.get('zones_dangereuses', []) or plan.get('zones_danger', [])
+    if zones_danger and len(zones_danger) > 0:
+        elements.append(Paragraph(f"<b>⚠️ Zones Dangereuses ({len(zones_danger)})</b>", heading_style))
+        for idx, zone in enumerate(zones_danger, 1):
+            elements.append(Paragraph(f"{idx}. {zone.get('description', 'N/A')}", normal_style))
+        elements.append(Spacer(1, 0.2*inch))
+    else:
+        elements.append(Paragraph("<b>⚠️ Zones Dangereuses</b>", heading_style))
+        elements.append(Paragraph("Aucune zone dangereuse identifiée", normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
-    # Notes
-    if plan.get('notes'):
-        elements.append(Paragraph("<b>📝 Notes</b>", heading_style))
-        elements.append(Paragraph(plan['notes'], normal_style))
+    # Équipements
+    equipements = plan.get('equipements', [])
+    if equipements and len(equipements) > 0:
+        elements.append(Paragraph(f"<b>🔧 Équipements ({len(equipements)})</b>", heading_style))
+        for idx, equip in enumerate(equipements, 1):
+            elements.append(Paragraph(f"{idx}. {equip.get('description', 'N/A')}", normal_style))
+        elements.append(Spacer(1, 0.2*inch))
+    else:
+        elements.append(Paragraph("<b>🔧 Équipements</b>", heading_style))
+        elements.append(Paragraph("Aucun équipement spécifique", normal_style))
+        elements.append(Spacer(1, 0.2*inch))
+    
+    # Risques identifiés
+    risques = plan.get('risques_identifies', [])
+    if risques and len(risques) > 0:
+        elements.append(Paragraph(f"<b>🔥 Risques Identifiés ({len(risques)})</b>", heading_style))
+        for idx, risque in enumerate(risques, 1):
+            elements.append(Paragraph(f"{idx}. {risque.get('description', 'N/A')}", normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
     # Commentaires de validation
     if plan.get('commentaires_validation'):
         elements.append(Paragraph("<b>✅ Commentaires de Validation</b>", heading_style))
         elements.append(Paragraph(plan['commentaires_validation'], normal_style))
+        elements.append(Spacer(1, 0.2*inch))
     
     # Pied de page
     elements.append(Spacer(1, 0.5*inch))
