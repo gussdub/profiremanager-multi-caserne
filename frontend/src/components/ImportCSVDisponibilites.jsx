@@ -389,29 +389,63 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               </p>
             </div>
             
-            <div className="border rounded-lg" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto' }}>
-              <table style={{ width: 'max-content', minWidth: '100%' }} className="divide-y divide-gray-200">
-                <thead className="bg-gray-50" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+            <div 
+              style={{ 
+                width: '100%',
+                overflowX: 'scroll',
+                overflowY: 'auto',
+                maxHeight: '400px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+            >
+              <table 
+                style={{ 
+                  width: 'auto',
+                  minWidth: '100%',
+                  borderCollapse: 'collapse'
+                }}
+              >
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f9fafb' }}>
                   <tr>
                     {availableFields.map(field => (
                       <th 
-                        key={field.key} 
-                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-                        style={{ minWidth: '180px', whiteSpace: 'nowrap', backgroundColor: '#f9fafb' }}
+                        key={field.key}
+                        style={{
+                          padding: '12px',
+                          textAlign: 'left',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#6b7280',
+                          textTransform: 'uppercase',
+                          whiteSpace: 'nowrap',
+                          minWidth: '200px',
+                          borderBottom: '1px solid #e5e7eb',
+                          backgroundColor: '#f9fafb'
+                        }}
                       >
                         {field.label}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {previewData.map((row, idx) => (
-                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                    <tr 
+                      key={idx}
+                      style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}
+                    >
                       {availableFields.map(field => (
                         <td 
-                          key={field.key} 
-                          className="px-3 py-2 text-sm text-gray-900"
-                          style={{ minWidth: '180px', whiteSpace: 'nowrap' }}
+                          key={field.key}
+                          style={{
+                            padding: '12px',
+                            fontSize: '14px',
+                            color: '#111827',
+                            whiteSpace: 'nowrap',
+                            minWidth: '200px',
+                            borderBottom: '1px solid #f3f4f6'
+                          }}
                         >
                           {row[field.key] || '-'}
                         </td>
@@ -422,8 +456,16 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               </table>
             </div>
             
-            <div className="text-sm text-gray-600 mt-2">
-              💡 <strong>Astuce :</strong> Faites défiler horizontalement pour voir toutes les colonnes →
+            <div style={{ 
+              marginTop: '12px', 
+              padding: '8px 12px',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: '#1e40af'
+            }}>
+              💡 <strong>Astuce :</strong> Utilisez la barre de défilement horizontale ci-dessus pour voir toutes les colonnes (6 colonnes au total)
             </div>
             
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
