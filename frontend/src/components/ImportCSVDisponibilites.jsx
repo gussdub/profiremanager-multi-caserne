@@ -222,11 +222,16 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
       });
       
       // Envoyer au backend
+      const token = getTenantToken();
+      if (!token) {
+        throw new Error('Vous devez être connecté pour importer des disponibilités');
+      }
+      
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/disponibilites/import-csv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ disponibilites })
       });
