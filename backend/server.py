@@ -15196,6 +15196,11 @@ async def import_epis_csv(
         "duplicates": []
     }
     
+    # Précharger les utilisateurs pour matching intelligent
+    users_list = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    users_by_name = create_user_matching_index(users_list)
+    users_by_num = {u.get("numero_employe"): u for u in users_list if u.get("numero_employe")}
+    
     for index, epi_data in enumerate(epis):
         try:
             # Validation des champs obligatoires
