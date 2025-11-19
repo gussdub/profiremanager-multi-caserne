@@ -12474,13 +12474,45 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 dispos_lookup[user_id][date] = {}
             dispos_lookup[user_id][date][type_garde_id] = True
         
-        # Calculate monthly hours for each user (séparé interne/externe)
+        # Récupérer les paramètres d'équité
+        params_planning = await db.parametres_validation_planning.find_one({"tenant_id": tenant.id})
+        periode_equite = params_planning.get("periode_equite", "mensuel") if params_planning else "mensuel"
+        periode_equite_jours = params_planning.get("periode_equite_jours", 30) if params_planning else 30
+        
+        # Calculer la date de début de la période d'équité
+        date_debut_periode = start_date
+        if periode_equite == "hebdomadaire":
+            # Début de la semaine (lundi)
+            jours_depuis_lundi = date_debut_periode.weekday()
+            date_debut_periode = date_debut_periode - timedelta(days=jours_depuis_lundi)
+        elif periode_equite == "bi-hebdomadaire":
+            # Début de la bi-semaine (14 jours glissants)
+            date_debut_periode = start_date - timedelta(days=14)
+        elif periode_equite == "mensuel":
+            # Début du mois
+            date_debut_periode = date_debut_periode.replace(day=1)
+        elif periode_equite == "personnalise":
+            # Période personnalisée en jours
+            date_debut_periode = start_date - timedelta(days=periode_equite_jours)
+        
+        logging.info(f"📊 [ÉQUITÉ] Période: {periode_equite}, Début: {date_debut_periode}, Jours: {periode_equite_jours if periode_equite == 'personnalise' else 'N/A'}")
+        
+        # Récupérer les assignations de la période d'équité
+        assignations_periode = await db.assignations_gardes.find({
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": date_debut_periode.strftime("%Y-%m-%d"),
+                "$lt": end_date.strftime("%Y-%m-%d")
+            }
+        }).to_list(length=None)
+        
+        # Calculate hours for each user based on equity period (séparé interne/externe)
         user_monthly_hours_internes = {}
         user_monthly_hours_externes = {}
         for user in users:
             user_hours_internes = 0
             user_hours_externes = 0
-            for assignation in monthly_assignations:
+            for assignation in assignations_periode:
                 if assignation["user_id"] == user["id"]:
                     # Find type garde to get duration
                     type_garde = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
@@ -12493,6 +12525,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             user_hours_internes += duree
             user_monthly_hours_internes[user["id"]] = user_hours_internes
             user_monthly_hours_externes[user["id"]] = user_hours_externes
+        
+        logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
         # Initialiser la liste des nouvelles assignations
         nouvelles_assignations = []
