@@ -10813,6 +10813,147 @@ async def update_user_disponibilites(tenant_slug: str, user_id: str, disponibili
     return {"message": f"Disponibilités mises à jour avec succès ({len(disponibilites)} entrées)"}
 
 
+@api_router.post("/{tenant_slug}/disponibilites/import-csv")
+async def import_disponibilites_csv(
+    tenant_slug: str,
+    disponibilites_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Import en masse de disponibilités depuis un CSV/XLS"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    disponibilites = disponibilites_data.get("disponibilites", [])
+    if not disponibilites:
+        raise HTTPException(status_code=400, detail="Aucune disponibilité à importer")
+    
+    results = {
+        "total": len(disponibilites),
+        "created": 0,
+        "updated": 0,
+        "errors": [],
+        "skipped": 0
+    }
+    
+    # Précharger les utilisateurs et types de garde pour optimisation
+    users_list = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    users_by_num = {u.get("numero_employe"): u for u in users_list if u.get("numero_employe")}
+    users_by_name = {f"{u.get('prenom', '')} {u.get('nom', '')}".strip().lower(): u for u in users_list}
+    
+    types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+    types_garde_by_name = {tg.get("nom", "").strip().lower(): tg for tg in types_garde_list}
+    
+    for index, dispo_data in enumerate(disponibilites):
+        try:
+            # 1. Trouver l'utilisateur
+            employe_str = dispo_data.get("Employé", "").strip()
+            if not employe_str:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": "Employé manquant"
+                })
+                continue
+            
+            # Extraire le numéro d'employé entre parenthèses (ex: "(981)")
+            user_obj = None
+            if "(" in employe_str and ")" in employe_str:
+                num_employe = employe_str.split("(")[1].split(")")[0].strip()
+                user_obj = users_by_num.get(num_employe)
+            
+            # Si pas trouvé par numéro, chercher par nom
+            if not user_obj:
+                nom_complet = employe_str.split("(")[0].strip().lower()
+                user_obj = users_by_name.get(nom_complet)
+            
+            if not user_obj:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": f"Employé non trouvé: {employe_str}"
+                })
+                continue
+            
+            # 2. Parser les dates/heures
+            debut_str = str(dispo_data.get("Début", "")).strip()
+            fin_str = str(dispo_data.get("Fin", "")).strip()
+            
+            if not debut_str or not fin_str:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": "Date/heure de début ou fin manquante"
+                })
+                continue
+            
+            try:
+                # Parser les dates/heures (format: "2025-12-01 06:00")
+                from datetime import datetime as dt
+                debut_dt = dt.strptime(debut_str, "%Y-%m-%d %H:%M")
+                fin_dt = dt.strptime(fin_str, "%Y-%m-%d %H:%M")
+                
+                date_str = debut_dt.strftime("%Y-%m-%d")
+                heure_debut = debut_dt.strftime("%H:%M")
+                heure_fin = fin_dt.strftime("%H:%M")
+                
+            except ValueError as e:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": f"Format de date/heure invalide: {e}"
+                })
+                continue
+            
+            # 3. Mapper la sélection au statut
+            selection = dispo_data.get("Sélection", "").strip()
+            statut = "disponible" if selection.lower() == "disponible" else "indisponible"
+            
+            # 4. Trouver le type de garde (optionnel)
+            type_garde_id = None
+            quart_str = dispo_data.get("Quart", "").strip().lower()
+            if quart_str:
+                type_garde_obj = types_garde_by_name.get(quart_str)
+                if type_garde_obj:
+                    type_garde_id = type_garde_obj.get("id")
+            
+            # 5. Vérifier si une disponibilité existe déjà
+            existing = await db.disponibilites.find_one({
+                "tenant_id": tenant.id,
+                "user_id": user_obj["id"],
+                "date": date_str,
+                "heure_debut": heure_debut,
+                "heure_fin": heure_fin
+            })
+            
+            dispo_obj = Disponibilite(
+                tenant_id=tenant.id,
+                user_id=user_obj["id"],
+                date=date_str,
+                heure_debut=heure_debut,
+                heure_fin=heure_fin,
+                statut=statut,
+                type_garde_id=type_garde_id,
+                origine="import_csv"
+            )
+            
+            if existing:
+                # Mettre à jour
+                await db.disponibilites.update_one(
+                    {"id": existing["id"]},
+                    {"$set": dispo_obj.dict()}
+                )
+                results["updated"] += 1
+            else:
+                # Créer nouveau
+                await db.disponibilites.insert_one(dispo_obj.dict())
+                results["created"] += 1
+                
+        except Exception as e:
+            results["errors"].append({
+                "ligne": index + 2,
+                "erreur": str(e)
+            })
+    
+    return results
+
 
 # ===== EXPORTS DISPONIBILITES =====
 
