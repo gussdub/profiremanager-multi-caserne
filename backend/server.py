@@ -8943,6 +8943,7 @@ class PlanInterventionCreate(BaseModel):
 
 class PlanInterventionUpdate(BaseModel):
     nom: Optional[str] = None
+    layers: Optional[List[Dict[str, Any]]] = None  # Layers GeoJSON du builder
     hydrants: Optional[List[HydrantElement]] = None
     sorties: Optional[List[SortieElement]] = None
     matieres_dangereuses: Optional[List[MatiereDangereuse]] = None
