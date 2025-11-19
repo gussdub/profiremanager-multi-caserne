@@ -332,6 +332,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       const planData = {
         ...formData,
         batiment_id: batiment.id,
+        centre_lat: batiment.latitude || 0,
+        centre_lng: batiment.longitude || 0,
         layers: cleanLayers
       };
 
