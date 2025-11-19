@@ -71,6 +71,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       return;
     }
     
+    // 🧹 NETTOYER les markers existants avant d'en créer de nouveaux
+    if (markersRef.current && markersRef.current.length > 0) {
+      markersRef.current.forEach(marker => {
+        if (map.hasLayer(marker)) {
+          map.removeLayer(marker);
+        }
+      });
+      markersRef.current = [];
+      console.log('🧹 Markers précédents nettoyés');
+    }
+    
     if (!layers || layers.length === 0) {
       console.log('⚠️ Aucun layer à restaurer');
       return;
