@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { getTenantToken } from '../utils/api';
 
 const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
   const [step, setStep] = useState(1);
