@@ -299,7 +299,6 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                 <Input
                   id="csv-upload"
                   type="file"
-                  accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
