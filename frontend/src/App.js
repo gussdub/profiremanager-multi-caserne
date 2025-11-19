@@ -14169,12 +14169,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   >
                     <option value="semaine">Semaine courante</option>
                     <option value="mois">Mois courant</option>
+                    <option value="mois_prochain">Mois prochain</option>
                     <option value="annee">Année courante</option>
                     <option value="personnalisee">Période personnalisée</option>
                   </select>
                   <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
                     {reinitConfig.periode === 'semaine' && 'Du lundi au dimanche de la semaine en cours'}
                     {reinitConfig.periode === 'mois' && 'Du 1er au dernier jour du mois en cours'}
+                    {reinitConfig.periode === 'mois_prochain' && 'Du 1er au dernier jour du mois prochain'}
                     {reinitConfig.periode === 'annee' && 'Du 1er janvier au 31 décembre de l\'année en cours'}
                     {reinitConfig.periode === 'personnalisee' && 'Sélectionnez une plage de dates personnalisée (max 1 an)'}
                   </small>
