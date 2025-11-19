@@ -117,9 +117,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             
             // Recréer le popup si nécessaire
             if (props.label) {
-              const symbolDisplay = props.isCustom 
-                ? `<div style="font-size: 24px;">${props.symbol || '📍'}</div>`
-                : `<div style="font-size: 24px;">${props.symbol}</div>`;
+              const symbolDisplay = props.isCustom && props.image
+                ? `<img src="${props.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
+                : `<div style="font-size: 24px;">${props.symbol || '📍'}</div>`;
               
               const popupContent = props.note 
                 ? `<div style="min-width: 150px;">
