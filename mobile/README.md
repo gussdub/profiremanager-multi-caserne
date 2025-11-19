@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://geosymbol.preview.emergentagent.com
+- **URL** : https://firedeptassets.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://geosymbol.preview.emergentagent.com"
+  "apiUrl": "https://firedeptassets.preview.emergentagent.com"
 }
 ```
 
