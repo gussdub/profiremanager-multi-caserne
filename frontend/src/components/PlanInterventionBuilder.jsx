@@ -221,15 +221,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       }
     };
   }, [map, layers, customSymbols]);
-  const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
-  const [showSymbolPalette, setShowSymbolPalette] = useState(false);
-  const [selectedSymbol, setSelectedSymbol] = useState(null);
-  const [customSymbols, setCustomSymbols] = useState([]);
-  const [showAddSymbolModal, setShowAddSymbolModal] = useState(false);
-  const [showEditSymbolModal, setShowEditSymbolModal] = useState(false);
-  const [symbolToEdit, setSymbolToEdit] = useState(null);
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-  const [symbolToDelete, setSymbolToDelete] = useState(null);
 
   // Palette de symboles pour les plans d'intervention
   const symbolCategories = {
