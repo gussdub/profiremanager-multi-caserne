@@ -1002,6 +1002,23 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                     🛰️ Satellite
                   </button>
                 </div>
+
+                {/* Aide pour supprimer les symboles */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  left: '10px',
+                  zIndex: 1000,
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  fontSize: '12px',
+                  color: '#666',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  💡 <strong>Astuce :</strong> Clic droit sur un symbole pour le supprimer
+                </div>
                 <MapContainer
                   center={center}
                   zoom={18}
