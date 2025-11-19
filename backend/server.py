@@ -12811,29 +12811,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 logging.info(f"    TF Incomplets: {len(tf_incomplets)}")
                 logging.info(f"    TF Complets: {len(tf_complets)}")
                 
-                # ÉTAPE 5: Ancienneté - among users with same hours and type, prioritize by ancienneté
-                users_with_min_hours = []
-                if available_users:  # Vérification que available_users n'est pas vide
-                    if type_garde.get("est_garde_externe", False):
-                        min_hours = user_monthly_hours_externes.get(available_users[0]["id"], 0)
-                        users_with_min_hours = [u for u in available_users if user_monthly_hours_externes.get(u["id"], 0) == min_hours]
-                    else:
-                        min_hours = user_monthly_hours_internes.get(available_users[0]["id"], 0)
-                        users_with_min_hours = [u for u in available_users if user_monthly_hours_internes.get(u["id"], 0) == min_hours]
-                
-                if len(users_with_min_hours) > 1:
-                    # Sort by ancienneté (date_embauche) - oldest first
-                    # Gérer les deux formats de date possibles (ISO et français)
-                    def parse_date_flexible(date_str):
-                        try:
-                            return datetime.strptime(date_str, "%Y-%m-%d")
-                        except:
-                            try:
-                                return datetime.strptime(date_str, "%d/%m/%Y")
-                            except:
-                                return datetime(1900, 1, 1)  # Date par défaut si parsing échoue
-                    
-                    users_with_min_hours.sort(key=lambda u: parse_date_flexible(u.get("date_embauche", "1900-01-01")))
+                # ÉTAPE 5: Les candidats sont déjà triés par priorité, équité et ancienneté
+                # Utiliser directement available_users
+                users_with_min_hours = available_users  # Déjà triés correctement
                 
                 # Assigner autant de pompiers que nécessaire pour remplir la garde
                 pompiers_assignes_cette_iteration = 0
