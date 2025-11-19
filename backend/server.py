@@ -3628,7 +3628,7 @@ async def update_mon_profil(
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour profil: {str(e)}")
 
 @api_router.put("/{tenant_slug}/users/{user_id}", response_model=User)
-async def update_user(tenant_slug: str, user_id: str, user_update: UserCreate, current_user: User = Depends(get_current_user)):
+async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -3640,22 +3640,23 @@ async def update_user(tenant_slug: str, user_id: str, user_update: UserCreate, c
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
-    # Update user data
-    user_dict = user_update.dict()
-    if user_dict["mot_de_passe"]:
-        user_dict["mot_de_passe_hash"] = get_password_hash(user_dict.pop("mot_de_passe"))
-    else:
-        user_dict.pop("mot_de_passe")
-        user_dict["mot_de_passe_hash"] = existing_user["mot_de_passe_hash"]
+    # Préparer les données à mettre à jour (seulement les champs fournis)
+    update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if v is not None}
     
-    user_dict["id"] = user_id
-    user_dict["tenant_id"] = tenant.id  # Assurer le tenant_id
-    user_dict["statut"] = existing_user.get("statut", "Actif")
-    user_dict["created_at"] = existing_user.get("created_at")
+    # Gestion du mot de passe
+    if "mot_de_passe" in update_data and update_data["mot_de_passe"]:
+        update_data["mot_de_passe_hash"] = get_password_hash(update_data.pop("mot_de_passe"))
+    elif "mot_de_passe" in update_data:
+        update_data.pop("mot_de_passe")
     
-    result = await db.users.replace_one({"id": user_id, "tenant_id": tenant.id}, user_dict)
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour l'utilisateur")
+    # Mettre à jour uniquement les champs fournis
+    result = await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
