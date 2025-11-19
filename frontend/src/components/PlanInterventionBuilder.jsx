@@ -322,40 +322,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       });
     }
 
-    const marker = L.marker(latlng, { 
-      icon,
-      draggable: true  // Permet de déplacer le marqueur
-    }).addTo(map);
-
-    // Gérer le déplacement du marqueur
-    marker.on('dragend', (e) => {
-      const newLatLng = e.target.getLatLng();
-      console.log('Symbole déplacé vers:', newLatLng);
-      
-      // Mettre à jour les données (vous pouvez ajouter plus de logique ici si nécessaire)
-      // Pour l'instant, le marqueur est simplement déplacé visuellement
-    });
-    
-    const symbolDisplay = symbol.isCustom && symbol.image 
-      ? `<img src="${symbol.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
-      : `<div style="font-size: 24px;">${symbol.emoji}</div>`;
-    
-    if (note) {
-      marker.bindPopup(`
-        <div style="min-width: 150px;">
-          <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
-          <strong>${symbol.label}</strong><br/>
-          <div style="margin-top: 8px; color: #666; font-size: 13px;">${note}</div>
-        </div>
-      `);
-    } else {
-      marker.bindPopup(`
-        <div style="text-align: center;">
-          <div style="margin-bottom: 5px;">${symbolDisplay}</div>
-          <strong>${symbol.label}</strong>
-        </div>
-      `);
-    }
+    // Note: Le marker sera créé et ajouté à la carte par le useEffect
+    // qui observe le state 'layers'. Cela évite la duplication.
 
     // Ajouter aux données
     const layerData = {
