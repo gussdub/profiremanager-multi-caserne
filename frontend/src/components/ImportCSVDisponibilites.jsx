@@ -389,15 +389,15 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               </p>
             </div>
             
-            <div className="overflow-x-auto border rounded-lg" style={{ maxHeight: '400px' }}>
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
+            <div className="border rounded-lg" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto' }}>
+              <table style={{ width: 'max-content', minWidth: '100%' }} className="divide-y divide-gray-200">
+                <thead className="bg-gray-50" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
                     {availableFields.map(field => (
                       <th 
                         key={field.key} 
-                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
-                        style={{ minWidth: '120px' }}
+                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase"
+                        style={{ minWidth: '180px', whiteSpace: 'nowrap', backgroundColor: '#f9fafb' }}
                       >
                         {field.label}
                       </th>
@@ -406,12 +406,12 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {previewData.map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                       {availableFields.map(field => (
                         <td 
                           key={field.key} 
-                          className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap"
-                          style={{ minWidth: '120px' }}
+                          className="px-3 py-2 text-sm text-gray-900"
+                          style={{ minWidth: '180px', whiteSpace: 'nowrap' }}
                         >
                           {row[field.key] || '-'}
                         </td>
@@ -420,6 +420,10 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+            
+            <div className="text-sm text-gray-600 mt-2">
+              💡 <strong>Astuce :</strong> Faites défiler horizontalement pour voir toutes les colonnes →
             </div>
             
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
