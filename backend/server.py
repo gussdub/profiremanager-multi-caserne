@@ -3546,6 +3546,12 @@ async def import_users_csv(
         "password_reset_emails": []
     }
     
+    # Précharger tous les utilisateurs pour matching intelligent
+    existing_users_list = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    users_by_email = {u.get("email", "").lower(): u for u in existing_users_list if u.get("email")}
+    users_by_name = create_user_matching_index(existing_users_list)
+    users_by_num = {u.get("numero_employe"): u for u in existing_users_list if u.get("numero_employe")}
+    
     for index, user_data in enumerate(users):
         try:
             # Validation des champs obligatoires
