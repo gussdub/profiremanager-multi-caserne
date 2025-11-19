@@ -210,18 +210,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     // Attendre que la carte soit prête avant de créer les markers
     const timeoutId = setTimeout(createMarkers, 500);
     
-    // Cleanup : nettoyer le timeout et les markers
+    // Cleanup : nettoyer le timeout seulement
     return () => {
       clearTimeout(timeoutId);
-      createdMarkers.forEach(marker => {
-        try {
-          if (map && map.hasLayer(marker)) {
-            map.removeLayer(marker);
-          }
-        } catch (e) {
-          console.log('Marker déjà supprimé');
-        }
-      });
     };
   }, [map, layers, customSymbols]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
