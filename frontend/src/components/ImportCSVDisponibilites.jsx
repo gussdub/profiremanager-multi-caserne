@@ -300,13 +300,13 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition">
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <div className="space-y-4">
-                <Label htmlFor="csv-upload" className="cursor-pointer block">
+                <Label htmlFor="csv-upload-disponibilites" className="cursor-pointer block">
                   <span className="text-blue-600 hover:text-blue-700 font-medium">
                     Cliquez pour sélectionner un fichier
                   </span>
                 </Label>
                 <Input
-                  id="csv-upload"
+                  id="csv-upload-disponibilites"
                   type="file"
                   onChange={handleFileUpload}
                   className="hidden"
