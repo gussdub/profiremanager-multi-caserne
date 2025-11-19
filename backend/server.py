@@ -1433,6 +1433,26 @@ class UserCreate(BaseModel):
     accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
     mot_de_passe: str = "TempPass123!"
 
+class UserUpdate(BaseModel):
+    nom: Optional[str] = None
+    prenom: Optional[str] = None
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    adresse: Optional[str] = None
+    contact_urgence: Optional[str] = None
+    grade: Optional[str] = None
+    fonction_superieur: Optional[bool] = None
+    type_emploi: Optional[str] = None
+    heures_max_semaine: Optional[int] = None
+    role: Optional[str] = None
+    numero_employe: Optional[str] = None
+    date_embauche: Optional[str] = None
+    taux_horaire: Optional[float] = None
+    formations: Optional[List[str]] = None
+    competences: Optional[List[str]] = None
+    accepte_gardes_externes: Optional[bool] = None
+    mot_de_passe: Optional[str] = None  # Optionnel pour les mises à jour
+
 class UserLogin(BaseModel):
     email: str
     mot_de_passe: str
