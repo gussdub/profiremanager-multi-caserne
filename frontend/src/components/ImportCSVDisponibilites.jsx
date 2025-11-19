@@ -149,7 +149,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               return rowData;
             });
           
-          setCsvData(data);
+          setCsvData(parsedData);
           
           // Auto-mapping si les colonnes correspondent
           const autoMapping = {};
