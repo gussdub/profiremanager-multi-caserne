@@ -496,6 +496,19 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           <Button variant="outline" onClick={onClose}>
             ❌ Annuler
           </Button>
+          {existingPlan && (
+            <Button 
+              onClick={handleDeletePlan} 
+              disabled={saving}
+              style={{
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none'
+              }}
+            >
+              🗑️ Supprimer
+            </Button>
+          )}
           <Button onClick={handleSavePlan} disabled={saving}>
             {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
           </Button>
