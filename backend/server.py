@@ -11032,8 +11032,22 @@ async def import_disponibilites_csv(
                 continue
             
             # 3. Mapper la sélection au statut
-            selection = dispo_data.get("Sélection", "").strip()
-            statut = "disponible" if selection.lower() == "disponible" else "indisponible"
+            selection = dispo_data.get("Sélection", "").strip().lower()
+            
+            # Si "Aucune", ignorer cette ligne (ne pas créer de disponibilité)
+            if selection == "aucune" or not selection:
+                results["skipped"] += 1
+                continue
+            
+            # Seulement créer une disponibilité si "Disponible"
+            if selection != "disponible":
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": f"Sélection invalide: '{selection}'. Attendu: 'Disponible' ou 'Aucune'"
+                })
+                continue
+            
+            statut = "disponible"
             
             # 4. Trouver le type de garde (optionnel)
             type_garde_id = None
