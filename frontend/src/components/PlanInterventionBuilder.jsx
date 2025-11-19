@@ -148,48 +148,23 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       }
     };
     
-    // Créer tous les markers
+    // Créer tous les markers et autres layers
     const timeoutId = setTimeout(() => {
       const newMarkers = [];
       
-      layers.forEach((layer) => {
-        const marker = createMarkerFromLayer(layer);
-        if (marker) {
-          marker.addTo(map);
-          newMarkers.push(marker);
-                console.log('✅ Symbole supprimé:', layer.id);
-              }
-            });
-            
-            // Recréer le popup si nécessaire
-            if (props.label) {
-              const symbolDisplay = props.isCustom && props.image
-                ? `<img src="${props.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
-                : `<div style="font-size: 24px;">${props.symbol || '📍'}</div>`;
-              
-              const popupContent = props.note 
-                ? `<div style="min-width: 150px;">
-                     <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
-                     <strong>${props.label}</strong><br/>
-                     <div style="margin-top: 8px; color: #666; font-size: 13px;">${props.note}</div>
-                     <hr style="margin: 8px 0;"/>
-                     <div style="font-size: 11px; color: #999; text-align: center;">Clic droit pour supprimer</div>
-                   </div>`
-                : `<div style="text-align: center;">
-                     <div style="margin-bottom: 5px;">${symbolDisplay}</div>
-                     <strong>${props.label}</strong>
-                     <hr style="margin: 8px 0;"/>
-                     <div style="font-size: 11px; color: #999;">Clic droit pour supprimer</div>
-                   </div>`;
-              
-              leafletMarker.bindPopup(popupContent);
+      layers.forEach((layer, index) => {
+        try {
+          // Gérer les markers/symbols
+          if (layer.type === 'symbol' || layer.type === 'marker') {
+            const marker = createMarkerFromLayer(layer);
+            if (marker) {
+              marker.addTo(map);
+              newMarkers.push(marker);
+              console.log('✅ Symbol/Marker ajouté à la carte');
             }
-            
-            leafletMarker.addTo(map);
-            markersRef.current.push(leafletMarker);
-            console.log('✅ Symbol/Marker ajouté à la carte');
           }
           
+          // Gérer les polygons
           if (layer.type === 'polygon' && layer.geometry?.coordinates) {
             const positions = layer.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
             const polygon = L.polygon(positions, {
@@ -199,6 +174,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             console.log('✅ Polygon ajouté à la carte');
           }
           
+          // Gérer les polylines
           if (layer.type === 'polyline' && layer.geometry?.coordinates) {
             const positions = layer.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             const polyline = L.polyline(positions, {
@@ -208,6 +184,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             console.log('✅ Polyline ajouté à la carte');
           }
           
+          // Gérer les circles
           if (layer.type === 'circle' && layer.geometry?.coordinates) {
             const [lng, lat] = layer.geometry.coordinates;
             const circle = L.circle([lat, lng], {
@@ -221,6 +198,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           console.error('❌ Erreur lors de la restauration du layer', index, ':', error);
         }
       });
+      
+      // Stocker les markers pour cleanup
+      markersRef.current = newMarkers;
     }, 100);
     
     // Cleanup
