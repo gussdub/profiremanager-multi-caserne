@@ -916,6 +916,76 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                       }}
                     />
                   </FeatureGroup>
+
+                  {/* Afficher les layers sauvegardés */}
+                  {layers.map((layer, index) => {
+                    console.log('🎨 Rendu du layer', index, layer);
+                    
+                    if (layer.type === 'marker' && layer.geometry?.coordinates) {
+                      const [lng, lat] = layer.geometry.coordinates;
+                      const iconUrl = layer.properties?.icon;
+                      
+                      // Créer une icône personnalisée si nécessaire
+                      const customIcon = iconUrl ? L.icon({
+                        iconUrl: iconUrl,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32]
+                      }) : undefined;
+                      
+                      return (
+                        <Marker 
+                          key={layer.id || index} 
+                          position={[lat, lng]}
+                          icon={customIcon}
+                        >
+                          {layer.properties?.label && (
+                            <Popup>
+                              <div style={{ padding: '5px' }}>
+                                <strong>{layer.properties.label}</strong>
+                              </div>
+                            </Popup>
+                          )}
+                        </Marker>
+                      );
+                    }
+                    
+                    if (layer.type === 'polygon' && layer.geometry?.coordinates) {
+                      const positions = layer.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+                      return (
+                        <Polygon 
+                          key={layer.id || index} 
+                          positions={positions}
+                          color={layer.properties?.color || '#3b82f6'}
+                        />
+                      );
+                    }
+                    
+                    if (layer.type === 'polyline' && layer.geometry?.coordinates) {
+                      const positions = layer.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                      return (
+                        <Polyline 
+                          key={layer.id || index} 
+                          positions={positions}
+                          color={layer.properties?.color || '#3b82f6'}
+                        />
+                      );
+                    }
+                    
+                    if (layer.type === 'circle' && layer.geometry?.coordinates) {
+                      const [lng, lat] = layer.geometry.coordinates;
+                      return (
+                        <Circle 
+                          key={layer.id || index} 
+                          center={[lat, lng]}
+                          radius={layer.properties?.radius || 50}
+                          color={layer.properties?.color || '#3b82f6'}
+                        />
+                      );
+                    }
+                    
+                    return null;
+                  })}
                 </MapContainer>
             </div>
           </div>
