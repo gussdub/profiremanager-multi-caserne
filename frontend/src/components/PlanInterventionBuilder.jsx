@@ -192,15 +192,20 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           console.error('❌ Erreur lors de la restauration du layer', index, ':', error);
         }
       });
+      
+      // Cleanup function stored for later
+      return () => {
+        createdMarkers.forEach(marker => {
+          if (map && map.hasLayer(marker)) {
+            map.removeLayer(marker);
+          }
+        });
+      };
     }, 500);
     
-    // Cleanup : supprimer les markers quand les layers changent
+    // Cleanup : nettoyer le timeout et les markers
     return () => {
-      createdMarkers.forEach(marker => {
-        if (map && map.hasLayer(marker)) {
-          map.removeLayer(marker);
-        }
-      });
+      clearTimeout(timeoutId);
     };
   }, [map, layers, customSymbols]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
