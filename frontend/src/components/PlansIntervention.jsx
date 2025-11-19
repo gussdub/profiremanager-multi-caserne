@@ -408,6 +408,13 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
                       {plan.statut === 'en_attente_validation' && (
                         <>
                           <Button 
+                            onClick={() => handleEditPlan(plan)}
+                            variant="outline"
+                            style={{ fontSize: '0.875rem' }}
+                          >
+                            👁️ Voir le plan
+                          </Button>
+                          <Button 
                             onClick={() => handleApprovePlan(plan.id)}
                             style={{ fontSize: '0.875rem', backgroundColor: '#10b981' }}
                           >
