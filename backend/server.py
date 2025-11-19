@@ -12636,8 +12636,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 personnel_requis = type_garde.get("personnel_requis", 1)
                 personnel_assigne = len(existing_for_garde)
                 
+                # 🔍 LOG pour debug sur-assignation
+                logging.info(f"🔍 [ASSIGNATION] {type_garde['nom']} - {date_str}: {personnel_assigne}/{personnel_requis} assignés")
+                
                 # Si déjà complet ou plus, passer à la garde suivante
                 if personnel_assigne >= personnel_requis:
+                    logging.info(f"✅ [SKIP] {type_garde['nom']} - {date_str}: Garde déjà complète ({personnel_assigne}/{personnel_requis})")
                     continue  # Garde déjà complète, ne rien ajouter
                 
                 # Calculer combien de pompiers il faut encore assigner
