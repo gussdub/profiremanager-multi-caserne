@@ -8926,19 +8926,19 @@ class PlanInterventionCreate(BaseModel):
     notes_generales: str = ""
     
     # Champs optionnels pour permettre la sauvegarde depuis le builder
-    layers: Optional[List[Dict[str, Any]]] = []
-    hydrants: Optional[List[HydrantElement]] = []
-    sorties: Optional[List[SortieElement]] = []
-    matieres_dangereuses: Optional[List[MatiereDangereuse]] = []
-    generatrices: Optional[List[GeneratriceElement]] = []
-    gaz_naturel: Optional[List[GazNaturelElement]] = []
-    reservoirs_propane: Optional[List[ReservoirPropaneElement]] = []
-    vehicules: Optional[List[VehiculeElement]] = []
-    routes_acces: Optional[List[RouteAcces]] = []
-    zones_danger: Optional[List[ZoneDanger]] = []
-    secteurs: Optional[List[SecteurPlan]] = []
-    plans_etages: Optional[List[PlanEtage]] = []
-    photos: Optional[List[PhotoPlanIntervention]] = []
+    layers: List[Dict[str, Any]] = Field(default_factory=list)
+    hydrants: List[HydrantElement] = Field(default_factory=list)
+    sorties: List[SortieElement] = Field(default_factory=list)
+    matieres_dangereuses: List[MatiereDangereuse] = Field(default_factory=list)
+    generatrices: List[GeneratriceElement] = Field(default_factory=list)
+    gaz_naturel: List[GazNaturelElement] = Field(default_factory=list)
+    reservoirs_propane: List[ReservoirPropaneElement] = Field(default_factory=list)
+    vehicules: List[VehiculeElement] = Field(default_factory=list)
+    routes_acces: List[RouteAcces] = Field(default_factory=list)
+    zones_danger: List[ZoneDanger] = Field(default_factory=list)
+    secteurs: List[SecteurPlan] = Field(default_factory=list)
+    plans_etages: List[PlanEtage] = Field(default_factory=list)
+    photos: List[PhotoPlanIntervention] = Field(default_factory=list)
     instructions_particulieres: str = ""
 
 class PlanInterventionUpdate(BaseModel):
