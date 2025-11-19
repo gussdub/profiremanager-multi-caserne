@@ -54,36 +54,105 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
   // Restaurer les layers sur la carte Leaflet
   useEffect(() => {
-    if (!map) return;
-    
-    console.log('🗺️ useEffect déclenché, layers:', layers.length);
-    
-    // Nettoyer tous les anciens markers
-    if (markersRef.current && markersRef.current.length > 0) {
-      console.log('🧹 Nettoyage de', markersRef.current.length, 'markers');
-      markersRef.current.forEach(marker => {
-        try {
-          if (map && map.hasLayer(marker)) {
-            map.removeLayer(marker);
-          }
-        } catch (e) {
-          // Ignorer les erreurs
-        }
-      });
-      markersRef.current = [];
+    // Conditions de sortie rapide
+    if (!map) {
+      console.log('⚠️ Pas de carte disponible');
+      return;
     }
     
-    // Si pas de layers, on s'arrête là
     if (!layers || layers.length === 0) {
       console.log('⚠️ Aucun layer à restaurer');
       return;
     }
     
-    // Créer les markers après un court délai
+    console.log('🗺️ Restauration de', layers.length, 'layers');
+    
+    // Fonction pour créer un marker à partir d'un layer
+    const createMarkerFromLayer = (layer) => {
+      try {
+        // Vérifier que c'est un symbole avec des coordonnées
+        if ((layer.type !== 'symbol' && layer.type !== 'marker') || 
+            layer.geometry?.type !== 'Point' || 
+            !layer.geometry?.coordinates) {
+          return null;
+        }
+        
+        const [lng, lat] = layer.geometry.coordinates;
+        const props = layer.properties || {};
+        
+        // Créer l'icône
+        let icon = null;
+        
+        if (props.isCustom && props.image) {
+          icon = L.divIcon({
+            html: `<img src="${props.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
+            className: 'custom-image-marker',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          });
+        } else if (props.symbol) {
+          icon = L.divIcon({
+            html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${props.symbol}</div>`,
+            className: 'custom-emoji-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          });
+        }
+        
+        // Créer le marker
+        const marker = icon 
+          ? L.marker([lat, lng], { icon, draggable: true })
+          : L.marker([lat, lng], { draggable: true });
+        
+        // Ajouter l'ID pour pouvoir supprimer
+        marker.layerId = layer.id;
+        
+        // Événement de suppression
+        marker.on('contextmenu', function() {
+          if (window.confirm('🗑️ Supprimer ce symbole ?')) {
+            setLayers(prevLayers => prevLayers.filter(l => l.id !== layer.id));
+            if (map.hasLayer(marker)) {
+              map.removeLayer(marker);
+            }
+          }
+        });
+        
+        // Popup
+        if (props.label) {
+          const symbolDisplay = props.isCustom && props.image
+            ? `<img src="${props.image}" style="width: 40px; height: 40px; object-fit: contain;" />`
+            : `<div style="font-size: 24px;">${props.symbol || '📍'}</div>`;
+          
+          const popupContent = props.note 
+            ? `<div style="min-width: 150px;">
+                 <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
+                 <strong>${props.label}</strong><br/>
+                 <div style="margin-top: 8px; color: #666; font-size: 13px;">${props.note}</div>
+                 <hr style="margin: 8px 0;"/>
+                 <div style="font-size: 11px; color: #999; text-align: center;">Clic droit pour supprimer</div>
+               </div>`
+            : `<div style="text-align: center;">
+                 <div style="margin-bottom: 5px;">${symbolDisplay}</div>
+                 <strong>${props.label}</strong>
+                 <hr style="margin: 8px 0;"/>
+                 <div style="font-size: 11px; color: #999;">Clic droit pour supprimer</div>
+               </div>`;
+          
+          marker.bindPopup(popupContent);
+        }
+        
+        return marker;
+      } catch (error) {
+        console.error('Erreur création marker:', error);
+        return null;
+      }
+    };
+    
+    // Créer tous les markers
     const timeoutId = setTimeout(() => {
-      console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
+      const newMarkers = [];
       
-      layers.forEach((layer, index) => {
+      layers.forEach((layer) => {
         try {
           console.log('🔄 Restauration du layer', index, ':', layer);
           console.log('🔍 Type du layer:', layer.type);
