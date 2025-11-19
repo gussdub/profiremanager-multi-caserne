@@ -30,9 +30,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     notes_tactiques: existingPlan?.notes_tactiques || '',
   });
 
-  const [layers, setLayers] = useState(existingPlan?.layers || []);
+  const [layers, setLayers] = useState([]);
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
+
+  // Charger les layers depuis existingPlan au montage ou quand il change
+  useEffect(() => {
+    if (existingPlan?.layers && existingPlan.layers.length > 0) {
+      console.log('📥 Chargement des layers depuis existingPlan:', existingPlan.layers);
+      setLayers(existingPlan.layers);
+    }
+  }, [existingPlan]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
   const [showSymbolPalette, setShowSymbolPalette] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
