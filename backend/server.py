@@ -15212,27 +15212,28 @@ async def import_epis_csv(
                 })
                 continue
             
-            # Rechercher l'employé par nom complet si fourni
+            # Rechercher l'employé avec matching intelligent
             user_id = None
             if epi_data.get("employe_nom"):
-                # Format attendu : "Prénom Nom"
-                nom_parts = epi_data["employe_nom"].strip().split(" ", 1)
-                if len(nom_parts) == 2:
-                    prenom, nom = nom_parts
-                    user = await db.users.find_one({
-                        "tenant_id": tenant.id,
-                        "prenom": {"$regex": f"^{prenom}$", "$options": "i"},
-                        "nom": {"$regex": f"^{nom}$", "$options": "i"}
+                employe_str = epi_data["employe_nom"].strip()
+                
+                # Utiliser le matching intelligent
+                user_obj = find_user_intelligent(
+                    search_string=employe_str,
+                    users_by_name=users_by_name,
+                    users_by_num=users_by_num,
+                    numero_field="numero_employe"
+                )
+                
+                if user_obj:
+                    user_id = user_obj["id"]
+                else:
+                    results["errors"].append({
+                        "line": index + 1,
+                        "error": f"Employé non trouvé: {employe_str}",
+                        "data": epi_data
                     })
-                    if user:
-                        user_id = user["id"]
-                    else:
-                        results["errors"].append({
-                            "line": index + 1,
-                            "error": f"Employé non trouvé: {epi_data['employe_nom']}",
-                            "data": epi_data
-                        })
-                        continue
+                    continue
             
             # Vérifier si l'EPI existe déjà (par numéro de série)
             existing_epi = await db.epis.find_one({
