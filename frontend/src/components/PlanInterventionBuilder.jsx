@@ -193,7 +193,16 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         }
       });
     }, 500);
-  }, [map, layers]);
+    
+    // Cleanup : supprimer les markers quand les layers changent
+    return () => {
+      createdMarkers.forEach(marker => {
+        if (map && map.hasLayer(marker)) {
+          map.removeLayer(marker);
+        }
+      });
+    };
+  }, [map, layers, customSymbols]);
   const [mapType, setMapType] = useState('satellite'); // 'street' ou 'satellite' - Satellite par défaut
   const [showSymbolPalette, setShowSymbolPalette] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
