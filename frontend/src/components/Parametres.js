@@ -160,7 +160,9 @@ const Parametres = ({ user, tenantSlug }) => {
     heure_envoi: '17:00',
     periode_couverte: 'mois_suivant',
     envoi_automatique: true,
-    derniere_notification: null
+    derniere_notification: null,
+    periode_equite: 'mensuel',
+    periode_equite_jours: 30
   });
 
   // Paramètres de gestion des heures supplémentaires
