@@ -449,7 +449,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               <h3 className="font-semibold mb-2">Résultats de l'import</h3>
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                 <CheckCircle className="mx-auto h-8 w-8 text-green-600 mb-2" />
                 <div className="text-2xl font-bold text-green-900">{importResults.created}</div>
@@ -460,6 +460,12 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                 <AlertCircle className="mx-auto h-8 w-8 text-blue-600 mb-2" />
                 <div className="text-2xl font-bold text-blue-900">{importResults.updated}</div>
                 <div className="text-sm text-blue-700">Mises à jour</div>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                <AlertCircle className="mx-auto h-8 w-8 text-gray-600 mb-2" />
+                <div className="text-2xl font-bold text-gray-900">{importResults.skipped || 0}</div>
+                <div className="text-sm text-gray-700">Ignorées</div>
               </div>
               
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
