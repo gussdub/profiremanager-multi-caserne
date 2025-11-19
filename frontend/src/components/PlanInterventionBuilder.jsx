@@ -64,23 +64,35 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           console.log('🔄 Restauration du layer', index, ':', layer);
           console.log('🔍 Type du layer:', layer.type);
           console.log('🔍 Geometry:', layer.geometry);
-          console.log('🔍 Structure complète:', JSON.stringify(layer, null, 2));
           
-          if (layer.type === 'marker' && layer.geometry?.coordinates) {
+          // Gestion des symboles/markers (type: "symbol" avec geometry.type: "Point")
+          if ((layer.type === 'symbol' || layer.type === 'marker') && 
+              layer.geometry?.type === 'Point' && 
+              layer.geometry?.coordinates) {
             const [lng, lat] = layer.geometry.coordinates;
             const iconUrl = layer.properties?.icon;
             
+            console.log('📍 Création marker/symbol à position:', [lat, lng]);
+            console.log('🎨 Icon URL:', iconUrl);
+            
             let leafletMarker;
             if (iconUrl) {
-              const customIcon = L.icon({
-                iconUrl: iconUrl,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-              });
-              leafletMarker = L.marker([lat, lng], { icon: customIcon });
+              try {
+                const customIcon = L.icon({
+                  iconUrl: iconUrl,
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 32],
+                  popupAnchor: [0, -32]
+                });
+                leafletMarker = L.marker([lat, lng], { icon: customIcon });
+                console.log('✅ Marker créé avec icône personnalisée');
+              } catch (iconError) {
+                console.warn('⚠️ Erreur création icône personnalisée, utilisation icône par défaut:', iconError);
+                leafletMarker = L.marker([lat, lng]);
+              }
             } else {
               leafletMarker = L.marker([lat, lng]);
+              console.log('✅ Marker créé avec icône par défaut');
             }
             
             if (layer.properties?.label) {
@@ -88,7 +100,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             }
             
             leafletMarker.addTo(map);
-            console.log('✅ Marker ajouté à la carte');
+            console.log('✅ Symbol/Marker ajouté à la carte');
           }
           
           if (layer.type === 'polygon' && layer.geometry?.coordinates) {
