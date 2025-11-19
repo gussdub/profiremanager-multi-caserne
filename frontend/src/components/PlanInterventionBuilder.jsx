@@ -57,6 +57,9 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     
     console.log('🗺️ Restauration des layers sur la carte, nombre:', layers.length);
     
+    // Stocker les markers créés pour pouvoir les supprimer
+    const createdMarkers = [];
+    
     // Attendre un peu que la carte soit complètement prête
     setTimeout(() => {
       layers.forEach((layer, index) => {
@@ -115,6 +118,20 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               ? L.marker([lat, lng], { icon, draggable: true })
               : L.marker([lat, lng], { draggable: true });
             
+            // Stocker l'ID du layer dans le marker pour pouvoir le supprimer
+            leafletMarker.layerId = layer.id;
+            
+            // Ajouter un événement de clic droit pour supprimer
+            leafletMarker.on('contextmenu', function(e) {
+              if (window.confirm('🗑️ Supprimer ce symbole ?')) {
+                // Supprimer du state
+                setLayers(prevLayers => prevLayers.filter(l => l.id !== layer.id));
+                // Supprimer de la carte
+                map.removeLayer(leafletMarker);
+                console.log('✅ Symbole supprimé:', layer.id);
+              }
+            });
+            
             // Recréer le popup si nécessaire
             if (props.label) {
               const symbolDisplay = props.isCustom && props.image
@@ -126,16 +143,21 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                      <div style="text-align: center; margin-bottom: 8px;">${symbolDisplay}</div>
                      <strong>${props.label}</strong><br/>
                      <div style="margin-top: 8px; color: #666; font-size: 13px;">${props.note}</div>
+                     <hr style="margin: 8px 0;"/>
+                     <div style="font-size: 11px; color: #999; text-align: center;">Clic droit pour supprimer</div>
                    </div>`
                 : `<div style="text-align: center;">
                      <div style="margin-bottom: 5px;">${symbolDisplay}</div>
                      <strong>${props.label}</strong>
+                     <hr style="margin: 8px 0;"/>
+                     <div style="font-size: 11px; color: #999;">Clic droit pour supprimer</div>
                    </div>`;
               
               leafletMarker.bindPopup(popupContent);
             }
             
             leafletMarker.addTo(map);
+            createdMarkers.push(leafletMarker);
             console.log('✅ Symbol/Marker ajouté à la carte');
           }
           
