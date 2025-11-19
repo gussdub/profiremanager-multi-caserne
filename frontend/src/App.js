@@ -14194,7 +14194,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                               setReinitConfig({...reinitConfig, date_debut: e.target.value});
                               setReinitWarning(null);
                             }}
-                            max={reinitConfig.date_fin}
                           />
                         </div>
                         <div>
@@ -14206,7 +14205,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                               setReinitConfig({...reinitConfig, date_fin: e.target.value});
                               setReinitWarning(null);
                             }}
-                            min={reinitConfig.date_debut}
                           />
                         </div>
                       </div>
