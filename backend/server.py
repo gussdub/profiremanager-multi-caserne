@@ -3828,6 +3828,16 @@ async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, c
     
     updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
+    
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="personnel_modification",
+        description=f"✏️ {current_user.prenom} {current_user.nom} a modifié le profil de {updated_user['prenom']} {updated_user['nom']}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     return User(**updated_user)
 
 @api_router.delete("/{tenant_slug}/users/{user_id}")
