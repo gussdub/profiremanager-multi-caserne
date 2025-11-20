@@ -12161,6 +12161,19 @@ async def generer_indisponibilites(
         if indispos:
             await db.disponibilites.insert_many(indispos)
         
+        # Créer une activité
+        horaire_text = "Montréal 7/24" if generation_data.horaire_type == "montreal" else "Québec 10/14"
+        user = await db.users.find_one({"id": generation_data.user_id, "tenant_id": tenant.id})
+        if user:
+            await creer_activite(
+                tenant_id=tenant.id,
+                type_activite="disponibilite_generation_auto",
+                description=f"🔄 {current_user.prenom} {current_user.nom} a généré {len(indispos)} indisponibilités automatiques ({horaire_text} - {generation_data.equipe}) pour {user['prenom']} {user['nom']}",
+                user_id=current_user.id,
+                user_nom=f"{current_user.prenom} {current_user.nom}",
+                data={"concerne_user_id": generation_data.user_id}
+            )
+        
         return {
             "message": "Indisponibilités générées avec succès",
             "horaire_type": generation_data.horaire_type,
