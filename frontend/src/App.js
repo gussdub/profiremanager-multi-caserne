@@ -5905,8 +5905,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <Label>Heures maximum par semaine *</Label>
                       <input
                         type="number"
-                        min="5"
-                        max="168"
                         style={{
                           width: '100%',
                           padding: '8px 12px',
@@ -5916,10 +5914,26 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         }}
                         value={newUser.heures_max_semaine !== null && newUser.heures_max_semaine !== undefined 
                           ? newUser.heures_max_semaine 
-                          : 40}
+                          : ''}
                         onChange={(e) => {
-                          const value = parseInt(e.target.value) || 40;
-                          setNewUser({...newUser, heures_max_semaine: value});
+                          const value = e.target.value;
+                          if (value === '') {
+                            setNewUser({...newUser, heures_max_semaine: ''});
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                              setNewUser({...newUser, heures_max_semaine: numValue});
+                            }
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Valider à la sortie du champ
+                          const value = e.target.value;
+                          if (value === '' || parseInt(value) < 5) {
+                            setNewUser({...newUser, heures_max_semaine: 5});
+                          } else if (parseInt(value) > 168) {
+                            setNewUser({...newUser, heures_max_semaine: 168});
+                          }
                         }}
                         placeholder="Ex: 40"
                         data-testid="edit-user-heures-max-input"
@@ -5930,7 +5944,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       />
                       <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.875rem' }}>
                         {newUser.type_emploi === 'temps_plein' 
-                          ? "Modifiable uniquement par les administrateurs"
+                          ? "Modifiable uniquement par les administrateurs (5-168h)"
                           : "Les employés temps partiel modifient ce champ dans leur profil"}
                       </small>
                     </div>
