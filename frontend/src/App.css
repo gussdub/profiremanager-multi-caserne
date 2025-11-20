@@ -2770,12 +2770,12 @@ body {
 }
 
 .user-grade {
-  background-color: #3B82F6;
-  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
   padding: 0.125rem 0.5rem;
   border-radius: 12px;
   font-size: 0.625rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .user-status {
