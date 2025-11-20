@@ -10439,10 +10439,32 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
             "statistiques_mois": stats_mois
         }
     
-    # ===== ACTIVITÉS RÉCENTES (Admin/Superviseur uniquement) =====
+    # ===== ACTIVITÉS RÉCENTES (Filtrage selon le rôle) =====
     activites_recentes = []
-    if current_user.role in ["admin", "superviseur"]:
-        activites = await db.activites.find({"tenant_id": tenant.id}).sort("created_at", -1).limit(20).to_list(20)
+    
+    # Filtrer selon le rôle
+    if current_user.role == "admin":
+        # Admins voient tout (sauf paramètres)
+        activites = await db.activites.find({
+            "tenant_id": tenant.id,
+            "type_activite": {"$nin": ["parametres"]}  # Exclure les paramètres
+        }).sort("created_at", -1).limit(50).to_list(50)
+        activites_recentes = [clean_mongo_doc(a) for a in activites]
+    
+    elif current_user.role in ["superviseur", "employe"]:
+        # Superviseurs et employés voient :
+        # - Formations créées
+        # - Planning validé/publié
+        # - Activités les concernant directement
+        # - Messages importants
+        activites = await db.activites.find({
+            "tenant_id": tenant.id,
+            "$or": [
+                {"type_activite": {"$in": ["formation_creation", "planning_publication", "message_important"]}},
+                {"user_id": current_user.id},  # Leurs propres activités
+                {"data.concerne_user_id": current_user.id}  # Activités qui les concernent
+            ]
+        }).sort("created_at", -1).limit(30).to_list(30)
         activites_recentes = [clean_mongo_doc(a) for a in activites]
     
     return {
