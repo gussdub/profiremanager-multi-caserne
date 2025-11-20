@@ -3485,6 +3485,15 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     
     await db.users.insert_one(user_obj.dict())
     
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="personnel_creation",
+        description=f"👤 {current_user.prenom} {current_user.nom} a ajouté {user_create.prenom} {user_create.nom} ({user_create.grade}) au personnel",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     # Envoyer l'email de bienvenue
     try:
         user_name = f"{user_create.prenom} {user_create.nom}"
