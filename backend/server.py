@@ -10333,31 +10333,37 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     # ===== SECTION GÉNÉRALE (Admin/Superviseur uniquement) =====
     section_generale = None
     if current_user.role in ["admin", "superviseur"]:
-        # Couverture du planning (assignations ce mois)
-        assignations_mois = [a for a in assignations if "date" in a]
-        assignations_mois_valides = []
-        for a in assignations_mois:
-            try:
-                # Parser la date - gérer les formats avec et sans heure
-                date_str = a["date"]
-                if isinstance(date_str, str):
-                    # Si la date contient un 'T', c'est un datetime, sinon c'est juste une date
-                    if 'T' in date_str:
-                        date_assign = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                    else:
-                        # C'est juste une date (YYYY-MM-DD), la convertir en datetime pour comparaison
-                        date_assign = datetime.fromisoformat(date_str + "T00:00:00").replace(tzinfo=timezone.utc)
-                    
-                    # Comparer avec le mois en cours
-                    if debut_mois <= date_assign <= fin_mois.replace(hour=23, minute=59, second=59):
-                        assignations_mois_valides.append(a)
-            except (ValueError, TypeError, AttributeError) as e:
-                # Ignorer les dates invalides mais logger pour debug
-                pass
+        # Couverture du planning (assignations ce mois) - CALCUL CORRECT
+        # Calculer le personnel requis vs assigné pour le mois
+        total_personnel_requis = 0
+        total_personnel_assigne = 0
         
-        total_jours_mois = (fin_mois - debut_mois).days + 1
-        jours_assignes = len(set([a["date"] for a in assignations_mois_valides]))
-        couverture_planning = round((jours_assignes / total_jours_mois * 100), 1)
+        # Pour chaque jour du mois
+        jours_mois = (fin_mois - debut_mois).days + 1
+        for day_offset in range(jours_mois):
+            current_day = debut_mois + timedelta(days=day_offset)
+            day_name = current_day.strftime("%A").lower()
+            current_day_str = current_day.strftime("%Y-%m-%d")
+            
+            # Pour chaque type de garde
+            for type_garde in types_garde:
+                jours_app = type_garde.get("jours_application", [])
+                
+                # Si ce type de garde s'applique à ce jour
+                if not jours_app or day_name in jours_app:
+                    personnel_requis = type_garde.get("personnel_requis", 1)
+                    total_personnel_requis += personnel_requis
+                    
+                    # Compter combien de personnes sont assignées pour cette garde ce jour
+                    assignations_jour = len([a for a in assignations 
+                                            if a.get("date", "").startswith(current_day_str) 
+                                            and a.get("type_garde_id") == type_garde["id"]])
+                    
+                    total_personnel_assigne += min(assignations_jour, personnel_requis)
+        
+        # Calcul correct : (personnel assigné / personnel requis) × 100
+        couverture_planning = round((total_personnel_assigne / total_personnel_requis * 100), 1) if total_personnel_requis > 0 else 0
+        couverture_planning = min(couverture_planning, 100.0)  # Cap à 100%
         
         # Gardes manquantes (postes non assignés dans les 7 prochains jours)
         gardes_manquantes = 0
