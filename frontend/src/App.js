@@ -5922,12 +5922,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         }}
                         placeholder="Ex: 40"
                         data-testid="edit-user-heures-max-input"
-                        disabled={newUser.type_emploi === 'temps_partiel'}
                       />
                       <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.875rem' }}>
-                        {newUser.type_emploi === 'temps_plein' 
-                          ? "Limite d'heures hebdomadaires pour l'auto-attribution (modifiable par admin uniquement)"
-                          : "Les employés temps partiel modifient ce champ dans leur profil"}
+                        Limite d'heures hebdomadaires pour l'auto-attribution (5-168h).
                       </small>
                     </div>
                   </div>
