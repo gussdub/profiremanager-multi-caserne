@@ -5745,7 +5745,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
       {/* Edit User Modal - Complet et fonctionnel */}
       {showEditModal && selectedUser && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+        <div className="modal-overlay" onClick={async () => {
+          await handleUpdateUser();
+        }}>
           <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="edit-user-modal">
             <div className="modal-header">
               <h3>✏️ Modifier {selectedUser.prenom} {selectedUser.nom}</h3>
