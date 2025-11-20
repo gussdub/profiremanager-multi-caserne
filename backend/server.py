@@ -5182,6 +5182,18 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
         # 🚀 LANCER LA RECHERCHE AUTOMATIQUE DE REMPLAÇANT
         await lancer_recherche_remplacant(demande_obj.id, tenant.id)
         
+        # Créer une activité
+        type_garde = await db.types_garde.find_one({"id": demande.type_garde_id, "tenant_id": tenant.id})
+        garde_nom = type_garde['nom'] if type_garde else 'garde'
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="remplacement_demande",
+            description=f"🔄 {current_user.prenom} {current_user.nom} cherche un remplaçant pour la {garde_nom} du {demande.date}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": current_user.id, "demande_id": demande_obj.id}
+        )
+        
         # Clean the object before returning
         cleaned_demande = clean_mongo_doc(demande_obj.dict())
         return DemandeRemplacement(**cleaned_demande)
