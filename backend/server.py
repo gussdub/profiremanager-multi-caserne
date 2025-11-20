@@ -4534,6 +4534,16 @@ async def create_assignation(tenant_slug: str, assignation: AssignationCreate, c
                 "type_garde": type_garde["nom"]
             }
         )
+        
+        # Créer une activité
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="assignation_manuelle",
+            description=f"📅 {current_user.prenom} {current_user.nom} a assigné {user_assigne['prenom']} {user_assigne['nom']} à la garde '{type_garde['nom']}' le {assignation.date}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": assignation.user_id}  # Pour filtrage superviseur/employé
+        )
     
     return {"message": "Assignation créée avec succès"}
 
