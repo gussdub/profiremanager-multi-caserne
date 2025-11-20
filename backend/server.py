@@ -10475,8 +10475,15 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
 
 
 # Fonction helper pour créer des activités
-async def creer_activite(tenant_id: str, type_activite: str, description: str, user_id: Optional[str] = None, user_nom: Optional[str] = None):
-    """Helper pour créer une activité dans le système"""
+async def creer_activite(
+    tenant_id: str, 
+    type_activite: str, 
+    description: str, 
+    user_id: Optional[str] = None, 
+    user_nom: Optional[str] = None,
+    data: Optional[dict] = None  # Données supplémentaires pour filtrage
+):
+    """Helper pour créer une activité dans le système avec auto-nettoyage après 30 jours"""
     activite = Activite(
         tenant_id=tenant_id,
         type_activite=type_activite,
@@ -10484,7 +10491,19 @@ async def creer_activite(tenant_id: str, type_activite: str, description: str, u
         user_id=user_id,
         user_nom=user_nom
     )
-    await db.activites.insert_one(activite.dict())
+    
+    activite_dict = activite.dict()
+    if data:
+        activite_dict["data"] = data  # Ajouter les données supplémentaires
+    
+    await db.activites.insert_one(activite_dict)
+    
+    # Nettoyage automatique des activités > 30 jours
+    date_limite = datetime.now(timezone.utc) - timedelta(days=30)
+    await db.activites.delete_many({
+        "tenant_id": tenant_id,
+        "created_at": {"$lt": date_limite}
+    })
 
 
 # ====================================================================
