@@ -10230,16 +10230,35 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     # ===== SECTION PERSONNELLE =====
     # Heures travaillées ce mois (séparé interne/externe)
     mes_assignations_mois = [a for a in assignations if a["user_id"] == current_user.id and "date" in a]
+    logger.info(f"📊 Dashboard - User {current_user.email}: {len(mes_assignations_mois)} assignations trouvées")
     heures_mois_internes = 0
     heures_mois_externes = 0
     heures_mois_total = 0
     nombre_gardes_mois = 0
     for assignation in mes_assignations_mois:
         try:
-            date_assign = datetime.fromisoformat(assignation["date"])
+            date_str = assignation["date"]
+            logger.info(f"📊 Traitement assignation - date: {date_str}, type: {type(date_str)}")
+            
+            # Gérer les différents formats de date
+            if isinstance(date_str, str):
+                # Retirer le 'Z' et gérer le timezone
+                date_str = date_str.replace('Z', '+00:00')
+                if 'T' in date_str:
+                    date_assign = datetime.fromisoformat(date_str)
+                else:
+                    # Format date simple YYYY-MM-DD
+                    date_assign = datetime.fromisoformat(date_str + "T00:00:00").replace(tzinfo=timezone.utc)
+            else:
+                # Si c'est déjà un datetime
+                date_assign = date_str
+            
+            logger.info(f"📊 Date parsée: {date_assign}, debut_mois: {debut_mois}, fin_mois: {fin_mois}")
+            
             if debut_mois <= date_assign <= fin_mois:
                 # Récupérer le type de garde pour calculer la durée exacte
                 type_garde = type_garde_map.get(assignation.get("type_garde_id"))
+                logger.info(f"📊 Type garde trouvé: {type_garde.get('nom') if type_garde else 'None'}")
                 if type_garde:
                     duree = type_garde.get("duree_heures", 8)
                     if type_garde.get("est_garde_externe", False):
@@ -10247,12 +10266,17 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
                     else:
                         heures_mois_internes += duree
                     heures_mois_total += duree
+                    logger.info(f"📊 Heures ajoutées: {duree}h (total: {heures_mois_total}h)")
                 else:
                     # Fallback si type garde non trouvé
                     heures_mois_internes += 8
                     heures_mois_total += 8
+                    logger.info(f"📊 Heures ajoutées (fallback): 8h (total: {heures_mois_total}h)")
                 nombre_gardes_mois += 1
-        except:
+            else:
+                logger.info(f"📊 Date hors du mois en cours, ignorée")
+        except Exception as e:
+            logger.error(f"📊 Erreur traitement assignation: {e}, assignation: {assignation}")
             pass
     
     # Présence aux formations
