@@ -5903,10 +5903,17 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   <div className="form-row">
                     <div className="form-field">
                       <Label>Heures maximum par semaine *</Label>
-                      <Input
+                      <input
                         type="number"
                         min="5"
                         max="168"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
                         value={newUser.heures_max_semaine !== null && newUser.heures_max_semaine !== undefined 
                           ? newUser.heures_max_semaine 
                           : 40}
@@ -5918,7 +5925,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="edit-user-heures-max-input"
                         disabled={
                           newUser.type_emploi === 'temps_partiel' || 
-                          (newUser.type_emploi === 'temps_plein' && user.role !== 'admin')
+                          (newUser.type_emploi === 'temps_plein' && user?.role !== 'admin')
                         }
                       />
                       <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.875rem' }}>
