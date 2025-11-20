@@ -15433,6 +15433,18 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
     
     await db.epis.insert_one(epi_data)
     
+    # Créer une activité
+    user = await db.users.find_one({"id": epi.user_id, "tenant_id": tenant.id})
+    if user:
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="epi_attribution",
+            description=f"🧰 {current_user.prenom} {current_user.nom} a attribué l'EPI '{epi.type_equipement}' (#{epi_dict['numero_serie']}) à {user['prenom']} {user['nom']}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": epi.user_id}
+        )
+    
     return epi_obj
 
 @api_router.post("/{tenant_slug}/epi/import-csv")
