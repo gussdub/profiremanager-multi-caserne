@@ -3623,9 +3623,9 @@ const Dashboard = () => {
                 <h3>{section_generale.couverture_planning}%</h3>
                 <p>Couverture planning</p>
               </div>
-              <div className="kpi-card" style={{background: section_generale.gardes_manquantes > 0 ? '#FEE2E2' : '#D1FAE5'}}>
-                <h3>{section_generale.gardes_manquantes}</h3>
-                <p>Gardes manquantes</p>
+              <div className="kpi-card" style={{background: (section_generale.postes_a_pourvoir || section_generale.gardes_manquantes || 0) > 0 ? '#FEE2E2' : '#D1FAE5'}}>
+                <h3>{section_generale.postes_a_pourvoir || section_generale.gardes_manquantes || 0}</h3>
+                <p>Postes à pourvoir ce mois</p>
               </div>
               <div className="kpi-card" style={{background: '#FED7AA'}}>
                 <h3>{section_generale.demandes_conges_en_attente}</h3>
