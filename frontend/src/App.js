@@ -6064,13 +6064,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 </div>
               </div>
 
-              <div className="modal-actions">
-                <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                  Annuler
-                </Button>
-                <Button variant="default" onClick={handleUpdateUser} data-testid="update-user-btn">
-                  💾 Sauvegarder les modifications
-                </Button>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>
+                  💡 Les modifications sont sauvegardées automatiquement lors de la fermeture
+                </p>
               </div>
             </div>
           </div>
