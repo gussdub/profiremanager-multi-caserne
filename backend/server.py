@@ -10365,19 +10365,46 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         couverture_planning = round((total_personnel_assigne / total_personnel_requis * 100), 1) if total_personnel_requis > 0 else 0
         couverture_planning = min(couverture_planning, 100.0)  # Cap à 100%
         
-        # Gardes manquantes (postes non assignés dans les 7 prochains jours)
+        # Gardes manquantes (postes non pourvus dans les 7 prochains jours)
         gardes_manquantes = 0
-        for i in range(7):
-            date_check = (today + timedelta(days=i)).date().isoformat()
-            assignations_jour = [a for a in assignations if a.get("date") == date_check]
-            # Supposons 3 postes par jour minimum
-            if len(assignations_jour) < 3:
-                gardes_manquantes += (3 - len(assignations_jour))
+        for day_offset in range(7):
+            date_check = today + timedelta(days=day_offset)
+            day_name = date_check.strftime("%A").lower()
+            date_check_str = date_check.strftime("%Y-%m-%d")
+            
+            # Pour chaque type de garde applicable ce jour
+            for type_garde in types_garde:
+                jours_app = type_garde.get("jours_application", [])
+                if not jours_app or day_name in jours_app:
+                    personnel_requis = type_garde.get("personnel_requis", 1)
+                    assignations_jour = len([a for a in assignations 
+                                            if a.get("date", "").startswith(date_check_str) 
+                                            and a.get("type_garde_id") == type_garde["id"]])
+                    
+                    if assignations_jour < personnel_requis:
+                        gardes_manquantes += (personnel_requis - assignations_jour)
         
         # Demandes de congé à approuver
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
         
         # Statistiques du mois
+        # Compter les assignations du mois
+        assignations_mois_count = 0
+        for a in assignations:
+            try:
+                if "date" in a:
+                    date_str = a["date"]
+                    if isinstance(date_str, str):
+                        if 'T' in date_str:
+                            date_assign = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                        else:
+                            date_assign = datetime.fromisoformat(date_str + "T00:00:00").replace(tzinfo=timezone.utc)
+                        
+                        if debut_mois <= date_assign <= fin_mois.replace(hour=23, minute=59, second=59):
+                            assignations_mois_count += 1
+            except:
+                pass
+        
         # Compter les formations ce mois avec gestion d'erreur pour les dates invalides
         formations_ce_mois_count = 0
         for f in formations:
@@ -10391,7 +10418,7 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
                 pass
         
         stats_mois = {
-            "total_assignations": len(assignations_mois_valides),
+            "total_assignations": assignations_mois_count,
             "total_personnel_actif": len([u for u in users if u.get("statut") == "Actif"]),
             "formations_ce_mois": formations_ce_mois_count
         }
