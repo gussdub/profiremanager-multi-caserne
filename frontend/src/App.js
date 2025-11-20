@@ -5904,22 +5904,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     <div className="form-field">
                       <Label>Heures maximum par semaine *</Label>
                       <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                        type="number"
+                        min="5"
+                        max="168"
                         value={newUser.heures_max_semaine !== null && newUser.heures_max_semaine !== undefined 
                           ? newUser.heures_max_semaine 
                           : 40}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Permettre seulement les chiffres ou champ vide
-                          if (value === '' || /^\d+$/.test(value)) {
-                            const numValue = value === '' ? null : parseInt(value);
-                            // Valider la plage 5-168
-                            if (numValue === null || (numValue >= 5 && numValue <= 168)) {
-                              setNewUser({...newUser, heures_max_semaine: numValue});
-                            }
-                          }
+                          const value = parseInt(e.target.value) || 40;
+                          setNewUser({...newUser, heures_max_semaine: value});
                         }}
                         placeholder="Ex: 40"
                         data-testid="edit-user-heures-max-input"
