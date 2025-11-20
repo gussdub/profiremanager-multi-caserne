@@ -5875,6 +5875,16 @@ async def create_formation(tenant_slug: str, formation: FormationCreate, current
     form_data["updated_at"] = formation_obj.updated_at.isoformat()
     
     await db.formations.insert_one(form_data)
+    
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="formation_creation",
+        description=f"🎓 {current_user.prenom} {current_user.nom} a créé la formation '{formation.nom}' du {formation.date_debut} au {formation.date_fin}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     return formation_obj
 
 @api_router.get("/{tenant_slug}/formations", response_model=List[Formation])
