@@ -4496,6 +4496,19 @@ async def retirer_assignation(tenant_slug: str, assignation_id: str, current_use
         if result.deleted_count == 0:
             raise HTTPException(status_code=400, detail="Impossible de retirer l'assignation")
         
+        # Créer une activité
+        user = await db.users.find_one({"id": assignation["user_id"], "tenant_id": tenant.id})
+        type_garde = await db.types_garde.find_one({"id": assignation.get("type_garde_id"), "tenant_id": tenant.id})
+        if user and type_garde:
+            await creer_activite(
+                tenant_id=tenant.id,
+                type_activite="assignation_retrait",
+                description=f"❌ {current_user.prenom} {current_user.nom} a retiré {user['prenom']} {user['nom']} de la garde '{type_garde['nom']}' du {assignation['date']}",
+                user_id=current_user.id,
+                user_nom=f"{current_user.prenom} {current_user.nom}",
+                data={"concerne_user_id": assignation["user_id"]}
+            )
+        
         return {
             "message": "Assignation retirée avec succès",
             "assignation_supprimee": assignation_id,
