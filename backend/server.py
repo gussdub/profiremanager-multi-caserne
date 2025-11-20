@@ -17302,6 +17302,15 @@ async def import_batiments_csv(
             })
             error_count += 1
     
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="prevention_import_batiments",
+        description=f"📊 {current_user.prenom} {current_user.nom} a importé {success_count} bâtiments ({error_count} erreurs)",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     return {
         "success_count": success_count,
         "error_count": error_count,
