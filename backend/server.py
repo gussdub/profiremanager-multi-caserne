@@ -10434,7 +10434,7 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         
         section_generale = {
             "couverture_planning": couverture_planning,
-            "gardes_manquantes": gardes_manquantes,
+            "postes_a_pourvoir": postes_a_pourvoir,  # Renommé pour clarté
             "demandes_conges_en_attente": demandes_en_attente,
             "statistiques_mois": stats_mois
         }
