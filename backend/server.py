@@ -11299,6 +11299,15 @@ async def import_disponibilites_csv(
                 "erreur": str(e)
             })
     
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="import_disponibilites",
+        description=f"📊 {current_user.prenom} {current_user.nom} a importé {results['created'] + results['updated']} disponibilités ({results['created']} créées, {results['updated']} mises à jour, {results['skipped']} ignorées)",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     return results
 
 
