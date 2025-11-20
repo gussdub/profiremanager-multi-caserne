@@ -18847,6 +18847,15 @@ async def create_plan_intervention(
     
     await db.plans_intervention.insert_one(plan_to_insert)
     
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="prevention_plan_creation",
+        description=f"🏢 {current_user.prenom} {current_user.nom} a créé le plan d'intervention #{numero_plan} pour '{batiment['nom']}'",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     result = clean_mongo_doc(plan_to_insert)
     logger.info(f"✅ Layers dans résultat final: {len(result.get('layers', []))} layers")
     
