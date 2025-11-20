@@ -818,10 +818,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                             right: '2px',
                             display: 'none',
                             gap: '2px',
-                            zIndex: 10
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.display = 'flex';
+                            zIndex: 10,
+                            pointerEvents: 'auto'
                           }}
                         >
                           <button
