@@ -5003,6 +5003,21 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
                 }
             )
         
+        # Créer une activité
+        type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
+        garde_nom = type_garde['nom'] if type_garde else 'garde'
+        await creer_activite(
+            tenant_id=tenant_id,
+            type_activite="remplacement_accepte",
+            description=f"✅ {remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de remplacer {demandeur.get('prenom', '')} {demandeur.get('nom', '')} pour la {garde_nom} du {demande_data['date']}",
+            user_id=remplacant_id,
+            user_nom=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}",
+            data={
+                "concerne_user_id": demande_data["demandeur_id"],
+                "demande_id": demande_id
+            }
+        )
+        
         logging.info(f"✅ Remplacement accepté: demande {demande_id}, remplaçant {remplacant['nom_complet']}")
         return True
         
