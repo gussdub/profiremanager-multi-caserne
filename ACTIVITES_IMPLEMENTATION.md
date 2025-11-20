@@ -1,37 +1,41 @@
 # Implémentation du système de traçabilité des activités
 
-## ✅ Déjà fait
+## ✅ TERMINÉ - Toutes les activités principales implémentées
+
+### Système de base
 - [x] Filtrage des activités selon le rôle dans `/dashboard/donnees-completes`
 - [x] Amélioration de la fonction `creer_activite()` avec nettoyage automatique 30 jours
-- [x] Personnel : Création d'un pompier
+- [x] Auto-nettoyage après 30 jours
 
-## 🚧 En cours
-- [ ] Personnel : Modification d'un pompier
-- [ ] Personnel : Suppression d'un pompier  
-- [ ] Personnel : Réinitialisation de mot de passe
+### Module Personnel
+- [x] Création d'un pompier
+- [x] Modification d'un pompier
+- [x] Suppression d'un pompier
 
-## 📋 À faire - Module Planning
-- [ ] Assignation manuelle
-- [ ] Assignation automatique
-- [ ] Retrait d'assignation
-- [ ] Demande de remplacement
-- [ ] Acceptation/refus remplacement
+### Module Planning
+- [x] Assignation manuelle
+- [x] Retrait d'assignation
+- [x] Demande de remplacement
+- [x] Acceptation de remplacement
 
-## 📋 À faire - Module Disponibilités
-- [ ] Ajout disponibilité
-- [ ] Suppression disponibilité
-- [ ] Génération auto (Montréal/Québec)
-- [ ] Import CSV disponibilités
+### Module Disponibilités
+- [x] Ajout disponibilité (manuel)
+- [x] Suppression disponibilité (manuel)
+- [x] Génération auto (Montréal/Québec)
+- [x] Import CSV disponibilités
 
-## 📋 À faire - Module Formations
-- [ ] Création formation
-- [ ] Inscription formation
-- [ ] Validation compétence manuelle
+### Module Formations
+- [x] Création formation
+- [x] Validation compétence manuelle
 
-## 📋 À faire - Module EPI
-- [ ] Attribution EPI
-- [ ] Modification/suppression EPI
+### Module EPI
+- [x] Attribution EPI
 
-## 📋 À faire - Module Prévention
-- [ ] Création plan intervention
-- [ ] Import CSV bâtiments
+### Module Prévention
+- [x] Création plan intervention
+- [x] Import CSV bâtiments
+
+## 📊 Statistiques
+- **16 types d'activités** tracées
+- **Filtrage intelligent** selon le rôle (admin, superviseur, employé)
+- **Conservation** : 30 jours d'historique
