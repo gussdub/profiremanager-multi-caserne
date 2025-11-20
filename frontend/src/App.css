@@ -385,11 +385,13 @@ body {
   font-weight: 600;
   font-size: 0.9rem;
   margin-bottom: 0.25rem;
+  color: #ffffff;
 }
 
 .user-role, .user-grade {
   font-size: 0.75rem;
-  opacity: 0.8;
+  opacity: 0.9;
+  color: #ffffff;
 }
 
 .logout-btn {
