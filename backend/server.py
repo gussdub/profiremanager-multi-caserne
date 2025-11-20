@@ -11769,6 +11769,18 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     if result.deleted_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de supprimer la disponibilité")
     
+    # Créer une activité (seulement si l'utilisateur supprime ses propres disponibilités)
+    if disponibilite["user_id"] == current_user.id:
+        statut_text = "disponibilité" if disponibilite["statut"] == "disponible" else "indisponibilité"
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="disponibilite_suppression",
+            description=f"🗑️ {current_user.prenom} {current_user.nom} a supprimé une {statut_text} du {disponibilite['date']}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": current_user.id}
+        )
+    
     return {"message": "Disponibilité supprimée avec succès"}
 
 # ==================== PUSH NOTIFICATIONS ROUTES ====================
