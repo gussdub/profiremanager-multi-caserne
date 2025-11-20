@@ -10365,12 +10365,16 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         couverture_planning = round((total_personnel_assigne / total_personnel_requis * 100), 1) if total_personnel_requis > 0 else 0
         couverture_planning = min(couverture_planning, 100.0)  # Cap à 100%
         
-        # Gardes manquantes (postes non pourvus dans les 7 prochains jours)
+        # Gardes manquantes (postes non pourvus ce mois) - à partir d'aujourd'hui jusqu'à fin du mois
         gardes_manquantes = 0
-        for day_offset in range(7):
+        jours_restants_mois = (fin_mois.date() - today.date()).days + 1
+        logger.info(f"📊 Calcul gardes manquantes - jours restants: {jours_restants_mois}")
+        
+        for day_offset in range(jours_restants_mois):
             date_check = today + timedelta(days=day_offset)
             day_name = date_check.strftime("%A").lower()
             date_check_str = date_check.strftime("%Y-%m-%d")
+            jour_manquantes = 0
             
             # Pour chaque type de garde applicable ce jour
             for type_garde in types_garde:
@@ -10382,7 +10386,12 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
                                             and a.get("type_garde_id") == type_garde["id"]])
                     
                     if assignations_jour < personnel_requis:
-                        gardes_manquantes += (personnel_requis - assignations_jour)
+                        manquantes = personnel_requis - assignations_jour
+                        gardes_manquantes += manquantes
+                        jour_manquantes += manquantes
+            
+            if jour_manquantes > 0:
+                logger.info(f"📊 {date_check_str} ({day_name}): {jour_manquantes} postes manquants")
         
         # Demandes de congé à approuver
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
