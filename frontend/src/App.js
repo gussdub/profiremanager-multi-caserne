@@ -5751,7 +5751,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="edit-user-modal">
             <div className="modal-header">
               <h3>✏️ Modifier {selectedUser.prenom} {selectedUser.nom}</h3>
-              <Button variant="ghost" onClick={() => setShowEditModal(false)}>✕</Button>
+              <Button variant="ghost" onClick={async () => {
+                await handleUpdateUser();
+              }}>✕</Button>
             </div>
             <div className="modal-body">
               <div className="personnel-form-grid">
