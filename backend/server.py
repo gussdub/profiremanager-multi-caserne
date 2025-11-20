@@ -10387,11 +10387,11 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
                     
                     if assignations_jour < personnel_requis:
                         manquantes = personnel_requis - assignations_jour
-                        gardes_manquantes += manquantes
+                        postes_a_pourvoir += manquantes
                         jour_manquantes += manquantes
             
             if jour_manquantes > 0:
-                logger.info(f"📊 {date_check_str} ({day_name}): {jour_manquantes} postes manquants")
+                logger.info(f"📊 {date_check_str} ({day_name}): {jour_manquantes} postes à pourvoir")
         
         # Demandes de congé à approuver
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
