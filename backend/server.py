@@ -11060,6 +11060,21 @@ async def create_disponibilite(
     dispo_dict["tenant_id"] = tenant.id
     disponibilite_obj = Disponibilite(**dispo_dict)
     await db.disponibilites.insert_one(disponibilite_obj.dict())
+    
+    # Créer une activité (seulement si l'utilisateur modifie ses propres disponibilités)
+    if disponibilite.user_id == current_user.id:
+        statut_text = "disponible" if disponibilite.statut == "disponible" else "indisponible"
+        type_garde = await db.types_garde.find_one({"id": disponibilite.type_garde_id, "tenant_id": tenant.id})
+        garde_text = f" pour la garde '{type_garde['nom']}'" if type_garde else ""
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="disponibilite_ajout",
+            description=f"📅 {current_user.prenom} {current_user.nom} s'est déclaré(e) {statut_text}{garde_text} le {disponibilite.date}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": current_user.id}
+        )
+    
     return disponibilite_obj
 
 @api_router.get("/{tenant_slug}/disponibilites/{user_id}", response_model=List[Disponibilite])
