@@ -2349,15 +2349,14 @@ body {
 }
 
 .user-grade {
-  background-color: #ffffff;
-  color: #1e293b;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
   padding: 0.125rem 0.5rem;
   border-radius: 12px;
   font-size: 0.625rem;
   font-weight: 600;
   display: inline-block;
   margin-bottom: 0.5rem;
-  border: 1px solid #e2e8f0;
 }
 
 @media (max-width: 900px) {
