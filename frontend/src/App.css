@@ -2773,7 +2773,7 @@ body {
 
 .user-grade {
   background-color: rgba(0, 0, 0, 0.5);
-  color: #ffffff;
+  color: #ffffff !important;
   padding: 0.125rem 0.5rem;
   border-radius: 12px;
   font-size: 0.625rem;
