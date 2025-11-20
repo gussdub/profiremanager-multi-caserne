@@ -3863,6 +3863,15 @@ async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depen
     await db.assignations.delete_many({"user_id": user_id, "tenant_id": tenant.id})
     await db.demandes_remplacement.delete_many({"demandeur_id": user_id, "tenant_id": tenant.id})
     
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="personnel_suppression",
+        description=f"🗑️ {current_user.prenom} {current_user.nom} a supprimé {existing_user['prenom']} {existing_user['nom']} du personnel",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
     return {"message": "Utilisateur supprimé avec succès"}
 
 @api_router.put("/{tenant_slug}/users/{user_id}/password")
