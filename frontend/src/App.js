@@ -3754,6 +3754,7 @@ const Dashboard = () => {
 
 // Personnel Component complet
 const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [formations, setFormations] = useState([]);
   const [grades, setGrades] = useState([]);
