@@ -7059,6 +7059,20 @@ async def creer_validation_competence(
     
     await db.validations_competences.insert_one(validation_obj.dict())
     
+    # Récupérer l'employé concerné
+    user = await db.users.find_one({"id": validation.user_id, "tenant_id": tenant.id})
+    
+    # Créer une activité
+    if user:
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="validation_competence",
+            description=f"✅ {current_user.prenom} {current_user.nom} a validé la compétence '{competence['nom']}' pour {user['prenom']} {user['nom']}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"concerne_user_id": validation.user_id}
+        )
+    
     return validation_obj
 
 @api_router.get("/{tenant_slug}/validations-competences/{user_id}")
