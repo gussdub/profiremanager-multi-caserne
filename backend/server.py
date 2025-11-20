@@ -10365,13 +10365,13 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         couverture_planning = round((total_personnel_assigne / total_personnel_requis * 100), 1) if total_personnel_requis > 0 else 0
         couverture_planning = min(couverture_planning, 100.0)  # Cap à 100%
         
-        # Gardes manquantes (postes non pourvus ce mois) - à partir d'aujourd'hui jusqu'à fin du mois
-        gardes_manquantes = 0
-        jours_restants_mois = (fin_mois.date() - today.date()).days + 1
-        logger.info(f"📊 Calcul gardes manquantes - jours restants: {jours_restants_mois}")
+        # Postes à pourvoir (personnes manquantes pour atteindre 100% de couverture) - tout le mois
+        postes_a_pourvoir = 0
+        jours_mois = (fin_mois.date() - debut_mois.date()).days + 1
+        logger.info(f"📊 Calcul postes à pourvoir - jours du mois: {jours_mois}")
         
-        for day_offset in range(jours_restants_mois):
-            date_check = today + timedelta(days=day_offset)
+        for day_offset in range(jours_mois):
+            date_check = debut_mois + timedelta(days=day_offset)
             day_name = date_check.strftime("%A").lower()
             date_check_str = date_check.strftime("%Y-%m-%d")
             jour_manquantes = 0
