@@ -12912,8 +12912,18 @@ async def generer_justification_attribution(
         
         # Vérifier disponibilité (temps partiel)
         if not raison_exclusion and candidate.get("type_emploi") == "temps_partiel":
-            # Vérifier s'il a déclaré une disponibilité (simplifié)
-            raison_exclusion = "Disponibilité non déclarée"
+            # Vérifier s'il a déclaré une disponibilité (même logique que l'attribution)
+            has_dispo = False
+            if dispos_lookup and candidate["id"] in dispos_lookup and date_str in dispos_lookup[candidate["id"]]:
+                # Disponibilité spécifique pour ce type de garde
+                if type_garde["id"] in dispos_lookup[candidate["id"]][date_str]:
+                    has_dispo = True
+                # OU disponibilité générale (type_garde_id = None)
+                elif None in dispos_lookup[candidate["id"]][date_str]:
+                    has_dispo = True
+            
+            if not has_dispo:
+                raison_exclusion = "Disponibilité non déclarée"
         
         # Vérifier s'il est déjà assigné
         if not raison_exclusion:
