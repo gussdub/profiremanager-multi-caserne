@@ -13532,7 +13532,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         user_monthly_hours_externes=user_monthly_hours_externes,
                         activer_heures_sup=activer_heures_sup,
                         existing_assignations=existing_assignations,
-                        disponibilites_evaluees=None  # TODO: passer les vraies dispos si nécessaire
+                        disponibilites_evaluees=None,
+                        dispos_lookup=dispos_lookup  # Passer le lookup pour vérifier les dispos
                     )
                     
                     # Créer l'assignation avec justification
