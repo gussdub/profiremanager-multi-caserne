@@ -13118,13 +13118,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         logging.info(f"📊 [ÉQUITÉ] Période: {periode_equite}, Début: {date_debut_periode}, Jours: {periode_equite_jours if periode_equite == 'personnalise' else 'N/A'}")
         
         # Récupérer les assignations de la période d'équité
-        assignations_periode = await db.assignations_gardes.find({
+        assignations_periode = await db.assignations.find({
             "tenant_id": tenant.id,
             "date": {
                 "$gte": date_debut_periode.strftime("%Y-%m-%d"),
                 "$lt": end_date.strftime("%Y-%m-%d")
             }
         }).to_list(length=None)
+        
+        logging.info(f"📊 [ÉQUITÉ] {len(assignations_periode)} assignations trouvées pour la période d'équité")
         
         # Calculate hours for each user based on equity period (séparé interne/externe)
         user_monthly_hours_internes = {}
