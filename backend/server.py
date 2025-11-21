@@ -13344,29 +13344,47 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     continue
                 
                 # ÉTAPE 3: Apply grade requirements (1 officier obligatoire si configuré)
-                # Logique CASCADE: Officiers qualifiés → Pompiers fonction_superieur
+                # Logique: Si au moins 1 officier déjà assigné, la contrainte est respectée
+                # Sinon, filtrer pour ne garder que les officiers/fonction_superieur
                 if type_garde.get("officier_obligatoire", False):
-                    # Identifier les utilisateurs avec des grades d'officier
-                    user_grade_obj = grades_map.get(user.get("grade")) if "user" in locals() else None
+                    # Vérifier s'il y a déjà un officier assigné à cette garde
+                    officier_deja_assigne = False
+                    for assignation in existing_for_garde:
+                        assigned_user = next((u for u in users if u["id"] == assignation["user_id"]), None)
+                        if assigned_user:
+                            grade_obj = grades_map.get(assigned_user.get("grade"))
+                            if (grade_obj and grade_obj.get("est_officier", False)) or assigned_user.get("fonction_superieur", False):
+                                officier_deja_assigne = True
+                                break
                     
-                    # Séparer officiers et pompiers fonction_superieur
-                    officers_qualifies = []
-                    pompiers_fonction_sup = []
-                    
-                    for u in available_users:
-                        grade_obj = grades_map.get(u.get("grade"))
-                        if grade_obj and grade_obj.get("est_officier", False):
-                            officers_qualifies.append(u)
-                        elif u.get("fonction_superieur", False):
-                            pompiers_fonction_sup.append(u)
-                    
-                    # Priorité 1: Officiers qualifiés (avec compétences vérifiées)
-                    if officers_qualifies:
-                        available_users = officers_qualifies
-                    # Priorité 2 (Fallback): Pompiers fonction_superieur si aucun officier
-                    elif pompiers_fonction_sup:
-                        available_users = pompiers_fonction_sup
-                    # Priorité 3: Si aucun des deux, garde reste non assignée (available_users vide)
+                    # Si aucun officier n'est encore assigné, appliquer la contrainte
+                    if not officier_deja_assigne:
+                        logging.info(f"🎖️ [OFFICIER] {type_garde['nom']} - {date_str}: Aucun officier assigné, application de la contrainte")
+                        
+                        # Séparer officiers et pompiers fonction_superieur
+                        officers_qualifies = []
+                        pompiers_fonction_sup = []
+                        
+                        for u in available_users:
+                            grade_obj = grades_map.get(u.get("grade"))
+                            if grade_obj and grade_obj.get("est_officier", False):
+                                officers_qualifies.append(u)
+                            elif u.get("fonction_superieur", False):
+                                pompiers_fonction_sup.append(u)
+                        
+                        # Priorité 1: Officiers qualifiés
+                        if officers_qualifies:
+                            available_users = officers_qualifies
+                            logging.info(f"✅ [OFFICIER] {len(officers_qualifies)} officiers qualifiés trouvés")
+                        # Priorité 2 (Fallback): Pompiers fonction_superieur si aucun officier
+                        elif pompiers_fonction_sup:
+                            available_users = pompiers_fonction_sup
+                            logging.info(f"✅ [OFFICIER] {len(pompiers_fonction_sup)} pompiers fonction supérieur trouvés (fallback)")
+                        # Priorité 3: Si aucun des deux, garde reste non assignée
+                        else:
+                            logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible")
+                    else:
+                        logging.info(f"✅ [OFFICIER] {type_garde['nom']} - {date_str}: Officier déjà assigné, contrainte respectée - tous les candidats éligibles")
                 
                 # ÉTAPE 4: NOUVELLE LOGIQUE D'ATTRIBUTION PAR PRIORITÉ
                 # Séparer les candidats en 4 catégories de priorité
