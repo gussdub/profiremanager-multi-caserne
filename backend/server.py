@@ -3779,13 +3779,22 @@ async def update_mon_profil(
     
     try:
         # L'utilisateur peut modifier son propre profil
+        # Utiliser exclude_unset=True pour ne mettre à jour que les champs modifiés
+        update_data = profile_data.dict(exclude_unset=True)
+        
+        if not update_data:
+            # Aucune modification
+            updated_user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
+            updated_user = clean_mongo_doc(updated_user)
+            return User(**updated_user)
+        
         result = await db.users.update_one(
             {"id": current_user.id, "tenant_id": tenant.id}, 
-            {"$set": profile_data.dict()}
+            {"$set": update_data}
         )
         
-        if result.modified_count == 0:
-            raise HTTPException(status_code=400, detail="Impossible de mettre à jour le profil")
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Profil non trouvé")
         
         # Récupérer le profil mis à jour
         updated_user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
