@@ -13401,11 +13401,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 for u in available_users:
                     if u["type_emploi"] == "temps_partiel":
                         # Vérifier si a déclaré une disponibilité
-                        has_dispo = (
-                            u["id"] in dispos_lookup and
-                            date_str in dispos_lookup[u["id"]] and
-                            type_garde["id"] in dispos_lookup[u["id"]][date_str]
-                        )
+                        # Accepter soit : disponibilité spécifique pour cette garde OU disponibilité générale (None)
+                        has_dispo = False
+                        if u["id"] in dispos_lookup and date_str in dispos_lookup[u["id"]]:
+                            # Disponibilité spécifique pour ce type de garde
+                            if type_garde["id"] in dispos_lookup[u["id"]][date_str]:
+                                has_dispo = True
+                            # OU disponibilité générale (type_garde_id = None)
+                            elif None in dispos_lookup[u["id"]][date_str]:
+                                has_dispo = True
                         
                         # Vérifier si a déclaré une indisponibilité (déjà filtré normalement, mais double vérification)
                         has_indispo = (
