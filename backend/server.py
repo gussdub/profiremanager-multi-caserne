@@ -12813,7 +12813,8 @@ async def generer_justification_attribution(
     user_monthly_hours_externes: Dict,
     activer_heures_sup: bool,
     existing_assignations: List[Dict],
-    disponibilites_evaluees: List[Dict] = None
+    disponibilites_evaluees: List[Dict] = None,
+    dispos_lookup: Dict = None  # NOUVEAU: pour vérifier les disponibilités
 ) -> Dict[str, Any]:
     """
     Génère une justification détaillée pour une attribution automatique
