@@ -4073,6 +4073,28 @@ async def create_type_garde(tenant_slug: str, type_garde: TypeGardeCreate, curre
     
     type_garde_dict = type_garde.dict()
     type_garde_dict["tenant_id"] = tenant.id
+    
+    # CALCUL AUTOMATIQUE de duree_heures à partir de heure_debut et heure_fin
+    if type_garde_dict.get("heure_debut") and type_garde_dict.get("heure_fin"):
+        try:
+            # Parse les heures (format "HH:MM")
+            debut = datetime.strptime(type_garde_dict["heure_debut"], "%H:%M")
+            fin = datetime.strptime(type_garde_dict["heure_fin"], "%H:%M")
+            
+            # Calculer la différence en heures
+            duree_calculee = (fin - debut).total_seconds() / 3600
+            
+            # Si heure de fin < heure de début, c'est une garde qui traverse minuit
+            if duree_calculee < 0:
+                duree_calculee += 24
+            
+            type_garde_dict["duree_heures"] = round(duree_calculee, 2)
+            logging.info(f"✅ [TYPE GARDE] Durée calculée: {duree_calculee}h ({type_garde_dict['heure_debut']} → {type_garde_dict['heure_fin']})")
+        except Exception as e:
+            logging.error(f"❌ [TYPE GARDE] Erreur calcul durée: {e}")
+            # Fallback sur 8h si erreur
+            type_garde_dict["duree_heures"] = 8
+    
     type_garde_obj = TypeGarde(**type_garde_dict)
     await db.types_garde.insert_one(type_garde_obj.dict())
     return type_garde_obj
