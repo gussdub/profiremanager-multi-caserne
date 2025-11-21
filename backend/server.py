@@ -13262,8 +13262,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             # Heures sup DÉSACTIVÉES : vérifier strictement heures_max_semaine
                             # Calculer les heures de la semaine actuelle pour cet utilisateur
                             # IMPORTANT: Ne compter que les gardes INTERNES (pas les externes)
+                            # INCLURE aussi les assignations nouvellement créées dans cette session
                             heures_semaine_actuelle = 0
-                            for assignation in existing_assignations:
+                            
+                            # Compter les assignations EXISTANTES + NOUVELLES
+                            toutes_assignations_semaine = existing_assignations + nouvelles_assignations
+                            
+                            for assignation in toutes_assignations_semaine:
                                 if assignation["user_id"] == user["id"]:
                                     type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
                                     if type_g:
