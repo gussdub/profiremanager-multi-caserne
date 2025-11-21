@@ -13268,6 +13268,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             # Pour l'instant, on ne limite pas (les heures sup sont autorisées)
                             pass  # Pas de skip, autoriser l'attribution
                         else:
+                            # Heures sup DÉSACTIVÉES : appliquer limite intelligente
+                            # Si employé a mis > 42h, on limite à 42h (overtime standard = au-delà de 42h)
+                            # Si employé a mis < 42h (ex: 25h, 30h), on respecte sa limite
+                            heures_max_user = min(heures_max_user, 42)
+                            logging.info(f"🔒 [LIMITE] {user['prenom']} {user['nom']}: heures_max_semaine limitée à {heures_max_user}h (heures sup désactivées)")
                             # Heures sup DÉSACTIVÉES : vérifier strictement heures_max_semaine
                             # Calculer les heures de la semaine actuelle pour cet utilisateur
                             # IMPORTANT: Ne compter que les gardes INTERNES (pas les externes)
