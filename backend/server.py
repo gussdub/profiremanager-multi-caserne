@@ -4134,6 +4134,27 @@ async def update_type_garde(tenant_slug: str, type_garde_id: str, type_garde_upd
     type_dict["tenant_id"] = tenant.id
     type_dict["created_at"] = existing_type.get("created_at")
     
+    # CALCUL AUTOMATIQUE de duree_heures à partir de heure_debut et heure_fin
+    if type_dict.get("heure_debut") and type_dict.get("heure_fin"):
+        try:
+            # Parse les heures (format "HH:MM")
+            debut = datetime.strptime(type_dict["heure_debut"], "%H:%M")
+            fin = datetime.strptime(type_dict["heure_fin"], "%H:%M")
+            
+            # Calculer la différence en heures
+            duree_calculee = (fin - debut).total_seconds() / 3600
+            
+            # Si heure de fin < heure de début, c'est une garde qui traverse minuit
+            if duree_calculee < 0:
+                duree_calculee += 24
+            
+            type_dict["duree_heures"] = round(duree_calculee, 2)
+            logging.info(f"✅ [TYPE GARDE UPDATE] Durée calculée: {duree_calculee}h ({type_dict['heure_debut']} → {type_dict['heure_fin']})")
+        except Exception as e:
+            logging.error(f"❌ [TYPE GARDE UPDATE] Erreur calcul durée: {e}")
+            # Garder la durée existante si erreur
+            type_dict["duree_heures"] = existing_type.get("duree_heures", 8)
+    
     result = await db.types_garde.replace_one({"id": type_garde_id, "tenant_id": tenant.id}, type_dict)
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Impossible de mettre à jour le type de garde")
