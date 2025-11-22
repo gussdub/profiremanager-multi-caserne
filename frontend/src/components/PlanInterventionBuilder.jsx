@@ -633,46 +633,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     }
   };
 
-  // Fonctions pour gérer les icônes personnalisées
-  const handleCreateIconePersonnalisee = async (iconeData) => {
-    try {
-      const token = getTenantToken();
-      
-      const response = await axios.post(
-        buildApiUrl(tenantSlug, '/prevention/icones-personnalisees'),
-        iconeData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Ajouter la nouvelle icône à la liste
-      setIconesPersonnalisees(prev => [...prev, response.data]);
-      alert('Icône personnalisée créée avec succès! ✅');
-    } catch (error) {
-      console.error('Erreur création icône:', error);
-      throw new Error(error.response?.data?.detail || error.message);
-    }
-  };
-
-  const handleDeleteIconePersonnalisee = async (iconeId) => {
-    if (!window.confirm('Supprimer cette icône personnalisée ?')) return;
-
-    try {
-      const token = getTenantToken();
-      
-      await axios.delete(
-        buildApiUrl(tenantSlug, `/prevention/icones-personnalisees/${iconeId}`),
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Retirer l'icône de la liste
-      setIconesPersonnalisees(prev => prev.filter(i => i.id !== iconeId));
-      alert('Icône supprimée avec succès! ✅');
-    } catch (error) {
-      console.error('Erreur suppression icône:', error);
-      alert(`Erreur lors de la suppression: ${error.response?.data?.detail || error.message}`);
-    }
-  };
-
   return (
     <div style={{ 
       position: 'fixed',
