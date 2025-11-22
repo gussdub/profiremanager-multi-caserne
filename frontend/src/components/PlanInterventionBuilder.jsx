@@ -50,6 +50,11 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [symbolToEdit, setSymbolToEdit] = useState(null);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [symbolToDelete, setSymbolToDelete] = useState(null);
+  
+  // États pour les icônes personnalisées et photos
+  const [iconesPersonnalisees, setIconesPersonnalisees] = useState([]);
+  const [showIconeModal, setShowIconeModal] = useState(false);
+  const [photos, setPhotos] = useState(existingPlan?.photos || []);
 
   // Charger les layers depuis existingPlan au montage ou quand il change
   useEffect(() => {
