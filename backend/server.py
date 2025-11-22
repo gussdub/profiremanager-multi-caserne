@@ -19620,8 +19620,8 @@ async def export_plan_intervention_pdf(
                     categorie_labels = {
                         'facade': '🏢 Façade',
                         'entree': '🚪 Entrée',
-                        'systeme_alarme': '🚨 Système d\'alarme',
-                        'points_eau': '💧 Points d\'eau',
+                        'systeme_alarme': "🚨 Système d'alarme",
+                        'points_eau': "💧 Points d'eau",
                         'risques': '⚠️ Risques',
                         'autre': '📷 Autre'
                     }
