@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 const CATEGORIES_PHOTOS = [
   { value: 'facade', label: '🏢 Façade' },
   { value: 'entree', label: '🚪 Entrée' },
-  { value: 'systeme_alarme', label: '🚨 Système d'alarme' },
-  { value: 'points_eau', label: '💧 Points d'eau' },
+  { value: 'systeme_alarme', label: "🚨 Système d'alarme" },
+  { value: 'points_eau', label: "💧 Points d'eau" },
   { value: 'risques', label: '⚠️ Risques' },
   { value: 'autre', label: '📷 Autre' }
 ];
