@@ -1330,6 +1330,14 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           }}
         />
       )}
+
+      {/* Modal Créer Icône Personnalisée */}
+      {showIconeModal && (
+        <IconePersonnaliseeModal
+          onClose={() => setShowIconeModal(false)}
+          onSave={handleCreateIconePersonnalisee}
+        />
+      )}
     </div>
   );
 };
