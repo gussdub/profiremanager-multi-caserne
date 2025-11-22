@@ -4261,9 +4261,8 @@ async def export_planning_pdf(
         jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
         
         if type == 'semaine':
-        
-        # Style pour les titres de jour
-        jour_style = ParagraphStyle(
+            # Style pour les titres de jour
+            jour_style = ParagraphStyle(
             'JourStyle',
             parent=styles['Heading2'],
             fontSize=14,
