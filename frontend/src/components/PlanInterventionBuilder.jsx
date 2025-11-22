@@ -1696,6 +1696,108 @@ const DeleteConfirmModal = ({ symbol, onConfirm, onCancel }) => {
   );
 };
 
+// Modal pour modifier un symbole prédéfini
+const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
+  const [newEmoji, setNewEmoji] = useState(symbol.emoji);
+
+  const handleSave = () => {
+    if (!newEmoji.trim()) {
+      alert('Veuillez entrer un emoji');
+      return;
+    }
+    onSave(newEmoji);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100000
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        padding: '30px',
+        maxWidth: '450px',
+        width: '90%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+          ✏️ Modifier le Symbole Prédéfini
+        </h3>
+
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '10px' }}>{symbol.emoji}</div>
+          <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
+            {symbol.label}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            Nouvel emoji *
+          </label>
+          <input
+            type="text"
+            value={newEmoji}
+            onChange={(e) => setNewEmoji(e.target.value)}
+            placeholder="Ex: 🔥"
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '24px',
+              textAlign: 'center'
+            }}
+          />
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px' }}>
+            💡 Astuce: Copiez-collez un emoji depuis votre clavier ou depuis un site d'emojis
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            ✅ Modifier
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Modal pour ajouter un symbole personnalisé
 const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
   const [nom, setNom] = useState('');
