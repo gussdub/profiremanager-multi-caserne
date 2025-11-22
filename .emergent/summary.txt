@@ -1,90 +1,104 @@
 <analysis>
-The user's primary language is French. The next agent MUST respond in French.
+The trajectory details an extensive, iterative development and debugging cycle on the ProFireManager application. The user's primary language is French, and all future responses must be in French.
 
-This trajectory details a complex development and debugging cycle for the ProFireManager application, focusing on the Prévention (Prevention) module. The initial task was to implement a map-based system for managing fire prevention officer sectors.
+The work began by fixing a critical UI bug: a non-scrolling preview table in the availability import modal. This was resolved with specific CSS changes. The focus then shifted to a major refactor of the Personnel module's UI, where confusing and non-functional modals for editing user hours were streamlined. The AI removed a redundant modal, fixed disabled input fields, and implemented an auto-save feature on the main edit modal.
 
-The first major effort involved implementing this feature with the Google Maps API. This was fraught with persistent issues, including React lifecycle problems (, ), incorrect DOM element attachment, and recurring  and  errors, despite multiple attempts by the user to configure the API key correctly in the Google Cloud Console.
+Subsequently, a series of UI/UX and backend bug fixes were addressed. The AI fixed a text contrast issue in the sidebar, which required overcoming CSS specificity problems. A significant portion of the work involved deep debugging and refactoring of the backend's automatic scheduling logic in . This included correcting KPI calculations on the dashboard, fixing how partially filled shifts are counted, and ensuring the officer required constraint was applied correctly (at least one vs. all). The AI also fixed critical bugs where user availability and monthly work hours were calculated incorrectly, preventing fair and accurate automated assignments.
 
-Following these failures, a strategic pivot was made to Leaflet and OpenStreetMap. This migration was successful, resulting in a functional, key-less interactive map displaying building markers.
-
-Work then shifted to a series of user-reported bugs. First, the building photo feature in the Bâtiment modal was broken because it relied on the now-removed Google Street View API. This was fixed by migrating to a placeholder system designed for Mapillary and manual uploads, which involved creating a dynamic mini-Leaflet map preview inside the modal. Second, a UI bug causing the address autocomplete dropdown to reappear after selection was fixed.
-
-The final and current task is resolving a critical bug preventing the creation of new buildings. After extensive debugging involving frontend data sanitization, backend logging, and user-provided console screenshots, the root cause was identified: the frontend sends a data payload with several fields that are missing from the backend's  Pydantic model, causing a  validation error. The immediate next step is to update this backend model.
+The trajectory concludes with the AI and user agreeing on a complete redesign of the weekly planning view to improve readability, with the AI about to begin implementation of the new whiteboard style layout.
 </analysis>
 
 <product_requirements>
-The ProFireManager application is a comprehensive tool for managing fire department operations, including personnel, training, and building prevention inspections.
+The primary goal is to enhance and stabilize the ProFireManager application by addressing bugs and implementing user-requested features for better usability and logical correctness.
 
-**Core Feature: Prevention Officer Sector Management**
-The primary goal is to build a system allowing administrators to visually manage geographic sectors for fire prevention officers.
--   **Phase 1 (Implicit):** Setup and planning.
--   **Phase 2 (Completed):** Display interactive building markers on a map. This was successfully implemented using Leaflet/OpenStreetMap after abandoning a problematic Google Maps integration.
--   **Phase 3 (Pending):** Implement map drawing tools (e.g., polygons) to define sectors.
--   **Phase 4 & 5 (Pending):** Assign sectors to officers and create backend logic to persist this data.
+**1. Bug Fixes & UI/UX Improvements:**
+- **Planning Module:** The weekly view is unreadable. It needs a complete redesign to a clear, vertical whiteboard style layout. The PDF export is also unreadable and must be redesigned to match the new, clear format, correctly filtering shifts by day and displaying all names.
+- **Personnel Module:** The process for editing an employee's max weekly hours was confusing and broken. This involved removing a redundant modal, making the input field in the main edit modal functional, and implementing role-based permissions (only admins can edit for full-time employees).
+- **Authentication:** Users report being frequently logged out or facing errors, forcing them to use the password forgotten feature.
+- **UI Polish:** Improve the legibility of user information (name, role, grade) in the sidebar against its red background.
 
-**Recent Bug Fixes & Enhancements:**
--   **Building Photo Display:** The building detail modal initially used Google Street View. This was replaced with a system that first attempts to find a photo from Mapillary and, if unsuccessful, displays a placeholder with an Add Photo button. The display was further refined to show a mini-interactive Leaflet map and finally the placeholder.
--   **Address Autocomplete:** A UI bug that caused the address suggestion list to immediately reopen after a selection was resolved.
--   **Building Creation (In-Progress Fix):** A critical bug preventing users from creating new buildings is currently being addressed. The root cause is a mismatch between the data sent by the frontend and the fields defined in the backend's Pydantic creation model.
+**2. Backend Logic & Feature Enhancements:**
+- **Automatic Scheduling:** The core assignment logic has multiple flaws that need correction to be reliable and fair. This includes fixing how monthly hours are calculated, ensuring weekly hour limits are respected (especially when overtime is disabled), correctly interpreting general availabilities, and properly applying the officer required constraint.
+- **Activity Log:** A comprehensive, real-time activity feed (fil du temps) must be implemented to track all significant actions (user creation, schedule changes, etc.), with visibility filtered by user role (Admins see all; others see relevant events).
+- **Dashboard KPIs:** The key performance indicators on the dashboard must be accurate and consistent with data shown in other modules.
 </product_requirements>
 
 <key_technical_concepts>
-- **Frameworks:** React (Vite) frontend, FastAPI backend.
-- **Database:** MongoDB.
-- **Architecture:** Monolithic frontend () with some logic extracted into components (). Backend is a single  file.
-- **Mapping Technology:** Migrated from Google Maps API to **Leaflet** with **OpenStreetMap** tiles, using  and .
-- **API & Data Validation:** **Pydantic** models are used for strict data validation on the backend, which was the source of the current create building bug.
-- **Geocoding:** Migrated from Google Geocoding to **Nominatim** (OpenStreetMap's free geocoding service).
+- **Frameworks**: React (Vite) frontend, FastAPI (Python) backend.
+- **Database**: MongoDB.
+- **Frontend Concepts**: React Hooks, CSS-in-JS, debugging CSS specificity, monolithic component structure (), Context API for authentication ().
+- **Backend Concepts**: Complex business logic implementation in Python,  manipulation, Pydantic models, JWT authentication, and PDF generation with .
+- **Development Cycle**: Highly iterative debugging and feature development based on direct user feedback and screenshots.
 </key_technical_concepts>
 
 <code_architecture>
-The application uses a React frontend and a FastAPI backend. The code is organized as follows:
+The application is a monolith with a React frontend and a FastAPI backend, with most of the application logic concentrated in two large files.
 
--   ****
-    -   **Importance:** This remains the central file for the frontend, containing the main application layout, routing, and the  component which houses the mapping feature.
-    -   **Summary of Changes:** The Google Maps  was entirely replaced with a new  component that uses  and is prepared for  integration. It renders the main map in the Préventionnistes view.
 
--   ****
-    -   **Importance:** This component is critical for creating and editing buildings. It handles address autocomplete, photo display, and form submission. It has been the focus of multiple recent bug fixes.
-    -   **Summary of Changes:**
-        -   All Google Maps dependencies (, Street View API calls) were removed.
-        -   Address search was migrated to the free Nominatim API.
-        -   An address autocomplete UI bug was fixed using a  flag to prevent re-fetching on selection.
-        -   The photo display was changed multiple times, finally settling on a system that attempts to fetch a Mapillary image and shows a placeholder with an upload button if none is found.
-        -   The  function was modified to prepare data for submission, but it's the source of the current bug where it sends fields not expected by the backend.
 
--   ****
-    -   **Importance:** Contains all backend API endpoints, database logic, and Pydantic data models.
-    -   **Summary of Changes:**
-        -   The  Pydantic model is the source of the current critical bug. It is missing several fields that the frontend sends upon creation (e.g., , , ).
-        -   The  endpoint () was updated to correctly add a  to the new document's uid=0(root) gid=0(root) groups=0(root) field.
-        -   Debug  statements were added to this endpoint to capture the raw incoming request body to diagnose the 422 error.
+-   ****:
+    -   **Importance**: This is the application's brain, containing all API endpoints, business logic for scheduling, PDF generation, and database interactions. It's the central point for almost all features and bug fixes.
+    -   **Summary of Changes**: This file underwent extensive modifications.
+        -   **Scheduling Logic ()**: Major refactoring was done to:
+            -   Correctly calculate monthly hours for equity, fixing a bug that read from the wrong database collection.
+            -   Enforce weekly hour limits by tracking newly created assignments within the same run.
+            -   Implement an intelligent 42h/week cap when overtime is disabled.
+            -   Recognize general availabilities (not tied to a specific shift type) as valid for all shifts.
+            -   Fix the Officier obligatoire constraint to mean at least one officer instead of only officers.
+        -   **Activity Log**: A new  function and associated data model were created. This function was then integrated into over 15 endpoints (user creation/modification, schedule assignments, training creation, etc.) to build a comprehensive audit trail. The  endpoint was updated to filter these activities based on user role.
+        -   **PDF Export ()**: The logic was completely rewritten to generate a more readable, list-style format. This included filtering shift types based on the day of the week and ensuring all assigned user names are displayed correctly.
+        -   **Type de Garde**: The endpoints for creating/updating shift types were modified to automatically calculate the  based on start and end times.
 
--   ** & **
-    -   **Importance:** Store environment variables.
-    -   **Summary of Changes:** The  was added, updated several times, and finally removed from both files as part of the migration to Leaflet.
+-   ****:
+    -   **Importance**: A massive, monolithic component that contains the router, modals, and logic for almost every page, including Personnel, Planning, and the main Login form.
+    -   **Summary of Changes**:
+        -   **Personnel Module**: The Modifier les heures max/semaine modal was removed. The input field in the main user edit modal was fixed by removing a faulty  condition and implementing correct role-based permissions using . An auto-save feature was added by calling the update function when the edit modal is closed.
+        -   **Exports**: The  and  functions were fixed by replacing  with an imported  function to resolve authentication errors.
+        -   **Login**: Investigated a login issue where the frontend was suspected of sending  instead of , though the code appeared correct.
+
+-   ****:
+    -   **Importance**: The main stylesheet for the application.
+    -   **Summary of Changes**: The file was edited multiple times to fix a text contrast issue in the sidebar. The AI struggled with CSS specificity, eventually using  to force the  style on , , and  to make them readable against a red background.
+
+-   ****:
+    -   **Importance**: Contains helper functions for API communication.
+    -   **Summary of Changes**: This file was read to discover the location of the  function, which was then imported into  to fix the export functionality.
 </code_architecture>
 
 <pending_tasks>
-- **Immediate:** Fix the critical create building bug by updating the  Pydantic model in  to include all fields sent by the frontend.
-- **Continue Feature:** Implement **Phase 3** of the Sector Management feature: activate the  tools to allow users to draw, edit, and save polygon sectors on the map.
-- **Implement Upload:** Add the file upload logic for the 📷 Ajouter une photo button in the building modal.
+- **Implement New Planning View**: Begin the approved redesign of the weekly planning view to match the Option 1: Vertical Whiteboard Style layout.
+- **Authentication Issues**: The user is still experiencing login problems, forcing frequent password resets. This needs a deeper investigation.
+- **Guillaume Dubeau Assignment Bug**: The investigation into why user Guillaume Dubeau is not being automatically assigned despite having availabilities was started but not concluded.
+- **Develop Hours Report**: Create the new PDF/Excel export for admins/supervisors listing all personnel with their total hours for a selected month.
 </pending_tasks>
 
 <current_work>
-The work is focused on fixing a critical bug that prevents the creation of new buildings. When a user fills out the Nouveau Bâtiment form and clicks Créer, the request fails with a  error from the backend.
+The immediate task is to completely redesign the weekly planning view in the Planning module. The current view is considered unreadable and not user-friendly.
 
-**Debugging Journey:**
-1.  The user reported the error with a screenshot showing the failed toast message.
-2.  Initial analysis of backend logs showed the  error but not the specific validation failure.
-3.  A  test confirmed that the backend endpoint could create a building if the payload was correct, proving the issue was with the data being sent by the frontend.
-4.  Debug logs were added to the backend  endpoint to print the raw incoming request body.
-5.  The user triggered the error again and provided a screenshot of the frontend's browser console, which showed the exact JSON payload being sent in the  request.
+The user provided an image of a physical, handwritten schedule as inspiration and, after being presented with four different UI mockups by the previous AI engineer, selected Option 1.
 
-**Root Cause Identified:**
-The user's screenshot revealed the problem. The frontend is sending a payload containing numerous fields (e.g., , , , ) that are **not** defined in the  Pydantic model within . Pydantic, by default, rejects unknown fields, leading to the  validation error. The very last step was identifying this mismatch as the definitive cause of the bug.
+**File to be modified:**  (specifically the  component within it).
+
+**Task:**
+- Implement the Planning Vertical Style Tableau Blanc layout.
+- The new design features a vertical column for each day of the week.
+- Each day's column will contain cards or sections for each shift (e.g., JOUR 6h-18h, NUIT 18h-6h).
+- Inside each shift card, the names of the assigned firefighters will be clearly listed.
+- The goal is to create a highly visual, clean, and intuitive interface that mirrors the clarity of the user's analog reference.
+
+The previous engineer had just received confirmation from the user to proceed with this implementation and was about to start coding this significant frontend enhancement.
 </current_work>
 
 <optional_next_step>
-Update the  Pydantic model in  to include all the missing fields that the frontend is sending. This will resolve the  error and allow successful creation of new buildings.
+I will start implementing the new Option 1 planning visualization within the  component in , structuring the JSX and CSS to create the vertical, day-by-day whiteboard layout.
 </optional_next_step>
+
+<verbatim_quotes>
+**User:** dans le module planning, je trouve que la visualisation hebdomadaire nest pas trés lisible et conviviale. pourrais-tu me proposer une visualisation différente? voir image pour inspiration. je veux que les personnes travaillant sur la garde soient visibles. as-tu des suggestions? tu peux me faire plusieurs propositions si tu veux"
+
+**AI Engineer:** "[Presents 4 options]"
+
+**User:** "tu peux implanter loption 1
+
+**AI Engineer:** Parfait ! Je vais implémenter lOption 1 - Planning Vertical style tableau blanc. Cest une grosse modification du composant Planning. Commençons :
+</verbatim_quotes>
