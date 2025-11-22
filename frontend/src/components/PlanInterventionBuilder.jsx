@@ -52,6 +52,11 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   
   // État pour les photos
   const [photos, setPhotos] = useState(existingPlan?.photos || []);
+  
+  // État pour stocker les modifications des symboles prédéfinis
+  const [predefinedSymbolOverrides, setPredefinedSymbolOverrides] = useState({});
+  const [showEditPredefinedModal, setShowEditPredefinedModal] = useState(false);
+  const [editingPredefinedSymbol, setEditingPredefinedSymbol] = useState(null);
 
   // Charger les layers depuis existingPlan au montage ou quand il change
   useEffect(() => {
