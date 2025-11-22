@@ -4358,6 +4358,8 @@ async def export_planning_pdf(
                         garde_style
                     ))
                     
+                    # Parcourir les types de garde
+                    for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
                         jours_app = type_garde.get('jours_application', [])
                         if jours_app and current_day not in jours_app:
                             continue
