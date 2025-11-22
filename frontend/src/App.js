@@ -7301,7 +7301,7 @@ const Planning = () => {
   const handleExportExcelPlanning = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       const url = `${backendUrl}/api/${tenantSlug}/planning/export-excel?periode=${periode}&type=${viewMode}`;
