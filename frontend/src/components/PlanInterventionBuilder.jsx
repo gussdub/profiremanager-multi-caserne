@@ -727,19 +727,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             >
               ➕ Ajouter Symbole
             </Button>
-            <Button
-              onClick={() => setShowIconeModal(true)}
-              style={{
-                backgroundColor: '#10b981',
-                color: 'white',
-                padding: '6px 12px',
-                fontSize: '12px',
-                marginTop: '8px',
-                width: '100%'
-              }}
-            >
-              🎨 Créer Icône Personnalisée
-            </Button>
           </div>
           
           <div style={{ padding: '15px', flex: 1, overflowY: 'auto' }}>
