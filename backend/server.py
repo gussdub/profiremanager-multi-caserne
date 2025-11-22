@@ -4260,6 +4260,8 @@ async def export_planning_pdf(
         # NOUVEAU FORMAT ÉPURÉ - Liste par jour
         jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
         
+        if type == 'semaine':
+        
         # Style pour les titres de jour
         jour_style = ParagraphStyle(
             'JourStyle',
