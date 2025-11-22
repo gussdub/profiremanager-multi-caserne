@@ -610,9 +610,21 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   };
 
   const handleEditPredefinedSymbol = (categoryName, idx, symbol) => {
-    // Pour les symboles prédéfinis, on peut ouvrir une modal d'édition ou simplement afficher une alerte
-    alert(`Édition du symbole prédéfini: ${symbol.label} (${symbol.emoji})\nCatégorie: ${categoryName}\nIndex: ${idx}`);
-    // TODO: Implémenter l'édition des symboles prédéfinis si nécessaire
+    setEditingPredefinedSymbol({ category: categoryName, index: idx, symbol });
+    setShowEditPredefinedModal(true);
+  };
+
+  const handleSavePredefinedSymbolEdit = (updatedEmoji) => {
+    if (!editingPredefinedSymbol) return;
+    
+    const key = `${editingPredefinedSymbol.category}-${editingPredefinedSymbol.index}`;
+    setPredefinedSymbolOverrides(prev => ({
+      ...prev,
+      [key]: updatedEmoji
+    }));
+    
+    setShowEditPredefinedModal(false);
+    setEditingPredefinedSymbol(null);
   };
 
   const handleDeleteSymbol = (symbol) => {
