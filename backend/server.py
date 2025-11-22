@@ -4358,41 +4358,29 @@ async def export_planning_pdf(
                         garde_style
                     ))
                     
-                    # Gardes du jour
-                    for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
-                    assignations_jour = [a for a in assignations_list if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
+                        jours_app = type_garde.get('jours_application', [])
+                        if jours_app and current_day not in jours_app:
+                            continue
+                        
+                        assignations_jour = [a for a in assignations_list 
+                                           if a['date'] == date_str 
+                                           and a['type_garde_id'] == type_garde['id']]
+                        
+                        if assignations_jour:
+                            noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
+                                   for a in assignations_jour if a['user_id'] in users_map]
+                            personnel_str = ', '.join(noms)
+                            garde_text = f"  • {type_garde['nom']} ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}): {personnel_str}"
+                            elements.append(Paragraph(garde_text, styles['Normal']))
                     
-                    if assignations_jour or True:
-                        noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
-                               for a in assignations_jour if a['user_id'] in users_map]
-                        
-                        personnel_str = ', '.join(noms) if noms else 'Aucun'
-                        statut = 'Complet' if len(noms) >= type_garde.get('personnel_requis', 1) else 'Partiel' if noms else 'Vacant'
-                        
-                        table_data.append([
-                            current.strftime('%d/%m/%Y'),
-                            type_garde['nom'],
-                            personnel_str[:50],
-                            statut
-                        ])
+                    elements.append(Spacer(1, 0.1*inch))
                 
-                current += timedelta(days=1)
-        
-        table = Table(table_data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FCA5A5')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ]))
-        
-        elements.append(table)
+                # Passer à la semaine suivante
+                current += timedelta(days=7)
+                semaine_num += 1
+                
+                if current <= date_fin:
+                    elements.append(PageBreak())  # Nouvelle page par semaine
         doc.build(elements)
         buffer.seek(0)
         
