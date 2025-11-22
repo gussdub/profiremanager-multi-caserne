@@ -1267,7 +1267,24 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                       {formData.equipements.length}
                     </div>
                   </div>
+
+                  <div style={{ padding: '10px', backgroundColor: '#fce7f3', borderRadius: '6px' }}>
+                    <div style={{ fontWeight: '600', fontSize: '13px', color: '#9f1239' }}>
+                      📷 Photos
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#9f1239' }}>
+                      {photos.length}
+                    </div>
+                  </div>
               </div>
+            </div>
+
+            {/* Galerie de photos */}
+            <div style={{ marginTop: '20px' }}>
+              <GaleriePhotosBuilder 
+                photos={photos}
+                onPhotosChange={setPhotos}
+              />
             </div>
           </div>
         </div>
