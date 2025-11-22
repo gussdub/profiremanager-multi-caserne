@@ -4257,45 +4257,77 @@ async def export_planning_pdf(
         elements.append(Paragraph(periode_str, styles['Normal']))
         elements.append(Spacer(1, 0.3*inch))
         
-        # Construire le tableau
-        if type == 'semaine':
-            jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-            dates = [(date_debut + timedelta(days=i)).strftime('%d/%m') for i in range(7)]
+        # NOUVEAU FORMAT ÉPURÉ - Liste par jour
+        jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+        
+        # Style pour les titres de jour
+        jour_style = ParagraphStyle(
+            'JourStyle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#1e293b'),
+            spaceAfter=10,
+            spaceBefore=15,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Style pour les gardes
+        garde_style = ParagraphStyle(
+            'GardeStyle',
+            parent=styles['Normal'],
+            fontSize=11,
+            leading=16,
+            leftIndent=20,
+            spaceAfter=8
+        )
+        
+        # Parcourir les jours
+        for i in range(7):
+            current_date = date_debut + timedelta(days=i)
+            current_date_str = current_date.strftime('%Y-%m-%d')
+            current_day = current_date.strftime('%A').lower()
+            jour_nom = jours_fr[current_date.weekday()]
+            date_formatted = current_date.strftime('%d %B %Y')
             
-            table_data = [['Type de Garde'] + [f"{j}\n{d}" for j, d in zip(jours, dates)]]
+            # Titre du jour
+            elements.append(Paragraph(f"<b>{jour_nom.upper()} {current_date.strftime('%d/%m/%Y')}</b>", jour_style))
+            elements.append(Spacer(1, 0.1*inch))
             
+            # Trouver les gardes applicables ce jour
+            gardes_du_jour = []
             for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
-                row = [f"{type_garde['nom']}\n{type_garde.get('heure_debut', '')} - {type_garde.get('heure_fin', '')}"]
+                jours_app = type_garde.get('jours_application', [])
                 
-                # Vérifier si cette garde a au moins une assignation dans la semaine
-                a_des_assignations = False
+                # Filtrer par jour applicable
+                if jours_app and current_day not in jours_app:
+                    continue
                 
-                for i in range(7):
-                    current_date = (date_debut + timedelta(days=i)).strftime('%Y-%m-%d')
-                    current_day = (date_debut + timedelta(days=i)).strftime('%A').lower()
+                # Récupérer les assignations
+                assignations_jour = [a for a in assignations_list 
+                                    if a['date'] == current_date_str 
+                                    and a['type_garde_id'] == type_garde['id']]
+                
+                if assignations_jour or not jours_app:  # Afficher si assignations OU garde générale
+                    noms_complets = []
+                    for a in assignations_jour:
+                        if a['user_id'] in users_map:
+                            user = users_map[a['user_id']]
+                            noms_complets.append(f"{user['prenom']} {user['nom']}")
                     
-                    # FILTRAGE : Ne garder que les gardes applicables ce jour
-                    jours_app = type_garde.get('jours_application', [])
-                    if jours_app and current_day not in jours_app:
-                        row.append('-')  # Garde non applicable ce jour
-                        continue
+                    garde_nom = type_garde['nom']
+                    garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
                     
-                    assignations_jour = [a for a in assignations_list if a['date'] == current_date and a['type_garde_id'] == type_garde['id']]
-                    
-                    if assignations_jour:
-                        a_des_assignations = True
-                        # Afficher TOUS les noms (pas de limite à 3)
-                        noms = [f"{users_map[a['user_id']]['prenom'][0]}. {users_map[a['user_id']]['nom'][:8]}" 
-                               for a in assignations_jour if a['user_id'] in users_map]
-                        cell_text = '\n'.join(noms)
+                    if noms_complets:
+                        personnel_str = ", ".join(noms_complets)
+                        garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>👤 {personnel_str}"
                     else:
-                        cell_text = 'Vacant'
+                        garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>⚠️ <i>Vacant</i>"
                     
-                    row.append(cell_text)
-                
-                # N'ajouter la ligne que si la garde a au moins une assignation dans la semaine
-                if a_des_assignations:
-                    table_data.append(row)
+                    elements.append(Paragraph(garde_text, garde_style))
+            
+            # Ligne de séparation
+            if i < 6:  # Pas de ligne après le dernier jour
+                elements.append(Spacer(1, 0.15*inch))
         else:
             table_data = [['Date', 'Type de Garde', 'Personnel Assigné', 'Statut']]
             
