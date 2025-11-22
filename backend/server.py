@@ -4267,16 +4267,27 @@ async def export_planning_pdf(
             for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
                 row = [f"{type_garde['nom']}\n{type_garde.get('heure_debut', '')} - {type_garde.get('heure_fin', '')}"]
                 
+                # Vérifier si cette garde a au moins une assignation dans la semaine
+                a_des_assignations = False
+                
                 for i in range(7):
                     current_date = (date_debut + timedelta(days=i)).strftime('%Y-%m-%d')
+                    current_day = (date_debut + timedelta(days=i)).strftime('%A').lower()
+                    
+                    # FILTRAGE : Ne garder que les gardes applicables ce jour
+                    jours_app = type_garde.get('jours_application', [])
+                    if jours_app and current_day not in jours_app:
+                        row.append('-')  # Garde non applicable ce jour
+                        continue
+                    
                     assignations_jour = [a for a in assignations_list if a['date'] == current_date and a['type_garde_id'] == type_garde['id']]
                     
                     if assignations_jour:
-                        noms = [f"{users_map[a['user_id']]['prenom'][0]}. {users_map[a['user_id']]['nom'][:10]}" 
+                        a_des_assignations = True
+                        # Afficher TOUS les noms (pas de limite à 3)
+                        noms = [f"{users_map[a['user_id']]['prenom'][0]}. {users_map[a['user_id']]['nom'][:8]}" 
                                for a in assignations_jour if a['user_id'] in users_map]
-                        cell_text = '\n'.join(noms[:3])
-                        if len(noms) > 3:
-                            cell_text += f"\n+{len(noms)-3}"
+                        cell_text = '\n'.join(noms)
                     else:
                         cell_text = 'Vacant'
                     
