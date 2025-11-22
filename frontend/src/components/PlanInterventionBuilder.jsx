@@ -914,59 +914,63 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '8px'
                 }}>
-                    {symbols.map((symbol, idx) => (
-                      <div
-                        key={idx}
-                        style={{ position: 'relative' }}
-                      >
-                        <button
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, symbol)}
-                          onClick={() => handleSymbolClick(symbol)}
-                          style={{
-                            padding: '12px',
-                            border: selectedSymbol?.emoji === symbol.emoji ? `3px solid ${symbol.color}` : `2px solid ${symbol.color}`,
-                            borderRadius: '8px',
-                            backgroundColor: selectedSymbol?.emoji === symbol.emoji ? `${symbol.color}30` : 'white',
-                            cursor: 'grab',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '5px',
-                            transition: 'all 0.2s',
-                            textAlign: 'center',
-                            boxShadow: selectedSymbol?.emoji === symbol.emoji ? `0 0 10px ${symbol.color}` : 'none',
-                            width: '100%'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                            // Afficher les boutons Edit sur le parent
-                            const parent = e.currentTarget.parentElement;
-                            const actionButtons = parent.querySelector('.action-buttons-predefined');
-                            if (actionButtons) {
-                              actionButtons.style.display = 'flex';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.boxShadow = 'none';
-                            // Cacher les boutons Edit
-                            const parent = e.currentTarget.parentElement;
-                            const actionButtons = parent.querySelector('.action-buttons-predefined');
-                            if (actionButtons) {
-                              actionButtons.style.display = 'none';
-                            }
-                          }}
-                          onDragEnd={(e) => {
-                            e.currentTarget.style.cursor = 'grab';
-                          }}
+                    {symbols.map((symbol, idx) => {
+                      const overrideKey = `${category}-${idx}`;
+                      const displayEmoji = predefinedSymbolOverrides[overrideKey] || symbol.emoji;
+                      
+                      return (
+                        <div
+                          key={idx}
+                          style={{ position: 'relative' }}
                         >
-                          <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{symbol.emoji}</div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
-                            {symbol.label}
-                          </div>
-                        </button>
+                          <button
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, { ...symbol, emoji: displayEmoji })}
+                            onClick={() => handleSymbolClick({ ...symbol, emoji: displayEmoji })}
+                            style={{
+                              padding: '12px',
+                              border: selectedSymbol?.emoji === displayEmoji ? `3px solid ${symbol.color}` : `2px solid ${symbol.color}`,
+                              borderRadius: '8px',
+                              backgroundColor: selectedSymbol?.emoji === displayEmoji ? `${symbol.color}30` : 'white',
+                              cursor: 'grab',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '5px',
+                              transition: 'all 0.2s',
+                              textAlign: 'center',
+                              boxShadow: selectedSymbol?.emoji === displayEmoji ? `0 0 10px ${symbol.color}` : 'none',
+                              width: '100%'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                              // Afficher les boutons Edit sur le parent
+                              const parent = e.currentTarget.parentElement;
+                              const actionButtons = parent.querySelector('.action-buttons-predefined');
+                              if (actionButtons) {
+                                actionButtons.style.display = 'flex';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                              // Cacher les boutons Edit
+                              const parent = e.currentTarget.parentElement;
+                              const actionButtons = parent.querySelector('.action-buttons-predefined');
+                              if (actionButtons) {
+                                actionButtons.style.display = 'none';
+                              }
+                            }}
+                            onDragEnd={(e) => {
+                              e.currentTarget.style.cursor = 'grab';
+                            }}
+                          >
+                            <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{displayEmoji}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
+                              {symbol.label}
+                            </div>
+                          </button>
 
                         {/* Boutons Modifier */}
                         <div 
