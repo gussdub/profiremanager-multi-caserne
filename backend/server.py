@@ -4329,13 +4329,37 @@ async def export_planning_pdf(
             if i < 6:  # Pas de ligne après le dernier jour
                 elements.append(Spacer(1, 0.15*inch))
         else:
-            table_data = [['Date', 'Type de Garde', 'Personnel Assigné', 'Statut']]
-            
+            # Mode mois - Afficher semaine par semaine
             current = date_debut
+            semaine_num = 1
+            
             while current <= date_fin:
-                date_str = current.strftime('%Y-%m-%d')
+                # Titre de semaine
+                fin_semaine = min(current + timedelta(days=6), date_fin)
+                elements.append(Paragraph(
+                    f"<b>SEMAINE {semaine_num} - Du {current.strftime('%d/%m')} au {fin_semaine.strftime('%d/%m/%Y')}</b>",
+                    jour_style
+                ))
+                elements.append(Spacer(1, 0.15*inch))
                 
-                for type_garde in types_garde_list:
+                # Afficher les 7 jours de cette semaine
+                for day_offset in range(7):
+                    jour_actuel = current + timedelta(days=day_offset)
+                    if jour_actuel > date_fin:
+                        break
+                    
+                    date_str = jour_actuel.strftime('%Y-%m-%d')
+                    current_day = jour_actuel.strftime('%A').lower()
+                    jour_nom = jours_fr[jour_actuel.weekday()]
+                    
+                    # Titre du jour
+                    elements.append(Paragraph(
+                        f"<b>{jour_nom} {jour_actuel.strftime('%d/%m')}</b>",
+                        garde_style
+                    ))
+                    
+                    # Gardes du jour
+                    for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
                     assignations_jour = [a for a in assignations_list if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
                     
                     if assignations_jour or True:
