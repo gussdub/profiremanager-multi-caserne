@@ -18574,6 +18574,78 @@ async def delete_photo(
     return {"message": "Photo supprimée avec succès"}
 
 
+# ==================== ICÔNES PERSONNALISÉES ====================
+
+@api_router.post("/{tenant_slug}/prevention/icones-personnalisees")
+async def create_icone_personnalisee(
+    tenant_slug: str,
+    icone: IconePersonnaliseeCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une icône personnalisée"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    try:
+        # Créer l'icône
+        icone_dict = icone.dict()
+        icone_dict["id"] = str(uuid.uuid4())
+        icone_dict["tenant_id"] = tenant.id
+        icone_dict["created_by_id"] = current_user.id
+        icone_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+        
+        await db.icones_personnalisees.insert_one(icone_dict)
+        
+        return clean_mongo_doc(icone_dict)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur création icône: {str(e)}")
+
+@api_router.get("/{tenant_slug}/prevention/icones-personnalisees")
+async def get_icones_personnalisees(
+    tenant_slug: str,
+    categorie: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les icônes personnalisées d'un tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    if categorie:
+        query["categorie"] = categorie
+    
+    icones = await db.icones_personnalisees.find(query).to_list(length=None)
+    
+    return [clean_mongo_doc(icone) for icone in icones]
+
+@api_router.delete("/{tenant_slug}/prevention/icones-personnalisees/{icone_id}")
+async def delete_icone_personnalisee(
+    tenant_slug: str,
+    icone_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une icône personnalisée"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    result = await db.icones_personnalisees.delete_one({"id": icone_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Icône non trouvée")
+    
+    return {"message": "Icône supprimée avec succès"}
 
 
 # ==================== INSPECTIONS VISUELLES (NOUVEAU SYSTÈME) ====================
