@@ -1011,7 +1011,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             ))}
