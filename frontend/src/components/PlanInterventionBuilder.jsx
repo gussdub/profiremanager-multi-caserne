@@ -9,7 +9,6 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
-import IconePersonnaliseeModal from './IconePersonnaliseeModal';
 import GaleriePhotosBuilder from './GaleriePhotosBuilder';
 
 // Fix pour les icônes Leaflet
