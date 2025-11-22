@@ -4264,72 +4264,72 @@ async def export_planning_pdf(
             # Style pour les titres de jour
             jour_style = ParagraphStyle(
             'JourStyle',
-            parent=styles['Heading2'],
-            fontSize=14,
-            textColor=colors.HexColor('#1e293b'),
-            spaceAfter=10,
-            spaceBefore=15,
-            fontName='Helvetica-Bold'
-        )
-        
-        # Style pour les gardes
-        garde_style = ParagraphStyle(
-            'GardeStyle',
-            parent=styles['Normal'],
-            fontSize=11,
-            leading=16,
-            leftIndent=20,
-            spaceAfter=8
-        )
-        
-        # Parcourir les jours
-        for i in range(7):
-            current_date = date_debut + timedelta(days=i)
-            current_date_str = current_date.strftime('%Y-%m-%d')
-            current_day = current_date.strftime('%A').lower()
-            jour_nom = jours_fr[current_date.weekday()]
-            date_formatted = current_date.strftime('%d %B %Y')
+                parent=styles['Heading2'],
+                fontSize=14,
+                textColor=colors.HexColor('#1e293b'),
+                spaceAfter=10,
+                spaceBefore=15,
+                fontName='Helvetica-Bold'
+            )
             
-            # Titre du jour
-            elements.append(Paragraph(f"<b>{jour_nom.upper()} {current_date.strftime('%d/%m/%Y')}</b>", jour_style))
-            elements.append(Spacer(1, 0.1*inch))
+            # Style pour les gardes
+            garde_style = ParagraphStyle(
+                'GardeStyle',
+                parent=styles['Normal'],
+                fontSize=11,
+                leading=16,
+                leftIndent=20,
+                spaceAfter=8
+            )
             
-            # Trouver les gardes applicables ce jour
-            gardes_du_jour = []
-            for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
-                jours_app = type_garde.get('jours_application', [])
+            # Parcourir les jours
+            for i in range(7):
+                current_date = date_debut + timedelta(days=i)
+                current_date_str = current_date.strftime('%Y-%m-%d')
+                current_day = current_date.strftime('%A').lower()
+                jour_nom = jours_fr[current_date.weekday()]
+                date_formatted = current_date.strftime('%d %B %Y')
                 
-                # Filtrer par jour applicable
-                if jours_app and current_day not in jours_app:
-                    continue
+                # Titre du jour
+                elements.append(Paragraph(f"<b>{jour_nom.upper()} {current_date.strftime('%d/%m/%Y')}</b>", jour_style))
+                elements.append(Spacer(1, 0.1*inch))
                 
-                # Récupérer les assignations
-                assignations_jour = [a for a in assignations_list 
-                                    if a['date'] == current_date_str 
-                                    and a['type_garde_id'] == type_garde['id']]
+                # Trouver les gardes applicables ce jour
+                gardes_du_jour = []
+                for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                    jours_app = type_garde.get('jours_application', [])
+                    
+                    # Filtrer par jour applicable
+                    if jours_app and current_day not in jours_app:
+                        continue
+                    
+                    # Récupérer les assignations
+                    assignations_jour = [a for a in assignations_list 
+                                        if a['date'] == current_date_str 
+                                        and a['type_garde_id'] == type_garde['id']]
+                    
+                    if assignations_jour or not jours_app:  # Afficher si assignations OU garde générale
+                        noms_complets = []
+                        for a in assignations_jour:
+                            if a['user_id'] in users_map:
+                                user = users_map[a['user_id']]
+                                noms_complets.append(f"{user['prenom']} {user['nom']}")
+                        
+                        garde_nom = type_garde['nom']
+                        garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
+                        
+                        if noms_complets:
+                            personnel_str = ", ".join(noms_complets)
+                            garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>👤 {personnel_str}"
+                        else:
+                            garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>⚠️ <i>Vacant</i>"
+                        
+                        elements.append(Paragraph(garde_text, garde_style))
                 
-                if assignations_jour or not jours_app:  # Afficher si assignations OU garde générale
-                    noms_complets = []
-                    for a in assignations_jour:
-                        if a['user_id'] in users_map:
-                            user = users_map[a['user_id']]
-                            noms_complets.append(f"{user['prenom']} {user['nom']}")
-                    
-                    garde_nom = type_garde['nom']
-                    garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
-                    
-                    if noms_complets:
-                        personnel_str = ", ".join(noms_complets)
-                        garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>👤 {personnel_str}"
-                    else:
-                        garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>⚠️ <i>Vacant</i>"
-                    
-                    elements.append(Paragraph(garde_text, garde_style))
+                    # Ligne de séparation
+                    if i < 6:  # Pas de ligne après le dernier jour
+                        elements.append(Spacer(1, 0.15*inch))
             
-                # Ligne de séparation
-                if i < 6:  # Pas de ligne après le dernier jour
-                    elements.append(Spacer(1, 0.15*inch))
-        
         elif type == 'mois':
             # Mode mois - Afficher semaine par semaine
             current = date_debut
