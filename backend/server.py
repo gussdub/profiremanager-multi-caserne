@@ -4327,10 +4327,11 @@ async def export_planning_pdf(
                     
                     elements.append(Paragraph(garde_text, garde_style))
             
-            # Ligne de séparation
-            if i < 6:  # Pas de ligne après le dernier jour
-                elements.append(Spacer(1, 0.15*inch))
-        else:
+                # Ligne de séparation
+                if i < 6:  # Pas de ligne après le dernier jour
+                    elements.append(Spacer(1, 0.15*inch))
+        
+        elif type == 'mois':
             # Mode mois - Afficher semaine par semaine
             current = date_debut
             semaine_num = 1
