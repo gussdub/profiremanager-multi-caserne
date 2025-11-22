@@ -1339,6 +1339,18 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           }}
         />
       )}
+
+      {/* Modal Modifier Symbole Prédéfini */}
+      {showEditPredefinedModal && editingPredefinedSymbol && (
+        <EditPredefinedSymbolModal
+          symbol={editingPredefinedSymbol.symbol}
+          onClose={() => {
+            setShowEditPredefinedModal(false);
+            setEditingPredefinedSymbol(null);
+          }}
+          onSave={handleSavePredefinedSymbolEdit}
+        />
+      )}
     </div>
   );
 };
