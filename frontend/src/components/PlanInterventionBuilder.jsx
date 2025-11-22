@@ -500,7 +500,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         batiment_id: batiment.id,
         centre_lat: batiment.latitude || 0,
         centre_lng: batiment.longitude || 0,
-        layers: cleanLayers
+        layers: cleanLayers,
+        photos: photos
       };
 
       console.log('📤 Envoi du plan:', planData);
