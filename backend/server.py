@@ -13474,6 +13474,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 tf_complets = []
                 
                 for u in available_users:
+                    # Log spécifique pour Guillaume Dubeau
+                    if "guillaume" in u.get("prenom", "").lower() and "dubeau" in u.get("nom", "").lower():
+                        logging.info(f"🔍 [GUILLAUME] Traitement pour {type_garde['nom']} - {date_str}")
+                        logging.info(f"    Type emploi: {u['type_emploi']}")
+                        logging.info(f"    Statut: {u.get('statut', 'N/A')}")
+                    
                     if u["type_emploi"] == "temps_partiel":
                         # Vérifier si a déclaré une disponibilité
                         # Accepter soit : disponibilité spécifique pour cette garde OU disponibilité générale (None)
