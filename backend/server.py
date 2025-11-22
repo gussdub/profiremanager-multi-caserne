@@ -4263,7 +4263,7 @@ async def export_planning_pdf(
         if type == 'semaine':
             # Style pour les titres de jour
             jour_style = ParagraphStyle(
-            'JourStyle',
+                'JourStyle',
                 parent=styles['Heading2'],
                 fontSize=14,
                 textColor=colors.HexColor('#1e293b'),
