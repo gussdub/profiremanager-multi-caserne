@@ -4293,7 +4293,9 @@ async def export_planning_pdf(
                     
                     row.append(cell_text)
                 
-                table_data.append(row)
+                # N'ajouter la ligne que si la garde a au moins une assignation dans la semaine
+                if a_des_assignations:
+                    table_data.append(row)
         else:
             table_data = [['Date', 'Type de Garde', 'Personnel Assigné', 'Statut']]
             
