@@ -68,24 +68,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     }
   }, [existingPlan]);
 
-  // Charger les icônes personnalisées
-  useEffect(() => {
-    const loadIconesPersonnalisees = async () => {
-      try {
-        const token = getTenantToken();
-        const response = await axios.get(
-          buildApiUrl(tenantSlug, '/prevention/icones-personnalisees'),
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setIconesPersonnalisees(response.data || []);
-      } catch (error) {
-        console.error('Erreur chargement icônes personnalisées:', error);
-      }
-    };
-    
-    loadIconesPersonnalisees();
-  }, [tenantSlug]);
-
   // Restaurer les layers sur la carte Leaflet
   useEffect(() => {
     // Conditions de sortie rapide
