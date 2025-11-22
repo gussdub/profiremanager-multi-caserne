@@ -9247,12 +9247,29 @@ class PhotoPlanIntervention(BaseModel):
     """Photo attachée au plan d'intervention"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     url: str
-    latitude: float
-    longitude: float
+    latitude: float = 0.0
+    longitude: float = 0.0
     titre: str = ""
     description: str = ""
-    categorie: str = ""  # facade, acces, danger, autre
+    localisation: str = ""  # Localisation textuelle dans le bâtiment (ex: "Entrée principale", "2e étage - côté est")
+    categorie: str = ""  # facade, entree, systeme_alarme, points_eau, risques, autre
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class IconePersonnalisee(BaseModel):
+    """Icône personnalisée pour les plans d'intervention"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    image_base64: str  # Image encodée en base64
+    categorie: str  # hydrants, sorties, matieres_dangereuses, generateurs, gaz_naturel, propane, vehicules, autre
+    created_by_id: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class IconePersonnaliseeCreate(BaseModel):
+    """Création d'une icône personnalisée"""
+    nom: str
+    image_base64: str
+    categorie: str
 
 class PlanIntervention(BaseModel):
     """Plan d'intervention complet"""
