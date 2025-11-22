@@ -19598,6 +19598,86 @@ async def export_plan_intervention_pdf(
         elements.append(Paragraph(plan['commentaires_validation'], normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
+    # Galerie Photos (nouvelle section)
+    photos = plan.get('photos', [])
+    if photos and len(photos) > 0:
+        elements.append(PageBreak())
+        elements.append(Paragraph(f"<b>📷 Galerie Photos ({len(photos)})</b>", title_style))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        import base64
+        from PIL import Image as PILImage
+        
+        for idx, photo in enumerate(photos, 1):
+            try:
+                # En-tête de la photo
+                photo_title = photo.get('titre', f'Photo {idx}')
+                elements.append(Paragraph(f"<b>{idx}. {photo_title}</b>", heading_style))
+                
+                # Informations de la photo
+                photo_info = []
+                if photo.get('categorie'):
+                    categorie_labels = {
+                        'facade': '🏢 Façade',
+                        'entree': '🚪 Entrée',
+                        'systeme_alarme': '🚨 Système d\'alarme',
+                        'points_eau': '💧 Points d\'eau',
+                        'risques': '⚠️ Risques',
+                        'autre': '📷 Autre'
+                    }
+                    categorie = categorie_labels.get(photo.get('categorie'), photo.get('categorie'))
+                    photo_info.append(f"<b>Catégorie:</b> {categorie}")
+                
+                if photo.get('localisation'):
+                    photo_info.append(f"<b>Localisation:</b> {photo.get('localisation')}")
+                
+                if photo.get('description'):
+                    photo_info.append(f"<b>Description:</b> {photo.get('description')}")
+                
+                if photo_info:
+                    info_text = ' | '.join(photo_info)
+                    elements.append(Paragraph(info_text, normal_style))
+                    elements.append(Spacer(1, 0.1*inch))
+                
+                # Image (si disponible)
+                if photo.get('url'):
+                    try:
+                        # Gérer les images base64
+                        if photo['url'].startswith('data:image'):
+                            # Extraire les données base64
+                            image_data = photo['url'].split(',')[1]
+                            image_bytes = base64.b64decode(image_data)
+                            
+                            # Ouvrir l'image avec PIL pour la compresser
+                            img = PILImage.open(BytesIO(image_bytes))
+                            
+                            # Convertir en RGB si nécessaire
+                            if img.mode in ('RGBA', 'LA', 'P'):
+                                img = img.convert('RGB')
+                            
+                            # Compresser l'image (qualité optimisée 70-80%)
+                            img_buffer = BytesIO()
+                            img.save(img_buffer, format='JPEG', quality=75, optimize=True)
+                            img_buffer.seek(0)
+                            
+                            # Créer l'image ReportLab avec une largeur maximale de 5 inches
+                            rl_image = RLImage(img_buffer, width=5*inch, height=3.5*inch, kind='proportional')
+                            elements.append(rl_image)
+                    except Exception as img_error:
+                        print(f"Erreur chargement image {idx}: {img_error}")
+                        elements.append(Paragraph(f"<i>Image non disponible</i>", normal_style))
+                
+                elements.append(Spacer(1, 0.4*inch))
+                
+                # Saut de page après 2 photos pour éviter la surcharge
+                if idx % 2 == 0 and idx < len(photos):
+                    elements.append(PageBreak())
+                    
+            except Exception as e:
+                print(f"Erreur traitement photo {idx}: {e}")
+                elements.append(Paragraph(f"<i>Erreur lors du traitement de la photo {idx}</i>", normal_style))
+                elements.append(Spacer(1, 0.2*inch))
+    
     # Pied de page
     elements.append(Spacer(1, 0.5*inch))
     footer_style = ParagraphStyle(
