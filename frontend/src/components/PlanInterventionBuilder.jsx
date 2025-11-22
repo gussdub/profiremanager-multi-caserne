@@ -604,6 +604,12 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     setShowEditSymbolModal(true);
   };
 
+  const handleEditPredefinedSymbol = (categoryName, idx, symbol) => {
+    // Pour les symboles prédéfinis, on peut ouvrir une modal d'édition ou simplement afficher une alerte
+    alert(`Édition du symbole prédéfini: ${symbol.label} (${symbol.emoji})\nCatégorie: ${categoryName}\nIndex: ${idx}`);
+    // TODO: Implémenter l'édition des symboles prédéfinis si nécessaire
+  };
+
   const handleDeleteSymbol = (symbol) => {
     setSymbolToDelete(symbol);
     setShowDeleteConfirmModal(true);
