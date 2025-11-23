@@ -19809,15 +19809,21 @@ async def export_plan_intervention_pdf(
     buffer.seek(0)
     
     # Générer un nom de fichier avec le nom du bâtiment ou l'adresse
+    print(f"DEBUG - batiment: {batiment}")
     if batiment:
-        batiment_info = batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or 'batiment'
+        print(f"DEBUG - batiment keys: {batiment.keys()}")
+        batiment_info = batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or batiment.get('adresse') or 'batiment'
     else:
         batiment_info = 'batiment'
     
+    print(f"DEBUG - batiment_info: {batiment_info}")
+    
     # Nettoyer le nom pour le rendre compatible avec les noms de fichiers
-    batiment_safe = batiment_info.replace(' ', '_').replace('/', '-').replace('\\', '-')
+    batiment_safe = batiment_info.replace(' ', '_').replace('/', '-').replace('\\', '-').replace(',', '')
     numero_plan = plan.get('numero_plan', plan_id[:8])
     filename = f"plan_intervention_{numero_plan}_{batiment_safe}.pdf"
+    
+    print(f"DEBUG - filename généré: {filename}")
     
     return Response(
         content=buffer.getvalue(),
