@@ -573,6 +573,75 @@ const BatimentForm = ({
     }
   };
 
+  // Auto-save function (silencieuse, sans fermer le mode édition)
+  const performAutoSave = async () => {
+    if (isCreating || !isEditing || !batiment) {
+      // Ne pas auto-save si on crée un nouveau bâtiment ou si on n'est pas en mode édition
+      return;
+    }
+
+    try {
+      setAutoSaveStatus('saving');
+      console.log('🔄 Auto-save en cours...');
+      
+      // Préparer les données
+      const dataToSave = { ...editData };
+      
+      if (buildingPhoto && buildingPhoto.url) {
+        dataToSave.photo_url = buildingPhoto.url;
+      } else if (!dataToSave.photo_url) {
+        dataToSave.photo_url = '';
+      }
+      
+      delete dataToSave._id;
+      delete dataToSave.__v;
+      delete dataToSave.created_at;
+      delete dataToSave.updated_at;
+      
+      if (dataToSave.latitude !== undefined && dataToSave.latitude !== null) {
+        dataToSave.latitude = parseFloat(dataToSave.latitude);
+      }
+      if (dataToSave.longitude !== undefined && dataToSave.longitude !== null) {
+        dataToSave.longitude = parseFloat(dataToSave.longitude);
+      }
+      if (dataToSave.valeur_fonciere !== undefined && dataToSave.valeur_fonciere !== null && dataToSave.valeur_fonciere !== '') {
+        dataToSave.valeur_fonciere = parseFloat(dataToSave.valeur_fonciere);
+      }
+      
+      if (!Array.isArray(dataToSave.risques)) {
+        dataToSave.risques = [];
+      }
+      
+      if (!dataToSave.nom_etablissement || dataToSave.nom_etablissement.trim() === '') {
+        if (dataToSave.adresse_civique) {
+          dataToSave.nom_etablissement = `Bâtiment ${dataToSave.adresse_civique}`;
+        } else {
+          dataToSave.nom_etablissement = 'Bâtiment sans nom';
+        }
+      }
+      
+      // Sauvegarder sans fermer le mode édition
+      await onUpdate(dataToSave);
+      lastSavedDataRef.current = JSON.stringify(editData);
+      setAutoSaveStatus('saved');
+      console.log('✅ Auto-save réussi');
+      
+      // Revenir à idle après 3 secondes
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ Erreur auto-save:', error);
+      setAutoSaveStatus('error');
+      
+      // Revenir à idle après 5 secondes
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 5000);
+    }
+  };
+
   return (
     <>
       {/* Style global pour les suggestions Google Places */}
