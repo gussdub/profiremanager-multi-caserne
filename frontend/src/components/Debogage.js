@@ -124,10 +124,13 @@ const Debogage = () => {
         ? `/admin/bugs/${itemId}`
         : `/admin/features/${itemId}`;
       
+      // Utiliser le bon token (admin_token pour super admin)
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api${endpoint}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
