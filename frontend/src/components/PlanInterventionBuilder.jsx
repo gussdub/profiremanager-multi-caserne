@@ -1706,13 +1706,71 @@ const DeleteConfirmModal = ({ symbol, onConfirm, onCancel }) => {
 // Modal pour modifier un symbole prédéfini
 const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
   const [newEmoji, setNewEmoji] = useState(symbol.emoji);
+  const [imageBase64, setImageBase64] = useState('');
+  const [useImage, setUseImage] = useState(false);
+
+  const handleImageUpload = (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('L\'image est trop volumineuse (max 2 Mo)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageBase64(e.target.result);
+      setUseImage(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    handleImageUpload(file);
+  };
+
+  // Gérer Ctrl+V
+  React.useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
 
   const handleSave = () => {
-    if (!newEmoji.trim()) {
+    if (useImage && !imageBase64) {
+      alert('Veuillez ajouter une image');
+      return;
+    }
+    if (!useImage && !newEmoji.trim()) {
       alert('Veuillez entrer un emoji');
       return;
     }
-    onSave(newEmoji);
+    
+    // Retourner soit l'image, soit l'emoji
+    onSave(useImage ? { type: 'image', value: imageBase64 } : { type: 'emoji', value: newEmoji });
   };
 
   return (
@@ -1732,8 +1790,10 @@ const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
         backgroundColor: '#fff',
         borderRadius: '12px',
         padding: '30px',
-        maxWidth: '450px',
+        maxWidth: '500px',
         width: '90%',
+        maxHeight: '90vh',
+        overflowY: 'auto',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
       }}>
         <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: 'bold' }}>
@@ -1747,28 +1807,158 @@ const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-            Nouvel emoji *
-          </label>
-          <input
-            type="text"
-            value={newEmoji}
-            onChange={(e) => setNewEmoji(e.target.value)}
-            placeholder="Ex: 🔥"
+        {/* Toggle entre Emoji et Image */}
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button
+            onClick={() => setUseImage(false)}
             style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #d1d5db',
+              padding: '8px 16px',
+              backgroundColor: !useImage ? '#3b82f6' : '#e5e7eb',
+              color: !useImage ? '#fff' : '#6b7280',
+              border: 'none',
               borderRadius: '6px',
-              fontSize: '24px',
-              textAlign: 'center'
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
             }}
-          />
-          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px' }}>
-            💡 Astuce: Copiez-collez un emoji depuis votre clavier ou depuis un site d'emojis
-          </div>
+          >
+            😊 Emoji
+          </button>
+          <button
+            onClick={() => setUseImage(true)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: useImage ? '#3b82f6' : '#e5e7eb',
+              color: useImage ? '#fff' : '#6b7280',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            🖼️ Image
+          </button>
         </div>
+
+        {/* Champ Emoji */}
+        {!useImage ? (
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+              Nouvel emoji *
+            </label>
+            <input
+              type="text"
+              value={newEmoji}
+              onChange={(e) => setNewEmoji(e.target.value)}
+              placeholder="Ex: 🔥"
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '24px',
+                textAlign: 'center'
+              }}
+            />
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px' }}>
+              💡 Astuce: Copiez-collez un emoji depuis votre clavier ou depuis un site d'emojis
+            </div>
+          </div>
+        ) : (
+          /* Upload d'image */
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+              Image du symbole *
+            </label>
+            
+            {imageBase64 ? (
+              <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                <img 
+                  src={imageBase64} 
+                  alt="Aperçu" 
+                  style={{ 
+                    maxWidth: '100px', 
+                    maxHeight: '100px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '10px'
+                  }} 
+                />
+                <div>
+                  <label style={{
+                    marginTop: '10px',
+                    padding: '6px 12px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    display: 'inline-block',
+                    marginRight: '10px'
+                  }}>
+                    📂 Changer l'image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <button
+                    onClick={() => setImageBase64('')}
+                    style={{
+                      marginTop: '10px',
+                      padding: '6px 12px',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                border: '2px dashed #d1d5db',
+                borderRadius: '8px',
+                padding: '30px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>🖼️</div>
+                <label style={{
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  fontSize: '14px',
+                  marginBottom: '10px'
+                }}>
+                  📂 Choisir une image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                  ou utilisez Ctrl+V pour coller
+                </div>
+                <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+                  Max 2 Mo - PNG, JPG, GIF
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button
