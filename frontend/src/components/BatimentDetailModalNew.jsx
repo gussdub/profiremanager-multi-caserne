@@ -169,6 +169,7 @@ const BatimentForm = ({
     if (batiment) {
       setEditData({ ...batiment });
       fetchInspections();
+      lastSavedDataRef.current = JSON.stringify(batiment);
       
       // Charger la photo si elle existe
       if (batiment.photo_url) {
@@ -179,6 +180,36 @@ const BatimentForm = ({
       }
     }
   }, [batiment]);
+
+  // Auto-save avec debounce quand editData change
+  useEffect(() => {
+    if (!isEditing || isCreating || !batiment) {
+      return;
+    }
+
+    // Vérifier si les données ont vraiment changé
+    const currentData = JSON.stringify(editData);
+    if (currentData === lastSavedDataRef.current) {
+      return;
+    }
+
+    // Annuler le timer précédent
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Déclencher auto-save après 2 secondes d'inactivité
+    autoSaveTimerRef.current = setTimeout(() => {
+      performAutoSave();
+    }, 2000);
+
+    // Cleanup
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [editData, isEditing, isCreating, batiment]);
 
   // Autocomplétion d'adresse avec API Adresse Québec (gratuite et fiable)
   const [suggestions, setSuggestions] = useState([]);
