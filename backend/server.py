@@ -19831,7 +19831,7 @@ async def export_plan_intervention_pdf(
     return Response(
         content=buffer.getvalue(),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 @api_router.get("/{tenant_slug}/prevention/plans-intervention/{plan_id}/versions")
