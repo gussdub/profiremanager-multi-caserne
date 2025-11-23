@@ -21514,7 +21514,7 @@ const Prevention = () => {
                 });
               }
             }}
-            canEdit={['admin', 'superviseur'].includes(user?.role) || user?.type_emploi === 'preventionniste'}
+            canEdit={['admin', 'superviseur', 'preventionniste'].includes(user?.role)}
             tenantSlug={tenantSlug}
           />
         </Suspense>
