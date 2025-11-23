@@ -614,13 +614,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     setShowEditPredefinedModal(true);
   };
 
-  const handleSavePredefinedSymbolEdit = (updatedEmoji) => {
+  const handleSavePredefinedSymbolEdit = (updatedData) => {
     if (!editingPredefinedSymbol) return;
     
     const key = `${editingPredefinedSymbol.category}-${editingPredefinedSymbol.index}`;
     setPredefinedSymbolOverrides(prev => ({
       ...prev,
-      [key]: updatedEmoji
+      [key]: updatedData // { type: 'emoji', value: '🔥' } ou { type: 'image', value: 'data:image...' }
     }));
     
     setShowEditPredefinedModal(false);
