@@ -531,7 +531,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         centre_lng: batiment.longitude || 0,
         layers: cleanLayers,
         photos: photos,
-        carte_image: carteImageBase64
+        carte_image: carteImageBase64,
+        predefined_symbol_overrides: predefinedSymbolOverrides
       };
 
       console.log('📤 Envoi du plan:', planData);
