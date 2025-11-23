@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
   const loadTenants = async () => {
     try {
-      const response = await fetch('https://shift-organizer-9.preview.emergentagent.com/api/tenants');
+      const response = await fetch('https://firefighter-pro-2.preview.emergentagent.com/api/tenants');
       const data = await response.json();
       setTenants(data);
     } catch (error) {
