@@ -3,11 +3,11 @@
 frontend:
   - task: "Bâtiment Module - Edit Rights, Plan Viewer & Auto-Save"
     implemented: true
-    working: true
+    working: "NA"
     file: "frontend/src/App.js, frontend/src/components/BatimentDetailModalNew.jsx, frontend/src/components/PlanInterventionViewer.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -18,6 +18,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "NEW FEATURE - Auto-Save Implementation. Implémentation de la sauvegarde automatique dans BatimentDetailModalNew.jsx: 1) ✅ États ajoutés: autoSaveStatus ('idle', 'saving', 'saved', 'error'), autoSaveTimerRef pour le debounce, lastSavedDataRef pour comparer les données, 2) ✅ Fonction performAutoSave: Sauvegarde silencieuse sans fermer le mode édition, validation des données identique à handleSave, gestion des erreurs avec feedback visuel, 3) ✅ useEffect avec debounce: Détecte les changements dans editData, déclenche auto-save après 2 secondes d'inactivité, s'active uniquement en mode édition (pas en création), 4) ✅ Indicateur visuel: Affiche le statut en temps réel avec couleurs (jaune=saving, vert=saved, rouge=error), animations de rotation pour l'icône de chargement, message informatif quand idle, positionné à droite de la barre d'actions, 5) ✅ Style CSS: Keyframes pour animation de rotation injectés dynamiquement. FONCTIONNEMENT: Quand l'utilisateur modifie un champ dans le formulaire de bâtiment, les changements sont automatiquement sauvegardés après 2 secondes d'inactivité. Un indicateur visuel montre l'état de la sauvegarde (en cours, réussie, ou erreur). L'auto-save ne fonctionne qu'en mode édition d'un bâtiment existant, pas lors de la création. NEEDS TESTING to verify auto-save triggers correctly and saves data without closing edit mode."
+      - working: "NA"
+        agent: "testing"
+        comment: "🔍 AUTO-SAVE MODULE TESTING - COMPREHENSIVE CODE VERIFICATION COMPLETED: 1) ✅ Frontend Compilation: Frontend compiles successfully without errors using yarn build, all dependencies resolved correctly, 2) ✅ Code Implementation Verified: BatimentDetailModalNew.jsx contains complete auto-save implementation with autoSaveStatus states ('idle', 'saving', 'saved', 'error'), autoSaveTimerRef for debounce timing, lastSavedDataRef for data comparison, performAutoSave() function with silent save logic, useEffect with 2-second debounce trigger, visual indicator with proper styling and animations, 3) ✅ Logic Analysis: Auto-save only triggers in edit mode (isEditing=true), does not trigger during creation (isCreating=true), debounce properly cancels previous timers, data comparison prevents unnecessary saves, error handling with visual feedback, 4) ✅ Visual Indicator: Positioned correctly with marginLeft: 'auto', displays 4 states with appropriate colors and messages, includes rotation animation for saving state, shows informative message when idle. TESTING LIMITATION: ❌ End-to-end testing blocked by Prevention module not being activated for Shefford tenant (module_prevention_active: false), login successful but building module interface not accessible, auto-save functionality cannot be tested in browser without access to building forms. CONCLUSION: Code implementation is complete and correct, but functional testing requires Prevention module activation or alternative access to building editing interface."
 
   - task: "Vue Préventionnistes - MapComponent mapRef Issue"
     implemented: true
