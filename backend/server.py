@@ -9318,6 +9318,7 @@ class PlanIntervention(BaseModel):
     zoom_level: int = 18
     vue_aerienne_url: Optional[str] = None  # Google Static Map URL
     carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
+    predefined_symbol_overrides: Dict[str, Any] = {}  # Modifications des icônes prédéfinies
     
     # Calculs automatiques
     distance_caserne_km: Optional[float] = None
