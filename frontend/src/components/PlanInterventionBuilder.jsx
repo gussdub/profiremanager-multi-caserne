@@ -503,13 +503,35 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         properties: layer.properties
       }));
 
+      // Capturer la carte en image
+      let carteImageBase64 = null;
+      try {
+        console.log('📸 Capture de la carte en cours...');
+        const mapElement = document.querySelector('.leaflet-container');
+        if (mapElement) {
+          const canvas = await html2canvas(mapElement, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#f0f0f0',
+            scale: 1, // Réduire la résolution pour un fichier plus léger
+            logging: false
+          });
+          carteImageBase64 = canvas.toDataURL('image/jpeg', 0.8); // Compression JPEG 80%
+          console.log('✅ Carte capturée avec succès');
+        }
+      } catch (captureError) {
+        console.warn('⚠️ Erreur lors de la capture de la carte:', captureError);
+        // Continue sans l'image de la carte
+      }
+
       const planData = {
         ...formData,
         batiment_id: batiment.id,
         centre_lat: batiment.latitude || 0,
         centre_lng: batiment.longitude || 0,
         layers: cleanLayers,
-        photos: photos
+        photos: photos,
+        carte_image: carteImageBase64
       };
 
       console.log('📤 Envoi du plan:', planData);
