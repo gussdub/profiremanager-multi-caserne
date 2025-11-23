@@ -767,6 +767,32 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                       <div
                         key={symbol.id}
                         style={{ position: 'relative' }}
+                        onMouseEnter={(e) => {
+                          // Afficher les boutons Edit/Delete
+                          const actionButtons = e.currentTarget.querySelector('.action-buttons');
+                          if (actionButtons) {
+                            actionButtons.style.display = 'flex';
+                          }
+                          // Effet hover sur le bouton
+                          const button = e.currentTarget.querySelector('button');
+                          if (button) {
+                            button.style.transform = 'scale(1.05)';
+                            button.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          // Cacher les boutons Edit/Delete
+                          const actionButtons = e.currentTarget.querySelector('.action-buttons');
+                          if (actionButtons) {
+                            actionButtons.style.display = 'none';
+                          }
+                          // Retirer l'effet hover
+                          const button = e.currentTarget.querySelector('button');
+                          if (button) {
+                            button.style.transform = 'scale(1)';
+                            button.style.boxShadow = 'none';
+                          }
+                        }}
                       >
                         <button
                           draggable
@@ -800,26 +826,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                             textAlign: 'center',
                             boxShadow: selectedSymbol?.label === symbol.nom ? `0 0 10px ${symbol.couleur}` : 'none',
                             width: '100%'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                            // Afficher les boutons Edit/Delete
-                            const parent = e.currentTarget.parentElement;
-                            const actionButtons = parent.querySelector('.action-buttons');
-                            if (actionButtons) {
-                              actionButtons.style.display = 'flex';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.boxShadow = 'none';
-                            // Cacher les boutons Edit/Delete
-                            const parent = e.currentTarget.parentElement;
-                            const actionButtons = parent.querySelector('.action-buttons');
-                            if (actionButtons) {
-                              actionButtons.style.display = 'none';
-                            }
                           }}
                         >
                           <img 
