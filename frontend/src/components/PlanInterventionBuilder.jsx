@@ -114,7 +114,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         // Créer l'icône
         let icon = null;
         
-        if (props.isCustom && props.image) {
+        if (props.image) {
+          // Symbole avec image (personnalisé ou prédéfini modifié)
           icon = L.divIcon({
             html: `<img src="${props.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
             className: 'custom-image-marker',
@@ -122,6 +123,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             iconAnchor: [16, 16]
           });
         } else if (props.symbol) {
+          // Symbole emoji
           icon = L.divIcon({
             html: `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${props.symbol}</div>`,
             className: 'custom-emoji-marker',
