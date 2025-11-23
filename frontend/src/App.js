@@ -21400,7 +21400,6 @@ const Prevention = () => {
         <Suspense fallback={<div>Chargement...</div>}>
           <BatimentDetailModal
             batiment={selectedBatiment}
-            canEdit={user.role === 'admin' || user.role === 'superviseur' || user.role === 'preventionniste'}
             onClose={() => {
               setShowBatimentModal(false);
               setSelectedBatiment(null);
