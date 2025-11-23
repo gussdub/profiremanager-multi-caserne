@@ -9377,6 +9377,7 @@ class PlanInterventionUpdate(BaseModel):
     photos: Optional[List[PhotoPlanIntervention]] = None
     notes_generales: Optional[str] = None
     instructions_particulieres: Optional[str] = None
+    carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
 
 class TemplatePlanIntervention(BaseModel):
     """Template pré-défini de plan d'intervention"""
