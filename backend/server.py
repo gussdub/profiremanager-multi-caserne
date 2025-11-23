@@ -17556,16 +17556,16 @@ async def upload_batiment_photo(
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
     # Vérifier que la photo est au bon format base64
-    if not photo_base64.startswith('data:image/'):
+    if not photo_data.photo_base64.startswith('data:image/'):
         raise HTTPException(status_code=400, detail="Format de photo invalide (doit être base64 data URL)")
     
     # Mettre à jour la photo
     await db.batiments.update_one(
         {"id": batiment_id, "tenant_id": tenant.id},
-        {"$set": {"photo_url": photo_base64, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"photo_url": photo_data.photo_base64, "updated_at": datetime.now(timezone.utc)}}
     )
     
-    return {"message": "Photo mise à jour avec succès", "photo_url": photo_base64}
+    return {"message": "Photo mise à jour avec succès", "photo_url": photo_data.photo_base64}
 
 @api_router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}/photo")
 async def delete_batiment_photo(
