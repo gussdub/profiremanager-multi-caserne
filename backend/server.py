@@ -9317,6 +9317,7 @@ class PlanIntervention(BaseModel):
     centre_lng: float
     zoom_level: int = 18
     vue_aerienne_url: Optional[str] = None  # Google Static Map URL
+    carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
     
     # Calculs automatiques
     distance_caserne_km: Optional[float] = None
