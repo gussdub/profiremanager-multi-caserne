@@ -917,6 +917,7 @@ const BatimentForm = ({
             display: 'flex',
             gap: '0.75rem',
             flexWrap: 'wrap',
+            alignItems: 'center',
             backgroundColor: '#f9fafb'
           }}>
             {isEditing ? (
@@ -927,6 +928,53 @@ const BatimentForm = ({
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   Annuler
                 </Button>
+                
+                {/* Indicateur d'auto-save */}
+                <div style={{
+                  marginLeft: 'auto',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  backgroundColor: 
+                    autoSaveStatus === 'saving' ? '#FEF3C7' :
+                    autoSaveStatus === 'saved' ? '#D1FAE5' :
+                    autoSaveStatus === 'error' ? '#FEE2E2' : 'transparent',
+                  color:
+                    autoSaveStatus === 'saving' ? '#92400E' :
+                    autoSaveStatus === 'saved' ? '#065F46' :
+                    autoSaveStatus === 'error' ? '#991B1B' : '#6B7280'
+                }}>
+                  {autoSaveStatus === 'saving' && (
+                    <>
+                      <span style={{ 
+                        display: 'inline-block', 
+                        animation: 'spin 1s linear infinite',
+                        fontSize: '1rem'
+                      }}>⏳</span>
+                      <span>Sauvegarde automatique...</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <>
+                      <span style={{ fontSize: '1rem' }}>✅</span>
+                      <span>Sauvegardé automatiquement</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'error' && (
+                    <>
+                      <span style={{ fontSize: '1rem' }}>⚠️</span>
+                      <span>Erreur de sauvegarde</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'idle' && (
+                    <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                      Les modifications sont sauvegardées automatiquement
+                    </span>
+                  )}
+                </div>
               </>
             ) : (
               <>
