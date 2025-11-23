@@ -21519,6 +21519,17 @@ const Prevention = () => {
           />
         </Suspense>
       )}
+
+      {/* Viewer pour plan d'intervention */}
+      {selectedPlanId && (
+        <Suspense fallback={<div>Chargement...</div>}>
+          <PlanInterventionViewer
+            planId={selectedPlanId}
+            tenantSlug={tenantSlug}
+            onClose={() => setSelectedPlanId(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
