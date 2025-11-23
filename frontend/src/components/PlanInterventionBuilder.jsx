@@ -311,10 +311,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const placeSymbolOnMap = (symbol, latlng) => {
     const note = prompt(`Ajouter une note pour ce symbole (${symbol.label}):`);
     
+    // Déterminer si c'est une image ou un emoji
+    const hasImage = symbol.image || (symbol.isCustom && symbol.image);
+    
     // Créer un marqueur personnalisé avec l'emoji ou l'image
     let icon;
-    if (symbol.isCustom && symbol.image) {
-      // Symbole personnalisé avec image
+    if (hasImage) {
+      // Symbole avec image (personnalisé ou prédéfini modifié)
       icon = L.divIcon({
         html: `<img src="${symbol.image}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" />`,
         className: 'custom-image-marker',
@@ -343,13 +346,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         coordinates: [latlng.lng, latlng.lat]
       },
       properties: {
-        symbol: symbol.emoji,
+        symbol: symbol.emoji || '',  // Emoji peut être vide si c'est une image
         label: symbol.label,
         note: note || '',
         color: symbol.color,
         symbolId: symbol.symbolId || null,  // ID du symbole personnalisé si applicable
         isCustom: symbol.isCustom || false,
-        image: symbol.image || null  // Sauvegarder l'image pour les symboles personnalisés
+        image: symbol.image || null  // Sauvegarder l'image pour les symboles personnalisés ou prédéfinis modifiés
       }
     };
 
