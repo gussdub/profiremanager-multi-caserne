@@ -434,6 +434,9 @@ const BatimentForm = ({
   // Gérer le collage d'images (Ctrl+V)
   useEffect(() => {
     const handlePaste = (e) => {
+      // Vérifier si le modal est visible
+      if (!batiment || !batiment.id) return;
+      
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -442,6 +445,7 @@ const BatimentForm = ({
           e.preventDefault();
           const file = items[i].getAsFile();
           if (file) {
+            console.log('📋 Image collée détectée, upload en cours...');
             uploadPhotoFromFile(file);
           }
           break;
@@ -449,11 +453,17 @@ const BatimentForm = ({
       }
     };
 
-    document.addEventListener('paste', handlePaste);
+    // Ajouter le listener uniquement si le modal est ouvert avec un bâtiment valide
+    if (batiment && batiment.id) {
+      console.log('✅ Listener Ctrl+V activé pour le bâtiment:', batiment.id);
+      document.addEventListener('paste', handlePaste);
+    }
+    
     return () => {
+      console.log('🧹 Nettoyage du listener Ctrl+V');
       document.removeEventListener('paste', handlePaste);
     };
-  }, [batiment]); // Re-créer le listener si le bâtiment change
+  }, [batiment?.id]); // Re-créer le listener si l'ID du bâtiment change
 
   const validateAddress = () => {
     // Fonction simplifiée - l'autocomplétion gère tout automatiquement
