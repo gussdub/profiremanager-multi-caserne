@@ -19703,7 +19703,13 @@ async def export_plan_intervention_pdf(
     
     # Retourner le PDF
     buffer.seek(0)
-    filename = f"plan_intervention_{plan.get('nom_plan', 'document').replace(' ', '_')}_{plan_id[:8]}.pdf"
+    
+    # Générer un nom de fichier avec le nom du bâtiment ou l'adresse
+    batiment_info = batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or 'batiment'
+    # Nettoyer le nom pour le rendre compatible avec les noms de fichiers
+    batiment_safe = batiment_info.replace(' ', '_').replace('/', '-').replace('\\', '-')
+    numero_plan = plan.get('numero_plan', plan_id[:8])
+    filename = f"plan_intervention_{numero_plan}_{batiment_safe}.pdf"
     
     return Response(
         content=buffer.getvalue(),
