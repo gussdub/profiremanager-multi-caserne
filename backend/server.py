@@ -19545,7 +19545,53 @@ async def export_plan_intervention_pdf(
         <b>Éléments placés sur la carte:</b> {len(layers)} symbole(s)
         """
         elements.append(Paragraph(carte_info, normal_style))
-        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Image de la carte (si disponible)
+        carte_image = plan.get('carte_image')
+        if carte_image:
+            try:
+                # Décoder l'image base64
+                if carte_image.startswith('data:image'):
+                    image_data = carte_image.split(',')[1]
+                    image_bytes = base64.b64decode(image_data)
+                    
+                    # Créer une image PIL pour optimiser
+                    img = PILImage.open(BytesIO(image_bytes))
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        img = img.convert('RGB')
+                    
+                    # Redimensionner pour le PDF (largeur max 6.5 inches)
+                    max_width = 6.5 * inch
+                    aspect_ratio = img.height / img.width
+                    img_width = max_width
+                    img_height = img_width * aspect_ratio
+                    
+                    # Limiter la hauteur maximale à 4 inches
+                    if img_height > 4 * inch:
+                        img_height = 4 * inch
+                        img_width = img_height / aspect_ratio
+                    
+                    # Compresser l'image
+                    img_buffer = BytesIO()
+                    img.save(img_buffer, format='JPEG', quality=80, optimize=True)
+                    img_buffer.seek(0)
+                    
+                    # Créer l'image ReportLab
+                    carte_rl_image = RLImage(img_buffer, width=img_width, height=img_height)
+                    
+                    # Centrer l'image
+                    elements.append(Paragraph("<b>📍 Vue de la Carte</b>", heading_style))
+                    elements.append(Spacer(1, 0.1*inch))
+                    elements.append(carte_rl_image)
+                    elements.append(Spacer(1, 0.3*inch))
+            except Exception as e:
+                print(f"Erreur lors de l'ajout de l'image de la carte: {e}")
+                elements.append(Paragraph("<i>Erreur lors du chargement de l'image de la carte</i>", normal_style))
+                elements.append(Spacer(1, 0.2*inch))
+        else:
+            elements.append(Paragraph("<i>💡 Astuce: L'image de la carte sera capturée automatiquement à la prochaine sauvegarde du plan.</i>", normal_style))
+            elements.append(Spacer(1, 0.3*inch))
         
         # Légendes des symboles avec icônes
         elements.append(Paragraph("<b>📌 Légende des Symboles</b>", heading_style))
