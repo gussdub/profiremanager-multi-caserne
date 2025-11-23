@@ -19526,10 +19526,95 @@ async def export_plan_intervention_pdf(
         elements.append(Paragraph(notes_tactiques, normal_style))
         elements.append(Spacer(1, 0.2*inch))
     
-    # Symboles/Layers sur la carte
+    # Section Carte et Légendes (affichage visuel des symboles)
     layers = plan.get('layers', [])
     if layers and len(layers) > 0:
-        elements.append(Paragraph(f"<b>🗺️ Symboles sur la Carte ({len(layers)} éléments)</b>", heading_style))
+        elements.append(PageBreak())
+        elements.append(Paragraph("<b>🗺️ Carte et Légendes</b>", title_style))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Informations de la carte
+        carte_info = f"""
+        <b>Centre de la carte:</b><br/>
+        Latitude: {plan.get('centre_lat', 'N/A')}<br/>
+        Longitude: {plan.get('centre_lng', 'N/A')}<br/>
+        <br/>
+        <b>Éléments placés sur la carte:</b> {len(layers)} symbole(s)
+        """
+        elements.append(Paragraph(carte_info, normal_style))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Légendes des symboles avec icônes
+        elements.append(Paragraph("<b>📌 Légende des Symboles</b>", heading_style))
+        elements.append(Spacer(1, 0.1*inch))
+        
+        # Grouper les symboles par type pour éviter les répétitions
+        symbol_types = {}
+        for layer in layers:
+            if layer.get('type') == 'symbol':
+                props = layer.get('properties', {})
+                label = props.get('label', 'Symbole')
+                if label not in symbol_types:
+                    symbol_types[label] = {
+                        'symbol': props.get('symbol', '📍'),
+                        'image': props.get('image'),
+                        'color': props.get('color', '#6B7280'),
+                        'count': 0
+                    }
+                symbol_types[label]['count'] += 1
+        
+        # Créer un tableau de légendes avec icônes
+        legend_data = [['Icône', 'Type', 'Quantité']]
+        for label, info in symbol_types.items():
+            # Si c'est une image, essayer de l'afficher
+            if info['image']:
+                try:
+                    # Décoder l'image base64
+                    if info['image'].startswith('data:image'):
+                        image_data = info['image'].split(',')[1]
+                        image_bytes = base64.b64decode(image_data)
+                        
+                        # Créer une image PIL
+                        img = PILImage.open(BytesIO(image_bytes))
+                        if img.mode in ('RGBA', 'LA', 'P'):
+                            img = img.convert('RGB')
+                        
+                        # Redimensionner pour la légende
+                        img.thumbnail((24, 24))
+                        img_buffer = BytesIO()
+                        img.save(img_buffer, format='PNG')
+                        img_buffer.seek(0)
+                        
+                        # Créer une image ReportLab
+                        icon_display = RLImage(img_buffer, width=24, height=24)
+                        legend_data.append([icon_display, label, f"{info['count']}x"])
+                    else:
+                        legend_data.append([Paragraph(info['symbol'], normal_style), label, f"{info['count']}x"])
+                except Exception as e:
+                    print(f"Erreur affichage icône: {e}")
+                    legend_data.append([Paragraph(info['symbol'], normal_style), label, f"{info['count']}x"])
+            else:
+                # Afficher l'emoji
+                legend_data.append([Paragraph(info['symbol'], normal_style), label, f"{info['count']}x"])
+        
+        legend_table = Table(legend_data, colWidths=[0.8*inch, 3*inch, 1*inch])
+        legend_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3B82F6')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F3F4F6')])
+        ]))
+        elements.append(legend_table)
+        elements.append(Spacer(1, 0.4*inch))
+    
+    # Liste détaillée des symboles sur la carte
+    if layers and len(layers) > 0:
+        elements.append(Paragraph(f"<b>📍 Liste Détaillée des Symboles ({len(layers)} éléments)</b>", heading_style))
         
         symbol_data = [['#', 'Type', 'Label', 'Note']]
         for idx, layer in enumerate(layers, 1):
