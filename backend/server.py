@@ -9360,6 +9360,7 @@ class PlanInterventionCreate(BaseModel):
     photos: List[PhotoPlanIntervention] = Field(default_factory=list)
     instructions_particulieres: str = ""
     carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
+    predefined_symbol_overrides: Dict[str, Any] = Field(default_factory=dict)  # Modifications des icônes prédéfinies
 
 class PlanInterventionUpdate(BaseModel):
     nom: Optional[str] = None
