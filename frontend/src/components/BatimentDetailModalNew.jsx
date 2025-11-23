@@ -164,6 +164,14 @@ const BatimentForm = ({
     if (batiment) {
       setEditData({ ...batiment });
       fetchInspections();
+      
+      // Charger la photo si elle existe
+      if (batiment.photo_url) {
+        console.log('📸 Chargement de la photo existante du bâtiment');
+        setBuildingPhoto({ url: batiment.photo_url });
+      } else {
+        setBuildingPhoto(null);
+      }
     }
   }, [batiment]);
 
