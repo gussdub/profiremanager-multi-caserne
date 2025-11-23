@@ -995,12 +995,6 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                             gap: '2px',
                             zIndex: 10
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.display = 'flex';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
                         >
                           <button
                             onClick={(e) => {
