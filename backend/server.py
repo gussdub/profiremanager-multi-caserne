@@ -19603,9 +19603,12 @@ async def export_plan_intervention_pdf(
     # Galerie Photos (nouvelle section)
     photos = plan.get('photos', [])
     if photos and len(photos) > 0:
-        elements.append(PageBreak())
-        elements.append(Paragraph(f"<b>📷 Galerie Photos ({len(photos)})</b>", title_style))
-        elements.append(Spacer(1, 0.3*inch))
+        try:
+            elements.append(PageBreak())
+            elements.append(Paragraph(f"<b>📷 Galerie Photos ({len(photos)})</b>", title_style))
+            elements.append(Spacer(1, 0.3*inch))
+        except Exception as e:
+            print(f"Erreur lors de l'ajout du titre galerie photos: {e}")
         
         for idx, photo in enumerate(photos, 1):
             try:
