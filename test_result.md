@@ -1,7 +1,7 @@
 # ProFireManager Testing Results
 
 frontend:
-  - task: "Bâtiment Module - Edit Rights and Plan Viewer"
+  - task: "Bâtiment Module - Edit Rights, Plan Viewer & Auto-Save"
     implemented: true
     working: true
     file: "frontend/src/App.js, frontend/src/components/BatimentDetailModalNew.jsx, frontend/src/components/PlanInterventionViewer.jsx"
@@ -15,6 +15,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "✅ BÂTIMENT MODULE EDIT RIGHTS & PLAN VIEWER IMPLEMENTATION VERIFIED - Comprehensive testing completed successfully with 100% implementation verification. CORE FUNCTIONALITY CONFIRMED: 1) ✅ Edit Rights Implementation: canEdit prop correctly includes ['admin', 'superviseur', 'preventionniste'] in App.js line 21517, excludes 'employe' as expected, BatimentDetailModalNew.jsx properly uses canEdit prop to show/hide 'Modifier' and 'Supprimer' buttons (lines 828-861), 2) ✅ PlanInterventionViewer Integration: Component imported with lazy loading in App.js line 28, selectedPlanId state properly managed (line 20762), onCreatePlan function correctly searches for validated plans and opens viewer (lines 21450-21480), proper error handling for buildings without validated plans, 3) ✅ User Authentication: Admin authentication successful with admin@firemanager.ca / Admin123!, user role correctly identified as 'Administrateur' with 'Directeur' grade, 4) ✅ Logic Verification: Plan search logic correctly filters for statut === 'valide', toast messages properly defined for success and error cases, viewer opens with correct props (planId, tenantSlug, onClose). IMPLEMENTATION STATUS: All requested modifications are correctly implemented in the codebase. The preventionniste role now has edit rights alongside admin and superviseur. The PlanInterventionViewer opens directly instead of redirecting to a filtered list. Error handling is in place for buildings without validated intervention plans. NOTE: Full end-to-end testing was limited by Prevention module not being activated for Shefford tenant (module_prevention_active: false), but code implementation is verified as correct and functional."
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Auto-Save Implementation. Implémentation de la sauvegarde automatique dans BatimentDetailModalNew.jsx: 1) ✅ États ajoutés: autoSaveStatus ('idle', 'saving', 'saved', 'error'), autoSaveTimerRef pour le debounce, lastSavedDataRef pour comparer les données, 2) ✅ Fonction performAutoSave: Sauvegarde silencieuse sans fermer le mode édition, validation des données identique à handleSave, gestion des erreurs avec feedback visuel, 3) ✅ useEffect avec debounce: Détecte les changements dans editData, déclenche auto-save après 2 secondes d'inactivité, s'active uniquement en mode édition (pas en création), 4) ✅ Indicateur visuel: Affiche le statut en temps réel avec couleurs (jaune=saving, vert=saved, rouge=error), animations de rotation pour l'icône de chargement, message informatif quand idle, positionné à droite de la barre d'actions, 5) ✅ Style CSS: Keyframes pour animation de rotation injectés dynamiquement. FONCTIONNEMENT: Quand l'utilisateur modifie un champ dans le formulaire de bâtiment, les changements sont automatiquement sauvegardés après 2 secondes d'inactivité. Un indicateur visuel montre l'état de la sauvegarde (en cours, réussie, ou erreur). L'auto-save ne fonctionne qu'en mode édition d'un bâtiment existant, pas lors de la création. NEEDS TESTING to verify auto-save triggers correctly and saves data without closing edit mode."
 
   - task: "Vue Préventionnistes - MapComponent mapRef Issue"
     implemented: true
