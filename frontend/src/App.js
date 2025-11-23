@@ -21445,10 +21445,42 @@ const Prevention = () => {
               setShowBatimentModal(false);
               handleInspectBatiment(selectedBatiment);
             }}
-            onCreatePlan={() => {
-              setShowBatimentModal(false);
-              setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
-              setCurrentView('plans-intervention');
+            onCreatePlan={async () => {
+              try {
+                // Chercher un plan d'intervention validé pour ce bâtiment
+                const plans = await apiGet(tenantSlug, `/prevention/plans-intervention?batiment_id=${selectedBatiment.id}`);
+                
+                // Filtrer les plans validés
+                const planValide = plans.find(p => p.statut === 'valide');
+                
+                if (planValide) {
+                  // Ouvrir le plan validé en visualisation
+                  setShowBatimentModal(false);
+                  setCurrentView('plans-intervention');
+                  // TODO: Ouvrir directement le plan en mode visualisation
+                  // Pour l'instant, redirige vers la liste filtrée
+                  setFilteredBatimentId(selectedBatiment.id);
+                  
+                  toast({
+                    title: "Plan d'intervention trouvé",
+                    description: `Plan ${planValide.numero_plan || planValide.id} - Statut: Validé`
+                  });
+                } else {
+                  // Aucun plan validé trouvé
+                  toast({
+                    title: "Aucun plan d'intervention",
+                    description: "Aucun plan validé pour ce bâtiment",
+                    variant: "destructive"
+                  });
+                }
+              } catch (error) {
+                console.error('Erreur récupération plan:', error);
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de récupérer les plans d'intervention",
+                  variant: "destructive"
+                });
+              }
             }}
             onViewHistory={() => {
               setShowBatimentModal(false);
