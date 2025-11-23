@@ -4,6 +4,22 @@ import { Card } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
 
+// Style pour l'animation de rotation
+const spinKeyframes = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+// Injecter les keyframes dans le document
+if (typeof document !== 'undefined' && !document.getElementById('spin-keyframes')) {
+  const style = document.createElement('style');
+  style.id = 'spin-keyframes';
+  style.innerHTML = spinKeyframes;
+  document.head.appendChild(style);
+}
+
 // Mini-carte Leaflet pour l'aperçu dans le modal
 const MiniMapPreview = ({ latitude, longitude, address }) => {
   const [mapReady, setMapReady] = useState(false);
