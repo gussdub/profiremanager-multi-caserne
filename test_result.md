@@ -1,6 +1,18 @@
 # ProFireManager Testing Results
 
 frontend:
+  - task: "Bâtiment Module - Edit Rights and Plan Viewer"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js, frontend/src/components/BatimentDetailModalNew.jsx, frontend/src/components/PlanInterventionViewer.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Corrections et améliorations du module Bâtiment. Modifications effectuées: 1) ✅ Droits d'édition: Ajout du rôle 'preventionniste' aux droits d'édition des bâtiments (avec admin et superviseur) - corrigé dans App.js ligne 21516, 2) ✅ Suppression doublon: Supprimé la définition dupliquée du prop canEdit, 3) ✅ PlanInterventionViewer: Importé et intégré le composant PlanInterventionViewer en lazy loading, 4) ✅ État selectedPlanId: Ajouté l'état pour gérer l'affichage du viewer, 5) ✅ Navigation directe: Modifié la fonction onCreatePlan pour ouvrir directement le viewer au lieu de rediriger vers la liste filtrée, 6) ✅ Composant viewer: Ajouté le composant PlanInterventionViewer avec props (planId, tenantSlug, onClose) après le BatimentDetailModal. NEEDS COMPREHENSIVE TESTING to verify: 1) Les préventionnistes peuvent maintenant modifier les bâtiments, 2) Le bouton 'Plan d'intervention' ouvre directement le viewer en lecture seule, 3) Le viewer affiche correctement le plan avec la carte, les photos et les informations."
+
   - task: "Vue Préventionnistes - MapComponent mapRef Issue"
     implemented: true
     working: false
