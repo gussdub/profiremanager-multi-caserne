@@ -9380,6 +9380,7 @@ class PlanInterventionUpdate(BaseModel):
     notes_generales: Optional[str] = None
     instructions_particulieres: Optional[str] = None
     carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
+    predefined_symbol_overrides: Optional[Dict[str, Any]] = None  # Modifications des icônes prédéfinies
 
 class TemplatePlanIntervention(BaseModel):
     """Template pré-défini de plan d'intervention"""
