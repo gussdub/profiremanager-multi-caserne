@@ -19424,6 +19424,8 @@ async def export_plan_intervention_pdf(
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
     from io import BytesIO
+    import base64
+    from PIL import Image as PILImage
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
