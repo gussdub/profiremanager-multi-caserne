@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
 import GaleriePhotosBuilder from './GaleriePhotosBuilder';
+import html2canvas from 'html2canvas';
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
