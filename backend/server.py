@@ -19607,9 +19607,6 @@ async def export_plan_intervention_pdf(
         elements.append(Paragraph(f"<b>📷 Galerie Photos ({len(photos)})</b>", title_style))
         elements.append(Spacer(1, 0.3*inch))
         
-        import base64
-        from PIL import Image as PILImage
-        
         for idx, photo in enumerate(photos, 1):
             try:
                 # En-tête de la photo
