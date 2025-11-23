@@ -19111,10 +19111,11 @@ async def create_plan_intervention(
     await db.plans_intervention.insert_one(plan_to_insert)
     
     # Créer une activité
+    batiment_nom = batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or 'Bâtiment'
     await creer_activite(
         tenant_id=tenant.id,
         type_activite="prevention_plan_creation",
-        description=f"🏢 {current_user.prenom} {current_user.nom} a créé le plan d'intervention #{numero_plan} pour '{batiment['nom']}'",
+        description=f"🏢 {current_user.prenom} {current_user.nom} a créé le plan d'intervention #{numero_plan} pour '{batiment_nom}'",
         user_id=current_user.id,
         user_nom=f"{current_user.prenom} {current_user.nom}"
     )
