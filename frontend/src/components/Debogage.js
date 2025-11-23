@@ -188,10 +188,13 @@ const Debogage = () => {
       const formDataImg = new FormData();
       formDataImg.append('file', file);
       
+      // Utiliser le bon token (admin_token pour super admin)
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/admin/upload-image`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formDataImg
       });
