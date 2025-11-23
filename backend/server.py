@@ -9358,6 +9358,7 @@ class PlanInterventionCreate(BaseModel):
     plans_etages: List[PlanEtage] = Field(default_factory=list)
     photos: List[PhotoPlanIntervention] = Field(default_factory=list)
     instructions_particulieres: str = ""
+    carte_image: Optional[str] = None  # Capture d'écran de la carte en base64
 
 class PlanInterventionUpdate(BaseModel):
     nom: Optional[str] = None
