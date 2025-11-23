@@ -17530,11 +17530,14 @@ async def delete_batiment(
     return {"message": "Bâtiment supprimé avec succès"}
 
 
+class BatimentPhotoUpload(BaseModel):
+    photo_base64: str
+
 @api_router.post("/{tenant_slug}/prevention/batiments/{batiment_id}/photo")
 async def upload_batiment_photo(
     tenant_slug: str,
     batiment_id: str,
-    photo_base64: str = Body(...),
+    photo_data: BatimentPhotoUpload,
     current_user: User = Depends(get_current_user)
 ):
     """Uploader/Mettre à jour la photo d'un bâtiment (en base64)"""
