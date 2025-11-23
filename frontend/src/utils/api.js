@@ -11,10 +11,17 @@ const getStorageKey = (key, tenantSlug) => {
 
 export const getTenantToken = () => {
   const tenantSlug = window.location.pathname.split('/')[1];
+  
+  // Pour le super admin, utiliser admin_token
+  if (tenantSlug === 'admin') {
+    return localStorage.getItem('admin_token') || localStorage.getItem('token');
+  }
+  
   if (!tenantSlug) {
     return localStorage.getItem('token');
   }
-  // Pour admin et tous les autres tenants, utiliser le préfixe
+  
+  // Pour tous les autres tenants, utiliser le préfixe
   return localStorage.getItem(getStorageKey('token', tenantSlug));
 };
 
