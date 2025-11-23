@@ -21459,10 +21459,7 @@ const Prevention = () => {
                 if (planValide) {
                   // Ouvrir le plan validé en visualisation
                   setShowBatimentModal(false);
-                  setCurrentView('plans-intervention');
-                  // TODO: Ouvrir directement le plan en mode visualisation
-                  // Pour l'instant, redirige vers la liste filtrée
-                  setFilteredBatimentId(selectedBatiment.id);
+                  setSelectedPlanId(planValide.id);
                   
                   toast({
                     title: "Plan d'intervention trouvé",
