@@ -59,7 +59,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [showEditPredefinedModal, setShowEditPredefinedModal] = useState(false);
   const [editingPredefinedSymbol, setEditingPredefinedSymbol] = useState(null);
 
-  // Charger les layers depuis existingPlan au montage ou quand il change
+  // Charger les layers et overrides depuis existingPlan au montage ou quand il change
   useEffect(() => {
     console.log('🔍 useEffect déclenché - existingPlan:', existingPlan);
     console.log('🔍 existingPlan?.layers:', existingPlan?.layers);
@@ -70,6 +70,12 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       setLayers(existingPlan.layers);
     } else {
       console.log('⚠️ Aucun layer à charger depuis existingPlan');
+    }
+    
+    // Charger les modifications d'icônes prédéfinies
+    if (existingPlan?.predefined_symbol_overrides) {
+      console.log('📥 Chargement des overrides d\'icônes:', existingPlan.predefined_symbol_overrides);
+      setPredefinedSymbolOverrides(existingPlan.predefined_symbol_overrides);
     }
   }, [existingPlan]);
 
