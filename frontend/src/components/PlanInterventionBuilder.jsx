@@ -922,7 +922,35 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                 }}>
                     {symbols.map((symbol, idx) => {
                       const overrideKey = `${category}-${idx}`;
-                      const displayEmoji = predefinedSymbolOverrides[overrideKey] || symbol.emoji;
+                      const override = predefinedSymbolOverrides[overrideKey];
+                      
+                      // Déterminer ce qu'on affiche (emoji original, emoji modifié, ou image)
+                      let displayContent;
+                      let displayEmoji = symbol.emoji;
+                      let displayImage = null;
+                      
+                      if (override) {
+                        if (override.type === 'emoji') {
+                          displayEmoji = override.value;
+                          displayContent = <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{override.value}</div>;
+                        } else if (override.type === 'image') {
+                          displayImage = override.value;
+                          displayContent = (
+                            <img 
+                              src={override.value} 
+                              alt={symbol.label}
+                              style={{ 
+                                width: '32px', 
+                                height: '32px',
+                                objectFit: 'contain',
+                                pointerEvents: 'none'
+                              }} 
+                            />
+                          );
+                        }
+                      } else {
+                        displayContent = <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{symbol.emoji}</div>;
+                      }
                       
                       return (
                         <div
@@ -957,8 +985,16 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                         >
                           <button
                             draggable
-                            onDragStart={(e) => handleDragStart(e, { ...symbol, emoji: displayEmoji })}
-                            onClick={() => handleSymbolClick({ ...symbol, emoji: displayEmoji })}
+                            onDragStart={(e) => handleDragStart(e, { 
+                              ...symbol, 
+                              emoji: displayImage ? null : displayEmoji,
+                              image: displayImage
+                            })}
+                            onClick={() => handleSymbolClick({ 
+                              ...symbol, 
+                              emoji: displayImage ? null : displayEmoji,
+                              image: displayImage
+                            })}
                             style={{
                               padding: '12px',
                               border: selectedSymbol?.emoji === displayEmoji ? `3px solid ${symbol.color}` : `2px solid ${symbol.color}`,
@@ -978,7 +1014,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                               e.currentTarget.style.cursor = 'grab';
                             }}
                           >
-                            <div style={{ fontSize: '28px', pointerEvents: 'none' }}>{displayEmoji}</div>
+                            {displayContent}
                             <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.2', pointerEvents: 'none' }}>
                               {symbol.label}
                             </div>
