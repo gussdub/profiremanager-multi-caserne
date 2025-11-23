@@ -19612,36 +19612,6 @@ async def export_plan_intervention_pdf(
         elements.append(legend_table)
         elements.append(Spacer(1, 0.4*inch))
     
-    # Liste détaillée des symboles sur la carte
-    if layers and len(layers) > 0:
-        elements.append(Paragraph(f"<b>📍 Liste Détaillée des Symboles ({len(layers)} éléments)</b>", heading_style))
-        
-        symbol_data = [['#', 'Type', 'Label', 'Note']]
-        for idx, layer in enumerate(layers, 1):
-            props = layer.get('properties', {})
-            symbol_data.append([
-                str(idx),
-                props.get('symbol', '📍'),
-                props.get('label', 'N/A'),
-                props.get('note', '-')[:40] + '...' if len(props.get('note', '')) > 40 else props.get('note', '-')
-            ])
-        
-        symbol_table = Table(symbol_data, colWidths=[0.5*inch, 1*inch, 2*inch, 2.5*inch])
-        symbol_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-            ('TOPPADDING', (0, 0), (-1, 0), 10),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')]),
-        ]))
-        elements.append(symbol_table)
-        elements.append(Spacer(1, 0.3*inch))
-    
     # Points d'accès
     points_acces = plan.get('points_acces', [])
     if points_acces and len(points_acces) > 0:
