@@ -19479,11 +19479,17 @@ async def export_plan_intervention_pdf(
     info_data = [
         ['Numéro de plan:', plan.get('numero_plan', 'N/A')],
         ['Statut:', plan.get('statut', 'brouillon').replace('_', ' ').capitalize()],
-        ['Date de création:', plan.get('created_at', '')[:10] if plan.get('created_at') else 'N/A'],
+        ['Date de création:', plan.get('created_at').strftime('%Y-%m-%d') if plan.get('created_at') and hasattr(plan.get('created_at'), 'strftime') else (str(plan.get('created_at', 'N/A'))[:10] if plan.get('created_at') else 'N/A')],
     ]
     
     if plan.get('date_validation'):
-        info_data.append(['Date de validation:', plan['date_validation'][:10] if isinstance(plan['date_validation'], str) else 'N/A'])
+        date_val = plan['date_validation']
+        if hasattr(date_val, 'strftime'):
+            info_data.append(['Date de validation:', date_val.strftime('%Y-%m-%d')])
+        elif isinstance(date_val, str):
+            info_data.append(['Date de validation:', date_val[:10]])
+        else:
+            info_data.append(['Date de validation:', 'N/A'])
     
     if batiment:
         info_data.append(['Bâtiment:', f"{batiment.get('nom_etablissement', 'N/A')}"])
