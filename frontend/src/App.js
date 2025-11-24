@@ -4121,6 +4121,30 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
+  // Toggle le statut de préventionniste
+  const handleTogglePreventionniste = async (userId, currentStatus, userName) => {
+    const action = currentStatus ? "retirer" : "désigner";
+    if (!window.confirm(`Voulez-vous ${action} ${userName} comme préventionniste ?`)) return;
+
+    try {
+      const response = await apiPut(tenantSlug, `/users/${userId}/toggle-preventionniste`, {});
+      toast({
+        title: "Statut mis à jour",
+        description: `${userName} a été ${currentStatus ? "retiré" : "désigné"} comme préventionniste`,
+        variant: "success"
+      });
+      // Recharger les utilisateurs
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de préventionniste",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Ouvrir le modal d'export
   const handleOpenExportModal = (type) => {
     setExportType(type);
