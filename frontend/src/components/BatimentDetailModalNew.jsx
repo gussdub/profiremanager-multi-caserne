@@ -347,15 +347,6 @@ const BatimentForm = ({
 
   // Générer photo Mapillary automatiquement si pas de photo uploadée
   useEffect(() => {
-    console.log('📸 useEffect Mapillary déclenché:', {
-      adresse: editData.adresse_civique,
-      ville: editData.ville,
-      latitude: editData.latitude,
-      longitude: editData.longitude,
-      batiment_photo_url: batiment?.photo_url,
-      buildingPhoto_source: buildingPhoto?.source
-    });
-    
     // Ne chercher automatiquement que si :
     // 1. Il y a une adresse
     // 2. Pas de photo uploadée existante (pas de batiment.photo_url)
@@ -365,16 +356,9 @@ const BatimentForm = ({
                           (!buildingPhoto || 
                            buildingPhoto.source === 'mapillary');
       
-      console.log('🤔 Devrait chercher Mapillary?', shouldSearch);
-      
       if (shouldSearch) {
-        console.log('🔍 Lancement recherche automatique Mapillary...');
         generateStreetViewUrl();
-      } else {
-        console.log('⏭️ Recherche Mapillary ignorée (photo déjà présente)');
       }
-    } else {
-      console.log('⚠️ Adresse incomplète pour recherche Mapillary');
     }
   }, [editData.latitude, editData.longitude, editData.adresse_civique, editData.ville]);
 
