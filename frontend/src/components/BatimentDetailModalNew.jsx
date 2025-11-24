@@ -420,6 +420,41 @@ const BatimentForm = ({
     }
   };
   
+  const fetchKartaViewPhoto = async (lat, lng) => {
+    console.log('🗺️ fetchKartaViewPhoto appelée pour:', lat, lng);
+    try {
+      // KartaView API - chercher des photos dans un rayon de 100m
+      const radius = 100; // mètres
+      const url = `https://api.openstreetcam.org/2.0/photo/?lat=${lat}&lng=${lng}&radius=${radius}`;
+      
+      console.log('🔗 Appel API KartaView...');
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      console.log('📊 Résultat KartaView:', data);
+      
+      if (data.result && data.result.data && data.result.data.length > 0) {
+        // Prendre la première photo
+        const photo = data.result.data[0];
+        const photoUrl = `https://api.openstreetcam.org/2.0/photo/${photo.id}/download/lth`;
+        
+        console.log('✅ Photo KartaView trouvée!', photoUrl);
+        setBuildingPhoto({
+          url: photoUrl,
+          source: 'kartaview',
+          capturedAt: photo.shot_date
+        });
+        return true;
+      } else {
+        console.log('❌ Aucune photo KartaView trouvée');
+        return false;
+      }
+    } catch (error) {
+      console.log('❌ Erreur KartaView:', error);
+      return false;
+    }
+  };
+
   const fetchMapillaryPhoto = async (lat, lng) => {
     console.log('📷 fetchMapillaryPhoto appelée pour:', lat, lng);
     setPhotoLoading(true);
@@ -442,16 +477,32 @@ const BatimentForm = ({
           source: 'mapillary',
           capturedAt: data.data[0].captured_at
         });
+        setPhotoLoading(false);
+        return true;
       } else {
-        // Pas de photo Mapillary, afficher le placeholder
-        console.log('❌ Aucune photo Mapillary trouvée dans ce secteur');
-        setBuildingPhoto(null);
+        // Pas de photo Mapillary, essayer KartaView
+        console.log('⏭️ Pas de photo Mapillary, essai avec KartaView...');
+        const kartaViewFound = await fetchKartaViewPhoto(lat, lng);
+        
+        if (!kartaViewFound) {
+          // Aucune source n'a trouvé de photo
+          console.log('❌ Aucune photo trouvée (Mapillary + KartaView)');
+          setBuildingPhoto(null);
+        }
+        
+        setPhotoLoading(false);
+        return kartaViewFound;
       }
     } catch (error) {
       console.log('❌ Erreur Mapillary:', error);
-      setBuildingPhoto(null);
-    } finally {
+      // En cas d'erreur Mapillary, essayer quand même KartaView
+      console.log('⏭️ Tentative KartaView après erreur Mapillary...');
+      const kartaViewFound = await fetchKartaViewPhoto(lat, lng);
+      if (!kartaViewFound) {
+        setBuildingPhoto(null);
+      }
       setPhotoLoading(false);
+      return kartaViewFound;
     }
   };
   
