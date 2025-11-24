@@ -21209,10 +21209,10 @@ const Prevention = () => {
                               size="sm"
                               onClick={() => {
                                 setSelectedBatiment(batiment);
-                                setCurrentView('modifier-batiment');
+                                setCurrentView('nouvelle-inspection');
                               }}
                             >
-                              ✏️
+                              📋 Inspecter
                             </Button>
                           </div>
                         </td>
