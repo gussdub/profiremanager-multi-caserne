@@ -434,12 +434,6 @@ const BatimentForm = ({
       return;
     }
 
-    // Vérifier la taille (max 5 Mo)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('La photo est trop volumineuse (max 5 Mo)');
-      return;
-    }
-
     // Si c'est une création, on ne peut pas encore uploader (pas d'ID)
     if (!batiment || !batiment.id) {
       alert('Veuillez d\'abord créer le bâtiment avant d\'ajouter une photo');
@@ -448,42 +442,64 @@ const BatimentForm = ({
     
     setPhotoLoading(true);
     
-    // Convertir en base64 pour stockage
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64Image = e.target.result;
+    try {
+      // Options de compression
+      const options = {
+        maxSizeMB: 0.5, // Taille max 500KB
+        maxWidthOrHeight: 1920, // Dimension max
+        useWebWorker: true,
+        initialQuality: 0.8 // Qualité initiale
+      };
       
-      try {
-        const token = getTenantToken();
+      console.log('📦 Compression de l\'image en cours...');
+      console.log(`Taille originale: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      // Compresser l'image
+      const compressedFile = await imageCompression(file, options);
+      
+      console.log(`Taille compressée: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      // Convertir en base64 pour stockage
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Image = e.target.result;
         
-        // Utiliser l'endpoint dédié à l'upload de photos
-        await axios.post(
-          buildApiUrl(tenantSlug, `/prevention/batiments/${batiment.id}/photo`),
-          { photo_base64: base64Image },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        setBuildingPhoto({
-          url: base64Image,
-          source: 'uploaded',
-          capturedAt: new Date().toISOString()
-        });
-        
-        // Mettre à jour l'état local
-        setEditData(prev => ({
-          ...prev,
-          photo_url: base64Image
-        }));
-        
-        alert('Photo enregistrée avec succès ! 📷');
-      } catch (error) {
-        console.error('Erreur upload photo:', error);
-        alert('Erreur lors de l\'enregistrement de la photo');
-      } finally {
-        setPhotoLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
+        try {
+          const token = getTenantToken();
+          
+          // Utiliser l'endpoint dédié à l'upload de photos
+          await axios.post(
+            buildApiUrl(tenantSlug, `/prevention/batiments/${batiment.id}/photo`),
+            { photo_base64: base64Image },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          setBuildingPhoto({
+            url: base64Image,
+            source: 'uploaded',
+            capturedAt: new Date().toISOString()
+          });
+          
+          // Mettre à jour l'état local
+          setEditData(prev => ({
+            ...prev,
+            photo_url: base64Image
+          }));
+          
+          alert('Photo enregistrée avec succès ! 📷');
+        } catch (error) {
+          console.error('Erreur upload photo:', error);
+          alert('Erreur lors de l\'enregistrement de la photo');
+        } finally {
+          setPhotoLoading(false);
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Erreur compression photo:', error);
+      alert('Erreur lors de la compression de la photo');
+      setPhotoLoading(false);
+    }
   };
 
   const handlePhotoUpload = async (event) => {
