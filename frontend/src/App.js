@@ -4908,6 +4908,25 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   <span className="info-label">N° Employé:</span>
                   <span className="info-value">{user.numero_employe}</span>
                 </div>
+                {user.est_preventionniste && (
+                  <div className="card-info-item">
+                    <span style={{
+                      background: '#EEF2FF',
+                      color: '#4F46E5',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      gridColumn: '1 / -1',
+                      justifyContent: 'center'
+                    }}>
+                      🎯 Préventionniste
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="card-footer">
@@ -4920,6 +4939,20 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 {user.type_emploi === 'temps_partiel' && (
                   <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
                     📅 Dispo
+                  </Button>
+                )}
+                {(user.role === 'admin' || user.role === 'superviseur') && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleTogglePreventionniste(user.id, user.est_preventionniste, `${user.prenom} ${user.nom}`)}
+                    style={{
+                      background: user.est_preventionniste ? '#FEE2E2' : '#EEF2FF',
+                      color: user.est_preventionniste ? '#991B1B' : '#4F46E5',
+                      borderColor: user.est_preventionniste ? '#FCA5A5' : '#C7D2FE'
+                    }}
+                  >
+                    🎯 {user.est_preventionniste ? 'Retirer' : 'Désigner'}
                   </Button>
                 )}
               </div>
