@@ -879,10 +879,7 @@ const BatimentForm = ({
                   borderRadius: '4px',
                   fontSize: '11px'
                 }}>
-                  {buildingPhoto.source === 'mapillary' ? '© Mapillary' : 
-                   buildingPhoto.source === 'kartaview' ? '© KartaView' :
-                   buildingPhoto.source === 'uploaded' || buildingPhoto.source === 'thumbnail' ? '📸 Photo uploadée' : 
-                   'Photo'}
+                  {buildingPhoto.source === 'mapillary' ? '© Mapillary' : '📸 Photo uploadée'}
                 </div>
                 <button
                   onClick={() => setShowPhotoUpload(true)}
