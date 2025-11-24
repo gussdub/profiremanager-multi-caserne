@@ -4787,6 +4787,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             <div>Contact</div>
             <div>Statut</div>
             <div>Type Emploi</div>
+            <div>Préventionniste</div>
             <div>Actions</div>
           </div>
 
