@@ -17545,8 +17545,9 @@ async def upload_batiment_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Uploader/Mettre à jour la photo d'un bâtiment (en base64)"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    # Admins, superviseurs et préventionnistes peuvent uploader des photos
+    if current_user.role not in ["admin", "superviseur"] and not current_user.est_preventionniste:
+        raise HTTPException(status_code=403, detail="Accès refusé - Permission insuffisante")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
