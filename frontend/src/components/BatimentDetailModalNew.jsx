@@ -583,10 +583,14 @@ const BatimentForm = ({
   };
 
   const fetchInspections = async () => {
+    if (!batiment || !batiment.id) {
+      return;
+    }
+    
     try {
-      const token = localStorage.getItem('token');
+      const token = getTenantToken();
       const response = await axios.get(
-        buildApiUrl(`/${tenantSlug}/prevention/inspections?batiment_id=${batiment.id}&limit=5`),
+        buildApiUrl(tenantSlug, `/prevention/inspections?batiment_id=${batiment.id}&limit=5`),
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setInspections(response.data.slice(0, 5));
