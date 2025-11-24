@@ -427,7 +427,16 @@ const BatimentForm = ({
     
     try {
       // Options de compression
-      const options = {
+      // Options pour le thumbnail (très petite taille pour affichage rapide)
+      const thumbnailOptions = {
+        maxSizeMB: 0.05, // 50KB max
+        maxWidthOrHeight: 400, // Petite dimension
+        useWebWorker: true,
+        initialQuality: 0.6
+      };
+      
+      // Options pour l'image complète
+      const fullImageOptions = {
         maxSizeMB: 0.5, // Taille max 500KB
         maxWidthOrHeight: 1920, // Dimension max
         useWebWorker: true,
@@ -437,10 +446,28 @@ const BatimentForm = ({
       console.log('📦 Compression de l\'image en cours...');
       console.log(`Taille originale: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       
-      // Compresser l'image
-      const compressedFile = await imageCompression(file, options);
+      // Générer le thumbnail en parallèle
+      const thumbnailPromise = imageCompression(file, thumbnailOptions);
+      const fullImagePromise = imageCompression(file, fullImageOptions);
       
-      console.log(`Taille compressée: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      // Afficher d'abord le thumbnail
+      const thumbnail = await thumbnailPromise;
+      console.log(`Thumbnail créé: ${(thumbnail.size / 1024).toFixed(2)} KB`);
+      
+      // Convertir le thumbnail en base64 et l'afficher immédiatement
+      const thumbnailReader = new FileReader();
+      thumbnailReader.onload = (e) => {
+        setBuildingPhoto({
+          url: e.target.result,
+          source: 'thumbnail',
+          capturedAt: new Date().toISOString()
+        });
+      };
+      thumbnailReader.readAsDataURL(thumbnail);
+      
+      // Attendre l'image complète
+      const compressedFile = await fullImagePromise;
+      console.log(`Image complète: ${(compressedFile.size / 1024).toFixed(2)} KB`);
       
       // Convertir en base64 pour stockage
       const reader = new FileReader();
