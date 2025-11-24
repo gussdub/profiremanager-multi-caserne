@@ -194,35 +194,23 @@ const BatimentForm = ({
     }
   }, [batiment]);
 
-  // Auto-save avec debounce quand editData change
+  // Charger la liste des préventionnistes
   useEffect(() => {
-    if (!isEditing || isCreating || !batiment) {
-      return;
-    }
-
-    // Vérifier si les données ont vraiment changé
-    const currentData = JSON.stringify(editData);
-    if (currentData === lastSavedDataRef.current) {
-      return;
-    }
-
-    // Annuler le timer précédent
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    // Déclencher auto-save après 2 secondes d'inactivité
-    autoSaveTimerRef.current = setTimeout(() => {
-      performAutoSave();
-    }, 2000);
-
-    // Cleanup
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
+    const fetchPreventionnistes = async () => {
+      try {
+        const token = getTenantToken();
+        const response = await axios.get(
+          buildApiUrl(tenantSlug, `/prevention/preventionnistes`),
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setPreventionnistes(response.data);
+      } catch (error) {
+        console.error('Erreur chargement préventionnistes:', error);
       }
     };
-  }, [editData, isEditing, isCreating, batiment]);
+    
+    fetchPreventionnistes();
+  }, [tenantSlug]);
 
   // Autocomplétion d'adresse avec API Adresse Québec (gratuite et fiable)
   const [suggestions, setSuggestions] = useState([]);
