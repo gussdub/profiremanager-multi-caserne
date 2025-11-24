@@ -8741,6 +8741,7 @@ class Batiment(BaseModel):
     notes_generales: str = ""
     notes: str = ""  # Alias pour compatibilité frontend
     preventionniste_assigne_id: Optional[str] = None  # ID de l'employé préventionniste
+    historique_assignations: List[Dict[str, Any]] = []  # Historique des changements de préventionniste
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
