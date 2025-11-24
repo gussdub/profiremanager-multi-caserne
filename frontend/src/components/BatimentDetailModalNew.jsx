@@ -915,7 +915,10 @@ const BatimentForm = ({
             {photoLoading ? (
               <div style={{ textAlign: 'center', color: 'white' }}>
                 <div style={{ fontSize: '48px', marginBottom: '10px' }}>📷</div>
-                <div>Recherche d'une photo...</div>
+                <div>Recherche d'une photo Street View...</div>
+                <div style={{ fontSize: '11px', marginTop: '5px', opacity: 0.8 }}>
+                  (Mapillary → KartaView)
+                </div>
               </div>
             ) : buildingPhoto ? (
               <>
