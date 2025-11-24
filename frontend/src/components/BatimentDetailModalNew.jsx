@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
+import imageCompression from 'browser-image-compression';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
