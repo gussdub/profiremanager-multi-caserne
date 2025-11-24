@@ -1541,6 +1541,7 @@ class User(BaseModel):
     formations: List[str] = []  # Liste des UUIDs de formations suivies (pour module Formation)
     competences: List[str] = []  # Liste des UUIDs de compétences acquises/certifiées (pour auto-attribution)
     accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
+    est_preventionniste: bool = False  # Désigné comme préventionniste (module Prévention)
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
