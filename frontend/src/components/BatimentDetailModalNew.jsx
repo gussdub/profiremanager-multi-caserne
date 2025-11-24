@@ -156,11 +156,7 @@ const BatimentForm = ({
   const [inspections, setInspections] = useState([]);
   const autocompleteInputRef = useRef(null);
   const autocompleteRef = useRef(null);
-  
-  // Auto-save states
-  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
-  const autoSaveTimerRef = useRef(null);
-  const lastSavedDataRef = useRef(null);
+  const [preventionnistes, setPreventionnistes] = useState([]);
 
   // Types de bâtiment avec sous-catégories
   const typesBatiment = {
