@@ -723,7 +723,7 @@ const BatimentForm = ({
           zIndex: 1000,
           padding: '2rem'
         }}
-        onClick={onClose}
+        onClick={handleCloseWithSave}
       >
       <div 
         style={{
