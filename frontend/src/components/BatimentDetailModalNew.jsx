@@ -345,10 +345,17 @@ const BatimentForm = ({
     return () => clearTimeout(timeoutId);
   }, [editData.adresse_civique, isEditing]);
 
-  // Générer URL de carte statique quand l'adresse change ou au chargement initial
+  // Générer photo Mapillary automatiquement si pas de photo uploadée
   useEffect(() => {
+    // Ne chercher automatiquement que si :
+    // 1. Il y a une adresse
+    // 2. Pas de photo uploadée existante (pas de batiment.photo_url)
+    // 3. buildingPhoto est null ou vient de Mapillary (pas uploaded)
     if (editData.adresse_civique && editData.ville) {
-      generateStreetViewUrl();
+      if (!batiment?.photo_url && (!buildingPhoto || buildingPhoto.source === 'mapillary')) {
+        console.log('🔍 Recherche automatique d\'une photo Mapillary...');
+        generateStreetViewUrl();
+      }
     }
   }, [editData.latitude, editData.longitude, editData.adresse_civique, editData.ville]);
 
