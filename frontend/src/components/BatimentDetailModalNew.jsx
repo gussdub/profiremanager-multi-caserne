@@ -507,6 +507,11 @@ const BatimentForm = ({
             photo_url: base64Image
           }));
           
+          // Notifier le parent que le bâtiment a été mis à jour
+          if (onUpdate && batiment) {
+            await onUpdate({ ...batiment, photo_url: base64Image });
+          }
+          
           alert('Photo enregistrée avec succès ! 📷');
         } catch (error) {
           console.error('Erreur upload photo:', error);
