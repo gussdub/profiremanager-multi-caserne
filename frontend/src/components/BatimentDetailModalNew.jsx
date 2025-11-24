@@ -907,7 +907,7 @@ const BatimentForm = ({
           
           <Button 
             variant="ghost" 
-            onClick={onClose}
+            onClick={handleCloseWithSave}
             style={{
               color: 'white',
               fontSize: '1.5rem',
