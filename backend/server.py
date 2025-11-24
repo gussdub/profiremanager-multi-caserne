@@ -1585,6 +1585,7 @@ class UserUpdate(BaseModel):
     formations: Optional[List[str]] = None
     competences: Optional[List[str]] = None
     accepte_gardes_externes: Optional[bool] = None
+    est_preventionniste: Optional[bool] = None
     mot_de_passe: Optional[str] = None  # Optionnel pour les mises à jour
 
 class UserLogin(BaseModel):
