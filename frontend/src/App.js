@@ -5062,6 +5062,28 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   )}
 
+                  {/* Option préventionniste (admin seulement) */}
+                  {user.role === 'admin' && (
+                    <div className="form-field">
+                      <div className="fonction-superieur-option">
+                        <label className="fonction-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={newUser.est_preventionniste || false}
+                            onChange={(e) => setNewUser({...newUser, est_preventionniste: e.target.checked})}
+                            data-testid="user-est-preventionniste"
+                          />
+                          <div className="fonction-content">
+                            <span className="fonction-title">🎯 Préventionniste</span>
+                            <span className="fonction-description">
+                              Désigner cet employé comme préventionniste (module Prévention)
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="form-row">
                     <div className="form-field">
                       <Label>Numéro d'employé</Label>
