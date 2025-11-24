@@ -4822,12 +4822,44 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 </span>
               </div>
 
+              <div className="cell-modern">
+                {user.est_preventionniste ? (
+                  <span style={{
+                    background: '#EEF2FF',
+                    color: '#4F46E5',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '12px',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}>
+                    🎯 Préventionniste
+                  </span>
+                ) : (
+                  <span style={{color: '#9CA3AF', fontSize: '0.875rem'}}>—</span>
+                )}
+              </div>
+
               <div className="actions-cell-modern">
                 <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
                 <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
                 <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
                 {user.type_emploi === 'temps_partiel' && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
+                )}
+                {(user.role === 'admin' || user.role === 'superviseur') && (
+                  <button 
+                    onClick={() => handleTogglePreventionniste(user.id, user.est_preventionniste, `${user.prenom} ${user.nom}`)} 
+                    title={user.est_preventionniste ? "Retirer préventionniste" : "Désigner préventionniste"}
+                    style={{
+                      background: user.est_preventionniste ? '#FEE2E2' : '#EEF2FF',
+                      color: user.est_preventionniste ? '#991B1B' : '#4F46E5'
+                    }}
+                  >
+                    🎯
+                  </button>
                 )}
               </div>
             </div>
