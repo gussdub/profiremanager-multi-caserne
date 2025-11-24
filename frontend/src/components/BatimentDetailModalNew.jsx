@@ -421,17 +421,22 @@ const BatimentForm = ({
   };
   
   const fetchMapillaryPhoto = async (lat, lng) => {
+    console.log('📷 fetchMapillaryPhoto appelée pour:', lat, lng);
     setPhotoLoading(true);
     try {
       // Chercher des images Mapillary dans un rayon de 50m
       const radius = 50;
       const url = `https://graph.mapillary.com/images?access_token=MLY|5824985657540538|2ca5e88149fc6be2e9edeae0c17a24e2&fields=id,thumb_2048_url,captured_at&bbox=${lng-0.001},${lat-0.001},${lng+0.001},${lat+0.001}&limit=1`;
       
+      console.log('🔗 Appel API Mapillary...');
       const response = await fetch(url);
       const data = await response.json();
       
+      console.log('📊 Résultat Mapillary:', data);
+      
       if (data.data && data.data.length > 0) {
         // Photo trouvée !
+        console.log('✅ Photo Mapillary trouvée!', data.data[0].thumb_2048_url);
         setBuildingPhoto({
           url: data.data[0].thumb_2048_url,
           source: 'mapillary',
@@ -439,10 +444,11 @@ const BatimentForm = ({
         });
       } else {
         // Pas de photo Mapillary, afficher le placeholder
+        console.log('❌ Aucune photo Mapillary trouvée dans ce secteur');
         setBuildingPhoto(null);
       }
     } catch (error) {
-      console.log('Erreur Mapillary:', error);
+      console.log('❌ Erreur Mapillary:', error);
       setBuildingPhoto(null);
     } finally {
       setPhotoLoading(false);
