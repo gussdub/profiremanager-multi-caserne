@@ -420,89 +420,34 @@ const BatimentForm = ({
     }
   };
   
-  const fetchKartaViewPhoto = async (lat, lng) => {
-    console.log('🗺️ fetchKartaViewPhoto appelée pour:', lat, lng);
-    try {
-      // KartaView API - chercher des photos dans un rayon de 100m
-      const radius = 100; // mètres
-      const url = `https://api.openstreetcam.org/2.0/photo/?lat=${lat}&lng=${lng}&radius=${radius}`;
-      
-      console.log('🔗 Appel API KartaView...');
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      console.log('📊 Résultat KartaView:', data);
-      
-      if (data.result && data.result.data && data.result.data.length > 0) {
-        // Prendre la première photo
-        const photo = data.result.data[0];
-        const photoUrl = `https://api.openstreetcam.org/2.0/photo/${photo.id}/download/lth`;
-        
-        console.log('✅ Photo KartaView trouvée!', photoUrl);
-        setBuildingPhoto({
-          url: photoUrl,
-          source: 'kartaview',
-          capturedAt: photo.shot_date
-        });
-        return true;
-      } else {
-        console.log('❌ Aucune photo KartaView trouvée');
-        return false;
-      }
-    } catch (error) {
-      console.log('❌ Erreur KartaView:', error);
-      return false;
-    }
-  };
-
   const fetchMapillaryPhoto = async (lat, lng) => {
-    console.log('📷 fetchMapillaryPhoto appelée pour:', lat, lng);
+    console.log('📷 Recherche photo Mapillary pour:', lat, lng);
     setPhotoLoading(true);
     try {
       // Chercher des images Mapillary dans un rayon de 50m
-      const radius = 50;
       const url = `https://graph.mapillary.com/images?access_token=MLY|5824985657540538|2ca5e88149fc6be2e9edeae0c17a24e2&fields=id,thumb_2048_url,captured_at&bbox=${lng-0.001},${lat-0.001},${lng+0.001},${lat+0.001}&limit=1`;
       
-      console.log('🔗 Appel API Mapillary...');
       const response = await fetch(url);
       const data = await response.json();
       
-      console.log('📊 Résultat Mapillary:', data);
-      
       if (data.data && data.data.length > 0) {
         // Photo trouvée !
-        console.log('✅ Photo Mapillary trouvée!', data.data[0].thumb_2048_url);
+        console.log('✅ Photo Mapillary trouvée!');
         setBuildingPhoto({
           url: data.data[0].thumb_2048_url,
           source: 'mapillary',
           capturedAt: data.data[0].captured_at
         });
-        setPhotoLoading(false);
-        return true;
       } else {
-        // Pas de photo Mapillary, essayer KartaView
-        console.log('⏭️ Pas de photo Mapillary, essai avec KartaView...');
-        const kartaViewFound = await fetchKartaViewPhoto(lat, lng);
-        
-        if (!kartaViewFound) {
-          // Aucune source n'a trouvé de photo
-          console.log('❌ Aucune photo trouvée (Mapillary + KartaView)');
-          setBuildingPhoto(null);
-        }
-        
-        setPhotoLoading(false);
-        return kartaViewFound;
+        // Pas de photo Mapillary
+        console.log('❌ Aucune photo Mapillary dans ce secteur');
+        setBuildingPhoto(null);
       }
     } catch (error) {
       console.log('❌ Erreur Mapillary:', error);
-      // En cas d'erreur Mapillary, essayer quand même KartaView
-      console.log('⏭️ Tentative KartaView après erreur Mapillary...');
-      const kartaViewFound = await fetchKartaViewPhoto(lat, lng);
-      if (!kartaViewFound) {
-        setBuildingPhoto(null);
-      }
+      setBuildingPhoto(null);
+    } finally {
       setPhotoLoading(false);
-      return kartaViewFound;
     }
   };
   
