@@ -19071,6 +19071,415 @@ async def update_batiment_coordinates(
     return {"message": "Coordonnées mises à jour avec succès"}
 
 
+# ==================== GESTION DES PRÉVENTIONNISTES ====================
+
+@api_router.put("/{tenant_slug}/users/{user_id}/toggle-preventionniste")
+async def toggle_preventionniste(
+    tenant_slug: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Activer/désactiver le statut de préventionniste pour un utilisateur (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Seuls les admins et superviseurs peuvent modifier ce statut
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Récupérer l'utilisateur
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Toggle le statut
+    new_status = not user.get('est_preventionniste', False)
+    
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"est_preventionniste": new_status}}
+    )
+    
+    return {
+        "message": "Statut de préventionniste mis à jour",
+        "user_id": user_id,
+        "est_preventionniste": new_status
+    }
+
+
+@api_router.get("/{tenant_slug}/prevention/preventionnistes")
+async def get_preventionnistes(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la liste de tous les préventionnistes actifs"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer tous les utilisateurs avec est_preventionniste = true et statut actif
+    preventionnistes_cursor = db.users.find({
+        "tenant_id": tenant.id,
+        "est_preventionniste": True,
+        "statut": "Actif"
+    })
+    
+    preventionnistes = await preventionnistes_cursor.to_list(length=None)
+    
+    # Pour chaque préventionniste, ajouter des statistiques
+    result = []
+    for prev in preventionnistes:
+        # Compter les bâtiments assignés
+        nb_batiments = await db.batiments.count_documents({
+            "tenant_id": tenant.id,
+            "preventionniste_assigne_id": prev["id"]
+        })
+        
+        # Compter les secteurs assignés
+        nb_secteurs = await db.secteurs_geographiques.count_documents({
+            "tenant_id": tenant.id,
+            "preventionniste_assigne_id": prev["id"]
+        })
+        
+        # Compter les inspections ce mois
+        start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        nb_inspections_mois = await db.inspections.count_documents({
+            "tenant_id": tenant.id,
+            "preventionniste_id": prev["id"],
+            "date_inspection": {"$gte": start_of_month.isoformat()}
+        })
+        
+        result.append({
+            "id": prev["id"],
+            "nom": prev["nom"],
+            "prenom": prev["prenom"],
+            "email": prev["email"],
+            "telephone": prev.get("telephone", ""),
+            "grade": prev.get("grade", ""),
+            "nb_batiments": nb_batiments,
+            "nb_secteurs": nb_secteurs,
+            "nb_inspections_mois": nb_inspections_mois
+        })
+    
+    return result
+
+
+@api_router.get("/{tenant_slug}/prevention/preventionnistes/{preventionniste_id}/stats")
+async def get_preventionniste_stats(
+    tenant_slug: str,
+    preventionniste_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les statistiques détaillées d'un préventionniste"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le préventionniste existe
+    preventionniste = await db.users.find_one({
+        "id": preventionniste_id,
+        "tenant_id": tenant.id,
+        "est_preventionniste": True
+    })
+    
+    if not preventionniste:
+        raise HTTPException(status_code=404, detail="Préventionniste non trouvé")
+    
+    # Statistiques globales
+    nb_batiments = await db.batiments.count_documents({
+        "tenant_id": tenant.id,
+        "preventionniste_assigne_id": preventionniste_id
+    })
+    
+    nb_secteurs = await db.secteurs_geographiques.count_documents({
+        "tenant_id": tenant.id,
+        "preventionniste_assigne_id": preventionniste_id
+    })
+    
+    # Inspections par période
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start_of_year = datetime.now(timezone.utc).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    nb_inspections_mois = await db.inspections.count_documents({
+        "tenant_id": tenant.id,
+        "preventionniste_id": preventionniste_id,
+        "date_inspection": {"$gte": start_of_month.isoformat()}
+    })
+    
+    nb_inspections_annee = await db.inspections.count_documents({
+        "tenant_id": tenant.id,
+        "preventionniste_id": preventionniste_id,
+        "date_inspection": {"$gte": start_of_year.isoformat()}
+    })
+    
+    # Plans d'intervention créés
+    nb_plans = await db.plans_intervention.count_documents({
+        "tenant_id": tenant.id,
+        "created_by": preventionniste_id
+    })
+    
+    return {
+        "preventionniste": {
+            "id": preventionniste["id"],
+            "nom": preventionniste["nom"],
+            "prenom": preventionniste["prenom"],
+            "email": preventionniste["email"],
+            "telephone": preventionniste.get("telephone", ""),
+            "grade": preventionniste.get("grade", "")
+        },
+        "stats": {
+            "nb_batiments": nb_batiments,
+            "nb_secteurs": nb_secteurs,
+            "nb_inspections_mois": nb_inspections_mois,
+            "nb_inspections_annee": nb_inspections_annee,
+            "nb_plans": nb_plans
+        }
+    }
+
+
+@api_router.get("/{tenant_slug}/prevention/preventionnistes/{preventionniste_id}/batiments")
+async def get_preventionniste_batiments(
+    tenant_slug: str,
+    preventionniste_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les bâtiments assignés à un préventionniste"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    batiments_cursor = db.batiments.find({
+        "tenant_id": tenant.id,
+        "preventionniste_assigne_id": preventionniste_id
+    })
+    
+    batiments = await batiments_cursor.to_list(length=None)
+    return batiments
+
+
+@api_router.get("/{tenant_slug}/prevention/preventionnistes/{preventionniste_id}/secteurs")
+async def get_preventionniste_secteurs(
+    tenant_slug: str,
+    preventionniste_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les secteurs assignés à un préventionniste"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    secteurs_cursor = db.secteurs_geographiques.find({
+        "tenant_id": tenant.id,
+        "preventionniste_assigne_id": preventionniste_id
+    })
+    
+    secteurs = await secteurs_cursor.to_list(length=None)
+    return secteurs
+
+
+@api_router.put("/{tenant_slug}/prevention/batiments/{batiment_id}/assigner")
+async def assigner_batiment_preventionniste(
+    tenant_slug: str,
+    batiment_id: str,
+    preventionniste_id: Optional[str] = Body(None),
+    raison: Optional[str] = Body(""),
+    current_user: User = Depends(get_current_user)
+):
+    """Assigner un préventionniste à un bâtiment (avec historique)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier permissions
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Récupérer le bâtiment
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Si preventionniste_id fourni, vérifier qu'il existe et est actif
+    if preventionniste_id:
+        preventionniste = await db.users.find_one({
+            "id": preventionniste_id,
+            "tenant_id": tenant.id,
+            "est_preventionniste": True,
+            "statut": "Actif"
+        })
+        if not preventionniste:
+            raise HTTPException(status_code=404, detail="Préventionniste non trouvé ou inactif")
+    
+    # Créer l'entrée d'historique
+    ancien_preventionniste_id = batiment.get("preventionniste_assigne_id")
+    historique_entry = {
+        "date": datetime.now(timezone.utc).isoformat(),
+        "ancien_preventionniste_id": ancien_preventionniste_id,
+        "nouveau_preventionniste_id": preventionniste_id,
+        "modifie_par": current_user.id,
+        "modifie_par_nom": f"{current_user.prenom} {current_user.nom}",
+        "raison": raison
+    }
+    
+    # Mettre à jour le bâtiment
+    await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {
+            "$set": {
+                "preventionniste_assigne_id": preventionniste_id,
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$push": {"historique_assignations": historique_entry}
+        }
+    )
+    
+    # Créer notification pour le préventionniste
+    if preventionniste_id:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "user_id": preventionniste_id,
+            "type": "assignation_batiment",
+            "titre": "Nouveau bâtiment assigné",
+            "message": f"Le bâtiment '{batiment.get('nom_etablissement') or batiment.get('adresse_civique')}' vous a été assigné.",
+            "lue": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "batiment_id": batiment_id,
+                "batiment_nom": batiment.get('nom_etablissement') or batiment.get('adresse_civique')
+            }
+        }
+        await db.notifications.insert_one(notification)
+    
+    return {
+        "message": "Bâtiment assigné avec succès",
+        "batiment_id": batiment_id,
+        "preventionniste_id": preventionniste_id
+    }
+
+
+@api_router.put("/{tenant_slug}/prevention/secteurs/{secteur_id}/assigner")
+async def assigner_secteur_preventionniste(
+    tenant_slug: str,
+    secteur_id: str,
+    preventionniste_id: Optional[str] = Body(None),
+    assigner_batiments: bool = Body(True),
+    current_user: User = Depends(get_current_user)
+):
+    """Assigner un préventionniste à un secteur (et optionnellement tous ses bâtiments)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier permissions
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Récupérer le secteur
+    secteur = await db.secteurs_geographiques.find_one({"id": secteur_id, "tenant_id": tenant.id})
+    if not secteur:
+        raise HTTPException(status_code=404, detail="Secteur non trouvé")
+    
+    # Si preventionniste_id fourni, vérifier qu'il existe
+    if preventionniste_id:
+        preventionniste = await db.users.find_one({
+            "id": preventionniste_id,
+            "tenant_id": tenant.id,
+            "est_preventionniste": True,
+            "statut": "Actif"
+        })
+        if not preventionniste:
+            raise HTTPException(status_code=404, detail="Préventionniste non trouvé ou inactif")
+    
+    # Mettre à jour le secteur
+    await db.secteurs_geographiques.update_one(
+        {"id": secteur_id, "tenant_id": tenant.id},
+        {
+            "$set": {
+                "preventionniste_assigne_id": preventionniste_id,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    nb_batiments_assignes = 0
+    
+    # Si demandé, assigner tous les bâtiments du secteur
+    if assigner_batiments:
+        # Trouver tous les bâtiments dans ce secteur (géométriquement)
+        # Pour simplifier, on va assigner tous les bâtiments sans preventionniste ou avec autre preventionniste
+        batiments_cursor = db.batiments.find({
+            "tenant_id": tenant.id,
+            "latitude": {"$ne": None},
+            "longitude": {"$ne": None}
+        })
+        
+        batiments = await batiments_cursor.to_list(length=None)
+        
+        # Pour chaque bâtiment, vérifier s'il est dans le polygone du secteur
+        from shapely.geometry import Point, shape
+        
+        secteur_polygon = shape(secteur["geometry"])
+        
+        for batiment in batiments:
+            if batiment.get("latitude") and batiment.get("longitude"):
+                point = Point(batiment["longitude"], batiment["latitude"])
+                
+                if secteur_polygon.contains(point):
+                    # Créer l'entrée d'historique
+                    ancien_preventionniste_id = batiment.get("preventionniste_assigne_id")
+                    historique_entry = {
+                        "date": datetime.now(timezone.utc).isoformat(),
+                        "ancien_preventionniste_id": ancien_preventionniste_id,
+                        "nouveau_preventionniste_id": preventionniste_id,
+                        "modifie_par": current_user.id,
+                        "modifie_par_nom": f"{current_user.prenom} {current_user.nom}",
+                        "raison": f"Assignation automatique via secteur '{secteur['nom']}'"
+                    }
+                    
+                    # Mettre à jour le bâtiment
+                    await db.batiments.update_one(
+                        {"id": batiment["id"]},
+                        {
+                            "$set": {
+                                "preventionniste_assigne_id": preventionniste_id,
+                                "updated_at": datetime.now(timezone.utc)
+                            },
+                            "$push": {"historique_assignations": historique_entry}
+                        }
+                    )
+                    nb_batiments_assignes += 1
+    
+    # Créer notification pour le préventionniste
+    if preventionniste_id:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "user_id": preventionniste_id,
+            "type": "assignation_secteur",
+            "titre": "Nouveau secteur assigné",
+            "message": f"Le secteur '{secteur['nom']}' vous a été assigné" + (f" avec {nb_batiments_assignes} bâtiments." if assigner_batiments else "."),
+            "lue": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "secteur_id": secteur_id,
+                "secteur_nom": secteur['nom'],
+                "nb_batiments": nb_batiments_assignes
+            }
+        }
+        await db.notifications.insert_one(notification)
+    
+    return {
+        "message": "Secteur assigné avec succès",
+        "secteur_id": secteur_id,
+        "preventionniste_id": preventionniste_id,
+        "nb_batiments_assignes": nb_batiments_assignes
+    }
 
 
 # ==================== PLANS D'INTERVENTION ====================
