@@ -183,11 +183,15 @@ const BatimentForm = ({
       setEditData({ ...batiment });
       fetchInspections();
       
-      // Charger la photo si elle existe
+      // Charger la photo si elle existe dans le bâtiment
       if (batiment.photo_url) {
         console.log('📸 Chargement de la photo existante du bâtiment');
-        setBuildingPhoto({ url: batiment.photo_url });
+        setBuildingPhoto({ 
+          url: batiment.photo_url,
+          source: 'uploaded'
+        });
       } else {
+        // Pas de photo uploadée, on cherchera automatiquement via Mapillary
         setBuildingPhoto(null);
       }
     }
