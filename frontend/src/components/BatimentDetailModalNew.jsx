@@ -379,12 +379,16 @@ const BatimentForm = ({
   }, [editData.latitude, editData.longitude, editData.adresse_civique, editData.ville]);
 
   const generateStreetViewUrl = async () => {
+    console.log('🗺️ generateStreetViewUrl appelée');
     // Chercher une photo réelle du bâtiment via Mapillary
     if (editData.latitude && editData.longitude) {
+      console.log('✅ Coordonnées disponibles:', editData.latitude, editData.longitude);
       await fetchMapillaryPhoto(editData.latitude, editData.longitude);
     } else if (editData.adresse_civique && editData.ville) {
       // Si pas de coordonnées, tenter un geocoding pour obtenir les coordonnées
+      console.log('🌍 Pas de coordonnées, tentative de geocoding...');
       const address = encodeURIComponent(`${editData.adresse_civique}, ${editData.ville}, ${editData.province || 'QC'}, Canada`);
+      console.log('📍 Adresse à géocoder:', address);
       
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${address}&format=json&limit=1`, {
@@ -397,6 +401,7 @@ const BatimentForm = ({
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lon = parseFloat(data[0].lon);
+          console.log('✅ Géocodage réussi:', lat, lon);
           // Mettre à jour les coordonnées dans editData
           setEditData(prev => ({
             ...prev,
@@ -404,10 +409,14 @@ const BatimentForm = ({
             longitude: lon
           }));
           await fetchMapillaryPhoto(lat, lon);
+        } else {
+          console.log('❌ Aucun résultat de géocodage');
         }
       } catch (err) {
-        console.log('Erreur geocoding:', err);
+        console.log('❌ Erreur geocoding:', err);
       }
+    } else {
+      console.log('⚠️ Données insuffisantes pour recherche');
     }
   };
   
