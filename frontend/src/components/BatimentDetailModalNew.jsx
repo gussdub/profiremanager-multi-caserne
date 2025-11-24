@@ -182,7 +182,6 @@ const BatimentForm = ({
     if (batiment) {
       setEditData({ ...batiment });
       fetchInspections();
-      lastSavedDataRef.current = JSON.stringify(batiment);
       
       // Charger la photo si elle existe
       if (batiment.photo_url) {
