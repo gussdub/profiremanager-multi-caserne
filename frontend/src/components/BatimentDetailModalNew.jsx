@@ -1667,7 +1667,53 @@ const BatimentForm = ({
               </div>
             </Card>
 
-            {/* Section 6 - NOTES ET COMPLÉMENTS */}
+            {/* Section 6 - GESTION ET ASSIGNATION */}
+            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb' }}>
+              <h3 style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: '600', 
+                marginBottom: '1rem',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                🎯 Gestion
+              </h3>
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
+                    Préventionniste assigné
+                  </label>
+                  <select
+                    value={editData.preventionniste_assigne_id || ''}
+                    onChange={(e) => handleChange('preventionniste_assigne_id', e.target.value || null)}
+                    disabled={!isEditing}
+                    style={{
+                      width: '100%',
+                      padding: '0.625rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      backgroundColor: isEditing ? 'white' : '#f9fafb',
+                      cursor: isEditing ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    <option value="">Aucun préventionniste assigné</option>
+                    {preventionnistes.map(prev => (
+                      <option key={prev.id} value={prev.id}>
+                        🎯 {prev.prenom} {prev.nom} {prev.grade && `(${prev.grade})`}
+                      </option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                    Responsable de l'entretien et suivi préventif du bâtiment
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Section 7 - NOTES ET COMPLÉMENTS */}
             <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb' }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
