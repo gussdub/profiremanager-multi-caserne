@@ -21149,28 +21149,51 @@ const Prevention = () => {
               </div>
             </div>
             
-            {loading ? (
-              <div className="loading">Chargement des bâtiments...</div>
-            ) : batiments.length === 0 ? (
-              <div className="empty-state">
-                <p>Aucun bâtiment enregistré</p>
-                <Button onClick={() => setCurrentView('nouveau-batiment')}>
-                  Ajouter le premier bâtiment
-                </Button>
-              </div>
-            ) : viewMode === 'liste' ? (
-              <div className="batiments-table" style={{background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-                <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                  <thead>
-                    <tr style={{background: '#f9fafb', borderBottom: '2px solid #e5e7eb'}}>
-                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📫 Adresse</th>
-                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>🏢 Type</th>
-                      <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📅 Dernière inspection</th>
-                      <th style={{padding: '1rem', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem'}}>⚡ Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batiments.map(batiment => (
+            {(() => {
+              // Filtrer les bâtiments selon le rôle de l'utilisateur
+              const isPreventionnisteOrAdmin = user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur';
+              const filteredBatiments = isPreventionnisteOrAdmin 
+                ? batiments 
+                : batiments.filter(b => b.niveau_risque === 'Faible');
+              
+              if (loading) {
+                return <div className="loading">Chargement des bâtiments...</div>;
+              }
+              
+              if (batiments.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <p>Aucun bâtiment enregistré</p>
+                    {isPreventionnisteOrAdmin && (
+                      <Button onClick={() => setCurrentView('nouveau-batiment')}>
+                        Ajouter le premier bâtiment
+                      </Button>
+                    )}
+                  </div>
+                );
+              }
+              
+              if (filteredBatiments.length === 0 && !isPreventionnisteOrAdmin) {
+                return (
+                  <div className="empty-state">
+                    <p>Aucun bâtiment à risque faible à inspecter</p>
+                  </div>
+                );
+              }
+              
+              return viewMode === 'liste' ? (
+                <div className="batiments-table" style={{background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
+                  <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                    <thead>
+                      <tr style={{background: '#f9fafb', borderBottom: '2px solid #e5e7eb'}}>
+                        <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📫 Adresse</th>
+                        <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>🏢 Type</th>
+                        <th style={{padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem'}}>📅 Dernière inspection</th>
+                        <th style={{padding: '1rem', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem'}}>⚡ Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredBatiments.map(batiment => (
                       <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
                         <td style={{padding: '1rem'}}>
                           <div>
