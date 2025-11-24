@@ -19256,6 +19256,12 @@ async def get_preventionniste_batiments(
     })
     
     batiments = await batiments_cursor.to_list(length=None)
+    
+    # Nettoyer les ObjectIds pour sérialisation JSON
+    for batiment in batiments:
+        if "_id" in batiment:
+            del batiment["_id"]
+    
     return batiments
 
 
