@@ -21240,14 +21240,14 @@ const Prevention = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="batiments-list">
-                  <div className="batiments-grid">
-                    {batiments.map(batiment => (
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="batiments-list">
+                    <div className="batiments-grid">
+                      {filteredBatiments.map(batiment => (
                       <div key={batiment.id} className="batiment-card">
                         <div className="batiment-header">
                           <h4>{batiment.nom_etablissement || batiment.adresse_civique}</h4>
