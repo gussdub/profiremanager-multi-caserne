@@ -19283,6 +19283,12 @@ async def get_preventionniste_secteurs(
     })
     
     secteurs = await secteurs_cursor.to_list(length=None)
+    
+    # Nettoyer les ObjectIds pour sérialisation JSON
+    for secteur in secteurs:
+        if "_id" in secteur:
+            del secteur["_id"]
+    
     return secteurs
 
 
