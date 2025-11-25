@@ -21397,6 +21397,18 @@ const Prevention = () => {
           />
         );
       
+      case 'calendrier':
+        return (
+          <Suspense fallback={<div>Chargement du calendrier...</div>}>
+            <CalendrierInspections
+              tenantSlug={tenantSlug}
+              apiGet={apiGet}
+              user={user}
+              toast={toast}
+            />
+          </Suspense>
+        );
+      
       case 'non-conformites':
         return <GestionNonConformites setCurrentView={setCurrentView} />;
       
