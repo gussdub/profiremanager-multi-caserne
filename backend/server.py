@@ -20575,6 +20575,256 @@ async def get_prevention_statistics(
     }
 
 
+# ==================== RAPPORT BÂTIMENT PDF ====================
+
+@api_router.get("/{tenant_slug}/prevention/batiments/{batiment_id}/rapport-pdf")
+async def export_rapport_batiment_pdf(
+    tenant_slug: str,
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Générer un rapport complet PDF pour un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer le bâtiment
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Récupérer les inspections du bâtiment
+    inspections_cursor = db.inspections.find({
+        "tenant_id": tenant.id,
+        "batiment_id": batiment_id
+    }).sort("date_inspection", -1)
+    inspections = await inspections_cursor.to_list(length=None)
+    
+    # Récupérer le plan d'intervention validé
+    plan = await db.plans_intervention.find_one({
+        "tenant_id": tenant.id,
+        "batiment_id": batiment_id,
+        "statut": "valide"
+    })
+    
+    # Récupérer le préventionniste assigné
+    preventionniste = None
+    if batiment.get("preventionniste_assigne_id"):
+        preventionniste = await db.users.find_one({
+            "id": batiment["preventionniste_assigne_id"],
+            "tenant_id": tenant.id
+        })
+    
+    # Créer le PDF
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    import io
+    from PIL import Image as PILImage
+    import base64
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Style personnalisé
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#1a1a1a'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#2563eb'),
+        spaceAfter=10,
+        spaceBefore=15
+    )
+    
+    # Titre principal
+    story.append(Paragraph(f"RAPPORT DE PRÉVENTION", title_style))
+    story.append(Paragraph(f"{batiment.get('nom_etablissement') or batiment.get('adresse_civique')}", styles['Heading2']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Section A : Informations du Bâtiment
+    story.append(Paragraph("📋 INFORMATIONS DU BÂTIMENT", heading_style))
+    
+    info_data = [
+        ["Adresse", f"{batiment.get('adresse_civique', '')}, {batiment.get('ville', '')}, {batiment.get('province', 'QC')}"],
+        ["Type de bâtiment", batiment.get('type_batiment', 'N/A')],
+        ["Catégorie", batiment.get('categorie', 'N/A')],
+        ["Niveau de risque", batiment.get('niveau_risque', 'N/A')],
+        ["Nombre d'occupants", str(batiment.get('nombre_occupants', 'N/A'))],
+        ["Valeur foncière", f"{batiment.get('valeur_fonciere', 0):,.2f} $" if batiment.get('valeur_fonciere') else 'N/A'],
+        ["Préventionniste assigné", f"{preventionniste['prenom']} {preventionniste['nom']}" if preventionniste else "Non assigné"]
+    ]
+    
+    info_table = Table(info_data, colWidths=[2*inch, 4.5*inch])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Photo du bâtiment si disponible
+    if batiment.get('photo_url'):
+        try:
+            photo_data = batiment['photo_url']
+            if photo_data.startswith('data:image'):
+                photo_data = photo_data.split(',')[1]
+            
+            img_data = base64.b64decode(photo_data)
+            img = PILImage.open(io.BytesIO(img_data))
+            
+            # Redimensionner
+            max_width = 4 * inch
+            max_height = 3 * inch
+            img.thumbnail((int(max_width * 2), int(max_height * 2)), PILImage.Resampling.LANCZOS)
+            
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=85)
+            img_buffer.seek(0)
+            
+            rl_img = RLImage(img_buffer, width=max_width, height=max_height)
+            story.append(rl_img)
+            story.append(Spacer(1, 0.2*inch))
+        except Exception as e:
+            print(f"Erreur chargement photo: {e}")
+    
+    # Section B : Historique des Inspections
+    story.append(Paragraph("📜 HISTORIQUE DES INSPECTIONS", heading_style))
+    
+    if inspections:
+        insp_data = [["Date", "Statut", "Non-conformités", "Inspecteur"]]
+        
+        for insp in inspections[:10]:  # Limiter à 10 dernières
+            date_str = insp.get('date_inspection', 'N/A')
+            if isinstance(date_str, str):
+                try:
+                    date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    date_str = date_obj.strftime('%Y-%m-%d')
+                except:
+                    pass
+            
+            statut = insp.get('statut_conformite', 'N/A')
+            nb_nc = len(insp.get('non_conformites', []))
+            inspecteur = insp.get('inspecteur_nom', 'N/A')
+            
+            insp_data.append([date_str, statut, str(nb_nc), inspecteur])
+        
+        insp_table = Table(insp_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 2*inch])
+        insp_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')])
+        ]))
+        story.append(insp_table)
+        
+        # Statistiques
+        story.append(Spacer(1, 0.15*inch))
+        conformes = len([i for i in inspections if i.get('statut_conformite') == 'Conforme'])
+        taux = (conformes / len(inspections) * 100) if inspections else 0
+        
+        stats_text = f"<b>Statistiques :</b> {len(inspections)} inspections | Taux de conformité : {taux:.1f}%"
+        story.append(Paragraph(stats_text, styles['Normal']))
+    else:
+        story.append(Paragraph("Aucune inspection enregistrée pour ce bâtiment.", styles['Normal']))
+    
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Section C : Plan d'Intervention
+    story.append(Paragraph("🗺️ PLAN D'INTERVENTION", heading_style))
+    
+    if plan:
+        plan_text = f"Plan validé : <b>{plan.get('numero_plan', 'N/A')}</b><br/>"
+        plan_text += f"Points d'accès : {len(plan.get('points_acces', []))}<br/>"
+        plan_text += f"Zones dangereuses : {len(plan.get('zones_dangereuses', []))}<br/>"
+        plan_text += f"Équipements : {len(plan.get('equipements_disponibles', []))}"
+        story.append(Paragraph(plan_text, styles['Normal']))
+    else:
+        story.append(Paragraph("Aucun plan d'intervention validé.", styles['Normal']))
+    
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Section D : Recommandations
+    story.append(Paragraph("💡 RECOMMANDATIONS", heading_style))
+    
+    recommandations = []
+    
+    # Analyse des dernières inspections
+    if inspections:
+        derniere_insp = inspections[0]
+        date_derniere = derniere_insp.get('date_inspection')
+        if date_derniere:
+            try:
+                date_obj = datetime.fromisoformat(date_derniere.replace('Z', '+00:00'))
+                jours_depuis = (datetime.now(timezone.utc) - date_obj).days
+                
+                if jours_depuis > 365:
+                    recommandations.append(f"⚠️ Dernière inspection il y a {jours_depuis} jours - Prévoir une nouvelle inspection")
+            except:
+                pass
+        
+        if derniere_insp.get('statut_conformite') == 'Non conforme':
+            nb_nc = len(derniere_insp.get('non_conformites', []))
+            recommandations.append(f"🔴 {nb_nc} non-conformité(s) à corriger en priorité")
+    
+    if not plan:
+        recommandations.append("📋 Créer un plan d'intervention pour ce bâtiment")
+    
+    if batiment.get('niveau_risque') in ['Élevé', 'Très élevé'] and not preventionniste:
+        recommandations.append("👤 Assigner un préventionniste pour le suivi régulier")
+    
+    if not recommandations:
+        recommandations.append("✅ Bâtiment en bon état, poursuivre le suivi régulier")
+    
+    for reco in recommandations:
+        story.append(Paragraph(f"• {reco}", styles['Normal']))
+    
+    # Footer
+    story.append(Spacer(1, 0.3*inch))
+    footer_text = f"<i>Rapport généré le {datetime.now().strftime('%Y-%m-%d %H:%M')} par {current_user.prenom} {current_user.nom}</i>"
+    story.append(Paragraph(footer_text, styles['Normal']))
+    
+    # Construire le PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Nom du fichier
+    filename = f"rapport_{batiment.get('nom_etablissement', 'batiment').replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+
 # ==================== EXPORT EXCEL ====================
 
 @api_router.get("/{tenant_slug}/prevention/export-excel")
