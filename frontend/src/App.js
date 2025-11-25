@@ -21398,14 +21398,12 @@ const Prevention = () => {
       
       case 'calendrier':
         return (
-          <Suspense fallback={<div>Chargement du calendrier...</div>}>
-            <CalendrierInspections
-              tenantSlug={tenantSlug}
-              apiGet={apiGet}
-              user={user}
-              toast={toast}
-            />
-          </Suspense>
+          <CalendrierInspections
+            setCurrentView={setCurrentView}
+            batiments={batiments}
+            filteredBatimentId={filteredBatimentId}
+            setFilteredBatimentId={setFilteredBatimentId}
+          />
         );
       
       case 'non-conformites':
