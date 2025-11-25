@@ -21089,6 +21089,16 @@ const Prevention = () => {
                   ⚠️ Non-conformités
                 </Button>
                 <Button 
+                  onClick={() => setCurrentView('calendrier')}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white'
+                  }}
+                >
+                  📅 Calendrier des inspections
+                </Button>
+                <Button 
                   onClick={() => setCurrentView('import')}
                   className="action-button"
                 >
