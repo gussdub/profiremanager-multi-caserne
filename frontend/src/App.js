@@ -21582,12 +21582,47 @@ const Prevention = () => {
               setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
               setCurrentView('calendrier'); // Vue inspections
             }}
-            onGenerateReport={() => {
-              // TODO: Générer rapport pour ce bâtiment
-              toast({
-                title: "Fonctionnalité à venir",
-                description: "Génération de rapport en développement"
-              });
+            onGenerateReport={async () => {
+              try {
+                toast({
+                  title: "Génération en cours",
+                  description: "Téléchargement du rapport PDF..."
+                });
+                
+                const response = await fetch(
+                  buildApiUrl(tenantSlug, `/prevention/batiments/${selectedBatiment.id}/rapport-pdf`),
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${getTenantToken()}`
+                    }
+                  }
+                );
+                
+                if (!response.ok) throw new Error('Erreur génération rapport');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rapport_${selectedBatiment.nom_etablissement || 'batiment'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                toast({
+                  title: "Rapport généré",
+                  description: "Le PDF a été téléchargé avec succès",
+                  variant: "success"
+                });
+              } catch (error) {
+                console.error('Erreur génération rapport:', error);
+                toast({
+                  title: "Erreur",
+                  description: "Impossible de générer le rapport",
+                  variant: "destructive"
+                });
+              }
             }}
             onDelete={async () => {
               if (!window.confirm(`Supprimer le bâtiment ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}?`)) {
