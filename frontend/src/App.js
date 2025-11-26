@@ -18933,24 +18933,26 @@ const GestionPreventionnistes = () => {
                           <div key={batiment.id} className="batiment-item" style={{
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
                             padding: '0.75rem',
                             backgroundColor: '#f9fafb',
                             borderRadius: '6px',
                             marginBottom: '0.5rem',
                             border: '1px solid #e5e7eb'
                           }}>
-                            <div>
+                            <div style={{ flex: 1 }}>
                               <span className="batiment-name" style={{
                                 fontWeight: '500',
                                 color: '#1e293b',
-                                display: 'block'
+                                display: 'block',
+                                marginBottom: '0.25rem'
                               }}>
                                 {batiment.nom_etablissement}
                               </span>
                               <span style={{
                                 fontSize: '0.8rem',
-                                color: '#64748b'
+                                color: '#64748b',
+                                display: 'block'
                               }}>
                                 📍 {batiment.adresse_civique || 'Adresse non spécifiée'}
                               </span>
