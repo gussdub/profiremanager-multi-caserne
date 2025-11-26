@@ -45,31 +45,6 @@ const RapportBatimentComplet = ({ batiment, tenantSlug, onBack }) => {
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      const token = getTenantToken();
-      const response = await axios.get(
-        buildApiUrl(tenantSlug, `/prevention/batiments/${batiment.id}/export-batiment-report-pdf`),
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `rapport-prevention-${batiment.nom_etablissement || 'batiment'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Erreur export PDF:', err);
-      alert('L\'export PDF n\'est pas encore disponible. Utilisez la fonction d\'impression du navigateur (Ctrl+P).');
-    }
-  };
-
   const handlePrint = () => {
     window.print();
   };
