@@ -147,7 +147,9 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {inspections.map((inspection) => {
+            {inspections
+              .filter(i => filtreStatut === 'tous' || i.statut === filtreStatut)
+              .map((inspection) => {
               const statutInfo = getStatutLabel(inspection.statut);
               
               return (
