@@ -319,7 +319,6 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
               </Marker>
             ))}
           </MapContainer>
-          </>
         )}
       </div>
     </div>
