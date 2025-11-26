@@ -228,7 +228,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
               </h3>
               <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
                 <MapContainer
-                  center={[plan.batiment.latitude, plan.batiment.longitude]}
+                  center={[batiment.latitude, batiment.longitude]}
                   zoom={18}
                   style={{ height: '100%', width: '100%' }}
                 >
@@ -247,11 +247,11 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                     </BaseLayer>
                   </LayersControl>
                   
-                  <Marker position={[plan.batiment.latitude, plan.batiment.longitude]}>
+                  <Marker position={[batiment.latitude, batiment.longitude]}>
                     <Popup>
-                      <strong>{plan.batiment.nom_etablissement || 'Bâtiment'}</strong>
+                      <strong>{batiment.nom_etablissement || 'Bâtiment'}</strong>
                       <br />
-                      {plan.batiment.adresse_civique}
+                      {batiment.adresse_civique}
                     </Popup>
                   </Marker>
                   
