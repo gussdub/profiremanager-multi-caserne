@@ -6,6 +6,7 @@ import { buildApiUrl, getTenantToken } from '../utils/api';
 import imageCompression from 'browser-image-compression';
 import HistoriqueInspections from './HistoriqueInspections';
 import InspectionDetailView from './InspectionDetailView';
+import PlanInterventionViewerNew from './PlanInterventionViewerNew';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
