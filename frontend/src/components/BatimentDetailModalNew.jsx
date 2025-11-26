@@ -781,7 +781,6 @@ const BatimentForm = ({
                   setSelectedPlanId(null);
                 }}
               />
-            </div>
           </div>
         </div>
       </>
