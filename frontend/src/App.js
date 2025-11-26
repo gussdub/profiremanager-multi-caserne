@@ -21849,10 +21849,10 @@ const Prevention = () => {
             📅 Planification
           </Button>
           <Button 
-            variant={currentView === 'inspections' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('inspections')}
+            variant={currentView === 'non-conformites' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('non-conformites')}
           >
-            📋 Inspections
+            ⚠️ Non-conformités
           </Button>
           <Button 
             variant={currentView === 'grilles' ? 'default' : 'outline'}
