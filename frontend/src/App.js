@@ -8166,17 +8166,17 @@ const Planning = () => {
                           >
                             <div style={{ 
                               fontWeight: '500', 
-                              fontSize: '0.95rem',
-                              color: '#1e293b' // Couleur explicite pour le nom
+                              fontSize: '0.875rem',
+                              color: '#1e293b'
                             }}>
                               {userOption.prenom} {userOption.nom}
                             </div>
                             <div style={{ 
-                              fontSize: '0.875rem', 
+                              fontSize: '0.75rem', 
                               color: '#64748b', 
-                              marginTop: '0.25rem' 
+                              marginTop: '0.125rem' 
                             }}>
-                              {userOption.grade} - {userOption.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                              {userOption.grade} - {userOption.type_emploi === 'temps_plein' ? 'TP' : 'TPA'}
                             </div>
                           </div>
                         ))}
