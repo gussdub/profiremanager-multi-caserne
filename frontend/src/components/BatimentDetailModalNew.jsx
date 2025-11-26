@@ -772,15 +772,17 @@ const BatimentForm = ({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <PlanInterventionViewerNew
-              planId={selectedPlanId}
-              batiment={batiment}
-              tenantSlug={tenantSlug}
-              onBack={() => {
-                setViewMode('form');
-                setSelectedPlanId(null);
-              }}
-            />
+            <div style={{ height: '100%', overflow: 'hidden' }}>
+              <PlanInterventionViewerNew
+                planId={selectedPlanId}
+                batiment={batiment}
+                tenantSlug={tenantSlug}
+                onBack={() => {
+                  setViewMode('form');
+                  setSelectedPlanId(null);
+                }}
+              />
+            </div>
           </div>
         </div>
       </>
