@@ -8054,8 +8054,9 @@ const Planning = () => {
             onClick={(e) => e.stopPropagation()} 
             data-testid="assign-modal"
             style={{
-              maxHeight: '90vh',
-              maxWidth: '500px',
+              maxHeight: '85vh',
+              maxWidth: '600px',
+              width: '95%',
               overflow: 'visible',
               display: 'flex',
               flexDirection: 'column'
