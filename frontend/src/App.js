@@ -8049,7 +8049,18 @@ const Planning = () => {
       {/* Assignment Modal */}
       {showAssignModal && selectedSlot && user.role !== 'employe' && (
         <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} data-testid="assign-modal">
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            data-testid="assign-modal"
+            style={{
+              maxHeight: '90vh',
+              maxWidth: '500px',
+              overflow: 'visible',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
             <div className="modal-header">
               <h3>Assigner une garde</h3>
               <Button variant="ghost" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>✕</Button>
