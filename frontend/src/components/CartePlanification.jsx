@@ -246,7 +246,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
       </div>
 
       {/* Carte */}
-      <div style={{ flex: 1, position: 'relative', minHeight: '500px' }}>
+      <div style={{ flex: 1, position: 'relative', minHeight: '500px', backgroundColor: '#e0e0e0' }}>
         {batimentsValides.length === 0 ? (
           <div style={{ 
             height: '100%', 
@@ -263,7 +263,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
           <MapContainer
             center={[45.4042, -72.9889]}
             zoom={13}
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: '500px', width: '100%' }}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
