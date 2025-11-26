@@ -8073,10 +8073,21 @@ const Planning = () => {
               overflowY: 'auto',
               padding: '1rem 1.5rem'
             }}>
-              <div className="assignment-details">
-                <p><strong>Garde:</strong> {selectedSlot.typeGarde.nom}</p>
-                <p><strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}</p>
-                <p><strong>Horaires:</strong> {selectedSlot.typeGarde.heure_debut} - {selectedSlot.typeGarde.heure_fin}</p>
+              <div className="assignment-details" style={{ 
+                padding: '0.75rem', 
+                background: '#f8fafc', 
+                borderRadius: '6px',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                  <strong>Garde:</strong> {selectedSlot.typeGarde.nom}
+                </p>
+                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                  <strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}
+                </p>
+                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                  <strong>Horaires:</strong> {selectedSlot.typeGarde.heure_debut} - {selectedSlot.typeGarde.heure_fin}
+                </p>
               </div>
               
               <div className="user-selection" style={{ overflow: 'visible' }}>
