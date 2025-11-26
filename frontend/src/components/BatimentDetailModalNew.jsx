@@ -1105,7 +1105,7 @@ const BatimentForm = ({
                   </Button>
                 )}
                 {onViewHistory && (
-                  <Button variant="outline" onClick={() => onViewHistory(batiment)}>
+                  <Button variant="outline" onClick={() => setViewMode('history')}>
                     📜 Historique
                   </Button>
                 )}
