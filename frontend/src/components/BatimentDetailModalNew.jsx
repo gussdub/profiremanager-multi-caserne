@@ -7,6 +7,7 @@ import imageCompression from 'browser-image-compression';
 import HistoriqueInspections from './HistoriqueInspections';
 import InspectionDetailView from './InspectionDetailView';
 import PlanInterventionViewerNew from './PlanInterventionViewerNew';
+import RapportBatimentComplet from './RapportBatimentComplet';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
