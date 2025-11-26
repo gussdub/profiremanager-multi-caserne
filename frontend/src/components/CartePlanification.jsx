@@ -72,7 +72,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('🗺️ CartePlanification - Début fetchData');
+      console.log('🗺️ CartePlanification - Début fetchData, tenantSlug:', tenantSlug);
       
       // Récupérer les bâtiments et inspections
       const [batimentsData, inspectionsData] = await Promise.all([
@@ -80,6 +80,8 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
         apiGet(tenantSlug, '/prevention/inspections')
       ]);
       
+      console.log('🗺️ Réponse API batiments:', batimentsData);
+      console.log('🗺️ Réponse API inspections:', inspectionsData);
       console.log(`🗺️ Données récupérées: ${batimentsData?.length || 0} bâtiments, ${inspectionsData?.length || 0} inspections`);
       
       setBatiments(batimentsData);
