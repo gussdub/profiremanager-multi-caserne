@@ -740,7 +740,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           <Button onClick={handleSavePlan} disabled={saving}>
             {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
           </Button>
-          {existingPlan && existingPlan.statut === 'brouillon' && (
+          {existingPlan && (existingPlan.statut === 'brouillon' || existingPlan.statut === 'rejete') && (
             <Button onClick={handleSubmitForValidation} disabled={saving}>
               ✅ Soumettre pour validation
             </Button>
