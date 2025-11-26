@@ -134,10 +134,7 @@ const RapportBatimentComplet = ({ batiment, tenantSlug, onBack }) => {
             ← Retour
           </Button>
           <Button variant="outline" onClick={handlePrint}>
-            🖨️ Imprimer
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            📄 Exporter PDF
+            🖨️ Imprimer / PDF
           </Button>
         </div>
         
