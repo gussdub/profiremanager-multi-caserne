@@ -8151,7 +8151,7 @@ const Planning = () => {
                               setShowQuickAssignDropdown(false);
                             }}
                             style={{
-                              padding: '0.5rem',
+                              padding: '0.75rem',
                               cursor: 'pointer',
                               borderBottom: '1px solid #f1f5f9',
                               transition: 'background 0.2s',
