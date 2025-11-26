@@ -677,6 +677,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       ...prev,
       [key]: updatedData // { type: 'emoji', value: '🔥' } ou { type: 'image', value: 'data:image...' }
     }));
+    setHasUnsavedChanges(true);
     
     setShowEditPredefinedModal(false);
     setEditingPredefinedSymbol(null);
