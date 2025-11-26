@@ -321,8 +321,9 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast, openBatimentMo
                         key={insp.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('Clic sur inspection:', insp, 'Batiment:', batiment);
-                          // L'ouverture du modal sera gérée par le parent plus tard
+                          if (batiment && openBatimentModal) {
+                            openBatimentModal(batiment);
+                          }
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.opacity = '0.8';
