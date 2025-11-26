@@ -26,6 +26,7 @@ const BatimentDetailModal = lazy(() => import("./components/BatimentDetailModalN
 const ConflictResolutionModal = lazy(() => import("./components/ConflictResolutionModal"));
 const GestionActifs = lazy(() => import("./components/GestionActifs"));
 const PlanInterventionViewer = lazy(() => import("./components/PlanInterventionViewer"));
+const ParametresPrevention = lazy(() => import("./components/ParametresPrevention"));
 
 // Composant de chargement
 const LoadingComponent = () => (
