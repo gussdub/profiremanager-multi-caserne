@@ -18548,14 +18548,13 @@ const GestionPreventionnistes = () => {
         await assignBatimentsToSecteur(secteurId, preventionnisteId, geometry);
       }
       
+      // Fermer le modal et rafraîchir les données
       setShowSecteurModal(false);
       setCurrentSecteur(null);
       setPendingGeometry(null);
       
-      // Attendre un peu que l'assignation se termine avant de rafraîchir
-      setTimeout(() => {
-        fetchData();
-      }, 1000);
+      // Rafraîchir toutes les données après l'assignation
+      await fetchData();
     } catch (error) {
       console.error('Erreur sauvegarde secteur:', error);
       toast({
