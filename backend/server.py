@@ -19497,6 +19497,64 @@ async def assigner_secteur_preventionniste(
     }
 
 
+# ==================== PARAMÈTRES PRÉVENTION ====================
+
+@api_router.put("/{tenant_slug}/prevention/parametres")
+async def update_parametres_prevention(
+    tenant_slug: str,
+    recurrence_inspections: int = Body(...),
+    nombre_visites_requises: int = Body(...),
+    superviseur_prevention_id: Optional[str] = Body(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les paramètres de prévention (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions (admin seulement)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent modifier les paramètres")
+    
+    # Valider les valeurs
+    if recurrence_inspections not in [1, 2, 3, 4, 5]:
+        raise HTTPException(status_code=400, detail="La récurrence doit être entre 1 et 5 ans")
+    
+    if nombre_visites_requises not in [1, 2, 3]:
+        raise HTTPException(status_code=400, detail="Le nombre de visites doit être entre 1 et 3")
+    
+    # Si superviseur fourni, vérifier qu'il existe
+    if superviseur_prevention_id:
+        superviseur = await db.users.find_one({
+            "id": superviseur_prevention_id,
+            "tenant_id": tenant.id
+        })
+        if not superviseur:
+            raise HTTPException(status_code=404, detail="Superviseur non trouvé")
+    
+    # Mettre à jour les paramètres du tenant
+    parametres_update = {
+        "parametres.recurrence_inspections": recurrence_inspections,
+        "parametres.nombre_visites_requises": nombre_visites_requises,
+        "parametres.superviseur_prevention_id": superviseur_prevention_id,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.tenants.update_one(
+        {"id": tenant.id},
+        {"$set": parametres_update}
+    )
+    
+    logging.info(f"Paramètres prévention mis à jour pour {tenant_slug} par {current_user.prenom} {current_user.nom}")
+    
+    return {
+        "message": "Paramètres mis à jour avec succès",
+        "parametres": {
+            "recurrence_inspections": recurrence_inspections,
+            "nombre_visites_requises": nombre_visites_requises,
+            "superviseur_prevention_id": superviseur_prevention_id
+        }
+    }
+
+
 # ==================== PLANS D'INTERVENTION ====================
 
 @api_router.post("/{tenant_slug}/prevention/plans-intervention")
