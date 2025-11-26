@@ -8061,11 +8061,18 @@ const Planning = () => {
               flexDirection: 'column'
             }}
           >
-            <div className="modal-header">
+            <div className="modal-header" style={{ flexShrink: 0 }}>
               <h3>Assigner une garde</h3>
               <Button variant="ghost" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>✕</Button>
             </div>
-            <div className="modal-body" style={{ overflow: 'visible' }}>
+            <div className="modal-body" style={{ 
+              overflow: 'visible', 
+              flex: 1, 
+              minHeight: 0,
+              maxHeight: 'calc(90vh - 100px)',
+              overflowY: 'auto',
+              padding: '1rem 1.5rem'
+            }}>
               <div className="assignment-details">
                 <p><strong>Garde:</strong> {selectedSlot.typeGarde.nom}</p>
                 <p><strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}</p>
