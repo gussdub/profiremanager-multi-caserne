@@ -19950,6 +19950,71 @@ async def export_plan_intervention_pdf(
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Section Contacts (si bâtiment disponible)
+    if batiment:
+        has_contacts = False
+        contact_data = []
+        
+        # Propriétaire
+        if batiment.get('proprietaire_nom') or batiment.get('proprietaire_prenom'):
+            contact_data.append(['👤 Propriétaire:', f"{batiment.get('proprietaire_prenom', '')} {batiment.get('proprietaire_nom', '')}".strip()])
+            if batiment.get('proprietaire_telephone'):
+                contact_data.append(['Téléphone:', batiment.get('proprietaire_telephone')])
+            if batiment.get('proprietaire_courriel'):
+                contact_data.append(['Courriel:', batiment.get('proprietaire_courriel')])
+            has_contacts = True
+        
+        # Gestionnaire
+        if batiment.get('gestionnaire_nom') or batiment.get('gestionnaire_prenom') or batiment.get('gerant_nom'):
+            nom = batiment.get('gestionnaire_nom') or batiment.get('gerant_nom', '')
+            prenom = batiment.get('gestionnaire_prenom', '')
+            contact_data.append(['👨‍💼 Gestionnaire:', f"{prenom} {nom}".strip()])
+            tel = batiment.get('gestionnaire_telephone') or batiment.get('gerant_telephone')
+            if tel:
+                contact_data.append(['Téléphone:', tel])
+            email = batiment.get('gestionnaire_courriel') or batiment.get('gerant_courriel')
+            if email:
+                contact_data.append(['Courriel:', email])
+            has_contacts = True
+        
+        # Locataire
+        if batiment.get('locataire_nom') or batiment.get('locataire_prenom') or batiment.get('localaire_nom'):
+            nom = batiment.get('locataire_nom') or batiment.get('localaire_nom', '')
+            prenom = batiment.get('locataire_prenom') or batiment.get('localaire_prenom', '')
+            contact_data.append(['🏠 Locataire:', f"{prenom} {nom}".strip()])
+            tel = batiment.get('locataire_telephone') or batiment.get('localaire_telephone')
+            if tel:
+                contact_data.append(['Téléphone:', tel])
+            email = batiment.get('locataire_courriel') or batiment.get('localaire_courriel')
+            if email:
+                contact_data.append(['Courriel:', email])
+            has_contacts = True
+        
+        # Responsable sécurité
+        if batiment.get('responsable_securite_nom'):
+            contact_data.append(['🔒 Responsable sécurité:', batiment.get('responsable_securite_nom')])
+            if batiment.get('responsable_securite_telephone'):
+                contact_data.append(['Téléphone:', batiment.get('responsable_securite_telephone')])
+            if batiment.get('responsable_securite_courriel'):
+                contact_data.append(['Courriel:', batiment.get('responsable_securite_courriel')])
+            has_contacts = True
+        
+        if has_contacts:
+            elements.append(Paragraph("<b>📞 Contacts</b>", heading_style))
+            contact_table = Table(contact_data, colWidths=[2*inch, 4*inch])
+            contact_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#F3F4F6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ]))
+            elements.append(contact_table)
+            elements.append(Spacer(1, 0.3*inch))
+    
     # Description
     description = plan.get('description') or plan.get('notes_generales')
     if description:
