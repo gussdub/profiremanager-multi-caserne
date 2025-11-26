@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://firefighter-pro-2.preview.emergentagent.com
+- **URL** : https://firesafety-1.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://firefighter-pro-2.preview.emergentagent.com"
+  "apiUrl": "https://firesafety-1.preview.emergentagent.com"
 }
 ```
 
