@@ -9369,6 +9369,7 @@ class PlanInterventionCreate(BaseModel):
 
 class PlanInterventionUpdate(BaseModel):
     nom: Optional[str] = None
+    statut: Optional[str] = None  # Permettre la mise à jour du statut (pour repasser rejete -> brouillon)
     layers: Optional[List[Dict[str, Any]]] = None  # Layers GeoJSON du builder
     hydrants: Optional[List[HydrantElement]] = None
     sorties: Optional[List[SortieElement]] = None
