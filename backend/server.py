@@ -19931,11 +19931,28 @@ async def export_plan_intervention_pdf(
     
     if batiment:
         info_data.append(['Bâtiment:', f"{batiment.get('nom_etablissement', 'N/A')}"])
-        info_data.append(['Adresse:', f"{batiment.get('adresse_civique', '')} {batiment.get('ville', '')} {batiment.get('province', '')} {batiment.get('code_postal', '')}".strip()])
+        info_data.append(['Adresse complète:', f"{batiment.get('adresse_civique', '')} {batiment.get('ville', '')} {batiment.get('province', '')} {batiment.get('code_postal', '')}".strip() or 'N/A'])
+        
         if batiment.get('type_batiment'):
             info_data.append(['Type de bâtiment:', batiment['type_batiment']])
+        if batiment.get('sous_type_batiment'):
+            info_data.append(['Sous-type:', batiment['sous_type_batiment']])
         if batiment.get('groupe_occupation'):
             info_data.append(['Groupe d\'occupation:', batiment['groupe_occupation']])
+        if batiment.get('sous_groupe'):
+            info_data.append(['Sous-groupe:', batiment['sous_groupe']])
+        if batiment.get('niveau_risque'):
+            info_data.append(['Niveau de risque:', batiment['niveau_risque']])
+        if batiment.get('annee_construction'):
+            info_data.append(['Année construction:', batiment['annee_construction']])
+        if batiment.get('nombre_etages'):
+            info_data.append(['Nombre d\'étages:', batiment['nombre_etages']])
+        if batiment.get('superficie_totale_m2'):
+            info_data.append(['Superficie totale:', f"{batiment['superficie_totale_m2']} m²"])
+        if batiment.get('cadastre_matricule'):
+            info_data.append(['Cadastre/Matricule:', batiment['cadastre_matricule']])
+        if batiment.get('description_activite'):
+            info_data.append(['Description activité:', batiment['description_activite']])
     
     info_table = Table(info_data, colWidths=[2*inch, 4*inch])
     info_table.setStyle(TableStyle([
