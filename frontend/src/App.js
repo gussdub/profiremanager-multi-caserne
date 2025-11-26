@@ -18539,11 +18539,13 @@ const GestionPreventionnistes = () => {
         });
       }
       
-      console.log('🎯 Assignation - secteurId:', secteurId, 'preventionnisteId:', secteurData.preventionniste_id, 'geometry:', geometry);
+      // Le champ du formulaire s'appelle preventionniste_assigne_id
+      const preventionnisteId = secteurData.preventionniste_assigne_id || secteurData.preventionniste_id;
+      console.log('🎯 Assignation - secteurId:', secteurId, 'preventionnisteId:', preventionnisteId, 'geometry:', geometry);
       
       // Assigner automatiquement les bâtiments dans le secteur au préventionniste
-      if (secteurData.preventionniste_id && geometry) {
-        await assignBatimentsToSecteur(secteurId, secteurData.preventionniste_id, geometry);
+      if (preventionnisteId && geometry) {
+        await assignBatimentsToSecteur(secteurId, preventionnisteId, geometry);
       }
       
       setShowSecteurModal(false);
