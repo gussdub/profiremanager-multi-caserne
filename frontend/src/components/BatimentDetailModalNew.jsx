@@ -116,6 +116,8 @@ const BatimentForm = ({
 }) => {
   const isCreating = !batiment;
   const [isEditing, setIsEditing] = useState(isCreating);
+  const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail'
+  const [selectedInspection, setSelectedInspection] = useState(null);
   const [editData, setEditData] = useState(isCreating ? {
     adresse_civique: '',
     ville: '',
