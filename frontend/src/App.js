@@ -8113,7 +8113,7 @@ const Planning = () => {
                       top: '100%',
                       left: 0,
                       right: 0,
-                      maxHeight: '200px',
+                      maxHeight: '300px',
                       overflowY: 'auto',
                       background: 'white',
                       border: '1px solid #cbd5e1',
