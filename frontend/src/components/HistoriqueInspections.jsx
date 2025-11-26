@@ -5,6 +5,7 @@ import { apiGet } from '../utils/api';
 const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection }) => {
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtreStatut, setFiltreStatut] = useState('tous');
 
   useEffect(() => {
     fetchInspections();
