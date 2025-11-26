@@ -1149,7 +1149,29 @@ const BatimentForm = ({
                   </Button>
                 )}
                 {onCreatePlan && (
-                  <Button variant="outline" onClick={() => onCreatePlan(batiment)}>
+                  <Button variant="outline" onClick={async () => {
+                    // Vérifier si un plan existe déjà pour ce bâtiment
+                    try {
+                      const token = getTenantToken();
+                      const response = await axios.get(
+                        buildApiUrl(tenantSlug, `/prevention/plans-intervention`),
+                        { headers: { Authorization: `Bearer ${token}` } }
+                      );
+                      const planExistant = response.data.find(p => p.batiment_id === batiment.id);
+                      
+                      if (planExistant) {
+                        // Ouvrir le viewer
+                        setSelectedPlanId(planExistant.id);
+                        setViewMode('plan-intervention');
+                      } else {
+                        // Créer un nouveau plan
+                        onCreatePlan(batiment);
+                      }
+                    } catch (error) {
+                      console.error('Erreur vérification plan:', error);
+                      onCreatePlan(batiment);
+                    }
+                  }}>
                     🗺️ Plan d'intervention
                   </Button>
                 )}
