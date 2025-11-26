@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiGet } from '../utils/api';
+
+const { BaseLayer } = LayersControl;
 
 // Fix pour les icônes par défaut de Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
