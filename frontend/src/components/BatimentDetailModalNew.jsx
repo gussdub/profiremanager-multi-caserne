@@ -1225,7 +1225,7 @@ const BatimentForm = ({
                   </Button>
                 )}
                 {onGenerateReport && (
-                  <Button variant="outline" onClick={() => onGenerateReport(batiment)}>
+                  <Button variant="outline" onClick={() => setViewMode('rapport')}>
                     📄 Rapport
                   </Button>
                 )}
