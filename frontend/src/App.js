@@ -18551,7 +18551,11 @@ const GestionPreventionnistes = () => {
       setShowSecteurModal(false);
       setCurrentSecteur(null);
       setPendingGeometry(null);
-      fetchData();
+      
+      // Attendre un peu que l'assignation se termine avant de rafraîchir
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
     } catch (error) {
       console.error('Erreur sauvegarde secteur:', error);
       toast({
