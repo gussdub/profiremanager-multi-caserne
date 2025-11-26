@@ -8070,8 +8070,6 @@ const Planning = () => {
               overflow: 'visible', 
               flex: 1, 
               minHeight: 0,
-              maxHeight: 'calc(85vh - 80px)',
-              overflowY: 'auto',
               padding: '1.5rem'
             }}>
               <div className="assignment-details" style={{ 
