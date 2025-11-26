@@ -18933,29 +18933,28 @@ const GestionPreventionnistes = () => {
                           <div key={batiment.id} className="batiment-item" style={{
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'flex-start',
+                            alignItems: 'center',
                             padding: '0.75rem',
                             backgroundColor: '#f9fafb',
                             borderRadius: '6px',
                             marginBottom: '0.5rem',
-                            border: '1px solid #e5e7eb'
+                            border: '1px solid #e5e7eb',
+                            gap: '0.75rem'
                           }}>
-                            <div style={{ flex: 1 }}>
-                              <span className="batiment-name" style={{
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
                                 fontWeight: '500',
                                 color: '#1e293b',
-                                display: 'block',
                                 marginBottom: '0.25rem'
                               }}>
                                 {batiment.nom_etablissement}
-                              </span>
-                              <span style={{
+                              </div>
+                              <div style={{
                                 fontSize: '0.8rem',
-                                color: '#64748b',
-                                display: 'block'
+                                color: '#64748b'
                               }}>
                                 📍 {batiment.adresse_civique || 'Adresse non spécifiée'}
-                              </span>
+                              </div>
                             </div>
                             <button 
                               onClick={() => handleRemoveAssignment(batiment.id)}
@@ -18970,7 +18969,7 @@ const GestionPreventionnistes = () => {
                                 transition: 'opacity 0.2s',
                                 flexShrink: 0,
                                 padding: '0.25rem',
-                                marginLeft: '0.5rem'
+                                lineHeight: 1
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                               onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
