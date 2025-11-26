@@ -21407,64 +21407,7 @@ const Prevention = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="quick-actions">
-              <h3>Actions rapides</h3>
-              <div className="action-buttons">
-                <Button 
-                  onClick={() => setCurrentView('batiments')}
-                  className="action-button"
-                >
-                  📋 Gérer les bâtiments
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('calendrier')}
-                  className="action-button"
-                >
-                  📅 Calendrier d'inspections
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('inspections')}
-                  className="action-button"
-                >
-                  🔍 Voir les inspections
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('rapports')}
-                  className="action-button"
-                >
-                  📊 Rapports et Analyses
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('nouvelle-inspection')}
-                  className="action-button"
-                >
-                  ➕ Nouvelle inspection
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('non-conformites')}
-                  className="action-button"
-                >
-                  ⚠️ Non-conformités
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('calendrier')}
-                  className="action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white'
-                  }}
-                >
-                  📅 Calendrier des inspections
-                </Button>
-                <Button 
-                  onClick={() => setCurrentView('import')}
-                  className="action-button"
-                >
-                  📊 Import CSV/Excel
-                </Button>
-              </div>
-            </div>
+            {/* Actions rapides supprimées - utiliser le menu de navigation */}
           </div>
         );
       
