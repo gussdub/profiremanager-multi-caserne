@@ -258,9 +258,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
             </p>
           </div>
         ) : (
-          <>
-            {console.log('🗺️ Rendu de la carte avec', batimentsValides.length, 'marqueurs')}
-            <MapContainer
+          <MapContainer
             center={[45.4042, -72.9889]}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
