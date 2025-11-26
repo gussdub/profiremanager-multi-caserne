@@ -21874,7 +21874,16 @@ const Prevention = () => {
             onViewHistory={() => {
               setShowBatimentModal(false);
               setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
-              setCurrentView('calendrier'); // Vue inspections
+              
+              // Si on est dans le module prévention, aller à la vue calendrier/planification
+              if (activeModule === 'prevention') {
+                setCurrentView('calendrier'); // Vue calendrier dans planification
+              }
+              
+              toast({
+                title: "Historique",
+                description: `Affichage des inspections pour ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}`
+              });
             }}
             onGenerateReport={async () => {
               try {
