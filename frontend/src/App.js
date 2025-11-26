@@ -8150,11 +8150,11 @@ const Planning = () => {
                               setShowQuickAssignDropdown(false);
                             }}
                             style={{
-                              padding: '0.75rem',
+                              padding: '0.5rem',
                               cursor: 'pointer',
                               borderBottom: '1px solid #f1f5f9',
                               transition: 'background 0.2s',
-                              color: '#1e293b' // Couleur texte explicite pour chaque item
+                              color: '#1e293b'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = '#f8fafc';
