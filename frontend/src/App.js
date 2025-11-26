@@ -18965,7 +18965,10 @@ const GestionPreventionnistes = () => {
                                 fontSize: '1.2rem',
                                 cursor: 'pointer',
                                 opacity: 0.6,
-                                transition: 'opacity 0.2s'
+                                transition: 'opacity 0.2s',
+                                flexShrink: 0,
+                                alignSelf: 'center',
+                                padding: '0.25rem'
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                               onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
