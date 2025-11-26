@@ -236,7 +236,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
       </div>
 
       {/* Carte */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ flex: 1, position: 'relative', minHeight: '500px' }}>
         {batimentsValides.length === 0 ? (
           <div style={{ 
             height: '100%', 
