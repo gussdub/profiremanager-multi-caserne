@@ -314,12 +314,28 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   {dayInspections.slice(0, 3).map(insp => {
                     const batiment = batiments.find(b => b.id === insp.batiment_id);
-                    const couleur = batiment ? getCouleurRisque(batiment.niveau_risque) : '#6b7280';
+                    const couleur = getCouleurStatutInspection(insp);
                     
                     return (
                       <div
                         key={insp.id}
-                        title={batiment?.nom_etablissement || batiment?.adresse_civique || 'Inspection'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (batiment && setCurrentView) {
+                            // Ouvrir le modal du bâtiment
+                            setCurrentView('batiment-detail');
+                            // Note: vous devrez peut-être passer une fonction pour ouvrir le modal
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.8';
+                          e.currentTarget.style.transform = 'scale(1.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                        title={`${batiment?.nom_etablissement || 'Inspection'}\n${batiment?.adresse_civique || ''}\nStatut: ${insp.statut || 'À faire'}`}
                         style={{
                           fontSize: '0.7rem',
                           padding: '2px 4px',
@@ -328,7 +344,9 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
                           color: 'white',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
                         }}
                       >
                         {batiment?.nom_etablissement?.substring(0, 15) || 'Inspection'}
