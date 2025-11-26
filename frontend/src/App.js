@@ -21649,14 +21649,15 @@ const Prevention = () => {
         );
       
       case 'calendrier':
-        return (
-          <CalendrierInspections
-            setCurrentView={setCurrentView}
-            batiments={batiments}
-            filteredBatimentId={filteredBatimentId}
-            setFilteredBatimentId={setFilteredBatimentId}
-          />
-        );
+        return <PlanificationView 
+          tenantSlug={tenantSlug}
+          setCurrentView={setCurrentView}
+          batiments={batiments}
+          filteredBatimentId={filteredBatimentId}
+          setFilteredBatimentId={setFilteredBatimentId}
+          openBatimentModal={openBatimentModal}
+          parametres={tenant?.parametres}
+        />;
       
       case 'non-conformites':
         return <GestionNonConformites setCurrentView={setCurrentView} />;
