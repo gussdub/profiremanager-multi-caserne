@@ -39,6 +39,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
   const markersRef = useRef([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // États pour la palette de symboles et modals
   const [mapType, setMapType] = useState('satellite');
