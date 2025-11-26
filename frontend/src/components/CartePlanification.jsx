@@ -168,6 +168,8 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
     !isNaN(b.latitude) && !isNaN(b.longitude)
   );
 
+  console.log(`🗺️ Bâtiments valides avec coordonnées: ${batimentsValides.length}/${batimentsAvecStatut.length}`);
+
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
