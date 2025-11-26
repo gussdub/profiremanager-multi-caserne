@@ -21664,7 +21664,7 @@ const Prevention = () => {
           filteredBatimentId={filteredBatimentId}
           setFilteredBatimentId={setFilteredBatimentId}
           openBatimentModal={openBatimentModal}
-          parametres={tenant?.parametres}
+          parametres={tenant?.config?.prevention_settings}
         />;
       
       case 'non-conformites':
