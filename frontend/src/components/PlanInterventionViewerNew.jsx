@@ -238,12 +238,16 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                       <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        maxZoom={19}
+                        maxNativeZoom={19}
                       />
                     </BaseLayer>
                     <BaseLayer name="🛰️ Satellite">
                       <TileLayer
                         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                         attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+                        maxZoom={19}
+                        maxNativeZoom={19}
                       />
                     </BaseLayer>
                   </LayersControl>
