@@ -8075,18 +8075,18 @@ const Planning = () => {
               padding: '1.5rem'
             }}>
               <div className="assignment-details" style={{ 
-                padding: '0.75rem', 
+                padding: '1rem', 
                 background: '#f8fafc', 
-                borderRadius: '6px',
-                marginBottom: '1rem'
+                borderRadius: '8px',
+                marginBottom: '1.25rem'
               }}>
-                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.5rem 0', fontSize: '1rem' }}>
                   <strong>Garde:</strong> {selectedSlot.typeGarde.nom}
                 </p>
-                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.5rem 0', fontSize: '1rem' }}>
                   <strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}
                 </p>
-                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.5rem 0', fontSize: '1rem' }}>
                   <strong>Horaires:</strong> {selectedSlot.typeGarde.heure_debut} - {selectedSlot.typeGarde.heure_fin}
                 </p>
               </div>
