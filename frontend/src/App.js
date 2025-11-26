@@ -8054,7 +8054,7 @@ const Planning = () => {
               <h3>Assigner une garde</h3>
               <Button variant="ghost" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>✕</Button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ overflow: 'visible' }}>
               <div className="assignment-details">
                 <p><strong>Garde:</strong> {selectedSlot.typeGarde.nom}</p>
                 <p><strong>Date:</strong> {selectedSlot.date.toLocaleDateString('fr-FR')}</p>
