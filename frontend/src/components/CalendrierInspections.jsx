@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
+const CalendrierInspections = ({ tenantSlug, apiGet, user, toast, openBatimentModal }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
