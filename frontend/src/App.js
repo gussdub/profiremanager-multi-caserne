@@ -21874,11 +21874,7 @@ const Prevention = () => {
             onViewHistory={() => {
               setShowBatimentModal(false);
               setFilteredBatimentId(selectedBatiment.id); // Filtrer par ce bâtiment
-              
-              // Si on est dans le module prévention, aller à la vue calendrier/planification
-              if (activeModule === 'prevention') {
-                setCurrentView('calendrier'); // Vue calendrier dans planification
-              }
+              setCurrentView('calendrier'); // Vue calendrier dans planification
               
               toast({
                 title: "Historique",
