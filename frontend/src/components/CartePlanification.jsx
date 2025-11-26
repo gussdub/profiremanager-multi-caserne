@@ -64,12 +64,15 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('🗺️ CartePlanification - Début fetchData');
       
       // Récupérer les bâtiments et inspections
       const [batimentsData, inspectionsData] = await Promise.all([
         apiGet(tenantSlug, '/prevention/batiments'),
         apiGet(tenantSlug, '/prevention/inspections')
       ]);
+      
+      console.log(`🗺️ Données récupérées: ${batimentsData?.length || 0} bâtiments, ${inspectionsData?.length || 0} inspections`);
       
       setBatiments(batimentsData);
       setInspections(inspectionsData);
@@ -80,9 +83,10 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
       const orange = batimentsAvecStatut.filter(b => b.couleur === 'orange').length;
       const vert = batimentsAvecStatut.filter(b => b.couleur === 'vert').length;
       
+      console.log(`🗺️ Stats calculées - Rouge: ${rouge}, Orange: ${orange}, Vert: ${vert}`);
       setStats({ rouge, orange, vert });
     } catch (error) {
-      console.error('Erreur chargement données carte:', error);
+      console.error('❌ Erreur chargement données carte:', error);
     } finally {
       setLoading(false);
     }
