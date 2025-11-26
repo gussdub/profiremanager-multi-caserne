@@ -18964,13 +18964,13 @@ const GestionPreventionnistes = () => {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                fontSize: '1.2rem',
+                                fontSize: '1.1rem',
                                 cursor: 'pointer',
                                 opacity: 0.6,
                                 transition: 'opacity 0.2s',
                                 flexShrink: 0,
-                                alignSelf: 'center',
-                                padding: '0.25rem'
+                                padding: '0.25rem',
+                                marginLeft: '0.5rem'
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                               onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
