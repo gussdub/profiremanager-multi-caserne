@@ -541,8 +541,12 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         // Continue sans l'image de la carte
       }
 
+      // Si le plan était rejeté, le remettre en brouillon après modification
+      const nouveauStatut = formData.statut === 'rejete' ? 'brouillon' : formData.statut;
+      
       const planData = {
         ...formData,
+        statut: nouveauStatut,
         batiment_id: batiment.id,
         centre_lat: batiment.latitude || 0,
         centre_lng: batiment.longitude || 0,
