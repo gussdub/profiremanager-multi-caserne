@@ -427,9 +427,25 @@ const RapportBatimentComplet = ({ batiment, tenantSlug, onBack }) => {
           .no-print {
             display: none !important;
           }
+          
+          /* Masquer tout sauf le rapport */
+          body > *:not(:has(.rapport-print-content)) {
+            display: none !important;
+          }
+          
+          /* Forcer l'affichage du rapport en pleine page */
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
           @page {
             margin: 1.5cm;
+            size: A4;
           }
+          
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
