@@ -762,10 +762,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           <Button 
             onClick={handleSavePlan} 
             disabled={saving}
-            style={{
-              backgroundColor: hasUnsavedChanges ? '#f59e0b' : undefined,
-              fontWeight: hasUnsavedChanges ? 'bold' : undefined
-            }}
+            variant={hasUnsavedChanges ? "destructive" : "default"}
+            className={hasUnsavedChanges ? "!bg-orange-500 hover:!bg-orange-600" : ""}
           >
             {saving ? '⏳ Sauvegarde...' : (hasUnsavedChanges ? '💾 Sauvegarder *' : '💾 Sauvegarder')}
           </Button>
