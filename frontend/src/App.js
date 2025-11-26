@@ -18530,13 +18530,16 @@ const GestionPreventionnistes = () => {
           ...secteurData,
           geometry: pendingGeometry
         });
-        secteurId = response.id;
+        console.log('🔍 Réponse API création secteur:', response);
+        secteurId = response?.id || response?._id;
         geometry = pendingGeometry;
         toast({
           title: "Succès",
           description: "Secteur créé"
         });
       }
+      
+      console.log('🎯 Assignation - secteurId:', secteurId, 'preventionnisteId:', secteurData.preventionniste_id, 'geometry:', geometry);
       
       // Assigner automatiquement les bâtiments dans le secteur au préventionniste
       if (secteurData.preventionniste_id && geometry) {
