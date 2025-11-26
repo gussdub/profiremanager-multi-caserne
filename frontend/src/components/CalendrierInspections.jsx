@@ -30,11 +30,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
       setPreventionnistes(prev);
     } catch (error) {
       console.error('Erreur chargement données:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données du calendrier",
-        variant: "destructive"
-      });
+      alert('Erreur: Impossible de charger les données du calendrier');
     } finally {
       setLoading(false);
     }
