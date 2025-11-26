@@ -230,6 +230,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                 <MapContainer
                   center={[batiment.latitude, batiment.longitude]}
                   zoom={18}
+                  maxZoom={19}
                   style={{ height: '100%', width: '100%' }}
                 >
                   <LayersControl position="topright">
