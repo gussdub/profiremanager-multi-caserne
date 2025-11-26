@@ -58,7 +58,9 @@ const SecteursMap = ({
       }
       
       // Supprimer le layer temporaire car on va le recréer depuis le backend
-      map.removeLayer(layer);
+      if (layer._map) {
+        layer._map.removeLayer(layer);
+      }
     }
   };
 
