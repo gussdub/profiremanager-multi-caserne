@@ -21736,7 +21736,7 @@ const Prevention = () => {
             variant={currentView === 'calendrier' ? 'default' : 'outline'}
             onClick={() => setCurrentView('calendrier')}
           >
-            📅 Calendrier
+            📅 Planification
           </Button>
           <Button 
             variant={currentView === 'inspections' ? 'default' : 'outline'}
