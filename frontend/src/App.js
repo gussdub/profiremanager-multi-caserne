@@ -21092,6 +21092,12 @@ const Prevention = () => {
   const [googleMap, setGoogleMap] = useState(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
+  // Fonction pour ouvrir le modal d'un bâtiment
+  const openBatimentModal = (batiment) => {
+    setSelectedBatiment(batiment);
+    setShowBatimentModal(true);
+  };
+
   const fetchBatiments = async () => {
     try {
       setLoading(true);
