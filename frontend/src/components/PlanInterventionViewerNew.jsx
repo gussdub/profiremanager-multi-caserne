@@ -215,7 +215,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
           </section>
 
           {/* Carte avec points d'eau et risques */}
-          {plan.batiment && plan.batiment.latitude && plan.batiment.longitude && (
+          {batiment && batiment.latitude && batiment.longitude && (
             <section style={{ marginBottom: '2rem' }}>
               <h3 style={{
                 fontSize: '1.125rem',
