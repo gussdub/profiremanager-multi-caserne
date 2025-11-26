@@ -102,15 +102,26 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
     });
   };
 
-  // Couleur selon le niveau de risque
-  const getCouleurRisque = (niveau) => {
-    switch (niveau) {
-      case 'Faible': return '#10b981';
-      case 'Moyen': return '#f59e0b';
-      case 'Élevé': return '#ef4444';
-      case 'Très élevé': return '#991b1b';
-      default: return '#6b7280';
+  // Couleur selon le statut de l'inspection
+  const getCouleurStatutInspection = (inspection) => {
+    if (!inspection || !inspection.statut) {
+      return '#ef4444'; // Rouge - À faire
     }
+    
+    const statut = inspection.statut.toLowerCase();
+    
+    // Vert - Complété
+    if (statut === 'valide' || statut === 'validé' || statut === 'complété') {
+      return '#22c55e';
+    }
+    
+    // Orange - En cours
+    if (statut === 'absent' || statut === 'non_disponible' || statut === 'personne_mineure') {
+      return '#f97316';
+    }
+    
+    // Rouge - À faire (brouillon, etc.)
+    return '#ef4444';
   };
 
   // Navigation mois
