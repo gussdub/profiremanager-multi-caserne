@@ -18595,7 +18595,7 @@ const GestionPreventionnistes = () => {
           await apiPut(tenantSlug, `/prevention/batiments/${batiment.id}`, {
             ...batiment,
             secteur_id: secteurId,
-            preventionniste_id: preventionnisteId
+            preventionniste_assigne_id: preventionnisteId  // Utiliser le bon nom de champ
           });
           assignedCount++;
           console.log(`✅ Bâtiment assigné: ${batiment.nom_etablissement}`);
