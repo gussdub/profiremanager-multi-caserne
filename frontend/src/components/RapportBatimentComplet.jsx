@@ -147,7 +147,7 @@ const RapportBatimentComplet = ({ batiment, tenantSlug, onBack }) => {
       </div>
 
       {/* Contenu du rapport - scrollable */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '2rem', backgroundColor: 'white' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '2rem', backgroundColor: 'white' }} className="rapport-print-content">
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           
           {/* Page de garde */}
