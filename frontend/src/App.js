@@ -18509,27 +18509,40 @@ const GestionPreventionnistes = () => {
 
   const handleSaveSecteur = async (secteurData) => {
     try {
+      let secteurId;
+      let geometry;
+      
       if (currentSecteur) {
         // Mise à jour - conserver la géométrie existante
         await apiPut(tenantSlug, `/prevention/secteurs/${currentSecteur.id}`, {
           ...secteurData,
           geometry: currentSecteur.geometry  // Garder la géométrie existante
         });
+        secteurId = currentSecteur.id;
+        geometry = currentSecteur.geometry;
         toast({
           title: "Succès",
           description: "Secteur mis à jour"
         });
       } else {
         // Création - utiliser la géométrie nouvellement dessinée
-        await apiPost(tenantSlug, '/prevention/secteurs', {
+        const response = await apiPost(tenantSlug, '/prevention/secteurs', {
           ...secteurData,
           geometry: pendingGeometry
         });
+        secteurId = response.id;
+        geometry = pendingGeometry;
         toast({
           title: "Succès",
           description: "Secteur créé"
         });
       }
+      
+      // Assigner automatiquement les bâtiments dans le secteur au préventionniste
+      if (secteurData.preventionniste_id && geometry) {
+        await assignBatimentsToSecteur(secteurId, secteurData.preventionniste_id, geometry);
+      }
+      
       setShowSecteurModal(false);
       setCurrentSecteur(null);
       setPendingGeometry(null);
@@ -18542,6 +18555,58 @@ const GestionPreventionnistes = () => {
         variant: "destructive"
       });
     }
+  };
+  
+  // Fonction pour assigner les bâtiments dans un secteur au préventionniste
+  const assignBatimentsToSecteur = async (secteurId, preventionnisteId, geometry) => {
+    try {
+      // Vérifier quels bâtiments sont dans le secteur (calcul côté client)
+      const batimentsInSecteur = batiments.filter(batiment => {
+        if (!batiment.latitude || !batiment.longitude) return false;
+        
+        // Vérifier si le point est dans le polygone
+        const point = [batiment.longitude, batiment.latitude];
+        return isPointInPolygon(point, geometry.coordinates[0]);
+      });
+      
+      console.log(`🎯 ${batimentsInSecteur.length} bâtiments trouvés dans le secteur`);
+      
+      // Assigner chaque bâtiment au préventionniste
+      for (const batiment of batimentsInSecteur) {
+        await apiPut(tenantSlug, `/prevention/batiments/${batiment.id}`, {
+          ...batiment,
+          secteur_id: secteurId,
+          preventionniste_id: preventionnisteId
+        });
+      }
+      
+      if (batimentsInSecteur.length > 0) {
+        toast({
+          title: "Assignation réussie",
+          description: `${batimentsInSecteur.length} bâtiment(s) assigné(s) au préventionniste`
+        });
+      }
+    } catch (error) {
+      console.error('Erreur assignation bâtiments:', error);
+    }
+  };
+  
+  // Fonction pour vérifier si un point est dans un polygone (algorithme ray-casting)
+  const isPointInPolygon = (point, polygon) => {
+    const x = point[0], y = point[1];
+    let inside = false;
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+      
+      const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      
+      if (intersect) inside = !inside;
+    }
+    
+    return inside;
   };
 
   const handleDeleteSecteur = async (secteurId) => {
