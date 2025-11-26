@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import CalendrierInspections from './CalendrierInspections';
 import CartePlanification from './CartePlanification';
+import { apiGet } from '../utils/api';
+import { useToast } from '../hooks/use-toast';
 
 const PlanificationView = ({ 
   tenantSlug, 
@@ -10,8 +12,10 @@ const PlanificationView = ({
   filteredBatimentId, 
   setFilteredBatimentId,
   openBatimentModal,
-  parametres 
+  parametres,
+  user
 }) => {
+  const { toast } = useToast();
   const [vue, setVue] = useState('calendrier'); // 'calendrier' ou 'carte'
 
   const handleBatimentClick = (batiment) => {
