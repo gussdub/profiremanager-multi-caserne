@@ -91,8 +91,8 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
   const calculateBatimentStatut = (batiments, inspections, parametres) => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const recurrence = parametres?.recurrence_inspections || 1;
-    const nombreVisitesRequises = parametres?.nombre_visites_requises || 1;
+    const recurrence = parametres?.frequence_inspections || 1;
+    const nombreVisitesRequises = parametres?.nb_visites_max || 1;
     
     return batiments.map(batiment => {
       // Trouver les inspections de cette année pour ce bâtiment
