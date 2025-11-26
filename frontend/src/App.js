@@ -8112,7 +8112,7 @@ const Planning = () => {
                       top: '100%',
                       left: 0,
                       right: 0,
-                      maxHeight: '300px',
+                      maxHeight: '200px',
                       overflowY: 'auto',
                       background: 'white',
                       border: '1px solid #cbd5e1',
@@ -8120,8 +8120,8 @@ const Planning = () => {
                       marginTop: '4px',
                       zIndex: 1050,
                       boxShadow: '0 10px 15px rgba(0,0,0,0.15)',
-                      fontSize: '0.95rem',
-                      color: '#1e293b' // Couleur de texte explicite
+                      fontSize: '0.875rem',
+                      color: '#1e293b'
                     }}>
                       {users
                         .filter(userOption => {
