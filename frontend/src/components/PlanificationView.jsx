@@ -53,6 +53,10 @@ const PlanificationView = ({
       <div style={{ flex: 1, overflow: 'auto' }}>
         {vue === 'calendrier' ? (
           <CalendrierInspections
+            tenantSlug={tenantSlug}
+            apiGet={apiGet}
+            user={user}
+            toast={toast}
             setCurrentView={setCurrentView}
             batiments={batiments}
             filteredBatimentId={filteredBatimentId}
