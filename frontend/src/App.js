@@ -8061,9 +8061,9 @@ const Planning = () => {
                 <p><strong>Horaires:</strong> {selectedSlot.typeGarde.heure_debut} - {selectedSlot.typeGarde.heure_fin}</p>
               </div>
               
-              <div className="user-selection">
+              <div className="user-selection" style={{ overflow: 'visible' }}>
                 <h4>Rechercher un pompier:</h4>
-                <div style={{ position: 'relative', overflow: 'visible' }}>
+                <div style={{ position: 'relative', overflow: 'visible', marginBottom: '1rem' }}>
                   <Input
                     type="text"
                     placeholder="Tapez le nom ou prénom du pompier..."
