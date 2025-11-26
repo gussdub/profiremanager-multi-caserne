@@ -18850,59 +18850,77 @@ const GestionPreventionnistes = () => {
                     <div className="preventionniste-stats" style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1rem',
-                      padding: '1rem',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
                       backgroundColor: '#f8fafc',
                       borderRadius: '8px',
                       marginBottom: '1rem'
                     }}>
-                      <div className="stat-item" style={{ textAlign: 'center' }}>
-                        <span className="stat-number" style={{
-                          display: 'block',
-                          fontSize: '1.5rem',
+                      <div className="stat-item" style={{ 
+                        textAlign: 'center',
+                        padding: '0.5rem',
+                        minWidth: 0
+                      }}>
+                        <div className="stat-number" style={{
+                          fontSize: '1.25rem',
                           fontWeight: 'bold',
-                          color: '#3b82f6'
+                          color: '#3b82f6',
+                          marginBottom: '0.25rem'
                         }}>
                           {stats.batiments_assignes || batimentsAssignes.length}
-                        </span>
-                        <span className="stat-label" style={{
-                          fontSize: '0.8rem',
-                          color: '#64748b'
+                        </div>
+                        <div className="stat-label" style={{
+                          fontSize: '0.7rem',
+                          color: '#64748b',
+                          textTransform: 'uppercase',
+                          fontWeight: '500'
                         }}>
                           Bâtiments
-                        </span>
+                        </div>
                       </div>
-                      <div className="stat-item" style={{ textAlign: 'center' }}>
-                        <span className="stat-number" style={{
-                          display: 'block',
-                          fontSize: '1.5rem',
+                      <div className="stat-item" style={{ 
+                        textAlign: 'center',
+                        padding: '0.5rem',
+                        minWidth: 0
+                      }}>
+                        <div className="stat-number" style={{
+                          fontSize: '1.25rem',
                           fontWeight: 'bold',
-                          color: '#10b981'
+                          color: '#10b981',
+                          marginBottom: '0.25rem'
                         }}>
                           {stats.secteurs_assignes || secteursAssignes.length}
-                        </span>
-                        <span className="stat-label" style={{
-                          fontSize: '0.8rem',
-                          color: '#64748b'
+                        </div>
+                        <div className="stat-label" style={{
+                          fontSize: '0.7rem',
+                          color: '#64748b',
+                          textTransform: 'uppercase',
+                          fontWeight: '500'
                         }}>
                           Secteurs
-                        </span>
+                        </div>
                       </div>
-                      <div className="stat-item" style={{ textAlign: 'center' }}>
-                        <span className="stat-number" style={{
-                          display: 'block',
-                          fontSize: '1.5rem',
+                      <div className="stat-item" style={{ 
+                        textAlign: 'center',
+                        padding: '0.5rem',
+                        minWidth: 0
+                      }}>
+                        <div className="stat-number" style={{
+                          fontSize: '1.25rem',
                           fontWeight: 'bold',
-                          color: '#f59e0b'
+                          color: '#f59e0b',
+                          marginBottom: '0.25rem'
                         }}>
                           {stats.inspections_effectuees || 0}
-                        </span>
-                        <span className="stat-label" style={{
-                          fontSize: '0.8rem',
-                          color: '#64748b'
+                        </div>
+                        <div className="stat-label" style={{
+                          fontSize: '0.7rem',
+                          color: '#64748b',
+                          textTransform: 'uppercase',
+                          fontWeight: '500'
                         }}>
                           Inspections
-                        </span>
+                        </div>
                       </div>
                     </div>
                   </div>
