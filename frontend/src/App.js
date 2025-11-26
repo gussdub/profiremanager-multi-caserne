@@ -8090,9 +8090,9 @@ const Planning = () => {
                 </p>
               </div>
               
-              <div className="user-selection" style={{ overflow: 'visible' }}>
-                <h4>Rechercher un pompier:</h4>
-                <div style={{ position: 'relative', overflow: 'visible', marginBottom: '1rem' }}>
+              <div className="user-selection" style={{ overflow: 'visible', marginBottom: '0.5rem' }}>
+                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>Rechercher un pompier:</h4>
+                <div style={{ position: 'relative', overflow: 'visible' }}>
                   <Input
                     type="text"
                     placeholder="Tapez le nom ou prénom du pompier..."
