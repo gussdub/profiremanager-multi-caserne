@@ -36,7 +36,7 @@ export const TenantProvider = ({ children }) => {
       const slug = pathParts[0];
       
       // Vérifier que le slug n'est pas une route React classique
-      const validSlugs = ['shefford', 'bromont', 'granby', 'magog', 'caserne1', 'caserne2', 'caserne3']; // Liste à étendre
+      const validSlugs = ['shefford', 'bromont', 'granby', 'magog', 'demo']; // Liste à étendre
       
       if (validSlugs.includes(slug) || slug.match(/^[a-z0-9\-]+$/)) {
         setTenantSlug(slug);
