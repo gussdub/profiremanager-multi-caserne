@@ -79,9 +79,60 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
         </div>
       </div>
 
+      {/* Filtres */}
+      {inspections.length > 0 && (
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
+        }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b7280' }}>
+              Filtrer par statut:
+            </span>
+            {['tous', 'valide', 'brouillon', 'absent', 'non_disponible', 'personne_mineure'].map(statut => {
+              const count = statut === 'tous' 
+                ? inspections.length 
+                : inspections.filter(i => i.statut === statut).length;
+              
+              if (count === 0 && statut !== 'tous') return null;
+              
+              const labels = {
+                'tous': '🔘 Tous',
+                'valide': '✅ Validées',
+                'brouillon': '📝 Brouillons',
+                'absent': '🟠 Absent',
+                'non_disponible': '🟠 Non disponible',
+                'personne_mineure': '🟠 Personne mineure'
+              };
+              
+              return (
+                <button
+                  key={statut}
+                  onClick={() => setFiltreStatut(statut)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: filtreStatut === statut ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    backgroundColor: filtreStatut === statut ? '#eff6ff' : 'white',
+                    color: filtreStatut === statut ? '#3b82f6' : '#374151',
+                    fontSize: '0.875rem',
+                    fontWeight: filtreStatut === statut ? '600' : '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {labels[statut]} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Liste des inspections */}
       <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem' }}>
-        {inspections.length === 0 ? (
+        {inspections.filter(i => filtreStatut === 'tous' || i.statut === filtreStatut).length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '3rem',
