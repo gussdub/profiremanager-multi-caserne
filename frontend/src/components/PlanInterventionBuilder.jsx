@@ -584,6 +584,8 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       console.log('📥 Réponse du serveur après sauvegarde:', response.data);
       console.log('📥 Layers dans la réponse:', response.data?.layers);
       
+      setHasUnsavedChanges(false); // Réinitialiser après sauvegarde réussie
+      
       alert('Plan d\'intervention sauvegardé avec succès! 🎉\n\n💡 Vous pouvez maintenant soumettre le plan pour validation.');
       if (onSave) onSave(response.data);
       // Ne pas fermer le modal pour permettre la soumission immédiate
