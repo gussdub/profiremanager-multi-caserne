@@ -809,11 +809,13 @@ const BatimentForm = ({
               alignItems: 'center',
               gap: '0.75rem'
             }}>
-              {isCreating ? '✚ Nouveau Bâtiment' : `🏢 ${editData.adresse_civique || 'Bâtiment'}`}
+              {isCreating ? '✚ Nouveau Bâtiment' : `🏢 ${editData.nom_etablissement || editData.adresse_civique || 'Bâtiment'}`}
             </h2>
-            {!isCreating && editData.ville && (
+            {!isCreating && (
               <p style={{ opacity: 0.9, fontSize: '1rem' }}>
-                {editData.ville}, {editData.province} {editData.code_postal}
+                {editData.adresse_civique && `${editData.adresse_civique}, `}
+                {editData.ville && `${editData.ville}, `}
+                {editData.province} {editData.code_postal}
               </p>
             )}
           </div>
