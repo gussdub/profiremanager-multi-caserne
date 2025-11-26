@@ -759,8 +759,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               🗑️ Supprimer
             </Button>
           )}
-          <Button onClick={handleSavePlan} disabled={saving}>
-            {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
+          <Button 
+            onClick={handleSavePlan} 
+            disabled={saving}
+            style={{
+              backgroundColor: hasUnsavedChanges ? '#f59e0b' : undefined,
+              fontWeight: hasUnsavedChanges ? 'bold' : undefined
+            }}
+          >
+            {saving ? '⏳ Sauvegarde...' : (hasUnsavedChanges ? '💾 Sauvegarder *' : '💾 Sauvegarder')}
           </Button>
           {existingPlan && (existingPlan.statut === 'brouillon' || existingPlan.statut === 'rejete') && (
             <Button 
