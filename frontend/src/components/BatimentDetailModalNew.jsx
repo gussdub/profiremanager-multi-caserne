@@ -738,6 +738,95 @@ const BatimentForm = ({
     onClose();
   };
 
+  // Gestion de la navigation historique/inspection
+  if (viewMode === 'history') {
+    return (
+      <>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+          onClick={onClose}
+        >
+          <div 
+            style={{
+              width: '90%',
+              maxWidth: '1000px',
+              maxHeight: '90vh',
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HistoriqueInspections
+              batiment={batiment}
+              tenantSlug={tenantSlug}
+              onBack={() => setViewMode('form')}
+              onViewInspection={(inspection) => {
+                setSelectedInspection(inspection);
+                setViewMode('inspection-detail');
+              }}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (viewMode === 'inspection-detail' && selectedInspection) {
+    return (
+      <>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+          onClick={onClose}
+        >
+          <div 
+            style={{
+              width: '90%',
+              maxWidth: '1000px',
+              maxHeight: '90vh',
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <InspectionDetailView
+              inspection={selectedInspection}
+              batiment={batiment}
+              onBack={() => setViewMode('history')}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Style global pour les suggestions Google Places */}
