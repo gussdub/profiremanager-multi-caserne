@@ -424,26 +424,35 @@ const RapportBatimentComplet = ({ batiment, tenantSlug, onBack }) => {
       {/* Styles pour l'impression */}
       <style>{`
         @media print {
-          .no-print {
-            display: none !important;
+          /* Masquer TOUT d'abord */
+          * {
+            visibility: hidden !important;
           }
           
-          /* Masquer tout sauf le rapport */
-          body > *:not(:has(.rapport-print-content)) {
-            display: none !important;
+          /* Puis afficher UNIQUEMENT le rapport et ses descendants */
+          .rapport-print-content,
+          .rapport-print-content * {
+            visibility: visible !important;
           }
           
-          /* Forcer l'affichage du rapport en pleine page */
-          html, body {
-            height: auto !important;
-            overflow: visible !important;
-            margin: 0 !important;
-            padding: 0 !important;
+          /* Positionner le rapport en haut à gauche */
+          .rapport-print-content {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
           }
           
           @page {
             margin: 1.5cm;
             size: A4;
+          }
+          
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           body {
