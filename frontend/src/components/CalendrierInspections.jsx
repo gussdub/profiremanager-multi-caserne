@@ -350,20 +350,16 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast }) => {
         flexWrap: 'wrap'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ width: '16px', height: '16px', background: '#10b981', borderRadius: '3px' }}></div>
-          <span>Risque faible</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ width: '16px', height: '16px', background: '#f59e0b', borderRadius: '3px' }}></div>
-          <span>Risque moyen</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ width: '16px', height: '16px', background: '#ef4444', borderRadius: '3px' }}></div>
-          <span>Risque élevé</span>
+          <span>À faire</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ width: '16px', height: '16px', background: '#991b1b', borderRadius: '3px' }}></div>
-          <span>Risque très élevé</span>
+          <div style={{ width: '16px', height: '16px', background: '#f97316', borderRadius: '3px' }}></div>
+          <span>En cours</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '16px', height: '16px', background: '#22c55e', borderRadius: '3px' }}></div>
+          <span>Complété</span>
         </div>
       </div>
     </div>
