@@ -18563,34 +18563,60 @@ const GestionPreventionnistes = () => {
   // Fonction pour assigner les bâtiments dans un secteur au préventionniste
   const assignBatimentsToSecteur = async (secteurId, preventionnisteId, geometry) => {
     try {
+      console.log('🔍 Début assignation - secteurId:', secteurId, 'preventionnisteId:', preventionnisteId);
+      console.log('🔍 Geometry:', geometry);
+      console.log('🔍 Total bâtiments:', batiments.length);
+      
       // Vérifier quels bâtiments sont dans le secteur (calcul côté client)
       const batimentsInSecteur = batiments.filter(batiment => {
-        if (!batiment.latitude || !batiment.longitude) return false;
+        if (!batiment.latitude || !batiment.longitude) {
+          console.log('❌ Bâtiment sans coordonnées:', batiment.nom_etablissement);
+          return false;
+        }
         
         // Vérifier si le point est dans le polygone
         const point = [batiment.longitude, batiment.latitude];
-        return isPointInPolygon(point, geometry.coordinates[0]);
+        const isInside = isPointInPolygon(point, geometry.coordinates[0]);
+        console.log(`${isInside ? '✅' : '❌'} ${batiment.nom_etablissement}: [${point[0]}, ${point[1]}]`);
+        return isInside;
       });
       
-      console.log(`🎯 ${batimentsInSecteur.length} bâtiments trouvés dans le secteur`);
+      console.log(`🎯 ${batimentsInSecteur.length} bâtiments trouvés dans le secteur:`, batimentsInSecteur.map(b => b.nom_etablissement));
       
       // Assigner chaque bâtiment au préventionniste
+      let assignedCount = 0;
       for (const batiment of batimentsInSecteur) {
-        await apiPut(tenantSlug, `/prevention/batiments/${batiment.id}`, {
-          ...batiment,
-          secteur_id: secteurId,
-          preventionniste_id: preventionnisteId
-        });
+        try {
+          await apiPut(tenantSlug, `/prevention/batiments/${batiment.id}`, {
+            ...batiment,
+            secteur_id: secteurId,
+            preventionniste_id: preventionnisteId
+          });
+          assignedCount++;
+          console.log(`✅ Bâtiment assigné: ${batiment.nom_etablissement}`);
+        } catch (err) {
+          console.error(`❌ Erreur assignation ${batiment.nom_etablissement}:`, err);
+        }
       }
       
-      if (batimentsInSecteur.length > 0) {
+      if (assignedCount > 0) {
         toast({
           title: "Assignation réussie",
-          description: `${batimentsInSecteur.length} bâtiment(s) assigné(s) au préventionniste`
+          description: `${assignedCount} bâtiment(s) assigné(s) au préventionniste`
+        });
+      } else {
+        toast({
+          title: "Information",
+          description: "Aucun bâtiment trouvé dans ce secteur"
         });
       }
     } catch (error) {
       console.error('Erreur assignation bâtiments:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'assignation des bâtiments",
+        variant: "destructive"
+      });
     }
   };
   
