@@ -77,6 +77,17 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       console.log('📥 Chargement des overrides d\'icônes:', existingPlan.predefined_symbol_overrides);
       setPredefinedSymbolOverrides(existingPlan.predefined_symbol_overrides);
     }
+    
+    // Mettre à jour le formData avec le nouveau statut et autres infos
+    if (existingPlan) {
+      setFormData(prev => ({
+        ...prev,
+        titre: existingPlan.titre || prev.titre,
+        description: existingPlan.description || prev.description,
+        statut: existingPlan.statut || prev.statut,
+        notes_tactiques: existingPlan.notes_tactiques || prev.notes_tactiques
+      }));
+    }
   }, [existingPlan]);
 
   // Restaurer les layers sur la carte Leaflet
