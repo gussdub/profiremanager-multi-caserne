@@ -267,10 +267,20 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
             zoom={13}
             style={{ height: '500px', width: '100%' }}
           >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            />
+            <LayersControl position="topright">
+              <BaseLayer checked name="🗺️ Plan">
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                />
+              </BaseLayer>
+              <BaseLayer name="🛰️ Satellite">
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+                />
+              </BaseLayer>
+            </LayersControl>
             <MapBounds batiments={batimentsValides} />
             
             {batimentsValides.map(batiment => (
@@ -282,44 +292,26 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
                   click: () => onBatimentClick(batiment)
                 }}
               >
-                <Popup>
-                  <div style={{ minWidth: '200px' }}>
-                    <h4 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                <Tooltip direction="top" offset={[0, -15]} opacity={0.95}>
+                  <div style={{ minWidth: '180px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
                       {batiment.nom_etablissement}
-                    </h4>
-                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                      📍 {batiment.adresse_civique}
-                    </p>
-                    <div style={{ 
-                      padding: '0.5rem',
-                      backgroundColor: batiment.couleur === 'rouge' ? '#fee2e2' : 
-                                      batiment.couleur === 'orange' ? '#ffedd5' : '#dcfce7',
-                      borderRadius: '4px',
-                      marginBottom: '0.5rem'
-                    }}>
-                      <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>
-                        {batiment.couleur === 'rouge' && '🔴 À inspecter'}
-                        {batiment.couleur === 'orange' && `🟠 ${batiment.inspectionsCetteAnnee} visite(s)`}
-                        {batiment.couleur === 'vert' && '✅ Complété'}
-                      </p>
                     </div>
-                    <button
-                      onClick={() => onBatimentClick(batiment)}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: '500'
-                      }}
-                    >
-                      {batiment.couleur === 'rouge' ? '🔍 Inspecter' : '👁️ Voir détails'}
-                    </button>
+                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>
+                      📍 {batiment.adresse_civique}
+                    </div>
+                    <div style={{ 
+                      fontSize: '0.8rem',
+                      fontWeight: '500',
+                      color: batiment.couleur === 'rouge' ? '#ef4444' : 
+                             batiment.couleur === 'orange' ? '#f97316' : '#22c55e'
+                    }}>
+                      {batiment.couleur === 'rouge' && '🔴 À inspecter'}
+                      {batiment.couleur === 'orange' && `🟠 ${batiment.inspectionsCetteAnnee} visite(s)`}
+                      {batiment.couleur === 'vert' && '✅ Complété'}
+                    </div>
                   </div>
-                </Popup>
+                </Tooltip>
               </Marker>
             ))}
           </MapContainer>
