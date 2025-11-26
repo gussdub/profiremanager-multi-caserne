@@ -21769,7 +21769,7 @@ const Prevention = () => {
         />;
       
       case 'non-conformites':
-        return <GestionNonConformites setCurrentView={setCurrentView} />;
+        return <NonConformites tenantSlug={tenantSlug} toast={toast} openBatimentModal={openBatimentModal} />;
       
       case 'plans-intervention':
         console.log('🎯 Prevention - Rendu PlansIntervention avec tenantSlug:', tenantSlug);
