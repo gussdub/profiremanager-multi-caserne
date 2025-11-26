@@ -379,6 +379,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     };
 
     setLayers(prev => [...prev, layerData]);
+    setHasUnsavedChanges(true);
 
     // Catégoriser selon le type
     if (symbol.label.includes('urgence') || symbol.label.includes('Accès')) {
