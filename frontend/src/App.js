@@ -8089,9 +8089,10 @@ const Planning = () => {
                       border: '1px solid #cbd5e1',
                       borderRadius: '6px',
                       marginTop: '4px',
-                      zIndex: 1050, // Increased z-index to be above modal
-                      boxShadow: '0 10px 15px rgba(0,0,0,0.15)', // Enhanced shadow for better visibility
-                      fontSize: '0.95rem' // Ensure readable text
+                      zIndex: 1050,
+                      boxShadow: '0 10px 15px rgba(0,0,0,0.15)',
+                      fontSize: '0.95rem',
+                      color: '#1e293b' // Couleur de texte explicite
                     }}>
                       {users
                         .filter(userOption => {
@@ -8123,16 +8124,29 @@ const Planning = () => {
                               padding: '0.75rem',
                               cursor: 'pointer',
                               borderBottom: '1px solid #f1f5f9',
-                              transition: 'background 0.2s'
+                              transition: 'background 0.2s',
+                              color: '#1e293b' // Couleur texte explicite pour chaque item
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#f8fafc';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'white';
+                            }}
                             data-testid={`quick-assign-user-${userOption.id}`}
                           >
-                            <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>
+                            <div style={{ 
+                              fontWeight: '500', 
+                              fontSize: '0.95rem',
+                              color: '#1e293b' // Couleur explicite pour le nom
+                            }}>
                               {userOption.prenom} {userOption.nom}
                             </div>
-                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                            <div style={{ 
+                              fontSize: '0.875rem', 
+                              color: '#64748b', 
+                              marginTop: '0.25rem' 
+                            }}>
                               {userOption.grade} - {userOption.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
                             </div>
                           </div>
