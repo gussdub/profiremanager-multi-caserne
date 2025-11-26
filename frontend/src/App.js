@@ -21758,6 +21758,12 @@ const Prevention = () => {
           >
             🗺️ Plans d'Intervention
           </Button>
+          <Button 
+            variant={currentView === 'parametres' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('parametres')}
+          >
+            ⚙️ Paramètres
+          </Button>
         </div>
       </div>
       
