@@ -327,6 +327,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       ...prev,
       [name]: value
     }));
+    setHasUnsavedChanges(true);
   };
 
   const placeSymbolOnMap = (symbol, latlng) => {
