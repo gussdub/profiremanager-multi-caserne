@@ -767,16 +767,33 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           >
             {saving ? '⏳ Sauvegarde...' : (hasUnsavedChanges ? '💾 Sauvegarder *' : '💾 Sauvegarder')}
           </Button>
-          {existingPlan && (existingPlan.statut === 'brouillon' || existingPlan.statut === 'rejete') && (
-            <Button 
-              onClick={handleSubmitForValidation} 
-              disabled={saving || hasUnsavedChanges}
-              variant={hasUnsavedChanges ? "outline" : "default"}
-              title={hasUnsavedChanges ? '⚠️ Veuillez sauvegarder vos modifications avant de soumettre' : 'Soumettre le plan pour validation'}
-            >
-              {hasUnsavedChanges ? '🔒 Soumettre pour validation' : '✅ Soumettre pour validation'}
-            </Button>
-          )}
+          <Button 
+            onClick={handleSubmitForValidation} 
+            disabled={
+              saving || 
+              hasUnsavedChanges || 
+              !existingPlan || 
+              (existingPlan.statut !== 'brouillon' && existingPlan.statut !== 'rejete')
+            }
+            variant={
+              !existingPlan || hasUnsavedChanges || (existingPlan.statut !== 'brouillon' && existingPlan.statut !== 'rejete')
+                ? "outline" 
+                : "default"
+            }
+            title={
+              !existingPlan 
+                ? '⚠️ Veuillez d\'abord sauvegarder le plan'
+                : hasUnsavedChanges 
+                  ? '⚠️ Veuillez sauvegarder vos modifications avant de soumettre'
+                  : (existingPlan.statut !== 'brouillon' && existingPlan.statut !== 'rejete')
+                    ? `⚠️ Ce plan est déjà en statut "${existingPlan.statut}"`
+                    : 'Soumettre le plan pour validation'
+            }
+          >
+            {!existingPlan || hasUnsavedChanges || (existingPlan.statut !== 'brouillon' && existingPlan.statut !== 'rejete')
+              ? '🔒 Soumettre pour validation' 
+              : '✅ Soumettre pour validation'}
+          </Button>
         </div>
       </div>
 
