@@ -19930,9 +19930,11 @@ async def export_plan_intervention_pdf(
     
     if batiment:
         info_data.append(['Bâtiment:', f"{batiment.get('nom_etablissement', 'N/A')}"])
-        info_data.append(['Adresse:', batiment.get('adresse_civique', 'N/A')])
+        info_data.append(['Adresse:', f"{batiment.get('adresse_civique', '')} {batiment.get('ville', '')} {batiment.get('province', '')} {batiment.get('code_postal', '')}".strip()])
         if batiment.get('type_batiment'):
             info_data.append(['Type de bâtiment:', batiment['type_batiment']])
+        if batiment.get('groupe_occupation'):
+            info_data.append(['Groupe d\'occupation:', batiment['groupe_occupation']])
     
     info_table = Table(info_data, colWidths=[2*inch, 4*inch])
     info_table.setStyle(TableStyle([
