@@ -4,6 +4,8 @@ import { Card } from './ui/card';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
 import imageCompression from 'browser-image-compression';
+import HistoriqueInspections from './HistoriqueInspections';
+import InspectionDetailView from './InspectionDetailView';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
