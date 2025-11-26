@@ -21,9 +21,6 @@ const ParametresPrevention = ({ tenantSlug, currentUser }) => {
     try {
       setLoading(true);
       
-      // Récupérer les paramètres actuels
-      const tenantData = await apiGet(tenantSlug, '/tenant-info');
-      
       // Récupérer tous les utilisateurs pour le dropdown superviseur
       const usersData = await apiGet(tenantSlug, '/users');
       setUsers(usersData);
@@ -32,14 +29,8 @@ const ParametresPrevention = ({ tenantSlug, currentUser }) => {
       const prevData = usersData.filter(u => u.est_preventionniste === true);
       setPreventionnistes(prevData);
       
-      // Charger les paramètres existants
-      if (tenantData.parametres) {
-        setParametres({
-          recurrence_inspections: tenantData.parametres.recurrence_inspections || 1,
-          nombre_visites_requises: tenantData.parametres.nombre_visites_requises || 1,
-          superviseur_prevention_id: tenantData.parametres.superviseur_prevention_id || ''
-        });
-      }
+      // Les paramètres seront initialisés avec les valeurs par défaut
+      // Ils seront sauvegardés lors du premier enregistrement
     } catch (error) {
       console.error('Erreur chargement paramètres:', error);
       alert('Erreur lors du chargement des paramètres');
