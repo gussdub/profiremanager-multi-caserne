@@ -184,7 +184,9 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
         onClose={handleClosBuilder}
         onSave={(plan) => {
           console.log('Plan sauvegardé:', plan);
-          handleClosBuilder();
+          setSelectedPlan(plan); // Mettre à jour avec le plan sauvegardé
+          // Ne pas fermer automatiquement pour permettre la soumission
+          // handleClosBuilder();
         }}
       />
     );
