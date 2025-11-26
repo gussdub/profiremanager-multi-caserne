@@ -21698,7 +21698,7 @@ const Prevention = () => {
         );
       
       case 'parametres':
-        return <ParametresPrevention tenantSlug={tenantSlug} currentUser={currentUser} />;
+        return <ParametresPrevention tenantSlug={tenantSlug} currentUser={user} />;
       
       default:
         return <div>Vue en développement...</div>;
