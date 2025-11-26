@@ -28,19 +28,21 @@ const SecteursMap = ({
   const [map, setMap] = useState(null);
   const [mapType, setMapType] = useState('street'); // 'street' ou 'satellite'
 
-  // Composant pour ajuster la vue aux marqueurs
+  // Composant pour ajuster la vue aux marqueurs (une seule fois au montage)
   const FitBounds = ({ batiments }) => {
     const map = useMap();
+    const [hasAdjusted, setHasAdjusted] = useState(false);
     
     useEffect(() => {
-      if (batiments && batiments.length > 0) {
+      if (!hasAdjusted && batiments && batiments.length > 0) {
         const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
         if (batimentsAvecCoords.length > 0) {
           const bounds = batimentsAvecCoords.map(b => [b.latitude, b.longitude]);
           map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+          setHasAdjusted(true);
         }
       }
-    }, [batiments, map]);
+    }, [batiments, map, hasAdjusted]);
     
     return null;
   };
