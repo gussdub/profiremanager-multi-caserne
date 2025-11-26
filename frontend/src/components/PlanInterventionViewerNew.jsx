@@ -36,6 +36,8 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
         buildApiUrl(tenantSlug, `/prevention/plans-intervention/${planId}`),
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('📋 Plan chargé:', response.data);
+      console.log('📋 Bâtiment prop:', batiment);
       setPlan(response.data);
     } catch (err) {
       console.error('Erreur chargement plan:', err);
