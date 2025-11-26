@@ -55,7 +55,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [photos, setPhotos] = useState(existingPlan?.photos || []);
   
   // État pour stocker les modifications des symboles prédéfinis
-  const [predefinedSymbolOverrides, setPredefinedSymbolOverrides] = useState({});
+  const [predefinedSymbolOverrides, setPredefinedSymbolOverrides] = useState(existingPlan?.predefined_symbol_overrides || {});
   const [showEditPredefinedModal, setShowEditPredefinedModal] = useState(false);
   const [editingPredefinedSymbol, setEditingPredefinedSymbol] = useState(null);
 
