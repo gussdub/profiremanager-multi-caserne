@@ -21642,9 +21642,6 @@ const Prevention = () => {
       case 'non-conformites':
         return <GestionNonConformites setCurrentView={setCurrentView} />;
       
-      case 'calendrier':
-        return <CalendrierInspections setCurrentView={setCurrentView} batiments={batiments} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
-      
       case 'plans-intervention':
         console.log('🎯 Prevention - Rendu PlansIntervention avec tenantSlug:', tenantSlug);
         return <PlansIntervention tenantSlug={tenantSlug} filteredBatimentId={filteredBatimentId} setFilteredBatimentId={setFilteredBatimentId} />;
