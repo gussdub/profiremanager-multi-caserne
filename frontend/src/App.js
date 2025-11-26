@@ -29,6 +29,7 @@ const PlanInterventionViewer = lazy(() => import("./components/PlanInterventionV
 const ParametresPrevention = lazy(() => import("./components/ParametresPrevention"));
 const PlanificationView = lazy(() => import("./components/PlanificationView"));
 const CartePlanification = lazy(() => import("./components/CartePlanification"));
+const NonConformites = lazy(() => import("./components/NonConformites"));
 
 // Composant de chargement
 const LoadingComponent = () => (
