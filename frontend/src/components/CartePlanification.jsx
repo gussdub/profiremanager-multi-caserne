@@ -123,7 +123,7 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
         .filter(insp => insp.batiment_id === batiment.id && insp.statut === 'valide')
         .sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection))[0];
       
-      // Calculer la couleur
+      // Calculer la couleur selon la priorité
       let couleur = 'rouge';
       let tooltip = `${batiment.nom_etablissement}\n${batiment.adresse_civique}`;
       
@@ -132,17 +132,14 @@ const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
         couleur = 'vert';
         tooltip += `\n✅ Dernière inspection: ${new Date(derniereInspectionValidee.date_inspection).toLocaleDateString('fr-FR')}`;
       }
-      // Vert si nombre de visites atteint (peu importe statut)
-      else if (inspectionsCetteAnnee.length >= nombreVisitesRequises) {
-        couleur = 'vert';
-        tooltip += `\n✅ ${inspectionsCetteAnnee.length} visite(s) effectuée(s)`;
-      }
       // Orange si inspection en cours (absent, non disponible, personne mineure)
       else if (inspectionsCetteAnnee.some(insp => 
         ['absent', 'non_disponible', 'personne_mineure'].includes(insp.statut))) {
         couleur = 'orange';
-        const derniereVisite = inspectionsCetteAnnee[inspectionsCetteAnnee.length - 1];
-        tooltip += `\n🟠 Dernière visite: ${new Date(derniereVisite.date_inspection).toLocaleDateString('fr-FR')} - ${derniereVisite.statut}`;
+        const visitesEchouees = inspectionsCetteAnnee.filter(insp => 
+          ['absent', 'non_disponible', 'personne_mineure'].includes(insp.statut)
+        );
+        tooltip += `\n🟠 ${visitesEchouees.length} visite(s) échouée(s)`;
       }
       // Rouge si aucune inspection ou seulement brouillons
       else {
