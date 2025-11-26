@@ -746,6 +746,7 @@ const BatimentForm = ({
     return (
       <>
         <div 
+          className="no-print"
           style={{
             position: 'fixed',
             top: 0,
