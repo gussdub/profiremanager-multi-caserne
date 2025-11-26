@@ -163,6 +163,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         marker.on('contextmenu', function() {
           if (window.confirm('🗑️ Supprimer ce symbole ?')) {
             setLayers(prevLayers => prevLayers.filter(l => l.id !== layer.id));
+            setHasUnsavedChanges(true);
             if (map.hasLayer(marker)) {
               map.removeLayer(marker);
             }
