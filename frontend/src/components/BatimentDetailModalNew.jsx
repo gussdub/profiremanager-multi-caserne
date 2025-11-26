@@ -763,7 +763,7 @@ const BatimentForm = ({
             style={{
               width: '90%',
               maxWidth: '1200px',
-              maxHeight: '90vh',
+              height: '90vh',
               backgroundColor: 'white',
               borderRadius: '12px',
               overflow: 'hidden',
@@ -772,8 +772,7 @@ const BatimentForm = ({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ height: '100%', overflow: 'hidden' }}>
-              <PlanInterventionViewerNew
+            <PlanInterventionViewerNew
                 planId={selectedPlanId}
                 batiment={batiment}
                 tenantSlug={tenantSlug}
