@@ -21714,6 +21714,12 @@ const Prevention = () => {
             👨‍🚒 Préventionnistes
           </Button>
           <Button 
+            variant={currentView === 'calendrier' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('calendrier')}
+          >
+            📅 Calendrier
+          </Button>
+          <Button 
             variant={currentView === 'inspections' ? 'default' : 'outline'}
             onClick={() => setCurrentView('inspections')}
           >
