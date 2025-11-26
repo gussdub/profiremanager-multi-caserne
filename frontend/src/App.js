@@ -18426,7 +18426,10 @@ const GestionPreventionnistes = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [usersData, batimentsData, secteursData] = await Promise.all([
+      
+      // Charger les préventionnistes avec l'endpoint dédié
+      const [preventionnistesData, usersData, batimentsData, secteursData] = await Promise.all([
+        apiGet(tenantSlug, '/prevention/preventionnistes'),
         apiGet(tenantSlug, '/users'),
         apiGet(tenantSlug, '/prevention/batiments'),
         apiGet(tenantSlug, '/prevention/secteurs').catch(() => [])
@@ -18436,11 +18439,20 @@ const GestionPreventionnistes = () => {
       setBatiments(batimentsData);
       setSecteurs(secteursData || []);
       
-      // Filtrer les préventionnistes (utilisateurs avec des bâtiments assignés)
-      const preventionnistesActifs = usersData.filter(user => 
-        batimentsData.some(batiment => batiment.preventionniste_assigne_id === user.id)
+      // Enrichir les préventionnistes avec leurs stats
+      const preventionnistesEnrichis = await Promise.all(
+        preventionnistesData.map(async (prev) => {
+          try {
+            const stats = await apiGet(tenantSlug, `/prevention/preventionnistes/${prev.id}/stats`);
+            return { ...prev, stats };
+          } catch (error) {
+            console.error(`Erreur stats pour ${prev.id}:`, error);
+            return { ...prev, stats: {} };
+          }
+        })
       );
-      setPreventionnistes(preventionnistesActifs);
+      
+      setPreventionnistes(preventionnistesEnrichis);
       
     } catch (error) {
       console.error('Erreur chargement données:', error);
