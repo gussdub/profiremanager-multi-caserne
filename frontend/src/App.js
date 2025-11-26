@@ -18809,49 +18809,223 @@ const GestionPreventionnistes = () => {
           <div className="preventionnistes-grid">
             {preventionnistes.map(preventionniste => {
               const batimentsAssignes = batiments.filter(b => b.preventionniste_assigne_id === preventionniste.id);
+              const stats = preventionniste.stats || {};
+              const secteursAssignes = secteurs.filter(s => s.preventionniste_assigne_id === preventionniste.id);
               
               return (
-                <div key={preventionniste.id} className="preventionniste-card">
-                  <div className="preventionniste-header">
-                    <div className="preventionniste-info">
-                      <h4>{preventionniste.prenom} {preventionniste.nom}</h4>
-                      <p>{preventionniste.email}</p>
-                      <span className="grade-badge">{preventionniste.grade}</span>
+                <div key={preventionniste.id} className="preventionniste-card" style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  backgroundColor: 'white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                }}>
+                  <div className="preventionniste-header" style={{ marginBottom: '1rem' }}>
+                    <div className="preventionniste-info" style={{ marginBottom: '1rem' }}>
+                      <h4 style={{ 
+                        fontSize: '1.25rem', 
+                        fontWeight: 'bold', 
+                        color: '#1e293b',
+                        marginBottom: '0.5rem'
+                      }}>
+                        👨‍🚒 {preventionniste.prenom} {preventionniste.nom}
+                      </h4>
+                      <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0.25rem 0' }}>
+                        📧 {preventionniste.email}
+                      </p>
+                      <span className="grade-badge" style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.75rem',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        borderRadius: '999px',
+                        fontSize: '0.85rem',
+                        fontWeight: '500',
+                        marginTop: '0.5rem'
+                      }}>
+                        {preventionniste.grade}
+                      </span>
                     </div>
-                    <div className="preventionniste-stats">
-                      <div className="stat-item">
-                        <span className="stat-number">{batimentsAssignes.length}</span>
-                        <span className="stat-label">bâtiments</span>
+                    
+                    <div className="preventionniste-stats" style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1rem',
+                      padding: '1rem',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      marginBottom: '1rem'
+                    }}>
+                      <div className="stat-item" style={{ textAlign: 'center' }}>
+                        <span className="stat-number" style={{
+                          display: 'block',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          color: '#3b82f6'
+                        }}>
+                          {stats.batiments_assignes || batimentsAssignes.length}
+                        </span>
+                        <span className="stat-label" style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b'
+                        }}>
+                          Bâtiments
+                        </span>
+                      </div>
+                      <div className="stat-item" style={{ textAlign: 'center' }}>
+                        <span className="stat-number" style={{
+                          display: 'block',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          color: '#10b981'
+                        }}>
+                          {stats.secteurs_assignes || secteursAssignes.length}
+                        </span>
+                        <span className="stat-label" style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b'
+                        }}>
+                          Secteurs
+                        </span>
+                      </div>
+                      <div className="stat-item" style={{ textAlign: 'center' }}>
+                        <span className="stat-number" style={{
+                          display: 'block',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          color: '#f59e0b'
+                        }}>
+                          {stats.inspections_effectuees || 0}
+                        </span>
+                        <span className="stat-label" style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b'
+                        }}>
+                          Inspections
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="batiments-assignes">
-                    <h5>🏢 Bâtiments assignés:</h5>
+                    <h5 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600',
+                      color: '#1e293b',
+                      marginBottom: '0.75rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem'
+                    }}>
+                      🏢 Bâtiments assignés
+                    </h5>
                     {batimentsAssignes.length === 0 ? (
-                      <p className="no-batiments">Aucun bâtiment assigné</p>
+                      <p className="no-batiments" style={{
+                        textAlign: 'center',
+                        color: '#9ca3af',
+                        padding: '1rem',
+                        fontStyle: 'italic'
+                      }}>
+                        Aucun bâtiment assigné
+                      </p>
                     ) : (
                       <div className="batiments-list">
-                        {batimentsAssignes.slice(0, 3).map(batiment => (
-                          <div key={batiment.id} className="batiment-item">
-                            <span className="batiment-name">{batiment.nom_etablissement}</span>
+                        {batimentsAssignes.slice(0, 5).map(batiment => (
+                          <div key={batiment.id} className="batiment-item" style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            backgroundColor: '#f9fafb',
+                            borderRadius: '6px',
+                            marginBottom: '0.5rem',
+                            border: '1px solid #e5e7eb'
+                          }}>
+                            <div>
+                              <span className="batiment-name" style={{
+                                fontWeight: '500',
+                                color: '#1e293b',
+                                display: 'block'
+                              }}>
+                                {batiment.nom_etablissement}
+                              </span>
+                              <span style={{
+                                fontSize: '0.8rem',
+                                color: '#64748b'
+                              }}>
+                                📍 {batiment.adresse_civique || 'Adresse non spécifiée'}
+                              </span>
+                            </div>
                             <button 
                               onClick={() => handleRemoveAssignment(batiment.id)}
                               className="remove-btn"
                               title="Supprimer l'assignation"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '1.2rem',
+                                cursor: 'pointer',
+                                opacity: 0.6,
+                                transition: 'opacity 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
                             >
                               ❌
                             </button>
                           </div>
                         ))}
-                        {batimentsAssignes.length > 3 && (
-                          <p className="more-batiments">
-                            ... et {batimentsAssignes.length - 3} autres
+                        {batimentsAssignes.length > 5 && (
+                          <p className="more-batiments" style={{
+                            textAlign: 'center',
+                            color: '#6b7280',
+                            fontSize: '0.9rem',
+                            marginTop: '0.75rem',
+                            fontStyle: 'italic'
+                          }}>
+                            ... et {batimentsAssignes.length - 5} autre(s)
                           </p>
                         )}
                       </div>
                     )}
                   </div>
+                  
+                  {secteursAssignes.length > 0 && (
+                    <div className="secteurs-assignes" style={{ marginTop: '1rem' }}>
+                      <h5 style={{ 
+                        fontSize: '1rem', 
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '0.75rem',
+                        borderBottom: '2px solid #e5e7eb',
+                        paddingBottom: '0.5rem'
+                      }}>
+                        🗺️ Secteurs assignés
+                      </h5>
+                      <div className="secteurs-list">
+                        {secteursAssignes.map(secteur => (
+                          <div key={secteur.id} style={{
+                            padding: '0.5rem 0.75rem',
+                            backgroundColor: '#ecfdf5',
+                            borderRadius: '6px',
+                            marginBottom: '0.5rem',
+                            border: '1px solid #a7f3d0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <span style={{ color: '#059669', fontWeight: '500' }}>
+                              {secteur.nom}
+                            </span>
+                            {secteur.description && (
+                              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                - {secteur.description}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
