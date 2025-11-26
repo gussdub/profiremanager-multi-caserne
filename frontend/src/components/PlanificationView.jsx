@@ -61,6 +61,7 @@ const PlanificationView = ({
             batiments={batiments}
             filteredBatimentId={filteredBatimentId}
             setFilteredBatimentId={setFilteredBatimentId}
+            openBatimentModal={openBatimentModal}
           />
         ) : (
           <CartePlanification
