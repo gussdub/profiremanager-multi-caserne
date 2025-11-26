@@ -763,7 +763,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
             {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
           </Button>
           {existingPlan && (existingPlan.statut === 'brouillon' || existingPlan.statut === 'rejete') && (
-            <Button onClick={handleSubmitForValidation} disabled={saving}>
+            <Button 
+              onClick={handleSubmitForValidation} 
+              disabled={saving || hasUnsavedChanges}
+              style={{
+                opacity: hasUnsavedChanges ? 0.5 : 1,
+                cursor: hasUnsavedChanges ? 'not-allowed' : 'pointer'
+              }}
+              title={hasUnsavedChanges ? 'Veuillez sauvegarder vos modifications avant de soumettre' : 'Soumettre le plan pour validation'}
+            >
               ✅ Soumettre pour validation
             </Button>
           )}
