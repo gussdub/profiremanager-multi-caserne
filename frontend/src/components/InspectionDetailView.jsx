@@ -130,12 +130,82 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
               <div style={{
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                backgroundColor: 'white'
               }}>
-                {/* Affichage de la grille d'inspection si disponible */}
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>
-                  Détails de la grille d'inspection
-                </div>
+                {inspection.grille_data.type && (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: '#f9fafb',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontWeight: '600',
+                    fontSize: '0.875rem',
+                    color: '#374151'
+                  }}>
+                    Type: {inspection.grille_data.type}
+                  </div>
+                )}
+                
+                {inspection.grille_data.elements_inspectes && inspection.grille_data.elements_inspectes.length > 0 ? (
+                  <div>
+                    {inspection.grille_data.elements_inspectes.map((element, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          padding: '1rem',
+                          borderBottom: index < inspection.grille_data.elements_inspectes.length - 1 ? '1px solid #e5e7eb' : 'none',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '500', fontSize: '0.875rem', color: '#111827' }}>
+                            {element.nom}
+                          </div>
+                          {element.observations && (
+                            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                              {element.observations}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{
+                          padding: '0.375rem 0.75rem',
+                          borderRadius: '6px',
+                          backgroundColor: element.conforme ? '#dcfce7' : '#fee2e2',
+                          color: element.conforme ? '#22c55e' : '#ef4444',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap',
+                          marginLeft: '1rem'
+                        }}>
+                          {element.conforme ? '✓ Conforme' : '✗ Non conforme'}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Résumé */}
+                    <div style={{
+                      padding: '1rem',
+                      backgroundColor: '#f9fafb',
+                      display: 'flex',
+                      gap: '2rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '600'
+                    }}>
+                      <div style={{ color: '#22c55e' }}>
+                        ✓ Conformes: {inspection.grille_data.elements_inspectes.filter(e => e.conforme).length}
+                      </div>
+                      <div style={{ color: '#ef4444' }}>
+                        ✗ Non conformes: {inspection.grille_data.elements_inspectes.filter(e => !e.conforme).length}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>
+                    Aucun élément inspecté enregistré
+                  </div>
+                )}
               </div>
             </section>
           )}
