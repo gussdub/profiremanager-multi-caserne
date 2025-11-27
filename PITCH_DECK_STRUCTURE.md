@@ -398,7 +398,7 @@
 
 ---
 
-### SLIDE 24 : PROCHAINES ÉTAPES
+### SLIDE 25 : PROCHAINES ÉTAPES
 **Visuel** : Checklist avec 3 étapes  
 **Contenu** :
 **📞 Comment Procéder ?**
@@ -414,7 +414,7 @@
 
 ---
 
-### SLIDE 25 : CONTACT & QUESTIONS
+### SLIDE 26 : CONTACT & QUESTIONS
 **Visuel** : Coordonnées + logo + QR code  
 **Contenu** :
 **📞 Restons en Contact**
