@@ -27,6 +27,7 @@ const ConflictResolutionModal = lazy(() => import("./components/ConflictResoluti
 const GestionActifs = lazy(() => import("./components/GestionActifs"));
 const PlanInterventionViewer = lazy(() => import("./components/PlanInterventionViewer"));
 const ParametresPrevention = lazy(() => import("./components/ParametresPrevention"));
+const Personnalisation = lazy(() => import("./components/Personnalisation"));
 const PlanificationView = lazy(() => import("./components/PlanificationView"));
 const CartePlanification = lazy(() => import("./components/CartePlanification"));
 const NonConformites = lazy(() => import("./components/NonConformites"));
