@@ -21456,6 +21456,38 @@ const Prevention = () => {
                     📋
                   </button>
                 </div>
+                <Button 
+                  variant="outline" 
+                  onClick={async () => {
+                    try {
+                      setExporting(true);
+                      const token = localStorage.getItem(`${tenantSlug}_token`);
+                      const response = await fetch(
+                        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=batiments`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                      );
+                      if (!response.ok) throw new Error('Erreur export');
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `batiments_${new Date().toISOString().split('T')[0]}.xlsx`;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                      toast({ title: "Export réussi", description: "Le fichier Excel a été téléchargé" });
+                    } catch (error) {
+                      console.error('Erreur export:', error);
+                      toast({ title: "Erreur", description: "Impossible d'exporter les données", variant: "destructive" });
+                    } finally {
+                      setExporting(false);
+                    }
+                  }}
+                  disabled={exporting}
+                >
+                  {exporting ? '⏳ Export...' : '📥 Exporter Excel'}
+                </Button>
                 <Button onClick={() => setCurrentView('nouveau-batiment')}>
                   ➕ Nouveau Bâtiment
                 </Button>
