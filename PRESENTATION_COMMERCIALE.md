@@ -687,5 +687,5 @@ Consultez notre centre d'aide : help.profiremanager.com
 
 ---
 
-*Document confidentiel - Version 2.0 - Novembre 2024*  
+*Document confidentiel - Version 2.0 - Novembre 2025*  
 *© 2024 ProFireManager - Tous droits réservés*

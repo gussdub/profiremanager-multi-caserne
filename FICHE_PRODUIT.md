@@ -329,4 +329,4 @@ La Plateforme Tout-en-Un pour Services d'Incendie
 
 **ProFireManager** - *Concentrez-vous sur votre mission. Nous nous occupons de l'administration.*
 
-*Version 2.0 - Novembre 2024*
+*Version 2.0 - Novembre 2025*

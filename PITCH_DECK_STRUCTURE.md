@@ -640,4 +640,4 @@ Pour les 10 premiers services :
 
 **ProFireManager** - *Libérez vos pompiers de l'administration pour qu'ils se concentrent sur leur vraie mission : protéger la communauté.*
 
-*Version 2.0 - Structure Pitch Deck Complète - Novembre 2024*
+*Version 2.0 - Structure Pitch Deck Complète - Novembre 2025*
