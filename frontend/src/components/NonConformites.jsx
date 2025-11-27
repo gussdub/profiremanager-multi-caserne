@@ -265,7 +265,10 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
           </select>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <Button variant="outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? '⏳ Export...' : '📥 Exporter Excel'}
+          </Button>
           <Button variant="outline" onClick={loadData}>
             🔄 Actualiser
           </Button>
