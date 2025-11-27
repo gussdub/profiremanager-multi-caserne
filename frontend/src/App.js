@@ -17755,25 +17755,69 @@ const GrillesInspection = () => {
 
   return (
     <div className="grilles-inspection-container">
-      {/* Grilles par défaut */}
+      {/* Grilles disponibles */}
       <div className="default-grilles-section">
-        <h3>📋 Grilles Templates par Groupe d'Occupation</h3>
-        <p>Grilles d'inspection pré-configurées selon le Code de sécurité du Québec</p>
+        <h3>📋 Grilles d'Inspection Disponibles</h3>
+        <p>Grilles d'inspection configurées pour votre service selon le Code de sécurité du Québec</p>
+        
+        {grilles.length === 0 && (
+          <div style={{ 
+            padding: '2rem', 
+            textAlign: 'center', 
+            backgroundColor: '#fef3c7', 
+            border: '2px solid #fcd34d',
+            borderRadius: '8px',
+            margin: '1rem 0'
+          }}>
+            <p style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>⚠️ Aucune grille d'inspection configurée</p>
+            <p style={{ color: '#92400e', marginBottom: '1rem' }}>
+              Pour utiliser le module de prévention, vous devez d'abord initialiser les grilles d'inspection standards.
+            </p>
+            <Button 
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  await apiPost(tenantSlug, '/prevention/initialiser', {});
+                  toast({
+                    title: "Succès",
+                    description: "7 grilles d'inspection créées avec succès"
+                  });
+                  fetchGrilles();
+                } catch (error) {
+                  toast({
+                    title: "Erreur",
+                    description: error.response?.data?.detail || "Impossible d'initialiser les grilles",
+                    variant: "destructive"
+                  });
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              🚀 Initialiser les 7 grilles standards
+            </Button>
+          </div>
+        )}
         
         <div className="default-grilles-grid">
-          {DEFAULT_GRILLES_TEMPLATES.map(template => (
-            <div key={template.groupe} className="template-card">
+          {grilles.map(grille => (
+            <div key={grille.id} className="template-card">
               <div className="template-header">
-                <h4>Groupe {template.groupe}</h4>
-                <span className="groupe-badge">{template.groupe}</span>
+                <h4>{grille.groupe_occupation ? `Groupe ${grille.groupe_occupation}` : 'Grille personnalisée'}</h4>
+                {grille.groupe_occupation && <span className="groupe-badge">{grille.groupe_occupation}</span>}
               </div>
               <div className="template-info">
-                <p><strong>{template.nom}</strong></p>
-                <p>{template.description}</p>
+                <p><strong>{grille.nom}</strong></p>
+                <p>{grille.description || 'Grille d\'inspection personnalisée'}</p>
                 <div className="template-stats">
-                  <span className="stat">{template.sections.length} sections</span>
-                  <span className="stat">{template.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions</span>
+                  <span className="stat">{grille.sections?.length || 0} sections</span>
+                  <span className="stat">{grille.sections?.reduce((acc, s) => acc + (s.questions?.length || 0), 0) || 0} questions</span>
                 </div>
+                {grille.sous_types && grille.sous_types.length > 0 && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                    Sous-types: {grille.sous_types.join(', ')}
+                  </div>
+                )}
               </div>
               <div className="template-actions">
                 <Button 
