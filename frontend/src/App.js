@@ -18099,9 +18099,122 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                 <option value="D">D - Affaires et services personnels</option>
                 <option value="E">E - Commercial</option>
                 <option value="F">F - Industriel</option>
+                <option value="AGRICOLE">Agricole</option>
               </select>
             </div>
           </div>
+
+          {/* Info sur les sous-types */}
+          {formData.groupe_occupation && (
+            <div style={{
+              marginTop: '1rem',
+              padding: '1rem',
+              backgroundColor: '#eff6ff',
+              borderLeft: '4px solid #3b82f6',
+              borderRadius: '4px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
+                <div>
+                  <strong style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>
+                    Grille Universelle avec Questions Conditionnelles
+                  </strong>
+                  <p style={{ fontSize: '0.875rem', color: '#1e40af', marginBottom: '0.5rem' }}>
+                    Cette grille s'adapte automatiquement selon le <strong>sous-type du bâtiment</strong> lors de l'inspection.
+                    Les questions non pertinentes seront masquées.
+                  </p>
+                  
+                  {formData.groupe_occupation === 'C' && (
+                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
+                      <strong>Sous-types supportés :</strong> Unifamiliale, Bifamiliale, Multifamiliale (3-8), Multifamiliale (9+), Copropriété, Maison mobile
+                    </div>
+                  )}
+                  {formData.groupe_occupation === 'E' && (
+                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
+                      <strong>Sous-types supportés :</strong> Bureau, Magasin, Restaurant, Hôtel, Centre commercial
+                    </div>
+                  )}
+                  {formData.groupe_occupation === 'F' && (
+                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
+                      <strong>Sous-types supportés :</strong> Manufacture légère, Manufacture lourde, Entrepôt, Usine, Atelier
+                    </div>
+                  )}
+                  {formData.groupe_occupation === 'B' && (
+                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
+                      <strong>Sous-types supportés :</strong> École, Hôpital, CHSLD, Centre communautaire, Église, Bibliothèque
+                    </div>
+                  )}
+                  {formData.groupe_occupation === 'AGRICOLE' && (
+                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
+                      <strong>Sous-types supportés :</strong> Ferme, Grange, Serre, Écurie, Silo
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    marginTop: '0.75rem', 
+                    padding: '0.5rem',
+                    backgroundColor: 'white',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    color: '#059669'
+                  }}>
+                    ✅ <strong>Comment ça marche :</strong><br/>
+                    1. Le sous-type est défini sur le <strong>bâtiment</strong> (dans le modal bâtiment)<br/>
+                    2. Lors de l'inspection, seules les questions pertinentes s'affichent<br/>
+                    3. Vous pouvez ajouter des conditions aux questions (ex: "condition: multi_9 || copropriete")
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Option: Grille spécifique à un sous-type */}
+          <details style={{ marginTop: '1rem' }}>
+            <summary style={{ 
+              cursor: 'pointer', 
+              fontSize: '0.875rem',
+              color: '#3b82f6',
+              padding: '0.5rem',
+              backgroundColor: '#f9fafb',
+              borderRadius: '4px'
+            }}>
+              🔧 Option Avancée : Créer une grille spécifique à un sous-type
+            </summary>
+            <div style={{ 
+              marginTop: '0.5rem', 
+              padding: '1rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '4px',
+              backgroundColor: '#fefce8'
+            }}>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                ⚠️ Par défaut, une grille s'applique à TOUS les sous-types d'un groupe.
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                Si vous voulez créer une grille qui ne s'applique qu'à un sous-type spécifique 
+                (ex: uniquement pour Maisons mobiles), ajoutez un suffixe clair au nom.
+              </p>
+              <div className="form-field">
+                <label style={{ fontSize: '0.875rem' }}>Sous-type cible (optionnel)</label>
+                <input
+                  type="text"
+                  value={formData.sous_type_cible || ''}
+                  onChange={(e) => setFormData({ ...formData, sous_type_cible: e.target.value })}
+                  placeholder="Ex: maison_mobile, hotel, manufacture_legere"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '4px',
+                    fontSize: '0.875rem'
+                  }}
+                />
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                  Laissez vide pour une grille universelle (recommandé)
+                </p>
+              </div>
+            </div>
+          </details>
         </div>
 
         {/* Sections et questions */}
