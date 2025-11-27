@@ -17822,16 +17822,49 @@ const GrillesInspection = () => {
               <div className="template-actions">
                 <Button 
                   size="sm" 
-                  onClick={() => setViewingTemplate(template)}
+                  onClick={() => setViewingTemplate(grille)}
                 >
                   👀 Aperçu
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => setCreatingFromTemplate(template)}
+                  onClick={() => setEditingGrille(grille)}
                 >
-                  📝 Utiliser & Personnaliser
+                  📝 Modifier
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={async () => {
+                    if (!confirm('Dupliquer cette grille pour créer une variante?')) return;
+                    const nouveauNom = prompt('Nom de la nouvelle grille:', `${grille.nom} (Copie)`);
+                    if (!nouveauNom) return;
+                    
+                    try {
+                      await apiPost(tenantSlug, `/prevention/grilles-inspection/${grille.id}/dupliquer?nouveau_nom=${encodeURIComponent(nouveauNom)}`, {});
+                      toast({
+                        title: "Succès",
+                        description: "Grille dupliquée avec succès"
+                      });
+                      fetchGrilles();
+                    } catch (error) {
+                      toast({
+                        title: "Erreur",
+                        description: "Impossible de dupliquer la grille",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
+                  📋 Dupliquer
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  onClick={() => handleDeleteGrille(grille.id)}
+                >
+                  🗑️ Supprimer
                 </Button>
               </div>
             </div>
@@ -17839,16 +17872,34 @@ const GrillesInspection = () => {
         </div>
       </div>
 
-      {/* Grilles personnalisées */}
-      <div className="custom-grilles-section">
-        <h3>🛠️ Grilles Personnalisées</h3>
-        
-        {grilles.length === 0 ? (
+      {/* Note informative */}
+      <div style={{
+        marginTop: '2rem',
+        padding: '1rem',
+        backgroundColor: '#f0f9ff',
+        border: '1px solid #bae6fd',
+        borderRadius: '8px'
+      }}>
+        <p style={{ fontSize: '0.875rem', color: '#0369a1' }}>
+          ℹ️ <strong>Astuce</strong>: Les grilles peuvent être dupliquées pour créer des variantes adaptées à vos besoins spécifiques.
+          Les sous-types permettent d'afficher des questions conditionnelles lors des inspections.
+        </p>
+      </div>
+
+      {/* Anciennes grilles personnalisées supprimées - maintenant toutes les grilles sont dans la même liste */}
+      <div style={{ display: 'none' }}>
+        {/* Section supprimée - grilles personnalisées fusionnées avec grilles principales */}
+        <div className="custom-grilles-section">
+          <h3>🛠️ Grilles Personnalisées</h3>
           <div className="empty-state">
-            <p>Aucune grille personnalisée créée</p>
-            <p><small>Utilisez les templates ci-dessus ou créez une grille from scratch</small></p>
+            <p>Section fusionnée avec grilles principales ci-dessus</p>
           </div>
-        ) : (
+        </div>
+      </div>
+
+      {/* Reste du code inchangé - ne pas modifier */}
+      <div style={{ display: 'none' }}>
+        {grilles.length > 0 && (
           <div className="custom-grilles-grid">
             {grilles.map(grille => (
               <div key={grille.id} className="grille-card">
@@ -17858,7 +17909,7 @@ const GrillesInspection = () => {
                 </div>
                 <div className="grille-info">
                   <p>Version: {grille.version}</p>
-                  <p>Sections: {grille.sections.length}</p>
+                  <p>Sections: {grille.sections?.length || 0}</p>
                   <p>Statut: {grille.actif ? '✅ Actif' : '❌ Inactif'}</p>
                 </div>
                 <div className="grille-actions">
