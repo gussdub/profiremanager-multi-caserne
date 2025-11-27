@@ -21408,36 +21408,6 @@ const Prevention = () => {
                 </div>
               </div>
             </div>
-            
-            {/* Section Import CSV */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '1.5rem',
-              marginTop: '2rem',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>📥 Import de Bâtiments</h3>
-                <Button
-                  onClick={() => setShowImportCSV(!showImportCSV)}
-                  variant={showImportCSV ? "default" : "outline"}
-                >
-                  {showImportCSV ? '❌ Fermer' : '📤 Importer CSV/Excel'}
-                </Button>
-              </div>
-              
-              {showImportCSV && (
-                <div style={{ marginTop: '1rem' }}>
-                  <ImportBatiments 
-                    onImportComplete={() => {
-                      setShowImportCSV(false);
-                      fetchBatiments();
-                    }}
-                  />
-                </div>
-              )}
-            </div>
           </div>
         );
       
@@ -21781,7 +21751,13 @@ const Prevention = () => {
         );
       
       case 'parametres':
-        return <ParametresPrevention tenantSlug={tenantSlug} currentUser={user} />;
+        return (
+          <ParametresPrevention 
+            tenantSlug={tenantSlug} 
+            currentUser={user}
+            onRefreshBatiments={fetchBatiments}
+          />
+        );
       
       default:
         return <div>Vue en développement...</div>;
