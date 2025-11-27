@@ -433,17 +433,17 @@ Vs 12-24 mois pour développement sur mesure
 
 ---
 
-### SLIDE 22 : ROADMAP 2025 🔮
+### SLIDE 22 : ROADMAP 2026 🔮
 **Visuel** : Timeline futur avec icônes  
 **Contenu** :  
-**🔮 Évolution Continue - Roadmap 2025**
+**🔮 Évolution Continue - Roadmap 2026**
 
-**Q1 2025**  
+**Q1 2026**  
 📲 Notifications push avancées  
 ✍️ Signature numérique tablette  
 🔄 Mode hors-ligne amélioré  
 
-**Q2-Q4 2025**  
+**Q2-Q4 2026**  
 🎓 Module qualifications avancé  
 🚒 Gestion équipements incendie (pompes, boyaux)  
 🏠 Portail propriétaire (suivi NC)  
@@ -522,7 +522,7 @@ Vs 12-24 mois pour développement sur mesure
 📞 1-XXX-XXX-XXXX  
 💬 Support : support@profiremanager.com  
 
-**🎁 OFFRE SPÉCIALE LANCEMENT 2024**  
+**🎁 OFFRE SPÉCIALE FIN 2025**  
 Pour les 10 premiers services :  
 - 20% rabais frais intégration  
 - 1er mois gratuit  
