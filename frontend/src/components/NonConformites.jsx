@@ -88,8 +88,17 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
 
   const marquerCorrige = async (nonConformite) => {
     try {
-      // Cette fonction devrait mettre à jour l'inspection dans la BD
-      // Pour l'instant, on met à jour localement
+      // Mettre à jour le statut dans le backend
+      await apiPut(
+        tenantSlug, 
+        `/prevention/non-conformites/${nonConformite.id}/statut`,
+        {
+          statut: 'corrigee',
+          notes_correction: `Marquée comme corrigée via l'interface le ${new Date().toLocaleDateString('fr-FR')}`
+        }
+      );
+      
+      // Mettre à jour localement
       const updated = nonConformites.map(nc => 
         nc.id === nonConformite.id 
           ? { ...nc, statut: 'corrige' }
