@@ -30,6 +30,7 @@ const ParametresPrevention = lazy(() => import("./components/ParametresPreventio
 const PlanificationView = lazy(() => import("./components/PlanificationView"));
 const CartePlanification = lazy(() => import("./components/CartePlanification"));
 const NonConformites = lazy(() => import("./components/NonConformites"));
+const InspectionTerrain = lazy(() => import("./components/InspectionTerrain"));
 
 // Composant de chargement
 const LoadingComponent = () => (
