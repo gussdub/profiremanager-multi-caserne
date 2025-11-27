@@ -22864,8 +22864,41 @@ const AppLayout = () => {
 
   return (
     <div className="app-layout">
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} tenant={tenant} />
+      <Sidebar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage} 
+        tenant={tenant}
+        personnalisation={personnalisation}
+      />
       <main className="main-content">
+        <div className="main-header" style={{
+          padding: '1rem 2rem',
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {personnalisation.logo_url && (
+              <img 
+                src={personnalisation.logo_url} 
+                alt="Logo du service" 
+                style={{ height: '50px', maxWidth: '200px', objectFit: 'contain' }}
+              />
+            )}
+            <div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
+                {personnalisation.nom_service || tenant?.nom || 'ProFireManager'}
+              </h1>
+            </div>
+          </div>
+          {personnalisation.afficher_profiremanager && (
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500', opacity: 0.8 }}>
+              Powered by <span style={{ fontWeight: '600', color: '#ef4444' }}>ProFireManager</span>
+            </div>
+          )}
+        </div>
         {renderCurrentPage()}
       </main>
     </div>
