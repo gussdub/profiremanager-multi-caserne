@@ -49,3 +49,7 @@ Thumbs.db
 
 # Test results (optionnel - à commenter si on veut les garder)
 # test_result.md
+-e 
+# Environment files
+*.env
+*.env.*
