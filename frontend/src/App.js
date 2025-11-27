@@ -634,8 +634,33 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [personnalisation, setPersonnalisation] = useState(null);
   const { login } = useAuth();
   const { toast } = useToast();
+  const { tenantSlug } = useTenant();
+
+  // Charger la personnalisation du tenant (sans authentification)
+  useEffect(() => {
+    const loadPersonnalisation = async () => {
+      try {
+        // Récupérer les infos publiques du tenant
+        const response = await axios.get(`${API}/${tenantSlug}/public/branding`);
+        setPersonnalisation(response.data);
+      } catch (error) {
+        console.error('Erreur chargement branding:', error);
+        // En cas d'erreur, utiliser les valeurs par défaut
+        setPersonnalisation({
+          logo_url: '',
+          nom_service: '',
+          afficher_profiremanager: true
+        });
+      }
+    };
+
+    if (tenantSlug) {
+      loadPersonnalisation();
+    }
+  }, [tenantSlug]);
 
   if (showForgotPassword) {
     return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
