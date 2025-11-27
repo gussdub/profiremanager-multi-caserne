@@ -22843,6 +22843,12 @@ const AppLayout = () => {
             <Parametres user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
+      case 'personnalisation':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <Personnalisation tenantSlug={tenantSlug} toast={useToast().toast} />
+          </Suspense>
+        );
       case 'mesepi':
         return (
           <Suspense fallback={<LoadingComponent />}>
