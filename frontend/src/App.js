@@ -21901,7 +21901,7 @@ const Prevention = () => {
     return grille || grilles.find(g => g.nom.toLowerCase().includes('générique')) || grilles[0];
   };
 
-  // Créer inspection directement et ouvrir la fiche
+  // Ouvrir le nouveau composant InspectionTerrain pour réaliser l'inspection
   const handleInspectBatiment = async (batiment) => {
     try {
       setLoading(true);
@@ -21918,38 +21918,27 @@ const Prevention = () => {
         return;
       }
 
-      // Créer l'inspection automatiquement
-      const inspectionData = {
-        batiment_id: batiment.id,
-        grille_inspection_id: grille.id,
-        date_inspection: new Date().toISOString().split('T')[0],
-        type_inspection: 'reguliere',
+      // Stocker les données dans localStorage pour InspectionTerrain
+      localStorage.setItem('inspection_terrain_data', JSON.stringify({
+        grille: grille,
+        batiment: batiment,
         inspecteur_id: user.id,
-        // Pré-remplir les infos du bâtiment
-        adresse: `${batiment.adresse_civique}, ${batiment.ville}`,
-        contact_nom: batiment.proprietaire_nom || batiment.gerant_nom || '',
-        contact_telephone: batiment.proprietaire_telephone || batiment.gerant_telephone || '',
-        contact_courriel: batiment.proprietaire_courriel || batiment.gerant_courriel || ''
-      };
+        date_inspection: new Date().toISOString().split('T')[0]
+      }));
 
-      const newInspection = await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+      // Naviguer vers la vue inspection-terrain
+      setCurrentView('inspection-terrain');
 
-      // Afficher un toast de succès
       toast({
-        title: "Inspection créée",
-        description: `Inspection pour ${batiment.nom_etablissement || batiment.adresse_civique} créée avec succès`
+        title: "Inspection démarrée",
+        description: `Inspection pour ${batiment.nom_etablissement || batiment.adresse_civique}`
       });
 
-      // Rediriger vers la liste des inspections ou rester sur le dashboard
-      setCurrentView('inspections');
-      // Recharger les données
-      loadInspections();
-
     } catch (error) {
-      console.error('Erreur création inspection:', error);
+      console.error('Erreur démarrage inspection:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de créer l'inspection",
+        description: "Impossible de démarrer l'inspection",
         variant: "destructive"
       });
     } finally {
