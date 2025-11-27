@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPut, getTenantToken } from '../utils/api';
+import { apiGet, apiPut } from '../utils/api';
 
 const ParametresPrevention = ({ tenantSlug, currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [parametres, setParametres] = useState({
     recurrence_inspections: 1, // années
     nombre_visites_requises: 1,
@@ -60,41 +59,6 @@ const ParametresPrevention = ({ tenantSlug, currentUser }) => {
       ...prev,
       [field]: value
     }));
-  };
-
-  const handleExport = async (type) => {
-    try {
-      setExporting(true);
-      
-      const token = getTenantToken();
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=${type}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (!response.ok) throw new Error('Erreur export');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${type}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      alert('✅ Export réussi!');
-    } catch (error) {
-      console.error('Erreur export:', error);
-      alert('❌ Erreur lors de l\'export');
-    } finally {
-      setExporting(false);
-    }
   };
 
   if (loading) {
