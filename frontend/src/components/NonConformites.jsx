@@ -406,6 +406,280 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
           })}
         </div>
       )}
+
+      {/* Modal Création NC */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600' }}>
+                ➕ Créer une Non-Conformité
+              </h3>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewNC({
+                    titre: '',
+                    description: '',
+                    categorie: '',
+                    priorite: 'moyenne',
+                    batiment_id: '',
+                    date_identification: new Date().toISOString().split('T')[0]
+                  });
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Bâtiment */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Bâtiment *
+                </label>
+                <select
+                  value={newNC.batiment_id}
+                  onChange={(e) => setNewNC({...newNC, batiment_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="">Sélectionner un bâtiment...</option>
+                  {batiments.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nom_etablissement || b.adresse_civique} - {b.ville}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Titre */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Titre *
+                </label>
+                <input
+                  type="text"
+                  value={newNC.titre}
+                  onChange={(e) => setNewNC({...newNC, titre: e.target.value})}
+                  placeholder="Ex: Extincteur manquant"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Description *
+                </label>
+                <textarea
+                  value={newNC.description}
+                  onChange={(e) => setNewNC({...newNC, description: e.target.value})}
+                  placeholder="Détails de la non-conformité..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* Catégorie */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Catégorie *
+                </label>
+                <select
+                  value={newNC.categorie}
+                  onChange={(e) => setNewNC({...newNC, categorie: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="">Sélectionner...</option>
+                  <option value="Extérieur et Accès">Extérieur et Accès</option>
+                  <option value="Moyens d'Évacuation">Moyens d'Évacuation</option>
+                  <option value="Protection Incendie">Protection Incendie</option>
+                  <option value="Électricité">Électricité</option>
+                  <option value="Chauffage et Ventilation">Chauffage et Ventilation</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+
+              {/* Priorité */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Priorité *
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {['haute', 'moyenne', 'faible'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setNewNC({...newNC, priorite: p})}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: `2px solid ${newNC.priorite === p ? (p === 'haute' ? '#ef4444' : p === 'moyenne' ? '#f59e0b' : '#3b82f6') : '#d1d5db'}`,
+                        backgroundColor: newNC.priorite === p ? (p === 'haute' ? '#fef2f2' : p === 'moyenne' ? '#fffbeb' : '#eff6ff') : 'white',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: newNC.priorite === p ? '600' : '400',
+                        color: newNC.priorite === p ? (p === 'haute' ? '#dc2626' : p === 'moyenne' ? '#d97706' : '#2563eb') : '#6b7280'
+                      }}
+                    >
+                      {p === 'haute' ? '🔴 Haute' : p === 'moyenne' ? '🟡 Moyenne' : '🔵 Faible'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                  Date d'identification
+                </label>
+                <input
+                  type="date"
+                  value={newNC.date_identification}
+                  onChange={(e) => setNewNC({...newNC, date_identification: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              {/* Boutons */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                <Button
+                  onClick={async () => {
+                    // Validation
+                    if (!newNC.batiment_id || !newNC.titre || !newNC.description || !newNC.categorie) {
+                      toast({
+                        title: "Erreur",
+                        description: "Veuillez remplir tous les champs obligatoires",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    try {
+                      setCreatingNC(true);
+                      
+                      const ncData = {
+                        batiment_id: newNC.batiment_id,
+                        titre: newNC.titre,
+                        description: newNC.description,
+                        categorie: newNC.categorie,
+                        priorite: newNC.priorite,
+                        statut: 'ouverte',
+                        date_identification: newNC.date_identification
+                      };
+
+                      await apiPost(tenantSlug, '/prevention/non-conformites', ncData);
+                      
+                      toast({
+                        title: "Succès",
+                        description: "Non-conformité créée avec succès"
+                      });
+
+                      setShowCreateModal(false);
+                      setNewNC({
+                        titre: '',
+                        description: '',
+                        categorie: '',
+                        priorite: 'moyenne',
+                        batiment_id: '',
+                        date_identification: new Date().toISOString().split('T')[0]
+                      });
+                      loadData();
+                    } catch (error) {
+                      console.error('Erreur création NC:', error);
+                      toast({
+                        title: "Erreur",
+                        description: "Impossible de créer la non-conformité",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setCreatingNC(false);
+                    }
+                  }}
+                  disabled={creatingNC}
+                  style={{ flex: 1 }}
+                >
+                  {creatingNC ? '⏳ Création...' : '✅ Créer'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setNewNC({
+                      titre: '',
+                      description: '',
+                      categorie: '',
+                      priorite: 'moyenne',
+                      batiment_id: '',
+                      date_identification: new Date().toISOString().split('T')[0]
+                    });
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
