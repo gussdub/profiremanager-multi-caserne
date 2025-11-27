@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPatch } from '../utils/api';
+import { apiGet, apiPatch, getTenantToken } from '../utils/api';
 
 const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [nonConformites, setNonConformites] = useState([]);
@@ -8,6 +8,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [loading, setLoading] = useState(true);
   const [filtreStatut, setFiltreStatut] = useState('tous'); // tous, a_corriger, corrige
   const [filtrePriorite, setFiltrePriorite] = useState('tous'); // tous, haute, moyenne, faible
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -98,6 +99,48 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
         description: "Impossible de mettre à jour le statut",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      
+      const token = getTenantToken();
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=non_conformites`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur export');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `non_conformites_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export réussi",
+        description: "Le fichier Excel a été téléchargé"
+      });
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter les données",
+        variant: "destructive"
+      });
+    } finally {
+      setExporting(false);
     }
   };
 
