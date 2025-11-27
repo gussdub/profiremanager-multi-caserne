@@ -465,9 +465,9 @@
 - **Slides 5-13** : Solution + Fonctionnalités (15 min)
 - **Slide 14** : Workflow complet (3 min)
 - **Slides 15-17** : ROI + Comparaison (5 min)
-- **Slides 18-22** : Confiance + Roadmap (5 min)
+- **Slides 18-23** : Confiance + Tarification + Roadmap (5 min)
 - **DÉMO LIVE** : Application réelle (10 min) ⭐
-- **Slides 23-25** : Closing + Questions (7 min)
+- **Slides 24-26** : Closing + Questions (7 min)
 
 ---
 
