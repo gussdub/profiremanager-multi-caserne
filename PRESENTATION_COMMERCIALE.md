@@ -572,7 +572,7 @@ Installation, configuration et formation complètes :
 
 ## 🔮 ROADMAP - Évolution Continue
 
-### Déjà Disponible (2024)
+### Déjà Disponible (Novembre 2025)
 
 ✅ Planning avec auto-attribution intelligente  
 ✅ Gestion personnel et formations NFPA  
@@ -583,27 +583,27 @@ Installation, configuration et formation complètes :
 ✅ Rapports PDF/Excel automatiques  
 ✅ Tableaux de bord en temps réel  
 
-### Q1 2025 (Janvier-Mars)
+### Q1 2026 (Janvier-Mars)
 
 📲 **Notifications push avancées** : alertes granulaires personnalisables  
 ✍️ **Signature numérique tablette** : validation inspections, rapports, PI  
 🔄 **Mode hors-ligne amélioré** : sync différée pour zones sans réseau  
 📊 **Statistiques avancées** : analytics prédictifs, tendances  
 
-### Q2-Q3 2025 (Avril-Septembre)
+### Q2-Q3 2026 (Avril-Septembre)
 
 🎓 **Module Qualifications Avancé** : certifications, brevets, spécialisations  
 🚒 **Gestion Équipements Incendie** : pompes, boyaux, échelles, outils  
 📦 **Inventaire Avancé** : codes-barres, RFID, géolocalisation  
 🏠 **Portail Propriétaire** : suivi NC, confirmation corrections, communication  
 
-### Q4 2025 (Octobre-Décembre)
+### Q4 2026 (Octobre-Décembre)
 
 🤖 **Intelligence Artificielle** : prédictions remplacements, optimisation planning, détection anomalies  
 📈 **Analytics Prédictifs** : anticiper formations à échéance, identifier risques NC récurrentes  
 🔗 **Intégrations Tierces** : systèmes paie municipaux, GIS, CAD 911  
 
-### 2026 et Au-Delà
+### 2027 et Au-Delà
 
 🌐 **Plateforme Multi-Services** : collaboration inter-services pour entraide  
 📱 **App Mobile Native** : iOS et Android avec fonctionnalités offline complètes  
