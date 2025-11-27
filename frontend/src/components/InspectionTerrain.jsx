@@ -109,23 +109,48 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
 
   const handleSubmit = async () => {
     try {
+      // Calculer le score de conformité
+      const totalQuestions = grille.sections.reduce((acc, s) => acc + s.questions.length, 0);
+      const reponsesConformes = Object.values(reponses).filter(r => r === 'Conforme').length;
+      const scoreConformite = totalQuestions > 0 ? Math.round((reponsesConformes / totalQuestions) * 100) : 0;
+      
+      // Déterminer le statut global
+      const statutGlobal = scoreConformite >= 80 ? 'conforme' : 
+                          scoreConformite >= 50 ? 'partiellement_conforme' : 
+                          'non_conforme';
+
+      // Préparer les photos par question (juste les IDs)
+      const photosParQuestion = {};
+      Object.keys(photos).forEach(questionId => {
+        photosParQuestion[questionId] = photos[questionId].map(p => ({
+          photo_id: p.photo_id,
+          url: p.url,
+          name: p.name
+        }));
+      });
+
       // Préparer les données d'inspection
       const inspectionData = {
         batiment_id: batiment.id,
-        grille_id: grille.id,
+        grille_inspection_id: grille.id,
         grille_nom: grille.nom,
-        date_inspection: new Date().toISOString(),
-        reponses: reponses,
-        photos: photos,
-        statut: 'terminee'
+        date_inspection: new Date().toISOString().split('T')[0],
+        heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+        heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+        resultats: reponses,
+        photos: photosParQuestion,
+        score_conformite: scoreConformite,
+        statut_global: statutGlobal,
+        statut: 'terminee',
+        notes_inspection: '',
+        recommandations: ''
       };
 
-      // TODO: Upload photos et créer l'inspection
       await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
 
       toast({
-        title: "Inspection terminée",
-        description: "Les données ont été enregistrées avec succès"
+        title: "✅ Inspection terminée",
+        description: `Score de conformité: ${scoreConformite}% - Statut: ${statutGlobal}`
       });
 
       onComplete();
