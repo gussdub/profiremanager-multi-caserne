@@ -17867,32 +17867,392 @@ const GrillesInspection = () => {
     </div>
   );
 
-  async function createGrilleFromTemplate(template) {
-    try {
-      const grilleData = {
-        nom: template.nom,
-        groupe_occupation: template.groupe,
-        sections: template.sections,
-        actif: true,
-        version: "1.0"
-      };
+};
 
-      await apiPost(tenantSlug, '/prevention/grilles-inspection', grilleData);
+// Modal de prévisualisation du template
+const TemplatePreviewModal = ({ template, onClose, onUse }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '2rem'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        maxWidth: '900px',
+        maxHeight: '80vh',
+        width: '100%',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              📋 Grille Template - Groupe {template.groupe}
+            </h2>
+            <p style={{ color: '#6b7280' }}>{template.nom}</p>
+            <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>{template.description}</p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '0.5rem',
+              border: 'none',
+              background: 'none',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              color: '#6b7280'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '1.5rem'
+        }}>
+          <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+            <strong>📊 Statistiques:</strong>
+            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem' }}>
+              <span>🗂️ {template.sections.length} sections</span>
+              <span>❓ {template.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions</span>
+            </div>
+          </div>
+
+          {template.sections.map((section, idx) => (
+            <div key={idx} style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px'
+            }}>
+              <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                {section.titre}
+              </h4>
+              {section.description && (
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem', fontStyle: 'italic' }}>
+                  {section.description}
+                </p>
+              )}
+              
+              <div style={{ paddingLeft: '1rem' }}>
+                {section.questions.map((q, qIdx) => (
+                  <div key={qIdx} style={{
+                    padding: '0.5rem 0',
+                    borderBottom: qIdx < section.questions.length - 1 ? '1px solid #f3f4f6' : 'none'
+                  }}>
+                    <span style={{ fontSize: '0.875rem' }}>
+                      {qIdx + 1}. {q.question}
+                    </span>
+                    <span style={{
+                      marginLeft: '0.5rem',
+                      fontSize: '0.75rem',
+                      color: '#9ca3af',
+                      fontStyle: 'italic'
+                    }}>
+                      ({q.type})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '0.5rem'
+        }}>
+          <Button variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
+          <Button onClick={() => onUse(template)}>
+            📝 Utiliser & Personnaliser
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Éditeur de grille depuis template (avec questions pré-remplies)
+const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: `${template.nom} (Personnalisée)`,
+    groupe_occupation: template.groupe,
+    sections: JSON.parse(JSON.stringify(template.sections)), // Deep copy
+    actif: true,
+    version: "1.0"
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!formData.nom) {
+      toast({
+        title: "Validation",
+        description: "Le nom de la grille est requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
       
       toast({
         title: "Succès",
-        description: `Grille "${template.nom}" créée avec succès`
+        description: "Grille créée avec succès"
       });
       
-      fetchGrilles();
+      onSave();
     } catch (error) {
+      console.error('Erreur sauvegarde:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de créer la grille",
+        description: "Impossible de sauvegarder la grille",
         variant: "destructive"
       });
+    } finally {
+      setSaving(false);
     }
-  }
+  };
+
+  const addSection = () => {
+    setFormData({
+      ...formData,
+      sections: [...formData.sections, { titre: '', description: '', questions: [] }]
+    });
+  };
+
+  const removeSection = (index) => {
+    const newSections = formData.sections.filter((_, i) => i !== index);
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const updateSection = (index, field, value) => {
+    const newSections = [...formData.sections];
+    newSections[index] = { ...newSections[index], [field]: value };
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const addQuestion = (sectionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = [
+      ...(newSections[sectionIndex].questions || []),
+      { question: '', type: 'choix', options: ['Conforme', 'Non-conforme', 'S.O.'] }
+    ];
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const removeQuestion = (sectionIndex, questionIndex) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions = newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex);
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  const updateQuestion = (sectionIndex, questionIndex, field, value) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].questions[questionIndex] = {
+      ...newSections[sectionIndex].questions[questionIndex],
+      [field]: value
+    };
+    setFormData({ ...formData, sections: newSections });
+  };
+
+  return (
+    <div className="editer-grille-container">
+      <div className="page-header">
+        <h2>✏️ Personnaliser: {template.nom}</h2>
+        <div className="header-actions">
+          <Button variant="outline" onClick={onClose}>
+            ✕ Annuler
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grille-form">
+        {/* Informations générales */}
+        <div className="form-section">
+          <h3>Informations Générales</h3>
+          <div className="form-grid">
+            <div className="form-field">
+              <label>Nom de la grille *</label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                className="form-input"
+                placeholder="Ex: Grille Résidentielle Personnalisée"
+              />
+            </div>
+            <div className="form-field">
+              <label>Groupe d'occupation</label>
+              <select
+                value={formData.groupe_occupation}
+                onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
+                className="form-select"
+              >
+                <option value="">-- Sélectionner --</option>
+                <option value="A">A - Établissements de réunion</option>
+                <option value="B">B - Soins ou détention</option>
+                <option value="C">C - Résidentiel</option>
+                <option value="D">D - Affaires et services personnels</option>
+                <option value="E">E - Commercial</option>
+                <option value="F">F - Industriel</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections et questions */}
+        <div className="form-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Sections et Questions</h3>
+            <Button size="sm" onClick={addSection}>
+              ➕ Ajouter une section
+            </Button>
+          </div>
+
+          {formData.sections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="section-editor" style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1rem',
+              backgroundColor: '#f9fafb'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <h4>Section {sectionIndex + 1}</h4>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => removeSection(sectionIndex)}
+                >
+                  🗑️ Supprimer section
+                </Button>
+              </div>
+
+              <div className="form-field">
+                <label>Titre de la section *</label>
+                <input
+                  type="text"
+                  value={section.titre}
+                  onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
+                  className="form-input"
+                  placeholder="Ex: Voies d'évacuation"
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Description</label>
+                <textarea
+                  value={section.description || ''}
+                  onChange={(e) => updateSection(sectionIndex, 'description', e.target.value)}
+                  className="form-textarea"
+                  placeholder="Description optionnelle de la section"
+                  rows={2}
+                />
+              </div>
+
+              {/* Questions */}
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <strong>Questions:</strong>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => addQuestion(sectionIndex)}
+                  >
+                    ➕ Ajouter question
+                  </Button>
+                </div>
+
+                {section.questions && section.questions.map((question, qIndex) => (
+                  <div key={qIndex} style={{
+                    backgroundColor: 'white',
+                    padding: '1rem',
+                    borderRadius: '6px',
+                    marginBottom: '0.5rem',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <input
+                        type="text"
+                        value={question.question}
+                        onChange={(e) => updateQuestion(sectionIndex, qIndex, 'question', e.target.value)}
+                        placeholder="Texte de la question"
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '4px'
+                        }}
+                      />
+                      <select
+                        value={question.type}
+                        onChange={(e) => updateQuestion(sectionIndex, qIndex, 'type', e.target.value)}
+                        style={{
+                          padding: '0.5rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        <option value="choix">Choix multiple</option>
+                        <option value="texte">Texte libre</option>
+                        <option value="photos">Photos</option>
+                      </select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => removeQuestion(sectionIndex, qIndex)}
+                      >
+                        🗑️
+                      </Button>
+                    </div>
+                    {question.type === 'photos' && (
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic' }}>
+                        📸 L'inspecteur pourra prendre des photos lors du remplissage
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const CreateGrilleInspection = ({ onSave, onViewTemplates }) => {
