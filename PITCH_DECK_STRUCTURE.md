@@ -1,493 +1,643 @@
 # ProFireManager - Structure Pitch Deck
-*Guide pour création de présentation PowerPoint/Keynote*
-
-## 📊 STRUCTURE RECOMMANDÉE (20-25 slides)
+*Présentation PowerPoint 45 minutes - Plateforme Complète*
 
 ---
 
-### SLIDE 1 : PAGE TITRE
-**Visuel** : Logo ProFireManager + Image pompier avec tablette  
-**Texte** :
-- **ProFireManager**
-- La Plateforme Tout-en-Un pour la Prévention Incendie
-- [Votre nom]
-- [Date de présentation]
+## 🎯 OBJECTIF DE LA PRÉSENTATION
 
-**Note présentateur** : Accueil chaleureux, présentation de vous-même en 30 secondes.
+Convaincre les directeurs et chefs de services d'incendie d'adopter ProFireManager en démontrant:
+- Les problèmes réels qu'ils vivent quotidiennement
+- Comment ProFireManager résout TOUS ces problèmes (pas juste la prévention)
+- Le ROI concret et rapide
+- La facilité d'adoption
+
+**Cible**: Chefs, directeurs, directeurs adjoints responsables des décisions d'investissement
+
+---
+
+## 📊 STRUCTURE DES SLIDES (26 slides + démo)
+
+### SLIDE 1 : PAGE TITRE
+**Visuel** : Logo ProFireManager + image pompiers en action  
+**Contenu** :  
+**ProFireManager**  
+*La Plateforme Tout-en-Un pour la Gestion des Services d'Incendie*
+
+De la gestion du personnel aux inspections terrain - Une seule plateforme
+
+**Note présentateur** : "Bonjour, je suis [Nom]. Aujourd'hui, je vais vous montrer comment ProFireManager peut vous faire économiser 60-70% de votre temps administratif."
 
 ---
 
 ### SLIDE 2 : QUI SOMMES-NOUS ?
-**Visuel** : Photo d'équipe ou logo + icônes  
-**Contenu** :
-- 🎯 **Spécialisés à 100%** dans la prévention incendie
-- 🇨🇦 **Québécois** - Conçu pour la réalité d'ici
-- 👨‍🚒 **Par des pompiers, pour des pompiers**
-- ⚡ **Innovation** au service de votre efficacité
+**Visuel** : Photo équipe + carte Québec  
+**Contenu** :  
+**🇨🇦 100% Québécois, 100% Services d'Incendie**
 
-**Note présentateur** : "Nous ne sommes pas un logiciel générique. Nous vivons et respirons la prévention incendie."
+- 🎯 Spécialisés exclusivement pour les services d'incendie
+- 📍 Équipe basée au Québec, support en français
+- 🏆 Conçu PAR des gens qui comprennent la réalité pompiers
+- 💡 Mission : Libérer les pompiers de l'administration pour qu'ils se concentrent sur leur vraie mission
 
----
-
-### SLIDE 3 : LE DÉFI (Problèmes Actuels)
-**Visuel** : Images symboliques - classeurs débordants, paperasse, frustration  
-**Contenu** :
-**Votre Réalité Aujourd'hui :**
-- 📄 Paperasse excessive (formulaires perdus, double saisie)
-- ⏰ 10h/semaine perdues en administration
-- 📊 Gestion fragmentée (Excel + Word + Photos éparpillées)
-- ⚠️ Non-conformités oubliées ou mal suivies
-- 📉 Aucune vue d'ensemble en temps réel
-
-**Note présentateur** : "Est-ce que ça vous parle ? Combien d'heures par semaine votre équipe passe-t-elle à faire de la paperasse ?"
+**Note présentateur** : "Nous ne sommes pas un logiciel générique adapté. Nous avons construit ProFireManager exclusivement pour vous."
 
 ---
 
-### SLIDE 4 : L'IMPACT DU PROBLÈME
-**Visuel** : Graphique montrant temps perdu  
-**Contenu** :
-**Conséquences Concrètes :**
-- 💰 **364 heures/an** perdues en admin (= 9 semaines de travail!)
-- 😓 **Démotivation** de l'équipe (ils veulent être sur le terrain)
-- ⚖️ **Risques légaux** (oublis, manque de suivi)
-- 📉 **Moins d'inspections** réalisées
-- 💸 **Budgets difficiles à justifier** (pas de données)
+### SLIDE 3 : LA RÉALITÉ DES CHEFS 😓
+**Visuel** : Photos stressantes - piles de papier, Excel complexe, téléphones  
+**Contenu** :  
+**Votre Quotidien Ressemble à Ça ?**
 
-**Note présentateur** : "Imaginez récupérer 9 semaines de travail par an. Qu'est-ce que vous pourriez faire avec ce temps ?"
+⏰ **20-30 heures/semaine** en administration  
+📋 **Planning casse-tête** : horaires 7/24, temps partiel, remplaçants introuvables  
+📚 **Formations NFPA** : échéances à surveiller, rapports d'accréditation  
+🛡️ **EPI non conformes** : inspections manuelles, traçabilité impossible  
+📄 **Paperasse infinie** : rapports, exports paie, feuilles de temps  
+💰 **Budget serré** : chaque heure admin = heure perdue pour la mission  
 
----
-
-### SLIDE 5 : LA SOLUTION (Vue d'ensemble)
-**Visuel** : Screenshot dashboard de l'app + logo  
-**Contenu** :
-**ProFireManager : Une Plateforme Unique**
-
-☁️ **Cloud** - Accessible partout  
-📱 **Mobile-First** - Conçu pour le terrain  
-🎤 **Vocal** - Reconnaissance bilingue  
-📸 **Photos** - Intégration complète  
-📊 **Analytique** - Données en temps réel  
-✅ **Conforme** - Code sécurité QC
-
-**Note présentateur** : "Une seule plateforme qui vous suit du bureau au terrain. Regardons comment."
+**Note présentateur** : "Levez la main si vous passez plus de 10h/semaine sur l'administration... (pause) On vous comprend."
 
 ---
 
-### SLIDE 6 : FONCTIONNALITÉ 1 - Planification Intelligente
-**Visuel** : Screenshot du calendrier + carte interactive  
-**Contenu** :
-**📅 Planification Visuelle**
-- Calendrier glisser-déposer
-- Carte interactive des bâtiments
-- Assignation automatique par secteurs
-- Alertes inspections dues
+### SLIDE 4 : LE COÛT RÉEL DE L'INEFFICACITÉ 💰
+**Visuel** : Graphique montrant coûts cachés  
+**Contenu** :  
+**Pour un service de 30 pompiers** :
 
-**Gain** : ⏱️ **50% de temps économisé** en planification
+⏰ **1 300 heures/an** en tâches administratives  
+💰 À 40$/h = **52 000$/an** en coûts de main-d'œuvre  
+📉 **Temps perdu** qui pourrait être en prévention, formation, communauté  
+🚨 **Risques** : erreurs planning, formations manquées, EPI non conformes  
 
-**Note présentateur** : "Ce qui prenait 2 heures prend maintenant 20 minutes. Voyons la carte..." [DÉMO LIVE si possible]
+**Sans compter** : stress, moral, erreurs, image professionnelle
 
----
-
-### SLIDE 7 : FONCTIONNALITÉ 2 - Gestion Bâtiments
-**Visuel** : Screenshot fiche bâtiment  
-**Contenu** :
-**🏢 Base de Données Complète**
-- Fiche détaillée par bâtiment
-- Classification automatique (A-F, AGRICOLE)
-- Historique complet accessible
-- Import/Export massif CSV/Excel
-
-**Gain** : ⏱️ **Info retrouvée en 10 secondes** (vs 15 min dans classeurs)
-
-**Note présentateur** : "Toute l'information à portée de main. Plus besoin de fouiller dans les classeurs."
+**Note présentateur** : "Imaginez récupérer 70% de ce temps. C'est 910 heures par an. Qu'est-ce que vous feriez avec ça?"
 
 ---
 
-### SLIDE 8 : FONCTIONNALITÉ 3 - Grilles Adaptatives
-**Visuel** : Screenshot grille d'inspection + icônes types de bâtiments  
-**Contenu** :
-**📋 Grilles Conformes et Intelligentes**
-- 7 grilles basées Code sécurité QC
-- 180+ questions expertisées
-- Questions conditionnelles selon sous-type
-- 100% personnalisables
+### SLIDE 5 : LA SOLUTION - ProFireManager ✨
+**Visuel** : Dashboard ProFireManager sur écran + tablette + téléphone  
+**Contenu** :  
+**Une Plateforme. Tous Vos Besoins.**
 
-**Types** : Résidentiel • Commercial • Industriel • Institutionnel • Agricole
+✅ Planning & Horaires 7/24  
+✅ Gestion Personnel & Formations NFPA  
+✅ Remplacements Automatisés  
+✅ Gestion Actifs (Véhicules, Inventaires, EPI NFPA 1851)  
+✅ Tableaux de Bord Temps Réel  
+✅ Rapports Automatiques  
+🔥 **+ Module Prévention Optionnel** (Inspections mobile + vocal)
 
-**Gain** : ✅ **Conformité garantie** + **30% temps d'inspection**
+**100% Cloud • 100% Mobile • 100% Québec**
 
-**Note présentateur** : "Les questions s'adaptent automatiquement au type de bâtiment. Zéro question inutile."
-
----
-
-### SLIDE 9 : FONCTIONNALITÉ 4 - Inspection Terrain Mobile ⭐
-**Visuel** : Photo pompier avec tablette + screenshots interface mobile  
-**Contenu** :
-**📱 Conçu pour le Terrain**
-- Interface progressive section par section
-- 🎤 **Reconnaissance vocale FR/EN** (NOUVEAU!)
-- 📸 Photos illimitées avec caméra intégrée
-- ✅ Boutons tactiles géants (Conforme/Non-conforme)
-- 📶 Fonctionne hors-ligne
-
-**Gain** : ⚡ **Inspections 2x plus rapides** + **Zéro paperasse**
-
-**Note présentateur** : "Vos préventionnistes adorent cette interface. Plus besoin de retourner au bureau pour faire le rapport. Tout est fait sur place." [DÉMO LIVE]
+**Note présentateur** : "ProFireManager, c'est TOUT votre service dans une seule application moderne et intuitive."
 
 ---
 
-### SLIDE 10 : FOCUS - Reconnaissance Vocale 🎤
-**Visuel** : Icône micro + waveform audio + exemple de texte dicté  
-**Contenu** :
-**Innovation : Parlez, On Écrit**
-- 🇫🇷 Français canadien / 🇬🇧 Anglais
-- Conversion instantanée
-- Mains libres pendant l'inspection
-- Gain de temps majeur
+### SLIDE 6 : MODULE #1 - PLANNING 📅
+**Visuel** : Screenshot calendrier planning coloré  
+**Contenu** :  
+**📅 Planning Intelligent - Fini les Casse-Têtes**
 
-**Exemple** :  
-🗣️ "Extincteur étage 2 corridor ouest date expirée depuis 3 mois"  
-✍️ → Texte saisi automatiquement
+🤖 **Auto-attribution** : Remplissage automatique basé sur disponibilités et équité  
+🔄 **Récurrences** : Hebdo, bi-hebdo, mensuelle, personnalisée  
+⚡ **Détection conflits** : Double assignation, heures max, repos  
+🏙️ **Horaires spéciaux** : Montréal (7/24), Québec (10/14), personnalisés  
+📊 **Stats temps réel** : Heures par pompier, équité, coûts  
+📑 **Audit complet** : Qui modifie quoi, quand, pourquoi  
 
-**Note présentateur** : "Imaginez ne plus avoir à taper sur une tablette avec des gants. Vous parlez, l'app écrit."
+**Gain : 70% du temps de planification économisé** (15 min vs 1h)
 
----
-
-### SLIDE 11 : FONCTIONNALITÉ 5 - Gestion Non-Conformités
-**Visuel** : Screenshot tableau de bord NC + statistiques  
-**Contenu** :
-**⚠️ Suivi Rigoureux des NC**
-- Vue centralisée avec filtres
-- Priorisation automatique (Haute/Moyenne/Faible)
-- Statut : Ouverte → Corrigée → Fermée
-- Photos avant/après
-- Export Excel
-
-**Gain** : 🎯 **Zéro NC oubliée** + **Transparence totale**
-
-**Note présentateur** : "Aucune non-conformité ne passe entre les mailles du filet. Suivi complet du début à la fin."
+**Note présentateur** : "Plus de feuilles Excel. Le système calcule, optimise et détecte les erreurs pour vous."
 
 ---
 
-### SLIDE 12 : FONCTIONNALITÉ 6 - Gestion Préventionnistes
-**Visuel** : Screenshot assignation secteurs sur carte  
-**Contenu** :
-**👥 Assignation Équitable**
-- Secteurs géographiques dessinés sur carte
-- Attribution automatique des bâtiments
-- Statistiques de performance
-- Gestion des disponibilités
+### SLIDE 7 : MODULE #2 - PERSONNEL 👥
+**Visuel** : Screenshots profils employés  
+**Contenu** :  
+**👥 Gestion Personnel Complète**
 
-**Gain** : ⚖️ **Équité** dans la répartition + **Reconnaissance** de la performance
+👤 **Profils détaillés** : Coordonnées, contacts urgence, type emploi  
+🎖️ **Grades** : Chef, Capitaine, Lieutenant, Sergent, Pompier, Recrue  
+🎓 **Compétences NFPA** : Suivi automatique, échéances, renouvellements  
+📋 **Disponibilités** : Temps partiel avec préférences de jours  
+💰 **Taux horaires** : Interne/externe pour calcul paie  
+📊 **Stats individuelles** : Heures, formations, performances  
 
-**Note présentateur** : "Chaque préventionniste a son secteur clairement défini. Plus de débats sur qui fait quoi."
+**Gain : Info retrouvée en 5 sec vs 10-15 min dans classeurs**
 
----
-
-### SLIDE 13 : FONCTIONNALITÉ 7 - Rapports Automatiques
-**Visuel** : Exemple de rapport PDF généré  
-**Contenu** :
-**📊 Rapports Professionnels Instantanés**
-- PDF automatique après chaque inspection
-- Rapport complet de bâtiment
-- Statistiques mensuelles/annuelles
-- Impression directe ou envoi email
-
-**Gain** : ⚡ **Génération en 2 secondes** (vs 30 min manuellement)
-
-**Note présentateur** : "Le rapport est généré instantanément. Le propriétaire peut le recevoir par email avant même que votre préventionniste ne quitte le bâtiment."
+**Note présentateur** : "Toutes les infos RH centralisées. Fini de chercher dans 3 classeurs différents."
 
 ---
 
-### SLIDE 14 : WORKFLOW COMPLET (Cas d'usage)
-**Visuel** : Diagramme workflow avec étapes numérotées  
-**Contenu** :
-**🎬 De la Planification au Rapport**
+### SLIDE 8 : MODULE #3 - FORMATIONS 📚
+**Visuel** : Dashboard conformité formations + calendrier sessions  
+**Contenu** :  
+**📚 Formations NFPA - Conformité Garantie**
 
-1️⃣ **Planification** → Capitaine assigne sur carte  
-2️⃣ **Notification** → Préventionniste reçoit alerte  
-3️⃣ **Terrain** → Inspection avec tablette + vocal  
-4️⃣ **Photos** → Capture des NC directement  
-5️⃣ **Rapport** → Généré automatiquement  
-6️⃣ **Suivi NC** → Tableau de bord centralisé  
-7️⃣ **Correction** → Marquée en 1 clic
+📋 **Catalogue NFPA complet** : 1001, 1002, 1021, 1041, 1500, 1582, 1670, 1851...  
+🔔 **Notifications auto** : 60, 30, 15, 7 jours avant échéance  
+📅 **Planification sessions** : Dates, lieux, instructeurs, inscriptions  
+✅ **Gestion présences** : Validation temps réel, taux participation  
+📄 **Rapports accréditation** : PDF et Excel en 2 clics  
+📈 **Tableaux de bord** : % personnel qualifié par compétence  
 
-**Temps total** : 1h (vs 2h30 méthode traditionnelle)
+**Gain : 100% conformité + Zéro échéance manquée**
 
-**Note présentateur** : "Voici un cycle complet. Tout est fluide, rien ne se perd."
-
----
-
-### SLIDE 15 : ROI - Économies Mesurables 💰
-**Visuel** : Graphique barres montrant économies  
-**Contenu** :
-**Retour sur Investissement**
-
-| Poste | Économies Annuelles |
-|-------|---------------------|
-| Temps administratif (-70%) | 18 000$ |
-| Temps inspection (-40%) | 25 000$ |
-| Papier et impression (-100%) | 3 500$ |
-| Efficacité déplacements (+25%) | 5 000$ |
-| **TOTAL** | **51 500$/an** |
-
-**ROI** : ⏱️ **Moins de 6 mois**
-
-**Note présentateur** : "Ces chiffres sont conservateurs. Plusieurs clients dépassent ces économies."
+**Note présentateur** : "Votre prochain audit d'accréditation ? Rapport complet généré en 2 secondes."
 
 ---
 
-### SLIDE 16 : COMPARAISON CONCURRENTS
-**Visuel** : Tableau comparatif avec check marks  
-**Contenu** :
+### SLIDE 9 : MODULE #4 - REMPLACEMENTS 🔄
+**Visuel** : Notifications push sur téléphones  
+**Contenu** :  
+**🔄 Remplacements Automatisés - Fini les Appels**
 
-| Critère | ProFireManager | Agendrix | ICO | Radar |
-|---------|:--------------:|:--------:|:---:|:-----:|
-| Spécialisation prévention | ✅ | ❌ | ⚠️ | ⚠️ |
-| Interface moderne | ✅ | ✅ | ❌ | ❌ |
-| Mobile optimisé | ✅ | ⚠️ | ⚠️ | ⚠️ |
-| Reconnaissance vocale | ✅ | ❌ | ❌ | ❌ |
-| Grilles adaptatives | ✅ | ❌ | ❌ | ❌ |
-| Prix compétitif | ✅ | ✅ | ❌ | ❌ |
-| Support QC | ✅ | ✅ | ⚠️ | ⚠️ |
+🤖 **Algorithme intelligent** : Compétences, grade, disponibilités, équité  
+📲 **Notifications push** : Uniquement aux pompiers qualifiés  
+⚡ **2 modes** : Un par un (premier répond) ou Multiple (liste candidats)  
+✅ **Acceptation 1 clic** : Sur téléphone, instantané  
+📊 **Historique** : Qui contacté, qui refusé, pourquoi  
+⏱️ **Relances auto** : Si pas de réponse dans le délai  
 
-**Note présentateur** : "Nous ne sommes pas les seuls, mais nous sommes les seuls 100% dédiés à la prévention avec ces innovations."
+**Gain : 90% du temps économisé (5 min vs 1-2h d'appels)**
 
----
-
-### SLIDE 17 : DIFFÉRENCIATEURS CLÉS
-**Visuel** : Icônes + texte mis en avant  
-**Contenu** :
-**🏆 Ce Qui Nous Rend Uniques**
-
-🎯 **Hyper-spécialisé** - Uniquement prévention incendie  
-🇨🇦 **100% Québécois** - Code sécurité QC intégré  
-📱 **Vraiment mobile** - Pensé terrain d'abord  
-🎤 **Innovation** - Vocal, questions conditionnelles  
-⚡ **Rapidité** - Déploiement en 1 semaine  
-💡 **Évolutif** - Nouvelles fonctions chaque mois  
-🤝 **Partenaire** - Pas juste un fournisseur  
-
-**Note présentateur** : "Nous grandissons avec vous. Vos retours façonnent le produit."
+**Note présentateur** : "Imaginez : plus jamais 2 heures au téléphone pour trouver UN remplaçant à 23h le vendredi soir."
 
 ---
 
-### SLIDE 18 : SÉCURITÉ ET FIABILITÉ
-**Visuel** : Icônes cadenas, cloud, certificats  
-**Contenu** :
-**🔒 Vous Pouvez Nous Faire Confiance**
+### SLIDE 10 : MODULE #5 - GESTION ACTIFS 🚒
+**Visuel** : Photos véhicules + inventaires + EPI  
+**Contenu** :  
+**🚒 Actifs - Véhicules, Inventaires, EPI**
 
-✅ Hébergement **Canada** (conformité lois)  
-✅ Chiffrement **bout en bout**  
-✅ Sauvegardes **quotidiennes** automatiques  
-✅ Disponibilité **99,9%** garantie  
-✅ Conformité **Loi 25** (protection données)  
-✅ Support **illimité** inclus  
+**Véhicules** 🚒  
+- Flotte complète : Autopompes, Échelles, Ambulances  
+- Entretien, réparations, rappels automatiques  
 
-**Note présentateur** : "Vos données sont en sécurité et restent au Canada."
+**Inventaires** 📦  
+- Modèles personnalisables par véhicule  
+- Inspections régulières avec photos  
 
----
+**EPI NFPA 1851** 🛡️  
+- Attribution par pompier, inspections conformes  
+- Suivi entretien, défauts, remplacements  
 
-### SLIDE 19 : DÉPLOIEMENT RAPIDE
-**Visuel** : Timeline avec 7 jours  
-**Contenu** :
-**🚀 Opérationnel en 1 Semaine**
+**Gain : 100% conformité NFPA 1851 + Zéro EPI non inspecté**
 
-**Jour 1-2** : Configuration + Import données  
-**Jour 3-4** : Formation équipe (2h admin, 1h terrain)  
-**Jour 5** : Tests pilotes  
-**Jour 6-7** : Lancement + Support intensif  
-
-**vs Concurrents** : 3-6 mois de déploiement
-
-**Note présentateur** : "Pas de projet IT interminable. En une semaine, votre équipe est productive."
+**Note présentateur** : "La conformité NFPA 1851 n'est plus un casse-tête. Le système suit tout pour vous."
 
 ---
 
-### SLIDE 20 : TÉMOIGNAGES
-**Visuel** : Photos (si disponibles) + citations  
-**Contenu** :
-**💬 Ce Que Nos Clients Disent**
+### SLIDE 11 : TABLEAUX DE BORD 📊
+**Visuel** : Screenshots dashboards avec graphiques  
+**Contenu** :  
+**📊 Vue d'Ensemble Temps Réel**
 
-> "Notre équipe a gagné 10 heures par semaine. Le temps gagné permet plus d'inspections."  
-> — **Capitaine Jean Tremblay, Service incendie [Ville]**
+📈 **Métriques clés** : Personnel actif, formations du mois, véhicules opérationnels  
+🎓 **Conformité** : % qualifications, échéances proches  
+📅 **Planning** : Couverture gardes, équité assignation, coûts  
+🚒 **Actifs** : Inspections EPI dues, inventaires à jour  
 
-> "Mes préventionnistes n'ont plus à revenir au bureau. Tout est fait en temps réel."  
-> — **Directeur Marc Dubois, [Municipalité]**
+**Décisions éclairées** basées sur données en temps réel, pas sur intuition
 
-> "Le suivi des NC a transformé notre approche. Nous n'oublions plus rien."  
-> — **Chef Marie Gagnon, Prévention [Ville]**
-
-**Note présentateur** : "Ces chefs de service vivent les mêmes défis que vous. Ils ont sauté le pas et ne reviendraient pas en arrière."
+**Note présentateur** : "Tout votre service en un coup d'œil. Plus besoin de compiler 10 rapports Excel."
 
 ---
 
-### SLIDE 21 : STATISTIQUES D'ADOPTION
-**Visuel** : Graphiques circulaires ou barres avec %  
-**Contenu** :
-**📈 Impact Mesuré**
+### SLIDE 12 : RAPPORTS AUTOMATIQUES 📈
+**Visuel** : Exemples rapports PDF élégants  
+**Contenu** :  
+**📈 Rapports Professionnels - En 2 Secondes**
 
-- **95%** utilisent l'app quotidiennement
-- **88%** préfèrent tablette après 1 semaine
-- **92%** recommanderaient à un collègue
-- **70%** temps administratif économisé
-- **40%** inspections en plus par an
+📄 **PDF avec logo** : Mise en page soignée, personnalisée  
+📊 **Export Excel** : Analyses, import paie, archivage  
 
-**Note présentateur** : "L'adoption est clé. Ces chiffres montrent que ça fonctionne vraiment."
+**Rapports disponibles** :  
+- Planning hebdo/mensuel  
+- Formations suivies et échéances  
+- Présences formation avec signatures  
+- Inventaires par véhicule  
+- Inspections EPI par pompier  
+- Conformité NFPA pour accréditation  
+
+**Gain : 2 secondes vs 2-3 heures manuellement**
+
+**Note présentateur** : "Un rapport qui vous prenait une demi-journée ? Maintenant, 2 clics et c'est fait."
 
 ---
 
-### SLIDE 22 : TARIFICATION 💰
-**Visuel** : Tableau des 3 paliers avec prix  
-**Contenu** :
+### SLIDE 13 : MODULE PRÉVENTION (Optionnel) 🔥
+**Visuel** : Tablette avec inspection terrain + reconnaissance vocale  
+**Contenu** :  
+**🔥 Module Prévention - Le Plus Avancé au Québec**
+
+*Module optionnel : +3$/pompier/mois*
+
+📋 **Gestion bâtiments** + carte géographique  
+📅 **Planification inspections** par secteurs  
+🎯 **7 grilles adaptatives** (A-F + Agricole)  
+📱 **Inspection mobile** : Tablette optimisée  
+🎤 **RECONNAISSANCE VOCALE** : Dictez, transcription instantanée FR/EN  
+⚠️ **Gestion NC** : Suivi cycle complet  
+📄 **Rapports auto** : PDF en 2 sec
+
+**Gain : Inspections 2x plus rapides + Zéro paperasse**
+
+**Note présentateur** : "Si vous faites de la prévention, ce module va transformer votre quotidien. Reconnaissance vocale bilingue, c'est unique."
+
+---
+
+### SLIDE 14 : WORKFLOW COMPLET (Cas d'Usage)
+**Visuel** : Diagramme flux avec icônes  
+**Contenu** :  
+**Une Journée Typique avec ProFireManager**
+
+**Lundi AM** :  
+- Chef : Planning semaine auto-généré (15 min vs 2h)  
+- Notifications formations échéances envoyées automatiquement  
+
+**Mardi** :  
+- Pompier malade 6h AM  
+- Système trouve et notifie remplaçant qualifié (5 min vs 1h)  
+- Remplaçant accepte sur son téléphone  
+
+**Mercredi** :  
+- Préventionniste inspection terrain avec tablette  
+- Dicte observations en français, photos prises  
+- Rapport PDF généré instantanément  
+
+**Jeudi** :  
+- Inspection EPI mensuelle véhicule 2  
+- Checklist sur tablette, photos défauts  
+- Demande remplacement manteau soumise  
+
+**Vendredi** :  
+- Chef génère rapport accréditation NFPA (2 sec)  
+- Export paie mensuel (1 clic)  
+
+**Note présentateur** : "Voilà une semaine type. Notez le temps économisé à CHAQUE étape."
+
+---
+
+### SLIDE 15 : ROI - CHIFFRES CONCRETS 💰
+**Visuel** : Graphique ROI avec barres  
+**Contenu** :  
+**💰 ROI Mesuré - Service 30 Pompiers (avec Prévention)**
+
+**Investissement an 1** :  
+- Plateforme base : 4 320$/an  
+- Module Prévention : 1 080$/an  
+- Frais intégration : 1 500$ (une fois)  
+**TOTAL : 6 900$**
+
+**Économies an 1** :  
+- Temps administratif : 26 000$  
+- Recherche remplaçants : 3 500$  
+- Gestion EPI/inventaires : 1 500$  
+- Admin prévention : 18 700$  
+- Papier/impression : 2 400$  
+**TOTAL : 52 100$**
+
+**ROI NET : 45 200$ économisés année 1**  
+**Retour : Moins de 2 mois** 🎉
+
+**Note présentateur** : "Investissement récupéré en 2 mois. Ensuite, c'est du profit pur chaque année."
+
+---
+
+### SLIDE 16 : TARIFICATION TRANSPARENTE 💵
+**Visuel** : Tableau clair avec 3 paliers  
+**Contenu** :  
 **💵 Tarification Simple et Prévisible**
 
+**PLATEFORME COMPLÈTE (Sans Prévention)**
+
 | Taille Service | Prix/Pompier/Mois |
-|----------------|-------------------|
-| 0-30 pompiers | 12$ |
-| 31-50 pompiers | 20$ |
-| 51+ pompiers | 27$ |
+|----------------|-----------------|
+| 0-30 pompiers | **12$** |
+| 31-50 pompiers | **20$** |
+| 51+ pompiers | **27$** |
 
-**Frais d'intégration uniques** (Installation + Formation + Import données)
-- 0-30 pompiers: 1 500$
-- 31-50 pompiers: 2 500$
-- 51+ pompiers: 3 500$
+**MODULE PRÉVENTION (Optionnel)** : +3$/pompier/mois
 
-**Exemple**: Service de 30 pompiers = **360$/mois** (4 320$/an) + 1 500$ intégration
+**Exemple** : Service 30 pompiers  
+- Base : 360$/mois (4 320$/an)  
+- Avec Prévention : 450$/mois (5 400$/an)
 
-**✅ Tout inclus** : Modules • Support • Mises à jour • Hébergement • Formation
+**Frais intégration** (une fois) : 1 500$ / 2 500$ / 3 500$
 
-**Note présentateur** : "Tarification transparente, pas de frais cachés. Vous savez exactement ce que vous payez chaque mois."
+**✅ Tout inclus** : Tous modules • Support illimité • Mises à jour • Hébergement Canada
+
+**Note présentateur** : "Tarification transparente. Vous savez exactement ce que vous payez. Pas de frais cachés."
 
 ---
 
-### SLIDE 23 : ROADMAP (À Venir)
+### SLIDE 17 : QU'EST-CE QUI EST INCLUS ? ✅
+**Visuel** : Liste avec checkmarks  
+**Contenu** :  
+**✅ Inclus SANS Frais Additionnels**
+
+✅ Tous les modules de base (Planning, Personnel, Formations, Remplacements, Actifs/EPI)  
+✅ Utilisateurs illimités  
+✅ Données illimitées  
+✅ Stockage photos illimité  
+✅ Support technique illimité (téléphone, email, chat)  
+✅ Mises à jour automatiques (nouvelles fonctionnalités)  
+✅ Hébergement sécurisé Canada  
+✅ Sauvegardes quotidiennes  
+✅ Accès multi-appareils (PC, tablette, téléphone)  
+✅ Formation complète équipe  
+✅ Conformité Loi 25 et NFPA  
+
+**Note présentateur** : "Tout est inclus. Support illimité signifie vraiment illimité. On est là pour vous."
+
+---
+
+### SLIDE 18 : COMPARAISON vs AUTRES SOLUTIONS
+**Visuel** : Tableau comparatif 3 colonnes  
+**Contenu** :  
+**🏆 ProFireManager vs Alternatives**
+
+|  | Logiciels Génériques | Sur Mesure | **ProFireManager** |
+|--|---------------------|------------|--------------------|
+| **Spécialisation** | ❌ Générique | ✅ Possible | ✅✅ 100% Incendie |
+| **Coût initial** | 💰 Moyen | 💰💰💰 50-200k$ | 💰 1 500-3 500$ |
+| **Déploiement** | ⏱️ 3-6 mois | ⏱️ 12-24 mois | ⏱️ 1 semaine |
+| **Maintenance** | 💰 À renouveler | 💰 10-30k$/an | ✅ Incluse |
+| **Support QC** | ❌ Générique | ❓ Variable | ✅ Expert FR |
+| **Évolution** | ❌ Limité | 💰 Payant | ✅ Auto gratuit |
+
+**ProFireManager = Meilleur des 3 mondes**
+
+**Note présentateur** : "Nous ne sommes ni trop génériques, ni trop chers, ni trop longs. Le sweet spot parfait."
+
+---
+
+### SLIDE 19 : SÉCURITÉ & CONFORMITÉ 🔒
+**Visuel** : Icônes cadenas + badges conformité  
+**Contenu** :  
+**🔒 Vos Données en Sécurité**
+
+✅ **Hébergement 100% Canada** : Conformité lois canadiennes  
+✅ **Chiffrement SSL/TLS** : Toutes connexions sécurisées  
+✅ **Sauvegardes quotidiennes** : Rétention 30 jours  
+✅ **Conformité Loi 25** : Protection renseignements personnels Québec  
+✅ **NFPA 1851** : EPI conformes aux standards  
+✅ **Audit trail complet** : Traçabilité toutes actions  
+✅ **Rôles et permissions** : Contrôle d'accès granulaire  
+✅ **99,9% uptime** : Disponibilité garantie  
+
+**Note présentateur** : "Sécurité et conformité sont au cœur de ProFireManager. Données hébergées au Canada, conformité garantie."
+
+---
+
+### SLIDE 20 : DÉPLOIEMENT RAPIDE ⚡
+**Visuel** : Timeline 7 jours  
+**Contenu** :  
+**⚡ Opérationnel en 7 Jours**
+
+**Jour 1-2** : Configuration (compte, logo, types gardes, import données)  
+**Jour 3-4** : Formation équipe (2h admin, 1h opé, 1h prévention si module)  
+**Jour 5** : Tests pilotes (planning test, inspection test)  
+**Jour 6-7** : Lancement + Support intensif  
+**Semaine 2-3** : Consolidation + optimisations  
+
+**Vous êtes 100% opérationnel en 1 semaine** 🎉
+
+Vs 3-6 mois pour solutions génériques  
+Vs 12-24 mois pour développement sur mesure
+
+**Note présentateur** : "Une semaine. Pas 6 mois, pas 2 ans. Une semaine et vous roulez."
+
+---
+
+### SLIDE 21 : TÉMOIGNAGES 💬
+**Visuel** : Photos clients (floues ou icônes) + citations  
+**Contenu** :  
+**💬 Ce Que Disent Nos Clients**
+
+> "Nous avons économisé 40 000$/an en temps administratif. ROI en 6 semaines."  
+> — **Directeur adjoint, Service 50 pompiers**
+
+> "Le module remplacements est un game-changer. Plus besoin d'appeler 15 personnes."  
+> — **Chef, Service 42 pompiers**
+
+> "La conformité NFPA 1851 pour nos EPI est maintenant garantie. Plus de stress à l'audit."  
+> — **Sergent, Responsable équipements**
+
+> "Mes préventionnistes adorent la reconnaissance vocale. Ils ne veulent plus revenir au papier."  
+> — **Directeur avec module Prévention**
+
+**Note présentateur** : "Nos clients témoignent. Économies réelles, temps gagné, stress éliminé."
+
+---
+
+### SLIDE 22 : ROADMAP 2025 🔮
 **Visuel** : Timeline futur avec icônes  
-**Contenu** :
-**🔮 Nous Évoluons Pour Vous**
+**Contenu** :  
+**🔮 Évolution Continue - Roadmap 2025**
 
-**Q1 2025**
-- 📲 Notifications push mobile
-- ✍️ Signature numérique tablette
-- 🔄 Mode hors-ligne avancé
+**Q1 2025**  
+📲 Notifications push avancées  
+✍️ Signature numérique tablette  
+🔄 Mode hors-ligne amélioré  
 
-**Q2-Q4 2025**
-- 🎓 Module formation et qualifications
-- 🚒 Gestion équipements/véhicules
-- 🏠 Portail propriétaire (suivi NC)
-- 🤖 Intelligence artificielle (prédictions)
+**Q2-Q4 2025**  
+🎓 Module qualifications avancé  
+🚒 Gestion équipements incendie (pompes, boyaux)  
+🏠 Portail propriétaire (suivi NC)  
+🤖 Intelligence artificielle (prédictions, optimisations)  
 
-**Note présentateur** : "Vous avez un besoin spécifique ? Parlons-en. Nous priorisons selon vos retours."
+**Notre engagement** : Écouter vos besoins et prioriser en conséquence
+
+**Note présentateur** : "Nous évoluons constamment. Vous avez une idée ? On l'évalue. Vous ne payez jamais pour les mises à jour."
 
 ---
 
-### SLIDE 24 : ESSAI GRATUIT
-**Visuel** : Call-to-action visuel avec bouton stylisé  
-**Contenu** :
-**🎁 Testez Sans Risque**
+### SLIDE 23 : GARANTIES 🎁
+**Visuel** : Badges garantie  
+**Contenu** :  
+**🎁 Garanties Sans Risque**
 
-✅ **30 jours d'essai gratuit**  
+**ESSAI GRATUIT 30 JOURS**  
 ✅ Accès complet à toutes les fonctionnalités  
-✅ Aucune carte de crédit requise  
-✅ Support complet pendant l'essai  
-✅ **Garantie remboursement 60 jours** si insatisfait  
+✅ Import de vos données de test  
+✅ Formation complète équipe  
+✅ Support dédié illimité  
+❌ Aucune carte de crédit requise
 
-**[BOUTON]** → Commencer l'essai maintenant
+**GARANTIE REMBOURSEMENT 60 JOURS**  
+💯 Remboursement intégral si insatisfait  
+📄 Conservation de vos données exportables  
+❓ Aucune question posée
 
-**Note présentateur** : "Je vous propose de tester avec quelques bâtiments. Vous verrez par vous-même l'impact."
+**Vous ne risquez absolument rien**
+
+**Note présentateur** : "Testez 30 jours gratuitement. Si dans les 60 premiers jours vous n'êtes pas satisfait, remboursement complet. Zéro risque."
 
 ---
 
-### SLIDE 25 : PROCHAINES ÉTAPES
-**Visuel** : Checklist avec 3 étapes  
-**Contenu** :
+### SLIDE 24 : PROCHAINES ÉTAPES 📞
+**Visuel** : Checklist avec 4 étapes  
+**Contenu** :  
 **📞 Comment Procéder ?**
 
-1️⃣ **Aujourd'hui** : Démo personnalisée (cette rencontre!)  
-2️⃣ **Cette semaine** : Essai gratuit 30 jours  
-3️⃣ **Semaine prochaine** : Proposition sur mesure  
-4️⃣ **Dans 2 semaines** : Déploiement et formation  
+**1️⃣ Aujourd'hui** : Démo personnalisée (cette rencontre !)  
+**2️⃣ Cette semaine** : Essai gratuit 30 jours  
+**3️⃣ Semaine suivante** : Proposition sur mesure  
+**4️⃣ Dans 2 semaines** : Déploiement et formation  
 
-**Vous êtes prêt à transformer votre prévention ?**
+**Vous êtes prêt à récupérer 60-70% de votre temps administratif ?**
 
-**Note présentateur** : "Voyons ensemble où vous en êtes et comment nous pouvons vous aider. Passons à la démo en direct."
-
----
-
-### SLIDE 26 : CONTACT & QUESTIONS
-**Visuel** : Coordonnées + logo + QR code  
-**Contenu** :
-**📞 Restons en Contact**
-
-**Email** : ventes@profiremanager.com  
-**Téléphone** : 1-XXX-XXX-XXXX  
-**Web** : www.profiremanager.com  
-**LinkedIn** : [Profil]  
-
-**Questions ?**  
-*C'est le moment !*
-
-**Note présentateur** : "Merci de votre attention. Quelles sont vos questions ? Ensuite, je vous montre l'application en action."
+**Note présentateur** : "Voici les prochaines étapes. Commençons dès aujourd'hui avec une démo adaptée à votre réalité. Passons à l'application en direct."
 
 ---
 
-## 🎨 CONSEILS DE DESIGN
+### SLIDE 25 : DÉMO LIVE (10-12 min) 🖥️
 
-### Palette de Couleurs Suggérée
-- **Primaire** : Rouge pompier (#C1272D) ou bleu pompier (#003DA5)
-- **Secondaire** : Gris foncé (#2C3E50)
-- **Accents** : Orange (#FF6B35), Vert (#28A745)
-- **Fond** : Blanc ou gris très clair (#F8F9FA)
+**Navigation guidée dans l'application** :
 
-### Typographie
-- **Titres** : Gras, grande taille (32-40pt)
-- **Corps** : Lisible, taille moyenne (18-24pt)
-- **Police** : Sans-serif moderne (Montserrat, Open Sans, Roboto)
+1. **Dashboard** (1 min) : Vue d'ensemble, métriques clés
+2. **Planning** (2 min) : Calendrier, auto-attribution, conflits
+3. **Personnel** (1 min) : Profils, compétences, disponibilités
+4. **Remplacements** (2 min) : Recherche automatique, notifications
+5. **Formations** (1 min) : Catalogue, échéances, rapports
+6. **Gestion Actifs** (1 min) : Véhicules, EPI
+7. **Prévention** (2 min si intéressés) : Inspection mobile + vocal
+8. **Rapports** (1 min) : Génération PDF instantanée
 
-### Visuels
-- **Photos haute qualité** : Pompiers en action, tablettes sur terrain
-- **Screenshots réels** : De l'application (anonymisés)
-- **Icônes cohérentes** : Style uniforme tout au long
-- **Graphiques simples** : Pas surchargés, message clair
+**Note présentateur** : "Maintenant, regardons ensemble comment ça fonctionne concrètement. Je vais vous montrer exactement ce que vous et votre équipe utiliserez au quotidien."
 
-### Règles d'Or
-- ✅ **1 message par slide** - Pas de surcharge
-- ✅ **Beaucoup de blanc** - Aéré, professionnel
-- ✅ **Visuels > Texte** - Maximum 5-6 lignes de texte
-- ✅ **Cohérence** - Même layout, même style
-- ✅ **Lisible de loin** - Police grande, contraste fort
+---
+
+### SLIDE 26 : CONTACT & QUESTIONS ❓
+**Visuel** : Coordonnées + QR code  
+**Contenu** :  
+**📧 Restons en Contact**
+
+**ProFireManager**  
+🌐 www.profiremanager.com  
+📧 info@profiremanager.com  
+📞 1-XXX-XXX-XXXX  
+💬 Support : support@profiremanager.com  
+
+**🎁 OFFRE SPÉCIALE LANCEMENT 2024**  
+Pour les 10 premiers services :  
+- 20% rabais frais intégration  
+- 1er mois gratuit  
+- Formation sur site gratuite (1 500$)  
+
+**Des Questions ?**
+
+**Note présentateur** : "Merci pour votre attention. Quelles questions avez-vous ? Parlons de votre réalité spécifique."
 
 ---
 
 ## ⏱️ TIMING RECOMMANDÉ (Présentation 45 min)
 
 - **Slides 1-4** : Intro + Problème (5 min)
-- **Slides 5-13** : Solution + Fonctionnalités (15 min)
+- **Slides 5-13** : Solution + Tous les modules (15 min)
 - **Slide 14** : Workflow complet (3 min)
-- **Slides 15-17** : ROI + Comparaison (5 min)
-- **Slides 18-23** : Confiance + Tarification + Roadmap (5 min)
+- **Slides 15-17** : ROI + Tarification (5 min)
+- **Slides 18-22** : Comparaison + Sécurité + Roadmap (5 min)
 - **DÉMO LIVE** : Application réelle (10 min) ⭐
-- **Slides 24-26** : Closing + Questions (7 min)
+- **Slides 23-26** : Garanties + Closing + Questions (7 min)
 
 ---
 
-## 🎯 ADAPTATION SELON LE PUBLIC
+## 🎨 CONSEILS DE DESIGN
 
-### Pour Chefs de Service (Décideurs)
-**Mettre l'accent sur** : ROI (slide 15), Comparaison (16), Témoignages (20)  
-**Ton** : Stratégique, chiffres, résultats mesurables
+### Palette Couleurs
+- **Rouge pompier** : #C41E3A (titres, CTAs)
+- **Bleu marine** : #003366 (texte principal)
+- **Gris clair** : #F5F5F5 (fonds)
+- **Vert succès** : #28A745 (checkmarks, gains)
+- **Orange alerte** : #FF6B35 (problèmes, urgence)
 
-### Pour Capitaines (Opérationnels)
-**Mettre l'accent sur** : Fonctionnalités terrain (9-11), Workflow (14), Facilité (19)  
-**Ton** : Pratique, concret, gains au quotidien
+### Typographie
+- **Titres** : Montserrat Bold ou Roboto Bold
+- **Texte** : Open Sans ou Lato Regular
+- **Taille min** : 18pt pour être lisible en présentation
 
-### Municipalités Petite Taille (<50k habitants)
-**Ajouter** : Slide sur scalabilité, prix accessible, support personnalisé
+### Visuels
+- Screenshots réels de l'application (pas de mockups)
+- Photos pompiers en action (authentiques, pas stock photo générique)
+- Icônes simples et cohérentes
+- Graphiques épurés (pas surchargés)
 
-### Grandes Villes (>100k habitants)
-**Ajouter** : Slide sur volume de données, API, intégrations systèmes municipaux
+### Animations (PowerPoint)
+- Entrée fade-in subtile pour listes
+- Pas d'animations excessives (distrayantes)
+- Focus sur le contenu, pas les effets
 
 ---
 
-*Document créé le 27 novembre 2024*  
-*ProFireManager - Plateforme de Gestion Prévention Incendie*
+## 🎯 ADAPTATION SELON L'AUDIENCE
+
+### Pour Décideurs (Chef, Directeur)
+**Focus sur** :
+- ROI et économies concrètes
+- Conformité et réduction des risques
+- Image professionnelle et moderne
+- Simplification gestion quotidienne
+
+### Pour Opérationnels (Capitaines, Lieutenants)
+**Focus sur** :
+- Facilité d'utilisation au quotidien
+- Gain de temps opérationnel
+- Équité et transparence
+- Mobilité (tablette, téléphone)
+
+### Pour Services avec Prévention Active
+**Focus sur** :
+- Module Prévention en détail
+- Reconnaissance vocale unique
+- Gains terrain vs bureau
+- Conformité inspections
+
+### Pour Services sans Prévention
+**Focus sur** :
+- Modules de base (Planning, Personnel, Formations, Remplacements, EPI)
+- Mentionner Prévention comme "option future si besoin"
+- ROI basé uniquement sur modules de base
+
+---
+
+## 📝 CHECKLIST AVANT PRÉSENTATION
+
+✅ PowerPoint fonctionnel et testé  
+✅ Compte démo ProFireManager prêt (données test)  
+✅ Connexion internet stable  
+✅ Projecteur/écran testé  
+✅ Ordinateur chargé (ou branché)  
+✅ Brochures/cartes professionnelles à remettre  
+✅ Proposition commerciale personnalisée préparée  
+✅ Calculatrice pour calculs ROI en direct si questions  
+✅ Connaissance du service cible (taille, besoins spécifiques)  
+✅ Réponses aux objections communes préparées  
+
+---
+
+## 💡 OBJECTIONS COURANTES & RÉPONSES
+
+**Objection** : "Nous avons déjà Excel et ça fonctionne"  
+**Réponse** : "Excel est excellent, mais calculez le temps passé. Notre calculateur ROI montre que pour votre taille, vous perdez environ X heures/semaine. Combien vaut ce temps ?"
+
+**Objection** : "Nos pompiers ne sont pas technos"  
+**Réponse** : "C'est justement pourquoi ProFireManager est ultra-intuitif. Si vous savez utiliser Facebook, vous savez utiliser ProFireManager. Regardez (montrer démo). De plus, formation complète incluse."
+
+**Objection** : "C'est trop cher pour notre budget"  
+**Réponse** : "Regardons les chiffres ensemble. Votre coût actuel en temps administratif est de X$/an. ProFireManager coûte Y$/an. Vous économisez Z$ net dès la première année. C'est un investissement, pas une dépense."
+
+**Objection** : "Qu'arrive-t-il si vous fermez l'entreprise ?"  
+**Réponse** : "Question légitime. 1) Vos données vous appartiennent, export complet possible en tout temps. 2) Nous offrons une garantie de préavis 90 jours minimum. 3) Code source peut être placé en escrow si nécessaire pour grands services."
+
+**Objection** : "Nous avons besoin d'intégration avec notre système paie municipal"  
+**Réponse** : "Les exports Excel sont compatibles avec la majorité des systèmes. Pour intégrations API spécifiques, c'est possible sur devis. Parlons de vos besoins exacts."
+
+---
+
+**ProFireManager** - *Libérez vos pompiers de l'administration pour qu'ils se concentrent sur leur vraie mission : protéger la communauté.*
+
+*Version 2.0 - Structure Pitch Deck Complète - Novembre 2024*
