@@ -70,7 +70,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const marquerCorrige = async (nonConformite) => {
     try {
       // Mettre à jour le statut dans le backend
-      await apiPut(
+      await apiPatch(
         tenantSlug, 
         `/prevention/non-conformites/${nonConformite.id}/statut`,
         {
