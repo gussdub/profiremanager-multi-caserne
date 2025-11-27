@@ -17448,7 +17448,7 @@ async def dupliquer_grille_inspection(
     
     # Créer la copie avec un nouvel ID
     grille_copie = grille_source.copy()
-    grille_copie["id"] = str(uuid4())
+    grille_copie["id"] = str(uuid.uuid4())
     grille_copie["nom"] = nouveau_nom if nouveau_nom else f"{grille_source['nom']} (Copie)"
     grille_copie["version"] = "1.0"
     
@@ -17486,7 +17486,7 @@ async def initialiser_module_prevention(
     grilles_creees = []
     for grille_template in GRILLES:
         grille = grille_template.copy()
-        grille["id"] = str(uuid4())
+        grille["id"] = str(uuid.uuid4())
         grille["tenant_id"] = tenant.id
         grille["actif"] = True
         grille["version"] = "1.0"
