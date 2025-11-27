@@ -11770,9 +11770,19 @@ async def export_disponibilites_pdf(
         
         # Créer le PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=letter)
+        
+        # Définir le page template avec frame
+        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+        template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+        doc.addPageTemplates([template])
+        
         elements = []
         styles = getSampleStyleSheet()
+        
+        # Header personnalisé (logo + nom service)
+        header_elements = create_pdf_header_elements(tenant, styles)
+        elements.extend(header_elements)
         
         # Titre
         title_style = ParagraphStyle(
