@@ -22775,8 +22775,33 @@ const Prevention = () => {
 const AppLayout = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
+  const [personnalisation, setPersonnalisation] = useState({
+    logo_url: '',
+    nom_service: '',
+    afficher_profiremanager: true
+  });
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
+
+  // Charger la personnalisation
+  useEffect(() => {
+    const loadPersonnalisation = async () => {
+      try {
+        const response = await axios.get(`${API}/${tenantSlug}/personnalisation`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(getStorageKey('token', tenantSlug))}`
+          }
+        });
+        setPersonnalisation(response.data);
+      } catch (error) {
+        console.error('Erreur chargement personnalisation:', error);
+      }
+    };
+
+    if (tenantSlug && user) {
+      loadPersonnalisation();
+    }
+  }, [tenantSlug, user]);
 
   const renderCurrentPage = () => {
     switch (currentPage) {
