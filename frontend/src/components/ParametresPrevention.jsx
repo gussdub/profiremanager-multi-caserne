@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { apiGet, apiPut } from '../utils/api';
 
-const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments }) => {
+const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, ImportBatimentsComponent }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showImportCSV, setShowImportCSV] = useState(false);
@@ -248,30 +248,17 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments }) =
           )}
         </div>
 
-        {showImportCSV && (
-          <div style={{
-            marginTop: '1.5rem',
-            padding: '1.5rem',
-            backgroundColor: '#f9fafb',
-            borderRadius: '6px',
-            border: '1px solid #e5e7eb'
-          }}>
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
-                ℹ️ L'interface d'import complète s'ouvrira ici
-              </p>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
-                Pour utiliser l'import CSV complet, utilisez temporairement le lien ci-dessous.<br/>
-                L'intégration complète sera finalisée dans la prochaine version.
-              </p>
-              <Button
-                onClick={() => {
-                  window.open(`${window.location.origin}${window.location.pathname}#import-batiments`, '_blank');
-                }}
-              >
-                🔗 Ouvrir l'import dans une nouvelle fenêtre
-              </Button>
-            </div>
+        {showImportCSV && ImportBatimentsComponent && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <ImportBatimentsComponent 
+              onImportComplete={() => {
+                setShowImportCSV(false);
+                if (onRefreshBatiments) {
+                  onRefreshBatiments();
+                }
+                alert('✅ Import terminé avec succès!');
+              }}
+            />
           </div>
         )}
       </div>
