@@ -183,7 +183,7 @@ const BatimentForm = ({
     { code: 'D', nom: 'Groupe D - Établissements d\'Affaires' },
     { code: 'E', nom: 'Groupe E - Établissements Commerciaux' },
     { code: 'F', nom: 'Groupe F - Établissements Industriels' },
-    { code: 'AGRICOLE', nom: 'Groupe Agricole' }
+    { code: 'G', nom: 'Groupe G - Agricole' }
   ];
 
   // Sous-types par groupe d'occupation (pour grilles d'inspection conditionnelles)
