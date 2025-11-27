@@ -4542,6 +4542,20 @@ async def export_planning_pdf(
                 
                 if current <= date_fin:
                     elements.append(PageBreak())  # Nouvelle page par semaine
+        
+        # Footer personnalisé
+        footer_text = create_pdf_footer_text(tenant)
+        if footer_text:
+            footer_style = ParagraphStyle(
+                'Footer',
+                parent=styles['Normal'],
+                fontSize=8,
+                textColor=colors.grey,
+                alignment=TA_CENTER
+            )
+            elements.append(Spacer(1, 0.5*inch))
+            elements.append(Paragraph(footer_text, footer_style))
+        
         doc.build(elements)
         buffer.seek(0)
         
