@@ -17,43 +17,44 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
     try {
       setLoading(true);
       
-      // Charger les inspections et bâtiments
-      const [inspectionsData, batimentsData] = await Promise.all([
-        apiGet(tenantSlug, '/prevention/inspections'),
+      // Charger les non-conformités et bâtiments depuis le backend
+      const [nonConformitesData, batimentsData] = await Promise.all([
+        apiGet(tenantSlug, '/prevention/non-conformites'),
         apiGet(tenantSlug, '/prevention/batiments')
       ]);
 
       setBatiments(batimentsData);
 
-      // Extraire toutes les non-conformités
-      const nonConf = [];
-      
-      inspectionsData.forEach(inspection => {
-        if (inspection.grille_data?.elements_inspectes) {
-          const batiment = batimentsData.find(b => b.id === inspection.batiment_id);
-          
-          inspection.grille_data.elements_inspectes.forEach(element => {
-            if (!element.conforme) {
-              nonConf.push({
-                id: `${inspection.id}-${element.nom}`,
-                inspection_id: inspection.id,
-                batiment_id: inspection.batiment_id,
-                batiment: batiment,
-                date_inspection: inspection.date_inspection,
-                element: element.nom,
-                observations: element.observations || 'Non conforme',
-                statut: element.corrige ? 'corrige' : 'a_corriger',
-                priorite: determinePriorite(element.nom)
-              });
-            }
-          });
+      // Enrichir les non-conformités avec les données du bâtiment et calculer la priorité
+      const enrichedNonConf = nonConformitesData.map(nc => {
+        const batiment = batimentsData.find(b => b.id === nc.batiment_id);
+        
+        // Mapper la gravité backend vers priorité frontend
+        let priorite = 'faible';
+        if (nc.gravite === 'critique' || nc.gravite === 'eleve') {
+          priorite = 'haute';
+        } else if (nc.gravite === 'moyen') {
+          priorite = 'moyenne';
         }
+        
+        // Mapper le statut backend vers statut frontend
+        let statut = 'a_corriger';
+        if (nc.statut === 'corrigee' || nc.statut === 'fermee') {
+          statut = 'corrige';
+        }
+        
+        return {
+          ...nc,
+          batiment: batiment,
+          element: nc.titre || nc.section_grille,
+          observations: nc.description,
+          date_inspection: nc.created_at,
+          priorite: priorite,
+          statut: statut
+        };
       });
-
-      // Trier par date (plus récent en premier)
-      nonConf.sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection));
       
-      setNonConformites(nonConf);
+      setNonConformites(enrichedNonConf);
     } catch (error) {
       console.error('Erreur chargement non-conformités:', error);
       toast({
