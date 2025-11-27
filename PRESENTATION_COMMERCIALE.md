@@ -569,36 +569,82 @@ Une plateforme cloud unique qui accompagne vos préventionnistes **du bureau au 
 
 ## 💼 TARIFICATION
 
-*[À adapter selon votre modèle d'affaires]*
-
 ### Tarification Transparente et Flexible
 
-**Modèle par Utilisateur (SaaS)**
-- Prix par préventionniste actif / mois
-- Aucun frais caché
-- Paiement mensuel ou annuel (10% rabais)
-- Annulation possible en tout temps
+**Modèle par Pompier - Trois Paliers**
 
-**Inclus dans Tous les Plans**
-- ✅ Tous les modules décrits
-- ✅ Utilisateurs illimités (lecture seule)
-- ✅ Bâtiments illimités
-- ✅ Inspections illimitées
-- ✅ Stockage photos illimité
-- ✅ Support technique illimité
-- ✅ Mises à jour automatiques incluses
-- ✅ Formation initiale complète
-- ✅ Hébergement sécurisé Canada
+Notre tarification est simple et prévisible, basée sur la taille de votre service d'incendie:
 
-**Options Additionnelles**
-- Formation sur site (déplacement)
-- Migration de données complexes (ancien système)
-- Personnalisation avancée (développements sur mesure)
-- Intégrations avec vos systèmes existants
+| Taille du Service | Tarif par Pompier/Mois | Exemple (30 pompiers) |
+|-------------------|------------------------|------------------------|
+| **0 à 30 pompiers** | 12$ CAD | 360$/mois (4 320$/an) |
+| **31 à 50 pompiers** | 20$ CAD | 1 000$/mois (12 000$/an) |
+| **51 pompiers et +** | 27$ CAD | 1 350$/mois (16 200$/an pour 50) |
+
+**Exemple de Calcul:**
+- Service de 25 pompiers: 25 × 12$ = **300$/mois** (3 600$/an)
+- Service de 45 pompiers: 45 × 20$ = **900$/mois** (10 800$/an)
+- Service de 75 pompiers: 75 × 27$ = **2 025$/mois** (24 300$/an)
+
+### Frais d'Intégration Uniques (Non Remboursables)
+
+Frais d'installation et de configuration initiale selon la taille de votre service:
+
+| Taille du Service | Frais d'Intégration |
+|-------------------|---------------------|
+| **0 à 30 pompiers** | 1 500$ CAD |
+| **31 à 50 pompiers** | 2 500$ CAD |
+| **51 pompiers et +** | 3 500$ CAD |
+
+**Ces frais incluent:**
+- Configuration complète de votre compte
+- Import de vos données existantes (bâtiments, contacts)
+- Création des utilisateurs et gestion des permissions
+- Personnalisation de base (logo, couleurs)
+- Formation initiale de 2 heures pour les administrateurs
+- Formation de 1 heure pour les préventionnistes
+- Support intensif pendant les 2 premières semaines
+
+### Inclus dans Tous les Plans (Sans Frais Additionnels)
+
+- ✅ **Tous les modules** décrits dans ce document
+- ✅ **Utilisateurs illimités** (tous les pompiers de votre service)
+- ✅ **Bâtiments illimités** dans votre territoire
+- ✅ **Inspections illimitées** - Aucune restriction
+- ✅ **Stockage photos illimité** - Toutes vos photos en haute résolution
+- ✅ **Support technique illimité** par email, téléphone et chat
+- ✅ **Mises à jour automatiques** - Nouvelles fonctionnalités incluses
+- ✅ **Hébergement sécurisé au Canada** - Conformité garantie
+- ✅ **Sauvegardes quotidiennes automatiques**
+- ✅ **Accès depuis tous les appareils** (ordinateurs, tablettes, téléphones)
+
+### Options Additionnelles (Sur Devis)
+
+- 🎓 **Formation sur site** avec déplacement de notre équipe
+- 📊 **Migration de données complexes** depuis anciens systèmes
+- 🔧 **Personnalisation avancée** (développements sur mesure)
+- 🔗 **Intégrations spécifiques** avec vos systèmes municipaux existants
+- 👨‍🏫 **Formations additionnelles** pour nouveaux employés
+
+### Modalités de Paiement
+
+- **Facturation mensuelle** ou annuelle (économisez 10% avec le paiement annuel)
+- **Modes de paiement** : Virement bancaire, chèque, carte de crédit
+- **Aucun engagement à long terme** - Annulation possible avec préavis de 30 jours
+- **Ajustement du nombre de pompiers** possible en tout temps
 
 ### Garantie Satisfaction
-**Essai gratuit de 30 jours** - Aucune carte de crédit requise  
-**Garantie remboursement 60 jours** - Si vous n'êtes pas satisfait
+
+**🎁 Essai gratuit de 30 jours**  
+- Accès complet à toutes les fonctionnalités
+- Import de vos bâtiments de test
+- Formation complète de votre équipe
+- Aucune carte de crédit requise pour commencer
+
+**💯 Garantie remboursement 60 jours**  
+- Si vous n'êtes pas satisfait dans les 60 premiers jours
+- Remboursement intégral du montant mensuel payé
+- Aucune question posée
 
 ---
 
