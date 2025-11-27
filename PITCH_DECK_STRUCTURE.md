@@ -337,7 +337,31 @@
 
 ---
 
-### SLIDE 22 : ROADMAP (À Venir)
+### SLIDE 22 : TARIFICATION 💰
+**Visuel** : Tableau des 3 paliers avec prix  
+**Contenu** :
+**💵 Tarification Simple et Prévisible**
+
+| Taille Service | Prix/Pompier/Mois |
+|----------------|-------------------|
+| 0-30 pompiers | 12$ |
+| 31-50 pompiers | 20$ |
+| 51+ pompiers | 27$ |
+
+**Frais d'intégration uniques** (Installation + Formation + Import données)
+- 0-30 pompiers: 1 500$
+- 31-50 pompiers: 2 500$
+- 51+ pompiers: 3 500$
+
+**Exemple**: Service de 30 pompiers = **360$/mois** (4 320$/an) + 1 500$ intégration
+
+**✅ Tout inclus** : Modules • Support • Mises à jour • Hébergement • Formation
+
+**Note présentateur** : "Tarification transparente, pas de frais cachés. Vous savez exactement ce que vous payez chaque mois."
+
+---
+
+### SLIDE 23 : ROADMAP (À Venir)
 **Visuel** : Timeline futur avec icônes  
 **Contenu** :
 **🔮 Nous Évoluons Pour Vous**
@@ -357,7 +381,7 @@
 
 ---
 
-### SLIDE 23 : ESSAI GRATUIT
+### SLIDE 24 : ESSAI GRATUIT
 **Visuel** : Call-to-action visuel avec bouton stylisé  
 **Contenu** :
 **🎁 Testez Sans Risque**
