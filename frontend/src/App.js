@@ -17832,38 +17832,7 @@ const GrillesInspection = () => {
         )}
       </div>
 
-      {/* Aperçu des grilles templates */}
-      <div className="templates-preview">
-        {DEFAULT_GRILLES_TEMPLATES.map(template => (
-          <div key={`preview-${template.groupe}`} id={`grille-${template.groupe}`} className="template-preview">
-            <div className="preview-header">
-              <h3>📋 Grille Template - Groupe {template.groupe}: {template.nom}</h3>
-              <p>{template.description}</p>
-            </div>
-            
-            <div className="sections-preview">
-              {template.sections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="section-preview">
-                  <h4>{section.titre}</h4>
-                  <p><em>{section.description}</em></p>
-                  
-                  <div className="questions-preview">
-                    {section.questions.slice(0, 3).map((question, qIndex) => (
-                      <div key={qIndex} className="question-preview">
-                        <span className="question-text">{question.question}</span>
-                        <span className="question-type">({question.type})</span>
-                      </div>
-                    ))}
-                    {section.questions.length > 3 && (
-                      <p className="more-questions">... et {section.questions.length - 3} autres questions</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* L'aperçu s'ouvre maintenant dans un modal au clic */}
     </div>
   );
 
