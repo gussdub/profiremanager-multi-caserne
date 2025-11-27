@@ -219,6 +219,29 @@ GRILLES = [
                 ]
             }
         ]
+    },
+    
+    # GROUPE AGRICOLE - Nouveau (avec questions conditionnelles)
+    {
+        "nom": "Groupe Agricole",
+        "groupe_occupation": "AGRICOLE",
+        "description": "Fermes, granges, serres, écuries",
+        "sous_types": ["ferme", "grange", "serre", "ecurie", "silo"],
+        "sections": TRONC_COMMUN + [
+            {
+                "titre": "5. Spécifique Agricole",
+                "description": "Vérifications pour bâtiments agricoles",
+                "questions": [
+                    {"question": "Entreposage de foin/paille: stable, éloigné des sources de chaleur?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "ferme || grange"},
+                    {"question": "Machinerie agricole: entreposage sécuritaire, carburant?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "ferme || grange"},
+                    {"question": "Animaux: accès aux sorties non bloqué?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "ecurie"},
+                    {"question": "Système chauffage serre: entretenu, dégagé?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "serre"},
+                    {"question": "Silo: système ventilation fonctionnel, pas d'accumulation?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "silo"},
+                    {"question": "Produits chimiques agricoles: entreposage conforme?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
+                    {"question": "Photos installations agricoles", "type": "photos"}
+                ]
+            }
+        ]
     }
 ]
 
