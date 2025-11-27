@@ -170,7 +170,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
   const handleSubmit = async () => {
     try {
       // Calculer le score de conformité
-      const totalQuestions = grille.sections.reduce((acc, s) => acc + s.questions.length, 0);
+      const totalQuestions = grille.sections.reduce((acc, s) => acc + getFilteredQuestions(s).length, 0);
       const reponsesConformes = Object.values(reponses).filter(r => r === 'Conforme').length;
       const scoreConformite = totalQuestions > 0 ? Math.round((reponsesConformes / totalQuestions) * 100) : 0;
       
@@ -189,6 +189,10 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         }));
       });
 
+      // Récupérer l'inspecteur_id depuis localStorage
+      const inspectionTerrainData = JSON.parse(localStorage.getItem('inspection_terrain_data') || '{}');
+      const inspecteur_id = inspectionTerrainData.inspecteur_id;
+
       // Préparer les données d'inspection
       const inspectionData = {
         batiment_id: batiment.id,
@@ -197,6 +201,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         date_inspection: new Date().toISOString().split('T')[0],
         heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
         heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+        inspecteur_id: inspecteur_id,
         resultats: reponses,
         photos: photosParQuestion,
         score_conformite: scoreConformite,
@@ -206,11 +211,53 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         recommandations: ''
       };
 
-      await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+      // Créer l'inspection
+      const newInspection = await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+
+      // Créer automatiquement les non-conformités pour les questions non-conformes
+      const nonConformites = [];
+      for (const [questionId, reponse] of Object.entries(reponses)) {
+        if (reponse === 'Non-conforme') {
+          // Parser le questionId pour obtenir la section et la question
+          const [sectionIdx, questionIdx] = questionId.split('_').map(Number);
+          const section = grille.sections[sectionIdx];
+          const filteredQuestions = getFilteredQuestions(section);
+          const question = filteredQuestions[questionIdx];
+          
+          if (question) {
+            // Récupérer les photos associées à cette question
+            const questionPhotos = photosParQuestion[questionId] || [];
+            
+            const nonConformiteData = {
+              batiment_id: batiment.id,
+              inspection_id: newInspection.id,
+              titre: question.question,
+              description: `Non-conformité détectée lors de l'inspection du ${new Date().toLocaleDateString('fr-FR')}`,
+              categorie: section.titre,
+              priorite: 'moyenne',
+              statut: 'ouverte',
+              photos: questionPhotos,
+              date_identification: new Date().toISOString().split('T')[0],
+              identifie_par: inspecteur_id
+            };
+            
+            nonConformites.push(nonConformiteData);
+          }
+        }
+      }
+
+      // Créer toutes les non-conformités
+      for (const nc of nonConformites) {
+        try {
+          await apiPost(tenantSlug, '/prevention/non-conformites', nc);
+        } catch (error) {
+          console.error('Erreur création non-conformité:', error);
+        }
+      }
 
       toast({
         title: "✅ Inspection terminée",
-        description: `Score de conformité: ${scoreConformite}% - Statut: ${statutGlobal}`
+        description: `Score: ${scoreConformite}% - ${nonConformites.length} non-conformité(s) créée(s)`
       });
 
       onComplete();
