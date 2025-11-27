@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { apiGet, apiPost } from '../utils/api';
 import { useToast } from '../hooks/use-toast';
+import VoiceInputButton from './VoiceInputButton';
 
 const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel }) => {
   const { toast } = useToast();
@@ -306,19 +307,34 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
                 )}
 
                 {question.type === 'texte' && (
-                  <textarea
-                    value={reponse || ''}
-                    onChange={(e) => handleReponse(qIdx, e.target.value)}
-                    placeholder="Saisir vos observations..."
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '4px',
-                      minHeight: '80px',
-                      fontSize: '0.875rem'
-                    }}
-                  />
+                  <div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <VoiceInputButton
+                        onTranscript={(text) => {
+                          const currentText = reponse || '';
+                          const newText = currentText ? `${currentText} ${text}` : text;
+                          handleReponse(qIdx, newText);
+                        }}
+                        placeholder="Parlez pour ajouter du texte"
+                      />
+                      <span style={{ fontSize: '0.75rem', color: '#6b7280', alignSelf: 'center' }}>
+                        ou tapez ci-dessous
+                      </span>
+                    </div>
+                    <textarea
+                      value={reponse || ''}
+                      onChange={(e) => handleReponse(qIdx, e.target.value)}
+                      placeholder="Saisir vos observations..."
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '4px',
+                        minHeight: '80px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
                 )}
 
                 {/* Prise de photos si non-conforme ou type photos */}
