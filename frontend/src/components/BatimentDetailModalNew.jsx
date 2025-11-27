@@ -130,6 +130,7 @@ const BatimentForm = ({
     longitude: null,
     type_batiment: '',
     sous_type_batiment: '',
+    groupe_occupation: '',
     proprietaire_nom: '',
     proprietaire_prenom: '',
     proprietaire_telephone: '',
