@@ -224,7 +224,7 @@ const BatimentForm = ({
       { value: 'usine', label: 'Usine' },
       { value: 'atelier', label: 'Atelier' }
     ],
-    'AGRICOLE': [
+    'G': [
       { value: 'ferme', label: 'Ferme' },
       { value: 'grange', label: 'Grange' },
       { value: 'serre', label: 'Serre' },
