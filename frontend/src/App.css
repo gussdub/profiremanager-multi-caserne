@@ -11840,8 +11840,10 @@ body {
 .template-actions,
 .grille-actions {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1rem;
 }
 
 .grille-info p {
