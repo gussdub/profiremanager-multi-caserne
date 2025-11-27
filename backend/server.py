@@ -1368,6 +1368,38 @@ def create_pdf_footer_text(tenant):
     
     return " | ".join(footer_parts) if footer_parts else ""
 
+# Classe CustomDocTemplate avec branding automatique
+from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame
+from reportlab.pdfgen import canvas as pdf_canvas
+
+class BrandedDocTemplate(BaseDocTemplate):
+    """
+    Template de document PDF personnalisé avec branding tenant automatique
+    """
+    def __init__(self, filename, tenant=None, **kwargs):
+        self.tenant = tenant
+        BaseDocTemplate.__init__(self, filename, **kwargs)
+        
+    def afterPage(self):
+        """
+        Appelé après chaque page pour ajouter le footer
+        """
+        self.canv.saveState()
+        
+        # Footer avec branding ProFireManager
+        if self.tenant:
+            footer_text = create_pdf_footer_text(self.tenant)
+            if footer_text:
+                self.canv.setFont('Helvetica', 8)
+                self.canv.setFillColor(colors.grey)
+                self.canv.drawCentredString(
+                    self.pagesize[0] / 2,
+                    0.5 * inch,
+                    footer_text
+                )
+        
+        self.canv.restoreState()
+
 # ==================== FIN HELPERS PDF ====================
 
 def get_password_hash(password: str) -> str:
