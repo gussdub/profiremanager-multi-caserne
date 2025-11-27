@@ -253,6 +253,97 @@ const ParametresPrevention = ({ tenantSlug, currentUser }) => {
         </div>
       </div>
 
+      {/* Section Export de données */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        marginBottom: '1.5rem'
+      }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+          📊 Export de Données
+        </h3>
+        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+          Exportez les données de prévention au format Excel pour analyse ou archivage
+        </p>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '1rem'
+        }}>
+          {/* Export Bâtiments */}
+          <div style={{
+            border: '1px solid #e5e7eb',
+            borderRadius: '6px',
+            padding: '1rem',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏢</div>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              Bâtiments
+            </h4>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+              Liste complète avec historiques
+            </p>
+            <Button 
+              onClick={() => handleExport('batiments')}
+              disabled={exporting}
+              size="sm"
+            >
+              {exporting ? '⏳ Export...' : '📥 Télécharger Excel'}
+            </Button>
+          </div>
+
+          {/* Export Non-Conformités */}
+          <div style={{
+            border: '1px solid #e5e7eb',
+            borderRadius: '6px',
+            padding: '1rem',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              Non-Conformités
+            </h4>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+              Toutes les NC avec statuts
+            </p>
+            <Button 
+              onClick={() => handleExport('non_conformites')}
+              disabled={exporting}
+              size="sm"
+            >
+              {exporting ? '⏳ Export...' : '📥 Télécharger Excel'}
+            </Button>
+          </div>
+
+          {/* Export Inspections */}
+          <div style={{
+            border: '1px solid #e5e7eb',
+            borderRadius: '6px',
+            padding: '1rem',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              Inspections
+            </h4>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+              Historique des inspections
+            </p>
+            <Button 
+              onClick={() => handleExport('inspections')}
+              disabled={exporting}
+              size="sm"
+            >
+              {exporting ? '⏳ Export...' : '📥 Télécharger Excel'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Bouton Sauvegarder */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
         <Button
