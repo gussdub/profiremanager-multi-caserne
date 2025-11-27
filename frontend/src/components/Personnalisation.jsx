@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { apiGet, apiPut, apiPost } from '../utils/api';
-import { useToast } from '../hooks/use-toast';
 
-const Personnalisation = ({ tenantSlug }) => {
-  const { toast } = useToast();
+const Personnalisation = ({ tenantSlug, toast }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [personnalisation, setPersonnalisation] = useState({
