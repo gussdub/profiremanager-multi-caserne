@@ -668,7 +668,7 @@ Consultez notre centre d'aide : help.profiremanager.com
 
 ---
 
-## 🎁 OFFRE SPÉCIALE - Lancement 2024
+## 🎁 OFFRE SPÉCIALE - Fin 2025
 
 **Pour les 10 premiers services inscrits** :
 
@@ -677,7 +677,7 @@ Consultez notre centre d'aide : help.profiremanager.com
 🎉 **Formation sur site gratuite** (valeur 1 500$)  
 🎉 **Logo et personnalisation avancée** inclus  
 
-**Conditions** : Inscription avant le 31 décembre 2024. Offre limitée, premier arrivé premier servi.
+**Conditions** : Inscription avant le 31 décembre 2025. Offre limitée, premier arrivé premier servi.
 
 ---
 
@@ -688,4 +688,4 @@ Consultez notre centre d'aide : help.profiremanager.com
 ---
 
 *Document confidentiel - Version 2.0 - Novembre 2025*  
-*© 2024 ProFireManager - Tous droits réservés*
+*© 2025 ProFireManager - Tous droits réservés*
