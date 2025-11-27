@@ -174,6 +174,64 @@ const BatimentForm = ({
     'Institutionnel': ['École', 'Hôpital', 'CHSLD', 'Centre communautaire', 'Église', 'Bibliothèque']
   };
 
+  // Groupes d'occupation selon Code de sécurité avec sous-types pour questions conditionnelles
+  const groupesOccupation = [
+    { code: 'A', nom: 'Groupe A - Établissements de Réunion' },
+    { code: 'B', nom: 'Groupe B - Établissements de Soins et de Détention' },
+    { code: 'C', nom: 'Groupe C - Habitations' },
+    { code: 'D', nom: 'Groupe D - Établissements d\'Affaires' },
+    { code: 'E', nom: 'Groupe E - Établissements Commerciaux' },
+    { code: 'F', nom: 'Groupe F - Établissements Industriels' },
+    { code: 'AGRICOLE', nom: 'Groupe Agricole' }
+  ];
+
+  // Sous-types par groupe d'occupation (pour grilles d'inspection conditionnelles)
+  const sousTypesParGroupe = {
+    'A': [], // Pas de sous-types spécifiques pour Groupe A
+    'B': [
+      { value: 'ecole', label: 'École' },
+      { value: 'hopital', label: 'Hôpital' },
+      { value: 'chsld', label: 'CHSLD / Résidence pour aînés' },
+      { value: 'centre_communautaire', label: 'Centre communautaire' },
+      { value: 'eglise', label: 'Église / Lieu de culte' },
+      { value: 'bibliotheque', label: 'Bibliothèque' }
+    ],
+    'C': [
+      { value: 'unifamiliale', label: 'Unifamiliale' },
+      { value: 'bifamiliale', label: 'Bifamiliale' },
+      { value: 'multi_3_8', label: 'Multifamiliale (3-8 logements)' },
+      { value: 'multi_9', label: 'Multifamiliale (9+ logements)' },
+      { value: 'copropriete', label: 'Copropriété' },
+      { value: 'maison_mobile', label: 'Maison mobile / Parc de maisons mobiles' }
+    ],
+    'D': [
+      { value: 'bureau', label: 'Bureau' },
+      { value: 'magasin', label: 'Magasin de détail' },
+      { value: 'restaurant', label: 'Restaurant' },
+      { value: 'hotel', label: 'Hôtel / Motel' },
+      { value: 'centre_commercial', label: 'Centre commercial' }
+    ],
+    'E': [
+      { value: 'commerce_detail', label: 'Commerce de détail' },
+      { value: 'commerce_gros', label: 'Commerce de gros' },
+      { value: 'service', label: 'Services' }
+    ],
+    'F': [
+      { value: 'manufacture_legere', label: 'Manufacture légère' },
+      { value: 'manufacture_lourde', label: 'Manufacture lourde' },
+      { value: 'entrepot', label: 'Entrepôt' },
+      { value: 'usine', label: 'Usine' },
+      { value: 'atelier', label: 'Atelier' }
+    ],
+    'AGRICOLE': [
+      { value: 'ferme', label: 'Ferme' },
+      { value: 'grange', label: 'Grange' },
+      { value: 'serre', label: 'Serre' },
+      { value: 'ecurie', label: 'Écurie / Étable' },
+      { value: 'silo', label: 'Silo' }
+    ]
+  };
+
   const niveauxRisque = ['Faible', 'Moyen', 'Élevé', 'Très élevé'];
 
   const riskColors = {
