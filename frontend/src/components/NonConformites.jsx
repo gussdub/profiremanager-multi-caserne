@@ -276,6 +276,9 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <Button onClick={() => setShowCreateModal(true)}>
+            ➕ Créer NC
+          </Button>
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? '⏳ Export...' : '📥 Exporter Excel'}
           </Button>
