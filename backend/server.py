@@ -4069,6 +4069,17 @@ async def change_user_password(
 
 # ==================== PERSONNALISATION (LOGO & BRANDING) ====================
 
+@api_router.get("/{tenant_slug}/public/branding")
+async def get_public_branding(tenant_slug: str):
+    """Récupérer les paramètres de branding publics (pas d'authentification requise)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    return {
+        "logo_url": tenant.logo_url if hasattr(tenant, 'logo_url') else "",
+        "nom_service": tenant.nom_service if hasattr(tenant, 'nom_service') else tenant.nom,
+        "afficher_profiremanager": tenant.afficher_profiremanager if hasattr(tenant, 'afficher_profiremanager') else True
+    }
+
 @api_router.get("/{tenant_slug}/personnalisation")
 async def get_personnalisation(
     tenant_slug: str,
@@ -4078,8 +4089,8 @@ async def get_personnalisation(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     return {
-        "logo_url": tenant.logo_url or "",
-        "nom_service": tenant.nom_service or tenant.nom,
+        "logo_url": tenant.logo_url if hasattr(tenant, 'logo_url') else "",
+        "nom_service": tenant.nom_service if hasattr(tenant, 'nom_service') else tenant.nom,
         "afficher_profiremanager": tenant.afficher_profiremanager if hasattr(tenant, 'afficher_profiremanager') else True
     }
 
