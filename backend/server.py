@@ -17423,6 +17423,82 @@ async def delete_grille_inspection(
     
     return {"message": "Grille d'inspection supprimée avec succès"}
 
+@api_router.post("/{tenant_slug}/prevention/grilles-inspection/{grille_id}/dupliquer")
+async def dupliquer_grille_inspection(
+    tenant_slug: str, 
+    grille_id: str,
+    nouveau_nom: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Dupliquer une grille d'inspection pour créer une variante"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer la grille source
+    grille_source = await db.grilles_inspection.find_one({"id": grille_id, "tenant_id": tenant.id}, {"_id": 0})
+    
+    if not grille_source:
+        raise HTTPException(status_code=404, detail="Grille d'inspection non trouvée")
+    
+    # Créer la copie avec un nouvel ID
+    grille_copie = grille_source.copy()
+    grille_copie["id"] = str(uuid4())
+    grille_copie["nom"] = nouveau_nom if nouveau_nom else f"{grille_source['nom']} (Copie)"
+    grille_copie["version"] = "1.0"
+    
+    await db.grilles_inspection.insert_one(grille_copie)
+    
+    return clean_mongo_doc(grille_copie)
+
+@api_router.post("/{tenant_slug}/prevention/initialiser")
+async def initialiser_module_prevention(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Initialiser le module prévention avec les 7 grilles d'inspection standards"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le module prévention est activé
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier si des grilles existent déjà
+    existing_count = await db.grilles_inspection.count_documents({"tenant_id": tenant.id})
+    if existing_count > 0:
+        raise HTTPException(status_code=400, detail=f"{existing_count} grille(s) existent déjà. Supprimez-les d'abord si vous voulez réinitialiser.")
+    
+    # Importer les grilles depuis insert_grilles.py
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(__file__))
+    from insert_grilles import GRILLES
+    
+    # Créer les 7 grilles pour ce tenant
+    grilles_creees = []
+    for grille_template in GRILLES:
+        grille = grille_template.copy()
+        grille["id"] = str(uuid4())
+        grille["tenant_id"] = tenant.id
+        grille["actif"] = True
+        grille["version"] = "1.0"
+        
+        await db.grilles_inspection.insert_one(grille)
+        grilles_creees.append({"id": grille["id"], "nom": grille["nom"]})
+    
+    return {
+        "message": f"{len(grilles_creees)} grilles d'inspection créées avec succès",
+        "grilles": grilles_creees
+    }
+
 @api_router.post("/{tenant_slug}/prevention/batiments/import-csv")
 async def import_batiments_csv(
     tenant_slug: str,
