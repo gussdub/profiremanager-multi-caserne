@@ -315,7 +315,7 @@ La Plateforme Tout-en-Un pour Services d'Incendie
 
 ---
 
-## 🎁 OFFRE SPÉCIALE - Lancement 2024
+## 🎁 OFFRE SPÉCIALE - Fin 2025
 
 **Pour les 10 premiers services inscrits** :
 
@@ -323,7 +323,7 @@ La Plateforme Tout-en-Un pour Services d'Incendie
 🎉 **1er mois gratuit** (en plus des 30 jours d'essai)  
 🎉 **Formation sur site gratuite** (valeur 1 500$)  
 
-**Conditions** : Inscription avant le 31 décembre 2024
+**Conditions** : Inscription avant le 31 décembre 2025
 
 ---
 
