@@ -18249,7 +18249,7 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                 <option value="D">D - Affaires et services personnels</option>
                 <option value="E">E - Commercial</option>
                 <option value="F">F - Industriel</option>
-                <option value="AGRICOLE">Agricole</option>
+                <option value="G">G - Agricole</option>
               </select>
             </div>
           </div>
