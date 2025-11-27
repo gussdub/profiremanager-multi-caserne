@@ -11775,6 +11775,9 @@ body {
   border-radius: 8px;
   padding: 1.5rem;
   transition: all 0.2s;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .template-card:hover,
