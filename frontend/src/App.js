@@ -17672,6 +17672,8 @@ const GrillesInspection = () => {
   const [grilles, setGrilles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingGrille, setEditingGrille] = useState(null);
+  const [viewingTemplate, setViewingTemplate] = useState(null);
+  const [creatingFromTemplate, setCreatingFromTemplate] = useState(null);
 
   const fetchGrilles = async () => {
     try {
@@ -17713,6 +17715,35 @@ const GrillesInspection = () => {
     }
   };
 
+  // Modal de prévisualisation du template
+  if (viewingTemplate) {
+    return (
+      <TemplatePreviewModal 
+        template={viewingTemplate}
+        onClose={() => setViewingTemplate(null)}
+        onUse={(template) => {
+          setViewingTemplate(null);
+          setCreatingFromTemplate(template);
+        }}
+      />
+    );
+  }
+
+  // Édition d'une grille à partir d'un template
+  if (creatingFromTemplate) {
+    return (
+      <EditerGrilleFromTemplate 
+        template={creatingFromTemplate}
+        onClose={() => setCreatingFromTemplate(null)}
+        onSave={() => {
+          setCreatingFromTemplate(null);
+          fetchGrilles();
+        }}
+      />
+    );
+  }
+
+  // Édition d'une grille existante
   if (editingGrille) {
     return <EditerGrille grille={editingGrille} onClose={() => setEditingGrille(null)} onSave={() => { setEditingGrille(null); fetchGrilles(); }} />;
   }
@@ -17746,16 +17777,16 @@ const GrillesInspection = () => {
               <div className="template-actions">
                 <Button 
                   size="sm" 
-                  onClick={() => window.location.href = `#grille-${template.groupe}`}
+                  onClick={() => setViewingTemplate(template)}
                 >
                   👀 Aperçu
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => createGrilleFromTemplate(template)}
+                  onClick={() => setCreatingFromTemplate(template)}
                 >
-                  📝 Utiliser
+                  📝 Utiliser & Personnaliser
                 </Button>
               </div>
             </div>
