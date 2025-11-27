@@ -10432,9 +10432,19 @@ async def export_salaires_pdf(
     
     # Générer PDF
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    # Définir le page template avec frame
+    frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+    template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+    doc.addPageTemplates([template])
+    
     story = []
     styles = getSampleStyleSheet()
+    
+    # Header personnalisé (logo + nom service)
+    header_elements = create_pdf_header_elements(tenant, styles)
+    story.extend(header_elements)
     
     title_style = ParagraphStyle(
         'CustomTitle',
