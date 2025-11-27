@@ -21756,6 +21756,7 @@ const Prevention = () => {
             tenantSlug={tenantSlug} 
             currentUser={user}
             onRefreshBatiments={fetchBatiments}
+            ImportBatimentsComponent={ImportBatiments}
           />
         );
       
