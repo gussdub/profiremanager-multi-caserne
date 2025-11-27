@@ -18413,6 +18413,57 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                       </label>
                     </div>
 
+                    {/* Condition d'affichage */}
+                    <details style={{ marginTop: '0.5rem' }}>
+                      <summary style={{ 
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        color: '#9ca3af'
+                      }}>
+                        🔀 Question conditionnelle (avancé)
+                      </summary>
+                      <div style={{ 
+                        marginTop: '0.5rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#fef3c7',
+                        borderRadius: '4px'
+                      }}>
+                        <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '0.25rem' }}>
+                          Condition d'affichage
+                        </label>
+                        <input
+                          type="text"
+                          value={question.condition || ''}
+                          onChange={(e) => updateQuestion(sectionIndex, qIndex, 'condition', e.target.value)}
+                          placeholder="Ex: multi_9 || copropriete"
+                          style={{
+                            width: '100%',
+                            padding: '0.25rem',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                        <p style={{ fontSize: '0.65rem', color: '#92400e', marginTop: '0.25rem' }}>
+                          Utilisez les sous-types: unifamiliale, bifamiliale, multi_3_8, multi_9, copropriete, maison_mobile, bureau, magasin, restaurant, hotel, etc.
+                          <br/>Opérateurs: || (OU), && (ET)
+                          <br/>Laissez vide pour afficher toujours
+                        </p>
+                        {question.condition && (
+                          <div style={{ 
+                            marginTop: '0.5rem',
+                            padding: '0.25rem 0.5rem',
+                            backgroundColor: '#dcfce7',
+                            borderRadius: '4px',
+                            fontSize: '0.65rem',
+                            color: '#166534'
+                          }}>
+                            ✓ Cette question s'affichera seulement pour: <strong>{question.condition}</strong>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+
                     {question.type === 'photos' && (
                       <p style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic', marginTop: '0.5rem' }}>
                         💡 Type "Photos": L'inspecteur pourra prendre plusieurs photos librement
