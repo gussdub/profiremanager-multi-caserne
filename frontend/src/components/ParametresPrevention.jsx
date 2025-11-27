@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { apiGet, apiPut } from '../utils/api';
 
-const ParametresPrevention = ({ tenantSlug, currentUser }) => {
+const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showImportCSV, setShowImportCSV] = useState(false);
   const [parametres, setParametres] = useState({
     recurrence_inspections: 1, // années
     nombre_visites_requises: 1,
@@ -215,6 +216,64 @@ const ParametresPrevention = ({ tenantSlug, currentUser }) => {
             Les préventionnistes sont définis dans le module Personnel
           </p>
         </div>
+      </div>
+
+      {/* Section Import de Bâtiments */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        marginBottom: '1.5rem'
+      }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+          📥 Import de Bâtiments
+        </h3>
+        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+          Importez des bâtiments en masse à partir d'un fichier CSV, Excel, HTML ou XML
+        </p>
+        
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Button
+            onClick={() => setShowImportCSV(!showImportCSV)}
+            variant={showImportCSV ? "default" : "outline"}
+          >
+            {showImportCSV ? '❌ Fermer l\'import' : '📤 Ouvrir l\'import CSV/Excel'}
+          </Button>
+          
+          {!showImportCSV && (
+            <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+              Formats supportés : CSV, Excel (.xlsx, .xls), HTML, XML
+            </span>
+          )}
+        </div>
+
+        {showImportCSV && (
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1.5rem',
+            backgroundColor: '#f9fafb',
+            borderRadius: '6px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                ℹ️ L'interface d'import complète s'ouvrira ici
+              </p>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+                Pour utiliser l'import CSV complet, utilisez temporairement le lien ci-dessous.<br/>
+                L'intégration complète sera finalisée dans la prochaine version.
+              </p>
+              <Button
+                onClick={() => {
+                  window.open(`${window.location.origin}${window.location.pathname}#import-batiments`, '_blank');
+                }}
+              >
+                🔗 Ouvrir l'import dans une nouvelle fenêtre
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bouton Sauvegarder */}
