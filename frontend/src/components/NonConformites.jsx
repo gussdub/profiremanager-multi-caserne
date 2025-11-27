@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPatch, getTenantToken } from '../utils/api';
+import { apiGet, apiPatch, apiPost, getTenantToken } from '../utils/api';
 
 const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [nonConformites, setNonConformites] = useState([]);
@@ -9,6 +9,16 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [filtreStatut, setFiltreStatut] = useState('tous'); // tous, a_corriger, corrige
   const [filtrePriorite, setFiltrePriorite] = useState('tous'); // tous, haute, moyenne, faible
   const [exporting, setExporting] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingNC, setCreatingNC] = useState(false);
+  const [newNC, setNewNC] = useState({
+    titre: '',
+    description: '',
+    categorie: '',
+    priorite: 'moyenne',
+    batiment_id: '',
+    date_identification: new Date().toISOString().split('T')[0]
+  });
 
   useEffect(() => {
     loadData();
