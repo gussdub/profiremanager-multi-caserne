@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPut } from '../utils/api';
+import { apiGet, apiPatch } from '../utils/api';
 
 const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [nonConformites, setNonConformites] = useState([]);
