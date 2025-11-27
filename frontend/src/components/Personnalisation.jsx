@@ -310,63 +310,6 @@ const Personnalisation = ({ tenantSlug, toast }) => {
         </div>
       </div>
 
-      {/* Section Branding ProFireManager */}
-      <div style={{
-        backgroundColor: 'white',
-        border: '2px solid #e5e7eb',
-        borderRadius: '12px',
-        padding: '1.5rem',
-        marginBottom: '1.5rem'
-      }}>
-        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-          Branding ProFireManager
-        </h3>
-
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          gap: '0.75rem'
-        }}>
-          <input
-            type="checkbox"
-            checked={personnalisation.afficher_profiremanager}
-            onChange={(e) => setPersonnalisation(prev => ({
-              ...prev,
-              afficher_profiremanager: e.target.checked
-            }))}
-            style={{
-              width: '20px',
-              height: '20px',
-              cursor: 'pointer'
-            }}
-          />
-          <span style={{ fontWeight: '500' }}>
-            Afficher le branding ProFireManager
-          </span>
-        </label>
-
-        <div style={{
-          marginTop: '1rem',
-          padding: '0.75rem',
-          backgroundColor: personnalisation.afficher_profiremanager ? '#f0fdf4' : '#fef3c7',
-          border: `1px solid ${personnalisation.afficher_profiremanager ? '#bbf7d0' : '#fcd34d'}`,
-          borderRadius: '6px',
-          fontSize: '0.75rem',
-          color: personnalisation.afficher_profiremanager ? '#15803d' : '#92400e'
-        }}>
-          {personnalisation.afficher_profiremanager ? (
-            <>
-              ✅ <strong>Recommandé</strong> : La marque "ProFireManager" apparaîtra discrètement en haut à droite de l'application et en pied de page des documents PDF. Cela aide pour le support technique et la reconnaissance du logiciel.
-            </>
-          ) : (
-            <>
-              ⚠️ <strong>Non recommandé</strong> : Masquer le branding peut rendre le support technique plus difficile. Les utilisateurs ne sauront pas quel logiciel ils utilisent.
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Boutons d'action */}
       <div style={{
         display: 'flex',
