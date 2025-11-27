@@ -1,6 +1,19 @@
 # ProFireManager Testing Results
 
 frontend:
+  - task: "Module Non-conformités - Backend Integration"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/NonConformites.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "FEATURE COMPLETION - Intégration complète du composant Non-conformités avec le backend existant. Problème initial: Le composant cherchait les données dans inspection.grille_data.elements_inspectes (structure inexistante). Solution implémentée: 1) ✅ Mise à jour de loadData(): Utilise l'endpoint backend GET /prevention/non-conformites au lieu de parcourir les inspections, charge les bâtiments en parallèle avec Promise.all, enrichit les données avec le bâtiment correspondant, 2) ✅ Mapping des données backend: Gravité backend (critique/eleve/moyen/faible) → Priorité frontend (haute/moyenne/faible), Statut backend (ouverte/en_cours/corrigee/fermee) → Statut frontend (a_corriger/corrige), Titre/description backend → element/observations frontend, 3) ✅ Fonction marquerCorrige(): Utilise l'endpoint PATCH /prevention/non-conformites/{nc_id}/statut, envoie statut='corrigee' avec notes_correction, met à jour l'état local après succès backend, affiche un toast de confirmation, 4) ✅ Import mis à jour: Remplacé apiPut par apiPatch pour correspondre à l'endpoint PATCH, 5) ✅ Suppression du code obsolète: Supprimé la fonction determinePriorite() qui n'est plus nécessaire. ARCHITECTURE: Le backend possède déjà un modèle NonConformite complet avec tous les endpoints CRUD nécessaires. Le composant frontend utilise maintenant cette architecture existante au lieu de traiter les données côté client. BENEFITS: Performance améliorée (pas besoin de charger toutes les inspections), scalabilité (pagination possible côté serveur), cohérence des données (source unique de vérité dans MongoDB). NEEDS COMPREHENSIVE TESTING: Vérifier l'affichage, les filtres, et la fonctionnalité marquer comme corrigé."
+
+
   - task: "Bâtiment Module - Edit Rights, Plan Viewer & Auto-Save"
     implemented: true
     working: "NA"
