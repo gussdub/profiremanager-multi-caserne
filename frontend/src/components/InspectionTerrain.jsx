@@ -293,7 +293,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
 
         {/* Questions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {currentSection.questions.map((question, qIdx) => {
+          {filteredQuestions.map((question, qIdx) => {
             const questionId = `${currentSectionIndex}_${qIdx}`;
             const reponse = reponses[questionId];
             const questionPhotos = photos[questionId] || [];
