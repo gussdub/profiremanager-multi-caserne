@@ -4432,7 +4432,13 @@ async def export_planning_pdf(
         
         # Créer le PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+        doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=landscape(letter))
+        
+        # Définir le page template avec frame
+        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+        template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+        doc.addPageTemplates([template])
+        
         elements = []
         styles = getSampleStyleSheet()
         
