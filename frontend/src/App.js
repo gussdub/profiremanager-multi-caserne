@@ -688,13 +688,43 @@ const Login = () => {
       <div className="login-box">
         <div className="login-header">
           <div className="logo">
-            <div className="logo-flame">
-              <div className="flame-container">
-                <i className="fas fa-fire flame-icon"></i>
+            {personnalisation?.logo_url ? (
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <img 
+                  src={personnalisation.logo_url} 
+                  alt="Logo du service" 
+                  style={{ 
+                    maxHeight: '120px', 
+                    maxWidth: '100%', 
+                    objectFit: 'contain',
+                    marginBottom: '0.5rem'
+                  }}
+                />
+                {personnalisation.nom_service && (
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', margin: '0.5rem 0' }}>
+                    {personnalisation.nom_service}
+                  </h2>
+                )}
               </div>
-            </div>
-            <h1>ProFireManager</h1>
-            <p className="version">v2.0 Avancé</p>
+            ) : (
+              <>
+                <div className="logo-flame">
+                  <div className="flame-container">
+                    <i className="fas fa-fire flame-icon"></i>
+                  </div>
+                </div>
+                <h1>ProFireManager</h1>
+              </>
+            )}
+            {(!personnalisation || personnalisation.afficher_profiremanager) && (
+              <p className="version" style={{ 
+                fontSize: '0.875rem', 
+                color: '#6b7280',
+                marginTop: personnalisation?.logo_url ? '0.5rem' : '0'
+              }}>
+                {personnalisation?.logo_url ? 'Powered by ProFireManager' : 'v2.0 Avancé'}
+              </p>
+            )}
           </div>
         </div>
         
