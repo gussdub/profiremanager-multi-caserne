@@ -18208,9 +18208,100 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                         🗑️
                       </Button>
                     </div>
+
+                    {/* Photos de référence - optionnel pour guider l'inspecteur */}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <details style={{ fontSize: '0.875rem' }}>
+                        <summary style={{ cursor: 'pointer', color: '#3b82f6' }}>
+                          📷 Photos de référence (optionnel)
+                        </summary>
+                        <div style={{ 
+                          marginTop: '0.5rem', 
+                          padding: '0.75rem', 
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '4px'
+                        }}>
+                          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                            Ajoutez des photos/schémas pour aider l'inspecteur (ex: localisation extincteur, schéma technique)
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+                              // Pour l'instant, on stocke juste les noms
+                              // TODO: Upload vers serveur et stocker URLs
+                              const photoNames = files.map(f => f.name);
+                              updateQuestion(sectionIndex, qIndex, 'photos_reference', [
+                                ...(question.photos_reference || []),
+                                ...photoNames
+                              ]);
+                            }}
+                            style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}
+                          />
+                          
+                          {question.photos_reference && question.photos_reference.length > 0 && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <strong style={{ fontSize: '0.75rem' }}>Photos ajoutées:</strong>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+                                {question.photos_reference.map((photo, pIdx) => (
+                                  <div key={pIdx} style={{
+                                    padding: '0.25rem 0.5rem',
+                                    backgroundColor: 'white',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}>
+                                    📎 {photo}
+                                    <button
+                                      onClick={() => {
+                                        const newPhotos = question.photos_reference.filter((_, i) => i !== pIdx);
+                                        updateQuestion(sectionIndex, qIndex, 'photos_reference', newPhotos);
+                                      }}
+                                      style={{
+                                        border: 'none',
+                                        background: 'none',
+                                        cursor: 'pointer',
+                                        color: '#ef4444',
+                                        fontSize: '0.875rem'
+                                      }}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+
+                    {/* Champ observations si non-conforme */}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <label style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem',
+                        fontSize: '0.875rem',
+                        color: '#6b7280'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={question.photo_requise_si_non_conforme || false}
+                          onChange={(e) => updateQuestion(sectionIndex, qIndex, 'photo_requise_si_non_conforme', e.target.checked)}
+                        />
+                        📸 Photo obligatoire si non-conforme
+                      </label>
+                    </div>
+
                     {question.type === 'photos' && (
-                      <p style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic' }}>
-                        📸 L'inspecteur pourra prendre des photos lors du remplissage
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic', marginTop: '0.5rem' }}>
+                        💡 Type "Photos": L'inspecteur pourra prendre plusieurs photos librement
                       </p>
                     )}
                   </div>
