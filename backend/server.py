@@ -1313,6 +1313,63 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
         return False
 
+# ==================== HELPERS PDF PERSONNALISÉS ====================
+
+def create_pdf_header_elements(tenant, styles):
+    """
+    Crée les éléments de header personnalisés pour les PDFs
+    Retourne une liste d'éléments à ajouter au document
+    """
+    elements = []
+    
+    # Logo (si présent)
+    if hasattr(tenant, 'logo_url') and tenant.logo_url:
+        try:
+            if tenant.logo_url.startswith('data:image/'):
+                # Extraire les données base64
+                header, encoded = tenant.logo_url.split(',', 1)
+                logo_data = base64.b64decode(encoded)
+                logo_buffer = IOBytesIO(logo_data)
+                
+                # Ajouter le logo (max 100px de hauteur)
+                logo = Image(logo_buffer, width=100, height=50)
+                logo.hAlign = 'LEFT'
+                elements.append(logo)
+                elements.append(Spacer(1, 0.1 * inch))
+        except Exception as e:
+            print(f"Erreur chargement logo PDF: {e}")
+    
+    # Nom du service
+    nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom
+    
+    header_style = ParagraphStyle(
+        'ServiceHeader',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#1f2937'),
+        spaceAfter=10,
+        alignment=TA_CENTER
+    )
+    
+    elements.append(Paragraph(nom_service, header_style))
+    elements.append(Spacer(1, 0.2 * inch))
+    
+    return elements
+
+def create_pdf_footer_text(tenant):
+    """
+    Crée le texte du footer pour les PDFs
+    """
+    footer_parts = []
+    
+    # Toujours afficher ProFireManager (sauf si explicitement désactivé)
+    if not hasattr(tenant, 'afficher_profiremanager') or tenant.afficher_profiremanager:
+        footer_parts.append("Généré par ProFireManager • www.profiremanager.com")
+    
+    return " | ".join(footer_parts) if footer_parts else ""
+
+# ==================== FIN HELPERS PDF ====================
+
 def get_password_hash(password: str) -> str:
     """
     Crée un hash bcrypt du mot de passe (sécurisé et standard).
