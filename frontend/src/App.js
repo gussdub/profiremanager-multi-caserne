@@ -978,6 +978,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'] },  // Supprimé requiresModule temporairement
     { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
+    { id: 'personnalisation', label: 'Personnalisation', icon: '🎨', roles: ['admin'] },
     { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe'] }
   ];
