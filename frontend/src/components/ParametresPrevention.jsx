@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPut } from '../utils/api';
+import { apiGet, apiPut, getTenantToken } from '../utils/api';
 
 const ParametresPrevention = ({ tenantSlug, currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [parametres, setParametres] = useState({
     recurrence_inspections: 1, // années
     nombre_visites_requises: 1,
