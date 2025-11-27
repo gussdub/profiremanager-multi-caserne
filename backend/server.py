@@ -17565,7 +17565,13 @@ async def get_grilles_inspection(tenant_slug: str, current_user: User = Depends(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    grilles = await db.grilles_inspection.find({"tenant_id": tenant.id}).to_list(1000)
+    # Récupérer les grilles spécifiques au tenant ET les grilles globales (templates)
+    grilles = await db.grilles_inspection.find({
+        "$or": [
+            {"tenant_id": tenant.id},
+            {"tenant_id": {"$exists": False}}  # Grilles globales/templates
+        ]
+    }).to_list(1000)
     return [clean_mongo_doc(grille) for grille in grilles]
 
 @api_router.post("/{tenant_slug}/prevention/grilles-inspection")
