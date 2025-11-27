@@ -2402,6 +2402,10 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
+        {/* Onglet Personnalisation */}
+        {activeTab === 'personnalisation' && (
+          <Personnalisation tenantSlug={tenantSlug} toast={toast} />
+        )}
 
       </div>
 
