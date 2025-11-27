@@ -292,10 +292,10 @@ Vs 12-24 mois pour développement sur mesure
 
 ---
 
-## 🔮 ROADMAP 2025
+## 🔮 ROADMAP 2026
 
-**Q1 2025** : Notifications push avancées • Signature numérique • Mode hors-ligne amélioré  
-**Q2-Q4 2025** : Module qualifications avancé • Gestion équipements incendie • Portail propriétaire • IA prédictive
+**Q1 2026** : Notifications push avancées • Signature numérique • Mode hors-ligne amélioré  
+**Q2-Q4 2026** : Module qualifications avancé • Gestion équipements incendie • Portail propriétaire • IA prédictive
 
 **Vous avez un besoin spécifique ?** Parlons-en - nous priorisons selon vos retours.
 
