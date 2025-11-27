@@ -12,7 +12,66 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
   const [showPhotoPreview, setShowPhotoPreview] = useState(null);
   const fileInputRefs = useRef({});
 
+  // Normaliser le sous-type du bâtiment pour correspondre aux conditions
+  const normalizeSubType = (subType) => {
+    if (!subType) return '';
+    return subType.toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/\(/g, '')
+      .replace(/\)/g, '')
+      .replace(/-/g, '_')
+      .replace(/é/g, 'e')
+      .replace(/è/g, 'e')
+      .replace(/ê/g, 'e')
+      .replace(/à/g, 'a')
+      .replace(/ô/g, 'o');
+  };
+
+  const batimentSubType = normalizeSubType(batiment.sous_type_batiment || batiment.sous_type || '');
+
+  // Fonction pour évaluer une condition
+  const evalCondition = (condition) => {
+    if (!condition) return true; // Pas de condition = toujours visible
+    if (!batimentSubType) return true; // Pas de sous-type = afficher tout
+    
+    // Remplacer les opérateurs logiques
+    const evaluableCondition = condition
+      .replace(/\|\|/g, ' || ')
+      .replace(/&&/g, ' && ');
+    
+    // Créer un contexte d'évaluation avec le sous-type actuel
+    try {
+      const context = {};
+      
+      // Définir toutes les variables de sous-types possibles
+      const allSubTypes = [
+        'unifamiliale', 'bifamiliale', 'multi_3_8', 'multi_9', 'copropriete', 'maison_mobile',
+        'bureau', 'magasin', 'restaurant', 'hotel', 'centre_commercial',
+        'manufacture_legere', 'manufacture_lourde', 'entrepot', 'usine', 'atelier',
+        'ecole', 'hopital', 'chsld', 'centre_communautaire', 'eglise', 'bibliotheque',
+        'ferme', 'grange', 'serre', 'ecurie', 'silo'
+      ];
+      
+      allSubTypes.forEach(type => {
+        context[type] = (type === batimentSubType);
+      });
+      
+      // Évaluer l'expression
+      const func = new Function(...Object.keys(context), `return ${evaluableCondition}`);
+      return func(...Object.values(context));
+    } catch (e) {
+      console.error('Erreur évaluation condition:', e);
+      return true; // En cas d'erreur, afficher la question
+    }
+  };
+
+  // Filtrer les questions selon les conditions
+  const getFilteredQuestions = (section) => {
+    return section.questions.filter(q => evalCondition(q.condition));
+  };
+
   const currentSection = grille.sections[currentSectionIndex];
+  const filteredQuestions = getFilteredQuestions(currentSection);
   const progressPercent = ((currentSectionIndex + 1) / grille.sections.length) * 100;
 
   const handleReponse = (questionIndex, value) => {
