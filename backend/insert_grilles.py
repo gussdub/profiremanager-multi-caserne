@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Script pour insérer les grilles d'inspection pré-définies dans MongoDB
+CORRIGÉ selon la classification officielle du Code de sécurité du Québec
 """
 import asyncio
 import os
@@ -53,13 +54,14 @@ TRONC_COMMUN = [
     }
 ]
 
-# Grilles complètes par groupe
+# Grilles complètes par groupe (CORRIGÉES)
 GRILLES = [
-    # GROUPE A - Établissements de Réunion
+    # GROUPE A - Établissements de Réunion (A-1, A-2, A-3, A-4)
     {
         "nom": "Groupe A - Établissements de Réunion",
         "groupe_occupation": "A",
-        "description": "Salles de spectacles, écoles, restaurants, lieux de culte",
+        "description": "Théâtres, cinémas, écoles, églises, musées, restaurants, bibliothèques, arénas",
+        "sous_types": ["a_1_theatre", "a_1_cinema", "a_1_opera", "a_2_ecole", "a_2_eglise", "a_2_musee", "a_2_restaurant", "a_2_bibliotheque", "a_2_terminal", "a_3_arena", "a_3_piscine", "a_4_stade"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. Capacité et Occupation (Groupe A)",
@@ -68,7 +70,8 @@ GRILLES = [
                     {"question": "Capacité maximale affichée bien en vue?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Nombre actuel d'occupants", "type": "texte"},
                     {"question": "Dispositifs anti-panique (barres) fonctionnels?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Rideaux/tentures: ignifugés (certificat)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": False}
+                    {"question": "Rideaux/tentures: ignifugés (certificat)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": False, "condition": "a_1_theatre || a_1_cinema || a_1_opera"},
+                    {"question": "Gradins: solidité, accès dégagés?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "a_3_arena || a_3_piscine || a_4_stade"}
                 ]
             },
             {
@@ -84,12 +87,12 @@ GRILLES = [
         ]
     },
     
-    # GROUPE B - Soins ou Détention (avec questions conditionnelles)
+    # GROUPE B - Soin, Traitement ou Détention (B-1, B-2, B-3)
     {
-        "nom": "Groupe B - Soins ou Détention",
+        "nom": "Groupe B - Soin, Traitement ou Détention",
         "groupe_occupation": "B",
-        "description": "Hôpitaux, CHSLD, RPA, centres de détention",
-        "sous_types": ["ecole", "hopital", "chsld", "centre_communautaire", "eglise", "bibliotheque"],
+        "description": "Prisons, hôpitaux, CHSLD, foyers de groupe, centres de réadaptation",
+        "sous_types": ["b_1_prison", "b_1_penitencier", "b_1_reformatoire", "b_2_hopital", "b_2_chsld", "b_3_foyer_groupe", "b_3_readaptation"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. PNAP - Personnes Nécessitant Attention Particulière",
@@ -111,21 +114,20 @@ GRILLES = [
                     {"question": "Portes coupe-feu se ferment hermétiquement?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Verrouillage électromagnétique: déverrouille sur alarme?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Exercices d'évacuation: fréquence respectée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": False},
-                    {"question": "Largeur corridors adéquate (lits/civières)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "hopital || chsld"},
-                    {"question": "Classes/salles: capacité affichée, sorties dégagées?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "ecole"},
-                    {"question": "Équipements religieux: pas d'obstruction des sorties?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "eglise"},
+                    {"question": "Largeur corridors adéquate (lits/civières)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "b_2_hopital || b_2_chsld"},
+                    {"question": "Cellules/chambres: sécurité et évacuation?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "b_1_prison || b_1_penitencier || b_1_reformatoire"},
                     {"question": "Photos compartimentation", "type": "photos"}
                 ]
             }
         ]
     },
     
-    # GROUPE C - Habitation (avec questions conditionnelles selon sous-type)
+    # GROUPE C - Habitations (pas de sous-division officielle)
     {
-        "nom": "Groupe C - Habitation",
+        "nom": "Groupe C - Habitations",
         "groupe_occupation": "C",
-        "description": "Immeubles à logements, condos, hôtels",
-        "sous_types": ["unifamiliale", "bifamiliale", "multi_3_8", "multi_9", "copropriete", "maison_mobile"],
+        "description": "Maisons unifamiliales, immeubles à appartements, condos, hôtels, motels, pensions",
+        "sous_types": ["unifamiliale", "appartements", "condos", "hotel", "motel", "pension"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. PNAP - Si Applicable (Groupe C)",
@@ -142,23 +144,21 @@ GRILLES = [
                 "questions": [
                     {"question": "Avertisseurs de fumée dans logements: fonctionnels, <10 ans?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Détecteurs CO (si garage/combustion)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Portes logements: ferme-porte automatique?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "bifamiliale || multi_3_8 || multi_9 || copropriete"},
-                    {"question": "Vide-ordures: gicleur, porte fermée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_3_8 || multi_9 || copropriete"},
-                    {"question": "Corridors communs: largeur adéquate, éclairés?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_3_8 || multi_9 || copropriete"},
-                    {"question": "Système gicleurs: opérationnel, inspecté?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_9"},
-                    {"question": "Distance entre maisons mobiles respectée (3m minimum)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "maison_mobile"},
-                    {"question": "Ancrage et stabilité de la maison mobile?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "maison_mobile"},
+                    {"question": "Portes logements: ferme-porte automatique?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "appartements || condos"},
+                    {"question": "Corridors communs: largeur adéquate, éclairés?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "appartements || condos || hotel"},
+                    {"question": "Système gicleurs: opérationnel, inspecté?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "hotel || appartements || condos"},
                     {"question": "Photos logements/détecteurs", "type": "photos"}
                 ]
             }
         ]
     },
     
-    # GROUPE D - Affaires
+    # GROUPE D - Établissements d'Affaires et de Services Personnels
     {
         "nom": "Groupe D - Affaires et Services Personnels",
         "groupe_occupation": "D",
-        "description": "Bureaux, services professionnels",
+        "description": "Bureaux, banques, salons de coiffure, cabinets de dentiste, tours à bureaux",
+        "sous_types": ["bureaux", "banques", "salons", "cabinets_professionnels", "tours_bureaux"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. Charge Combustible (Groupe D)",
@@ -174,12 +174,12 @@ GRILLES = [
         ]
     },
     
-    # GROUPE E - Commercial (avec questions conditionnelles)
+    # GROUPE E - Établissements Commerciaux
     {
-        "nom": "Groupe E - Commercial",
+        "nom": "Groupe E - Commerciaux",
         "groupe_occupation": "E",
-        "description": "Magasins, centres commerciaux",
-        "sous_types": ["bureau", "magasin", "restaurant", "hotel", "centre_commercial"],
+        "description": "Supermarchés, grands magasins, centres commerciaux, boutiques",
+        "sous_types": ["supermarche", "grand_magasin", "centre_commercial", "boutique"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. Charge Combustible (Groupe E)",
@@ -188,21 +188,19 @@ GRILLES = [
                     {"question": "Allées principales dégagées (largeur min.)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Entreposage en hauteur: stable?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Dégagement 450mm sous gicleurs?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Aires de vente: pas d'obstruction sorties?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "magasin || centre_commercial"},
-                    {"question": "Cuisine commerciale: hotte propre, système extinction inspecté?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "restaurant || hotel"},
-                    {"question": "Chambres: détecteurs de fumée fonctionnels?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "hotel"},
+                    {"question": "Aires de vente: pas d'obstruction sorties?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Photos stockage et circulation", "type": "photos"}
                 ]
             }
         ]
     },
     
-    # GROUPE F - Industriel (avec questions conditionnelles)
+    # GROUPE F - Établissements Industriels (F-1, F-2, F-3)
     {
-        "nom": "Groupe F - Industriel",
+        "nom": "Groupe F - Industriels",
         "groupe_occupation": "F",
-        "description": "Usines, ateliers, entrepôts (F1, F2, F3)",
-        "sous_types": ["manufacture_legere", "manufacture_lourde", "entrepot", "usine", "atelier"],
+        "description": "Usines, ateliers, entrepôts (F-1: risque élevé, F-2: moyen, F-3: faible)",
+        "sous_types": ["f_1_explosifs", "f_1_produits_chimiques", "f_2_manufacture", "f_2_menuiserie", "f_2_garages", "f_2_imprimerie", "f_3_entrepot_incombustible", "f_3_energie", "f_3_transformation_aliments"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. Matières Dangereuses (Groupe F)",
@@ -212,20 +210,20 @@ GRILLES = [
                     {"question": "Fiches de données (FDS/SIMDUT) accessibles?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": False},
                     {"question": "Travaux point chaud: permis utilisé?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": False},
                     {"question": "Chiffons huileux: contenants métalliques fermés?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Système ventilation poussières fonctionnel?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "manufacture_legere || manufacture_lourde || usine"},
-                    {"question": "Équipements de production: protections incendie adéquates?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "manufacture_legere || manufacture_lourde || usine"},
-                    {"question": "Zones de stockage: séparation coupe-feu respectée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "entrepot"},
+                    {"question": "Système ventilation poussières fonctionnel?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "f_2_manufacture || f_2_menuiserie"},
+                    {"question": "Équipements de production: protections incendie adéquates?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "f_1_produits_chimiques || f_2_manufacture"},
+                    {"question": "Zones de stockage: séparation coupe-feu respectée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "f_3_entrepot_incombustible"},
                     {"question": "Photos matières dangereuses et installations", "type": "photos"}
                 ]
             }
         ]
     },
     
-    # GROUPE AGRICOLE - Nouveau (avec questions conditionnelles)
+    # GROUPE G - Agricole
     {
-        "nom": "Groupe Agricole",
-        "groupe_occupation": "AGRICOLE",
-        "description": "Fermes, granges, serres, écuries",
+        "nom": "Groupe G - Agricole",
+        "groupe_occupation": "G",
+        "description": "Fermes, granges, serres, écuries, silos",
         "sous_types": ["ferme", "grange", "serre", "ecurie", "silo"],
         "sections": TRONC_COMMUN + [
             {
