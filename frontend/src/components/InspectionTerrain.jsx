@@ -30,23 +30,59 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
     }
   };
 
-  const handlePhotoChange = (questionIndex, files) => {
+  const handlePhotoChange = async (questionIndex, files) => {
     const questionId = `${currentSectionIndex}_${questionIndex}`;
-    const newPhotos = Array.from(files).map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name
-    }));
-
-    setPhotos({
-      ...photos,
-      [questionId]: [...(photos[questionId] || []), ...newPhotos]
+    
+    // Convertir les fichiers en base64 et uploader
+    const uploadPromises = Array.from(files).map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64 = reader.result.split(',')[1]; // Enlever le préfixe data:image/...
+            
+            // Upload vers le serveur
+            const response = await apiPost(tenantSlug, '/prevention/upload-photo', {
+              photo_base64: base64,
+              filename: file.name
+            });
+            
+            resolve({
+              file,
+              preview: URL.createObjectURL(file),
+              name: file.name,
+              photo_id: response.photo_id,
+              url: response.url
+            });
+          } catch (error) {
+            console.error('Erreur upload:', error);
+            reject(error);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     });
 
-    toast({
-      title: "Photo ajoutée",
-      description: `${newPhotos.length} photo(s) ajoutée(s)`
-    });
+    try {
+      const uploadedPhotos = await Promise.all(uploadPromises);
+      
+      setPhotos({
+        ...photos,
+        [questionId]: [...(photos[questionId] || []), ...uploadedPhotos]
+      });
+
+      toast({
+        title: "Photo(s) ajoutée(s)",
+        description: `${uploadedPhotos.length} photo(s) uploadée(s) avec succès`
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader certaines photos",
+        variant: "destructive"
+      });
+    }
   };
 
   const removePhoto = (questionId, photoIndex) => {
