@@ -4393,6 +4393,10 @@ async def export_planning_pdf(
         elements = []
         styles = getSampleStyleSheet()
         
+        # Header personnalisé (logo + nom service)
+        header_elements = create_pdf_header_elements(tenant, styles)
+        elements.extend(header_elements)
+        
         # Titre
         title_style = ParagraphStyle(
             'CustomTitle',
