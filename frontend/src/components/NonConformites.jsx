@@ -67,25 +67,6 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
     }
   };
 
-  const determinePriorite = (element) => {
-    const elementsHautePriorite = [
-      'extincteur', 'gicleur', 'alarme', 'sortie de secours', 
-      'détecteur de fumée', 'système d\'alarme'
-    ];
-    const elementsMoyennePriorite = [
-      'éclairage', 'plan d\'évacuation', 'porte coupe-feu'
-    ];
-    
-    const elementLower = element.toLowerCase();
-    
-    if (elementsHautePriorite.some(e => elementLower.includes(e))) {
-      return 'haute';
-    } else if (elementsMoyennePriorite.some(e => elementLower.includes(e))) {
-      return 'moyenne';
-    }
-    return 'faible';
-  };
-
   const marquerCorrige = async (nonConformite) => {
     try {
       // Mettre à jour le statut dans le backend
