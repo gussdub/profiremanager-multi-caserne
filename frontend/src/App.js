@@ -22183,6 +22183,29 @@ const Prevention = () => {
             setCurrentView={setCurrentView}
           />
         );
+
+      case 'inspection-terrain':
+        // Nouveau composant d'inspection terrain (mobile-friendly)
+        const inspectionData = JSON.parse(localStorage.getItem('inspection_terrain_data') || '{}');
+        return (
+          <InspectionTerrain
+            tenantSlug={tenantSlug}
+            grille={inspectionData.grille}
+            batiment={inspectionData.batiment}
+            onComplete={() => {
+              localStorage.removeItem('inspection_terrain_data');
+              setCurrentView('calendrier');
+              toast({
+                title: "Inspection terminée",
+                description: "Les données ont été enregistrées"
+              });
+            }}
+            onCancel={() => {
+              localStorage.removeItem('inspection_terrain_data');
+              setCurrentView('calendrier');
+            }}
+          />
+        );
       
       case 'calendrier':
         return <PlanificationView 
