@@ -21192,6 +21192,7 @@ const Prevention = () => {
   const [googleMap, setGoogleMap] = useState(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [showImportCSV, setShowImportCSV] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Fonction pour ouvrir le modal d'un bâtiment
   const openBatimentModal = (batiment) => {
