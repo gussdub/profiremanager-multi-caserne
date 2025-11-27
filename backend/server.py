@@ -1492,6 +1492,10 @@ class Tenant(BaseModel):
     actif: bool = True
     date_creation: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     parametres: Dict[str, Any] = {}
+    # Personnalisation
+    logo_url: str = ""  # URL ou base64 du logo
+    nom_service: str = ""  # Nom complet du service (ex: "Service Incendie de Ville-X")
+    afficher_profiremanager: bool = True  # Afficher le branding ProFireManager
 
 class TenantCreate(BaseModel):
     slug: str
