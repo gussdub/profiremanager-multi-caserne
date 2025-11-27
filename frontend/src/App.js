@@ -18294,7 +18294,7 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                       <strong>Sous-types supportés :</strong> École, Hôpital, CHSLD, Centre communautaire, Église, Bibliothèque
                     </div>
                   )}
-                  {formData.groupe_occupation === 'AGRICOLE' && (
+                  {formData.groupe_occupation === 'G' && (
                     <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
                       <strong>Sous-types supportés :</strong> Ferme, Grange, Serre, Écurie, Silo
                     </div>
