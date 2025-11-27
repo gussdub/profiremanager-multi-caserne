@@ -117,11 +117,12 @@ GRILLES = [
         ]
     },
     
-    # GROUPE C - Habitation
+    # GROUPE C - Habitation (avec questions conditionnelles selon sous-type)
     {
         "nom": "Groupe C - Habitation",
         "groupe_occupation": "C",
         "description": "Immeubles à logements, condos, hôtels",
+        "sous_types": ["unifamiliale", "bifamiliale", "multi_3_8", "multi_9", "copropriete", "maison_mobile"],
         "sections": TRONC_COMMUN + [
             {
                 "titre": "5. PNAP - Si Applicable (Groupe C)",
@@ -138,8 +139,12 @@ GRILLES = [
                 "questions": [
                     {"question": "Avertisseurs de fumée dans logements: fonctionnels, <10 ans?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
                     {"question": "Détecteurs CO (si garage/combustion)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Portes logements: ferme-porte automatique?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
-                    {"question": "Vide-ordures: gicleur, porte fermée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True},
+                    {"question": "Portes logements: ferme-porte automatique?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "bifamiliale || multi_3_8 || multi_9 || copropriete"},
+                    {"question": "Vide-ordures: gicleur, porte fermée?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_3_8 || multi_9 || copropriete"},
+                    {"question": "Corridors communs: largeur adéquate, éclairés?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_3_8 || multi_9 || copropriete"},
+                    {"question": "Système gicleurs: opérationnel, inspecté?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "multi_9"},
+                    {"question": "Distance entre maisons mobiles respectée (3m minimum)?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "maison_mobile"},
+                    {"question": "Ancrage et stabilité de la maison mobile?", "type": "choix", "options": ["Conforme", "Non-conforme", "S.O."], "photo_requise_si_non_conforme": True, "condition": "maison_mobile"},
                     {"question": "Photos logements/détecteurs", "type": "photos"}
                 ]
             }
