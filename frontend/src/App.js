@@ -5077,7 +5077,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
 
                   {/* Option fonction supérieur pour les pompiers */}
-                  {newUser.grade === 'Pompier' && (
+                  {['Pompier', 'Lieutenant', 'Capitaine', 'Chef de division'].includes(newUser.grade) && (
                     <div className="form-field">
                       <div className="fonction-superieur-option">
                         <label className="fonction-checkbox">
@@ -5090,7 +5090,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           <div className="fonction-content">
                             <span className="fonction-title">🎖️ Fonction supérieur</span>
                             <span className="fonction-description">
-                              Ce pompier peut agir comme Lieutenant en dernier recours dans les affectations
+                              {newUser.grade === 'Pompier' && "Ce pompier peut agir comme Lieutenant en dernier recours dans les affectations"}
+                              {newUser.grade === 'Lieutenant' && "Ce lieutenant peut couvrir un poste de Capitaine en cas de besoin"}
+                              {newUser.grade === 'Capitaine' && "Ce capitaine peut couvrir un poste de Chef de division en cas de besoin"}
+                              {newUser.grade === 'Chef de division' && "Ce chef peut couvrir un poste de directeur en cas de besoin"}
                             </span>
                           </div>
                         </label>
