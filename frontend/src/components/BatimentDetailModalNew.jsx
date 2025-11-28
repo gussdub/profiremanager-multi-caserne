@@ -1231,14 +1231,26 @@ const BatimentForm = ({
           }}>
             {isEditing ? (
               <>
-                <div style={{
-                  marginLeft: 'auto',
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                  fontStyle: 'italic'
-                }}>
-                  💾 Les modifications seront sauvegardées à la fermeture
-                </div>
+                <Button 
+                  onClick={handleSave} 
+                  disabled={saving}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white'
+                  }}
+                >
+                  {saving ? '💾 Sauvegarde...' : '💾 Sauvegarder'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditData(batiment || {});
+                    setIsEditing(false);
+                  }}
+                  disabled={saving}
+                >
+                  ❌ Annuler
+                </Button>
               </>
             ) : (
               <>
