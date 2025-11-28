@@ -13740,19 +13740,21 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         user_competences = user.get("competences", [])
                         has_all_competences = all(comp_id in user_competences for comp_id in competences_requises)
                         
-                        # Log pour debugging compétences
-                        if type_garde["nom"] and "Préventionniste" in type_garde["nom"]:
-                            logging.info(f"🔍 [COMPETENCE] {type_garde['nom']}: {user['prenom']} {user['nom']}")
-                            logging.info(f"   Compétences requises: {competences_requises}")
-                            logging.info(f"   Compétences user: {user_competences}")
-                            logging.info(f"   A toutes les compétences: {has_all_competences}")
+                        # LOG DÉTAILLÉ pour TOUTES les gardes (pas seulement Préventionniste)
+                        logging.info(f"🔍 [COMPETENCE CHECK] Garde: {type_garde['nom']}")
+                        logging.info(f"   User: {user['prenom']} {user['nom']} (Grade: {user.get('grade', 'N/A')})")
+                        logging.info(f"   Compétences requises: {competences_requises}")
+                        logging.info(f"   Compétences user: {user_competences}")
+                        logging.info(f"   A toutes les compétences: {has_all_competences}")
                         
                         if not has_all_competences:
                             # CORRECTION: Vérification stricte des compétences - AUCUNE exception
                             # Un Premier Répondant ne peut PAS faire une garde de Pompier
                             # Un Pompier Auxiliaire ne peut PAS faire une garde nécessitant Pompier 1
-                            logging.info(f"❌ [COMPETENCE] {user['prenom']} {user['nom']} exclu - compétences manquantes")
+                            logging.info(f"❌ [COMPETENCE] {user['prenom']} {user['nom']} (Grade: {user.get('grade')}) EXCLU - compétences manquantes")
                             continue  # Skip si compétences manquantes - AUCUNE EXCEPTION
+                        else:
+                            logging.info(f"✅ [COMPETENCE] {user['prenom']} {user['nom']} ELIGIBLE - a toutes les compétences")
                     
                     # DÉDUPLICATION CRITIQUE : Comparer par ID car dict comparison ne fonctionne pas
                     if user["id"] not in [u["id"] for u in available_users]:
