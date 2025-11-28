@@ -13738,11 +13738,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             logging.info(f"   A toutes les compétences: {has_all_competences}")
                         
                         if not has_all_competences:
-                            # Exception: Pour "Officier obligatoire", accepter les pompiers fonction_superieur même sans compétences
-                            if type_garde.get("officier_obligatoire", False) and user.get("fonction_superieur", False):
-                                pass  # Autoriser le pompier fonction_superieur
-                            else:
-                                continue  # Skip si compétences manquantes
+                            # CORRECTION: Vérification stricte des compétences - AUCUNE exception
+                            # Un Premier Répondant ne peut PAS faire une garde de Pompier
+                            # Un Pompier Auxiliaire ne peut PAS faire une garde nécessitant Pompier 1
+                            logging.info(f"❌ [COMPETENCE] {user['prenom']} {user['nom']} exclu - compétences manquantes")
+                            continue  # Skip si compétences manquantes - AUCUNE EXCEPTION
                     
                     # DÉDUPLICATION CRITIQUE : Comparer par ID car dict comparison ne fonctionne pas
                     if user["id"] not in [u["id"] for u in available_users]:
