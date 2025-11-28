@@ -1781,74 +1781,18 @@ const BatimentForm = ({
                 🏗️ Type de bâtiment & Classification
               </h3>
               
-              {/* Ligne 1: Type principal et Groupe d'occupation */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
-                    Type principal *
-                  </label>
-                  <select
-                    value={editData.type_batiment || ''}
-                    onChange={(e) => {
-                      handleChange('type_batiment', e.target.value);
-                      handleChange('sous_type_batiment', ''); // Reset sous-type
-                    }}
-                    disabled={!isEditing}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    <option value="">Sélectionner...</option>
-                    {Object.keys(typesBatiment).map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
-                    Groupe d'occupation (Code de sécurité) *
-                  </label>
-                  <select
-                    value={editData.groupe_occupation || ''}
-                    onChange={(e) => {
-                      handleChange('groupe_occupation', e.target.value);
-                      handleChange('sous_type_batiment', ''); // Reset sous-type car dépend du groupe
-                    }}
-                    disabled={!isEditing}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    <option value="">Sélectionner...</option>
-                    {groupesOccupation.map(groupe => (
-                      <option key={groupe.code} value={groupe.code}>{groupe.nom}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Ligne 2: Sous-type (selon type OU groupe d'occupation) */}
-              <div>
+              {/* Ligne 1: Groupe d'occupation */}
+              <div style={{ marginBottom: '1rem' }}>
                 <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
-                  Sous-type {editData.groupe_occupation && '(pour grille d\'inspection adaptative)'}
-                  {editData.groupe_occupation && sousTypesParGroupe[editData.groupe_occupation]?.length === 0 && (
-                    <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
-                      (Pas de sous-types pour ce groupe)
-                    </span>
-                  )}
+                  Groupe d'occupation (Code de sécurité) *
                 </label>
                 <select
-                  value={editData.sous_type_batiment || ''}
-                  onChange={(e) => handleChange('sous_type_batiment', e.target.value)}
-                  disabled={!isEditing || (!editData.type_batiment && !editData.groupe_occupation)}
+                  value={editData.groupe_occupation || ''}
+                  onChange={(e) => {
+                    handleChange('groupe_occupation', e.target.value);
+                    handleChange('sous_type_batiment', ''); // Reset sous-type car dépend du groupe
+                  }}
+                  disabled={!isEditing}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
@@ -1858,29 +1802,55 @@ const BatimentForm = ({
                   }}
                 >
                   <option value="">Sélectionner...</option>
-                  {/* Si groupe_occupation existe, utiliser ses sous-types (priorité pour inspections) */}
-                  {editData.groupe_occupation && sousTypesParGroupe[editData.groupe_occupation]?.map(sousType => (
-                    <option key={sousType.value} value={sousType.value}>{sousType.label}</option>
-                  ))}
-                  {/* Sinon, utiliser les sous-types du type_batiment (compatibilité ancienne) */}
-                  {!editData.groupe_occupation && editData.type_batiment && typesBatiment[editData.type_batiment]?.map(sousType => (
-                    <option key={sousType} value={sousType}>{sousType}</option>
+                  {groupesOccupation.map(groupe => (
+                    <option key={groupe.code} value={groupe.code}>{groupe.nom}</option>
                   ))}
                 </select>
-                {editData.groupe_occupation && sousTypesParGroupe[editData.groupe_occupation]?.length > 0 && (
-                  <div style={{ 
-                    marginTop: '0.5rem', 
-                    padding: '0.75rem', 
-                    backgroundColor: '#f0f9ff', 
-                    border: '1px solid #bae6fd',
-                    borderRadius: '6px',
-                    fontSize: '0.75rem',
-                    color: '#0369a1'
-                  }}>
-                    ℹ️ Le sous-type sélectionné détermine les questions affichées lors de l'inspection (grille adaptative)
-                  </div>
-                )}
               </div>
+
+              {/* Ligne 2: Sous-type (selon groupe d'occupation) */}
+              {editData.groupe_occupation && (
+                <div>
+                  <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
+                    Sous-type {editData.groupe_occupation && '(pour grille d\'inspection adaptative)'}
+                    {editData.groupe_occupation && sousTypesParGroupe[editData.groupe_occupation]?.length === 0 && (
+                      <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
+                        (Pas de sous-types pour ce groupe)
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={editData.sous_type_batiment || ''}
+                    onChange={(e) => handleChange('sous_type_batiment', e.target.value)}
+                    disabled={!isEditing}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="">Sélectionner...</option>
+                    {sousTypesParGroupe[editData.groupe_occupation]?.map(sousType => (
+                      <option key={sousType.value} value={sousType.value}>{sousType.label}</option>
+                    ))}
+                  </select>
+                  {sousTypesParGroupe[editData.groupe_occupation]?.length > 0 && (
+                    <div style={{ 
+                      marginTop: '0.5rem', 
+                      padding: '0.75rem', 
+                      backgroundColor: '#f0f9ff', 
+                      border: '1px solid #bae6fd',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      color: '#0369a1'
+                    }}>
+                      ℹ️ Le sous-type sélectionné détermine les questions affichées lors de l'inspection (grille adaptative)
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
 
             {/* Section 4 - ÉVALUATION DES RISQUES */}
