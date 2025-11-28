@@ -3579,6 +3579,13 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     temp_password = user_dict["mot_de_passe"]  # Sauvegarder pour l'email
     user_dict["mot_de_passe_hash"] = get_password_hash(user_dict.pop("mot_de_passe"))
     user_dict["tenant_id"] = tenant.id  # Assigner le tenant
+    
+    # CORRECTION CRITIQUE: Synchroniser formations vers competences
+    # Le frontend utilise "formations" mais l'algorithme cherche dans "competences"
+    if "formations" in user_dict:
+        user_dict["competences"] = user_dict["formations"]
+        logging.info(f"🔄 [SYNC CREATE] Copie formations → competences: {user_dict['formations']}")
+    
     user_obj = User(**user_dict)
     
     await db.users.insert_one(user_obj.dict())
