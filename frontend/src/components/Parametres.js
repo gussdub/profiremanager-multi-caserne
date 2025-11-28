@@ -260,8 +260,21 @@ const Parametres = ({ user, tenantSlug }) => {
   useEffect(() => {
     if (user?.role === 'admin') {
       fetchData();
+      fetchNiveauxAttribution();
     }
   }, [user]);
+  
+  const fetchNiveauxAttribution = async () => {
+    try {
+      const response = await axios.get(`${API}/parametres/niveaux-attribution`);
+      setSystemSettings(prev => ({
+        ...prev,
+        ...response.data
+      }));
+    } catch (error) {
+      console.error("Erreur chargement niveaux:", error);
+    }
+  };
 
   const handleCreateType = async () => {
     if (!createForm.nom || !createForm.heure_debut || !createForm.heure_fin) {
