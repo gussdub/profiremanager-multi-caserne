@@ -765,16 +765,38 @@ const Parametres = ({ user, tenantSlug }) => {
     setEditForm({...editForm, jours_application: updatedJours});
   };
 
-  const handleSettingChange = (setting, value) => {
+  const handleSettingChange = async (setting, value) => {
     setSystemSettings(prev => ({
       ...prev,
       [setting]: value
     }));
-    toast({
-      title: "Paramètre mis à jour",
-      description: "La configuration a été sauvegardée",
-      variant: "success"
-    });
+    
+    // Sauvegarder dans le backend si c'est un niveau d'attribution
+    if (setting.startsWith('niveau_')) {
+      try {
+        await axios.put(`${API}/parametres/niveaux-attribution`, {
+          [setting]: value
+        });
+        toast({
+          title: "Paramètre mis à jour",
+          description: "La configuration a été sauvegardée",
+          variant: "success"
+        });
+      } catch (error) {
+        console.error("Erreur sauvegarde niveau:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de sauvegarder la configuration",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Paramètre mis à jour",
+        description: "La configuration a été sauvegardée",
+        variant: "success"
+      });
+    }
   };
 
   const handleValidationChange = (setting, value) => {
