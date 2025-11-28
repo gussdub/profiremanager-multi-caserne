@@ -21545,7 +21545,16 @@ async def get_notifications(
             sort=[("date_inspection", -1)]
         )
         
-        if not last_inspection or last_inspection.get("date_inspection", "") < six_months_ago:
+        # Gérer le cas où date_inspection peut être datetime ou string
+        last_inspection_date = None
+        if last_inspection:
+            date_insp = last_inspection.get("date_inspection")
+            if isinstance(date_insp, datetime):
+                last_inspection_date = date_insp.date().isoformat()
+            elif isinstance(date_insp, str):
+                last_inspection_date = date_insp
+        
+        if not last_inspection_date or last_inspection_date < six_months_ago:
             notifications.append({
                 "id": f"bat_inspection_{batiment['id']}",
                 "type": "inspection_requise",
