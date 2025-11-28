@@ -1289,7 +1289,7 @@ const Parametres = ({ user, tenantSlug }) => {
             {/* Grille de sections */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* CARTE 1: Algorithme d'attribution */}
+              {/* CARTE 1: Niveaux d'attribution configurables */}
               <div style={{
                 background: 'white',
                 border: '2px solid #e5e7eb',
@@ -1305,9 +1305,9 @@ const Parametres = ({ user, tenantSlug }) => {
                   fontSize: '1.25rem',
                   color: '#1e293b'
                 }}>
-                  🤖 Algorithme d'assignation automatique
+                  🤖 Niveaux d'Attribution Automatique
                   <span 
-                    title="L'algorithme assigne automatiquement les employés selon 5 niveaux de priorité dans l'ordre suivant"
+                    title="Configurez quels niveaux de priorité doivent être appliqués lors de l'attribution automatique. Les niveaux s'appliquent dans l'ordre."
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1325,51 +1325,268 @@ const Parametres = ({ user, tenantSlug }) => {
                     i
                   </span>
                 </h3>
-                <div className="priority-list">
-                  <div className="priority-item">
-                    <span className="priority-number">1</span>
-                    <div className="priority-content">
-                      <span className="priority-text">👤 Assignations manuelles privilégiées</span>
-                      <span className="priority-description">Les assignations manuelles ne sont jamais écrasées</span>
+                
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  fontSize: '0.875rem',
+                  color: '#0369a1'
+                }}>
+                  ℹ️ Les niveaux cochés seront appliqués dans l'ordre. Décochez un niveau pour le désactiver dans l'algorithme d'attribution.
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Niveau 0 - Toujours actif (non modifiable) */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '10px',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'not-allowed',
+                    opacity: 0.7
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      disabled={true}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'not-allowed'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#94a3b8',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N0</span>
+                        <strong style={{ fontSize: '1rem' }}>🔒 Priorisation Types de Garde</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>(INCHANGÉ)</span>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Priorité intrinsèque des types de gardes (configuration fixe)
+                      </p>
                     </div>
-                    <span className="priority-status active">✅ Actif</span>
-                  </div>
-                  
-                  <div className="priority-item">
-                    <span className="priority-number">2</span>
-                    <div className="priority-content">
-                      <span className="priority-text">✅ Respecter les disponibilités</span>
-                      <span className="priority-description">Temps partiel : doit avoir déclaré une disponibilité. Temps plein : éligible automatiquement</span>
+                  </label>
+
+                  {/* Niveau 1 - Toujours actif (non modifiable) */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '10px',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'not-allowed',
+                    opacity: 0.7
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      disabled={true}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'not-allowed'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#94a3b8',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N1</span>
+                        <strong style={{ fontSize: '1rem' }}>🔒 Assignations Manuelles</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>(INCHANGÉ)</span>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Les assignations manuelles ne sont jamais écrasées (priorité maximale)
+                      </p>
                     </div>
-                    <span className="priority-status active">✅ Actif</span>
-                  </div>
-                  
-                  <div className="priority-item">
-                    <span className="priority-number">3</span>
-                    <div className="priority-content">
-                      <span className="priority-text">🎖️ Respecter les grades requis</span>
-                      <span className="priority-description">Assignation d'un officier si configuré pour le type de garde</span>
+                  </label>
+
+                  {/* Niveau 2 - Temps Partiel DISPONIBLES */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: `2px solid ${systemSettings.niveau_2_actif ? '#10b981' : '#e5e7eb'}`,
+                    borderRadius: '10px',
+                    backgroundColor: systemSettings.niveau_2_actif ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={systemSettings.niveau_2_actif !== false}
+                      onChange={(e) => handleSettingChange('niveau_2_actif', e.target.checked)}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N2</span>
+                        <strong style={{ fontSize: '1rem' }}>🟢 Temps Partiel DISPONIBLES</strong>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Employés à temps partiel ayant déclaré leur disponibilité. Tri par équité puis ancienneté.
+                      </p>
                     </div>
-                    <span className="priority-status active">✅ Actif</span>
-                  </div>
-                  
-                  <div className="priority-item">
-                    <span className="priority-number">4</span>
-                    <div className="priority-content">
-                      <span className="priority-text">⚖️ Rotation équitable du personnel</span>
-                      <span className="priority-description">Favorise les employés avec moins d'heures dans le mois</span>
+                  </label>
+
+                  {/* Niveau 3 - Temps Partiel STAND-BY */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: `2px solid ${systemSettings.niveau_3_actif ? '#f59e0b' : '#e5e7eb'}`,
+                    borderRadius: '10px',
+                    backgroundColor: systemSettings.niveau_3_actif ? '#fffbeb' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={systemSettings.niveau_3_actif !== false}
+                      onChange={(e) => handleSettingChange('niveau_3_actif', e.target.checked)}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#f59e0b',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N3</span>
+                        <strong style={{ fontSize: '1rem' }}>🟡 Temps Partiel STAND-BY</strong>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Employés à temps partiel n'ayant rien déclaré (ni dispo, ni indispo). Tri par équité puis ancienneté.
+                      </p>
                     </div>
-                    <span className="priority-status active">✅ Actif</span>
-                  </div>
-                  
-                  <div className="priority-item">
-                    <span className="priority-number">5</span>
-                    <div className="priority-content">
-                      <span className="priority-text">📅 Ancienneté des employés</span>
-                      <span className="priority-description">En cas d'égalité d'heures, privilégier l'ancienneté (date d'embauche)</span>
+                  </label>
+
+                  {/* Niveau 4 - Temps Plein INCOMPLETS */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: `2px solid ${systemSettings.niveau_4_actif ? '#3b82f6' : '#e5e7eb'}`,
+                    borderRadius: '10px',
+                    backgroundColor: systemSettings.niveau_4_actif ? '#eff6ff' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={systemSettings.niveau_4_actif !== false}
+                      onChange={(e) => handleSettingChange('niveau_4_actif', e.target.checked)}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N4</span>
+                        <strong style={{ fontSize: '1rem' }}>🔵 Temps Plein INCOMPLETS</strong>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Employés à temps plein avec heures &lt; max hebdomadaires. Tri par heures manquantes, équité, ancienneté.
+                      </p>
                     </div>
-                    <span className="priority-status active">✅ Actif</span>
-                  </div>
+                  </label>
+
+                  {/* Niveau 5 - Temps Plein COMPLETS */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    padding: '16px',
+                    border: `2px solid ${systemSettings.niveau_5_actif ? '#a855f7' : '#e5e7eb'}`,
+                    borderRadius: '10px',
+                    backgroundColor: systemSettings.niveau_5_actif ? '#faf5ff' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={systemSettings.niveau_5_actif !== false}
+                      onChange={(e) => handleSettingChange('niveau_5_actif', e.target.checked)}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginTop: '2px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{
+                          backgroundColor: '#a855f7',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>N5</span>
+                        <strong style={{ fontSize: '1rem' }}>🟣 Temps Plein COMPLETS</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#f59e0b' }}>(Heures sup requises)</span>
+                      </div>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                        Employés à temps plein ayant atteint le max hebdomadaire (uniquement si heures sup activées). Tri par équité, ancienneté.
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
 
