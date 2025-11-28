@@ -13657,6 +13657,24 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Find available users for this slot
                 available_users = []
                 for user in users:
+                    # VÉRIFICATION CRITIQUE: Éviter les conflits d'horaires
+                    # Un utilisateur ne peut pas être sur 2 gardes en même temps
+                    user_deja_assigne_ce_jour = False
+                    for assignation in existing_assignations:
+                        if assignation["user_id"] == user["id"] and assignation["date"] == date_str:
+                            # L'utilisateur est déjà assigné à une garde ce jour
+                            # Vérifier si les horaires se chevauchent
+                            garde_existante = next((g for g in types_garde if g["id"] == assignation["type_garde_id"]), None)
+                            if garde_existante:
+                                # Pour simplifier, on considère que 2 gardes le même jour = conflit
+                                # (Une amélioration future pourrait vérifier les heures exactes)
+                                user_deja_assigne_ce_jour = True
+                                logging.info(f"❌ [CONFLIT] {user['prenom']} {user['nom']} déjà assigné à {garde_existante['nom']} le {date_str}")
+                                break
+                    
+                    if user_deja_assigne_ce_jour:
+                        continue  # Skip cet utilisateur pour éviter le conflit
+                    
                     # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
                     # Note: Les gardes externes n'ont PAS de limite d'heures supplémentaires
                     if not type_garde.get("est_garde_externe", False):
