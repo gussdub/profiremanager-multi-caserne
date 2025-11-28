@@ -7902,6 +7902,16 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         
         logging.info(f"✅ Utilisateur trouvé: {user_data.get('nom')} {user_data.get('prenom')} (id: {user_data.get('id')})")
         
+        # Vérifier que l'utilisateur est actif
+        if user_data.get("statut") != "Actif":
+            logging.warning(f"❌ Tentative de connexion d'un utilisateur inactif: {user_login.email}")
+            raise HTTPException(
+                status_code=403, 
+                detail="Votre compte est désactivé. Veuillez contacter votre administrateur."
+            )
+        
+        logging.info(f"✅ Statut de l'utilisateur vérifié: {user_data.get('statut')}")
+        
         current_hash = user_data.get("mot_de_passe_hash", "")
         hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
         logging.info(f"🔐 Type de hash détecté: {hash_type}")
