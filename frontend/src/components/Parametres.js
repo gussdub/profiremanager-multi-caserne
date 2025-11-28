@@ -125,6 +125,11 @@ const Parametres = ({ user, tenantSlug }) => {
     notification_email: true,
     max_personnes_contact: 5,
     grade_equivalent: true,
+    // Niveaux d'attribution automatique (nouveaux)
+    niveau_2_actif: true,  // Temps partiel disponibles
+    niveau_3_actif: true,  // Temps partiel stand-by
+    niveau_4_actif: true,  // Temps plein incomplets
+    niveau_5_actif: true,  // Temps plein complets (heures sup)
     // Nouvelles règles de validation pour remplacements
     privilegier_disponibles: true,
     grade_egal: true,
