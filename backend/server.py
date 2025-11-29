@@ -14154,8 +14154,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 assignations_vues.add(assignation_key)
                                 
                                 if assignation["user_id"] == user["id"]:
-                                    # Vérifier que l'assignation est dans la semaine actuelle
-                                    if semaine_debut <= assignation["date"] <= semaine_fin:
+                                    # CORRECTION CRITIQUE: Vérifier que l'assignation est dans LA SEMAINE CALENDAIRE de cette garde
+                                    # (pas dans toute la période d'attribution)
+                                    if semaine_start_str <= assignation["date"] <= semaine_end_str:
                                         type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
                                         if type_g:
                                             # Ne compter QUE les gardes internes (gardes externes ne sont pas des heures travaillées)
