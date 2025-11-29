@@ -801,6 +801,43 @@ const Login = () => {
             </form>
           </CardContent>
         </Card>
+        
+        {/* Footer ProFireManager - Discret */}
+        {personnalisation?.logo_url && (
+          <div style={{ 
+            marginTop: '2rem', 
+            paddingTop: '1.5rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.75rem',
+            opacity: 0.85
+          }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: 'rgba(255, 255, 255, 0.15)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div className="logo-flame" style={{ transform: 'scale(0.6)' }}>
+                <div className="flame-container">
+                  <i className="fas fa-fire flame-icon"></i>
+                </div>
+              </div>
+            </div>
+            <span style={{ 
+              fontSize: '0.75rem', 
+              color: 'white',
+              fontWeight: '500'
+            }}>
+              Propulsé par ProFireManager
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
