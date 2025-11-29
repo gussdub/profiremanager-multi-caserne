@@ -4668,11 +4668,27 @@ async def export_planning_pdf(
                                            if a['date'] == date_str 
                                            and a['type_garde_id'] == type_garde['id']]
                         
-                        if assignations_jour:
+                        if assignations_jour or not jours_app:  # Afficher aussi les gardes vides
                             noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
                                    for a in assignations_jour if a['user_id'] in users_map]
-                            personnel_str = ', '.join(noms)
-                            garde_text = f"  • {type_garde['nom']} ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}): {personnel_str}"
+                            
+                            personnel_requis = type_garde.get('personnel_requis', 1)
+                            personnel_assigne = len(noms)
+                            
+                            # Icône de couverture
+                            if personnel_assigne == 0:
+                                coverage_icon = '❌'
+                            elif personnel_assigne >= personnel_requis:
+                                coverage_icon = '✅'
+                            else:
+                                coverage_icon = '⚠️'
+                            
+                            if noms:
+                                personnel_str = ', '.join(noms)
+                                garde_text = f"  • <b>{type_garde['nom']}</b> ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}) {coverage_icon} {personnel_assigne}/{personnel_requis}: {personnel_str}"
+                            else:
+                                garde_text = f"  • <b>{type_garde['nom']}</b> ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}) {coverage_icon} Vacant"
+                            
                             elements.append(Paragraph(garde_text, styles['Normal']))
                     
                     elements.append(Spacer(1, 0.1*inch))
