@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiGet, getTenantToken } from '../utils/api';
+import { apiGet, getTenantToken, buildApiUrl } from '../utils/api';
 
 const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   const [loading, setLoading] = useState(false);
