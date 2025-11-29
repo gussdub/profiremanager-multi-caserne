@@ -14388,8 +14388,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             logging.info(f"⚠️ [N3] {u['prenom']} {u['nom']} ajouté à TP STAND-BY (pas de dispo couvrant l'horaire)")
                         # Si indispo, ne rien faire (exclu)
                     else:  # temps_plein
-                        # Calculer les heures de la semaine actuelle pour cet utilisateur
+                        # Calculer les heures de LA SEMAINE CALENDAIRE de cette garde (lundi-dimanche)
                         # CORRECTION: Inclure TOUTES les assignations (existantes + nouvelles) avec déduplication
+                        
+                        # Calculer la semaine calendaire de cette garde (même logique que plus haut)
+                        garde_date = datetime.strptime(date_str, "%Y-%m-%d")
+                        days_since_monday = garde_date.weekday()
+                        semaine_start_tf = garde_date - timedelta(days=days_since_monday)
+                        semaine_end_tf = semaine_start_tf + timedelta(days=6)
+                        semaine_start_tf_str = semaine_start_tf.strftime("%Y-%m-%d")
+                        semaine_end_tf_str = semaine_end_tf.strftime("%Y-%m-%d")
+                        
                         heures_semaine_actuelle = 0
                         assignations_vues_tf = set()
                         toutes_assignations_tf = existing_assignations + nouvelles_assignations
@@ -14402,8 +14411,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             assignations_vues_tf.add(assignation_key)
                             
                             if assignation["user_id"] == u["id"]:
-                                # Vérifier que c'est dans la semaine actuelle
-                                if semaine_debut <= assignation["date"] <= semaine_fin:
+                                # CORRECTION CRITIQUE: Vérifier que c'est dans LA SEMAINE CALENDAIRE de cette garde
+                                if semaine_start_tf_str <= assignation["date"] <= semaine_end_tf_str:
                                     type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
                                     if type_g and not type_g.get("est_garde_externe", False):
                                         heures_semaine_actuelle += type_g.get("duree_heures", 8)
