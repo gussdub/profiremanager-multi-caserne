@@ -21982,7 +21982,6 @@ const Prevention = () => {
   const [selectedBatiment, setSelectedBatiment] = useState(null);
   const [filteredBatimentId, setFilteredBatimentId] = useState(null); // Pour filtrer inspections/plans par bâtiment
   const [showBatimentModal, setShowBatimentModal] = useState(false);
-  const [showRapportHeuresModal, setShowRapportHeuresModal] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null); // Pour afficher le viewer de plan
   const [grilles, setGrilles] = useState([]);
   const [selectedInspection, setSelectedInspection] = useState(null);
