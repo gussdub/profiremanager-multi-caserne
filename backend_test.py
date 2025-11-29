@@ -684,7 +684,7 @@ class FrancoisGuayBugTester:
             print("✅ SUCCÈS: François Guay n'est PAS assigné à 'Garde PR 1 nuit' (18:00-06:00)")
             
             # Vérifier si les gardes assignées sont couvertes par ses disponibilités
-            if assignations:
+            if francois_assignations:
                 print("🔍 Vérification que les gardes assignées sont couvertes par ses disponibilités...")
                 # Cette vérification pourrait être ajoutée si nécessaire
             
