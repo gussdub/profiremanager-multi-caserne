@@ -4818,6 +4818,17 @@ async def get_rapport_heures(
         }
     }).to_list(10000)
     
+    # DÉDUPLICATION: Supprimer les doublons potentiels
+    # Clé unique: user_id + type_garde_id + date
+    assignations_uniques = {}
+    for a in assignations:
+        key = f"{a['user_id']}_{a['type_garde_id']}_{a['date']}"
+        if key not in assignations_uniques:
+            assignations_uniques[key] = a
+    
+    assignations = list(assignations_uniques.values())
+    logging.info(f"📊 [RAPPORT] {len(assignations)} assignations uniques pour la période {date_debut} - {date_fin}")
+    
     # Récupérer les types de garde
     types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
     types_garde_map = {t["id"]: t for t in types_garde}
@@ -4830,6 +4841,7 @@ async def get_rapport_heures(
     for user in users:
         heures_internes = 0
         heures_externes = 0
+        nb_assignations = 0
         
         # Compter les heures de cet utilisateur
         for assignation in assignations:
@@ -4837,10 +4849,15 @@ async def get_rapport_heures(
                 type_garde = types_garde_map.get(assignation["type_garde_id"])
                 if type_garde:
                     duree = type_garde.get("duree_heures", 8)
+                    nb_assignations += 1
                     if type_garde.get("est_garde_externe", False):
                         heures_externes += duree
                     else:
                         heures_internes += duree
+        
+        # Log pour utilisateurs avec beaucoup d'heures
+        if heures_internes + heures_externes > 150:
+            logging.warning(f"⚠️ [RAPPORT] {user.get('prenom')} {user.get('nom')}: {nb_assignations} assignations = {heures_internes}h int + {heures_externes}h ext = {heures_internes + heures_externes}h total")
         
         total_heures_internes += heures_internes
         total_heures_externes += heures_externes
