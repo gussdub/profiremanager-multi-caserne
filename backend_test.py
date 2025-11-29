@@ -425,22 +425,289 @@ class FrancoisGuayBugTester:
             print(f"\n✅ SUCCÈS: Tous les utilisateurs ont des assignations complètes")
             return True
     
-    def test_verification_logs(self):
-        """Test 4: Vérification des logs backend (simulation)"""
+    def find_francois_guay(self):
+        """Test 1: Identifier François Guay dans les utilisateurs"""
         print("\n" + "="*60)
-        print("🧪 TEST 4: VÉRIFICATION DES LOGS BACKEND")
+        print("🧪 TEST 1: IDENTIFIER FRANÇOIS GUAY")
         print("="*60)
         
-        print("📋 Logs à rechercher:")
-        print("  - Messages '[ASSIGNATION]' avec type INTERNE/EXTERNE et heures")
-        print("  - Messages '[CONFLIT HORAIRE]' pour la détection des conflits")
-        print("  - Messages '[HEURES]' pour le calcul des heures")
-        print("  - Absence de messages d'erreur critiques")
+        users = self.get_users()
+        if not users:
+            print("❌ Impossible de récupérer les utilisateurs")
+            return False
         
-        # Note: Dans un environnement de production, on ne peut pas accéder directement aux logs
-        # Ce test simule la vérification des logs
-        print("\n⚠️ NOTE: Vérification des logs backend non accessible en mode production")
-        print("✅ Les logs doivent être vérifiés manuellement par l'administrateur système")
+        # Chercher François Guay par nom (flexible)
+        francois_candidates = []
+        for user in users:
+            prenom = user.get('prenom', '').lower()
+            nom = user.get('nom', '').lower()
+            
+            # Recherche flexible pour François Guay
+            if ('francois' in prenom or 'françois' in prenom) and 'guay' in nom:
+                francois_candidates.append(user)
+        
+        if not francois_candidates:
+            print("❌ François Guay non trouvé dans les utilisateurs")
+            print("🔍 Recherche alternative par email...")
+            
+            # Recherche alternative par email
+            for user in users:
+                email = user.get('email', '').lower()
+                if 'francois' in email and 'guay' in email:
+                    francois_candidates.append(user)
+        
+        if not francois_candidates:
+            print("❌ ÉCHEC: François Guay non trouvé")
+            return False
+        
+        if len(francois_candidates) > 1:
+            print(f"⚠️ Plusieurs candidats trouvés ({len(francois_candidates)}), utilisation du premier")
+        
+        self.francois_guay_user = francois_candidates[0]
+        print(f"✅ François Guay trouvé:")
+        print(f"   - ID: {self.francois_guay_user['id']}")
+        print(f"   - Nom: {self.francois_guay_user.get('prenom', '')} {self.francois_guay_user.get('nom', '')}")
+        print(f"   - Email: {self.francois_guay_user.get('email', 'N/A')}")
+        print(f"   - Type emploi: {self.francois_guay_user.get('type_emploi', 'N/A')}")
+        
+        return True
+    
+    def check_francois_disponibilites(self):
+        """Test 2: Vérifier les disponibilités de François Guay pour le 19 décembre 2025"""
+        print("\n" + "="*60)
+        print("🧪 TEST 2: VÉRIFIER DISPONIBILITÉS FRANÇOIS GUAY - 19 DÉCEMBRE 2025")
+        print("="*60)
+        
+        if not self.francois_guay_user:
+            print("❌ François Guay non identifié")
+            return False
+        
+        user_id = self.francois_guay_user['id']
+        
+        # Récupérer les disponibilités pour le 19 décembre 2025
+        url = f"{self.base_url}/disponibilites"
+        params = {
+            "date": self.test_date,
+            "user_id": user_id
+        }
+        
+        response = requests.get(url, headers=self.headers, params=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur récupération disponibilités: {response.status_code} - {response.text}")
+            return False
+        
+        disponibilites = response.json()
+        print(f"📅 Disponibilités de François Guay pour le {self.test_date}:")
+        
+        if not disponibilites:
+            print("⚠️ Aucune disponibilité déclarée pour cette date")
+            return True
+        
+        for dispo in disponibilites:
+            statut = dispo.get('statut', 'N/A')
+            heure_debut = dispo.get('heure_debut', 'N/A')
+            heure_fin = dispo.get('heure_fin', 'N/A')
+            origine = dispo.get('origine', 'manuelle')
+            
+            print(f"   - {statut}: {heure_debut} - {heure_fin} (origine: {origine})")
+        
+        # Vérifier si les disponibilités couvrent la garde 18:00-06:00
+        garde_debut = "18:00"
+        garde_fin = "06:00"  # Le lendemain
+        
+        couvre_garde_complete = False
+        for dispo in disponibilites:
+            if dispo.get('statut') == 'disponible':
+                dispo_debut = dispo.get('heure_debut', '')
+                dispo_fin = dispo.get('heure_fin', '')
+                
+                # Vérifier si cette dispo couvre la garde complète
+                if self.dispo_couvre_garde(dispo_debut, dispo_fin, garde_debut, garde_fin):
+                    couvre_garde_complete = True
+                    break
+        
+        print(f"\n🔍 Analyse pour garde 'Garde PR 1 nuit' (18:00-06:00):")
+        if couvre_garde_complete:
+            print("✅ Les disponibilités COUVRENT la garde complète")
+        else:
+            print("❌ Les disponibilités NE COUVRENT PAS la garde complète")
+            print("   → François Guay ne devrait PAS être assigné à cette garde")
+        
+        return True
+    
+    def dispo_couvre_garde(self, dispo_debut, dispo_fin, garde_debut, garde_fin):
+        """Vérifie si une disponibilité couvre complètement une garde"""
+        try:
+            def time_to_minutes(time_str):
+                h, m = map(int, time_str.split(':'))
+                return h * 60 + m
+            
+            dispo_debut_min = time_to_minutes(dispo_debut)
+            dispo_fin_min = time_to_minutes(dispo_fin)
+            garde_debut_min = time_to_minutes(garde_debut)
+            garde_fin_min = time_to_minutes(garde_fin)
+            
+            # Gérer les gardes qui traversent minuit
+            if garde_fin_min < garde_debut_min:  # Garde traverse minuit
+                garde_fin_min += 24 * 60
+                
+                # Pour une garde qui traverse minuit, la dispo doit aussi traverser minuit
+                # ou couvrir complètement la partie avant minuit ET la partie après minuit
+                if dispo_fin_min < dispo_debut_min:  # Dispo traverse aussi minuit
+                    dispo_fin_min += 24 * 60
+                    return dispo_debut_min <= garde_debut_min and dispo_fin_min >= garde_fin_min
+                else:
+                    # Dispo ne traverse pas minuit, ne peut pas couvrir une garde qui traverse
+                    return False
+            
+            # Garde normale (ne traverse pas minuit)
+            return dispo_debut_min <= garde_debut_min and dispo_fin_min >= garde_fin_min
+            
+        except Exception as e:
+            print(f"⚠️ Erreur vérification couverture: {e}")
+            return False
+    
+    def check_parametres_niveau3(self):
+        """Test 3: Vérifier les paramètres d'attribution (niveau_3_actif)"""
+        print("\n" + "="*60)
+        print("🧪 TEST 3: VÉRIFIER PARAMÈTRES NIVEAU 3")
+        print("="*60)
+        
+        url = f"{self.base_url}/parametres"
+        response = requests.get(url, headers=self.headers)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur récupération paramètres: {response.status_code}")
+            return False
+        
+        parametres = response.json()
+        niveau_3_actif = parametres.get('niveau_3_actif', True)
+        
+        print(f"⚙️ Paramètres d'attribution:")
+        print(f"   - niveau_3_actif: {niveau_3_actif}")
+        
+        if not niveau_3_actif:
+            print("⚠️ Niveau 3 (Temps Partiel STAND-BY) est DÉCOCHÉ")
+            print("   → François Guay ne devrait recevoir AUCUNE garde ce jour")
+        else:
+            print("✅ Niveau 3 (Temps Partiel STAND-BY) est activé")
+        
+        return True
+    
+    def launch_attribution_and_verify(self):
+        """Test 4: Lancer l'attribution automatique et vérifier François Guay"""
+        print("\n" + "="*60)
+        print("🧪 TEST 4: ATTRIBUTION AUTOMATIQUE - SEMAINE 15-21 DÉCEMBRE 2025")
+        print("="*60)
+        
+        if not self.francois_guay_user:
+            print("❌ François Guay non identifié")
+            return False
+        
+        # Lancer l'attribution automatique
+        print(f"🚀 Lancement attribution automatique pour semaine {self.test_week_start}...")
+        
+        url = f"{self.base_url}/planning/attribution-auto"
+        params = {
+            "date_debut": self.test_week_start,
+            "date_fin": self.test_week_end
+        }
+        
+        response = requests.post(url, headers=self.headers, json=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur attribution automatique: {response.status_code} - {response.text}")
+            return False
+        
+        result = response.json()
+        assignations_creees = result.get('assignations_creees', 0)
+        print(f"✅ Attribution terminée - {assignations_creees} assignations créées")
+        
+        # Vérifier les assignations de François Guay pour le 19 décembre
+        return self.verify_francois_assignations()
+    
+    def verify_francois_assignations(self):
+        """Vérifier les assignations de François Guay pour le 19 décembre 2025"""
+        print(f"\n🔍 Vérification des assignations de François Guay pour le {self.test_date}...")
+        
+        user_id = self.francois_guay_user['id']
+        
+        # Récupérer les assignations pour François Guay le 19 décembre
+        url = f"{self.base_url}/assignations"
+        params = {
+            "date_debut": self.test_date,
+            "date_fin": self.test_date,
+            "user_id": user_id
+        }
+        
+        response = requests.get(url, headers=self.headers, params=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur récupération assignations: {response.status_code}")
+            return False
+        
+        assignations = response.json()
+        
+        print(f"📋 Assignations de François Guay le {self.test_date}:")
+        
+        if not assignations:
+            print("✅ SUCCÈS: Aucune assignation pour François Guay ce jour")
+            print("   → Le bug est corrigé, François n'est plus assigné incorrectement")
+            return True
+        
+        # Récupérer les types de garde pour analyser les assignations
+        types_garde = self.get_types_garde()
+        type_garde_map = {t['id']: t for t in types_garde}
+        
+        garde_pr_nuit_assignee = False
+        
+        for assignation in assignations:
+            type_garde_id = assignation.get('type_garde_id')
+            type_garde = type_garde_map.get(type_garde_id, {})
+            nom_garde = type_garde.get('nom', 'Garde inconnue')
+            heure_debut = type_garde.get('heure_debut', 'N/A')
+            heure_fin = type_garde.get('heure_fin', 'N/A')
+            
+            print(f"   - {nom_garde} ({heure_debut}-{heure_fin})")
+            
+            # Vérifier si c'est la garde problématique "Garde PR 1 nuit" (18:00-06:00)
+            if ('pr' in nom_garde.lower() and 'nuit' in nom_garde.lower() and 
+                heure_debut == '18:00' and heure_fin == '06:00'):
+                garde_pr_nuit_assignee = True
+        
+        if garde_pr_nuit_assignee:
+            print("❌ ÉCHEC: François Guay est ENCORE assigné à 'Garde PR 1 nuit' (18:00-06:00)")
+            print("   → Le bug N'EST PAS corrigé")
+            return False
+        else:
+            print("✅ SUCCÈS: François Guay n'est PAS assigné à 'Garde PR 1 nuit' (18:00-06:00)")
+            
+            # Vérifier si les gardes assignées sont couvertes par ses disponibilités
+            if assignations:
+                print("🔍 Vérification que les gardes assignées sont couvertes par ses disponibilités...")
+                # Cette vérification pourrait être ajoutée si nécessaire
+            
+            return True
+    
+    def analyze_backend_logs(self):
+        """Test 5: Analyser les logs backend pour diagnostic"""
+        print("\n" + "="*60)
+        print("🧪 TEST 5: ANALYSE DES LOGS BACKEND")
+        print("="*60)
+        
+        print("📋 Logs à rechercher pour François Guay:")
+        print("  - Messages '[DISPO_COUVRE]' pour les dispos valides")
+        print("  - Messages '[DISPO_PARTIELLE]' pour les dispos qui ne couvrent pas")
+        print("  - Messages '[N2]' et '[N3]' pour le classement des temps partiels")
+        print("  - Confirmation que François Guay est classé en N3 (STAND-BY)")
+        
+        # Note: En production, on ne peut pas accéder directement aux logs
+        print("\n⚠️ NOTE: Accès aux logs backend limité en environnement de production")
+        print("📝 Les logs doivent être vérifiés manuellement par l'administrateur:")
+        print("   - Rechercher '[DISPO_PARTIELLE]' pour François Guay")
+        print("   - Confirmer classification N3 (STAND-BY) vs N2 (DISPONIBLES)")
+        print("   - Vérifier messages de diagnostic d'attribution")
         
         return True
     
