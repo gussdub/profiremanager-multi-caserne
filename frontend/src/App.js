@@ -7948,7 +7948,7 @@ const Planning = () => {
                         padding: '1rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: (searchFilter.trim() && filteredUsers.length > 0)
+                        boxShadow: isSearchedUserAssigned
                           ? '0 4px 12px rgba(245, 158, 11, 0.4)'
                           : '0 2px 4px rgba(0,0,0,0.1)',
                         position: 'relative'
