@@ -164,12 +164,24 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Mois
                 </label>
-                <input
-                  type="month"
+                <select
                   value={moisSelectionne}
                   onChange={(e) => setMoisSelectionne(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 min-w-[200px]"
+                >
+                  {/* Générer les 12 derniers mois */}
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const label = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                    return (
+                      <option key={yearMonth} value={yearMonth}>
+                        {label.charAt(0).toUpperCase() + label.slice(1)}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
             
