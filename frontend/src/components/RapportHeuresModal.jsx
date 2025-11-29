@@ -17,6 +17,11 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   
   // Charger les données
   const chargerRapport = async () => {
+    if (!tenantSlug) {
+      setError('Tenant non défini');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError('');
