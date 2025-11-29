@@ -13424,6 +13424,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         activer_heures_sup = parametres.get("activer_gestion_heures_sup", False)
         
+        # CORRECTION CRITIQUE: Charger les paramètres des niveaux d'attribution
+        niveaux_actifs = {
+            "niveau_2": tenant.parametres.get("niveau_2_actif", True),
+            "niveau_3": tenant.parametres.get("niveau_3_actif", True),
+            "niveau_4": tenant.parametres.get("niveau_4_actif", True),
+            "niveau_5": tenant.parametres.get("niveau_5_actif", True)
+        }
+        logging.info(f"📊 [NIVEAUX] Niveaux d'attribution actifs: {niveaux_actifs}")
+        
         # Récupérer les grades pour vérifier les officiers
         grades = await db.grades.find({"tenant_id": tenant.id}).to_list(1000)
         grades_map = {g["nom"]: g for g in grades}
