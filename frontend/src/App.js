@@ -7708,7 +7708,16 @@ const Planning = () => {
             <span>🔍</span>
             <span>
               {(() => {
-                // Compter le nombre total d'employés correspondant à la recherche dans toutes les assignations
+                // Si un utilisateur spécifique a été sélectionné
+                if (selectedUserId) {
+                  const selectedUser = getUserById(selectedUserId);
+                  const userAssignations = assignations.filter(a => a.user_id === selectedUserId);
+                  return selectedUser 
+                    ? `${selectedUser.prenom} ${selectedUser.nom} - ${userAssignations.length} assignation(s) pour cette période`
+                    : `Utilisateur sélectionné - ${userAssignations.length} assignation(s)`;
+                }
+                
+                // Sinon recherche générale
                 const matchingAssignations = assignations.filter(a => {
                   const u = getUserById(a.user_id);
                   if (!u) return false;
@@ -7720,11 +7729,14 @@ const Planning = () => {
                 const uniqueUserIds = [...new Set(matchingAssignations.map(a => a.user_id))];
                 return uniqueUserIds.length > 0 
                   ? `${uniqueUserIds.length} employé(s) trouvé(s) correspondant à "${searchFilter}"`
-                  : `Aucun employé trouvé correspondant à "${searchFilter}"`;
+                  : `Recherche: "${searchFilter}" - Aucune assignation trouvée pour cette période`;
               })()}
             </span>
             <button
-              onClick={() => setSearchFilter('')}
+              onClick={() => {
+                setSearchFilter('');
+                setSelectedUserId(null);
+              }}
               style={{
                 marginLeft: 'auto',
                 background: 'transparent',
