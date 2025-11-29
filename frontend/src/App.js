@@ -7419,6 +7419,7 @@ const Planning = () => {
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       const url = `${backendUrl}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
       
+      // Ouvrir directement le PDF dans un nouvel onglet avec le token
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -7426,27 +7427,26 @@ const Planning = () => {
         }
       });
       
-      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur export PDF:', errorText);
+        throw new Error('Erreur lors de l\'export');
+      }
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `planning_${viewMode}_${periode}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      const pdfUrl = window.URL.createObjectURL(blob);
+      window.open(pdfUrl, '_blank');
       
       toast({ 
         title: "Succès", 
-        description: "Export PDF téléchargé",
+        description: "Planning ouvert pour impression",
         variant: "success"
       });
     } catch (error) {
+      console.error('Erreur export PDF planning:', error);
       toast({ 
         title: "Erreur", 
-        description: "Impossible d'exporter le PDF", 
+        description: `Impossible d'imprimer le planning: ${error.message}`, 
         variant: "destructive" 
       });
     }
