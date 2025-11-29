@@ -7570,13 +7570,77 @@ const Planning = () => {
       {/* Barre de Contrôles Harmonisée */}
       <div className="personnel-controls" style={{marginBottom: '2rem'}}>
         <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
-          {/* Recherche */}
-          <div style={{flex: 1, minWidth: '300px'}}>
+          {/* Recherche avec suggestions */}
+          <div style={{flex: 1, minWidth: '300px', position: 'relative'}}>
             <Input 
               placeholder="🔍 Rechercher un pompier..."
               value={searchFilter}
               onChange={e => setSearchFilter(e.target.value)}
+              onFocus={() => setShowSearchSuggestions(true)}
             />
+            {/* Dropdown de suggestions */}
+            {showSearchSuggestions && searchFilter.trim() && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'white',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  zIndex: 1000,
+                  marginTop: '4px'
+                }}
+              >
+                {(() => {
+                  const searchLower = searchFilter.toLowerCase();
+                  const filteredUsers = users.filter(u => 
+                    u.statut === 'Actif' && (
+                      u.nom.toLowerCase().includes(searchLower) ||
+                      u.prenom.toLowerCase().includes(searchLower) ||
+                      (u.email && u.email.toLowerCase().includes(searchLower))
+                    )
+                  ).slice(0, 10); // Limiter à 10 résultats
+                  
+                  if (filteredUsers.length === 0) {
+                    return (
+                      <div style={{padding: '1rem', textAlign: 'center', color: '#6B7280'}}>
+                        Aucun pompier trouvé
+                      </div>
+                    );
+                  }
+                  
+                  return filteredUsers.map(u => (
+                    <div
+                      key={u.id}
+                      onClick={() => {
+                        setSearchFilter(`${u.prenom} ${u.nom}`);
+                        setShowSearchSuggestions(false);
+                      }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #F3F4F6',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      <div style={{fontWeight: '600', color: '#1F2937'}}>
+                        {u.prenom} {u.nom}
+                      </div>
+                      <div style={{fontSize: '0.875rem', color: '#6B7280'}}>
+                        {u.grade} • {u.type_emploi === 'temps_partiel' ? 'TP' : 'TF'}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
           </div>
           
           {/* Toggle Vue Semaine/Mois */}
