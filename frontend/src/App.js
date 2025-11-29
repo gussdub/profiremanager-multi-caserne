@@ -694,7 +694,7 @@ const Login = () => {
                   src={personnalisation.logo_url} 
                   alt="Logo du service" 
                   style={{ 
-                    maxHeight: '100px', 
+                    maxHeight: '150px', 
                     maxWidth: '100%', 
                     objectFit: 'contain',
                     marginBottom: '1rem',
@@ -704,7 +704,7 @@ const Login = () => {
                   }}
                 />
                 {personnalisation.nom_service && (
-                  <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', margin: '0', textAlign: 'center' }}>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'white', margin: '0', textAlign: 'center' }}>
                     {personnalisation.nom_service}
                   </h2>
                 )}
