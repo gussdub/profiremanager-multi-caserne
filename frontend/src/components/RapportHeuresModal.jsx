@@ -169,15 +169,19 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
                   onChange={(e) => setMoisSelectionne(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 min-w-[200px]"
                 >
-                  {/* Générer les 12 derniers mois */}
-                  {Array.from({ length: 12 }, (_, i) => {
+                  {/* Générer mois prochain + 12 derniers mois */}
+                  {Array.from({ length: 13 }, (_, i) => {
                     const date = new Date();
-                    date.setMonth(date.getMonth() - i);
+                    // Mois prochain (i=0), mois actuel (i=1), puis mois précédents
+                    date.setMonth(date.getMonth() + 1 - i);
                     const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     const label = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                    const displayLabel = i === 0 
+                      ? `${label.charAt(0).toUpperCase() + label.slice(1)} (Planifié)` 
+                      : label.charAt(0).toUpperCase() + label.slice(1);
                     return (
                       <option key={yearMonth} value={yearMonth}>
-                        {label.charAt(0).toUpperCase() + label.slice(1)}
+                        {displayLabel}
                       </option>
                     );
                   })}
