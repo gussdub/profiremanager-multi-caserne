@@ -7931,13 +7931,19 @@ const Planning = () => {
                       key={typeGarde.id}
                       className="garde-card-vertical"
                       style={{
-                        background: isMyShift ? '#3B82F610' : 'white',
-                        border: `3px solid ${isMyShift ? '#3B82F6' : gardeColor}`,
+                        background: (searchFilter.trim() && filteredUsers.length > 0) 
+                          ? '#FFFBEB' 
+                          : isMyShift ? '#3B82F610' : 'white',
+                        border: (searchFilter.trim() && filteredUsers.length > 0)
+                          ? '3px solid #F59E0B'
+                          : `3px solid ${isMyShift ? '#3B82F6' : gardeColor}`,
                         borderRadius: '8px',
                         padding: '1rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        boxShadow: (searchFilter.trim() && filteredUsers.length > 0)
+                          ? '0 4px 12px rgba(245, 158, 11, 0.4)'
+                          : '0 2px 4px rgba(0,0,0,0.1)',
                         position: 'relative'
                       }}
                       onClick={() => {
