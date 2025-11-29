@@ -7926,6 +7926,9 @@ const Planning = () => {
                   
                   // Vérifier si c'est un quart de l'utilisateur actuel
                   const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                  
+                  // Vérifier si l'utilisateur recherché est assigné à cette garde
+                  const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
 
                   // Utiliser la couleur définie dans les paramètres du type de garde
                   const gardeColor = typeGarde.couleur || '#6B7280';
@@ -7935,10 +7938,10 @@ const Planning = () => {
                       key={typeGarde.id}
                       className="garde-card-vertical"
                       style={{
-                        background: (searchFilter.trim() && filteredUsers.length > 0) 
+                        background: isSearchedUserAssigned 
                           ? '#FFFBEB' 
                           : isMyShift ? '#3B82F610' : 'white',
-                        border: (searchFilter.trim() && filteredUsers.length > 0)
+                        border: isSearchedUserAssigned
                           ? '3px solid #F59E0B'
                           : `3px solid ${isMyShift ? '#3B82F6' : gardeColor}`,
                         borderRadius: '8px',
