@@ -8015,13 +8015,19 @@ const Planning = () => {
                                 key={idx} 
                                 style={{
                                   padding: '0.5rem',
-                                  background: searchFilter.trim() && filteredUsers.includes(u) ? '#FEF3C7' : '#F9FAFB',
+                                  background: searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) 
+                                    ? 'linear-gradient(135deg, #FCD34D 0%, #FDE68A 100%)' 
+                                    : '#F9FAFB',
                                   borderRadius: '4px',
                                   fontSize: '0.85rem',
-                                  fontWeight: u.id === user.id ? 'bold' : 'normal',
-                                  border: u.id === user.id ? '2px solid #3B82F6' : '1px solid #E5E7EB'
+                                  fontWeight: (searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId)) || u.id === user.id ? 'bold' : 'normal',
+                                  border: (searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId)) 
+                                    ? '2px solid #F59E0B' 
+                                    : u.id === user.id ? '2px solid #3B82F6' : '1px solid #E5E7EB',
+                                  boxShadow: searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none'
                                 }}
                               >
+                                {searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) && '🔍 '}
                                 {u.prenom.charAt(0)}. {u.nom} - {u.grade}
                               </div>
                             ))}
