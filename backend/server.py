@@ -4602,12 +4602,25 @@ async def export_planning_pdf(
                         
                         garde_nom = type_garde['nom']
                         garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
+                        personnel_requis = type_garde.get('personnel_requis', 1)
+                        personnel_assigne = len(noms_complets)
+                        
+                        # Icône de couverture
+                        if personnel_assigne == 0:
+                            coverage_icon = '❌'
+                            coverage_text = 'Vacant'
+                        elif personnel_assigne >= personnel_requis:
+                            coverage_icon = '✅'
+                            coverage_text = 'Complet'
+                        else:
+                            coverage_icon = '⚠️'
+                            coverage_text = 'Partiel'
                         
                         if noms_complets:
                             personnel_str = ", ".join(noms_complets)
-                            garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>👤 {personnel_str}"
+                            garde_text = f"<b>{garde_nom}</b> • {garde_horaire} • {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   👤 {personnel_str}"
                         else:
-                            garde_text = f"<b>{garde_nom}</b> ({garde_horaire})<br/>⚠️ <i>Vacant</i>"
+                            garde_text = f"<b>{garde_nom}</b> • {garde_horaire} • {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   ⚠️ <i>Aucun employé assigné</i>"
                         
                         elements.append(Paragraph(garde_text, garde_style))
                 
