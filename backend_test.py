@@ -97,12 +97,12 @@ class SheffordAttributionTester:
         print(f"\n🚀 Lancement attribution automatique pour semaine {semaine_debut}...")
         
         url = f"{self.base_url}/planning/attribution-auto"
-        payload = {
+        params = {
             "semaine_debut": semaine_debut,
-            "force_regeneration": True
+            "reset": True  # Réinitialiser les assignations existantes
         }
         
-        response = requests.post(url, headers=self.headers, json=payload)
+        response = requests.post(url, headers=self.headers, params=params)
         
         if response.status_code == 200:
             result = response.json()
