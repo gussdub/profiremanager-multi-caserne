@@ -109,7 +109,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
     
     const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`;
-    const token = localStorage.getItem('token');
+    const token = getTenantToken();
     
     fetch(url, {
       headers: {
