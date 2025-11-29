@@ -7632,6 +7632,7 @@ const Planning = () => {
                       key={u.id}
                       onClick={() => {
                         setSearchFilter(`${u.prenom} ${u.nom}`);
+                        setSelectedUserId(u.id);
                         setShowSearchSuggestions(false);
                       }}
                       style={{
