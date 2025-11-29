@@ -325,7 +325,7 @@ class SheffordAttributionTester:
             return False
         
         # Lancer attribution pour décembre 2024
-        semaine_test = "2024-12-02"  # Première semaine de décembre 2024
+        semaine_test = "2024-12-09"  # Deuxième semaine de décembre 2024
         result = self.lancer_attribution_auto(semaine_test)
         
         if not result:
