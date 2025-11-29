@@ -7713,6 +7713,20 @@ const Planning = () => {
           >
             👤 Assignation Manuelle Avancée
           </Button>
+          <Button 
+            style={{
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+            }}
+            onClick={() => setShowRapportHeuresModal(true)}
+            data-testid="rapport-heures-btn"
+          >
+            📊 Rapport d'Heures
+          </Button>
         </div>
       )}
 
