@@ -7417,31 +7417,14 @@ const Planning = () => {
       const token = getTenantToken();
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       
-      // URL relative pour éviter les problèmes CORS
-      const url = `/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
+      // Utiliser buildApiUrl comme dans le module Prévention
+      const url = buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`);
       
       console.log('Imprimer Planning URL:', url);
+      console.log('Token:', token ? 'Présent' : 'Absent');
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Erreur export PDF:', errorText);
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const blob = await response.blob();
-      console.log('PDF Blob size:', blob.size);
-      
-      const pdfUrl = window.URL.createObjectURL(blob);
-      window.open(pdfUrl, '_blank');
+      // Ouvrir directement l'URL avec le token (même méthode que Prévention ligne 21321)
+      window.open(`${url}&token=${token}`, '_blank');
       
       toast({ 
         title: "Succès", 
