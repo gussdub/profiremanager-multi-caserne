@@ -60,52 +60,54 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   }, [isOpen, moisSelectionne, dateDebut, dateFin, modeSelection]);
   
   // Export Excel
-  const exporterExcel = () => {
-    let debut, fin;
-    
-    if (modeSelection === 'mois') {
-      const [year, month] = moisSelectionne.split('-');
-      debut = `${year}-${month}-01`;
-      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-      fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    } else {
-      debut = dateDebut;
-      fin = dateFin;
-    }
-    
-    const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-excel?date_debut=${debut}&date_fin=${fin}`;
-    const token = getTenantToken();
-    
-    console.log('Export Excel URL:', url);
-    console.log('Token disponible:', token ? 'Oui' : 'Non');
-    
-    fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const exporterExcel = async () => {
+    try {
+      let debut, fin;
+      
+      if (modeSelection === 'mois') {
+        const [year, month] = moisSelectionne.split('-');
+        debut = `${year}-${month}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      } else {
+        debut = dateDebut;
+        fin = dateFin;
       }
-    })
-      .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+      
+      // Construire l'URL relative (le proxy Kubernetes gérera la redirection)
+      const url = `/api/${tenantSlug}/planning/rapport-heures/export-excel?date_debut=${debut}&date_fin=${fin}`;
+      const token = getTenantToken();
+      
+      console.log('Export Excel URL:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        return response.blob();
-      })
-      .then(blob => {
-        console.log('Blob size:', blob.size);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rapport_heures_${debut}_${fin}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(err => {
-        console.error('Erreur export Excel:', err);
-        alert(`Erreur lors de l'export Excel: ${err.message}`);
       });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+      
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `rapport_heures_${debut}_${fin}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error('Erreur export Excel:', err);
+      alert(`Erreur lors de l'export Excel: ${err.message}`);
+    }
   };
   
   // Imprimer (ouvre le PDF)
