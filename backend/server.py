@@ -13667,21 +13667,41 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 available_users = []
                 for user in users:
                     # VÉRIFICATION CRITIQUE: Éviter les conflits d'horaires
-                    # Un utilisateur ne peut pas être sur 2 gardes en même temps
-                    user_deja_assigne_ce_jour = False
+                    # Un utilisateur ne peut pas être sur 2 gardes qui se chevauchent
+                    user_a_conflit_horaire = False
+                    
+                    # Récupérer les horaires de la garde actuelle
+                    heure_debut_actuelle = type_garde.get("heure_debut", "")
+                    heure_fin_actuelle = type_garde.get("heure_fin", "")
+                    
                     for assignation in existing_assignations:
                         if assignation["user_id"] == user["id"] and assignation["date"] == date_str:
                             # L'utilisateur est déjà assigné à une garde ce jour
-                            # Vérifier si les horaires se chevauchent
                             garde_existante = next((g for g in types_garde if g["id"] == assignation["type_garde_id"]), None)
                             if garde_existante:
-                                # Pour simplifier, on considère que 2 gardes le même jour = conflit
-                                # (Une amélioration future pourrait vérifier les heures exactes)
-                                user_deja_assigne_ce_jour = True
-                                logging.info(f"❌ [CONFLIT] {user['prenom']} {user['nom']} déjà assigné à {garde_existante['nom']} le {date_str}")
-                                break
+                                # Vérifier si les horaires se chevauchent RÉELLEMENT
+                                heure_debut_existante = garde_existante.get("heure_debut", "")
+                                heure_fin_existante = garde_existante.get("heure_fin", "")
+                                
+                                # Vérification intelligente de chevauchement
+                                if heure_debut_actuelle and heure_fin_actuelle and heure_debut_existante and heure_fin_existante:
+                                    # Convertir en format comparable (ex: "06:00" < "12:00")
+                                    # Chevauchement si: (debut1 < fin2) ET (debut2 < fin1)
+                                    chevauchement = (heure_debut_actuelle < heure_fin_existante) and (heure_debut_existante < heure_fin_actuelle)
+                                    
+                                    if chevauchement:
+                                        user_a_conflit_horaire = True
+                                        logging.info(f"❌ [CONFLIT HORAIRE] {user['prenom']} {user['nom']} déjà sur {garde_existante['nom']} ({heure_debut_existante}-{heure_fin_existante}) chevauche {type_garde['nom']} ({heure_debut_actuelle}-{heure_fin_actuelle})")
+                                        break
+                                    else:
+                                        logging.info(f"✅ [PAS DE CONFLIT] {user['prenom']} {user['nom']} peut faire {type_garde['nom']} ({heure_debut_actuelle}-{heure_fin_actuelle}) après {garde_existante['nom']} ({heure_debut_existante}-{heure_fin_existante})")
+                                else:
+                                    # Si pas d'horaires définis, on considère conflit par sécurité
+                                    user_a_conflit_horaire = True
+                                    logging.info(f"⚠️ [CONFLIT] {user['prenom']} {user['nom']} déjà assigné à {garde_existante['nom']} le {date_str} (horaires non définis)")
+                                    break
                     
-                    if user_deja_assigne_ce_jour:
+                    if user_a_conflit_horaire:
                         continue  # Skip cet utilisateur pour éviter le conflit
                     
                     # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
