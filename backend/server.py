@@ -4671,7 +4671,29 @@ async def export_planning_pdf(
                 if current <= date_fin:
                     elements.append(PageBreak())  # Nouvelle page par semaine
         
-        doc.build(elements)
+        # Fonction pour ajouter le footer sur chaque page
+        def add_footer(canvas, doc_obj):
+            canvas.saveState()
+            
+            # Ligne de séparation en haut du footer
+            canvas.setStrokeColor(colors.HexColor('#e2e8f0'))
+            canvas.setLineWidth(1)
+            canvas.line(0.5*inch, 0.5*inch, landscape(letter)[0] - 0.5*inch, 0.5*inch)
+            
+            # Texte du footer
+            canvas.setFont('Helvetica', 9)
+            canvas.setFillColor(colors.HexColor('#64748b'))
+            footer_text = f"Produit avec ProFireManager v2.0 • {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
+            canvas.drawCentredString(landscape(letter)[0] / 2, 0.35*inch, footer_text)
+            
+            # Numéro de page
+            canvas.setFont('Helvetica', 8)
+            page_num_text = f"Page {doc_obj.page}"
+            canvas.drawRightString(landscape(letter)[0] - 0.5*inch, 0.35*inch, page_num_text)
+            
+            canvas.restoreState()
+        
+        doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
         buffer.seek(0)
         
         return StreamingResponse(
