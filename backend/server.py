@@ -13750,16 +13750,25 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             # INCLURE aussi les assignations nouvellement créées dans cette session
                             heures_semaine_actuelle = 0
                             
-                            # Compter les assignations EXISTANTES + NOUVELLES
+                            # Compter les assignations EXISTANTES + NOUVELLES (avec déduplication par ID)
+                            assignations_vues = set()  # Pour éviter de compter 2 fois la même assignation
                             toutes_assignations_semaine = existing_assignations + nouvelles_assignations
                             
                             for assignation in toutes_assignations_semaine:
+                                # Déduplication: ne compter chaque assignation qu'une seule fois
+                                assignation_key = f"{assignation['user_id']}_{assignation['type_garde_id']}_{assignation['date']}"
+                                if assignation_key in assignations_vues:
+                                    continue
+                                assignations_vues.add(assignation_key)
+                                
                                 if assignation["user_id"] == user["id"]:
-                                    type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
-                                    if type_g:
-                                        # Ne compter QUE les gardes internes (gardes externes ne sont pas des heures travaillées)
-                                        if not type_g.get("est_garde_externe", False):
-                                            heures_semaine_actuelle += type_g.get("duree_heures", 8)
+                                    # Vérifier que l'assignation est dans la semaine actuelle
+                                    if semaine_debut <= assignation["date"] <= semaine_fin:
+                                        type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
+                                        if type_g:
+                                            # Ne compter QUE les gardes internes (gardes externes ne sont pas des heures travaillées)
+                                            if not type_g.get("est_garde_externe", False):
+                                                heures_semaine_actuelle += type_g.get("duree_heures", 8)
                             
                             # Log spécifique pour Sébastien Charest
                             if user.get("email") == "sebas.charest18@hotmail.com":
