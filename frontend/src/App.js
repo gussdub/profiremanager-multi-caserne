@@ -7414,13 +7414,14 @@ const Planning = () => {
   // Fonctions d'export Planning
   const handleExportPDFPlanning = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
       const token = getTenantToken();
-      
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
-      const url = `${backendUrl}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
       
-      // Ouvrir directement le PDF dans un nouvel onglet avec le token
+      // URL relative pour éviter les problèmes CORS
+      const url = `/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
+      
+      console.log('Imprimer Planning URL:', url);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -7428,13 +7429,17 @@ const Planning = () => {
         }
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Erreur export PDF:', errorText);
-        throw new Error('Erreur lors de l\'export');
+        throw new Error(`HTTP ${response.status}`);
       }
       
       const blob = await response.blob();
+      console.log('PDF Blob size:', blob.size);
+      
       const pdfUrl = window.URL.createObjectURL(blob);
       window.open(pdfUrl, '_blank');
       
