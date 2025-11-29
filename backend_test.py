@@ -37,7 +37,7 @@ class SheffordAttributionTester:
         
         if response.status_code == 200:
             data = response.json()
-            self.token = data.get('token')
+            self.token = data.get('access_token')  # Correction: utiliser access_token
             self.headers = {'Authorization': f'Bearer {self.token}'}
             print(f"✅ Authentification réussie - Token obtenu")
             print(f"🔍 User info: {data.get('user', {}).get('email')} - Role: {data.get('user', {}).get('role')}")
