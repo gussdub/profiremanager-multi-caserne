@@ -41,6 +41,14 @@ class SheffordAttributionTester:
             self.headers = {'Authorization': f'Bearer {self.token}'}
             print(f"✅ Authentification réussie - Token obtenu")
             print(f"🔍 User info: {data.get('user', {}).get('email')} - Role: {data.get('user', {}).get('role')}")
+            
+            # Test immédiat du token
+            test_url = f"{self.base_url}/users"
+            test_response = requests.get(test_url, headers=self.headers)
+            print(f"🧪 Test token: {test_response.status_code}")
+            if test_response.status_code != 200:
+                print(f"⚠️ Token test failed: {test_response.text}")
+            
             return True
         else:
             print(f"❌ Échec authentification: {response.status_code} - {response.text}")
