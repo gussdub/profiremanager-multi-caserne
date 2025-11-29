@@ -265,20 +265,20 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
               {/* Statistiques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div style={{fontSize: '9px', color: '#2563EB', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
-                    Total Heures<br/>Planifiées
+                  <div style={{fontSize: '10px', color: '#2563EB', fontWeight: '600', marginBottom: '4px'}}>
+                    Total H. Planifiées
                   </div>
                   <div className="text-2xl font-bold text-blue-900">{data.statistiques.total_heures_planifiees}h</div>
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <div style={{fontSize: '9px', color: '#16A34A', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
-                    Moyenne Heures<br/>Internes
+                  <div style={{fontSize: '10px', color: '#16A34A', fontWeight: '600', marginBottom: '4px'}}>
+                    Moy. H. Internes
                   </div>
                   <div className="text-2xl font-bold text-green-900">{data.statistiques.moyenne_heures_internes}h</div>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <div style={{fontSize: '9px', color: '#9333EA', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
-                    Moyenne Heures<br/>Externes
+                  <div style={{fontSize: '10px', color: '#9333EA', fontWeight: '600', marginBottom: '4px'}}>
+                    Moy. H. Externes
                   </div>
                   <div className="text-2xl font-bold text-purple-900">{data.statistiques.moyenne_heures_externes}h</div>
                 </div>
