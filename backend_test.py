@@ -59,7 +59,7 @@ class SheffordAttributionTester:
             print(f"✅ Paramètres récupérés - Heures sup: {heures_sup_activees}")
             return params
         else:
-            print(f"❌ Erreur récupération paramètres: {response.status_code}")
+            print(f"❌ Erreur récupération paramètres: {response.status_code} - {response.text}")
             return None
     
     def desactiver_heures_supplementaires(self):
