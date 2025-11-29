@@ -13731,9 +13731,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Garde traverse minuit, pas la dispo - impossible de couvrir complètement
                     continue
                 elif dispo_traverse_minuit:
-                    # Dispo traverse minuit, pas la garde - vérifier si couvre
-                    if debut_dispo_min <= debut_garde_min or fin_dispo_min >= fin_garde_min:
-                        return True
+                    # Dispo traverse minuit, pas la garde - impossible de couvrir une garde qui ne traverse pas minuit
+                    continue
                 else:
                     # Aucune ne traverse minuit - vérification standard
                     if debut_dispo_min <= debut_garde_min and fin_dispo_min >= fin_garde_min:
