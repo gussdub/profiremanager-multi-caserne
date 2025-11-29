@@ -641,11 +641,17 @@ class FrancoisGuayBugTester:
             print(f"❌ Erreur récupération assignations: {response.status_code}")
             return False
         
-        assignations = response.json()
+        all_assignations = response.json()
+        
+        # Filtrer les assignations de François Guay pour le 19 décembre
+        francois_assignations = [
+            a for a in all_assignations 
+            if a.get('user_id') == user_id and a.get('date') == self.test_date
+        ]
         
         print(f"📋 Assignations de François Guay le {self.test_date}:")
         
-        if not assignations:
+        if not francois_assignations:
             print("✅ SUCCÈS: Aucune assignation pour François Guay ce jour")
             print("   → Le bug est corrigé, François n'est plus assigné incorrectement")
             return True
