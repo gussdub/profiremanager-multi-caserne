@@ -610,11 +610,10 @@ class FrancoisGuayBugTester:
         
         url = f"{self.base_url}/planning/attribution-auto"
         params = {
-            "date_debut": self.test_week_start,
-            "date_fin": self.test_week_end
+            "semaine_debut": self.test_week_start
         }
         
-        response = requests.post(url, headers=self.headers, json=params)
+        response = requests.post(url, headers=self.headers, params=params)
         
         if response.status_code != 200:
             print(f"❌ Erreur attribution automatique: {response.status_code} - {response.text}")
