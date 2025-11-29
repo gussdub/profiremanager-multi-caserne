@@ -13979,12 +13979,24 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Si indispo, ne rien faire (exclu)
                     else:  # temps_plein
                         # Calculer les heures de la semaine actuelle pour cet utilisateur
+                        # CORRECTION: Inclure TOUTES les assignations (existantes + nouvelles) avec déduplication
                         heures_semaine_actuelle = 0
-                        for assignation in existing_assignations:
+                        assignations_vues_tf = set()
+                        toutes_assignations_tf = existing_assignations + nouvelles_assignations
+                        
+                        for assignation in toutes_assignations_tf:
+                            # Déduplication
+                            assignation_key = f"{assignation['user_id']}_{assignation['type_garde_id']}_{assignation['date']}"
+                            if assignation_key in assignations_vues_tf:
+                                continue
+                            assignations_vues_tf.add(assignation_key)
+                            
                             if assignation["user_id"] == u["id"]:
-                                type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
-                                if type_g and not type_g.get("est_garde_externe", False):
-                                    heures_semaine_actuelle += type_g.get("duree_heures", 8)
+                                # Vérifier que c'est dans la semaine actuelle
+                                if semaine_debut <= assignation["date"] <= semaine_fin:
+                                    type_g = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
+                                    if type_g and not type_g.get("est_garde_externe", False):
+                                        heures_semaine_actuelle += type_g.get("duree_heures", 8)
                         
                         heures_max_user = u.get("heures_max_semaine", 40)
                         
