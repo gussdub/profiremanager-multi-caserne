@@ -14138,9 +14138,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             heures_max_user = min(heures_max_user, 42)
                             logging.info(f"🔒 [LIMITE] {user['prenom']} {user['nom']}: heures_max_semaine limitée à {heures_max_user}h (heures sup désactivées)")
                             # Heures sup DÉSACTIVÉES : vérifier strictement heures_max_semaine
-                            # Calculer les heures de la semaine actuelle pour cet utilisateur
-                            # IMPORTANT: Ne compter que les gardes INTERNES (pas les externes)
-                            # INCLURE aussi les assignations nouvellement créées dans cette session
+                            # CORRECTION CRITIQUE: Calculer les heures pour LA SEMAINE CALENDAIRE de cette garde
+                            # (lundi à dimanche), pas pour toute la période d'attribution
                             heures_semaine_actuelle = 0
                             
                             # Compter les assignations EXISTANTES + NOUVELLES (avec déduplication par ID)
