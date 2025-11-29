@@ -76,13 +76,23 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-excel?date_debut=${debut}&date_fin=${fin}`;
     const token = getTenantToken();
     
+    console.log('Export Excel URL:', url);
+    console.log('Token disponible:', token ? 'Oui' : 'Non');
+    
     fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-      .then(response => response.blob())
+      .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.blob();
+      })
       .then(blob => {
+        console.log('Blob size:', blob.size);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -90,8 +100,12 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
         document.body.appendChild(a);
         a.click();
         a.remove();
+        window.URL.revokeObjectURL(url);
       })
-      .catch(err => alert("Erreur lors de l'export Excel"));
+      .catch(err => {
+        console.error('Erreur export Excel:', err);
+        alert(`Erreur lors de l'export Excel: ${err.message}`);
+      });
   };
   
   // Imprimer (ouvre le PDF)
