@@ -13587,6 +13587,57 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Attribution automatique logic (5 niveaux de priorité)
         # nouvelles_assignations déjà déclaré plus haut
         
+        # ==================== FONCTION HELPER: VÉRIFICATION COUVERTURE HORAIRE ====================
+        def dispo_couvre_garde(dispos_list, heure_debut_garde, heure_fin_garde):
+            """
+            Vérifie si au moins UNE des disponibilités couvre COMPLÈTEMENT l'horaire de la garde.
+            Gère les gardes qui traversent minuit (ex: 18:00-06:00).
+            """
+            if not dispos_list or not heure_debut_garde or not heure_fin_garde:
+                return False
+            
+            def time_to_minutes(time_str):
+                if not time_str:
+                    return None
+                h, m = map(int, time_str.split(':'))
+                return h * 60 + m
+            
+            debut_garde_min = time_to_minutes(heure_debut_garde)
+            fin_garde_min = time_to_minutes(heure_fin_garde)
+            
+            if debut_garde_min is None or fin_garde_min is None:
+                return False
+            
+            garde_traverse_minuit = fin_garde_min < debut_garde_min
+            
+            for dispo in dispos_list:
+                debut_dispo_min = time_to_minutes(dispo.get("heure_debut"))
+                fin_dispo_min = time_to_minutes(dispo.get("heure_fin"))
+                
+                if debut_dispo_min is None or fin_dispo_min is None:
+                    continue
+                
+                dispo_traverse_minuit = fin_dispo_min < debut_dispo_min
+                
+                # Logique de couverture complète
+                if garde_traverse_minuit and dispo_traverse_minuit:
+                    # Les deux traversent minuit - vérifier si dispo couvre garde
+                    if debut_dispo_min <= debut_garde_min and fin_dispo_min >= fin_garde_min:
+                        return True
+                elif garde_traverse_minuit:
+                    # Garde traverse minuit, pas la dispo - impossible de couvrir complètement
+                    continue
+                elif dispo_traverse_minuit:
+                    # Dispo traverse minuit, pas la garde - vérifier si couvre
+                    if debut_dispo_min <= debut_garde_min or fin_dispo_min >= fin_garde_min:
+                        return True
+                else:
+                    # Aucune ne traverse minuit - vérification standard
+                    if debut_dispo_min <= debut_garde_min and fin_dispo_min >= fin_garde_min:
+                        return True
+            
+            return False
+        
         # ==================== PRIORISATION DES GARDES PAR COMPÉTENCES ====================
         # Trier les types de garde par criticité des compétences requises
         # Les gardes avec compétences rares/uniques sont traitées EN PREMIER
