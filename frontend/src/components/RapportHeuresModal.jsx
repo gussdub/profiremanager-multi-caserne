@@ -86,7 +86,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
         a.click();
         a.remove();
       })
-      .catch(err => alert('Erreur lors de l\'export Excel'));
+      .catch(err => alert("Erreur lors de l'export Excel"));
   };
   
   // Imprimer (ouvre le PDF)
