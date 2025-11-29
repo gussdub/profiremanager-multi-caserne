@@ -14115,8 +14115,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Garde EXTERNE: Pas de vérification d'heures max
                         logging.info(f"✅ [GARDE_EXTERNE] {user['prenom']} {user['nom']}: Pas de limite d'heures pour garde externe {type_garde['nom']}")
                     else:
-                        # Garde INTERNE: Vérifier heures_max_semaine
+                        # Garde INTERNE: Vérifier heures_max_semaine POUR LA SEMAINE CALENDAIRE de cette garde
                         heures_max_user = user.get("heures_max_semaine", 40)
+                        
+                        # Calculer la semaine calendaire de cette garde (lundi = début de semaine)
+                        garde_date = datetime.strptime(date_str, "%Y-%m-%d")
+                        # Trouver le lundi de cette semaine
+                        days_since_monday = garde_date.weekday()  # 0 = lundi, 6 = dimanche
+                        semaine_start = garde_date - timedelta(days=days_since_monday)
+                        semaine_end = semaine_start + timedelta(days=6)
+                        semaine_start_str = semaine_start.strftime("%Y-%m-%d")
+                        semaine_end_str = semaine_end.strftime("%Y-%m-%d")
                         
                         if activer_heures_sup:
                             # Heures sup activées : peut dépasser heures_max_user mais respecter limite système si elle existe
