@@ -49,7 +49,7 @@ class SheffordAttributionTester:
         """Récupère les paramètres de remplacement"""
         print("\n📋 Récupération des paramètres de remplacement...")
         
-        url = f"{self.base_url}/parametres-remplacements"
+        url = f"{self.base_url}/parametres/remplacements"
         response = requests.get(url, headers=self.headers)
         
         if response.status_code == 200:
