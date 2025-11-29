@@ -4992,6 +4992,19 @@ async def export_rapport_heures_pdf(
     """
     elements.append(Paragraph(stats_text, styles['Normal']))
     
+    # Ajouter footer ProFireManager
+    elements.append(Spacer(1, 0.5*inch))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=TA_CENTER
+    )
+    footer_text = create_pdf_footer_text(tenant)
+    if footer_text:
+        elements.append(Paragraph(footer_text, footer_style))
+    
     doc.build(elements)
     buffer.seek(0)
     
