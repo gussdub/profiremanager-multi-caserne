@@ -14452,7 +14452,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 
                 # Pour temps plein incomplets : trier par heures manquantes (plus loin de limite = priorité)
                 def calculer_heures_user_semaine(user_id):
-                    """Calcule les heures internes d'un user pour la semaine avec déduplication"""
+                    """Calcule les heures internes d'un user pour LA SEMAINE CALENDAIRE de cette garde"""
+                    # Utiliser la même semaine calendaire que calculée plus haut
                     heures = 0
                     assignations_vues_sort = set()
                     toutes_assign = existing_assignations + nouvelles_assignations
@@ -14462,7 +14463,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             continue
                         assignations_vues_sort.add(key)
                         
-                        if a["user_id"] == user_id and semaine_debut <= a["date"] <= semaine_fin:
+                        # CORRECTION CRITIQUE: Vérifier la semaine calendaire de cette garde
+                        if a["user_id"] == user_id and semaine_start_tf_str <= a["date"] <= semaine_end_tf_str:
                             type_g = next((t for t in types_garde if t["id"] == a["type_garde_id"]), None)
                             if type_g and not type_g.get("est_garde_externe", False):
                                 heures += type_g.get("duree_heures", 8)
