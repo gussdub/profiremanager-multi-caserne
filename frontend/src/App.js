@@ -6491,6 +6491,7 @@ const Planning = () => {
   const [viewMode, setViewMode] = useState('mois'); // 'semaine' ou 'mois' - Défaut: mois
   const [displayMode] = useState('calendrier'); // Vue calendrier uniquement (liste supprimée car moins lisible)
   const [searchFilter, setSearchFilter] = useState('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [typeGardeFilter, setTypeGardeFilter] = useState('');
   const [typesGarde, setTypesGarde] = useState([]);
   const [assignations, setAssignations] = useState([]);
