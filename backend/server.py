@@ -13717,9 +13717,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     if chevauchement:
                                         user_a_conflit_horaire = True
                                         logging.info(f"❌ [CONFLIT HORAIRE] {user['prenom']} {user['nom']} déjà sur {garde_existante['nom']} ({heure_debut_existante}-{heure_fin_existante}) chevauche {type_garde['nom']} ({heure_debut_actuelle}-{heure_fin_actuelle})")
+                                        logging.info(f"   [DEBUG CONFLIT] Garde existante externe: {garde_existante.get('est_garde_externe', False)}, Garde actuelle externe: {type_garde.get('est_garde_externe', False)}")
                                         break
-                                    else:
-                                        logging.info(f"✅ [PAS DE CONFLIT] {user['prenom']} {user['nom']} peut faire {type_garde['nom']} ({heure_debut_actuelle}-{heure_fin_actuelle}) après {garde_existante['nom']} ({heure_debut_existante}-{heure_fin_existante})")
                                 else:
                                     # Si pas d'horaires définis, on considère conflit par sécurité
                                     user_a_conflit_horaire = True
