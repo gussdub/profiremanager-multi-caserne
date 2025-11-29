@@ -7607,22 +7607,19 @@ const Planning = () => {
           
           {/* Rapport d'audit (admin seulement) */}
           {user.role === 'admin' && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button 
-                variant="outline" 
-                onClick={() => handleDownloadAuditReport('pdf')}
-                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
-              >
-                🔍 Audit PDF
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleDownloadAuditReport('excel')}
-                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
-              >
-                🔍 Audit Excel
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => handleDownloadAuditReport('pdf')}
+              style={{ 
+                borderColor: '#3B82F6', 
+                color: '#3B82F6',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              🖨️ Imprimer Planning
+            </Button>
           )}
         </div>
         
