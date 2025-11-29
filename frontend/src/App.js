@@ -6492,6 +6492,17 @@ const Planning = () => {
   const [displayMode] = useState('calendrier'); // Vue calendrier uniquement (liste supprimée car moins lisible)
   const [searchFilter, setSearchFilter] = useState('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  
+  // Fermer les suggestions quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showSearchSuggestions && !e.target.closest('.search-container')) {
+        setShowSearchSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSearchSuggestions]);
   const [typeGardeFilter, setTypeGardeFilter] = useState('');
   const [typesGarde, setTypesGarde] = useState([]);
   const [assignations, setAssignations] = useState([]);
