@@ -73,7 +73,7 @@ class SheffordAttributionTester:
         # Modifier pour désactiver les heures sup
         params['heures_supplementaires_activees'] = False
         
-        url = f"{self.base_url}/parametres-remplacements"
+        url = f"{self.base_url}/parametres/remplacements"
         response = requests.put(url, headers=self.headers, json=params)
         
         if response.status_code == 200:
