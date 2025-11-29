@@ -632,15 +632,10 @@ class FrancoisGuayBugTester:
         
         user_id = self.francois_guay_user['id']
         
-        # Récupérer les assignations pour François Guay le 19 décembre
-        url = f"{self.base_url}/assignations"
-        params = {
-            "date_debut": self.test_date,
-            "date_fin": self.test_date,
-            "user_id": user_id
-        }
+        # Récupérer les assignations pour la semaine (qui inclut le 19 décembre)
+        url = f"{self.base_url}/planning/assignations/{self.test_week_start}"
         
-        response = requests.get(url, headers=self.headers, params=params)
+        response = requests.get(url, headers=self.headers)
         
         if response.status_code != 200:
             print(f"❌ Erreur récupération assignations: {response.status_code}")
