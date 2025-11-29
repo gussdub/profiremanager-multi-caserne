@@ -7900,14 +7900,16 @@ const Planning = () => {
                   );
                   const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
                   
-                  // Filtrer les utilisateurs selon la recherche
-                  const filteredUsers = searchFilter.trim() 
-                    ? assignedUsers.filter(u => 
-                        u.nom.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                        u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                        (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
-                      )
-                    : assignedUsers;
+                  // Filtrer les utilisateurs selon la recherche ou l'utilisateur sélectionné
+                  const filteredUsers = selectedUserId 
+                    ? assignedUsers.filter(u => u.id === selectedUserId)
+                    : searchFilter.trim() 
+                      ? assignedUsers.filter(u => 
+                          u.nom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                          u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                          (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
+                        )
+                      : assignedUsers;
                   
                   const assignedCount = assignedUsers.length;
                   const requiredCount = typeGarde.personnel_requis;
