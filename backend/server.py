@@ -14017,16 +14017,31 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         logging.info(f"    Statut: {u.get('statut', 'N/A')}")
                     
                     if u["type_emploi"] == "temps_partiel":
-                        # Vérifier si a déclaré une disponibilité
-                        # Accepter soit : disponibilité spécifique pour cette garde OU disponibilité générale (None)
-                        has_dispo = False
+                        # CORRECTION CRITIQUE: Vérifier si a déclaré une disponibilité QUI COUVRE l'horaire de la garde
+                        has_dispo_covering = False
+                        
                         if u["id"] in dispos_lookup and date_str in dispos_lookup[u["id"]]:
-                            # Disponibilité spécifique pour ce type de garde
+                            # Récupérer les horaires de la garde
+                            heure_debut_garde = type_garde.get("heure_debut")
+                            heure_fin_garde = type_garde.get("heure_fin")
+                            
+                            # Vérifier disponibilité spécifique pour ce type de garde
                             if type_garde["id"] in dispos_lookup[u["id"]][date_str]:
-                                has_dispo = True
+                                dispos_list = dispos_lookup[u["id"]][date_str][type_garde["id"]]
+                                if dispo_couvre_garde(dispos_list, heure_debut_garde, heure_fin_garde):
+                                    has_dispo_covering = True
+                                    logging.info(f"✅ [DISPO_COUVRE] {u['prenom']} {u['nom']} a une dispo qui couvre {type_garde['nom']} ({heure_debut_garde}-{heure_fin_garde})")
+                                else:
+                                    logging.info(f"⚠️ [DISPO_PARTIELLE] {u['prenom']} {u['nom']} a une dispo pour {type_garde['nom']} mais ne couvre pas l'horaire complet")
+                            
                             # OU disponibilité générale (type_garde_id = None)
-                            elif None in dispos_lookup[u["id"]][date_str]:
-                                has_dispo = True
+                            if not has_dispo_covering and None in dispos_lookup[u["id"]][date_str]:
+                                dispos_list = dispos_lookup[u["id"]][date_str][None]
+                                if dispo_couvre_garde(dispos_list, heure_debut_garde, heure_fin_garde):
+                                    has_dispo_covering = True
+                                    logging.info(f"✅ [DISPO_GENERALE_COUVRE] {u['prenom']} {u['nom']} a une dispo générale qui couvre {type_garde['nom']} ({heure_debut_garde}-{heure_fin_garde})")
+                                else:
+                                    logging.info(f"⚠️ [DISPO_GENERALE_PARTIELLE] {u['prenom']} {u['nom']} a une dispo générale mais ne couvre pas l'horaire complet")
                         
                         # Vérifier si a déclaré une indisponibilité (déjà filtré normalement, mais double vérification)
                         has_indispo = (
@@ -14034,10 +14049,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             date_str in indispos_lookup[u["id"]]
                         )
                         
-                        if has_dispo:
+                        if has_dispo_covering:
                             tp_disponibles.append(u)
+                            logging.info(f"✅ [N2] {u['prenom']} {u['nom']} ajouté à TP DISPONIBLES pour {type_garde['nom']}")
                         elif not has_indispo:  # Ni dispo ni indispo = stand-by
                             tp_standby.append(u)
+                            logging.info(f"⚠️ [N3] {u['prenom']} {u['nom']} ajouté à TP STAND-BY (pas de dispo couvrant l'horaire)")
                         # Si indispo, ne rien faire (exclu)
                     else:  # temps_plein
                         # Calculer les heures de la semaine actuelle pour cet utilisateur
