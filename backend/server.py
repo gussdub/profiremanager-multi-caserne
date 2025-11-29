@@ -13979,14 +13979,40 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 
                 sort_by_equity_and_seniority(tf_complets)
                 
-                # Reconstruire available_users dans l'ordre de priorité
-                available_users = tp_disponibles + tp_standby + tf_incomplets + tf_complets
+                # CORRECTION CRITIQUE: Filtrer selon les niveaux d'attribution actifs
+                liste_niveaux = []
+                if niveaux_actifs["niveau_2"]:
+                    liste_niveaux.extend(tp_disponibles)
+                else:
+                    logging.info(f"⚠️ [NIVEAU 2 DÉSACTIVÉ] {len(tp_disponibles)} TP disponibles exclus")
                 
-                logging.info(f"📊 [PRIORITÉ] {type_garde['nom']} - {date_str}:")
-                logging.info(f"    TP Disponibles: {len(tp_disponibles)}")
-                logging.info(f"    TP Stand-by: {len(tp_standby)}")
-                logging.info(f"    TF Incomplets: {len(tf_incomplets)}")
-                logging.info(f"    TF Complets: {len(tf_complets)}")
+                if niveaux_actifs["niveau_3"]:
+                    liste_niveaux.extend(tp_standby)
+                else:
+                    logging.info(f"⚠️ [NIVEAU 3 DÉSACTIVÉ] {len(tp_standby)} TP stand-by exclus")
+                
+                if niveaux_actifs["niveau_4"]:
+                    liste_niveaux.extend(tf_incomplets)
+                else:
+                    logging.info(f"⚠️ [NIVEAU 4 DÉSACTIVÉ] {len(tf_incomplets)} TF incomplets exclus")
+                
+                if niveaux_actifs["niveau_5"]:
+                    if activer_heures_sup:
+                        liste_niveaux.extend(tf_complets)
+                    else:
+                        logging.info(f"⚠️ [NIVEAU 5] Heures sup désactivées - {len(tf_complets)} TF complets exclus")
+                else:
+                    logging.info(f"⚠️ [NIVEAU 5 DÉSACTIVÉ] {len(tf_complets)} TF complets exclus")
+                
+                # Reconstruire available_users avec SEULEMENT les niveaux actifs
+                available_users = liste_niveaux
+                
+                logging.info(f"📊 [PRIORITÉ FILTRÉE] {type_garde['nom']} - {date_str}:")
+                logging.info(f"    TP Disponibles: {len(tp_disponibles)} {'✅' if niveaux_actifs['niveau_2'] else '❌ EXCLUS'}")
+                logging.info(f"    TP Stand-by: {len(tp_standby)} {'✅' if niveaux_actifs['niveau_3'] else '❌ EXCLUS'}")
+                logging.info(f"    TF Incomplets: {len(tf_incomplets)} {'✅' if niveaux_actifs['niveau_4'] else '❌ EXCLUS'}")
+                logging.info(f"    TF Complets: {len(tf_complets)} {'✅' if niveaux_actifs['niveau_5'] and activer_heures_sup else '❌ EXCLUS'}")
+                logging.info(f"    Total candidats après filtrage: {len(available_users)}")
                 
                 # ÉTAPE 5: Les candidats sont déjà triés par priorité, équité et ancienneté
                 # Utiliser directement available_users
