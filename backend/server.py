@@ -21333,7 +21333,7 @@ async def export_rapport_batiment_pdf(
     import base64
     
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     story = []
     styles = getSampleStyleSheet()
     
