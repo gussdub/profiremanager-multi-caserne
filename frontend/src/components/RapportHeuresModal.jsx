@@ -111,49 +111,49 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   };
   
   // Imprimer (ouvre le PDF)
-  const imprimer = () => {
-    let debut, fin;
-    
-    if (modeSelection === 'mois') {
-      const [year, month] = moisSelectionne.split('-');
-      debut = `${year}-${month}-01`;
-      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-      fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    } else {
-      debut = dateDebut;
-      fin = dateFin;
-    }
-    
-    const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`;
-    const token = getTenantToken();
-    
-    console.log('Imprimer PDF URL:', url);
-    console.log('Token disponible:', token ? 'Oui' : 'Non');
-    
-    fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const imprimer = async () => {
+    try {
+      let debut, fin;
+      
+      if (modeSelection === 'mois') {
+        const [year, month] = moisSelectionne.split('-');
+        debut = `${year}-${month}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      } else {
+        debut = dateDebut;
+        fin = dateFin;
       }
-    })
-      .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-          return response.text().then(text => {
-            console.error('Error response:', text);
-            throw new Error(`HTTP ${response.status}: ${text}`);
-          });
+      
+      // Construire l'URL relative (le proxy Kubernetes gérera la redirection)
+      const url = `/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`;
+      const token = getTenantToken();
+      
+      console.log('Imprimer PDF URL:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        return response.blob();
-      })
-      .then(blob => {
-        console.log('PDF Blob size:', blob.size);
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      })
-      .catch(err => {
-        console.error('Erreur PDF:', err);
-        alert(`Erreur lors de la génération du PDF: ${err.message}`);
       });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Error response:', text);
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('PDF Blob size:', blob.size);
+      
+      const pdfUrl = window.URL.createObjectURL(blob);
+      window.open(pdfUrl, '_blank');
+    } catch (err) {
+      console.error('Erreur PDF:', err);
+      alert(`Erreur lors de la génération du PDF: ${err.message}`);
+    }
   };
   
   if (!isOpen) return null;
