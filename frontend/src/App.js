@@ -6492,6 +6492,7 @@ const Planning = () => {
   const [displayMode] = useState('calendrier'); // Vue calendrier uniquement (liste supprimée car moins lisible)
   const [searchFilter, setSearchFilter] = useState('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   
   // Fermer les suggestions quand on clique ailleurs
   useEffect(() => {
