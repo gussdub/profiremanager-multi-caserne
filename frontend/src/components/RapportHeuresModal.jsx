@@ -250,6 +250,14 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
           
           {data && !loading && (
             <>
+              {/* Note d'information */}
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 text-sm">
+                <p className="text-blue-800">
+                  <strong>ℹ️ Note:</strong> Ce rapport affiche les heures <strong>réellement assignées</strong> durant la période sélectionnée, 
+                  indépendamment des limites hebdomadaires ou des paramètres d&apos;heures supplémentaires.
+                </p>
+              </div>
+              
               {/* Statistiques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
