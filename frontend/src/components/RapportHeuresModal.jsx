@@ -73,7 +73,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       fin = dateFin;
     }
     
-    const url = `${process.env.REACT_APP_BACKEND_URL}/${tenantSlug}/planning/rapport-heures/export-excel?date_debut=${debut}&date_fin=${fin}`;
+    const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-excel?date_debut=${debut}&date_fin=${fin}`;
     const token = localStorage.getItem('token');
     
     fetch(url, {
