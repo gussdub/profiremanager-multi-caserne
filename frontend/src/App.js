@@ -23090,11 +23090,6 @@ const AppLayout = () => {
               </h1>
             </div>
           </div>
-          {personnalisation.afficher_profiremanager && (
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500', opacity: 0.8 }}>
-              Powered by <span style={{ fontWeight: '600', color: '#ef4444' }}>ProFireManager</span>
-            </div>
-          )}
         </div>
         {renderCurrentPage()}
       </main>
