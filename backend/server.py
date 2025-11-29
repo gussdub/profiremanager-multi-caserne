@@ -13057,6 +13057,109 @@ async def attribution_progress_stream(
 
 # Attribution automatique intelligente avec rotation équitable et ancienneté
 @api_router.post("/{tenant_slug}/planning/attribution-auto")
+@api_router.get("/{tenant_slug}/planning/debug-francois-guay")
+async def debug_francois_guay(
+    tenant_slug: str,
+    date: str,  # Format: YYYY-MM-DD
+    current_user: User = Depends(get_current_user)
+):
+    """Endpoint de diagnostic pour François Guay"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Trouver François Guay
+    francois = await db.users.find_one({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"nom": {"$regex": "Guay", "$options": "i"}},
+            {"prenom": {"$regex": "Francois", "$options": "i"}}
+        ]
+    })
+    
+    if not francois:
+        return {"error": "François Guay non trouvé"}
+    
+    # Récupérer ses disponibilités pour cette date
+    dispos = await db.disponibilites.find({
+        "user_id": francois["id"],
+        "date": date,
+        "statut": "disponible",
+        "tenant_id": tenant.id
+    }).to_list(100)
+    
+    # Récupérer le type de garde "Garde PR 1 nuit"
+    type_garde_pr1 = await db.types_garde.find_one({
+        "tenant_id": tenant.id,
+        "nom": {"$regex": "PR.*1.*nuit", "$options": "i"}
+    })
+    
+    diagnostic = {
+        "francois": {
+            "id": francois["id"],
+            "nom": f"{francois.get('prenom', '')} {francois.get('nom', '')}",
+            "type_emploi": francois.get("type_emploi"),
+            "email": francois.get("email")
+        },
+        "disponibilites_raw": [
+            {
+                "heure_debut": d.get("heure_debut"),
+                "heure_fin": d.get("heure_fin"),
+                "type_garde_id": d.get("type_garde_id"),
+                "origine": d.get("origine")
+            } for d in dispos
+        ],
+        "garde_pr1": {
+            "id": type_garde_pr1.get("id") if type_garde_pr1 else None,
+            "nom": type_garde_pr1.get("nom") if type_garde_pr1 else None,
+            "heure_debut": type_garde_pr1.get("heure_debut") if type_garde_pr1 else None,
+            "heure_fin": type_garde_pr1.get("heure_fin") if type_garde_pr1 else None,
+            "est_garde_externe": type_garde_pr1.get("est_garde_externe") if type_garde_pr1 else None
+        },
+        "analyse": []
+    }
+    
+    # Analyser si les dispos couvrent la garde
+    if type_garde_pr1 and dispos:
+        heure_debut_garde = type_garde_pr1.get("heure_debut")
+        heure_fin_garde = type_garde_pr1.get("heure_fin")
+        
+        for dispo in dispos:
+            heure_debut_dispo = dispo.get("heure_debut")
+            heure_fin_dispo = dispo.get("heure_fin")
+            
+            # Vérifier si cette dispo couvre la garde
+            if heure_debut_garde and heure_fin_garde and heure_debut_dispo and heure_fin_dispo:
+                def time_to_min(t):
+                    h, m = map(int, t.split(':'))
+                    return h * 60 + m
+                
+                debut_garde_min = time_to_min(heure_debut_garde)
+                fin_garde_min = time_to_min(heure_fin_garde)
+                debut_dispo_min = time_to_min(heure_debut_dispo)
+                fin_dispo_min = time_to_min(heure_fin_dispo)
+                
+                garde_traverse = fin_garde_min < debut_garde_min
+                dispo_traverse = fin_dispo_min < debut_dispo_min
+                
+                couvre = False
+                if garde_traverse and not dispo_traverse:
+                    couvre = False
+                    raison = "Garde traverse minuit mais pas la dispo"
+                elif not garde_traverse and not dispo_traverse:
+                    couvre = debut_dispo_min <= debut_garde_min and fin_dispo_min >= fin_garde_min
+                    raison = f"Dispo {'couvre' if couvre else 'ne couvre pas'} complètement"
+                else:
+                    raison = "Cas complexe"
+                
+                diagnostic["analyse"].append({
+                    "dispo": f"{heure_debut_dispo}-{heure_fin_dispo}",
+                    "garde": f"{heure_debut_garde}-{heure_fin_garde}",
+                    "couvre": couvre,
+                    "raison": raison,
+                    "type_garde_id_dispo": dispo.get("type_garde_id")
+                })
+    
+    return diagnostic
+
 async def attribution_automatique(
     tenant_slug: str, 
     semaine_debut: str, 
