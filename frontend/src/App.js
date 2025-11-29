@@ -7583,7 +7583,7 @@ const Planning = () => {
       <div className="personnel-controls" style={{marginBottom: '2rem'}}>
         <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
           {/* Recherche avec suggestions */}
-          <div style={{flex: 1, minWidth: '300px', position: 'relative'}}>
+          <div className="search-container" style={{flex: 1, minWidth: '300px', position: 'relative'}}>
             <Input 
               placeholder="🔍 Rechercher un pompier..."
               value={searchFilter}
