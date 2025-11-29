@@ -7417,26 +7417,47 @@ const Planning = () => {
       const token = getTenantToken();
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       
-      // Utiliser URL relative pour le proxy Kubernetes
+      toast({
+        title: "Génération en cours",
+        description: "Téléchargement du planning PDF..."
+      });
+      
+      // Utiliser la même méthode que Prévention (ligne 22863): fetch avec Authorization header
       const url = `/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
       
       console.log('Imprimer Planning URL:', url);
-      console.log('Token:', token ? 'Présent' : 'Absent');
       
-      // Ouvrir directement l'URL avec le token
-      window.open(`${url}&token=${token}`, '_blank');
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `planning_${periode}_${viewMode}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
       
       toast({ 
         title: "Succès", 
-        description: "Planning ouvert pour impression",
+        description: "Planning téléchargé avec succès",
         variant: "success"
       });
     } catch (error) {
       console.error('Erreur export PDF planning:', error);
       toast({ 
         title: "Erreur", 
-        description: `Impossible d'imprimer le planning: ${error.message}`, 
-        variant: "destructive" 
+        description: `Impossible d'exporter le planning: ${error.message}`,
+        variant: "destructive"
       });
     }
   };
