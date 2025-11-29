@@ -485,10 +485,10 @@ class FrancoisGuayBugTester:
         user_id = self.francois_guay_user['id']
         
         # Récupérer les disponibilités pour le 19 décembre 2025
-        url = f"{self.base_url}/disponibilites"
+        url = f"{self.base_url}/disponibilites/{user_id}"
         params = {
-            "date": self.test_date,
-            "user_id": user_id
+            "date_debut": self.test_date,
+            "date_fin": self.test_date
         }
         
         response = requests.get(url, headers=self.headers, params=params)
