@@ -662,7 +662,7 @@ class FrancoisGuayBugTester:
         
         garde_pr_nuit_assignee = False
         
-        for assignation in assignations:
+        for assignation in francois_assignations:
             type_garde_id = assignation.get('type_garde_id')
             type_garde = type_garde_map.get(type_garde_id, {})
             nom_garde = type_garde.get('nom', 'Garde inconnue')
