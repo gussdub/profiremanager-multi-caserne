@@ -9101,6 +9101,15 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Modal Rapport d'Heures */}
+      {showRapportHeuresModal && (
+        <RapportHeuresModal 
+          isOpen={showRapportHeuresModal}
+          onClose={() => setShowRapportHeuresModal(false)}
+          tenantSlug={tenantSlug}
+        />
+      )}
+
       {/* Overlay de chargement Attribution Automatique */}
       {attributionLoading && (
         <div style={{
