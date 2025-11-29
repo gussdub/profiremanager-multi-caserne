@@ -4470,27 +4470,28 @@ async def export_planning_pdf(
         # NOUVEAU FORMAT ÉPURÉ - Liste par jour
         jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
         
+        # Style pour les titres de jour (utilisé dans semaine ET mois)
+        jour_style = ParagraphStyle(
+            'JourStyle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#1e293b'),
+            spaceAfter=10,
+            spaceBefore=15,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Style pour les gardes (utilisé dans semaine ET mois)
+        garde_style = ParagraphStyle(
+            'GardeStyle',
+            parent=styles['Normal'],
+            fontSize=11,
+            leading=16,
+            leftIndent=20,
+            spaceAfter=8
+        )
+        
         if type == 'semaine':
-            # Style pour les titres de jour
-            jour_style = ParagraphStyle(
-                'JourStyle',
-                parent=styles['Heading2'],
-                fontSize=14,
-                textColor=colors.HexColor('#1e293b'),
-                spaceAfter=10,
-                spaceBefore=15,
-                fontName='Helvetica-Bold'
-            )
-            
-            # Style pour les gardes
-            garde_style = ParagraphStyle(
-                'GardeStyle',
-                parent=styles['Normal'],
-                fontSize=11,
-                leading=16,
-                leftIndent=20,
-                spaceAfter=8
-            )
             
             # Parcourir les jours
             for i in range(7):
