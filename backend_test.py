@@ -25,7 +25,7 @@ class SheffordAttributionTester:
         self.token = None
         self.admin_credentials = {
             "email": "admin@firemanager.ca",
-            "password": "Admin123!"
+            "mot_de_passe": "Admin123!"
         }
         
     def authenticate(self):
