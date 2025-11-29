@@ -512,27 +512,47 @@ class FrancoisGuayBugTester:
             
             print(f"   - {statut}: {heure_debut} - {heure_fin} (origine: {origine})")
         
-        # Vérifier si les disponibilités couvrent la garde 18:00-06:00
+        # Analyser les disponibilités pour comprendre le problème original
         garde_debut = "18:00"
         garde_fin = "06:00"  # Le lendemain
         
-        couvre_garde_complete = False
-        for dispo in disponibilites:
-            if dispo.get('statut') == 'disponible':
-                dispo_debut = dispo.get('heure_debut', '')
-                dispo_fin = dispo.get('heure_fin', '')
-                
-                # Vérifier si cette dispo couvre la garde complète
-                if self.dispo_couvre_garde(dispo_debut, dispo_fin, garde_debut, garde_fin):
-                    couvre_garde_complete = True
-                    break
+        disponibilites_valides = [d for d in disponibilites if d.get('statut') == 'disponible']
+        
+        print(f"\n🔍 Analyse des disponibilités valides:")
+        for dispo in disponibilites_valides:
+            heure_debut = dispo.get('heure_debut', 'N/A')
+            heure_fin = dispo.get('heure_fin', 'N/A')
+            origine = dispo.get('origine', 'manuelle')
+            print(f"   - Disponible: {heure_debut} - {heure_fin} (origine: {origine})")
+        
+        # Vérifier si une disponibilité couvre exactement 18:00-06:00
+        couvre_garde_nuit = False
+        couvre_seulement_jusqu_18h = False
+        
+        for dispo in disponibilites_valides:
+            dispo_debut = dispo.get('heure_debut', '')
+            dispo_fin = dispo.get('heure_fin', '')
+            
+            # Vérifier si c'est la dispo problématique (18:00-06:00)
+            if dispo_debut == "18:00" and dispo_fin == "06:00":
+                couvre_garde_nuit = True
+            
+            # Vérifier les dispos qui s'arrêtent à 18h (problème original)
+            if dispo_fin == "18:00":
+                couvre_seulement_jusqu_18h = True
         
         print(f"\n🔍 Analyse pour garde 'Garde PR 1 nuit' (18:00-06:00):")
-        if couvre_garde_complete:
-            print("✅ Les disponibilités COUVRENT la garde complète")
+        
+        if couvre_garde_nuit:
+            print("⚠️ François Guay a une disponibilité 18:00-06:00")
+            print("   → Il PEUT être assigné à cette garde (disponibilité complète)")
+            print("   → Ceci n'est PAS le bug original décrit")
+        elif couvre_seulement_jusqu_18h and not couvre_garde_nuit:
+            print("❌ François Guay n'a que des disponibilités jusqu'à 18:00")
+            print("   → Il ne devrait PAS être assigné à la garde 18:00-06:00")
+            print("   → Ceci correspond au bug original décrit")
         else:
-            print("❌ Les disponibilités NE COUVRENT PAS la garde complète")
-            print("   → François Guay ne devrait PAS être assigné à cette garde")
+            print("🔍 Situation complexe - analyse manuelle requise")
         
         return True
     
