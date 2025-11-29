@@ -7417,13 +7417,13 @@ const Planning = () => {
       const token = getTenantToken();
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       
-      // Utiliser buildApiUrl comme dans le module Prévention
-      const url = buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`);
+      // Utiliser URL relative pour le proxy Kubernetes
+      const url = `/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
       
       console.log('Imprimer Planning URL:', url);
       console.log('Token:', token ? 'Présent' : 'Absent');
       
-      // Ouvrir directement l'URL avec le token (même méthode que Prévention ligne 21321)
+      // Ouvrir directement l'URL avec le token
       window.open(`${url}&token=${token}`, '_blank');
       
       toast({ 
