@@ -13729,8 +13729,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         continue  # Skip cet utilisateur pour éviter le conflit
                     
                     # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
-                    # Note: Les gardes externes n'ont PAS de limite d'heures supplémentaires
-                    if not type_garde.get("est_garde_externe", False):
+                    # RÈGLE IMPORTANTE: Les gardes EXTERNES n'ont AUCUNE limite d'heures
+                    # Même si un employé a dépassé ses heures max en INTERNE, il peut toujours avoir des gardes EXTERNES
+                    if type_garde.get("est_garde_externe", False):
+                        # Garde EXTERNE: Pas de vérification d'heures max
+                        logging.info(f"✅ [GARDE_EXTERNE] {user['prenom']} {user['nom']}: Pas de limite d'heures pour garde externe {type_garde['nom']}")
+                    else:
+                        # Garde INTERNE: Vérifier heures_max_semaine
                         heures_max_user = user.get("heures_max_semaine", 40)
                         
                         if activer_heures_sup:
