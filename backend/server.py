@@ -4445,27 +4445,101 @@ async def export_planning_pdf(
         
         # Créer le PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+        doc = SimpleDocTemplate(
+            buffer, 
+            pagesize=landscape(letter),
+            leftMargin=0.5*inch,
+            rightMargin=0.5*inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch
+        )
         
         elements = []
         styles = getSampleStyleSheet()
         
-        # Titre
+        # ===== EN-TÊTE AVEC LOGO =====
+        header_data = []
+        
+        # Logo du client (si disponible)
+        if hasattr(tenant, 'logo_url') and tenant.logo_url:
+            try:
+                from reportlab.platypus import Image
+                from base64 import b64decode
+                
+                # Si c'est un data URL base64
+                if tenant.logo_url.startswith('data:image/'):
+                    header, encoded = tenant.logo_url.split(',', 1)
+                    logo_data = b64decode(encoded)
+                    logo_buffer = BytesIO(logo_data)
+                    logo = Image(logo_buffer, width=1.2*inch, height=0.6*inch)
+                else:
+                    # URL normale
+                    logo = Image(tenant.logo_url, width=1.2*inch, height=0.6*inch)
+                
+                header_data.append([logo, ''])
+            except Exception as e:
+                print(f"Erreur chargement logo: {e}")
+                header_data.append(['', ''])
+        else:
+            header_data.append(['', ''])
+        
+        # Nom du service à droite du logo
+        service_style = ParagraphStyle(
+            'ServiceStyle',
+            parent=styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor('#1e293b'),
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        if header_data[0][0]:  # Si logo présent
+            header_data[0][1] = Paragraph(f"<b>{tenant.nom}</b>", service_style)
+            header_table = Table(header_data, colWidths=[1.5*inch, 8*inch])
+            header_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            elements.append(header_table)
+            elements.append(Spacer(1, 0.2*inch))
+        else:
+            # Pas de logo, juste le nom centré
+            elements.append(Paragraph(f"<b>{tenant.nom.upper()}</b>", service_style))
+            elements.append(Spacer(1, 0.15*inch))
+        
+        # Titre principal
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=18,
+            fontSize=20,
             textColor=colors.HexColor('#EF4444'),
-            spaceAfter=30,
-            alignment=TA_CENTER
+            spaceAfter=10,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
         )
         
-        titre = f"Planning des Gardes - {type.capitalize()}"
-        periode_str = f"Du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
-        
+        titre = f"PLANIFICATION DES GARDES"
         elements.append(Paragraph(titre, title_style))
-        elements.append(Paragraph(periode_str, styles['Normal']))
-        elements.append(Spacer(1, 0.3*inch))
+        
+        # Sous-titre avec période
+        subtitle_style = ParagraphStyle(
+            'SubtitleStyle',
+            parent=styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor('#475569'),
+            spaceAfter=20,
+            alignment=TA_CENTER,
+            fontName='Helvetica'
+        )
+        
+        type_label = "Semaine" if type == "semaine" else "Mois"
+        periode_str = f"{type_label} du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+        elements.append(Paragraph(periode_str, subtitle_style))
+        
+        # Ligne de séparation
+        from reportlab.platypus import HRFlowable
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#e2e8f0'), spaceAfter=0.3*inch))
         
         # NOUVEAU FORMAT ÉPURÉ - Liste par jour
         jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
