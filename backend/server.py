@@ -14032,13 +14032,26 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 sort_by_equity_and_seniority(tp_standby)
                 
                 # Pour temps plein incomplets : trier par heures manquantes (plus loin de limite = priorité)
+                def calculer_heures_user_semaine(user_id):
+                    """Calcule les heures internes d'un user pour la semaine avec déduplication"""
+                    heures = 0
+                    assignations_vues_sort = set()
+                    toutes_assign = existing_assignations + nouvelles_assignations
+                    for a in toutes_assign:
+                        key = f"{a['user_id']}_{a['type_garde_id']}_{a['date']}"
+                        if key in assignations_vues_sort:
+                            continue
+                        assignations_vues_sort.add(key)
+                        
+                        if a["user_id"] == user_id and semaine_debut <= a["date"] <= semaine_fin:
+                            type_g = next((t for t in types_garde if t["id"] == a["type_garde_id"]), None)
+                            if type_g and not type_g.get("est_garde_externe", False):
+                                heures += type_g.get("duree_heures", 8)
+                    return heures
+                
                 tf_incomplets.sort(key=lambda u: (
                     # Heures manquantes (plus c'est élevé, plus prioritaire)
-                    -(u.get("heures_max_semaine", 40) - sum(
-                        next((t.get("duree_heures", 8) for t in types_garde if t["id"] == a["type_garde_id"]), 0)
-                        for a in existing_assignations 
-                        if a["user_id"] == u["id"] and not next((t.get("est_garde_externe", False) for t in types_garde if t["id"] == a["type_garde_id"]), False)
-                    )),
+                    -(u.get("heures_max_semaine", 40) - calculer_heures_user_semaine(u["id"])),
                     user_monthly_hours_externes.get(u["id"], 0) if type_garde.get("est_garde_externe", False) else user_monthly_hours_internes.get(u["id"], 0),
                     -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()
                 ))
