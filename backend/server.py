@@ -4788,6 +4788,329 @@ async def export_planning_excel(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
 
+# ===== RAPPORT D'HEURES =====
+
+@api_router.get("/{tenant_slug}/planning/rapport-heures")
+async def get_rapport_heures(
+    tenant_slug: str,
+    date_debut: str,  # Format YYYY-MM-DD
+    date_fin: str,    # Format YYYY-MM-DD
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère le rapport d'heures pour tous les employés sur une période"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin/Superviseur uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les utilisateurs actifs
+    users = await db.users.find({
+        "tenant_id": tenant.id,
+        "statut": "Actif"
+    }).to_list(1000)
+    
+    # Récupérer toutes les assignations de la période
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut,
+            "$lte": date_fin
+        }
+    }).to_list(10000)
+    
+    # Récupérer les types de garde
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    types_garde_map = {t["id"]: t for t in types_garde}
+    
+    # Calculer les heures pour chaque employé
+    rapport_data = []
+    total_heures_internes = 0
+    total_heures_externes = 0
+    
+    for user in users:
+        heures_internes = 0
+        heures_externes = 0
+        
+        # Compter les heures de cet utilisateur
+        for assignation in assignations:
+            if assignation["user_id"] == user["id"]:
+                type_garde = types_garde_map.get(assignation["type_garde_id"])
+                if type_garde:
+                    duree = type_garde.get("duree_heures", 8)
+                    if type_garde.get("est_garde_externe", False):
+                        heures_externes += duree
+                    else:
+                        heures_internes += duree
+        
+        total_heures_internes += heures_internes
+        total_heures_externes += heures_externes
+        
+        rapport_data.append({
+            "user_id": user["id"],
+            "nom": user.get("nom", ""),
+            "prenom": user.get("prenom", ""),
+            "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
+            "type_emploi": user.get("type_emploi", "temps_plein"),
+            "grade": user.get("grade", ""),
+            "heures_internes": heures_internes,
+            "heures_externes": heures_externes,
+            "total_heures": heures_internes + heures_externes,
+            "heures_max_semaine": user.get("heures_max_semaine", 40)
+        })
+    
+    # Trier par nom
+    rapport_data.sort(key=lambda x: (x["nom"], x["prenom"]))
+    
+    # Calculer les statistiques
+    nombre_employes = len(users)
+    moyenne_heures_internes = total_heures_internes / nombre_employes if nombre_employes > 0 else 0
+    moyenne_heures_externes = total_heures_externes / nombre_employes if nombre_employes > 0 else 0
+    
+    return {
+        "periode": {
+            "debut": date_debut,
+            "fin": date_fin
+        },
+        "employes": rapport_data,
+        "statistiques": {
+            "nombre_employes": nombre_employes,
+            "total_heures_internes": total_heures_internes,
+            "total_heures_externes": total_heures_externes,
+            "total_heures_planifiees": total_heures_internes + total_heures_externes,
+            "moyenne_heures_internes": round(moyenne_heures_internes, 1),
+            "moyenne_heures_externes": round(moyenne_heures_externes, 1)
+        }
+    }
+
+@api_router.get("/{tenant_slug}/planning/rapport-heures/export-pdf")
+async def export_rapport_heures_pdf(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Génère le PDF du rapport d'heures pour impression"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données du rapport
+    rapport_response = await get_rapport_heures(tenant_slug, date_debut, date_fin, current_user)
+    
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from io import BytesIO
+    
+    buffer = BytesIO()
+    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=A4, topMargin=0.75*inch, bottomMargin=0.75*inch)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Styles personnalisés
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#6B7280'),
+        spaceAfter=20,
+        alignment=TA_CENTER
+    )
+    
+    # Titre
+    elements.append(Paragraph("Rapport d'Heures", title_style))
+    
+    # Période
+    debut_dt = datetime.strptime(date_debut, "%Y-%m-%d")
+    fin_dt = datetime.strptime(date_fin, "%Y-%m-%d")
+    periode_text = f"Période: {debut_dt.strftime('%d/%m/%Y')} - {fin_dt.strftime('%d/%m/%Y')}"
+    elements.append(Paragraph(periode_text, subtitle_style))
+    
+    # Tableau des employés
+    table_data = [
+        ['Employé', 'Type', 'Grade', 'H. Internes', 'H. Externes', 'Total']
+    ]
+    
+    for emp in rapport_response["employes"]:
+        type_emploi_abbr = "TP" if emp["type_emploi"] == "temps_partiel" else "TF"
+        table_data.append([
+            emp["nom_complet"],
+            type_emploi_abbr,
+            emp["grade"],
+            f"{emp['heures_internes']}h",
+            f"{emp['heures_externes']}h",
+            f"{emp['total_heures']}h"
+        ])
+    
+    table = Table(table_data, colWidths=[2.5*inch, 0.6*inch, 1.2*inch, 1*inch, 1*inch, 0.8*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')])
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Statistiques
+    stats = rapport_response["statistiques"]
+    stats_text = f"""
+    <b>Statistiques Globales</b><br/>
+    Nombre d'employés: {stats['nombre_employes']}<br/>
+    Total heures planifiées: {stats['total_heures_planifiees']}h<br/>
+    Moyenne heures internes: {stats['moyenne_heures_internes']}h<br/>
+    Moyenne heures externes: {stats['moyenne_heures_externes']}h
+    """
+    elements.append(Paragraph(stats_text, styles['Normal']))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=rapport_heures_{date_debut}_{date_fin}.pdf"}
+    )
+
+@api_router.get("/{tenant_slug}/planning/rapport-heures/export-excel")
+async def export_rapport_heures_excel(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Génère l'Excel du rapport d'heures"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les données du rapport
+    rapport_response = await get_rapport_heures(tenant_slug, date_debut, date_fin, current_user)
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from io import BytesIO
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rapport Heures"
+    
+    # Styles
+    header_fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=11)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    center_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Titre
+    ws.merge_cells('A1:F1')
+    title_cell = ws['A1']
+    title_cell.value = "Rapport d'Heures"
+    title_cell.font = Font(size=16, bold=True, color="DC2626")
+    title_cell.alignment = center_alignment
+    
+    # Période
+    ws.merge_cells('A2:F2')
+    periode_cell = ws['A2']
+    debut_dt = datetime.strptime(date_debut, "%Y-%m-%d")
+    fin_dt = datetime.strptime(date_fin, "%Y-%m-%d")
+    periode_cell.value = f"Période: {debut_dt.strftime('%d/%m/%Y')} - {fin_dt.strftime('%d/%m/%Y')}"
+    periode_cell.alignment = center_alignment
+    
+    # En-têtes du tableau
+    headers = ['Employé', 'Type', 'Grade', 'H. Internes', 'H. Externes', 'Total']
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=4, column=col)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = center_alignment
+    
+    # Données
+    row = 5
+    for emp in rapport_response["employes"]:
+        type_emploi_abbr = "TP" if emp["type_emploi"] == "temps_partiel" else "TF"
+        ws.cell(row=row, column=1, value=emp["nom_complet"])
+        ws.cell(row=row, column=2, value=type_emploi_abbr)
+        ws.cell(row=row, column=3, value=emp["grade"])
+        ws.cell(row=row, column=4, value=emp["heures_internes"])
+        ws.cell(row=row, column=5, value=emp["heures_externes"])
+        ws.cell(row=row, column=6, value=emp["total_heures"])
+        
+        for col in range(1, 7):
+            ws.cell(row=row, column=col).border = border
+            ws.cell(row=row, column=col).alignment = center_alignment
+        
+        row += 1
+    
+    # Statistiques
+    stats = rapport_response["statistiques"]
+    row += 1
+    ws.merge_cells(f'A{row}:F{row}')
+    stats_cell = ws.cell(row=row, column=1)
+    stats_cell.value = "Statistiques Globales"
+    stats_cell.font = Font(bold=True, size=12)
+    
+    row += 1
+    ws.cell(row=row, column=1, value="Nombre d'employés:")
+    ws.cell(row=row, column=2, value=stats['nombre_employes'])
+    
+    row += 1
+    ws.cell(row=row, column=1, value="Total heures planifiées:")
+    ws.cell(row=row, column=2, value=stats['total_heures_planifiees'])
+    
+    row += 1
+    ws.cell(row=row, column=1, value="Moyenne heures internes:")
+    ws.cell(row=row, column=2, value=stats['moyenne_heures_internes'])
+    
+    row += 1
+    ws.cell(row=row, column=1, value="Moyenne heures externes:")
+    ws.cell(row=row, column=2, value=stats['moyenne_heures_externes'])
+    
+    # Ajuster les largeurs
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 8
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 10
+    
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=rapport_heures_{date_debut}_{date_fin}.xlsx"}
+    )
+
 # ===== FIN EXPORTS PLANNING =====
 
 
