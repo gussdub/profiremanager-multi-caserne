@@ -13683,11 +13683,36 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 heure_debut_existante = garde_existante.get("heure_debut", "")
                                 heure_fin_existante = garde_existante.get("heure_fin", "")
                                 
-                                # Vérification intelligente de chevauchement
+                                # Vérification intelligente de chevauchement avec support des gardes traversant minuit
                                 if heure_debut_actuelle and heure_fin_actuelle and heure_debut_existante and heure_fin_existante:
-                                    # Convertir en format comparable (ex: "06:00" < "12:00")
-                                    # Chevauchement si: (debut1 < fin2) ET (debut2 < fin1)
-                                    chevauchement = (heure_debut_actuelle < heure_fin_existante) and (heure_debut_existante < heure_fin_actuelle)
+                                    # Convertir les heures en minutes depuis minuit pour comparaison correcte
+                                    def time_to_minutes(time_str):
+                                        h, m = map(int, time_str.split(':'))
+                                        return h * 60 + m
+                                    
+                                    debut_actuelle_min = time_to_minutes(heure_debut_actuelle)
+                                    fin_actuelle_min = time_to_minutes(heure_fin_actuelle)
+                                    debut_existante_min = time_to_minutes(heure_debut_existante)
+                                    fin_existante_min = time_to_minutes(heure_fin_existante)
+                                    
+                                    # Détecter si les gardes traversent minuit
+                                    actuelle_traverse_minuit = fin_actuelle_min < debut_actuelle_min
+                                    existante_traverse_minuit = fin_existante_min < debut_existante_min
+                                    
+                                    # Logique de chevauchement selon les cas
+                                    if actuelle_traverse_minuit and existante_traverse_minuit:
+                                        # Les deux traversent minuit - elles se chevauchent forcément
+                                        chevauchement = True
+                                    elif actuelle_traverse_minuit:
+                                        # Actuelle traverse minuit (ex: 18:00-06:00)
+                                        # Chevauche si existante commence avant fin_actuelle OU termine après debut_actuelle
+                                        chevauchement = (debut_existante_min < fin_actuelle_min) or (fin_existante_min > debut_actuelle_min)
+                                    elif existante_traverse_minuit:
+                                        # Existante traverse minuit
+                                        chevauchement = (debut_actuelle_min < fin_existante_min) or (fin_actuelle_min > debut_existante_min)
+                                    else:
+                                        # Aucune ne traverse minuit - logique standard
+                                        chevauchement = (debut_actuelle_min < fin_existante_min) and (debut_existante_min < fin_actuelle_min)
                                     
                                     if chevauchement:
                                         user_a_conflit_horaire = True
