@@ -8142,15 +8142,30 @@ const Planning = () => {
                         a.date === dateStr && a.type_garde_id === typeGarde.id
                       );
                       const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
+                      
+                      // Filtrer les utilisateurs selon la recherche (même logique que vue semaine)
+                      const filteredUsers = selectedUserId 
+                        ? assignedUsers.filter(u => u.id === selectedUserId)
+                        : searchFilter.trim() 
+                          ? assignedUsers.filter(u => 
+                              u.nom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                              u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                              (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
+                            )
+                          : assignedUsers;
+                      
                       const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                      const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
                       
                       return (
                         <div
                           key={typeGarde.id}
-                          className={`garde-mois-item ${coverage} ${isMyShift ? 'my-shift' : ''}`}
+                          className={`garde-mois-item ${coverage} ${isMyShift ? 'my-shift' : ''} ${isSearchedUserAssigned ? 'searched-user' : ''}`}
                           style={{
-                            backgroundColor: isMyShift ? '#3B82F6' : getCoverageColor(coverage),
-                            opacity: coverage === 'vacante' ? 0.7 : 1
+                            backgroundColor: isSearchedUserAssigned ? '#F59E0B' : (isMyShift ? '#3B82F6' : getCoverageColor(coverage)),
+                            opacity: coverage === 'vacante' ? 0.7 : 1,
+                            border: isSearchedUserAssigned ? '2px solid #D97706' : 'none',
+                            boxShadow: isSearchedUserAssigned ? '0 0 0 3px rgba(245, 158, 11, 0.2)' : 'none'
                           }}
                           onClick={() => openGardeDetails(date, typeGarde)}
                           data-testid={`garde-mois-${date.getDate()}-${typeGarde.id}`}
