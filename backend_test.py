@@ -574,7 +574,7 @@ class FrancoisGuayBugTester:
         print("🧪 TEST 3: VÉRIFIER PARAMÈTRES NIVEAU 3")
         print("="*60)
         
-        url = f"{self.base_url}/parametres"
+        url = f"{self.base_url}/parametres/niveaux-attribution"
         response = requests.get(url, headers=self.headers)
         
         if response.status_code != 200:
