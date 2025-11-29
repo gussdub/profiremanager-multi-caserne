@@ -6500,6 +6500,7 @@ const Planning = () => {
   const [showGardeDetailsModal, setShowGardeDetailsModal] = useState(false);
   const [showAdvancedAssignModal, setShowAdvancedAssignModal] = useState(false);
   const [showAutoAttributionModal, setShowAutoAttributionModal] = useState(false);
+  const [showRapportHeuresModal, setShowRapportHeuresModal] = useState(false);
   const [autoAttributionConfig, setAutoAttributionConfig] = useState({
     periode: 'semaine', // semaine ou mois
     periodeLabel: '', // 'Semaine actuelle', 'Semaine suivante', 'Mois actuel', 'Mois suivant'
