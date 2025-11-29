@@ -689,19 +689,22 @@ const Login = () => {
         <div className="login-header">
           <div className="logo">
             {personnalisation?.logo_url ? (
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <img 
                   src={personnalisation.logo_url} 
                   alt="Logo du service" 
                   style={{ 
-                    maxHeight: '120px', 
+                    maxHeight: '100px', 
                     maxWidth: '100%', 
                     objectFit: 'contain',
-                    marginBottom: '0.5rem'
+                    marginBottom: '1rem',
+                    display: 'block',
+                    marginLeft: 'auto',
+                    marginRight: 'auto'
                   }}
                 />
                 {personnalisation.nom_service && (
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', margin: '0.5rem 0' }}>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', margin: '0', textAlign: 'center' }}>
                     {personnalisation.nom_service}
                   </h2>
                 )}
@@ -714,16 +717,8 @@ const Login = () => {
                   </div>
                 </div>
                 <h1>ProFireManager</h1>
+                <p className="version">v2.0 Avancé</p>
               </>
-            )}
-            {(!personnalisation || personnalisation.afficher_profiremanager) && (
-              <p className="version" style={{ 
-                fontSize: '0.875rem', 
-                color: '#6b7280',
-                marginTop: personnalisation?.logo_url ? '0.5rem' : '0'
-              }}>
-                {personnalisation?.logo_url ? 'Powered by ProFireManager' : 'v2.0 Avancé'}
-              </p>
             )}
           </div>
         </div>
