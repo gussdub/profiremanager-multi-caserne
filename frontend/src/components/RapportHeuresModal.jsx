@@ -43,7 +43,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
         return;
       }
       
-      const response = await apiGet(`/${tenantSlug}/planning/rapport-heures?date_debut=${debut}&date_fin=${fin}`);
+      const response = await apiGet(tenantSlug, `/planning/rapport-heures?date_debut=${debut}&date_fin=${fin}`);
       setData(response);
     } catch (err) {
       setError(err.message || 'Erreur lors du chargement du rapport');
