@@ -263,22 +263,22 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
               </div>
               
               {/* Statistiques */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="text-[10px] text-blue-600 font-semibold uppercase leading-tight mb-2" style={{lineHeight: '1.2'}}>
-                    Total Heures Planifiées
+                  <div style={{fontSize: '9px', color: '#2563EB', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
+                    Total Heures<br/>Planifiées
                   </div>
                   <div className="text-2xl font-bold text-blue-900">{data.statistiques.total_heures_planifiees}h</div>
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <div className="text-[10px] text-green-600 font-semibold uppercase leading-tight mb-2" style={{lineHeight: '1.2'}}>
-                    Moyenne Heures Internes
+                  <div style={{fontSize: '9px', color: '#16A34A', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
+                    Moyenne Heures<br/>Internes
                   </div>
                   <div className="text-2xl font-bold text-green-900">{data.statistiques.moyenne_heures_internes}h</div>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <div className="text-[10px] text-purple-600 font-semibold uppercase leading-tight mb-2" style={{lineHeight: '1.2'}}>
-                    Moyenne Heures Externes
+                  <div style={{fontSize: '9px', color: '#9333EA', fontWeight: '700', textTransform: 'uppercase', lineHeight: '1.3', marginBottom: '8px'}}>
+                    Moyenne Heures<br/>Externes
                   </div>
                   <div className="text-2xl font-bold text-purple-900">{data.statistiques.moyenne_heures_externes}h</div>
                 </div>
