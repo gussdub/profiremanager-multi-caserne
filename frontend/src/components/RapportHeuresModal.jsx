@@ -126,7 +126,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">📊 Rapport d'Heures</h2>
+          <h2 className="text-2xl font-bold text-gray-800">📊 Rapport d&apos;Heures</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
