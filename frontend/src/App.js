@@ -7597,30 +7597,20 @@ const Planning = () => {
             </button>
           </div>
 
-          {/* Exports */}
-          <Button variant="outline" onClick={handleExportPDFPlanning}>
-            📄 Export PDF
+          {/* Imprimer Planning */}
+          <Button 
+            variant="outline" 
+            onClick={handleExportPDFPlanning}
+            style={{ 
+              borderColor: '#3B82F6', 
+              color: '#3B82F6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            🖨️ Imprimer Planning
           </Button>
-          <Button variant="outline" onClick={handleExportExcelPlanning}>
-            📊 Export Excel
-          </Button>
-          
-          {/* Rapport d'audit (admin seulement) */}
-          {user.role === 'admin' && (
-            <Button 
-              variant="outline" 
-              onClick={() => handleDownloadAuditReport('pdf')}
-              style={{ 
-                borderColor: '#3B82F6', 
-                color: '#3B82F6',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              🖨️ Imprimer Planning
-            </Button>
-          )}
         </div>
         
         {/* Indicateur de résultats de recherche */}
