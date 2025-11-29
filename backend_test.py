@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
 """
-Test complet de l'algorithme d'attribution automatique (traiter_semaine_attribution_auto)
+TEST CRITIQUE: Vérification correction du bug François Guay - Garde externe avec dispo partielle
+
+CONTEXTE:
+L'utilisateur a identifié un bug où François Guay a été assigné à "Garde PR 1 nuit" (18:00-06:00) 
+le 19 décembre 2025, alors qu'il n'avait déclaré disponibilité que jusqu'à 18h (06:00-12:00 et 12:00-18:00). 
+De plus, le Niveau 3 (Temps Partiel STAND-BY) était décoché.
+
+CORRECTION APPORTÉE:
+L'algorithme a été modifié pour vérifier que les disponibilités déclarées COUVRENT COMPLÈTEMENT 
+l'horaire de la garde, pas seulement qu'une dispo existe ce jour-là.
+
+SCÉNARIO DE TEST SPÉCIFIQUE:
+- Identifier François Guay dans les utilisateurs
+- Vérifier ses disponibilités pour le 19 décembre 2025
+- Lancer l'attribution automatique pour la semaine du 15-21 décembre 2025
+- Vérifier que François Guay N'EST PAS assigné à "Garde PR 1 nuit" (18:00-06:00)
+- Analyser les logs backend pour confirmation
+
 Tenant: shefford (PRODUCTION)
 URL: https://fireinspect.preview.emergentagent.com/shefford
-
-Tests critiques:
-1. Calcul d'heures avec heures supplémentaires désactivées
-2. Détection des chevauchements de gardes externes
-3. Assignations complètes
-4. Vérification des logs backend
+Admin: admin@firemanager.ca / Admin123!
 """
 
 import requests
