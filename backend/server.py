@@ -13475,7 +13475,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         }).to_list(10000)
         
         # Créer un index/dictionnaire pour lookup rapide
-        # Structure: {user_id: {date: {type_garde_id: True}}}
+        # Structure: {user_id: {date: {type_garde_id: [list of dispos with horaires]}}}
         dispos_lookup = {}
         for dispo in all_disponibilites:
             user_id = dispo.get("user_id")
@@ -13486,7 +13486,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 dispos_lookup[user_id] = {}
             if date not in dispos_lookup[user_id]:
                 dispos_lookup[user_id][date] = {}
-            dispos_lookup[user_id][date][type_garde_id] = True
+            if type_garde_id not in dispos_lookup[user_id][date]:
+                dispos_lookup[user_id][date][type_garde_id] = []
+            
+            # Stocker la dispo complète avec ses horaires
+            dispos_lookup[user_id][date][type_garde_id].append({
+                "heure_debut": dispo.get("heure_debut"),
+                "heure_fin": dispo.get("heure_fin")
+            })
         
         # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
         all_indisponibilites = await db.disponibilites.find({
