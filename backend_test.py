@@ -787,8 +787,8 @@ class FrancoisGuayBugTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = SheffordAttributionTester()
-    success = tester.run_all_tests()
+    tester = FrancoisGuayBugTester()
+    success = tester.run_francois_guay_bug_tests()
     
     # Code de sortie
     sys.exit(0 if success else 1)
