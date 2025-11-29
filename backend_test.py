@@ -108,17 +108,9 @@ class SheffordAttributionTester:
         """Récupère les assignations pour une semaine"""
         print(f"\n📅 Récupération des assignations pour semaine {semaine_debut}...")
         
-        # Calculer date de fin (dimanche)
-        debut = datetime.strptime(semaine_debut, "%Y-%m-%d")
-        fin = debut + timedelta(days=6)
+        url = f"{self.base_url}/planning/assignations/{semaine_debut}"
         
-        url = f"{self.base_url}/assignations"
-        params = {
-            "date_debut": semaine_debut,
-            "date_fin": fin.strftime("%Y-%m-%d")
-        }
-        
-        response = requests.get(url, headers=self.headers, params=params)
+        response = requests.get(url, headers=self.headers)
         
         if response.status_code == 200:
             assignations = response.json()
