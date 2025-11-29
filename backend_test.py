@@ -356,7 +356,7 @@ class SheffordAttributionTester:
         print("="*60)
         
         # Utiliser la même semaine que le test précédent
-        semaine_test = "2024-12-02"
+        semaine_test = "2024-12-09"
         
         # Récupérer les données
         assignations = self.get_assignations_semaine(semaine_test)
