@@ -14147,12 +14147,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     existing_assignations.append(assignation_obj.dict())
                     pompiers_assignes_cette_iteration += 1
                     
-                    # Update monthly hours for next iteration (compteur approprié selon type de garde)
+                    # Log de l'assignation pour debug
                     duree = type_garde.get("duree_heures", 8)
+                    type_garde_str = "EXTERNE" if type_garde.get("est_garde_externe", False) else "INTERNE"
+                    logging.info(f"✅ [ASSIGNATION] {selected_user['prenom']} {selected_user['nom']} assigné à {type_garde['nom']} ({type_garde_str}, {duree}h) le {date_str}")
+                    
+                    # Update monthly hours for next iteration (compteur approprié selon type de garde)
                     if type_garde.get("est_garde_externe", False):
                         user_monthly_hours_externes[selected_user["id"]] += duree
+                        logging.info(f"   Heures externes mois: {user_monthly_hours_externes[selected_user['id']]}h")
                     else:
                         user_monthly_hours_internes[selected_user["id"]] += duree
+                        logging.info(f"   Heures internes mois: {user_monthly_hours_internes[selected_user['id']]}h")
                     
                     # Retirer ce pompier de la liste des disponibles pour cette garde
                     users_with_min_hours.pop(0)
