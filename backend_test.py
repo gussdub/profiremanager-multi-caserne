@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import time
 
-class SheffordAttributionTester:
+class FrancoisGuayBugTester:
     def __init__(self):
         self.base_url = "https://fireinspect.preview.emergentagent.com/api/shefford"
         self.headers = {}
@@ -39,6 +39,10 @@ class SheffordAttributionTester:
             "email": "admin@firemanager.ca",
             "mot_de_passe": "Admin123!"
         }
+        self.francois_guay_user = None
+        self.test_date = "2025-12-19"
+        self.test_week_start = "2025-12-15"
+        self.test_week_end = "2025-12-21"
         
     def authenticate(self):
         """Authentification admin sur tenant shefford"""
