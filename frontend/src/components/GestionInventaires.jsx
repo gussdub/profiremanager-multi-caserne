@@ -287,7 +287,7 @@ const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles }) => {
 };
 
 // Vue des inspections
-const InspectionsView = ({ inspections, vehicules, backendUrl, token, tenantSlug, fetchInspections }) => {
+const InspectionsView = ({ inspections, vehicules, tenantSlug, fetchInspections }) => {
   const getVehiculeNom = (vehiculeId) => {
     const v = vehicules.find(veh => veh.id === vehiculeId);
     return v ? v.nom : 'Véhicule inconnu';
