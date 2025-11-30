@@ -22861,12 +22861,10 @@ const AppLayout = () => {
           setCurrentPage={setCurrentPage}
           setManagingUserDisponibilites={setManagingUserDisponibilites}
         />;
-      case 'epi':
-        return <ModuleEPI user={user} />;
       case 'actifs':
         return (
           <Suspense fallback={<LoadingComponent />}>
-            <GestionActifs />
+            <GestionActifs user={user} ModuleEPI={ModuleEPI} />
           </Suspense>
         );
       case 'planning':
