@@ -13969,16 +13969,21 @@ async def process_attribution_auto_async(
             logging.info(f"🔍 [DEBUG] Types d'assignation existants: {distinct_types}")
             
             progress.update("Suppression des assignations existantes...", 10)
+            # CORRECTION: Supprimer TOUTES les assignations AUTO + celles sans type (anciennes)
             result = await db.assignations.delete_many({
                 "tenant_id": tenant.id,
                 "date": {
                     "$gte": semaine_debut,
                     "$lte": semaine_fin
                 },
-                "assignation_type": {"$in": ["auto", "automatique"]}  # Support ancien + nouveau format
+                "$or": [
+                    {"assignation_type": {"$in": ["auto", "automatique"]}},
+                    {"assignation_type": {"$exists": False}},  # Assignations sans type (anciennes)
+                    {"assignation_type": None}  # Assignations avec type null
+                ]
             })
             assignations_supprimees = result.deleted_count
-            logging.info(f"⏱️ [PERF] ✅ {assignations_supprimees} assignations supprimées")
+            logging.info(f"⏱️ [PERF] ✅ {assignations_supprimees} assignations supprimées (incluant anciennes sans type)")
         else:
             logging.info(f"🔍 [DEBUG] RESET MODE DÉSACTIVÉ - Pas de suppression")
         
