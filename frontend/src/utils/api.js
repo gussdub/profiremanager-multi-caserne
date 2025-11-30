@@ -123,8 +123,29 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
     const data = await response.json();
     
     if (!response.ok) {
+      // Gérer les erreurs de validation Pydantic (array) et les erreurs simples (string)
+      let errorMessage = 'Erreur API';
+      
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          // Erreur de validation Pydantic: array d'objets avec loc, msg, type
+          errorMessage = data.detail.map(err => {
+            const field = err.loc ? err.loc.join(' > ') : 'Champ inconnu';
+            return `${field}: ${err.msg}`;
+          }).join(', ');
+        } else if (typeof data.detail === 'string') {
+          // Erreur simple: string
+          errorMessage = data.detail;
+        } else {
+          // Autre format: convertir en string
+          errorMessage = JSON.stringify(data.detail);
+        }
+      } else if (data.message) {
+        errorMessage = data.message;
+      }
+      
       // Créer une erreur avec plus de contexte pour le catch
-      const error = new Error(data.detail || data.message || 'Erreur API');
+      const error = new Error(errorMessage);
       error.status = response.status;
       error.data = data;
       throw error;
