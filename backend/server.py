@@ -7827,7 +7827,7 @@ async def export_rapport_presence(
     
     # Génération selon le format
     if format == "pdf":
-        return await generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min)
+        return await generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min, tenant)
     elif format == "excel":
         return await generer_excel_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min)
     else:
