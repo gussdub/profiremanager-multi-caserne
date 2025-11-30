@@ -386,7 +386,7 @@ const InspectionsView = ({ inspections, vehicules, tenantSlug, fetchInspections 
 };
 
 // Modal pour créer/éditer un modèle d'inventaire
-const ModeleModal = ({ modele, onClose, backendUrl, token, tenantSlug, fetchModeles }) => {
+const ModeleModal = ({ modele, onClose, tenantSlug, fetchModeles }) => {
   const [formData, setFormData] = useState(modele || {
     nom: '',
     description: '',
