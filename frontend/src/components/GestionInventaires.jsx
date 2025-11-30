@@ -198,14 +198,12 @@ const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles }) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
 
     try {
-      await axios.delete(
-        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/modeles/${modeleId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert('Modèle supprimé avec succès');
+      await apiDelete(tenantSlug, `/inventaire/modeles/${modeleId}`);
+      alert('✅ Modèle supprimé avec succès');
       fetchModeles();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erreur lors de la suppression');
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors de la suppression: ' + errorMessage);
     }
   };
 
