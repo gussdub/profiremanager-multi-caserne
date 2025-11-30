@@ -14527,8 +14527,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 date_str = current_date.strftime("%Y-%m-%d")
                 day_name = current_date.strftime("%A").lower()
                 
-                # Skip if type garde doesn't apply to this day
-                if type_garde.get("jours_application") and day_name not in type_garde["jours_application"]:
+                # CORRECTION CRITIQUE: Skip if type garde doesn't apply to this day
+                jours_app = type_garde.get("jours_application", [])
+                if jours_app and len(jours_app) > 0 and day_name not in jours_app:
+                    logging.info(f"⏭️ [SKIP DAY] {type_garde['nom']} - {date_str} ({day_name}): Jour non applicable (limité à {jours_app})")
                     continue
                 
                 # ÉTAPE 1: Vérifier si la garde est déjà complète
