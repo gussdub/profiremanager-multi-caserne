@@ -1435,7 +1435,7 @@ def create_branded_pdf(tenant, pagesize=A4, **kwargs):
     styles = getSampleStyleSheet()
     
     # Créer les éléments de base avec logo et header
-    elements = create_pdf_logo_header(tenant, styles)
+    elements = create_pdf_header_elements(tenant, styles)
     
     return buffer, doc, elements
 
