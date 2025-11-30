@@ -6857,12 +6857,14 @@ const Planning = () => {
 
       toast({
         title: "✅ Nettoyage terminé",
-        description: `${data.deleted_count} assignation(s) supprimée(s)`,
+        description: `${data.deleted_count} assignation(s) supprimée(s). Rechargement de la page...`,
         variant: "success"
       });
 
-      // Recharger les assignations
-      chargerAssignations();
+      // Recharger la page pour mettre à jour toutes les données
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
       
     } catch (error) {
       console.error('Erreur nettoyage:', error);
