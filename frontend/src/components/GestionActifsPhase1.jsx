@@ -158,11 +158,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   const handleViewFicheVie = async (vehicle) => {
     try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/vehicules/${vehicle.id}/fiche-vie`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setFicheVieData(response.data);
+      const data = await apiGet(tenantSlug, `/actifs/vehicules/${vehicle.id}/fiche-vie`);
+      setFicheVieData(data);
       setShowFicheVieModal(true);
     } catch (error) {
       console.error('Erreur fiche de vie:', error);
