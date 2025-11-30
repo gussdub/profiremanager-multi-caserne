@@ -15,6 +15,10 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   
+  // États pour le tri
+  const [sortField, setSortField] = useState('nom'); // 'nom', 'heures_internes', 'heures_externes', 'total_heures'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' ou 'desc'
+  
   // Charger les données
   const chargerRapport = async () => {
     if (!tenantSlug) {
