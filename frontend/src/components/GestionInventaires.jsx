@@ -295,14 +295,12 @@ const InspectionsView = ({ inspections, vehicules, tenantSlug, fetchInspections 
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette inspection ?')) return;
 
     try {
-      await axios.delete(
-        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/inspections/${inspectionId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert('Inspection supprimée avec succès');
+      await apiDelete(tenantSlug, `/inventaire/inspections/${inspectionId}`);
+      alert('✅ Inspection supprimée avec succès');
       fetchInspections();
     } catch (error) {
-      alert('Erreur lors de la suppression');
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors de la suppression: ' + errorMessage);
     }
   };
 
