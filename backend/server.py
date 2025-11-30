@@ -8092,7 +8092,7 @@ async def export_rapport_competences(
     
     # Génération selon le format
     if format == "pdf":
-        return await generer_pdf_competences(rapport_data, annee, user_nom)
+        return await generer_pdf_competences(rapport_data, annee, user_nom, tenant)
     elif format == "excel":
         return await generer_excel_competences(rapport_data, annee, user_nom)
     else:
