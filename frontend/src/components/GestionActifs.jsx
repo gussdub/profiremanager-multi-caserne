@@ -53,7 +53,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       setBornes(data);
     } catch (error) {
       console.error('Erreur lors du chargement des bornes:', error);
-      alert('Erreur lors du chargement des bornes');
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors du chargement des bornes: ' + errorMessage);
     } finally {
       setLoading(false);
     }
