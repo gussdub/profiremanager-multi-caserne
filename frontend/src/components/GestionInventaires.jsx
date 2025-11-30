@@ -1,12 +1,67 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
-const InventairesTab = ({ modeles, inspections, vehicules, fetchModeles, fetchInspections, backendUrl, token, tenantSlug }) => {
+const InventairesTab = ({ tenantSlug }) => {
   const [viewMode, setViewMode] = useState('modeles'); // 'modeles' ou 'inspections'
   const [showModeleModal, setShowModeleModal] = useState(false);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [selectedModele, setSelectedModele] = useState(null);
   const [selectedInspection, setSelectedInspection] = useState(null);
+  
+  // États pour les données
+  const [modeles, setModeles] = useState([]);
+  const [inspections, setInspections] = useState([]);
+  const [vehicules, setVehicules] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Charger les données au montage
+  useEffect(() => {
+    if (viewMode === 'modeles') {
+      fetchModeles();
+    } else {
+      fetchInspections();
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    fetchVehicules();
+  }, []);
+
+  const fetchModeles = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet(tenantSlug, '/inventaire/modeles');
+      setModeles(data || []);
+    } catch (error) {
+      console.error('Erreur chargement modèles:', error);
+      setModeles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInspections = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet(tenantSlug, '/inventaire/inspections');
+      setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur chargement inspections:', error);
+      setInspections([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVehicules = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/actifs/vehicules');
+      setVehicules(data || []);
+    } catch (error) {
+      console.error('Erreur chargement véhicules:', error);
+      setVehicules([]);
+    }
+  };
   
   // Modal pour créer/éditer un modèle
   const openModeleModal = (modele = null) => {
