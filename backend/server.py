@@ -5120,6 +5120,105 @@ async def debug_rapport_heures_user(
         "doublons": doublons[:10] if doublons else []
     }
 
+@api_router.get("/{tenant_slug}/planning/rapport-assignations-invalides")
+async def rapport_assignations_invalides(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Identifie toutes les assignations qui ne respectent pas les jours_application du type de garde"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer toutes les assignations
+    assignations = await db.assignations.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(10000)
+    
+    # Récupérer tous les types de garde
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    types_garde_map = {t["id"]: t for t in types_garde}
+    
+    # Récupérer tous les users
+    users = await db.users.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    users_map = {u["id"]: u for u in users}
+    
+    # Jours de la semaine
+    jours_fr_to_en = {
+        0: "monday",
+        1: "tuesday", 
+        2: "wednesday",
+        3: "thursday",
+        4: "friday",
+        5: "saturday",
+        6: "sunday"
+    }
+    
+    assignations_invalides = []
+    assignations_valides_count = 0
+    
+    for a in assignations:
+        type_garde = types_garde_map.get(a["type_garde_id"])
+        if not type_garde:
+            continue
+        
+        jours_application = type_garde.get("jours_application", [])
+        
+        # Si pas de jours_application, considéré comme valide pour tous les jours
+        if not jours_application or len(jours_application) == 0:
+            assignations_valides_count += 1
+            continue
+        
+        # Vérifier le jour de la semaine de cette assignation
+        try:
+            from datetime import datetime
+            date_obj = datetime.strptime(a["date"], "%Y-%m-%d")
+            jour_semaine_index = date_obj.weekday()  # 0=lundi, 6=dimanche
+            jour_semaine_en = jours_fr_to_en[jour_semaine_index]
+            
+            # Vérifier si le jour est dans jours_application
+            if jour_semaine_en not in jours_application:
+                user = users_map.get(a["user_id"], {})
+                assignations_invalides.append({
+                    "assignation_id": a.get("id"),
+                    "date": a["date"],
+                    "jour_semaine": jour_semaine_en,
+                    "user_nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                    "user_id": a["user_id"],
+                    "type_garde_nom": type_garde.get("nom"),
+                    "type_garde_id": a["type_garde_id"],
+                    "jours_application_garde": jours_application,
+                    "raison": f"Assignation sur {jour_semaine_en} mais garde limitée à {', '.join(jours_application)}"
+                })
+            else:
+                assignations_valides_count += 1
+        except Exception as e:
+            logging.error(f"Erreur analyse assignation {a.get('id')}: {str(e)}")
+    
+    # Grouper par utilisateur
+    by_user = {}
+    for inv in assignations_invalides:
+        user_id = inv["user_id"]
+        if user_id not in by_user:
+            by_user[user_id] = {
+                "user_nom_complet": inv["user_nom_complet"],
+                "count": 0,
+                "assignations": []
+            }
+        by_user[user_id]["count"] += 1
+        by_user[user_id]["assignations"].append(inv)
+    
+    return {
+        "message": f"Trouvé {len(assignations_invalides)} assignations invalides sur {len(assignations)} totales",
+        "statistiques": {
+            "total_assignations": len(assignations),
+            "assignations_invalides": len(assignations_invalides),
+            "assignations_valides": assignations_valides_count,
+            "utilisateurs_affectes": len(by_user)
+        },
+        "par_utilisateur": by_user,
+        "toutes_invalides": sorted(assignations_invalides, key=lambda x: (x["date"], x["user_nom_complet"]))
+    }
+
 @api_router.post("/{tenant_slug}/planning/recalculer-durees-gardes")
 async def recalculer_durees_gardes(
     tenant_slug: str,
