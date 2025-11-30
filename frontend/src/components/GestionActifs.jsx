@@ -94,11 +94,24 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     e.preventDefault();
     
     try {
+      // Préparer les données en convertissant les types numériques
+      const preparedData = { ...formData };
+      
+      if (activeTab === 'vehicules') {
+        // Convertir les champs numériques pour véhicules
+        if (preparedData.annee) {
+          preparedData.annee = parseInt(preparedData.annee, 10);
+        }
+        if (preparedData.kilometrage) {
+          preparedData.kilometrage = parseFloat(preparedData.kilometrage);
+        }
+      }
+      
       if (modalMode === 'create') {
-        await apiPost(tenantSlug, `/actifs/${activeTab}`, formData);
+        await apiPost(tenantSlug, `/actifs/${activeTab}`, preparedData);
         alert('✅ Créé avec succès!');
       } else {
-        await apiPut(tenantSlug, `/actifs/${activeTab}/${selectedItem.id}`, formData);
+        await apiPut(tenantSlug, `/actifs/${activeTab}/${selectedItem.id}`, preparedData);
         alert('✅ Mis à jour avec succès!');
       }
       
