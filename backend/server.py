@@ -23074,6 +23074,17 @@ async def create_borne(
         **borne_data.dict()
     )
     
+    # Ajouter une entrée dans la fiche de vie
+    log_entry = {
+        "date": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id,
+        "user_name": f"{current_user.prenom} {current_user.nom}",
+        "action": "created",
+        "details": f"Borne {borne.nom} créée",
+        "gps": borne.localisation_gps.dict() if borne.localisation_gps else None
+    }
+    borne.logs = [log_entry]
+    
     await db.bornes_incendie.insert_one(borne.dict())
     
     return borne
