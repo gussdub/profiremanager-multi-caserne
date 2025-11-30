@@ -6802,14 +6802,43 @@ const Planning = () => {
       return;
     }
 
-    if (!window.confirm("⚠️ Voulez-vous supprimer toutes les assignations qui ne respectent pas les jours d'application des types de garde?\n\nCette action est irréversible.")) {
-      return;
-    }
-
     try {
+      // D'abord, obtenir le rapport
       toast({
-        title: "Nettoyage en cours...",
-        description: "Suppression des assignations invalides"
+        title: "Analyse en cours...",
+        description: "Recherche d'assignations invalides"
+      });
+
+      const rapportResponse = await fetch(buildApiUrl(tenantSlug, '/planning/rapport-assignations-invalides'), {
+        headers: {
+          'Authorization': `Bearer ${getTenantToken()}`
+        }
+      });
+
+      if (!rapportResponse.ok) {
+        throw new Error('Erreur lors de l\'analyse');
+      }
+
+      const rapport = await rapportResponse.json();
+      const count = rapport.statistiques.assignations_invalides;
+
+      if (count === 0) {
+        toast({
+          title: "Aucune assignation invalide",
+          description: "Toutes les assignations respectent les jours d'application",
+          variant: "success"
+        });
+        return;
+      }
+
+      // Confirmer avec le nombre trouvé
+      if (!window.confirm(`⚠️ ${count} assignation(s) invalide(s) détectée(s)!\n\nElles ne respectent pas les jours d'application de leur type de garde.\n\nVoulez-vous les supprimer?\n\nCette action est irréversible.`)) {
+        return;
+      }
+
+      toast({
+        title: "Suppression en cours...",
+        description: `Suppression de ${count} assignation(s)`
       });
 
       const response = await fetch(buildApiUrl(tenantSlug, '/planning/supprimer-assignations-invalides'), {
@@ -6821,14 +6850,14 @@ const Planning = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors du nettoyage');
+        throw new Error('Erreur lors de la suppression');
       }
 
       const data = await response.json();
 
       toast({
-        title: "Nettoyage terminé",
-        description: `${data.deleted_count} assignation(s) invalide(s) supprimée(s)`,
+        title: "✅ Nettoyage terminé",
+        description: `${data.deleted_count} assignation(s) supprimée(s)`,
         variant: "success"
       });
 
@@ -6839,7 +6868,7 @@ const Planning = () => {
       console.error('Erreur nettoyage:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de nettoyer les assignations invalides",
+        description: error.message || "Impossible de nettoyer les assignations",
         variant: "destructive"
       });
     }
