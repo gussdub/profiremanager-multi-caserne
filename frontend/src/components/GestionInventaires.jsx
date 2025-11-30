@@ -718,21 +718,19 @@ const InspectionModal = ({ vehicules, modeles, onClose, tenantSlug, fetchInspect
     }
 
     try {
-      const response = await axios.post(
-        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/inspections`,
-        {
-          vehicule_id: selectedVehicule,
-          modele_inventaire_id: selectedModele,
-          inspecteur_id: currentUserId
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await apiPost(tenantSlug, `/inventaire/inspections`, {
+        vehicule_id: selectedVehicule,
+        modele_inventaire_id: selectedModele,
+        inspecteur_id: currentUserId
+      });
       
-      alert('Inspection créée avec succès');
+      alert('✅ Inspection créée avec succès');
       fetchInspections();
       onClose();
     } catch (error) {
-      alert('Erreur lors de la création de l\'inspection');
+      console.error('Erreur création inspection:', error);
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors de la création de l\'inspection: ' + errorMessage);
       console.error(error);
     }
   };
