@@ -704,7 +704,7 @@ const ModeleModal = ({ modele, onClose, tenantSlug, fetchModeles }) => {
 };
 
 // Modal pour démarrer une inspection
-const InspectionModal = ({ vehicules, modeles, onClose, backendUrl, token, tenantSlug, fetchInspections }) => {
+const InspectionModal = ({ vehicules, modeles, onClose, tenantSlug, fetchInspections }) => {
   const [selectedVehicule, setSelectedVehicule] = useState('');
   const [selectedModele, setSelectedModele] = useState('');
   const currentUserId = localStorage.getItem('userId');
