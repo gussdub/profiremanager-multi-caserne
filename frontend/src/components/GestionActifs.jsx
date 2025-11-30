@@ -108,7 +108,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      alert('❌ Erreur lors de la sauvegarde: ' + (error.response?.data?.detail || error.message));
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors de la sauvegarde: ' + errorMessage);
     }
   };
 
