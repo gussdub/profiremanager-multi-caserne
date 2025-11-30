@@ -93,18 +93,10 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     
     try {
       if (modalMode === 'create') {
-        await axios.post(
-          `${backendUrl}/api/${tenantSlug}/actifs/${activeTab}`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await apiPost(tenantSlug, `/actifs/${activeTab}`, formData);
         alert('✅ Créé avec succès!');
       } else {
-        await axios.put(
-          `${backendUrl}/api/${tenantSlug}/actifs/${activeTab}/${selectedItem.id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await apiPut(tenantSlug, `/actifs/${activeTab}/${selectedItem.id}`, formData);
         alert('✅ Mis à jour avec succès!');
       }
       
