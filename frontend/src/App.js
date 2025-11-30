@@ -23166,6 +23166,66 @@ const AppLayout = () => {
             <Parametres user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
+      case 'maintenance':
+        return (
+          <div className="maintenance-page" style={{padding: '2rem'}}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">🔧 Maintenance - Outils Système</CardTitle>
+                <p className="text-sm text-gray-600 mt-2">
+                  Outils réservés aux super-administrateurs pour maintenir l'intégrité des données
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="maintenance-tools" style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  {/* Outil 1: Nettoyage des assignations invalides */}
+                  <div className="tool-card" style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    backgroundColor: '#fef3c7'
+                  }}>
+                    <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem'}}>
+                      🗑️ Nettoyage des Assignations Invalides
+                    </h3>
+                    <p style={{color: '#6b7280', marginBottom: '1rem'}}>
+                      Supprime automatiquement les assignations qui ne respectent pas les jours d'application de leur type de garde.
+                    </p>
+                    <ul style={{color: '#6b7280', marginBottom: '1rem', paddingLeft: '1.5rem'}}>
+                      <li>Exemple: "Garde WE" assignée un mardi</li>
+                      <li>Utile après importation de données ou bug système</li>
+                      <li>Analyse d'abord, puis demande confirmation</li>
+                    </ul>
+                    <Button 
+                      onClick={handleNettoyerAssignationsInvalides}
+                      style={{background: '#F59E0B'}}
+                    >
+                      🗑️ Analyser et Nettoyer
+                    </Button>
+                  </div>
+                  
+                  {/* Espace pour futurs outils */}
+                  <div className="tool-card" style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    backgroundColor: '#f3f4f6',
+                    opacity: 0.6
+                  }}>
+                    <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem'}}>
+                      📊 Autres Outils (À venir)
+                    </h3>
+                    <p style={{color: '#6b7280'}}>
+                      D'autres outils de maintenance seront ajoutés ici au besoin.
+                    </p>
+                  </div>
+                  
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
       case 'mesepi':
         return (
           <Suspense fallback={<LoadingComponent />}>
