@@ -22924,6 +22924,17 @@ async def create_vehicule(
         **vehicule_data.dict()
     )
     
+    # Ajouter une entrée dans la fiche de vie
+    log_entry = {
+        "date": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id,
+        "user_name": f"{current_user.prenom} {current_user.nom}",
+        "action": "created",
+        "details": f"Véhicule {vehicule.nom} créé",
+        "gps": None
+    }
+    vehicule.logs = [log_entry]
+    
     await db.vehicules.insert_one(vehicule.dict())
     
     return vehicule
