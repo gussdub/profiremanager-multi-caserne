@@ -434,30 +434,23 @@ const ModeleModal = ({ modele, onClose, tenantSlug, fetchModeles }) => {
     e.preventDefault();
 
     if (formData.sections.length === 0) {
-      alert('Vous devez ajouter au moins une section');
+      alert('⚠️ Vous devez ajouter au moins une section');
       return;
     }
 
     try {
       if (modele) {
-        await axios.put(
-          `${backendUrl}/api/${tenantSlug}/actifs/inventaires/modeles/${modele.id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await apiPut(tenantSlug, `/inventaire/modeles/${modele.id}`, formData);
       } else {
-        await axios.post(
-          `${backendUrl}/api/${tenantSlug}/actifs/inventaires/modeles`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await apiPost(tenantSlug, `/inventaire/modeles`, formData);
       }
-      alert('Modèle sauvegardé avec succès');
+      alert('✅ Modèle sauvegardé avec succès');
       fetchModeles();
       onClose();
     } catch (error) {
-      alert('Erreur lors de la sauvegarde');
-      console.error(error);
+      console.error('Erreur sauvegarde modèle:', error);
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors de la sauvegarde: ' + errorMessage);
     }
   };
 
