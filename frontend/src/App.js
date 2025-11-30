@@ -1074,8 +1074,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     // Vérification du rôle seulement
     if (!item.roles.includes(user?.role)) return false;
     
-    // Vérifier si c'est réservé aux super-admin
-    if (item.superAdminOnly && !isSuperAdmin) return false;
+    // Vérifier si c'est réservé aux super-admin (uniquement si connecté)
+    if (item.superAdminOnly && (typeof isSuperAdmin === 'undefined' || !isSuperAdmin)) return false;
     
     // Vérifier si c'est le module "Mes disponibilités" qui ne doit être visible que pour les utilisateurs temps partiel
     if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') {
