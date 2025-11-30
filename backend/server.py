@@ -2062,6 +2062,14 @@ class Vehicule(BaseModel):
     photos: List[str] = []  # URLs ou base64 des photos
     documents: List[Dict[str, str]] = []  # [{nom: "doc.pdf", url: "..."}]
     notes: Optional[str] = None
+    # Inspection SAAQ
+    derniere_inspection_id: Optional[str] = None
+    derniere_inspection_date: Optional[str] = None
+    # QR Code
+    qr_code: Optional[str] = None  # QR code en base64
+    qr_code_url: Optional[str] = None  # URL encodée dans le QR code
+    # Fiche de vie (audit trail)
+    logs: List[Dict[str, Any]] = []  # Historique complet des actions
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
