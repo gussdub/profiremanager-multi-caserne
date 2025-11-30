@@ -169,11 +169,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   const handleViewInspections = async (vehicle) => {
     try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/vehicules/${vehicle.id}/inspections`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setInspectionHistory(response.data);
+      const data = await apiGet(tenantSlug, `/actifs/vehicules/${vehicle.id}/inspections`);
+      setInspectionHistory(data);
       setSelectedItem(vehicle);
       setShowInspectionModal(true);
     } catch (error) {
