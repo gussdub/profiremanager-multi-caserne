@@ -383,8 +383,15 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-red-600">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                        Employé
+                      <th 
+                        className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => handleSort('nom')}
+                        title="Cliquer pour trier"
+                      >
+                        <div className="flex items-center justify-start">
+                          Employé
+                          <SortIcon field="nom" />
+                        </div>
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                         Type
@@ -392,19 +399,40 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
                       <th className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                         Grade
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-                        H. Internes
+                      <th 
+                        className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => handleSort('heures_internes')}
+                        title="Cliquer pour trier"
+                      >
+                        <div className="flex items-center justify-center">
+                          H. Internes
+                          <SortIcon field="heures_internes" />
+                        </div>
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-                        H. Externes
+                      <th 
+                        className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => handleSort('heures_externes')}
+                        title="Cliquer pour trier"
+                      >
+                        <div className="flex items-center justify-center">
+                          H. Externes
+                          <SortIcon field="heures_externes" />
+                        </div>
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-                        Total
+                      <th 
+                        className="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => handleSort('total_heures')}
+                        title="Cliquer pour trier"
+                      >
+                        <div className="flex items-center justify-center">
+                          Total
+                          <SortIcon field="total_heures" />
+                        </div>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {data.employes.map((emp, index) => (
+                    {getSortedEmployes().map((emp, index) => (
                       <tr key={emp.user_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                           {emp.nom_complet}
