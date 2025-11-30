@@ -9335,20 +9335,6 @@ const Planning = () => {
               >
                 {autoAttributionConfig.mode === 'reinitialiser' ? '🔄 Réinitialiser et Attribuer' : '✨ Lancer l\'attribution'}
               </Button>
-              
-              {/* Bouton Admin: Nettoyer assignations invalides */}
-              {user.role === 'admin' && (
-                <Button 
-                  onClick={handleNettoyerAssignationsInvalides}
-                  style={{
-                    background: '#F59E0B',
-                    marginLeft: '0.5rem'
-                  }}
-                  title="Supprime les assignations qui ne respectent pas les jours d'application"
-                >
-                  🗑️ Nettoyer assignations invalides
-                </Button>
-              )}
             </div>
           </div>
         </div>
