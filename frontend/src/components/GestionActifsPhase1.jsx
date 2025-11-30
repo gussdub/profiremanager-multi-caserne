@@ -260,8 +260,6 @@ const GestionActifs = ({ user, ModuleEPI }) => {
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
           ) : (
             <InventairesTab 
-              backendUrl={backendUrl}
-              token={token}
               tenantSlug={tenantSlug}
             />
           )}
