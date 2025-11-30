@@ -144,12 +144,14 @@ const InventairesTab = ({ tenantSlug }) => {
       </div>
 
       {/* Content */}
-      {viewMode === 'modeles' ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          Chargement...
+        </div>
+      ) : viewMode === 'modeles' ? (
         <ModelesView 
           modeles={modeles}
           onEdit={openModeleModal}
-          backendUrl={backendUrl}
-          token={token}
           tenantSlug={tenantSlug}
           fetchModeles={fetchModeles}
         />
@@ -157,8 +159,6 @@ const InventairesTab = ({ tenantSlug }) => {
         <InspectionsView 
           inspections={inspections}
           vehicules={vehicules}
-          backendUrl={backendUrl}
-          token={token}
           tenantSlug={tenantSlug}
           fetchInspections={fetchInspections}
         />
@@ -172,8 +172,6 @@ const InventairesTab = ({ tenantSlug }) => {
             setShowModeleModal(false);
             setSelectedModele(null);
           }}
-          backendUrl={backendUrl}
-          token={token}
           tenantSlug={tenantSlug}
           fetchModeles={fetchModeles}
         />
