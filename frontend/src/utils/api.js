@@ -123,7 +123,11 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.detail || 'Erreur API');
+      // Créer une erreur avec plus de contexte pour le catch
+      const error = new Error(data.detail || data.message || 'Erreur API');
+      error.status = response.status;
+      error.data = data;
+      throw error;
     }
     
     return data;
