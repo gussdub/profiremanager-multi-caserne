@@ -35,11 +35,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const fetchVehicules = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/vehicules`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setVehicules(response.data);
+      const data = await apiGet(tenantSlug, '/actifs/vehicules');
+      setVehicules(data);
     } catch (error) {
       console.error('Erreur lors du chargement des véhicules:', error);
       alert('Erreur lors du chargement des véhicules');
