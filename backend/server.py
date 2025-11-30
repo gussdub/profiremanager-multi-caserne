@@ -5120,6 +5120,93 @@ async def debug_rapport_heures_user(
         "doublons": doublons[:10] if doublons else []
     }
 
+@api_router.post("/{tenant_slug}/planning/recalculer-durees-gardes")
+async def recalculer_durees_gardes(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Recalcule le champ duree_heures pour tous les types de garde en utilisant heure_debut et heure_fin"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les types de garde
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    
+    corrections = []
+    erreurs = []
+    
+    for tg in types_garde:
+        type_id = tg["id"]
+        nom = tg.get("nom", "Sans nom")
+        heure_debut = tg.get("heure_debut")
+        heure_fin = tg.get("heure_fin")
+        duree_actuelle = tg.get("duree_heures")
+        
+        if heure_debut and heure_fin:
+            try:
+                from datetime import datetime
+                debut = datetime.strptime(heure_debut, "%H:%M")
+                fin = datetime.strptime(heure_fin, "%H:%M")
+                
+                # Gestion du cas où la garde traverse minuit
+                if fin < debut:
+                    fin = fin.replace(day=debut.day + 1)
+                
+                delta = (fin - debut).total_seconds() / 3600
+                duree_calculee = round(delta, 2)
+                
+                # Mise à jour seulement si différent ou absent
+                if duree_actuelle is None or abs(duree_actuelle - duree_calculee) > 0.01:
+                    await db.types_garde.update_one(
+                        {"id": type_id, "tenant_id": tenant.id},
+                        {"$set": {"duree_heures": duree_calculee}}
+                    )
+                    corrections.append({
+                        "type_garde": nom,
+                        "horaires": f"{heure_debut} - {heure_fin}",
+                        "duree_avant": duree_actuelle,
+                        "duree_apres": duree_calculee,
+                        "statut": "corrigé"
+                    })
+                else:
+                    corrections.append({
+                        "type_garde": nom,
+                        "horaires": f"{heure_debut} - {heure_fin}",
+                        "duree": duree_actuelle,
+                        "statut": "déjà_correct"
+                    })
+                    
+            except Exception as e:
+                erreurs.append({
+                    "type_garde": nom,
+                    "erreur": str(e),
+                    "horaires": f"{heure_debut} - {heure_fin}"
+                })
+        else:
+            erreurs.append({
+                "type_garde": nom,
+                "erreur": "horaires manquants",
+                "heure_debut": heure_debut,
+                "heure_fin": heure_fin
+            })
+    
+    nb_corriges = len([c for c in corrections if c.get("statut") == "corrigé"])
+    nb_deja_ok = len([c for c in corrections if c.get("statut") == "déjà_correct"])
+    
+    return {
+        "message": f"Recalcul terminé: {nb_corriges} corrigés, {nb_deja_ok} déjà corrects, {len(erreurs)} erreurs",
+        "corrections": corrections,
+        "erreurs": erreurs,
+        "statistiques": {
+            "total_types_garde": len(types_garde),
+            "corriges": nb_corriges,
+            "deja_corrects": nb_deja_ok,
+            "erreurs": len(erreurs)
+        }
+    }
+
 @api_router.get("/{tenant_slug}/planning/rapport-heures/export-pdf")
 async def export_rapport_heures_pdf(
     tenant_slug: str,
