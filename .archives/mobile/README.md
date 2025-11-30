@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://workforce-planner-8.preview.emergentagent.com
+- **URL** : https://fleet-inspection.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://workforce-planner-8.preview.emergentagent.com"
+  "apiUrl": "https://fleet-inspection.preview.emergentagent.com"
 }
 ```
 

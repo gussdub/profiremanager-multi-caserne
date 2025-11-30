@@ -19,7 +19,7 @@ SCÉNARIO DE TEST SPÉCIFIQUE:
 - Analyser les logs backend pour confirmation
 
 Tenant: shefford (PRODUCTION)
-URL: https://workforce-planner-8.preview.emergentagent.com/shefford
+URL: https://fleet-inspection.preview.emergentagent.com/shefford
 Admin: admin@firemanager.ca / Admin123!
 """
 
@@ -32,7 +32,7 @@ import time
 
 class FrancoisGuayBugTester:
     def __init__(self):
-        self.base_url = "https://workforce-planner-8.preview.emergentagent.com/api/shefford"
+        self.base_url = "https://fleet-inspection.preview.emergentagent.com/api/shefford"
         self.headers = {}
         self.token = None
         self.admin_credentials = {
@@ -741,7 +741,7 @@ class FrancoisGuayBugTester:
         """Exécute tous les tests spécifiques au bug François Guay"""
         print("🚀 DÉBUT DES TESTS - CORRECTION BUG FRANÇOIS GUAY")
         print("🏢 Tenant: shefford (PRODUCTION)")
-        print("🌐 URL: https://workforce-planner-8.preview.emergentagent.com/shefford")
+        print("🌐 URL: https://fleet-inspection.preview.emergentagent.com/shefford")
         print("👤 Admin: admin@firemanager.ca / Admin123!")
         print("📅 Date de test: Semaine du 15-21 décembre 2025 (incluant le 19 déc)")
         
