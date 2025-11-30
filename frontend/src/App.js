@@ -9433,12 +9433,14 @@ const Planning = () => {
       {/* Modal d'Audit de l'Affectation */}
       {showAuditModal && selectedAuditAssignation && selectedAuditAssignation.justification && (
         <div className="modal-overlay" onClick={() => setShowAuditModal(false)}>
-          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1000px', maxHeight: '90vh', overflow: 'auto' }}>
             <div className="modal-header">
               <h3>🔍 Audit de l'Affectation Automatique</h3>
               <Button variant="ghost" onClick={() => setShowAuditModal(false)}>✕</Button>
             </div>
             <div className="modal-body" style={{ padding: '1.5rem' }}>
+              
+              {/* PARTIE 1: Résultat Final + Raison Principale */}
               {/* En-tête de l'assignation */}
               <div style={{ 
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
