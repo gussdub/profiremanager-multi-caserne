@@ -3,16 +3,22 @@ import axios from 'axios';
 import InventairesTab from './GestionInventaires';
 
 const GestionActifs = ({ user, ModuleEPI }) => {
-  const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules', 'bornes', 'inventaires', ou 'epi'
+  const [activeTab, setActiveTab] = useState('vehicules');
   const [vehicules, setVehicules] = useState([]);
   const [bornes, setBornes] = useState([]);
-  const [modeles, setModeles] = useState([]);
-  const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [modalMode, setModalMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({});
+  
+  // Nouveaux états pour Phase 1
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrCodeData, setQRCodeData] = useState(null);
+  const [showFicheVieModal, setShowFicheVieModal] = useState(false);
+  const [ficheVieData, setFicheVieData] = useState(null);
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [inspectionHistory, setInspectionHistory] = useState([]);
 
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
   const token = localStorage.getItem('token');
@@ -23,9 +29,6 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       fetchVehicules();
     } else if (activeTab === 'bornes') {
       fetchBornes();
-    } else if (activeTab === 'inventaires') {
-      fetchModeles();
-      fetchInspections();
     }
   }, [activeTab]);
 
@@ -39,6 +42,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       setVehicules(response.data);
     } catch (error) {
       console.error('Erreur lors du chargement des véhicules:', error);
+      alert('Erreur lors du chargement des véhicules');
     } finally {
       setLoading(false);
     }
@@ -54,36 +58,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       setBornes(response.data);
     } catch (error) {
       console.error('Erreur lors du chargement des bornes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchModeles = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/modeles`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setModeles(response.data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des modèles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchInspections = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/inventaires/inspections`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setInspections(response.data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des inspections:', error);
+      alert('Erreur lors du chargement des bornes');
     } finally {
       setLoading(false);
     }
@@ -94,20 +69,20 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     setSelectedItem(null);
     setFormData(activeTab === 'vehicules' ? {
       nom: '',
-      type_vehicule: '',
+      type_vehicule: 'Autopompe',
       marque: '',
       modele: '',
       annee: '',
+      vin: '',
       statut: 'actif',
-      photos: []
+      notes: ''
     } : {
       nom: '',
       type_borne: 'seche',
       adresse: '',
       municipalite: '',
       statut: 'operationnelle',
-      photos: [],
-      schemas: []
+      notes_importantes: ''
     });
     setShowModal(true);
   };
@@ -129,12 +104,14 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        alert('✅ Créé avec succès!');
       } else {
         await axios.put(
           `${backendUrl}/api/${tenantSlug}/actifs/${activeTab}/${selectedItem.id}`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        alert('✅ Mis à jour avec succès!');
       }
       
       setShowModal(false);
@@ -145,7 +122,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde');
+      alert('❌ Erreur lors de la sauvegarde: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -160,6 +137,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      alert('✅ Supprimé avec succès!');
       if (activeTab === 'vehicules') {
         fetchVehicules();
       } else {
@@ -167,25 +145,89 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      alert('Erreur lors de la suppression');
+      alert('❌ Erreur lors de la suppression');
     }
+  };
+
+  // Nouvelles fonctions Phase 1
+  const handleGenerateQR = async (item) => {
+    try {
+      const type = activeTab === 'vehicules' ? 'vehicules' : 'bornes';
+      const response = await axios.post(
+        `${backendUrl}/api/${tenantSlug}/actifs/${type}/${item.id}/qr-code`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setQRCodeData({
+        qr_code: response.data.qr_code,
+        qr_code_url: response.data.qr_code_url,
+        item_name: item.nom
+      });
+      setShowQRModal(true);
+      
+      // Rafraîchir la liste
+      if (activeTab === 'vehicules') {
+        fetchVehicules();
+      } else {
+        fetchBornes();
+      }
+    } catch (error) {
+      console.error('Erreur génération QR:', error);
+      alert('❌ Erreur lors de la génération du QR code');
+    }
+  };
+
+  const handleViewFicheVie = async (vehicle) => {
+    try {
+      const response = await axios.get(
+        `${backendUrl}/api/${tenantSlug}/actifs/vehicules/${vehicle.id}/fiche-vie`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFicheVieData(response.data);
+      setShowFicheVieModal(true);
+    } catch (error) {
+      console.error('Erreur fiche de vie:', error);
+      alert('❌ Erreur lors du chargement de la fiche de vie');
+    }
+  };
+
+  const handleViewInspections = async (vehicle) => {
+    try {
+      const response = await axios.get(
+        `${backendUrl}/api/${tenantSlug}/actifs/vehicules/${vehicle.id}/inspections`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setInspectionHistory(response.data);
+      setSelectedItem(vehicle);
+      setShowInspectionModal(true);
+    } catch (error) {
+      console.error('Erreur inspections:', error);
+      alert('❌ Erreur lors du chargement des inspections');
+    }
+  };
+
+  const handleCreateInspection = (vehicle) => {
+    setSelectedItem(vehicle);
+    // Ouvrir le formulaire d'inspection
+    alert('🚧 Formulaire d\'inspection SAAQ à venir dans la prochaine itération');
   };
 
   return (
     <div className="gestion-actifs" style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>🚒 Gestion des Actifs</h1>
-        {activeTab !== 'inventaires' && (
+        {activeTab !== 'inventaires' && activeTab !== 'epi' && (
           <button 
             onClick={openCreateModal}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               backgroundColor: '#e74c3c',
               color: 'white',
               border: 'none',
-              borderRadius: '5px',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '16px'
+              fontSize: '16px',
+              fontWeight: 'bold'
             }}
           >
             + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
@@ -195,71 +237,33 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #ddd' }}>
-        <button
+        <TabButton
+          label="🚗 Véhicules"
+          active={activeTab === 'vehicules'}
           onClick={() => setActiveTab('vehicules')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: activeTab === 'vehicules' ? '#e74c3c' : 'transparent',
-            color: activeTab === 'vehicules' ? 'white' : '#333',
-            border: 'none',
-            borderBottom: activeTab === 'vehicules' ? '3px solid #e74c3c' : 'none',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          🚗 Véhicules
-        </button>
-        <button
+        />
+        <TabButton
+          label="💧 Bornes d'incendie"
+          active={activeTab === 'bornes'}
           onClick={() => setActiveTab('bornes')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: activeTab === 'bornes' ? '#e74c3c' : 'transparent',
-            color: activeTab === 'bornes' ? 'white' : '#333',
-            border: 'none',
-            borderBottom: activeTab === 'bornes' ? '3px solid #e74c3c' : 'none',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          💧 Bornes d'incendie
-        </button>
-        <button
+        />
+        <TabButton
+          label="📋 Inventaires"
+          active={activeTab === 'inventaires'}
           onClick={() => setActiveTab('inventaires')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: activeTab === 'inventaires' ? '#e74c3c' : 'transparent',
-            color: activeTab === 'inventaires' ? 'white' : '#333',
-            border: 'none',
-            borderBottom: activeTab === 'inventaires' ? '3px solid #e74c3c' : 'none',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          📋 Inventaires
-        </button>
-        <button
+        />
+        <TabButton
+          label="🛡️ Gestion EPI"
+          active={activeTab === 'epi'}
           onClick={() => setActiveTab('epi')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: activeTab === 'epi' ? '#e74c3c' : 'transparent',
-            color: activeTab === 'epi' ? 'white' : '#333',
-            border: 'none',
-            borderBottom: activeTab === 'epi' ? '3px solid #e74c3c' : 'none',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          🛡️ Gestion EPI
-        </button>
+        />
       </div>
 
       {/* Content */}
       {loading ? (
-        <div>Chargement...</div>
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p>Chargement...</p>
+        </div>
       ) : (
         <div>
           {activeTab === 'vehicules' ? (
@@ -267,22 +271,22 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               vehicules={vehicules} 
               onEdit={openEditModal} 
               onDelete={handleDelete}
+              onGenerateQR={handleGenerateQR}
+              onViewFicheVie={handleViewFicheVie}
+              onViewInspections={handleViewInspections}
+              onCreateInspection={handleCreateInspection}
             />
           ) : activeTab === 'bornes' ? (
             <BornesTab 
               bornes={bornes} 
               onEdit={openEditModal} 
               onDelete={handleDelete}
+              onGenerateQR={handleGenerateQR}
             />
           ) : activeTab === 'epi' ? (
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
           ) : (
             <InventairesTab 
-              modeles={modeles}
-              inspections={inspections}
-              vehicules={vehicules}
-              fetchModeles={fetchModeles}
-              fetchInspections={fetchInspections}
               backendUrl={backendUrl}
               token={token}
               tenantSlug={tenantSlug}
@@ -291,7 +295,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modals */}
       {showModal && (
         <Modal
           mode={modalMode}
@@ -302,170 +306,356 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onClose={() => setShowModal(false)}
         />
       )}
+
+      {showQRModal && qrCodeData && (
+        <QRCodeModal
+          qrCodeData={qrCodeData}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
+
+      {showFicheVieModal && ficheVieData && (
+        <FicheVieModal
+          ficheVieData={ficheVieData}
+          onClose={() => setShowFicheVieModal(false)}
+        />
+      )}
+
+      {showInspectionModal && (
+        <InspectionHistoryModal
+          vehicle={selectedItem}
+          inspections={inspectionHistory}
+          onClose={() => setShowInspectionModal(false)}
+        />
+      )}
     </div>
   );
 };
 
-// Composant pour l'onglet Véhicules
-const VehiculesTab = ({ vehicules, onEdit, onDelete }) => {
+// ==================== COMPONENTS ====================
+
+const TabButton = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    style={{
+      padding: '12px 20px',
+      backgroundColor: active ? '#e74c3c' : 'transparent',
+      color: active ? 'white' : '#333',
+      border: 'none',
+      borderBottom: active ? '3px solid #e74c3c' : 'none',
+      cursor: 'pointer',
+      fontSize: '15px',
+      fontWeight: active ? 'bold' : 'normal',
+      transition: 'all 0.3s'
+    }}
+  >
+    {label}
+  </button>
+);
+
+const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection }) => {
   if (vehicules.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-        <p>Aucun véhicule enregistré</p>
+      <div style={{ textAlign: 'center', padding: '60px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
+        <div style={{ fontSize: '64px', marginBottom: '20px' }}>🚗</div>
+        <h3>Aucun véhicule enregistré</h3>
+        <p>Commencez par ajouter votre premier véhicule</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
       {vehicules.map(vehicule => (
-        <div key={vehicule.id} style={{
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '15px',
-          backgroundColor: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
-            <h3 style={{ margin: 0 }}>{vehicule.nom}</h3>
-            <span style={{
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              backgroundColor: vehicule.statut === 'actif' ? '#27ae60' : '#95a5a6',
-              color: 'white'
-            }}>
-              {vehicule.statut}
-            </span>
-          </div>
-          
-          <div style={{ marginBottom: '10px', color: '#666' }}>
-            {vehicule.type_vehicule && <p><strong>Type:</strong> {vehicule.type_vehicule}</p>}
-            {vehicule.marque && <p><strong>Marque:</strong> {vehicule.marque} {vehicule.modele}</p>}
-            {vehicule.annee && <p><strong>Année:</strong> {vehicule.annee}</p>}
-            {vehicule.vin && <p><strong>VIN:</strong> {vehicule.vin}</p>}
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-            <button
-              onClick={() => onEdit(vehicule)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#3498db',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              ✏️ Modifier
-            </button>
-            <button
-              onClick={() => onDelete(vehicule.id)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              🗑️ Supprimer
-            </button>
-          </div>
-        </div>
+        <VehiculeCard 
+          key={vehicule.id}
+          vehicule={vehicule}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onGenerateQR={onGenerateQR}
+          onViewFicheVie={onViewFicheVie}
+          onViewInspections={onViewInspections}
+          onCreateInspection={onCreateInspection}
+        />
       ))}
     </div>
   );
 };
 
-// Composant pour l'onglet Bornes
-const BornesTab = ({ bornes, onEdit, onDelete }) => {
+const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection }) => {
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'actif': return '#27ae60';
+      case 'maintenance': return '#f39c12';
+      case 'retraite': return '#95a5a6';
+      default: return '#95a5a6';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch(status) {
+      case 'actif': return 'En service';
+      case 'maintenance': return 'Maintenance';
+      case 'retraite': return 'Retraité';
+      default: return status;
+    }
+  };
+
+  return (
+    <div style={{
+      border: '1px solid #e0e0e0',
+      borderRadius: '12px',
+      padding: '20px',
+      backgroundColor: 'white',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      cursor: 'pointer'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-4px)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+    }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '20px' }}>{vehicule.nom}</h3>
+        <span style={{
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          backgroundColor: getStatusColor(vehicule.statut),
+          color: 'white'
+        }}>
+          {getStatusLabel(vehicule.statut)}
+        </span>
+      </div>
+      
+      <div style={{ marginBottom: '15px', color: '#555', lineHeight: '1.8' }}>
+        {vehicule.type_vehicule && (
+          <p style={{ margin: '5px 0' }}>
+            <strong>Type:</strong> {vehicule.type_vehicule}
+          </p>
+        )}
+        {vehicule.marque && (
+          <p style={{ margin: '5px 0' }}>
+            <strong>Marque:</strong> {vehicule.marque} {vehicule.modele}
+          </p>
+        )}
+        {vehicule.annee && (
+          <p style={{ margin: '5px 0' }}>
+            <strong>Année:</strong> {vehicule.annee}
+          </p>
+        )}
+        {vehicule.vin && (
+          <p style={{ margin: '5px 0', fontSize: '13px' }}>
+            <strong>VIN:</strong> {vehicule.vin}
+          </p>
+        )}
+        {vehicule.derniere_inspection_date && (
+          <p style={{ margin: '5px 0', color: '#27ae60' }}>
+            <strong>✅ Dernière inspection:</strong> {new Date(vehicule.derniere_inspection_date).toLocaleDateString('fr-CA')}
+          </p>
+        )}
+      </div>
+
+      {/* QR Code Display */}
+      {vehicule.qr_code && (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '10px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <img 
+            src={vehicule.qr_code} 
+            alt="QR Code" 
+            style={{ width: '100px', height: '100px' }}
+          />
+          <p style={{ fontSize: '11px', color: '#666', margin: '5px 0 0 0' }}>
+            Scanner pour accéder à la fiche
+          </p>
+        </div>
+      )}
+
+      {/* Actions principales */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <ActionButton
+          label="✏️ Modifier"
+          color="#3498db"
+          onClick={() => onEdit(vehicule)}
+        />
+        <ActionButton
+          label="📋 Fiche de vie"
+          color="#9b59b6"
+          onClick={() => onViewFicheVie(vehicule)}
+        />
+      </div>
+
+      {/* Actions secondaires */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <ActionButton
+          label="📝 Inspections"
+          color="#16a085"
+          onClick={() => onViewInspections(vehicule)}
+          small
+        />
+        <ActionButton
+          label="✅ Nouvelle inspection"
+          color="#27ae60"
+          onClick={() => onCreateInspection(vehicule)}
+          small
+        />
+      </div>
+
+      {/* Actions tertiaires */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <ActionButton
+          label="📱 QR Code"
+          color="#f39c12"
+          onClick={() => onGenerateQR(vehicule)}
+          small
+        />
+        <ActionButton
+          label="🗑️ Supprimer"
+          color="#e74c3c"
+          onClick={() => onDelete(vehicule.id)}
+          small
+        />
+      </div>
+    </div>
+  );
+};
+
+const ActionButton = ({ label, color, onClick, small = false }) => (
+  <button
+    onClick={onClick}
+    style={{
+      flex: 1,
+      padding: small ? '6px' : '10px',
+      backgroundColor: color,
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: small ? '12px' : '14px',
+      fontWeight: small ? 'normal' : 'bold',
+      transition: 'opacity 0.2s'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+  >
+    {label}
+  </button>
+);
+
+const BornesTab = ({ bornes, onEdit, onDelete, onGenerateQR }) => {
   if (bornes.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-        <p>Aucune borne d'incendie enregistrée</p>
+      <div style={{ textAlign: 'center', padding: '60px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
+        <div style={{ fontSize: '64px', marginBottom: '20px' }}>💧</div>
+        <h3>Aucune borne d'incendie enregistrée</h3>
+        <p>Commencez par ajouter votre première borne</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
       {bornes.map(borne => (
-        <div key={borne.id} style={{
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '15px',
-          backgroundColor: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
-            <h3 style={{ margin: 0 }}>{borne.nom}</h3>
-            <span style={{
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              backgroundColor: borne.statut === 'operationnelle' ? '#27ae60' : '#e74c3c',
-              color: 'white'
-            }}>
-              {borne.statut}
-            </span>
-          </div>
-          
-          <div style={{ marginBottom: '10px', color: '#666' }}>
-            <p><strong>Type:</strong> {borne.type_borne === 'seche' ? 'Borne sèche' : 'Borne fontaine'}</p>
-            {borne.municipalite && <p><strong>Municipalité:</strong> {borne.municipalite}</p>}
-            {borne.adresse && <p><strong>Adresse:</strong> {borne.adresse}</p>}
-            {borne.transversale && <p><strong>Transversale:</strong> {borne.transversale}</p>}
-            {borne.lien_maps && (
-              <p>
-                <a href={borne.lien_maps} target="_blank" rel="noopener noreferrer" style={{ color: '#3498db' }}>
-                  📍 Voir sur la carte
-                </a>
-              </p>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-            <button
-              onClick={() => onEdit(borne)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#3498db',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              ✏️ Modifier
-            </button>
-            <button
-              onClick={() => onDelete(borne.id)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              🗑️ Supprimer
-            </button>
-          </div>
-        </div>
+        <BorneCard
+          key={borne.id}
+          borne={borne}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onGenerateQR={onGenerateQR}
+        />
       ))}
     </div>
   );
 };
 
-// Composant Modal pour créer/éditer
+const BorneCard = ({ borne, onEdit, onDelete, onGenerateQR }) => {
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'operationnelle': return '#27ae60';
+      case 'hors_service': return '#e74c3c';
+      case 'a_verifier': return '#f39c12';
+      default: return '#95a5a6';
+    }
+  };
+
+  return (
+    <div style={{
+      border: '1px solid #e0e0e0',
+      borderRadius: '12px',
+      padding: '20px',
+      backgroundColor: 'white',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, color: '#2c3e50' }}>{borne.nom}</h3>
+        <span style={{
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          backgroundColor: getStatusColor(borne.statut),
+          color: 'white'
+        }}>
+          {borne.statut}
+        </span>
+      </div>
+      
+      <div style={{ marginBottom: '15px', color: '#555' }}>
+        <p><strong>Type:</strong> {borne.type_borne === 'seche' ? 'Borne sèche' : 'Borne fontaine'}</p>
+        {borne.municipalite && <p><strong>Municipalité:</strong> {borne.municipalite}</p>}
+        {borne.adresse && <p><strong>Adresse:</strong> {borne.adresse}</p>}
+        {borne.transversale && <p><strong>Transversale:</strong> {borne.transversale}</p>}
+        {borne.debit && <p><strong>Débit:</strong> {borne.debit}</p>}
+        {borne.lien_maps && (
+          <p>
+            <a href={borne.lien_maps} target="_blank" rel="noopener noreferrer" style={{ color: '#3498db' }}>
+              📍 Voir sur la carte
+            </a>
+          </p>
+        )}
+      </div>
+
+      {borne.qr_code && (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '10px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <img 
+            src={borne.qr_code} 
+            alt="QR Code" 
+            style={{ width: '100px', height: '100px' }}
+          />
+          <p style={{ fontSize: '11px', color: '#666', margin: '5px 0 0 0' }}>
+            Scanner pour accéder à la fiche
+          </p>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
+        <ActionButton label="✏️ Modifier" color="#3498db" onClick={() => onEdit(borne)} />
+        <ActionButton label="📱 QR Code" color="#f39c12" onClick={() => onGenerateQR(borne)} small />
+        <ActionButton label="🗑️ Supprimer" color="#e74c3c" onClick={() => onDelete(borne.id)} small />
+      </div>
+    </div>
+  );
+};
+
+// ==================== MODALS ====================
+
 const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -479,7 +669,7 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'rgba(0,0,0,0.6)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -487,383 +677,38 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
     }}>
       <div style={{
         backgroundColor: 'white',
-        borderRadius: '8px',
+        borderRadius: '12px',
         padding: '30px',
         maxWidth: '600px',
         width: '90%',
         maxHeight: '90vh',
         overflow: 'auto'
       }}>
-        <h2>{mode === 'create' ? 'Ajouter' : 'Modifier'} {type === 'vehicules' ? 'un véhicule' : 'une borne'}</h2>
+        <h2 style={{ marginTop: 0 }}>
+          {mode === 'create' ? 'Ajouter' : 'Modifier'} {type === 'vehicules' ? 'un véhicule' : 'une borne'}
+        </h2>
         
         <form onSubmit={onSubmit}>
           {type === 'vehicules' ? (
-            <>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Nom du véhicule *
-                </label>
-                <input
-                  type="text"
-                  name="nom"
-                  value={formData.nom || ''}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Type de véhicule</label>
-                <input
-                  type="text"
-                  name="type_vehicule"
-                  value={formData.type_vehicule || ''}
-                  onChange={handleChange}
-                  placeholder="Ex: Autopompe, Citerne, Pick-up"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Marque</label>
-                  <input
-                    type="text"
-                    name="marque"
-                    value={formData.marque || ''}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Modèle</label>
-                  <input
-                    type="text"
-                    name="modele"
-                    value={formData.modele || ''}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Année</label>
-                  <input
-                    type="number"
-                    name="annee"
-                    value={formData.annee || ''}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Kilométrage</label>
-                  <input
-                    type="number"
-                    name="kilometrage"
-                    value={formData.kilometrage || ''}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>VIN</label>
-                <input
-                  type="text"
-                  name="vin"
-                  value={formData.vin || ''}
-                  onChange={handleChange}
-                  placeholder="Numéro d'identification du véhicule"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Statut</label>
-                <select
-                  name="statut"
-                  value={formData.statut || 'actif'}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="actif">Actif</option>
-                  <option value="maintenance">En maintenance</option>
-                  <option value="retraite">Retraité</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de mise en service</label>
-                <input
-                  type="date"
-                  name="date_mise_service"
-                  value={formData.date_mise_service || ''}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Notes</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes || ''}
-                  onChange={handleChange}
-                  rows="3"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </>
+            <VehiculeForm formData={formData} handleChange={handleChange} />
           ) : (
-            <>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Nom de la borne *
-                </label>
-                <input
-                  type="text"
-                  name="nom"
-                  value={formData.nom || ''}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ex: Allen, Borne Wallace"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Type de borne *</label>
-                <select
-                  name="type_borne"
-                  value={formData.type_borne || 'seche'}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="seche">Borne sèche</option>
-                  <option value="fontaine">Borne fontaine</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Municipalité</label>
-                <input
-                  type="text"
-                  name="municipalite"
-                  value={formData.municipalite || ''}
-                  onChange={handleChange}
-                  placeholder="Ex: Canton de Shefford"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Adresse</label>
-                <input
-                  type="text"
-                  name="adresse"
-                  value={formData.adresse || ''}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Transversale</label>
-                <input
-                  type="text"
-                  name="transversale"
-                  value={formData.transversale || ''}
-                  onChange={handleChange}
-                  placeholder="Ex: Chemin Wallace"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Débit</label>
-                <input
-                  type="text"
-                  name="debit"
-                  value={formData.debit || ''}
-                  onChange={handleChange}
-                  placeholder="Ex: 1000 GPM"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Lien Google Maps</label>
-                <input
-                  type="url"
-                  name="lien_maps"
-                  value={formData.lien_maps || ''}
-                  onChange={handleChange}
-                  placeholder="https://maps.app.goo.gl/..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Statut</label>
-                <select
-                  name="statut"
-                  value={formData.statut || 'operationnelle'}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="operationnelle">Opérationnelle</option>
-                  <option value="hors_service">Hors service</option>
-                  <option value="a_verifier">À vérifier</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Notes importantes</label>
-                <textarea
-                  name="notes_importantes"
-                  value={formData.notes_importantes || ''}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder="Allumer vos gyrophares, attention aux petites roches..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </>
+            <BorneForm formData={formData} handleChange={handleChange} />
           )}
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
                 flex: 1,
-                padding: '10px',
+                padding: '12px',
                 backgroundColor: '#95a5a6',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '14px'
+                fontSize: '15px',
+                fontWeight: 'bold'
               }}
             >
               Annuler
@@ -872,13 +717,14 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
               type="submit"
               style={{
                 flex: 1,
-                padding: '10px',
+                padding: '12px',
                 backgroundColor: '#27ae60',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '14px'
+                fontSize: '15px',
+                fontWeight: 'bold'
               }}
             >
               {mode === 'create' ? 'Créer' : 'Enregistrer'}
@@ -889,5 +735,469 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
     </div>
   );
 };
+
+const VehiculeForm = ({ formData, handleChange }) => (
+  <>
+    <FormField
+      label="Nom du véhicule *"
+      name="nom"
+      value={formData.nom || ''}
+      onChange={handleChange}
+      required
+      placeholder="Ex: Autopompe 391, Citerne 301"
+    />
+
+    <FormField
+      label="Type de véhicule"
+      name="type_vehicule"
+      type="select"
+      value={formData.type_vehicule || 'Autopompe'}
+      onChange={handleChange}
+      options={[
+        { value: 'Autopompe', label: 'Autopompe' },
+        { value: 'Citerne', label: 'Citerne' },
+        { value: 'Échelle', label: 'Échelle' },
+        { value: 'Pick-up', label: 'Pick-up' },
+        { value: 'VUS', label: 'VUS' },
+        { value: 'Autre', label: 'Autre' }
+      ]}
+    />
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+      <FormField
+        label="Marque"
+        name="marque"
+        value={formData.marque || ''}
+        onChange={handleChange}
+        placeholder="Ex: Freightliner, Ford"
+      />
+      <FormField
+        label="Modèle"
+        name="modele"
+        value={formData.modele || ''}
+        onChange={handleChange}
+        placeholder="Ex: M2 106, F-550"
+      />
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+      <FormField
+        label="Année"
+        name="annee"
+        type="number"
+        value={formData.annee || ''}
+        onChange={handleChange}
+        placeholder="2020"
+      />
+      <FormField
+        label="Statut"
+        name="statut"
+        type="select"
+        value={formData.statut || 'actif'}
+        onChange={handleChange}
+        options={[
+          { value: 'actif', label: 'En service' },
+          { value: 'maintenance', label: 'En maintenance' },
+          { value: 'retraite', label: 'Retraité' }
+        ]}
+      />
+    </div>
+
+    <FormField
+      label="VIN (Numéro d'identification)"
+      name="vin"
+      value={formData.vin || ''}
+      onChange={handleChange}
+      placeholder="17 caractères"
+    />
+
+    <FormField
+      label="Notes"
+      name="notes"
+      type="textarea"
+      value={formData.notes || ''}
+      onChange={handleChange}
+      rows={3}
+    />
+  </>
+);
+
+const BorneForm = ({ formData, handleChange }) => (
+  <>
+    <FormField
+      label="Nom de la borne *"
+      name="nom"
+      value={formData.nom || ''}
+      onChange={handleChange}
+      required
+      placeholder="Ex: Allen, Borne Wallace"
+    />
+
+    <FormField
+      label="Type de borne *"
+      name="type_borne"
+      type="select"
+      value={formData.type_borne || 'seche'}
+      onChange={handleChange}
+      required
+      options={[
+        { value: 'seche', label: 'Borne sèche' },
+        { value: 'fontaine', label: 'Borne fontaine' }
+      ]}
+    />
+
+    <FormField
+      label="Municipalité"
+      name="municipalite"
+      value={formData.municipalite || ''}
+      onChange={handleChange}
+      placeholder="Ex: Canton de Shefford"
+    />
+
+    <FormField
+      label="Adresse"
+      name="adresse"
+      value={formData.adresse || ''}
+      onChange={handleChange}
+    />
+
+    <FormField
+      label="Transversale"
+      name="transversale"
+      value={formData.transversale || ''}
+      onChange={handleChange}
+      placeholder="Ex: Chemin Wallace"
+    />
+
+    <FormField
+      label="Débit"
+      name="debit"
+      value={formData.debit || ''}
+      onChange={handleChange}
+      placeholder="Ex: 1000 GPM"
+    />
+
+    <FormField
+      label="Lien Google Maps"
+      name="lien_maps"
+      value={formData.lien_maps || ''}
+      onChange={handleChange}
+      placeholder="https://maps.app.goo.gl/..."
+    />
+
+    <FormField
+      label="Statut"
+      name="statut"
+      type="select"
+      value={formData.statut || 'operationnelle'}
+      onChange={handleChange}
+      options={[
+        { value: 'operationnelle', label: 'Opérationnelle' },
+        { value: 'hors_service', label: 'Hors service' },
+        { value: 'a_verifier', label: 'À vérifier' }
+      ]}
+    />
+
+    <FormField
+      label="Notes importantes"
+      name="notes_importantes"
+      type="textarea"
+      value={formData.notes_importantes || ''}
+      onChange={handleChange}
+      rows={3}
+      placeholder="Ex: Allumer vos gyrophares, attention aux petites roches..."
+    />
+  </>
+);
+
+const FormField = ({ label, name, value, onChange, type = 'text', required = false, placeholder = '', options = [], rows = 3 }) => (
+  <div style={{ marginBottom: '20px' }}>
+    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2c3e50' }}>
+      {label}
+    </label>
+    {type === 'textarea' ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        rows={rows}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '10px',
+          border: '1px solid #ddd',
+          borderRadius: '6px',
+          fontSize: '14px',
+          fontFamily: 'inherit'
+        }}
+      />
+    ) : type === 'select' ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        style={{
+          width: '100%',
+          padding: '10px',
+          border: '1px solid #ddd',
+          borderRadius: '6px',
+          fontSize: '14px'
+        }}
+      >
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '10px',
+          border: '1px solid #ddd',
+          borderRadius: '6px',
+          fontSize: '14px'
+        }}
+      />
+    )}
+  </div>
+);
+
+const QRCodeModal = ({ qrCodeData, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      padding: '40px',
+      maxWidth: '500px',
+      textAlign: 'center'
+    }}>
+      <h2 style={{ marginTop: 0 }}>📱 QR Code - {qrCodeData.item_name}</h2>
+      <img 
+        src={qrCodeData.qr_code} 
+        alt="QR Code" 
+        style={{ width: '300px', height: '300px', margin: '20px 0' }}
+      />
+      <p style={{ fontSize: '13px', color: '#666', wordBreak: 'break-all' }}>
+        {qrCodeData.qr_code_url}
+      </p>
+      <button
+        onClick={onClose}
+        style={{
+          marginTop: '20px',
+          padding: '12px 30px',
+          backgroundColor: '#3498db',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '15px',
+          fontWeight: 'bold'
+        }}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+);
+
+const FicheVieModal = ({ ficheVieData, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      padding: '30px',
+      maxWidth: '700px',
+      width: '90%',
+      maxHeight: '80vh',
+      overflow: 'auto'
+    }}>
+      <h2 style={{ marginTop: 0 }}>📋 Fiche de vie - {ficheVieData.vehicle_name}</h2>
+      <p style={{ color: '#666', marginBottom: '20px' }}>
+        {ficheVieData.vehicle_type} • Créé le {new Date(ficheVieData.created_at).toLocaleString('fr-CA')}
+      </p>
+
+      {ficheVieData.logs && ficheVieData.logs.length > 0 ? (
+        <div style={{ marginTop: '20px' }}>
+          {ficheVieData.logs.map((log, index) => (
+            <div key={index} style={{
+              padding: '15px',
+              backgroundColor: '#f8f9fa',
+              borderLeft: '4px solid #3498db',
+              marginBottom: '10px',
+              borderRadius: '4px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <strong style={{ color: '#2c3e50' }}>{log.action}</strong>
+                <span style={{ fontSize: '13px', color: '#7f8c8d' }}>
+                  {new Date(log.date).toLocaleString('fr-CA')}
+                </span>
+              </div>
+              <p style={{ margin: '5px 0', color: '#555' }}>{log.details}</p>
+              <p style={{ margin: '5px 0', fontSize: '13px', color: '#7f8c8d' }}>
+                Par: {log.user_name}
+              </p>
+              {log.gps && (
+                <p style={{ margin: '5px 0', fontSize: '12px', color: '#95a5a6' }}>
+                  📍 GPS: {log.gps[1]}, {log.gps[0]}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style={{ textAlign: 'center', color: '#999', padding: '40px' }}>
+          Aucune entrée dans la fiche de vie
+        </p>
+      )}
+
+      <button
+        onClick={onClose}
+        style={{
+          marginTop: '20px',
+          padding: '12px',
+          width: '100%',
+          backgroundColor: '#3498db',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '15px',
+          fontWeight: 'bold'
+        }}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+);
+
+const InspectionHistoryModal = ({ vehicle, inspections, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      padding: '30px',
+      maxWidth: '800px',
+      width: '90%',
+      maxHeight: '80vh',
+      overflow: 'auto'
+    }}>
+      <h2 style={{ marginTop: 0 }}>📝 Historique des inspections - {vehicle.nom}</h2>
+
+      {inspections && inspections.length > 0 ? (
+        <div style={{ marginTop: '20px' }}>
+          {inspections.map((insp, index) => (
+            <div key={index} style={{
+              padding: '20px',
+              backgroundColor: insp.passed ? '#f0fdf4' : '#fee2e2',
+              borderLeft: `4px solid ${insp.passed ? '#27ae60' : '#e74c3c'}`,
+              marginBottom: '15px',
+              borderRadius: '8px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <strong style={{ fontSize: '16px' }}>
+                  {insp.passed ? '✅ Inspection réussie' : '❌ Défaut(s) détecté(s)'}
+                </strong>
+                <span style={{ fontSize: '13px', color: '#666' }}>
+                  {new Date(insp.inspection_date).toLocaleString('fr-CA')}
+                </span>
+              </div>
+              
+              <p style={{ margin: '5px 0' }}>
+                <strong>Inspecteur:</strong> {insp.inspector_name}
+                {insp.inspector_matricule && ` (${insp.inspector_matricule})`}
+              </p>
+              
+              {insp.comments && (
+                <p style={{ margin: '10px 0', fontStyle: 'italic', color: '#555' }}>
+                  "{insp.comments}"
+                </p>
+              )}
+
+              {insp.defects && insp.defects.length > 0 && (
+                <div style={{ marginTop: '10px' }}>
+                  <strong>Défectuosités:</strong>
+                  <ul style={{ marginTop: '5px' }}>
+                    {insp.defects.map((defect, i) => (
+                      <li key={i} style={{ 
+                        color: defect.severity === 'majeure' ? '#c0392b' : '#f39c12',
+                        marginBottom: '5px'
+                      }}>
+                        <strong>{defect.item}</strong> ({defect.severity}): {defect.description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style={{ textAlign: 'center', color: '#999', padding: '40px' }}>
+          Aucune inspection enregistrée pour ce véhicule
+        </p>
+      )}
+
+      <button
+        onClick={onClose}
+        style={{
+          marginTop: '20px',
+          padding: '12px',
+          width: '100%',
+          backgroundColor: '#3498db',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '15px',
+          fontWeight: 'bold'
+        }}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+);
 
 export default GestionActifs;
