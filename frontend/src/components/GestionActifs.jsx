@@ -39,7 +39,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       setVehicules(data);
     } catch (error) {
       console.error('Erreur lors du chargement des véhicules:', error);
-      alert('Erreur lors du chargement des véhicules');
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors du chargement des véhicules: ' + errorMessage);
     } finally {
       setLoading(false);
     }
