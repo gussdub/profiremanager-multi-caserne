@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import InventairesTab from './GestionInventaires';
 
-const GestionActifs = () => {
-  const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules', 'bornes', ou 'inventaires'
+const GestionActifs = ({ user, ModuleEPI }) => {
+  const [activeTab, setActiveTab] = useState('vehicules'); // 'vehicules', 'bornes', 'inventaires', ou 'epi'
   const [vehicules, setVehicules] = useState([]);
   const [bornes, setBornes] = useState([]);
   const [modeles, setModeles] = useState([]);
