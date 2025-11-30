@@ -16,6 +16,7 @@ import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
 import Chart from "react-apexcharts";
 import RapportHeuresModal from "./components/RapportHeuresModal";
+import AuditModal from "./components/AuditModal";
 import "./App.css";
 
 // Lazy loading pour optimiser les performances
