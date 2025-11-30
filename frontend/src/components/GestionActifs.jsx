@@ -22,9 +22,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [inspectionHistory, setInspectionHistory] = useState([]);
 
-  const backendUrl = process.env.REACT_APP_BACKEND_URL;
-  const token = localStorage.getItem('token');
-  const tenantSlug = localStorage.getItem('tenantSlug');
+  const { tenantSlug } = useTenant();
 
   useEffect(() => {
     if (activeTab === 'vehicules') {
