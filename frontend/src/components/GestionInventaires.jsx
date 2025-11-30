@@ -193,7 +193,7 @@ const InventairesTab = ({ tenantSlug }) => {
 };
 
 // Vue des modèles d'inventaire
-const ModelesView = ({ modeles, onEdit, backendUrl, token, tenantSlug, fetchModeles }) => {
+const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles }) => {
   const handleDelete = async (modeleId) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
 
