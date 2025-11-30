@@ -480,6 +480,24 @@ backend:
         agent: "testing"
         comment: "🎯 ROOT CAUSE IDENTIFIÉE - EXCLUSION PAR LIMITES D'HEURES HEBDOMADAIRES! Test ciblé complété avec succès. PROBLÈME CONFIRMÉ: ✅ Sébastien Charest identifié (ID: ab40b1d6-b8b6-4007-9caa-f2abf1ba2347, Email: sebas.charest18@hotmail.com, heures_max_semaine: 18, type_emploi: temps_plein, 9 compétences), ✅ Auto-attribution lancée pour semaine 2025-11-03 (status 200), ✅ Logs spécifiques trouvés dans backend.err.log. LOGS CRITIQUES ANALYSÉS: 🔍 [HEURES] Sébastien Charest - Vérification heures: heures_max_semaine: 18, heures_semaine_actuelle: 24, duree_garde: 8, total_si_assigné: 32, dépasse_limite: True, ❌ [HEURES] Sébastien Charest EXCLU pour dépassement limite heures! DIAGNOSTIC FINAL: Sébastien est exclu AVANT la vérification des compétences car il a déjà 24h cette semaine (dépasse ses 18h max). L'algorithme fonctionne correctement - il protège contre le dépassement des limites d'heures hebdomadaires. SOLUTION: Réduire les assignations actuelles de Sébastien ou augmenter sa limite heures_max_semaine si approprié. Tenant: shefford, Auth: gussdub@gmail.com / ***PASSWORD***."
 
+  - task: "Gestion des Actifs - Phase 1 Frontend Integration"
+    implemented: true
+    working: true
+    file: "frontend/src/components/GestionActifs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Module Gestion des Actifs Phase 1 implémenté avec backend complet (CRUD véhicules/bornes, inspections SAAQ, QR codes, fiche de vie) et frontend amélioré (nouveaux composants pour afficher véhicules, bornes, QR codes, fiche de vie). Problème actuel: L'API backend retourne bien des véhicules, mais le frontend affiche 'Aucun véhicule enregistré'. NEEDS COMPREHENSIVE TESTING pour identifier la cause du problème d'affichage et valider toutes les nouvelles fonctionnalités (création véhicule, génération QR code, fiche de vie)."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL AUTHENTICATION ISSUE IDENTIFIED - Root cause found: GestionActifs component had authentication problems causing 401 errors when fetching vehicles. Issues: 1) Using localStorage.getItem('token') instead of tenant-specific token utility, 2) Using localStorage.getItem('tenantSlug') instead of URL-based tenant context, 3) Manual axios calls instead of proper API utilities. Console showed: 'Failed to load resource: the server responded with a status of 401 ()' and 'Erreur lors du chargement des véhicules: AxiosError'. This explains why frontend showed 'Aucun véhicule enregistré' despite backend returning data correctly."
+      - working: true
+        agent: "testing"
+        comment: "🎉 GESTION DES ACTIFS PHASE 1 FULLY FUNCTIONAL - Authentication issues fixed and comprehensive testing completed successfully! FIXES APPLIED: 1) ✅ Added proper imports: useTenant context and API utilities (apiGet, apiPost, apiPut, apiDelete), 2) ✅ Replaced localStorage.getItem('tenantSlug') with useTenant() hook, 3) ✅ Replaced localStorage.getItem('token') with proper tenant-specific token handling, 4) ✅ Converted all manual axios calls to use API utilities with proper authentication. COMPREHENSIVE TESTING RESULTS: 1) ✅ LOGIN & NAVIGATION: Successful login with gussdub@gmail.com / 230685Juin+, proper navigation to Asset Management module, 2) ✅ VEHICLE LOADING: Fixed 401 errors, now loads existing vehicles correctly (found 2 vehicles: Autopompe 391, Citerne 201), 3) ✅ VEHICLE CREATION: Successfully created 'Citerne 201' with all form fields (nom, type, marque, modèle, année, VIN, notes), form submission working perfectly, 4) ✅ QR CODE GENERATION: QR Code modal opens correctly with generated QR image and URL (https://fleet-inspection.preview.emergentagent.com/shefford/actif/vehicules/...), 5) ✅ LIFE RECORD (FICHE DE VIE): Modal opens showing vehicle history with 'created' and 'inspection_passed' entries, proper timeline display with user info and GPS coordinates, 6) ✅ INSPECTION HISTORY: Modal opens showing SAAQ inspection records with inspector details and results, 7) ✅ CHARGING STATIONS TAB: Properly shows empty state for bornes d'incendie, 8) ✅ NO CONSOLE ERRORS: All authentication issues resolved, clean API calls. All Phase 1 objectives achieved: backend integration working, vehicle CRUD operations functional, QR code generation operational, life record tracking active, inspection history accessible."
+
   - task: "Garde Externe (External Shift) Functionality"
     implemented: true
     working: true
