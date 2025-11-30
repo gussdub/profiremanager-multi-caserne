@@ -5438,21 +5438,10 @@ async def export_rapport_heures_pdf(
     from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
-    from io import BytesIO
     
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.75*inch, bottomMargin=0.75*inch)
-    elements = []
+    # Utiliser la fonction helper pour créer un PDF brandé
+    buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
     styles = getSampleStyleSheet()
-    
-    # Ajouter le logo du tenant en haut si disponible
-    if tenant.logo_url:
-        try:
-            logo = Image(tenant.logo_url, width=1.5*inch, height=0.75*inch)
-            elements.append(logo)
-            elements.append(Spacer(1, 0.2*inch))
-        except:
-            pass
     
     # Styles personnalisés
     title_style = ParagraphStyle(
