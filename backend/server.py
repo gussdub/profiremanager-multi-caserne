@@ -5016,6 +5016,110 @@ async def get_rapport_heures(
         }
     }
 
+@api_router.get("/{tenant_slug}/planning/rapport-heures/debug/{user_id}")
+async def debug_rapport_heures_user(
+    tenant_slug: str,
+    user_id: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Endpoint de diagnostic pour comprendre le calcul des heures d'un utilisateur"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer l'utilisateur
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Récupérer TOUTES les assignations (avec doublons éventuels)
+    assignations_brutes = await db.assignations.find({
+        "user_id": user_id,
+        "tenant_id": tenant.id,
+        "date": {"$gte": date_debut, "$lte": date_fin}
+    }, {"_id": 0}).to_list(10000)
+    
+    # Déduplication
+    assignations_uniques = {}
+    doublons = []
+    for a in assignations_brutes:
+        key = f"{a['user_id']}_{a['type_garde_id']}_{a['date']}"
+        if key not in assignations_uniques:
+            assignations_uniques[key] = a
+        else:
+            doublons.append(a)
+    
+    assignations = list(assignations_uniques.values())
+    
+    # Récupérer les types de garde
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    types_garde_map = {t["id"]: t for t in types_garde}
+    
+    # Calculer les détails
+    details = []
+    total_heures = 0
+    total_heures_calculees = 0
+    
+    for a in assignations:
+        type_garde = types_garde_map.get(a["type_garde_id"])
+        if type_garde:
+            duree_stored = type_garde.get("duree_heures", None)
+            
+            # Calculer la durée réelle à partir des horaires
+            duree_calculee = None
+            if type_garde.get("heure_debut") and type_garde.get("heure_fin"):
+                try:
+                    from datetime import datetime
+                    debut = datetime.strptime(type_garde["heure_debut"], "%H:%M")
+                    fin = datetime.strptime(type_garde["heure_fin"], "%H:%M")
+                    if fin < debut:
+                        fin = fin.replace(day=debut.day + 1)
+                    delta = (fin - debut).total_seconds() / 3600
+                    duree_calculee = round(delta, 2)
+                except:
+                    duree_calculee = None
+            
+            # Durée utilisée par le code (celle dans le rapport)
+            duree_utilisee = duree_stored if duree_stored is not None else 8
+            
+            total_heures += duree_utilisee
+            if duree_calculee:
+                total_heures_calculees += duree_calculee
+            
+            details.append({
+                "date": a["date"],
+                "type_garde_nom": type_garde.get("nom"),
+                "type_garde_id": a["type_garde_id"],
+                "heure_debut": type_garde.get("heure_debut"),
+                "heure_fin": type_garde.get("heure_fin"),
+                "duree_stored_bd": duree_stored,
+                "duree_calculee_horaires": duree_calculee,
+                "duree_utilisee_rapport": duree_utilisee,
+                "est_garde_externe": type_garde.get("est_garde_externe", False)
+            })
+    
+    return {
+        "user": {
+            "id": user["id"],
+            "nom_complet": f"{user.get('prenom')} {user.get('nom')}",
+            "email": user.get("email"),
+            "heures_max_semaine": user.get("heures_max_semaine", 40)
+        },
+        "periode": f"{date_debut} au {date_fin}",
+        "compteurs": {
+            "assignations_brutes": len(assignations_brutes),
+            "assignations_uniques": len(assignations),
+            "doublons_detectes": len(doublons),
+            "total_heures_rapport": total_heures,
+            "total_heures_reelles_calculees": total_heures_calculees
+        },
+        "assignations_details": sorted(details, key=lambda x: x["date"]),
+        "doublons": doublons[:10] if doublons else []
+    }
+
 @api_router.get("/{tenant_slug}/planning/rapport-heures/export-pdf")
 async def export_rapport_heures_pdf(
     tenant_slug: str,
