@@ -6792,6 +6792,59 @@ const Planning = () => {
     }
   };
 
+  const handleNettoyerAssignationsInvalides = async () => {
+    if (user.role !== 'admin') {
+      toast({
+        title: "Accès refusé",
+        description: "Cette action est réservée aux administrateurs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!window.confirm("⚠️ Voulez-vous supprimer toutes les assignations qui ne respectent pas les jours d'application des types de garde?\n\nCette action est irréversible.")) {
+      return;
+    }
+
+    try {
+      toast({
+        title: "Nettoyage en cours...",
+        description: "Suppression des assignations invalides"
+      });
+
+      const response = await fetch(buildApiUrl(tenantSlug, '/planning/supprimer-assignations-invalides'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getTenantToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du nettoyage');
+      }
+
+      const data = await response.json();
+
+      toast({
+        title: "Nettoyage terminé",
+        description: `${data.deleted_count} assignation(s) invalide(s) supprimée(s)`,
+        variant: "success"
+      });
+
+      // Recharger les assignations
+      chargerAssignations();
+      
+    } catch (error) {
+      console.error('Erreur nettoyage:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de nettoyer les assignations invalides",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAttributionAuto = async () => {
     if (user.role === 'employe') return;
 
