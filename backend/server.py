@@ -8099,12 +8099,11 @@ async def export_rapport_competences(
         raise HTTPException(status_code=400, detail="Format non supporté")
 
 
-async def generer_pdf_competences(rapport_data, annee, user_nom):
+async def generer_pdf_competences(rapport_data, annee, user_nom, tenant):
     """Génère un PDF pour le rapport par compétences"""
-    buffer = io.BytesIO()
     
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    story = []
+    # Utiliser la fonction helper pour créer un PDF brandé
+    buffer, doc, story = create_branded_pdf(tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = getSampleStyleSheet()
     
     title_style = ParagraphStyle(
