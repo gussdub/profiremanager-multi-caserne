@@ -1321,6 +1321,18 @@ test_plan:
         agent: "testing"
         comment: "✅ PREVENTION MODULE CONFIGURATION DIAGNOSTIC COMPLETE - ROOT CAUSE IDENTIFIED! Comprehensive testing completed with 100% success rate (5/5 tests passed). CRITICAL FINDINGS: 1) ✅ Super Admin Authentication: Successfully authenticated with gussdub@icloud.com / ***PASSWORD*** credentials, 2) ✅ Shefford Configuration: GET /api/admin/tenants/by-slug/shefford returns parametres.module_prevention_active = false (matches admin interface showing NO prevention), 3) ✅ Demo Configuration: GET /api/admin/tenants/by-slug/demo returns parametres.module_prevention_active = true (matches admin interface showing HAS prevention), 4) ✅ Data Consistency: GET /api/admin/tenants confirms same values - Shefford: false, Demo: true, 5) ✅ Problem Analysis: Database values MATCH admin interface expectations perfectly. ROOT CAUSE IDENTIFIED: The problem is NOT in the backend database or admin endpoints - values are correct. The issue is in the FRONTEND LOGIC that reads parametres.module_prevention_active to show/hide the Prevention module in the navigation menu. Frontend is either not reading the parametres field correctly, has inverted logic, or caching old values. BACKEND IS WORKING CORRECTLY - this is a FRONTEND issue with module visibility logic."
 
+  - task: "Gestion des Actifs - Amélioration Gestion d'Erreur Création Véhicule"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/GestionActifs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE - Amélioration de la gestion des erreurs dans l'API utility et le composant GestionActifs pour mieux afficher les messages d'erreur lors de la création de véhicules. Modifications apportées pour éviter l'affichage de '[object Object]' et fournir des messages d'erreur plus clairs et informatifs. NEEDS COMPREHENSIVE TESTING pour vérifier: 1) La création normale de véhicule avec tous les champs remplis fonctionne correctement, 2) La gestion d'erreur avec des données vides ou invalides affiche des messages clairs, 3) Tous les véhicules créés s'affichent correctement dans la liste."
+
 agent_communication:
   - agent: "testing"
     message: "🔍 PREVENTION MODULE CONFIGURATION DIAGNOSTIC COMPLETE - ROOT CAUSE IDENTIFIED! Comprehensive testing of the reported inverse problem completed successfully. USER REPORT: Admin interface shows Shefford=NO prevention, Demo=HAS prevention, but users see opposite (Shefford sees prevention, Demo doesn't). BACKEND TESTING RESULTS: 1) ✅ Database values are CORRECT: Shefford parametres.module_prevention_active = false, Demo parametres.module_prevention_active = true, 2) ✅ Admin endpoints working perfectly: GET /api/admin/tenants/by-slug/{slug} returns correct values, 3) ✅ Data consistency confirmed via both individual and list endpoints. CRITICAL FINDING: The backend database and admin interface are showing the SAME correct values. The problem is in the FRONTEND LOGIC that determines module visibility based on parametres.module_prevention_active. The frontend is either: 1) Not reading the parametres field correctly from login/tenant data, 2) Has inverted boolean logic (showing when false, hiding when true), 3) Caching old configuration values, 4) Using wrong tenant context. RECOMMENDATION: Main agent should investigate frontend module visibility logic, specifically how parametres.module_prevention_active is used to show/hide the Prevention module in navigation menu. Backend is working correctly."
