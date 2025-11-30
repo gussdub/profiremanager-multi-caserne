@@ -118,10 +118,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     }
 
     try {
-      await axios.delete(
-        `${backendUrl}/api/${tenantSlug}/actifs/${activeTab}/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await apiDelete(tenantSlug, `/actifs/${activeTab}/${id}`);
       
       alert('✅ Supprimé avec succès!');
       if (activeTab === 'vehicules') {
