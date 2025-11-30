@@ -1403,6 +1403,42 @@ class BrandedDocTemplate(BaseDocTemplate):
         
         self.canv.restoreState()
 
+
+
+def create_branded_pdf(tenant, pagesize=A4, **kwargs):
+    """
+    Fonction helper pour créer un PDF brandé avec logo et footer
+    
+    Args:
+        tenant: L'objet tenant
+        pagesize: Taille de la page (A4, letter, etc.)
+        **kwargs: Arguments additionnels pour BrandedDocTemplate
+        
+    Returns:
+        tuple: (buffer, doc, elements_with_header)
+        - buffer: BytesIO object
+        - doc: BrandedDocTemplate instance
+        - elements_with_header: Liste avec logo et header déjà ajoutés
+    """
+    from io import BytesIO
+    from reportlab.lib.styles import getSampleStyleSheet
+    
+    buffer = BytesIO()
+    
+    # Utiliser les marges par défaut si non spécifiées
+    if 'topMargin' not in kwargs:
+        kwargs['topMargin'] = 0.75 * inch
+    if 'bottomMargin' not in kwargs:
+        kwargs['bottomMargin'] = 0.75 * inch
+    
+    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=pagesize, **kwargs)
+    styles = getSampleStyleSheet()
+    
+    # Créer les éléments de base avec logo et header
+    elements = create_pdf_logo_header(tenant, styles)
+    
+    return buffer, doc, elements
+
 # ==================== FIN HELPERS PDF ====================
 
 def get_password_hash(password: str) -> str:
