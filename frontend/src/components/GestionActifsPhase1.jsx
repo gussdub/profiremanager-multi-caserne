@@ -48,11 +48,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const fetchBornes = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${backendUrl}/api/${tenantSlug}/actifs/bornes`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setBornes(response.data);
+      const data = await apiGet(tenantSlug, '/actifs/bornes');
+      setBornes(data);
     } catch (error) {
       console.error('Erreur lors du chargement des bornes:', error);
       alert('Erreur lors du chargement des bornes');
