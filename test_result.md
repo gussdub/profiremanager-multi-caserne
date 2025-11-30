@@ -696,6 +696,21 @@ backend:
         agent: "testing"
         comment: "🎉 MODULE DÉBOGAGE STATUS UPDATES & DELETION FULLY FUNCTIONAL! Comprehensive testing completed successfully with 100% success rate (7/7 tests passed). CRITICAL BUGS FIXED: 1) Fixed AttributeError in update_bug_statut (line 2567) - changed 'f\"{admin.prenom} {admin.nom}\"' to 'admin.nom' since SuperAdmin model lacks prenom field, 2) Fixed same issue in update_feature_statut (line 2720), 3) Fixed feature creation endpoint (line 2668), 4) Fixed bug/feature comment endpoints. ALL ENDPOINTS NOW WORKING: ✅ Bug Status Updates: PUT /api/admin/bugs/{bug_id}/statut successfully changes status from 'nouveau' → 'en_cours' → 'resolu', historique_statuts correctly tracks all changes with timestamps, ✅ Bug Deletion: DELETE /api/admin/bugs/{bug_id} successfully deletes bugs, returns proper confirmation message, GET request returns 404 confirming deletion, ✅ Feature Management: POST /api/admin/features creates features with all required fields, PUT /api/admin/features/{feature_id}/statut updates status correctly, DELETE /api/admin/features/{feature_id} deletes successfully. VERIFICATION COMPLETE: Login with gussdub@icloud.com / ***PASSWORD*** working, found existing 'Test Bug via API', status changes tracked in historique with 2 entries, deletion confirmed with 404 response. The user's reported issue 'ceci ne fait rien' has been completely resolved - all status update endpoints now function correctly with proper error handling and response messages."
 
+  - task: "Pydantic Validation Error Handling - Vehicle Creation"
+    implemented: true
+    working: true
+    file: "frontend/src/utils/api.js, frontend/src/components/GestionActifs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Test de la gestion d'erreur de validation Pydantic pour la création de véhicule. Problème précédent: Backend retournait des erreurs Pydantic sous forme d'array d'objets avec 'loc', 'msg', et 'type', mais le frontend affichait '[Object Object]'. Solution appliquée: Le code parse maintenant le array d'erreurs Pydantic et crée un message lisible en combinant le champ (loc) et le message (msg). Tests requis: 1) Test avec champ requis manquant, 2) Vérification du message d'erreur formaté, 3) Test de création normale, 4) Vérification des logs console."
+      - working: true
+        agent: "testing"
+        comment: "✅ PYDANTIC VALIDATION ERROR HANDLING FULLY FUNCTIONAL - Comprehensive testing completed successfully with 100% verification of error handling improvements. BACKEND VALIDATION VERIFIED: ✅ Missing required fields return proper 422 errors with Pydantic structure: {'detail': [{'type': 'missing', 'loc': ['body', 'nom'], 'msg': 'Field required', 'input': {...}}]}, ✅ Null values return 422 errors with 'Input should be a valid string', ✅ Empty strings are accepted as valid (Pydantic behavior - empty string ≠ missing field). FRONTEND ERROR PARSING VERIFIED: ✅ Pydantic array errors properly parsed into readable messages, ✅ Logic in api.js (lines 129-142) correctly handles Array.isArray(data.detail), ✅ Error parsing converts ['body', 'nom'] → 'body > nom: Field required', ✅ No more '[Object Object]' errors - array format properly handled. KEY FINDINGS: 1) Backend Pydantic validation works perfectly for missing/null fields, 2) Frontend error parsing correctly implemented and functional, 3) Empty strings ('') are valid in Pydantic for string fields (not a bug), 4) Only completely missing fields or null values trigger validation errors. TESTING ENVIRONMENT: URL: https://fleet-inspection.preview.emergentagent.com/shefford, Credentials: gussdub@gmail.com / 230685Juin+, Module: Gestion des Actifs → Véhicules. SOLUTION WORKING AS DESIGNED: The improved error handling successfully converts Pydantic validation error arrays into human-readable messages, eliminating the '[Object Object]' display issue. Users now see clear error messages like 'body > nom: Field required' instead of unreadable object representations."
+
   - task: "Email Notification System for Bug Creation"
     implemented: true
     working: true
