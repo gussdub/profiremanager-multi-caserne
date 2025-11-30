@@ -5219,6 +5219,64 @@ async def rapport_assignations_invalides(
         "toutes_invalides": sorted(assignations_invalides, key=lambda x: (x["date"], x["user_nom_complet"]))
     }
 
+@api_router.post("/{tenant_slug}/planning/supprimer-assignations-invalides")
+async def supprimer_assignations_invalides(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime toutes les assignations qui ne respectent pas les jours_application"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # D'abord, récupérer le rapport des invalides
+    assignations = await db.assignations.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(10000)
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    types_garde_map = {t["id"]: t for t in types_garde}
+    
+    jours_fr_to_en = {
+        0: "monday", 1: "tuesday", 2: "wednesday", 3: "thursday",
+        4: "friday", 5: "saturday", 6: "sunday"
+    }
+    
+    ids_to_delete = []
+    
+    for a in assignations:
+        type_garde = types_garde_map.get(a["type_garde_id"])
+        if not type_garde:
+            continue
+        
+        jours_application = type_garde.get("jours_application", [])
+        if not jours_application:
+            continue
+        
+        try:
+            from datetime import datetime
+            date_obj = datetime.strptime(a["date"], "%Y-%m-%d")
+            jour_semaine_en = jours_fr_to_en[date_obj.weekday()]
+            
+            if jour_semaine_en not in jours_application:
+                ids_to_delete.append(a["id"])
+        except:
+            pass
+    
+    # Supprimer
+    if ids_to_delete:
+        result = await db.assignations.delete_many({
+            "id": {"$in": ids_to_delete},
+            "tenant_id": tenant.id
+        })
+        deleted_count = result.deleted_count
+    else:
+        deleted_count = 0
+    
+    return {
+        "message": f"Supprimé {deleted_count} assignations invalides",
+        "deleted_count": deleted_count,
+        "ids_supprimes": ids_to_delete[:50]  # Max 50 pour la réponse
+    }
+
 @api_router.post("/{tenant_slug}/planning/recalculer-durees-gardes")
 async def recalculer_durees_gardes(
     tenant_slug: str,
