@@ -182,8 +182,6 @@ const InventairesTab = ({ tenantSlug }) => {
           vehicules={vehicules}
           modeles={modeles}
           onClose={() => setShowInspectionModal(false)}
-          backendUrl={backendUrl}
-          token={token}
           tenantSlug={tenantSlug}
           fetchInspections={fetchInspections}
         />
