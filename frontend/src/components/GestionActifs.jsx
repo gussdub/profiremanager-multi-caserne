@@ -240,6 +240,21 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         >
           📋 Inventaires
         </button>
+        <button
+          onClick={() => setActiveTab('epi')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: activeTab === 'epi' ? '#e74c3c' : 'transparent',
+            color: activeTab === 'epi' ? 'white' : '#333',
+            border: 'none',
+            borderBottom: activeTab === 'epi' ? '3px solid #e74c3c' : 'none',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          🛡️ Gestion EPI
+        </button>
       </div>
 
       {/* Content */}
