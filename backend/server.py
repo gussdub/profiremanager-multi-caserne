@@ -23430,6 +23430,367 @@ async def delete_inspection_inventaire(
     return {"message": "Inspection supprimée avec succès"}
 
 
+# ==================== GESTION DES ACTIFS - INSPECTIONS SAAQ MODELS ====================
+
+class DefectDetail(BaseModel):
+    """Détail d'une défectuosité identifiée"""
+    item: str  # Ex: "Freins avant", "Pneu avant gauche"
+    severity: str  # "mineure" ou "majeure"
+    description: str
+    photo_url: Optional[str] = None
+    reported_by: str
+    reported_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    resolved: bool = False
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
+
+class InspectionSAAQ(BaseModel):
+    """Inspection de sécurité SAAQ (Ronde pré-départ)"""
+    id: str = Field(default_factory=lambda: f"insp_{str(uuid.uuid4())[:8]}")
+    tenant_id: str
+    vehicle_id: str
+    
+    # Inspecteur
+    inspector_id: str
+    inspector_name: str
+    inspector_matricule: Optional[str] = None
+    
+    # Signature électronique
+    signature_certify: bool = False  # "Je certifie avoir effectué cette inspection"
+    signature_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    signature_gps: Optional[List[float]] = None  # [longitude, latitude]
+    
+    # Date/Heure inspection
+    inspection_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Checklist (Structure flexible pour différents types de véhicules)
+    checklist: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Défectuosités
+    defects: List[DefectDetail] = []
+    has_major_defect: bool = False  # Flag pour hors service
+    
+    # Photos
+    photo_urls: List[str] = []
+    
+    # Résultat
+    passed: bool = True
+    comments: Optional[str] = None
+    
+    # Offline sync (pour Atlas Device Sync)
+    synced: bool = False
+    created_offline: bool = False
+    device_id: Optional[str] = None
+    
+    # Métadonnées
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionSAAQCreate(BaseModel):
+    vehicle_id: str
+    inspector_id: str
+    inspector_name: str
+    inspector_matricule: Optional[str] = None
+    signature_certify: bool
+    signature_gps: Optional[List[float]] = None
+    checklist: Dict[str, Any]
+    defects: List[DefectDetail] = []
+    photo_urls: List[str] = []
+    comments: Optional[str] = None
+    device_id: Optional[str] = None
+
+class AuditLogEntry(BaseModel):
+    """Entrée dans la fiche de vie d'un actif"""
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+    user_name: str
+    action: str  # Ex: "created", "updated", "inspected", "repaired", "status_changed"
+    details: Optional[str] = None
+    gps: Optional[List[float]] = None  # Position GPS si applicable
+
+# ==================== GESTION DES ACTIFS - INSPECTIONS SAAQ ENDPOINTS ====================
+
+@api_router.post("/{tenant_slug}/actifs/vehicules/{vehicle_id}/inspection-saaq")
+async def create_inspection_saaq(
+    tenant_slug: str,
+    vehicle_id: str,
+    inspection_data: InspectionSAAQCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Créer une nouvelle inspection SAAQ (Ronde de sécurité)
+    Conforme aux exigences SAAQ et Loi 430
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicle = await db.vehicules.find_one(
+        {"id": vehicle_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Créer l'inspection
+    inspection = InspectionSAAQ(
+        tenant_id=tenant.id,
+        vehicle_id=vehicle_id,
+        inspector_id=inspection_data.inspector_id,
+        inspector_name=inspection_data.inspector_name,
+        inspector_matricule=inspection_data.inspector_matricule,
+        signature_certify=inspection_data.signature_certify,
+        signature_gps=inspection_data.signature_gps,
+        checklist=inspection_data.checklist,
+        defects=inspection_data.defects,
+        photo_urls=inspection_data.photo_urls,
+        comments=inspection_data.comments,
+        device_id=inspection_data.device_id
+    )
+    
+    # Analyser les défectuosités
+    has_major = False
+    for defect in inspection.defects:
+        if defect.severity == "majeure":
+            has_major = True
+            break
+    
+    inspection.has_major_defect = has_major
+    inspection.passed = not has_major
+    
+    # Sauvegarder l'inspection
+    await db.inspections_saaq.insert_one(inspection.dict())
+    
+    # Si défaut majeur, mettre le véhicule hors service
+    if has_major:
+        await db.vehicules.update_one(
+            {"id": vehicle_id},
+            {"$set": {
+                "statut": "maintenance",
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        # Ajouter une entrée dans la fiche de vie du véhicule
+        log_entry = AuditLogEntry(
+            user_id=current_user.id,
+            user_name=f"{current_user.prenom} {current_user.nom}",
+            action="inspection_defaut_majeur",
+            details=f"Inspection SAAQ - Défaut majeur détecté. Véhicule mis hors service.",
+            gps=inspection_data.signature_gps
+        )
+        
+        await db.vehicules.update_one(
+            {"id": vehicle_id},
+            {"$push": {"logs": log_entry.dict()}}
+        )
+    else:
+        # Ajouter une entrée positive dans la fiche de vie
+        log_entry = AuditLogEntry(
+            user_id=current_user.id,
+            user_name=f"{current_user.prenom} {current_user.nom}",
+            action="inspection_passed",
+            details=f"Inspection SAAQ réussie - Aucun défaut majeur",
+            gps=inspection_data.signature_gps
+        )
+        
+        await db.vehicules.update_one(
+            {"id": vehicle_id},
+            {"$push": {"logs": log_entry.dict()}}
+        )
+    
+    # Mettre à jour la date de dernière inspection
+    await db.vehicules.update_one(
+        {"id": vehicle_id},
+        {"$set": {
+            "derniere_inspection_id": inspection.id,
+            "derniere_inspection_date": inspection.inspection_date.isoformat()
+        }}
+    )
+    
+    return {
+        "message": "Inspection créée avec succès",
+        "inspection_id": inspection.id,
+        "vehicle_status": "maintenance" if has_major else "actif",
+        "passed": inspection.passed
+    }
+
+@api_router.get("/{tenant_slug}/actifs/vehicules/{vehicle_id}/inspections")
+async def get_vehicle_inspections(
+    tenant_slug: str,
+    vehicle_id: str,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'historique des inspections d'un véhicule"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicle = await db.vehicules.find_one(
+        {"id": vehicle_id, "tenant_id": tenant.id}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Récupérer les inspections
+    inspections = await db.inspections_saaq.find(
+        {"vehicle_id": vehicle_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("inspection_date", -1).limit(limit).to_list(limit)
+    
+    return inspections
+
+@api_router.get("/{tenant_slug}/actifs/vehicules/{vehicle_id}/fiche-vie")
+async def get_vehicle_lifecycle(
+    tenant_slug: str,
+    vehicle_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère la fiche de vie complète d'un véhicule (audit trail)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer le véhicule avec ses logs
+    vehicle = await db.vehicules.find_one(
+        {"id": vehicle_id, "tenant_id": tenant.id},
+        {"_id": 0, "logs": 1, "nom": 1, "type_vehicule": 1, "created_at": 1}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    return {
+        "vehicle_id": vehicle_id,
+        "vehicle_name": vehicle.get("nom", ""),
+        "vehicle_type": vehicle.get("type_vehicule", ""),
+        "created_at": vehicle.get("created_at"),
+        "logs": vehicle.get("logs", [])
+    }
+
+@api_router.post("/{tenant_slug}/actifs/vehicules/{vehicle_id}/qr-code")
+async def generate_vehicle_qr_code(
+    tenant_slug: str,
+    vehicle_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère un QR code pour un véhicule
+    Le QR code pointe vers l'URL complète de la fiche du véhicule
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicle = await db.vehicules.find_one(
+        {"id": vehicle_id, "tenant_id": tenant.id}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Générer l'URL complète vers la fiche du véhicule
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
+    vehicle_url = f"{frontend_url}/{tenant_slug}/actifs/vehicules/{vehicle_id}"
+    
+    # Générer le QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(vehicle_url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    
+    # Encoder en base64
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+    qr_code_data_url = f"data:image/png;base64,{img_base64}"
+    
+    # Sauvegarder le QR code dans le véhicule
+    await db.vehicules.update_one(
+        {"id": vehicle_id},
+        {"$set": {
+            "qr_code": qr_code_data_url,
+            "qr_code_url": vehicle_url,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {
+        "qr_code": qr_code_data_url,
+        "qr_code_url": vehicle_url,
+        "message": "QR code généré avec succès"
+    }
+
+@api_router.post("/{tenant_slug}/actifs/bornes/{borne_id}/qr-code")
+async def generate_borne_qr_code(
+    tenant_slug: str,
+    borne_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère un QR code pour une borne d'incendie
+    Le QR code pointe vers l'URL complète de la fiche de la borne
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient au tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que la borne existe
+    borne = await db.bornes_incendie.find_one(
+        {"id": borne_id, "tenant_id": tenant.id}
+    )
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne non trouvée")
+    
+    # Générer l'URL complète vers la fiche de la borne
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
+    borne_url = f"{frontend_url}/{tenant_slug}/actifs/bornes/{borne_id}"
+    
+    # Générer le QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(borne_url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    
+    # Encoder en base64
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+    qr_code_data_url = f"data:image/png;base64,{img_base64}"
+    
+    # Sauvegarder le QR code dans la borne
+    await db.bornes_incendie.update_one(
+        {"id": borne_id},
+        {"$set": {
+            "qr_code": qr_code_data_url,
+            "qr_code_url": borne_url,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {
+        "qr_code": qr_code_data_url,
+        "qr_code_url": borne_url,
+        "message": "QR code généré avec succès"
+    }
+
+
+
 
 # Include the router in the main app
 
