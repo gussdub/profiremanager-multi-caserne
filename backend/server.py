@@ -7834,13 +7834,11 @@ async def export_rapport_presence(
         raise HTTPException(status_code=400, detail="Format non supporté")
 
 
-async def generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min):
+async def generer_pdf_presence(rapport_data, annee, type_formation, total_pompiers, pompiers_conformes, taux_conformite, pourcentage_min, tenant):
     """Génère un PDF professionnel avec graphiques"""
-    buffer = io.BytesIO()
     
-    # Configuration du document
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    story = []
+    # Utiliser la fonction helper pour créer un PDF brandé
+    buffer, doc, story = create_branded_pdf(tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = getSampleStyleSheet()
     
     # Style personnalisé pour le titre
