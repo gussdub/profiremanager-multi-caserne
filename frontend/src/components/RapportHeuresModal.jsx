@@ -160,6 +160,64 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
+  // Fonction pour gérer le tri
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // Inverser l'ordre si on clique sur la même colonne
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Nouvelle colonne, ordre ascendant par défaut
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+  
+  // Fonction pour trier les employés
+  const getSortedEmployes = () => {
+    if (!data || !data.employes) return [];
+    
+    const employes = [...data.employes];
+    
+    employes.sort((a, b) => {
+      let valA, valB;
+      
+      switch(sortField) {
+        case 'nom':
+          valA = a.nom_complet.toLowerCase();
+          valB = b.nom_complet.toLowerCase();
+          break;
+        case 'heures_internes':
+          valA = a.heures_internes;
+          valB = b.heures_internes;
+          break;
+        case 'heures_externes':
+          valA = a.heures_externes;
+          valB = b.heures_externes;
+          break;
+        case 'total_heures':
+          valA = a.total_heures;
+          valB = b.total_heures;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return employes;
+  };
+  
+  // Icône de tri
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) {
+      return <span className="ml-1 text-white opacity-50">↕️</span>;
+    }
+    return <span className="ml-1 text-white">{sortOrder === 'asc' ? '↑' : '↓'}</span>;
+  };
+  
   if (!isOpen) return null;
   
   return (
