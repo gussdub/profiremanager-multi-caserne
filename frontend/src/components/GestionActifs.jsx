@@ -136,14 +136,10 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const handleGenerateQR = async (item) => {
     try {
       const type = activeTab === 'vehicules' ? 'vehicules' : 'bornes';
-      const response = await axios.post(
-        `${backendUrl}/api/${tenantSlug}/actifs/${type}/${item.id}/qr-code`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const data = await apiPost(tenantSlug, `/actifs/${type}/${item.id}/qr-code`, {});
       setQRCodeData({
-        qr_code: response.data.qr_code,
-        qr_code_url: response.data.qr_code_url,
+        qr_code: data.qr_code,
+        qr_code_url: data.qr_code_url,
         item_name: item.nom
       });
       setShowQRModal(true);
