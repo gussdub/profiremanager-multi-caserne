@@ -274,6 +274,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               onEdit={openEditModal} 
               onDelete={handleDelete}
             />
+          ) : activeTab === 'epi' ? (
+            ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
           ) : (
             <InventairesTab 
               modeles={modeles}
