@@ -37,6 +37,9 @@ from sendgrid.helpers.mail import Mail, Email
 import resend
 import firebase_admin
 from firebase_admin import credentials, messaging
+import qrcode
+from io import BytesIO
+import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
