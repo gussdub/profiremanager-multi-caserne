@@ -6569,6 +6569,14 @@ const Planning = () => {
     date_fin: '',
     exceptions: [] // dates d'exception
   });
+
+  // États pour formatage planning (demo uniquement)
+  const [showFormatageSection, setShowFormatageSection] = useState(false);
+  const [moisFormatage, setMoisFormatage] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [quickAssignSearchQuery, setQuickAssignSearchQuery] = useState('');
