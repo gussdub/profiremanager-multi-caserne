@@ -11901,6 +11901,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [showReinitModal, setShowReinitModal] = useState(false);
   const [reinitConfig, setReinitConfig] = useState({
     periode: 'mois',
+
+  // États pour formatage planning (demo uniquement)
+  const [showFormatageSection, setShowFormatageSection] = useState(false);
+  const [moisFormatage, setMoisFormatage] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+
     mode: 'generees_seulement',
     type_entree: 'les_deux',
     date_debut: new Date().toISOString().split('T')[0],
