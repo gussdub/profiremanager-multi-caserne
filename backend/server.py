@@ -19517,6 +19517,9 @@ async def get_categories_batiments(
 
 async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> BytesIO:
     """Générer un rapport PDF pour une inspection"""
+    # Récupérer le tenant
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    
     # Récupérer l'inspection
     inspection = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant_id})
     if not inspection:
@@ -19537,11 +19540,11 @@ async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> 
         "tenant_id": tenant_id
     }).to_list(1000)
     
-    # Créer le PDF
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    # Créer le PDF avec branding
+    from types import SimpleNamespace
+    tenant_obj = SimpleNamespace(**tenant) if tenant else None
+    buffer, doc, story = create_branded_pdf(tenant_obj, pagesize=letter)
     styles = getSampleStyleSheet()
-    story = []
     
     # Style personnalisé
     title_style = ParagraphStyle(
