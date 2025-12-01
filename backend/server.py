@@ -1375,74 +1375,15 @@ def create_pdf_footer_text(tenant):
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame
 from reportlab.pdfgen import canvas as pdf_canvas
 
-class BrandedDocTemplate(BaseDocTemplate):
+class BrandedDocTemplate(SimpleDocTemplate):
     """
     Template de document PDF personnalisé avec branding tenant automatique
+    Hérite de SimpleDocTemplate pour la simplicité
     """
     def __init__(self, filename, tenant=None, **kwargs):
         self.tenant = tenant
-        BaseDocTemplate.__init__(self, filename, **kwargs)
-        
-        # Créer un PageTemplate par défaut si non fourni
-        if not self.pageTemplates:
-            from reportlab.platypus import PageTemplate, Frame
-            
-            # Utiliser les marges définies
-            left_margin = kwargs.get('leftMargin', 0.75 * inch)
-            right_margin = kwargs.get('rightMargin', 0.75 * inch)
-            top_margin = kwargs.get('topMargin', 0.75 * inch)
-            bottom_margin = kwargs.get('bottomMargin', 0.75 * inch)
-            
-            # Créer un frame pour le contenu
-            frame = Frame(
-                left_margin, 
-                bottom_margin, 
-                self.width, 
-                self.height, 
-                id='normal'
-            )
-            
-            # Créer le PageTemplate avec le callback afterPage
-            template = PageTemplate(id='branded', frames=frame, onPage=self._onPage)
-            self.addPageTemplates([template])
-    
-    def _onPage(self, canvas, doc):
-        """Callback appelé pour chaque page"""
-        canvas.saveState()
-        
-        # Footer avec branding ProFireManager
-        if self.tenant:
-            footer_text = create_pdf_footer_text(self.tenant)
-            if footer_text:
-                canvas.setFont('Helvetica', 8)
-                canvas.setFillColor(colors.grey)
-                canvas.drawCentredString(
-                    self.pagesize[0] / 2,
-                    0.5 * inch,
-                    footer_text
-                )
-        
-        canvas.restoreState()
-        
-    def afterPage(self):
-        """
-        Appelé après chaque page pour ajouter le footer
-        """
-        self.canv.saveState()
-        
-        # Footer avec branding ProFireManager
-        if self.tenant:
-            footer_text = create_pdf_footer_text(self.tenant)
-            if footer_text:
-                self.canv.setFont('Helvetica', 8)
-                self.canv.setFillColor(colors.grey)
-                self.canv.drawCentredString(
-                    self.pagesize[0] / 2,
-                    0.5 * inch,
-                    footer_text
-                )
-        
-        self.canv.restoreState()
+        # Appeler le constructeur de SimpleDocTemplate
+        SimpleDocTemplate.__init__(self, filename, **kwargs)
 
 
 
