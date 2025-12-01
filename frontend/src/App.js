@@ -12507,6 +12507,48 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
 
+
+  // Fonction pour formater le planning (demo uniquement)
+  const handleFormaterPlanning = async () => {
+    if (tenantSlug !== 'demo') {
+      alert('Cette fonctionnalité est réservée au tenant demo');
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      alert('Accès réservé aux administrateurs');
+      return;
+    }
+
+    const confirmation = window.confirm(
+      `⚠️ ATTENTION\n\nVous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.\n\nConfirmer?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+      const response = await axios.delete(
+        `${backendUrl}/api/${tenantSlug}/planning/formater-mois?mois=${moisFormatage}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      alert(`✅ ${response.data.message}\n\n` +
+            `📊 Résumé:\n` +
+            `- ${response.data.assignations_supprimees} assignation(s) supprimée(s)\n` +
+            `- ${response.data.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
+      
+      // Recharger la page
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur formatage planning:', error);
+      alert('❌ Erreur lors du formatage: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   const handleGenerateIndisponibilites = async () => {
     setIsGenerating(true);
     
