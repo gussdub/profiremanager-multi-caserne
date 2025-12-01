@@ -14097,6 +14097,101 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
                     <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
                     <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
+
+
+                {/* Section Formatage Planning (DEMO uniquement) */}
+                {tenantSlug === 'demo' && user?.role === 'admin' && (
+                  <div style={{
+                    marginTop: '30px',
+                    padding: '20px',
+                    backgroundColor: '#fef2f2',
+                    border: '2px solid #fecaca',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: showFormatageSection ? '15px' : '0'
+                    }}>
+                      <h4 style={{ margin: 0, color: '#991b1b', fontSize: '14px' }}>
+                        🗑️ Formatage Planning (DEMO)
+                      </h4>
+                      <button
+                        onClick={() => setShowFormatageSection(!showFormatageSection)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #dc2626',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#dc2626'
+                        }}
+                      >
+                        {showFormatageSection ? '▲ Masquer' : '▼ Afficher'}
+                      </button>
+                    </div>
+
+                    {showFormatageSection && (
+                      <div>
+                        <p style={{ 
+                          fontSize: '13px', 
+                          color: '#7f1d1d',
+                          marginBottom: '15px',
+                          lineHeight: '1.5'
+                        }}>
+                          ⚠️ Cette fonctionnalité supprime <strong>toutes les assignations et demandes de remplacement</strong> du mois sélectionné. Utilisez-la pour vider le planning avant une démonstration.
+                        </p>
+
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ 
+                            display: 'block', 
+                            marginBottom: '8px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            color: '#7f1d1d'
+                          }}>
+                            📅 Sélectionner le mois à formater:
+                          </label>
+                          <input
+                            type="month"
+                            value={moisFormatage}
+                            onChange={(e) => setMoisFormatage(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #dc2626',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleFormaterPlanning}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
+                        >
+                          🗑️ Formater le planning de {new Date(moisFormatage + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                   </ul>
                   <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
                     💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe <strong>TRAVAILLE</strong> à son emploi principal selon le cycle sélectionné (vous ne serez donc pas disponible pour les gardes de pompiers ces jours-là).
