@@ -282,6 +282,18 @@ backend:
         agent: "testing"
         comment: "✅ CORRECTED RÉINITIALISER FUNCTIONALITY VERIFIED - Quick test of CORRECTED Réinitialiser functionality with new filters completed successfully as requested in review. BUGS FIXED: 1) Added type_entree filter (disponibilites/indisponibilites/les_deux) ✅, 2) Fixed mode 'generees_seulement' - now properly preserves manual entries with $or query checking origine field ✅. TEST RESULTS: Created manual disponibilité for today, generated Montreal schedule (91 auto-generated entries), called reinitialiser with periode='mois', mode='generees_seulement', type_entree='les_deux' - Manual entry STILL EXISTS ✅, Auto-generated entries DELETED ✅. Type_entree filter test: Created manual disponibilité (statut: disponible) and manual indisponibilité (statut: indisponible), reinitialiser with type_entree='disponibilites' - Only disponibilité deleted, indisponibilité preserved ✅. Expected behavior achieved: Manual entries preserved when mode='generees_seulement'. All corrections working perfectly."
 
+  - task: "Formatage Planning Functionality (DEMO Only)"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 FORMATAGE PLANNING FUNCTIONALITY FULLY TESTED AND WORKING - Comprehensive testing completed successfully for the new formatage planning feature. DEMO TENANT TESTS (✅ ALL PASSED): 1) ✅ Login successful with admin@demo.ca / admin123, 2) ✅ Navigation to Planning → Mes disponibilités → Indisponibilités modal working correctly, 3) ✅ 'Formatage Planning (DEMO)' section VISIBLE in Génération automatique tab with red background as expected, 4) ✅ '▼ Afficher' button expands section correctly, 5) ✅ All required elements present: warning message (⚠️ Cette fonctionnalité supprime toutes les assignations...), month selector (input type='month'), red format button (🗑️ Formater le planning de [mois]), 6) ✅ Month selection working (set to December 2025), 7) ✅ Format button triggers confirmation dialog correctly, 8) ✅ User can cancel operation safely. SHEFFORD TENANT TESTS (✅ ALL PASSED): 1) ✅ Login successful with gussdub@gmail.com / 230685Juin+, 2) ✅ Navigation to same modal working, 3) ✅ 'Formatage Planning (DEMO)' section correctly NOT VISIBLE - proper tenant restriction implemented. SECURITY & FUNCTIONALITY VERIFIED: ✅ Feature restricted to demo tenant only (tenantSlug === 'demo'), ✅ Admin role requirement enforced (user?.role === 'admin'), ✅ Confirmation dialog prevents accidental deletion, ✅ Month selector allows precise targeting, ✅ Clear warning message about irreversible action, ✅ Red styling indicates dangerous operation. The formatage planning functionality is working exactly as specified in the review request - visible only on demo tenant for admins with proper safety measures."
+
   - task: "Bcrypt Authentication System with Migration"
     implemented: true
     working: true
