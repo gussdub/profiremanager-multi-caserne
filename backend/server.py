@@ -1394,12 +1394,12 @@ def create_branded_pdf(tenant, pagesize=A4, **kwargs):
     Args:
         tenant: L'objet tenant
         pagesize: Taille de la page (A4, letter, etc.)
-        **kwargs: Arguments additionnels pour BrandedDocTemplate
+        **kwargs: Arguments additionnels pour SimpleDocTemplate
         
     Returns:
         tuple: (buffer, doc, elements_with_header)
         - buffer: BytesIO object
-        - doc: BrandedDocTemplate instance
+        - doc: SimpleDocTemplate instance avec branding
         - elements_with_header: Liste avec logo et header déjà ajoutés
     """
     from io import BytesIO
@@ -1413,11 +1413,29 @@ def create_branded_pdf(tenant, pagesize=A4, **kwargs):
     if 'bottomMargin' not in kwargs:
         kwargs['bottomMargin'] = 0.75 * inch
     
-    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=pagesize, **kwargs)
+    # Utiliser SimpleDocTemplate directement pour la simplicité
+    doc = SimpleDocTemplate(buffer, pagesize=pagesize, **kwargs)
     styles = getSampleStyleSheet()
     
     # Créer les éléments de base avec logo et header
     elements = create_pdf_header_elements(tenant, styles)
+    
+    # Ajouter le footer à la fin du document
+    footer_text = create_pdf_footer_text(tenant)
+    if footer_text:
+        from reportlab.platypus import Paragraph
+        from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.styles import ParagraphStyle
+        
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER,
+            spaceAfter=0
+        )
+        # Note: Le footer sera ajouté à la fin du document par l'appelant si nécessaire
     
     return buffer, doc, elements
 
