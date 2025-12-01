@@ -4495,18 +4495,15 @@ async def export_planning_pdf(
         types_map = {t['id']: t for t in types_garde_list}
         users_map = {u['id']: u for u in users_list}
         
-        # Créer le PDF
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            buffer, 
+        # Créer le PDF avec branding
+        buffer, doc, elements = create_branded_pdf(
+            tenant,
             pagesize=landscape(letter),
             leftMargin=0.5*inch,
             rightMargin=0.5*inch,
             topMargin=0.75*inch,
             bottomMargin=0.75*inch
         )
-        
-        elements = []
         styles = getSampleStyleSheet()
         
         # ===== EN-TÊTE AVEC LOGO =====
