@@ -15241,17 +15241,15 @@ async def generer_rapport_audit_assignations(
 
 async def generer_pdf_audit(assignations, user_map, type_garde_map, tenant, mois):
     """Génère un PDF du rapport d'audit"""
-    from io import BytesIO
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import inch
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
     
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    elements = []
+    # Utiliser la fonction helper pour créer un PDF brandé
+    buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
     styles = getSampleStyleSheet()
     
     # Style titre
