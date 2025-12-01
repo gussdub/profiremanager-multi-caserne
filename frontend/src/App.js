@@ -14098,12 +14098,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
 
 
-                {/* Section Formatage Planning (DEMO uniquement) */}
-                {(() => {
-                  console.log('DEBUG Formatage:', { tenantSlug, userRole: user?.role, tenant: tenant?.slug });
-                  return null;
-                })()}
-                {tenantSlug === 'demo' && user?.role === 'admin' && (
+                {/* Section Formatage Planning supprimée - déplacée vers modal Planning */}
+                {false && (
                   <div style={{
                     marginTop: '30px',
                     padding: '20px',
