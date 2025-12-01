@@ -14099,6 +14099,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
 
                 {/* Section Formatage Planning (DEMO uniquement) */}
+                {(() => {
+                  console.log('DEBUG Formatage:', { tenantSlug, userRole: user?.role, tenant: tenant?.slug });
+                  return null;
+                })()}
                 {tenantSlug === 'demo' && user?.role === 'admin' && (
                   <div style={{
                     marginTop: '30px',
