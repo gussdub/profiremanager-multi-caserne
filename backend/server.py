@@ -4447,6 +4447,71 @@ async def delete_type_garde(tenant_slug: str, type_garde_id: str, current_user: 
     
     return {"message": "Type de garde supprimé avec succès"}
 
+
+
+# ===== FORMATAGE PLANNING (DEMO UNIQUEMENT) =====
+
+@api_router.delete("/{tenant_slug}/planning/formater-mois")
+async def formater_planning_mois(
+    tenant_slug: str,
+    mois: str,  # Format: YYYY-MM
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Formate (vide) le planning d'un mois spécifique
+    UNIQUEMENT pour le tenant demo
+    Supprime: assignations, demandes de remplacement
+    """
+    # 1. Vérifier que c'est le tenant demo
+    if tenant_slug != "demo":
+        raise HTTPException(status_code=403, detail="Cette fonctionnalité est réservée au tenant demo")
+    
+    # 2. Vérifier que l'utilisateur est admin
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # 3. Valider le format du mois
+    try:
+        year, month = map(int, mois.split('-'))
+        if month < 1 or month > 12:
+            raise ValueError()
+    except:
+        raise HTTPException(status_code=400, detail="Format de mois invalide. Utilisez YYYY-MM")
+    
+    # 4. Calculer les dates de début et fin du mois
+    date_debut = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        date_fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc) - timedelta(seconds=1)
+    else:
+        date_fin = datetime(year, month + 1, 1, tzinfo=timezone.utc) - timedelta(seconds=1)
+    
+    # 5. Supprimer les assignations du mois
+    result_assignations = await db.assignations.delete_many({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut.isoformat(),
+            "$lte": date_fin.isoformat()
+        }
+    })
+    
+    # 6. Supprimer les demandes de remplacement du mois
+    result_remplacements = await db.demandes_remplacement.delete_many({
+        "tenant_id": tenant.id,
+        "date_garde": {
+            "$gte": date_debut.isoformat(),
+            "$lte": date_fin.isoformat()
+        }
+    })
+    
+    return {
+        "message": f"Planning formaté avec succès pour {mois}",
+        "mois": mois,
+        "assignations_supprimees": result_assignations.deleted_count,
+        "demandes_supprimees": result_remplacements.deleted_count
+    }
+
 # ===== EXPORTS PLANNING (doivent être AVANT les routes avec paramètres dynamiques) =====
 
 @api_router.get("/{tenant_slug}/planning/export-pdf")
