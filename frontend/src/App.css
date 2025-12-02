@@ -1115,6 +1115,20 @@ body {
   .kpi-card {
     padding: 1.5rem;
   }
+  
+  /* Modal employé sur tablette */
+  .large-modal {
+    width: 90%;
+    max-width: 90%;
+  }
+  
+  .detail-item-optimized {
+    gap: 2rem !important;
+  }
+  
+  .detail-item-optimized .detail-label {
+    min-width: 120px !important;
+  }
 }
 
 @media (max-width: 768px) {
