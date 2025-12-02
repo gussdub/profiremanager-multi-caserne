@@ -5686,25 +5686,6 @@ async def export_rapport_heures_excel(
 # ===== FIN EXPORTS PLANNING =====
 
 
-@api_router.get("/{tenant_slug}/planning/{semaine_debut}")
-async def get_planning(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    planning = await db.planning.find_one({"semaine_debut": semaine_debut, "tenant_id": tenant.id})
-    if not planning:
-        # Create empty planning for the week
-        semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
-        planning_obj = Planning(semaine_debut=semaine_debut, semaine_fin=semaine_fin)
-        planning_dict = planning_obj.dict()
-        planning_dict["tenant_id"] = tenant.id
-        await db.planning.insert_one(planning_dict)
-        planning = planning_dict
-    else:
-        planning = clean_mongo_doc(planning)
-    
-    return planning
-
 @api_router.delete("/{tenant_slug}/planning/assignation/{assignation_id}")
 async def retirer_assignation(tenant_slug: str, assignation_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
