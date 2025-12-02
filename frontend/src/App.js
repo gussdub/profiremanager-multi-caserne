@@ -5355,11 +5355,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
                     <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
                       <h5>📜 Compétences</h5>
-                      {selectedUser.formations?.length > 0 ? (
+                      {selectedUser.competences?.length > 0 ? (
                         <div className="competences-view-optimized">
-                          {selectedUser.formations.map((formationId, index) => (
+                          {selectedUser.competences.map((competenceId, index) => (
                             <div key={index} className="competence-badge-optimized">
-                              <span className="competence-name">{getFormationName(formationId)}</span>
+                              <span className="competence-name">{getCompetenceName(competenceId)}</span>
                               <span className="competence-status">✅</span>
                             </div>
                           ))}
