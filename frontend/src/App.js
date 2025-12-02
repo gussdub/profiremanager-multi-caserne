@@ -6510,6 +6510,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 const Planning = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+  const token = localStorage.getItem('token');
+  
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
     // Utiliser UTC pour éviter les problèmes de fuseau horaire
