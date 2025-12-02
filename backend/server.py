@@ -11675,13 +11675,51 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     debut_mois_prochain = fin_mois + timedelta(days=1)
     fin_mois_prochain = (debut_mois_prochain + timedelta(days=32)).replace(day=1) - timedelta(days=1)
     
-    # Récupérer toutes les données nécessaires
-    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
-    assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
-    formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
-    inscriptions_formations = await db.inscriptions_formations.find({"tenant_id": tenant.id}).to_list(10000)
-    demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
+    # Récupérer uniquement les données nécessaires avec filtres
+    # Types de garde (petite collection, OK de tout charger)
     types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Assignations du mois en cours UNIQUEMENT pour l'utilisateur
+    mes_assignations_mois = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "user_id": current_user.id,
+        "date": {
+            "$gte": debut_mois.isoformat(),
+            "$lte": fin_mois.isoformat()
+        }
+    }).to_list(1000)
+    
+    # Inscriptions de l'utilisateur uniquement
+    mes_inscriptions = await db.inscriptions_formations.find({
+        "tenant_id": tenant.id,
+        "user_id": current_user.id
+    }).to_list(1000)
+    
+    # Formations pour les inscriptions + futures
+    formation_ids = [i["formation_id"] for i in mes_inscriptions]
+    formations = await db.formations.find({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"id": {"$in": formation_ids}},
+            {"date_debut": {"$gte": today.isoformat()}}
+        ]
+    }).to_list(1000)
+    
+    # Pour section admin : charger données agrégées uniquement si nécessaire
+    if current_user.role in ["admin", "superviseur"]:
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        assignations = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": debut_mois.isoformat(),
+                "$lte": fin_mois.isoformat()
+            }
+        }).to_list(5000)
+        demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
+    else:
+        users = []
+        assignations = mes_assignations_mois
+        demandes_remplacement = []
     
     # Créer un mapping des types de garde pour accès rapide
     type_garde_map = {t["id"]: t for t in types_garde}
