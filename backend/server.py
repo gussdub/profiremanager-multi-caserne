@@ -7048,6 +7048,57 @@ async def update_competence(
 @api_router.delete("/{tenant_slug}/competences/{competence_id}")
 async def delete_competence(tenant_slug: str, competence_id: str, current_user: User = Depends(get_current_user)):
     """Supprime une compétence"""
+
+@api_router.post("/{tenant_slug}/competences/clean-invalid")
+async def clean_invalid_competences(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Nettoie les compétences invalides/obsolètes des utilisateurs
+    
+    Supprime des profils utilisateurs toutes les compétences qui n'existent plus 
+    dans la collection competences.
+    """
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les IDs de compétences valides
+    valid_competences = await db.competences.find({"tenant_id": tenant.id}, {"id": 1, "_id": 0}).to_list(1000)
+    valid_competence_ids = {c["id"] for c in valid_competences}
+    
+    # Récupérer tous les utilisateurs avec des compétences
+    users = await db.users.find(
+        {"tenant_id": tenant.id, "competences": {"$exists": True, "$ne": []}},
+        {"id": 1, "competences": 1, "prenom": 1, "nom": 1, "_id": 0}
+    ).to_list(1000)
+    
+    cleaned_count = 0
+    invalid_removed = 0
+    
+    for user in users:
+        original_competences = user.get("competences", [])
+        # Filtrer pour ne garder que les compétences valides
+        valid_user_competences = [c_id for c_id in original_competences if c_id in valid_competence_ids]
+        
+        if len(valid_user_competences) < len(original_competences):
+            # Il y avait des compétences invalides
+            removed = len(original_competences) - len(valid_user_competences)
+            invalid_removed += removed
+            cleaned_count += 1
+            
+            # Mettre à jour l'utilisateur
+            await db.users.update_one(
+                {"id": user["id"], "tenant_id": tenant.id},
+                {"$set": {"competences": valid_user_competences}}
+            )
+            
+            logging.info(f"🧹 Nettoyage: {user['prenom']} {user['nom']} - {removed} compétence(s) invalide(s) supprimée(s)")
+    
+    return {
+        "message": f"Nettoyage terminé",
+        "users_cleaned": cleaned_count,
+        "invalid_competences_removed": invalid_removed
+    }
+
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
