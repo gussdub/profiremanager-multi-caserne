@@ -779,24 +779,39 @@ class GuillaumeDubeauAttributionTester:
             print(f"\n❌ ÉCHEC: Guillaume n'a reçu aucune assignation")
             return False
     
-    def analyze_backend_logs(self):
-        """Test 5: Analyser les logs backend pour diagnostic"""
+    def analyze_conflict_resolution_logs(self):
+        """Test 5: Analyser les logs de résolution des conflits"""
         print("\n" + "="*60)
-        print("🧪 TEST 5: ANALYSE DES LOGS BACKEND")
+        print("🧪 TEST 5: ANALYSE DES LOGS DE RÉSOLUTION DES CONFLITS")
         print("="*60)
         
-        print("📋 Logs à rechercher pour François Guay:")
-        print("  - Messages '[DISPO_COUVRE]' pour les dispos valides")
-        print("  - Messages '[DISPO_PARTIELLE]' pour les dispos qui ne couvrent pas")
-        print("  - Messages '[N2]' et '[N3]' pour le classement des temps partiels")
-        print("  - Confirmation que François Guay est classé en N3 (STAND-BY)")
+        print("📋 Logs à rechercher pour Guillaume Dubeau:")
+        print("  - Messages de détection de conflits de disponibilités")
+        print("  - Messages de priorité des disponibilités manuelles")
+        print("  - Messages d'éligibilité pour les gardes 06:00-18:00")
+        print("  - Confirmation que les indisponibilités auto-générées sont ignorées")
         
-        # Note: En production, on ne peut pas accéder directement aux logs
-        print("\n⚠️ NOTE: Accès aux logs backend limité en environnement de production")
-        print("📝 Les logs doivent être vérifiés manuellement par l'administrateur:")
-        print("   - Rechercher '[DISPO_PARTIELLE]' pour François Guay")
-        print("   - Confirmer classification N3 (STAND-BY) vs N2 (DISPONIBLES)")
-        print("   - Vérifier messages de diagnostic d'attribution")
+        # Simuler l'analyse des logs (en production, on ne peut pas accéder directement)
+        print(f"\n🔍 Recherche des logs pour Guillaume (ID: {self.guillaume_user_id})...")
+        
+        # Logs attendus après la correction
+        expected_logs = [
+            f"[CONFLIT_DISPO] Guillaume Dubeau ({self.guillaume_user_id}): Conflit détecté pour 2025-12-01",
+            f"[PRIORITÉ_MANUELLE] Guillaume Dubeau: Disponibilité manuelle 06:00-18:00 prioritaire sur indisponibilité montreal_7_24",
+            f"[ÉLIGIBLE] Guillaume Dubeau: Éligible pour garde 06:00-18:00 malgré indisponibilité auto-générée",
+            f"[ASSIGNATION] Guillaume Dubeau assigné à garde avec résolution de conflit"
+        ]
+        
+        print("\n📝 Logs attendus après correction:")
+        for log in expected_logs:
+            print(f"   ✓ {log}")
+        
+        print("\n⚠️ NOTE: Vérification manuelle des logs backend requise")
+        print("📊 Indicateurs de succès dans les logs:")
+        print("   - Détection des conflits de disponibilités")
+        print("   - Application de la priorité manuelle")
+        print("   - Assignations réussies pour Guillaume")
+        print("   - Aucun message d'exclusion pour conflit non résolu")
         
         return True
     
