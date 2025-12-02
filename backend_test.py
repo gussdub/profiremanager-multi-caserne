@@ -38,19 +38,19 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import time
 
-class FrancoisGuayBugTester:
+class GuillaumeDubeauAttributionTester:
     def __init__(self):
-        self.base_url = "https://asset-mgr-1.preview.emergentagent.com/api/shefford"
+        self.base_url = "https://asset-mgr-1.preview.emergentagent.com/api/demo"
         self.headers = {}
         self.token = None
         self.admin_credentials = {
-            "email": "admin@firemanager.ca",
-            "mot_de_passe": "Admin123!"
+            "email": "gussdub@gmail.com",
+            "mot_de_passe": "230685Juin+"
         }
-        self.francois_guay_user = None
-        self.test_date = "2025-12-19"
-        self.test_week_start = "2025-12-15"
-        self.test_week_end = "2025-12-21"
+        self.guillaume_user_id = "f4bdfa76-a2a2-4a01-9734-2cf534d04d31"
+        self.guillaume_user = None
+        self.test_period_start = "2025-12-01"
+        self.test_period_end = "2026-01-04"
         
     def authenticate(self):
         """Authentification admin sur tenant shefford"""
