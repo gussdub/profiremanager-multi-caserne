@@ -4574,11 +4574,6 @@ async def export_planning_pdf(
         # Le logo et le header sont déjà ajoutés par create_branded_pdf
         # Pas besoin de les ajouter à nouveau
         
-        if True:  # Keeping the same indentation structure
-            # Pas de logo, juste le nom centré
-            elements.append(Paragraph(f"<b>{tenant.nom.upper()}</b>", service_style))
-            elements.append(Spacer(1, 0.15*inch))
-        
         # Titre principal
         title_style = ParagraphStyle(
             'CustomTitle',
