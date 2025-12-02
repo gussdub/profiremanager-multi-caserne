@@ -7580,7 +7580,6 @@ const Planning = () => {
   // Fonctions d'export Planning
   const handleExportPDFPlanning = async () => {
     try {
-      const token = getTenantToken();
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
       
       toast({
@@ -7588,34 +7587,30 @@ const Planning = () => {
         description: "Téléchargement du planning PDF..."
       });
       
-      // Utiliser la même méthode que Prévention (ligne 22863): fetch avec Authorization header
-      const url = `/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`;
-      
-      console.log('Imprimer Planning URL:', url);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`),
+        {
+          headers: {
+            'Authorization': `Bearer ${getTenantToken()}`
+          }
         }
-      });
+      );
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-      }
+      if (!response.ok) throw new Error('Erreur génération rapport');
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = downloadUrl;
+      a.href = url;
       a.download = `planning_${periode}_${viewMode}.pdf`;
       document.body.appendChild(a);
       a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
-      toast({ 
-        title: "Succès", 
-        description: "Planning téléchargé avec succès",
+      toast({
+        title: "Rapport généré",
+        description: "Le PDF a été téléchargé avec succès",
         variant: "success"
       });
     } catch (error) {
