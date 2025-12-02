@@ -11855,43 +11855,27 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         # Postes à pourvoir estimés
         postes_a_pourvoir = max(0, int(total_personnel_requis_estime - nb_assignations_mois))
         
-        # Demandes de congé à approuver
+        # Demandes de congé à approuver (déjà filtrées)
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
         
-        # Statistiques du mois
-        # Compter les assignations du mois
-        assignations_mois_count = 0
-        for a in assignations:
-            try:
-                if "date" in a:
-                    date_str = a["date"]
-                    if isinstance(date_str, str):
-                        if 'T' in date_str:
-                            date_assign = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                        else:
-                            date_assign = datetime.fromisoformat(date_str + "T00:00:00").replace(tzinfo=timezone.utc)
-                        
-                        if debut_mois <= date_assign <= fin_mois.replace(hour=23, minute=59, second=59):
-                            assignations_mois_count += 1
-            except:
-                pass
+        # Stats du mois - Utiliser les données déjà chargées
+        nb_formations_mois = await db.formations.count_documents({
+            "tenant_id": tenant.id,
+            "date_debut": {
+                "$gte": debut_mois.isoformat(),
+                "$lte": fin_mois.isoformat()
+            }
+        })
         
-        # Compter les formations ce mois avec gestion d'erreur pour les dates invalides
-        formations_ce_mois_count = 0
-        for f in formations:
-            try:
-                if "date_debut" in f and f["date_debut"]:
-                    date_debut_formation = datetime.fromisoformat(f["date_debut"]).date()
-                    if debut_mois.date() <= date_debut_formation <= fin_mois.date():
-                        formations_ce_mois_count += 1
-            except (ValueError, TypeError, AttributeError):
-                # Ignorer les formations avec des dates invalides
-                pass
+        nb_personnel_actif = await db.users.count_documents({
+            "tenant_id": tenant.id,
+            "statut": "Actif"
+        })
         
         stats_mois = {
-            "total_assignations": assignations_mois_count,
-            "total_personnel_actif": len([u for u in users if u.get("statut") == "Actif"]),
-            "formations_ce_mois": formations_ce_mois_count
+            "total_assignations": nb_assignations_mois,
+            "total_personnel_actif": nb_personnel_actif,
+            "formations_ce_mois": nb_formations_mois
         }
         
         section_generale = {
