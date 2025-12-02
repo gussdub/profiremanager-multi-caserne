@@ -1158,6 +1158,20 @@ body {
   .kpi-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+    padding: 0;
+  }
+  
+  .kpi-card {
+    padding: 1.5rem 1rem;
+    min-height: 120px;
+  }
+  
+  .kpi-card h3 {
+    font-size: 2rem;
+  }
+  
+  .kpi-card p {
+    font-size: 0.875rem;
   }
 
   /* Boutons d'export et d'action */
