@@ -815,13 +815,14 @@ class GuillaumeDubeauAttributionTester:
         
         return True
     
-    def run_francois_guay_bug_tests(self):
-        """Exécute tous les tests spécifiques au bug François Guay"""
-        print("🚀 DÉBUT DES TESTS - CORRECTION BUG FRANÇOIS GUAY")
-        print("🏢 Tenant: shefford (PRODUCTION)")
-        print("🌐 URL: https://asset-mgr-1.preview.emergentagent.com/shefford")
-        print("👤 Admin: admin@firemanager.ca / Admin123!")
-        print("📅 Date de test: Semaine du 15-21 décembre 2025 (incluant le 19 déc)")
+    def run_guillaume_attribution_tests(self):
+        """Exécute tous les tests pour l'attribution automatique de Guillaume"""
+        print("🚀 DÉBUT DES TESTS - ATTRIBUTION AUTOMATIQUE GUILLAUME DUBEAU")
+        print("🏢 Tenant: demo")
+        print("🌐 URL: https://asset-mgr-1.preview.emergentagent.com/demo")
+        print("👤 Credentials: gussdub@gmail.com / 230685Juin+")
+        print("📅 Période de test: Décembre 2025 (2025-12-01 à 2026-01-04)")
+        print(f"👤 Guillaume ID: {self.guillaume_user_id}")
         
         # Authentification
         if not self.authenticate():
@@ -830,11 +831,10 @@ class GuillaumeDubeauAttributionTester:
         
         # Exécuter les tests spécifiques
         tests = [
-            ("Test 1: Identifier François Guay", self.find_francois_guay),
-            ("Test 2: Vérifier disponibilités François Guay - 19 décembre 2025", self.check_francois_disponibilites),
-            ("Test 3: Vérifier paramètres Niveau 3", self.check_parametres_niveau3),
-            ("Test 4: Attribution automatique et vérification", self.launch_attribution_and_verify),
-            ("Test 5: Analyse des logs backend", self.analyze_backend_logs)
+            ("Test 1: Identifier Guillaume Dubeau", self.find_guillaume_dubeau),
+            ("Test 2: Vérifier disponibilités Guillaume - Décembre 2025", self.check_guillaume_disponibilites),
+            ("Test 3: Attribution automatique décembre 2025", self.launch_attribution_automatique),
+            ("Test 4: Analyse des logs de résolution des conflits", self.analyze_conflict_resolution_logs)
         ]
         
         resultats = []
@@ -855,7 +855,7 @@ class GuillaumeDubeauAttributionTester:
         
         # Résumé final
         print("\n" + "="*60)
-        print("📊 RÉSUMÉ DES TESTS - BUG FRANÇOIS GUAY")
+        print("📊 RÉSUMÉ DES TESTS - ATTRIBUTION AUTOMATIQUE GUILLAUME")
         print("="*60)
         
         succes = sum(1 for _, resultat in resultats if resultat)
@@ -869,23 +869,23 @@ class GuillaumeDubeauAttributionTester:
         
         # Critères de succès spécifiques
         print("\n🎯 CRITÈRES DE SUCCÈS:")
-        if self.francois_guay_user:
-            print("✅ François Guay identifié dans le système")
+        if self.guillaume_user:
+            print("✅ Guillaume Dubeau identifié dans le système")
         else:
-            print("❌ François Guay non trouvé")
+            print("❌ Guillaume Dubeau non trouvé")
         
-        print("✅ Disponibilités analysées pour le 19 décembre 2025")
-        print("✅ Paramètres Niveau 3 vérifiés")
-        
-        # Le test critique est le test 4
-        test_attribution_reussi = resultats[3][1] if len(resultats) > 3 else False
+        # Le test critique est le test 3 (attribution automatique)
+        test_attribution_reussi = resultats[2][1] if len(resultats) > 2 else False
         
         if test_attribution_reussi:
-            print("🎉 SUCCÈS CRITIQUE: François Guay N'EST PAS assigné incorrectement!")
-            print("   → Le bug de garde externe avec dispo partielle est CORRIGÉ")
+            print("🎉 SUCCÈS CRITIQUE: Guillaume reçoit maintenant des assignations!")
+            print("   → La priorité des disponibilités manuelles fonctionne")
+            print("   → Les conflits de disponibilités sont résolus")
+            print("   → L'attribution automatique est opérationnelle pour Guillaume")
         else:
-            print("❌ ÉCHEC CRITIQUE: François Guay est encore assigné incorrectement")
-            print("   → Le bug de garde externe avec dispo partielle N'EST PAS corrigé")
+            print("❌ ÉCHEC CRITIQUE: Guillaume ne reçoit toujours pas d'assignations")
+            print("   → Le problème de conflit de disponibilités persiste")
+            print("   → Les disponibilités manuelles n'ont pas priorité sur les auto-générées")
         
         return test_attribution_reussi
 
