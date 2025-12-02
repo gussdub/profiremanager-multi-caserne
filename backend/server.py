@@ -4065,11 +4065,14 @@ async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, c
     # Préparer les données à mettre à jour (seulement les champs fournis)
     update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if v is not None}
     
-    # CORRECTION CRITIQUE: Synchroniser formations vers competences
-    # Le frontend utilise "formations" mais l'algorithme cherche dans "competences"
+    # CORRECTION CRITIQUE: Synchroniser formations/competences (deux sens!)
+    # Certaines parties du frontend envoient "formations", d'autres "competences"
     if "formations" in update_data:
         update_data["competences"] = update_data["formations"]
         logging.info(f"🔄 [SYNC] Copie formations → competences: {update_data['formations']}")
+    elif "competences" in update_data:
+        update_data["formations"] = update_data["competences"]
+        logging.info(f"🔄 [SYNC] Copie competences → formations: {update_data['competences']}")
     
     # Gestion du mot de passe
     if "mot_de_passe" in update_data and update_data["mot_de_passe"]:
