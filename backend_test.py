@@ -53,15 +53,15 @@ class GuillaumeDubeauAttributionTester:
         self.test_period_end = "2026-01-04"
         
     def authenticate(self):
-        """Authentification admin sur tenant shefford"""
-        print("🔐 Authentification admin Shefford...")
+        """Authentification sur tenant demo"""
+        print("🔐 Authentification tenant demo...")
         
         auth_url = f"{self.base_url}/auth/login"
         response = requests.post(auth_url, json=self.admin_credentials)
         
         if response.status_code == 200:
             data = response.json()
-            self.token = data.get('access_token')  # Correction: utiliser access_token
+            self.token = data.get('access_token')
             self.headers = {'Authorization': f'Bearer {self.token}'}
             print(f"✅ Authentification réussie - Token obtenu")
             print(f"🔍 User info: {data.get('user', {}).get('email')} - Role: {data.get('user', {}).get('role')}")
