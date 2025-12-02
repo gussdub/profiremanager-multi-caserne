@@ -150,6 +150,9 @@ async def create_database_indexes():
         await db.inscriptions_formations.create_index([("tenant_id", 1), ("user_id", 1)])
         await db.inscriptions_formations.create_index([("formation_id", 1)])
         await db.formations.create_index([("tenant_id", 1), ("date_debut", 1)])
+        await db.activites.create_index([("tenant_id", 1), ("created_at", -1)])
+        await db.activites.create_index([("tenant_id", 1), ("user_id", 1)])
+        await db.activites.create_index([("tenant_id", 1), ("type_activite", 1)])
         
         print("✅ Index MongoDB créés avec succès (optimisations complètes)")
     except Exception as e:
