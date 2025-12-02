@@ -15119,7 +15119,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             }}
             conflicts={conflictData.conflicts}
             newItem={conflictData.newItem}
-            itemType={conflictData.itemType}
+            itemType="disponibilite"
             onResolve={handleResolveConflict}
           />
         </Suspense>
