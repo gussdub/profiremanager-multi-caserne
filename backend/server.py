@@ -11804,7 +11804,7 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
                 # Inclure toutes les formations qui commencent aujourd'hui ou dans le futur
                 if date_debut_formation.date() >= today.date():
                     # Vérifier si inscrit
-                    est_inscrit = any(i for i in inscriptions_formations if i["formation_id"] == formation["id"] and i["user_id"] == current_user.id)
+                    est_inscrit = any(i for i in mes_inscriptions if i["formation_id"] == formation["id"])
                     formations_a_venir.append({
                         "id": formation["id"],
                         "nom": formation["nom"],
