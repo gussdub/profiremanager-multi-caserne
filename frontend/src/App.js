@@ -6911,25 +6911,18 @@ const Planning = () => {
     if (!confirmation) return;
 
     try {
-      const response = await axios.delete(
-        `${backendUrl}/api/${tenantSlug}/planning/formater-mois?mois=${moisFormatage}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await apiDelete(tenantSlug, `/planning/formater-mois?mois=${moisFormatage}`);
 
-      alert(`✅ ${response.data.message}\n\n` +
+      alert(`✅ ${response.message}\n\n` +
             `📊 Résumé:\n` +
-            `- ${response.data.assignations_supprimees} assignation(s) supprimée(s)\n` +
-            `- ${response.data.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
+            `- ${response.assignations_supprimees} assignation(s) supprimée(s)\n` +
+            `- ${response.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
       
       // Recharger la page
       window.location.reload();
     } catch (error) {
       console.error('Erreur formatage planning:', error);
-      alert('❌ Erreur lors du formatage: ' + (error.response?.data?.detail || error.message));
+      alert('❌ Erreur lors du formatage: ' + error.message);
     }
   };
 
@@ -12679,25 +12672,18 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     if (!confirmation) return;
 
     try {
-      const response = await axios.delete(
-        `${backendUrl}/api/${tenantSlug}/planning/formater-mois?mois=${moisFormatage}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await apiDelete(tenantSlug, `/planning/formater-mois?mois=${moisFormatage}`);
 
-      alert(`✅ ${response.data.message}\n\n` +
+      alert(`✅ ${response.message}\n\n` +
             `📊 Résumé:\n` +
-            `- ${response.data.assignations_supprimees} assignation(s) supprimée(s)\n` +
-            `- ${response.data.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
+            `- ${response.assignations_supprimees} assignation(s) supprimée(s)\n` +
+            `- ${response.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
       
       // Recharger la page
       window.location.reload();
     } catch (error) {
       console.error('Erreur formatage planning:', error);
-      alert('❌ Erreur lors du formatage: ' + (error.response?.data?.detail || error.message));
+      alert('❌ Erreur lors du formatage: ' + error.message);
     }
   };
 
