@@ -114,7 +114,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
-  // Imprimer (ouvre le PDF)
+  // Imprimer (télécharge le PDF)
   const imprimer = async () => {
     try {
       let debut, fin;
@@ -129,34 +129,54 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
         fin = dateFin;
       }
       
-      // Construire l'URL relative (le proxy Kubernetes gérera la redirection)
-      const url = `/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`;
-      const token = getTenantToken();
-      
-      console.log('Imprimer PDF URL:', url);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const text = await response.text();
-        console.error('Error response:', text);
-        throw new Error(`HTTP ${response.status}: ${text}`);
+      // Afficher toast de génération en cours
+      if (window.toast) {
+        window.toast({
+          title: "Génération en cours",
+          description: "Téléchargement du rapport PDF..."
+        });
       }
       
-      const blob = await response.blob();
-      console.log('PDF Blob size:', blob.size);
+      const response = await fetch(
+        buildApiUrl(tenantSlug, `/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`),
+        {
+          headers: {
+            'Authorization': `Bearer ${getTenantToken()}`
+          }
+        }
+      );
       
-      const pdfUrl = window.URL.createObjectURL(blob);
-      window.open(pdfUrl, '_blank');
+      if (!response.ok) throw new Error('Erreur génération rapport');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_heures_${debut}_${fin}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Afficher toast de succès
+      if (window.toast) {
+        window.toast({
+          title: "Rapport généré",
+          description: "Le PDF a été téléchargé avec succès",
+          variant: "success"
+        });
+      }
     } catch (err) {
       console.error('Erreur PDF:', err);
-      alert(`Erreur lors de la génération du PDF: ${err.message}`);
+      if (window.toast) {
+        window.toast({
+          title: "Erreur",
+          description: `Impossible de générer le rapport: ${err.message}`,
+          variant: "destructive"
+        });
+      } else {
+        alert(`Erreur lors de la génération du PDF: ${err.message}`);
+      }
     }
   };
   
