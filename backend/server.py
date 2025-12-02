@@ -11729,7 +11729,6 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     
     # ===== SECTION PERSONNELLE =====
     # Heures travaillées ce mois (séparé interne/externe)
-    mes_assignations_mois = [a for a in assignations if a["user_id"] == current_user.id and "date" in a]
     logger.info(f"📊 Dashboard - User {current_user.email}: {len(mes_assignations_mois)} assignations trouvées")
     heures_mois_internes = 0
     heures_mois_externes = 0
