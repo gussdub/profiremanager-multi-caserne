@@ -106,14 +106,34 @@ async def create_database_indexes():
         ])
         await db.notifications.create_index([("date_creation", -1)])
         
-        # Index pour les utilisateurs
-        await db.users.create_index([("tenant_id", 1), ("email", 1)], unique=True)
+        # Index pour les utilisateurs (CRITIQUE - chargement dashboard)
+        await db.users.create_index([("tenant_id", 1)])
+        await db.users.create_index([("tenant_id", 1), ("email", 1)])
+        await db.users.create_index([("tenant_id", 1), ("statut", 1)])
         
-        # Index pour les assignations
+        # Index pour les types de garde (chargement dashboard)
+        await db.types_garde.create_index([("tenant_id", 1)])
+        
+        # Index pour les assignations (planning)
         await db.assignations.create_index([("tenant_id", 1), ("user_id", 1)])
+        await db.assignations.create_index([("tenant_id", 1), ("semaine_debut", 1)])
         await db.assignations.create_index([("semaine_debut", 1)])
         
-        print("✅ Index MongoDB créés avec succès")
+        # Index pour le planning
+        await db.planning.create_index([("tenant_id", 1), ("semaine_debut", 1)])
+        
+        # Index pour les disponibilités
+        await db.disponibilites.create_index([("tenant_id", 1), ("user_id", 1)])
+        await db.disponibilites.create_index([("tenant_id", 1), ("date", 1)])
+        
+        # Index pour les bâtiments (prévention)
+        await db.batiments.create_index([("tenant_id", 1)])
+        await db.batiments.create_index([("tenant_id", 1), ("niveau_risque", 1)])
+        
+        # Index pour les formations
+        await db.formations.create_index([("tenant_id", 1)])
+        
+        print("✅ Index MongoDB créés avec succès (optimisations complètes)")
     except Exception as e:
         print(f"⚠️ Erreur création index: {e}")
 
