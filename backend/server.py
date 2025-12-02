@@ -8816,7 +8816,13 @@ async def get_tenant_from_slug(slug: str) -> Tenant:
         raise HTTPException(status_code=404, detail=f"Caserne '{slug}' non trouvée")
     
     logging.info(f"🔍 Tenant data for {slug}: {tenant_data}")
-    return Tenant(**tenant_data)
+    tenant = Tenant(**tenant_data)
+    
+    # Mettre en cache
+    _tenant_cache[cache_key] = tenant
+    _tenant_cache_time[cache_key] = now
+    
+    return tenant
 
 async def get_current_tenant(tenant_slug: str) -> Tenant:
     """Dépendance FastAPI pour obtenir le tenant actuel"""
