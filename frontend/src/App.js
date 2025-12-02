@@ -15425,6 +15425,11 @@ const MonProfil = () => {
     return formation ? formation.nom : formationId;
   };
 
+  const getCompetenceName = (competenceId) => {
+    const competence = competences.find(c => c.id === competenceId);
+    return competence ? competence.nom : competenceId;
+  };
+
   if (loading) return <div className="loading" data-testid="profile-loading">Chargement du profil...</div>;
   
   // Debug : Vérifier si user est chargé
