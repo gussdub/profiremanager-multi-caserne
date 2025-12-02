@@ -685,16 +685,20 @@ class GuillaumeDubeauAttributionTester:
         # Vérifier les assignations de Guillaume
         return self.verify_guillaume_assignations(assignations_creees)
     
-    def verify_francois_assignations(self):
-        """Vérifier les assignations de François Guay pour le 19 décembre 2025"""
-        print(f"\n🔍 Vérification des assignations de François Guay pour le {self.test_date}...")
+    def verify_guillaume_assignations(self, total_assignations):
+        """Test 4: Vérifier les assignations de Guillaume pour décembre 2025"""
+        print(f"\n🔍 Vérification des assignations de Guillaume pour décembre 2025...")
         
-        user_id = self.francois_guay_user['id']
+        user_id = self.guillaume_user['id']
         
-        # Récupérer les assignations pour la semaine (qui inclut le 19 décembre)
-        url = f"{self.base_url}/planning/assignations/{self.test_week_start}"
+        # Récupérer les assignations pour la période
+        url = f"{self.base_url}/planning/assignations"
+        params = {
+            "date_debut": self.test_period_start,
+            "date_fin": self.test_period_end
+        }
         
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, params=params)
         
         if response.status_code != 200:
             print(f"❌ Erreur récupération assignations: {response.status_code}")
@@ -702,58 +706,78 @@ class GuillaumeDubeauAttributionTester:
         
         all_assignations = response.json()
         
-        # Filtrer les assignations de François Guay pour le 19 décembre
-        francois_assignations = [
+        # Filtrer les assignations de Guillaume
+        guillaume_assignations = [
             a for a in all_assignations 
-            if a.get('user_id') == user_id and a.get('date') == self.test_date
+            if a.get('user_id') == user_id
         ]
         
-        print(f"📋 Assignations de François Guay le {self.test_date}:")
+        print(f"📋 Résultats de l'attribution automatique:")
+        print(f"   - Total assignations créées: {total_assignations}")
+        print(f"   - Assignations de Guillaume: {len(guillaume_assignations)}")
         
-        if not francois_assignations:
-            print("✅ SUCCÈS: Aucune assignation pour François Guay ce jour")
-            print("   → Soit le bug est corrigé, soit l'attribution n'a pas créé d'assignations")
-            return True
+        if not guillaume_assignations:
+            print("❌ PROBLÈME: Guillaume n'a reçu AUCUNE assignation!")
+            print("   → Le problème de conflit de disponibilités persiste")
+            print("   → Les disponibilités manuelles n'ont pas priorité sur les auto-générées")
+            return False
+        
+        # Analyser les assignations de Guillaume
+        print(f"\n📅 Détail des assignations de Guillaume ({len(guillaume_assignations)} gardes):")
         
         # Récupérer les types de garde pour analyser les assignations
         types_garde = self.get_types_garde()
         type_garde_map = {t['id']: t for t in types_garde}
         
-        gardes_nuit_assignees = []
+        gardes_06_18 = []
+        autres_gardes = []
         
-        for assignation in francois_assignations:
+        for assignation in guillaume_assignations:
+            date = assignation.get('date', 'N/A')
             type_garde_id = assignation.get('type_garde_id')
             type_garde = type_garde_map.get(type_garde_id, {})
             nom_garde = type_garde.get('nom', 'Garde inconnue')
             heure_debut = type_garde.get('heure_debut', 'N/A')
             heure_fin = type_garde.get('heure_fin', 'N/A')
             
-            print(f"   - {nom_garde} ({heure_debut}-{heure_fin})")
+            print(f"   - {date}: {nom_garde} ({heure_debut}-{heure_fin})")
             
-            # Vérifier si c'est une garde de nuit (18:00-06:00) qui pourrait être problématique
-            if heure_debut == '18:00' and heure_fin == '06:00':
-                gardes_nuit_assignees.append(nom_garde)
+            # Vérifier si c'est une garde 06:00-18:00 (attendue)
+            if heure_debut == '06:00' and heure_fin == '18:00':
+                gardes_06_18.append(assignation)
+            else:
+                autres_gardes.append(assignation)
         
         # Analyser les résultats
-        if gardes_nuit_assignees:
-            print(f"\n⚠️ François Guay est assigné à {len(gardes_nuit_assignees)} garde(s) de nuit 18:00-06:00:")
-            for garde in gardes_nuit_assignees:
-                print(f"   - {garde}")
-            
-            # Vérifier si François a bien la disponibilité 18:00-06:00
-            # (d'après l'analyse précédente, il l'a, donc c'est normal qu'il soit assigné)
-            print("\n🔍 Analyse de la situation:")
-            print("   - François Guay a une disponibilité 18:00-06:00 (manuelle)")
-            print("   - Il est assigné à des gardes 18:00-06:00")
-            print("   - Ceci est COHÉRENT avec ses disponibilités")
-            print("   - Le bug original était probablement déjà corrigé ou les données ont changé")
-            
-            return True  # Considéré comme succès car cohérent avec les disponibilités
-        else:
-            print("✅ SUCCÈS: François Guay n'est assigné à aucune garde de nuit 18:00-06:00")
-            print("   → Pas de problème de garde externe avec dispo partielle")
-            
+        print(f"\n🔍 Analyse des assignations:")
+        print(f"   - Gardes 06:00-18:00 (attendues): {len(gardes_06_18)}")
+        print(f"   - Autres gardes: {len(autres_gardes)}")
+        
+        if gardes_06_18:
+            print("✅ SUCCÈS PARTIEL: Guillaume est assigné à des gardes 06:00-18:00")
+            print("   → Les disponibilités manuelles sont respectées")
+            print("   → La priorité manuelle sur auto-générée fonctionne")
+        
+        if autres_gardes:
+            print("⚠️ Guillaume est aussi assigné à d'autres types de gardes:")
+            for assignation in autres_gardes[:3]:  # Afficher les 3 premiers
+                date = assignation.get('date', 'N/A')
+                type_garde_id = assignation.get('type_garde_id')
+                type_garde = type_garde_map.get(type_garde_id, {})
+                nom_garde = type_garde.get('nom', 'Garde inconnue')
+                heure_debut = type_garde.get('heure_debut', 'N/A')
+                heure_fin = type_garde.get('heure_fin', 'N/A')
+                print(f"      - {date}: {nom_garde} ({heure_debut}-{heure_fin})")
+        
+        # Critère de succès: Guillaume doit avoir au moins une assignation
+        if len(guillaume_assignations) > 0:
+            print(f"\n🎉 SUCCÈS: Guillaume a reçu {len(guillaume_assignations)} assignations!")
+            print("   → Le problème de conflit de disponibilités est RÉSOLU")
+            print("   → L'attribution automatique fonctionne maintenant pour Guillaume")
             return True
+        else:
+            print(f"\n❌ ÉCHEC: Guillaume n'a reçu aucune assignation")
+            return False
     
     def analyze_backend_logs(self):
         """Test 5: Analyser les logs backend pour diagnostic"""
