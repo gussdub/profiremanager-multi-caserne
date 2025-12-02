@@ -649,22 +649,24 @@ class GuillaumeDubeauAttributionTester:
         
         return True
     
-    def launch_attribution_and_verify(self):
-        """Test 4: Lancer l'attribution automatique et vérifier François Guay"""
+    def launch_attribution_automatique(self):
+        """Test 3: Lancer l'attribution automatique pour décembre 2025"""
         print("\n" + "="*60)
-        print("🧪 TEST 4: ATTRIBUTION AUTOMATIQUE - SEMAINE 15-21 DÉCEMBRE 2025")
+        print("🧪 TEST 3: ATTRIBUTION AUTOMATIQUE - DÉCEMBRE 2025")
         print("="*60)
         
-        if not self.francois_guay_user:
-            print("❌ François Guay non identifié")
+        if not self.guillaume_user:
+            print("❌ Guillaume Dubeau non identifié")
             return False
         
-        # Lancer l'attribution automatique
-        print(f"🚀 Lancement attribution automatique pour semaine {self.test_week_start}...")
+        # Lancer l'attribution automatique pour décembre 2025
+        print(f"🚀 Lancement attribution automatique pour période {self.test_period_start} à {self.test_period_end}...")
         
         url = f"{self.base_url}/planning/attribution-auto"
         params = {
-            "semaine_debut": self.test_week_start
+            "date_debut": self.test_period_start,
+            "date_fin": self.test_period_end,
+            "reset": True  # Reset les assignations existantes
         }
         
         response = requests.post(url, headers=self.headers, params=params)
@@ -675,10 +677,13 @@ class GuillaumeDubeauAttributionTester:
         
         result = response.json()
         assignations_creees = result.get('assignations_creees', 0)
-        print(f"✅ Attribution terminée - {assignations_creees} assignations créées")
+        duree_execution = result.get('duree_execution', 'N/A')
         
-        # Vérifier les assignations de François Guay pour le 19 décembre
-        return self.verify_francois_assignations()
+        print(f"✅ Attribution terminée - {assignations_creees} assignations créées")
+        print(f"⏱️ Durée d'exécution: {duree_execution}")
+        
+        # Vérifier les assignations de Guillaume
+        return self.verify_guillaume_assignations(assignations_creees)
     
     def verify_francois_assignations(self):
         """Vérifier les assignations de François Guay pour le 19 décembre 2025"""
