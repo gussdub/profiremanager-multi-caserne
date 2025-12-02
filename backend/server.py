@@ -7629,19 +7629,25 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    pompiers = await db.users.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
     params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
     heures_min = params.get("heures_minimales_annuelles", 100) if params else 100
     pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
     
     aujourd_hui = datetime.now(timezone.utc).date()
     
+    # OPTIMISATION: Charger TOUTES les formations une seule fois (au lieu de 1 requête par inscription)
+    toutes_formations = await db.formations.find({
+        "tenant_id": tenant.id
+    }, {"_id": 0}).to_list(1000)
+    formations_map = {f["id"]: f for f in toutes_formations if "id" in f}
+    
     # Récupérer toutes les formations obligatoires de l'année
     formations_obligatoires = await db.formations.find({
         "tenant_id": tenant.id,
         "annee": annee,
         "obligatoire": True
-    }).to_list(1000)
+    }, {"_id": 0}).to_list(1000)
     
     rapport = []
     for pompier in pompiers:
