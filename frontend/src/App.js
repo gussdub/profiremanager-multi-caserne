@@ -14,7 +14,8 @@ import SecteursMap from "./components/SecteursMap";
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
-import Chart from "react-apexcharts";
+// Chart dynamique pour réduire bundle initial
+const Chart = lazy(() => import("react-apexcharts"));
 import RapportHeuresModal from "./components/RapportHeuresModal";
 import AuditModal from "./components/AuditModal";
 import "./App.css";
