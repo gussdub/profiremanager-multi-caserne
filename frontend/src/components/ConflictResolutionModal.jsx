@@ -185,13 +185,27 @@ const ConflictResolutionModal = ({
                   )}
                   <div style={{ 
                     marginTop: '6px',
-                    padding: '6px',
-                    backgroundColor: '#fef3c7',
+                    padding: '8px',
+                    backgroundColor: conflict.conflict_severity === 'incompatible' ? '#fecaca' : '#fef3c7',
                     borderRadius: '4px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    border: `1px solid ${conflict.conflict_severity === 'incompatible' ? '#dc2626' : '#f59e0b'}`
                   }}>
-                    ⚡ <strong>Chevauchement:</strong> {conflict.overlap_start} - {conflict.overlap_end}
+                    {conflict.conflict_severity === 'incompatible' ? '❌' : '⚡'} <strong>Chevauchement:</strong> {conflict.overlap_start} - {conflict.overlap_end}
                   </div>
+                  {conflict.message && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      backgroundColor: '#f0f9ff',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      color: '#0c4a6e',
+                      fontStyle: 'italic'
+                    }}>
+                      ℹ️ {conflict.message}
+                    </div>
+                  )}
                   {conflict.origine && conflict.origine !== 'manuelle' && (
                     <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
                       <em>Origine: {conflict.origine}</em>
