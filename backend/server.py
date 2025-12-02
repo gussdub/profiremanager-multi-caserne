@@ -12453,15 +12453,45 @@ async def create_disponibilite(
         )
         
         if conflicts:
-            # Retourner HTTP 409 avec les détails des conflits
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "message": "Conflits détectés avec des indisponibilités existantes",
-                    "conflicts": conflicts,
-                    "new_item": disponibilite.dict()
-                }
-            )
+            # Séparer les conflits incompatibles des compatibles
+            incompatible_conflicts = [c for c in conflicts if c.get("conflict_severity") == "incompatible"]
+            compatible_conflicts = [c for c in conflicts if c.get("conflict_severity") in ["compatible_overlap", "compatible_covered"]]
+            
+            # Si conflit couvert complètement, ne rien créer (déjà existe)
+            if any(c.get("conflict_severity") == "compatible_covered" for c in conflicts):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "Cette disponibilité est déjà couverte par une entrée existante",
+                        "conflicts": compatible_conflicts,
+                        "new_item": disponibilite.dict(),
+                        "action_required": "none"  # Aucune action nécessaire
+                    }
+                )
+            
+            # Si conflits incompatibles (dispo vs indispo), demander confirmation
+            if incompatible_conflicts:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "Conflits incompatibles détectés",
+                        "conflicts": incompatible_conflicts,
+                        "new_item": disponibilite.dict(),
+                        "action_required": "choose"  # L'utilisateur doit choisir
+                    }
+                )
+            
+            # Si seulement des conflits compatibles (chevauchement dispo-dispo), proposer fusion
+            if compatible_conflicts:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "Chevauchement détecté - Fusion possible",
+                        "conflicts": compatible_conflicts,
+                        "new_item": disponibilite.dict(),
+                        "action_required": "merge"  # Proposer la fusion automatique
+                    }
+                )
     
     # Créer la disponibilité
     dispo_dict = disponibilite.dict()
