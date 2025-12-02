@@ -9461,7 +9461,12 @@ const Planning = () => {
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
                     >
-                      🗑️ Formater le planning de {new Date(moisFormatage + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                      🗑️ Formater le planning de {(() => {
+                        const [year, month] = moisFormatage.split('-');
+                        const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+                                          'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+                        return `${monthNames[parseInt(month) - 1]} ${year}`;
+                      })()}
                     </button>
                   </div>
                 )}
