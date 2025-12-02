@@ -891,8 +891,8 @@ class GuillaumeDubeauAttributionTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = FrancoisGuayBugTester()
-    success = tester.run_francois_guay_bug_tests()
+    tester = GuillaumeDubeauAttributionTester()
+    success = tester.run_guillaume_attribution_tests()
     
     # Code de sortie
     sys.exit(0 if success else 1)
