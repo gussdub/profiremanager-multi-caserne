@@ -1105,6 +1105,16 @@ body {
   .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
+  
+  /* KPIs pour tablette - 2 colonnes */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .kpi-card {
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {
