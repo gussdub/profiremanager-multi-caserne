@@ -94,6 +94,10 @@ else:
 async def create_database_indexes():
     """Créer les index MongoDB pour optimiser les performances"""
     try:
+        # Index pour les tenants (CRITIQUE - appelé à chaque requête)
+        await db.tenants.create_index([("slug", 1)])
+        await db.tenants.create_index([("slug", 1), ("actif", 1)])
+        
         # Index pour les notifications (CRITIQUE pour la performance)
         await db.notifications.create_index([
             ("tenant_id", 1),
