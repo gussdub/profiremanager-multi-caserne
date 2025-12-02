@@ -7671,10 +7671,8 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
         formations_obligatoires_ratees = []
         
         for insc in toutes_inscriptions:
-            formation = await db.formations.find_one({
-                "id": insc["formation_id"],
-                "tenant_id": tenant.id
-            })
+            # OPTIMISATION: Lookup dans le dictionnaire au lieu de requête DB
+            formation = formations_map.get(insc["formation_id"])
             
             if formation:
                 try:
