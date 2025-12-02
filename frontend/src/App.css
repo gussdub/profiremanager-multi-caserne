@@ -1184,6 +1184,70 @@ body {
     font-size: 0.875rem;
   }
   
+  /* Modal employé responsive */
+  .large-modal {
+    width: 95%;
+    max-width: 95%;
+    margin: 1rem auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .profile-details-grid-optimized {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .detail-item-optimized {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  .detail-item-optimized .detail-label {
+    min-width: unset !important;
+    white-space: normal;
+  }
+  
+  .detail-item-optimized .detail-value {
+    text-align: left !important;
+    margin-left: 0 !important;
+    word-break: break-word;
+  }
+  
+  .profile-summary-compact {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .profile-info-summary h4 {
+    font-size: 1.1rem;
+  }
+  
+  .profile-badges {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  /* Module disponibilités - Navigation mois responsive */
+  .disponibilites-visual-container > div:first-of-type {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  .disponibilites-visual-container > div:first-of-type button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .disponibilites-visual-container > div:first-of-type h2 {
+    font-size: 1.1rem !important;
+    text-align: center;
+  }
+  
   /* Stats mois responsive */
   .stats-mois-grid {
     grid-template-columns: 1fr;
