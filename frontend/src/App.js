@@ -7578,45 +7578,11 @@ const Planning = () => {
   const kpis = calculateKPIs(kpiPeriode);
 
   // Fonctions d'export Planning
-  const handleExportPDFPlanning = async () => {
-    try {
-      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
-      
-      toast({
-        title: "Génération en cours",
-        description: "Préparation du planning PDF..."
-      });
-      
-      const response = await fetch(
-        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`),
-        {
-          headers: {
-            'Authorization': `Bearer ${getTenantToken()}`
-          }
-        }
-      );
-      
-      if (!response.ok) throw new Error('Erreur génération rapport');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
-      // Ouvrir dans un nouvel onglet pour permettre l'impression
-      window.open(url, '_blank');
-      
-      toast({
-        title: "Rapport généré",
-        description: "Le PDF a été ouvert avec succès",
-        variant: "success"
-      });
-    } catch (error) {
-      console.error('Erreur export PDF planning:', error);
-      toast({ 
-        title: "Erreur", 
-        description: `Impossible d'exporter le planning: ${error.message}`,
-        variant: "destructive"
-      });
-    }
+  const handleExportPDFPlanning = () => {
+    const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+    
+    // Ouvrir directement l'URL du PDF dans un nouvel onglet (méthode du module prévention)
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`, '_blank');
   };
 
   const handleExportExcelPlanning = async () => {
