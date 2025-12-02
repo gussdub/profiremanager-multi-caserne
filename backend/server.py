@@ -7234,7 +7234,19 @@ async def get_formations(tenant_slug: str, annee: Optional[int] = None, current_
     if annee:
         query["annee"] = annee
     
-    formations = await db.formations.find(query).sort("date_debut", 1).to_list(1000)
+    # OPTIMISATION: Charger formations et inscriptions en parallèle
+    formations = await db.formations.find(query, {"_id": 0}).sort("date_debut", 1).to_list(1000)
+    
+    # Charger toutes les inscriptions de l'utilisateur en UNE SEULE requête
+    formation_ids = [f["id"] for f in formations if "id" in f]
+    inscriptions_cursor = db.inscriptions_formations.find({
+        "formation_id": {"$in": formation_ids},
+        "user_id": current_user.id,
+        "tenant_id": tenant.id
+    }, {"formation_id": 1, "_id": 0})
+    inscriptions = await inscriptions_cursor.to_list(1000)
+    inscriptions_set = {i["formation_id"] for i in inscriptions}
+    
     cleaned = [clean_mongo_doc(f) for f in formations]
     
     for f in cleaned:
@@ -7243,13 +7255,8 @@ async def get_formations(tenant_slug: str, annee: Optional[int] = None, current_
         if isinstance(f.get("updated_at"), str):
             f["updated_at"] = datetime.fromisoformat(f["updated_at"].replace('Z', '+00:00'))
         
-        # Ajouter info d'inscription pour l'utilisateur actuel
-        inscription = await db.inscriptions_formations.find_one({
-            "formation_id": f["id"],
-            "user_id": current_user.id,
-            "tenant_id": tenant.id
-        })
-        f["user_inscrit"] = inscription is not None
+        # Vérifier inscription via le set (O(1) au lieu de requête DB)
+        f["user_inscrit"] = f["id"] in inscriptions_set
     
     return [Formation(**f) for f in cleaned]
 
