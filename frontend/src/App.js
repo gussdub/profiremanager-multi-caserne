@@ -22450,13 +22450,8 @@ const Prevention = () => {
           <div className="prevention-batiments">
             <div className="page-header">
               <h2>🏢 Gestion des Bâtiments</h2>
-              <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                <div style={{
-                  display: 'flex',
-                  background: '#f3f4f6',
-                  borderRadius: '6px',
-                  padding: '2px'
-                }}>
+              <div className="batiments-header-controls">
+                <div className="view-mode-toggle">
                   <button
                     onClick={() => setViewMode('carte')}
                     style={{
