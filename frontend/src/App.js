@@ -16,8 +16,8 @@ import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
 // Chart dynamique pour réduire bundle initial
 const Chart = lazy(() => import("react-apexcharts"));
-import RapportHeuresModal from "./components/RapportHeuresModal";
-import AuditModal from "./components/AuditModal";
+const RapportHeuresModal = lazy(() => import("./components/RapportHeuresModal"));
+const AuditModal = lazy(() => import("./components/AuditModal"));
 import "./App.css";
 
 // Lazy loading pour optimiser les performances
