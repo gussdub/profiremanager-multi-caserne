@@ -145,6 +145,12 @@ async def create_database_indexes():
         await db.immobilisations.create_index([("tenant_id", 1)])
         await db.immobilisations.create_index([("tenant_id", 1), ("type", 1)])
         
+        # Index pour dashboard - CRITIQUE pour performance
+        await db.assignations.create_index([("tenant_id", 1), ("user_id", 1), ("date", 1)])
+        await db.inscriptions_formations.create_index([("tenant_id", 1), ("user_id", 1)])
+        await db.inscriptions_formations.create_index([("formation_id", 1)])
+        await db.formations.create_index([("tenant_id", 1), ("date_debut", 1)])
+        
         print("✅ Index MongoDB créés avec succès (optimisations complètes)")
     except Exception as e:
         print(f"⚠️ Erreur création index: {e}")
