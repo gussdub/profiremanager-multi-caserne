@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 """
-TEST CRITIQUE: Vérification correction du bug François Guay - Garde externe avec dispo partielle
+TEST CRITIQUE: Attribution automatique Guillaume Dubeau - Priorité disponibilités manuelles
 
 CONTEXTE:
-L'utilisateur a identifié un bug où François Guay a été assigné à "Garde PR 1 nuit" (18:00-06:00) 
-le 19 décembre 2025, alors qu'il n'avait déclaré disponibilité que jusqu'à 18h (06:00-12:00 et 12:00-18:00). 
-De plus, le Niveau 3 (Temps Partiel STAND-BY) était décoché.
+L'utilisateur signale que l'attribution automatique crée 0 assignations alors que Guillaume Dubeau 
+a des disponibilités pour décembre 2025. Une investigation précédente a identifié un conflit de 
+disponibilités multiples pour Guillaume:
+- Multiples entrées 'indisponible: 00:00-23:59 (origine: montreal_7_24)' 
+- Multiples entrées 'disponible: 06:00-18:00 (origine: manuelle)' pour la MÊME DATE
 
-CORRECTION APPORTÉE:
-L'algorithme a été modifié pour vérifier que les disponibilités déclarées COUVRENT COMPLÈTEMENT 
-l'horaire de la garde, pas seulement qu'une dispo existe ce jour-là.
+MODIFICATION IMPLÉMENTÉE:
+La priorité des disponibilités manuelles sur les auto-générées a été implémentée.
+Guillaume devrait maintenant être éligible pour les gardes 06:00-18:00 malgré 
+l'indisponibilité auto-générée 00:00-23:59.
 
-SCÉNARIO DE TEST SPÉCIFIQUE:
-- Identifier François Guay dans les utilisateurs
-- Vérifier ses disponibilités pour le 19 décembre 2025
-- Lancer l'attribution automatique pour la semaine du 15-21 décembre 2025
-- Vérifier que François Guay N'EST PAS assigné à "Garde PR 1 nuit" (18:00-06:00)
-- Analyser les logs backend pour confirmation
+SCÉNARIO DE TEST:
+1. Se connecter avec tenant demo
+2. Vérifier les disponibilités de Guillaume pour décembre 2025
+3. Lancer une attribution automatique pour décembre 2025 (2025-12-01 à 2026-01-04) avec reset=True
+4. Vérifier si Guillaume est maintenant assigné aux gardes
+5. Afficher le nombre d'assignations créées et les détails des assignations de Guillaume
+6. Afficher les logs pertinents montrant la résolution des conflits
 
-Tenant: shefford (PRODUCTION)
-URL: https://asset-mgr-1.preview.emergentagent.com/shefford
-Admin: admin@firemanager.ca / Admin123!
+Credentials:
+- Tenant: demo
+- Email: gussdub@gmail.com
+- Mot de passe: 230685Juin+
+- User ID Guillaume: f4bdfa76-a2a2-4a01-9734-2cf534d04d31
+
+Backend URL: https://asset-mgr-1.preview.emergentagent.com
 """
 
 import requests
