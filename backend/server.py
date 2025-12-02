@@ -18807,11 +18807,11 @@ async def get_batiments(tenant_slug: str, current_user: User = Depends(get_curre
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # OPTIMISATION: Exclure les champs lourds (photos base64) pour liste
-    # Les photos seront chargées uniquement lors de la consultation d'un bâtiment spécifique
+    # OPTIMISATION: Pour la liste, inclure photo_url mais le frontend pourra charger les détails complets au besoin
+    # Note: Si photos base64 trop lourdes, migration vers stockage externe recommandée
     batiments = await db.batiments.find(
         {"tenant_id": tenant.id},
-        {"_id": 0, "photo_url": 0}  # Exclure _id et photo_url (potentiellement en base64)
+        {"_id": 0}
     ).to_list(1000)
     return [clean_mongo_doc(batiment) for batiment in batiments]
 
