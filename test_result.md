@@ -53,6 +53,18 @@ frontend:
         agent: "testing"
         comment: "❌ PROBLÈME CRITIQUE IDENTIFIÉ - MapComponent ne peut pas s'attacher au mapRef. Test effectué: 1) ✅ Login réussi (admin@firemanager.ca / Admin123!), 2) ✅ Accès module Prévention réussi, 3) ✅ Clic sur Préventionnistes réussi, 4) ❌ ÉCHEC CRITIQUE: 398 logs '[MapComponent] mapRef not ready yet, retrying in 100ms...' capturés pendant 20 secondes, 5) ❌ Aucun des logs critiques trouvé ('mapRef is ready!' et 'Carte créée avec succès!'), 6) ❌ Conteneur de carte absent du DOM. ROOT CAUSE: Le mapRef ne s'attache jamais au DOM, causant une boucle infinie de retry toutes les 100ms. La carte ne peut pas s'initialiser car l'élément DOM référencé par mapRef n'existe pas ou n'est pas accessible. IMPACT: Fonctionnalité Préventionnistes complètement inutilisable - la carte ne se charge jamais."
 
+  - task: "Planning Module Print Buttons Testing"
+    implemented: true
+    working: false
+    file: "frontend/src/App.js, frontend/src/components/RapportHeuresModal.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "🖨️ PLANNING MODULE PRINT BUTTONS TESTING COMPLETED - Comprehensive testing of both print buttons in Planning module completed with mixed results. TESTING ENVIRONMENT: URL: http://localhost:3000/demo, Credentials: gussdub@gmail.com / 230685Juin+, Module: Planning. DETAILED RESULTS: 1) ✅ LOGIN & NAVIGATION: Successfully logged in and navigated to Planning module, planning interface loaded correctly with calendar view, 2) ✅ PRINT PLANNING BUTTON: Button '🖨️ Imprimer Planning' found and clickable, triggers correct API call to /api/demo/planning/export-pdf?periode=2025-12&type=mois, ❌ BACKEND ERROR: Returns 500 Internal Server Error, frontend shows error message 'Erreur génération rapport', 3) ✅ RAPPORT D'HEURES MODAL: Modal opens correctly when clicking '📊 Rapport d'Heures' button, displays proper interface with month selector (2025-12), mode selection (Mois complet), 4) ✅ PRINT RAPPORT BUTTON: Button '🖨️ Imprimer' in modal found and clickable, triggers correct API call to /api/demo/planning/rapport-heures/export-pdf?date_debut=2025-12-01&date_fin=2025-12-31, ✅ SUCCESS: Returns 200 OK, no errors detected. TECHNICAL ANALYSIS: Frontend implementation is correct for both buttons, both buttons trigger appropriate API calls with correct parameters, PDF generation logic works (creates hidden iframe for printing), RapportHeuresModal component functions properly. BACKEND ISSUES: Planning export-pdf endpoint returns 500 error (backend implementation issue), Rapport d'Heures export-pdf endpoint works correctly. CONCLUSION: Print functionality is properly implemented in frontend, one backend endpoint needs fixing (planning export-pdf), user interface and user experience are working as expected."
+
 backend:
   - task: "Authentication System"
     implemented: true
