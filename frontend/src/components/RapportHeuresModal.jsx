@@ -115,65 +115,21 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   };
   
   // Imprimer (ouvre la fenêtre d'impression)
-  const imprimer = async () => {
-    try {
-      let debut, fin;
-      
-      if (modeSelection === 'mois') {
-        const [year, month] = moisSelectionne.split('-');
-        debut = `${year}-${month}-01`;
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-      } else {
-        debut = dateDebut;
-        fin = dateFin;
-      }
-      
-      // Afficher toast de génération en cours
-      if (window.toast) {
-        window.toast({
-          title: "Génération en cours",
-          description: "Préparation du rapport PDF..."
-        });
-      }
-      
-      const response = await fetch(
-        buildApiUrl(tenantSlug, `/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`),
-        {
-          headers: {
-            'Authorization': `Bearer ${getTenantToken()}`
-          }
-        }
-      );
-      
-      if (!response.ok) throw new Error('Erreur génération rapport');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
-      // Ouvrir dans un nouvel onglet pour permettre l'impression
-      window.open(url, '_blank');
-      
-      // Afficher toast de succès
-      if (window.toast) {
-        window.toast({
-          title: "Rapport généré",
-          description: "Le PDF a été ouvert avec succès",
-          variant: "success"
-        });
-      }
-    } catch (err) {
-      console.error('Erreur PDF:', err);
-      if (window.toast) {
-        window.toast({
-          title: "Erreur",
-          description: `Impossible de générer le rapport: ${err.message}`,
-          variant: "destructive"
-        });
-      } else {
-        alert(`Erreur lors de la génération du PDF: ${err.message}`);
-      }
+  const imprimer = () => {
+    let debut, fin;
+    
+    if (modeSelection === 'mois') {
+      const [year, month] = moisSelectionne.split('-');
+      debut = `${year}-${month}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+    } else {
+      debut = dateDebut;
+      fin = dateFin;
     }
+    
+    // Ouvrir directement l'URL du PDF dans un nouvel onglet (méthode du module prévention)
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`, '_blank');
   };
   
   // Fonction pour gérer le tri
