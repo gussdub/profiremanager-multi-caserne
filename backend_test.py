@@ -690,20 +690,17 @@ class GuillaumeDubeauAttributionTester:
         # Vérifier les assignations de Guillaume
         return self.verify_guillaume_assignations_after_attribution()
     
-    def verify_guillaume_assignations(self, total_assignations):
-        """Test 4: Vérifier les assignations de Guillaume pour décembre 2025"""
+    def verify_guillaume_assignations_after_attribution(self):
+        """Test 4: Vérifier les assignations de Guillaume après attribution automatique"""
         print(f"\n🔍 Vérification des assignations de Guillaume pour décembre 2025...")
         
         user_id = self.guillaume_user['id']
         
-        # Récupérer les assignations pour la période
-        url = f"{self.base_url}/planning/assignations"
-        params = {
-            "date_debut": self.test_period_start,
-            "date_fin": self.test_period_end
-        }
+        # Récupérer les assignations pour la période en utilisant l'endpoint par semaine
+        # Commencer par la première semaine de décembre 2025
+        url = f"{self.base_url}/planning/assignations/{self.test_period_start}"
         
-        response = requests.get(url, headers=self.headers, params=params)
+        response = requests.get(url, headers=self.headers)
         
         if response.status_code != 200:
             print(f"❌ Erreur récupération assignations: {response.status_code}")
@@ -718,13 +715,18 @@ class GuillaumeDubeauAttributionTester:
         ]
         
         print(f"📋 Résultats de l'attribution automatique:")
-        print(f"   - Total assignations créées: {total_assignations}")
+        print(f"   - Total assignations récupérées: {len(all_assignations)}")
         print(f"   - Assignations de Guillaume: {len(guillaume_assignations)}")
         
         if not guillaume_assignations:
             print("❌ PROBLÈME: Guillaume n'a reçu AUCUNE assignation!")
             print("   → Le problème de conflit de disponibilités persiste")
             print("   → Les disponibilités manuelles n'ont pas priorité sur les auto-générées")
+            
+            # Vérifier s'il y a des assignations pour d'autres utilisateurs
+            autres_users = set(a.get('user_id') for a in all_assignations)
+            print(f"   → {len(autres_users)} autres utilisateurs ont des assignations")
+            
             return False
         
         # Analyser les assignations de Guillaume
