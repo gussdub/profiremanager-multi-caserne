@@ -21522,8 +21522,14 @@ async def export_plan_intervention_pdf(
         batiment = await db.batiments.find_one({"id": plan["batiment_id"], "tenant_id": tenant.id})
     
     # Créer le buffer PDF avec branding
-    buffer = BytesIO()
-    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=60, bottomMargin=40)
+    buffer, doc, elements = create_branded_pdf(
+        tenant, 
+        pagesize=A4, 
+        rightMargin=40, 
+        leftMargin=40, 
+        topMargin=60, 
+        bottomMargin=40
+    )
     
     # Styles
     styles = getSampleStyleSheet()
@@ -21544,9 +21550,6 @@ async def export_plan_intervention_pdf(
         spaceBefore=12
     )
     normal_style = styles['Normal']
-    
-    # Contenu du PDF
-    elements = []
     
     # En-tête avec titre du plan
     elements.append(Paragraph(f"🔥 Plan d'Intervention", title_style))
