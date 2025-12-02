@@ -12332,7 +12332,12 @@ async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut:
                           heure_fin: str, type_garde_id: Optional[str], 
                           element_type: str) -> List[Dict[str, Any]]:
     """
-    Détecte les conflits entre disponibilités et indisponibilités
+    Détecte les conflits entre disponibilités/indisponibilités
+    
+    Détecte 3 types de conflits:
+    1. Disponibilité ↔ Indisponibilité (incompatible)
+    2. Disponibilité ↔ Disponibilité avec horaires différents (peut fusionner)
+    3. Indisponibilité ↔ Indisponibilité (peut fusionner)
     
     Args:
         tenant_id: ID du tenant
@@ -12344,24 +12349,18 @@ async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut:
         element_type: "disponibilite" ou "indisponibilite"
         
     Returns:
-        Liste des conflits avec détails
+        Liste des conflits avec détails et type (incompatible/mergeable)
     """
     from datetime import datetime
     
     conflicts = []
     
-    # Déterminer quelle collection chercher (l'opposé de ce qu'on crée)
-    if element_type == "disponibilite":
-        search_statuts = ["indisponible"]
-    else:  # indisponibilite
-        search_statuts = ["disponible", "preference"]
-    
-    # Récupérer toutes les entrées du même jour
+    # NOUVELLE LOGIQUE: Chercher TOUS les éléments du même jour (pas seulement l'opposé)
+    # On filtrera après pour déterminer si c'est incompatible ou fusionnable
     existing_entries = await db.disponibilites.find({
         "tenant_id": tenant_id,
         "user_id": user_id,
-        "date": date,
-        "statut": {"$in": search_statuts}
+        "date": date
     }).to_list(length=None)
     
     # Convertir les heures en minutes pour comparaison
