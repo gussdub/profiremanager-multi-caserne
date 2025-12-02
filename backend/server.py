@@ -7649,19 +7649,35 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
         "obligatoire": True
     }, {"_id": 0}).to_list(1000)
     
+    # OPTIMISATION: Charger toutes les inscriptions et validations en UNE FOIS
+    toutes_inscriptions_db = await db.inscriptions_formations.find({
+        "tenant_id": tenant.id
+    }, {"_id": 0}).to_list(10000)
+    
+    toutes_validations_db = await db.validations_competences.find({
+        "tenant_id": tenant.id
+    }, {"_id": 0}).to_list(10000)
+    
+    # Grouper par user_id pour accès rapide
+    inscriptions_par_user = {}
+    for insc in toutes_inscriptions_db:
+        user_id = insc.get("user_id")
+        if user_id not in inscriptions_par_user:
+            inscriptions_par_user[user_id] = []
+        inscriptions_par_user[user_id].append(insc)
+    
+    validations_par_user = {}
+    for val in toutes_validations_db:
+        user_id = val.get("user_id")
+        if user_id not in validations_par_user:
+            validations_par_user[user_id] = []
+        validations_par_user[user_id].append(val)
+    
     rapport = []
     for pompier in pompiers:
-        # Toutes les inscriptions
-        toutes_inscriptions = await db.inscriptions_formations.find({
-            "user_id": pompier["id"],
-            "tenant_id": tenant.id
-        }).to_list(1000)
-        
-        # Validations manuelles
-        validations = await db.validations_competences.find({
-            "user_id": pompier["id"],
-            "tenant_id": tenant.id
-        }).to_list(1000)
+        # Récupérer les inscriptions et validations depuis les dictionnaires
+        toutes_inscriptions = inscriptions_par_user.get(pompier["id"], [])
+        validations = validations_par_user.get(pompier["id"], [])
         competences_validees = {v["competence_id"] for v in validations}
         
         total_heures = 0
