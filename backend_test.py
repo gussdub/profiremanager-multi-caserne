@@ -28,7 +28,7 @@ Credentials:
 - Mot de passe: 230685Juin+
 - User ID Guillaume: f4bdfa76-a2a2-4a01-9734-2cf534d04d31
 
-Backend URL: https://print-bug-fixer.preview.emergentagent.com
+Backend URL: https://perf-optimize-app.preview.emergentagent.com
 """
 
 import requests
@@ -40,7 +40,7 @@ import time
 
 class GuillaumeDubeauAttributionTester:
     def __init__(self):
-        self.base_url = "https://print-bug-fixer.preview.emergentagent.com/api/demo"
+        self.base_url = "https://perf-optimize-app.preview.emergentagent.com/api/demo"
         self.headers = {}
         self.token = None
         self.admin_credentials = {
@@ -826,7 +826,7 @@ class GuillaumeDubeauAttributionTester:
         """Exécute tous les tests pour l'attribution automatique de Guillaume"""
         print("🚀 DÉBUT DES TESTS - ATTRIBUTION AUTOMATIQUE GUILLAUME DUBEAU")
         print("🏢 Tenant: demo")
-        print("🌐 URL: https://print-bug-fixer.preview.emergentagent.com/demo")
+        print("🌐 URL: https://perf-optimize-app.preview.emergentagent.com/demo")
         print("👤 Credentials: gussdub@gmail.com / 230685Juin+")
         print("📅 Période de test: Décembre 2025 (2025-12-01 à 2026-01-04)")
         print(f"👤 Guillaume ID: {self.guillaume_user_id}")

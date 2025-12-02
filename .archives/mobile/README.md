@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://print-bug-fixer.preview.emergentagent.com
+- **URL** : https://perf-optimize-app.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://print-bug-fixer.preview.emergentagent.com"
+  "apiUrl": "https://perf-optimize-app.preview.emergentagent.com"
 }
 ```
 
