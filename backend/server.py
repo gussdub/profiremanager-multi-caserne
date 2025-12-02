@@ -60,9 +60,14 @@ if 'mongodb+srv' in mongo_url or 'ssl=true' in mongo_url.lower():
 
 client = AsyncIOMotorClient(
     mongo_url,
-    serverSelectionTimeoutMS=5000,  # Timeout de 5 secondes pour la sélection du serveur
-    connectTimeoutMS=10000,          # Timeout de 10 secondes pour la connexion
-    socketTimeoutMS=45000            # Timeout de 45 secondes pour les opérations
+    serverSelectionTimeoutMS=30000,  # 30 secondes pour sélection serveur (distance Oregon-Virginie)
+    connectTimeoutMS=30000,          # 30 secondes pour connexion initiale
+    socketTimeoutMS=60000,           # 60 secondes pour opérations (documents avec photos base64)
+    maxPoolSize=50,                  # Pool de connexions pour réutilisation
+    minPoolSize=10,                  # Connexions permanentes
+    maxIdleTimeMS=45000,             # Garder connexions inactives 45s
+    retryWrites=True,                # Retry automatique en cas d'échec
+    retryReads=True                  # Retry automatique en lecture
 )
 
 # Extraire le nom de la base de données depuis MONGO_URL ou utiliser un défaut
