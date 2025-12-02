@@ -114,7 +114,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
-  // Imprimer (télécharge le PDF)
+  // Imprimer (déclenche la fenêtre d'impression système)
   const imprimer = async () => {
     try {
       let debut, fin;
@@ -127,14 +127,6 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       } else {
         debut = dateDebut;
         fin = dateFin;
-      }
-      
-      // Afficher toast de génération en cours
-      if (window.toast) {
-        window.toast({
-          title: "Génération en cours",
-          description: "Téléchargement du rapport PDF..."
-        });
       }
       
       const response = await fetch(
@@ -150,33 +142,32 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `rapport_heures_${debut}_${fin}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
       
-      // Afficher toast de succès
-      if (window.toast) {
-        window.toast({
-          title: "Rapport généré",
-          description: "Le PDF a été téléchargé avec succès",
-          variant: "success"
-        });
-      }
+      // Créer un iframe caché pour déclencher l'impression
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      
+      // Attendre que le PDF soit chargé, puis déclencher l'impression
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow.print();
+          // Nettoyer après un délai
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+        } catch (e) {
+          console.error('Erreur impression:', e);
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }
+      };
+      
     } catch (err) {
       console.error('Erreur PDF:', err);
-      if (window.toast) {
-        window.toast({
-          title: "Erreur",
-          description: `Impossible de générer le rapport: ${err.message}`,
-          variant: "destructive"
-        });
-      } else {
-        alert(`Erreur lors de la génération du PDF: ${err.message}`);
-      }
+      alert(`Erreur lors de la génération du PDF: ${err.message}`);
     }
   };
   
