@@ -478,23 +478,23 @@ class GuillaumeDubeauAttributionTester:
         
         return True
     
-    def check_francois_disponibilites(self):
-        """Test 2: Vérifier les disponibilités de François Guay pour le 19 décembre 2025"""
+    def check_guillaume_disponibilites(self):
+        """Test 2: Vérifier les disponibilités de Guillaume pour décembre 2025"""
         print("\n" + "="*60)
-        print("🧪 TEST 2: VÉRIFIER DISPONIBILITÉS FRANÇOIS GUAY - 19 DÉCEMBRE 2025")
+        print("🧪 TEST 2: VÉRIFIER DISPONIBILITÉS GUILLAUME - DÉCEMBRE 2025")
         print("="*60)
         
-        if not self.francois_guay_user:
-            print("❌ François Guay non identifié")
+        if not self.guillaume_user:
+            print("❌ Guillaume Dubeau non identifié")
             return False
         
-        user_id = self.francois_guay_user['id']
+        user_id = self.guillaume_user['id']
         
-        # Récupérer les disponibilités pour le 19 décembre 2025
+        # Récupérer les disponibilités pour décembre 2025
         url = f"{self.base_url}/disponibilites/{user_id}"
         params = {
-            "date_debut": self.test_date,
-            "date_fin": self.test_date
+            "date_debut": self.test_period_start,
+            "date_fin": self.test_period_end
         }
         
         response = requests.get(url, headers=self.headers, params=params)
@@ -504,61 +504,89 @@ class GuillaumeDubeauAttributionTester:
             return False
         
         disponibilites = response.json()
-        print(f"📅 Disponibilités de François Guay pour le {self.test_date}:")
+        print(f"📅 Disponibilités de Guillaume pour décembre 2025 ({len(disponibilites)} entrées):")
         
         if not disponibilites:
-            print("⚠️ Aucune disponibilité déclarée pour cette date")
+            print("⚠️ Aucune disponibilité déclarée pour cette période")
             return True
+        
+        # Analyser les disponibilités par origine et statut
+        by_origine = defaultdict(list)
+        by_statut = defaultdict(list)
+        conflicts_detected = defaultdict(list)
         
         for dispo in disponibilites:
             statut = dispo.get('statut', 'N/A')
             heure_debut = dispo.get('heure_debut', 'N/A')
             heure_fin = dispo.get('heure_fin', 'N/A')
             origine = dispo.get('origine', 'manuelle')
+            date = dispo.get('date', 'N/A')
             
-            print(f"   - {statut}: {heure_debut} - {heure_fin} (origine: {origine})")
-        
-        # Analyser les disponibilités pour comprendre le problème original
-        garde_debut = "18:00"
-        garde_fin = "06:00"  # Le lendemain
-        
-        disponibilites_valides = [d for d in disponibilites if d.get('statut') == 'disponible']
-        
-        print(f"\n🔍 Analyse des disponibilités valides:")
-        for dispo in disponibilites_valides:
-            heure_debut = dispo.get('heure_debut', 'N/A')
-            heure_fin = dispo.get('heure_fin', 'N/A')
-            origine = dispo.get('origine', 'manuelle')
-            print(f"   - Disponible: {heure_debut} - {heure_fin} (origine: {origine})")
-        
-        # Vérifier si une disponibilité couvre exactement 18:00-06:00
-        couvre_garde_nuit = False
-        couvre_seulement_jusqu_18h = False
-        
-        for dispo in disponibilites_valides:
-            dispo_debut = dispo.get('heure_debut', '')
-            dispo_fin = dispo.get('heure_fin', '')
+            by_origine[origine].append(dispo)
+            by_statut[statut].append(dispo)
             
-            # Vérifier si c'est la dispo problématique (18:00-06:00)
-            if dispo_debut == "18:00" and dispo_fin == "06:00":
-                couvre_garde_nuit = True
+            # Détecter les conflits pour la même date
+            conflicts_detected[date].append(dispo)
+        
+        print(f"\n📊 Analyse par origine:")
+        for origine, dispos in by_origine.items():
+            print(f"   - {origine}: {len(dispos)} entrées")
+        
+        print(f"\n📊 Analyse par statut:")
+        for statut, dispos in by_statut.items():
+            print(f"   - {statut}: {len(dispos)} entrées")
+        
+        # Identifier les conflits (même date, statuts différents)
+        print(f"\n🔍 Analyse des conflits de disponibilités:")
+        conflits_critiques = []
+        
+        for date, dispos_date in conflicts_detected.items():
+            if len(dispos_date) > 1:
+                # Vérifier s'il y a des statuts conflictuels
+                statuts = [d.get('statut') for d in dispos_date]
+                origines = [d.get('origine') for d in dispos_date]
+                
+                if 'disponible' in statuts and 'indisponible' in statuts:
+                    conflits_critiques.append({
+                        'date': date,
+                        'disponibilites': dispos_date,
+                        'statuts': statuts,
+                        'origines': origines
+                    })
+                    
+                    print(f"   ⚠️ CONFLIT le {date}:")
+                    for dispo in dispos_date:
+                        statut = dispo.get('statut', 'N/A')
+                        heure_debut = dispo.get('heure_debut', 'N/A')
+                        heure_fin = dispo.get('heure_fin', 'N/A')
+                        origine = dispo.get('origine', 'manuelle')
+                        print(f"      - {statut}: {heure_debut}-{heure_fin} (origine: {origine})")
+        
+        if conflits_critiques:
+            print(f"\n❌ {len(conflits_critiques)} conflits critiques détectés!")
+            print("   → Ces conflits peuvent expliquer pourquoi Guillaume n'est pas assigné")
             
-            # Vérifier les dispos qui s'arrêtent à 18h (problème original)
-            if dispo_fin == "18:00":
-                couvre_seulement_jusqu_18h = True
-        
-        print(f"\n🔍 Analyse pour garde 'Garde PR 1 nuit' (18:00-06:00):")
-        
-        if couvre_garde_nuit:
-            print("⚠️ François Guay a une disponibilité 18:00-06:00")
-            print("   → Il PEUT être assigné à cette garde (disponibilité complète)")
-            print("   → Ceci n'est PAS le bug original décrit")
-        elif couvre_seulement_jusqu_18h and not couvre_garde_nuit:
-            print("❌ François Guay n'a que des disponibilités jusqu'à 18:00")
-            print("   → Il ne devrait PAS être assigné à la garde 18:00-06:00")
-            print("   → Ceci correspond au bug original décrit")
+            # Analyser le premier conflit en détail
+            premier_conflit = conflits_critiques[0]
+            print(f"\n🔍 Analyse du premier conflit ({premier_conflit['date']}):")
+            
+            manuelles = [d for d in premier_conflit['disponibilites'] if d.get('origine') == 'manuelle']
+            auto_generees = [d for d in premier_conflit['disponibilites'] if d.get('origine') != 'manuelle']
+            
+            print(f"   - Disponibilités manuelles: {len(manuelles)}")
+            for dispo in manuelles:
+                print(f"     → {dispo.get('statut')}: {dispo.get('heure_debut')}-{dispo.get('heure_fin')}")
+            
+            print(f"   - Disponibilités auto-générées: {len(auto_generees)}")
+            for dispo in auto_generees:
+                print(f"     → {dispo.get('statut')}: {dispo.get('heure_debut')}-{dispo.get('heure_fin')} (origine: {dispo.get('origine')})")
+            
+            print(f"\n💡 SOLUTION ATTENDUE:")
+            print("   → Les disponibilités manuelles devraient avoir priorité")
+            print("   → Guillaume devrait être éligible pour les gardes 06:00-18:00")
+            print("   → L'indisponibilité auto-générée 00:00-23:59 devrait être ignorée")
         else:
-            print("🔍 Situation complexe - analyse manuelle requise")
+            print("✅ Aucun conflit critique détecté")
         
         return True
     
