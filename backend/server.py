@@ -1334,9 +1334,21 @@ def create_pdf_header_elements(tenant, styles):
                 logo_data = base64.b64decode(encoded)
                 logo_buffer = IOBytesIO(logo_data)
                 
-                # Ajouter le logo en préservant le ratio aspect
-                # Largeur max de 1.5 inch, hauteur ajustée automatiquement pour préserver le ratio
-                logo = Image(logo_buffer, width=1.5*inch)
+                # Utiliser PIL pour obtenir les dimensions de l'image
+                from PIL import Image as PILImage
+                pil_image = PILImage.open(logo_buffer)
+                img_width, img_height = pil_image.size
+                
+                # Calculer la hauteur proportionnelle pour une largeur de 1.5 inch
+                target_width = 1.5 * inch
+                aspect_ratio = img_height / img_width
+                target_height = target_width * aspect_ratio
+                
+                # Réinitialiser le buffer pour ReportLab
+                logo_buffer.seek(0)
+                
+                # Ajouter le logo avec largeur et hauteur explicites
+                logo = Image(logo_buffer, width=target_width, height=target_height)
                 logo.hAlign = 'LEFT'
                 elements.append(logo)
                 elements.append(Spacer(1, 0.1 * inch))
