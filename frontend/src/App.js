@@ -15106,6 +15106,7 @@ const MonProfil = () => {
   const { tenantSlug } = useTenant();
   const [userProfile, setUserProfile] = useState(null);
   const [formations, setFormations] = useState([]);
+  const [competences, setCompetences] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState({
     gardes_ce_mois: 0,
     heures_travaillees: 0,
@@ -15138,7 +15139,7 @@ const MonProfil = () => {
       });
       
       try {
-        const [userData, formationsData, statsData, episData] = await Promise.all([
+        const [userData, competencesData, statsData, episData] = await Promise.all([
           apiGet(tenantSlug, `/users/${user.id}`),
           apiGet(tenantSlug, '/competences'),
           apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`),
@@ -15155,7 +15156,7 @@ const MonProfil = () => {
         });
         
         setUserProfile(userData);
-        setFormations(formationsData);
+        setCompetences(competencesData || []);
         setMonthlyStats(statsData);
         setMyEPIs(episData);
         
