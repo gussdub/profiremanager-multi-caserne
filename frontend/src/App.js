@@ -7584,7 +7584,7 @@ const Planning = () => {
       
       toast({
         title: "Génération en cours",
-        description: "Téléchargement du planning PDF..."
+        description: "Préparation du planning PDF..."
       });
       
       const response = await fetch(
@@ -7600,17 +7600,13 @@ const Planning = () => {
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `planning_${periode}_${viewMode}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Ouvrir dans un nouvel onglet pour permettre l'impression
+      window.open(url, '_blank');
       
       toast({
         title: "Rapport généré",
-        description: "Le PDF a été téléchargé avec succès",
+        description: "Le PDF a été ouvert avec succès",
         variant: "success"
       });
     } catch (error) {
