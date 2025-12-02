@@ -91,8 +91,33 @@ else:
 
 # ==================== INITIALIZATION ====================
 
+async def create_database_indexes():
+    """Créer les index MongoDB pour optimiser les performances"""
+    try:
+        # Index pour les notifications (CRITIQUE pour la performance)
+        await db.notifications.create_index([
+            ("tenant_id", 1),
+            ("destinataire_id", 1),
+            ("statut", 1)
+        ])
+        await db.notifications.create_index([("date_creation", -1)])
+        
+        # Index pour les utilisateurs
+        await db.users.create_index([("tenant_id", 1), ("email", 1)], unique=True)
+        
+        # Index pour les assignations
+        await db.assignations.create_index([("tenant_id", 1), ("user_id", 1)])
+        await db.assignations.create_index([("semaine_debut", 1)])
+        
+        print("✅ Index MongoDB créés avec succès")
+    except Exception as e:
+        print(f"⚠️ Erreur création index: {e}")
+
 async def initialize_multi_tenant():
     """Initialize super admin and default tenant on first run"""
+    # Créer les index MongoDB pour les performances
+    await create_database_indexes()
+    
     # 1. Créer le super admin s'il n'existe pas
     super_admin_exists = await db.super_admins.find_one({"email": SUPER_ADMIN_EMAIL})
     
