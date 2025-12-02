@@ -4571,53 +4571,10 @@ async def export_planning_pdf(
         )
         styles = getSampleStyleSheet()
         
-        # ===== EN-TÊTE AVEC LOGO =====
-        header_data = []
+        # Le logo et le header sont déjà ajoutés par create_branded_pdf
+        # Pas besoin de les ajouter à nouveau
         
-        # Logo du client (si disponible)
-        if hasattr(tenant, 'logo_url') and tenant.logo_url:
-            try:
-                from reportlab.platypus import Image
-                from base64 import b64decode
-                
-                # Si c'est un data URL base64
-                if tenant.logo_url.startswith('data:image/'):
-                    header, encoded = tenant.logo_url.split(',', 1)
-                    logo_data = b64decode(encoded)
-                    logo_buffer = BytesIO(logo_data)
-                    logo = Image(logo_buffer, width=1.2*inch, height=0.6*inch)
-                else:
-                    # URL normale
-                    logo = Image(tenant.logo_url, width=1.2*inch, height=0.6*inch)
-                
-                header_data.append([logo, ''])
-            except Exception as e:
-                print(f"Erreur chargement logo: {e}")
-                header_data.append(['', ''])
-        else:
-            header_data.append(['', ''])
-        
-        # Nom du service à droite du logo
-        service_style = ParagraphStyle(
-            'ServiceStyle',
-            parent=styles['Normal'],
-            fontSize=11,
-            textColor=colors.HexColor('#1e293b'),
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold'
-        )
-        
-        if header_data[0][0]:  # Si logo présent
-            header_data[0][1] = Paragraph(f"<b>{tenant.nom}</b>", service_style)
-            header_table = Table(header_data, colWidths=[1.5*inch, 8*inch])
-            header_table.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
-            elements.append(header_table)
-            elements.append(Spacer(1, 0.2*inch))
-        else:
+        if True:  # Keeping the same indentation structure
             # Pas de logo, juste le nom centré
             elements.append(Paragraph(f"<b>{tenant.nom.upper()}</b>", service_style))
             elements.append(Spacer(1, 0.15*inch))
