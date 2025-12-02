@@ -8781,16 +8781,29 @@ class RetraitEPICreate(BaseModel):
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
+# Cache simple pour les tenants (60 secondes)
+_tenant_cache = {}
+_tenant_cache_time = {}
+
 async def get_tenant_from_slug(slug: str) -> Tenant:
-    """Récupère le tenant depuis son slug"""
-    # Essayer d'abord avec 'actif' (production)
-    tenant_data = await db.tenants.find_one({"slug": slug, "actif": True}, {"_id": 0})
+    """Récupère le tenant depuis son slug avec cache"""
+    # Vérifier le cache (60 secondes)
+    cache_key = f"tenant_{slug}"
+    now = time.time()
+    if cache_key in _tenant_cache and (now - _tenant_cache_time.get(cache_key, 0)) < 60:
+        return _tenant_cache[cache_key]
     
-    # Si non trouvé, essayer avec 'is_active' (dev)
+    # Requête simplifiée avec index
+    tenant_data = await db.tenants.find_one({"slug": slug}, {"_id": 0})
+    
+    # Fallback pour ancienne structure
+    if not tenant_data:
+        tenant_data = await db.tenants.find_one({"slug": slug, "actif": True}, {"_id": 0})
+    
     if not tenant_data:
         tenant_data = await db.tenants.find_one({"slug": slug, "is_active": True}, {"_id": 0})
     
-    # Si toujours pas trouvé, essayer sans filtre de statut (pour rétrocompatibilité)
+    # Si toujours pas trouvé
     if not tenant_data:
         tenant_data = await db.tenants.find_one({"slug": slug}, {"_id": 0})
         if tenant_data:
