@@ -660,12 +660,13 @@ class GuillaumeDubeauAttributionTester:
             return False
         
         # Lancer l'attribution automatique pour décembre 2025
+        # L'API attend semaine_debut et semaine_fin
         print(f"🚀 Lancement attribution automatique pour période {self.test_period_start} à {self.test_period_end}...")
         
         url = f"{self.base_url}/planning/attribution-auto"
         params = {
-            "date_debut": self.test_period_start,
-            "date_fin": self.test_period_end,
+            "semaine_debut": self.test_period_start,
+            "semaine_fin": self.test_period_end,
             "reset": True  # Reset les assignations existantes
         }
         
@@ -676,14 +677,18 @@ class GuillaumeDubeauAttributionTester:
             return False
         
         result = response.json()
-        assignations_creees = result.get('assignations_creees', 0)
-        duree_execution = result.get('duree_execution', 'N/A')
+        task_id = result.get('task_id')
+        message = result.get('message', 'Attribution lancée')
         
-        print(f"✅ Attribution terminée - {assignations_creees} assignations créées")
-        print(f"⏱️ Durée d'exécution: {duree_execution}")
+        print(f"✅ Attribution lancée - Task ID: {task_id}")
+        print(f"📝 Message: {message}")
+        
+        # Attendre un peu pour que l'attribution se termine
+        print("⏳ Attente de la fin de l'attribution (30 secondes)...")
+        time.sleep(30)
         
         # Vérifier les assignations de Guillaume
-        return self.verify_guillaume_assignations(assignations_creees)
+        return self.verify_guillaume_assignations_after_attribution()
     
     def verify_guillaume_assignations(self, total_assignations):
         """Test 4: Vérifier les assignations de Guillaume pour décembre 2025"""
