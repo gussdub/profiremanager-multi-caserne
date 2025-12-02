@@ -1129,6 +1129,12 @@ body {
   .detail-item-optimized .detail-label {
     min-width: 120px !important;
   }
+  
+  /* Module Prévention - Bâtiments header sur tablette */
+  .batiments-header-controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 768px) {
