@@ -1334,8 +1334,9 @@ def create_pdf_header_elements(tenant, styles):
                 logo_data = base64.b64decode(encoded)
                 logo_buffer = IOBytesIO(logo_data)
                 
-                # Ajouter le logo (max 100px de hauteur)
-                logo = Image(logo_buffer, width=100, height=50)
+                # Ajouter le logo en préservant le ratio aspect
+                # Hauteur max de 50px, largeur ajustée automatiquement
+                logo = Image(logo_buffer, height=50)
                 logo.hAlign = 'LEFT'
                 elements.append(logo)
                 elements.append(Spacer(1, 0.1 * inch))
