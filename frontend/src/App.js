@@ -4755,7 +4755,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   const getCompetenceName = (competenceId) => {
     const competence = competences.find(c => c.id === competenceId);
-    return competence ? competence.nom : competenceId;
+    if (competence) return competence.nom;
+    // Fallback pour compétences obsolètes/supprimées
+    return "⚠️ Compétence obsolète";
   };
 
   const handleFormationToggle = (formationId) => {
@@ -15436,7 +15438,9 @@ const MonProfil = () => {
 
   const getCompetenceName = (competenceId) => {
     const competence = competences.find(c => c.id === competenceId);
-    return competence ? competence.nom : competenceId;
+    if (competence) return competence.nom;
+    // Fallback pour compétences obsolètes/supprimées
+    return "⚠️ Compétence obsolète";
   };
 
   if (loading) return <div className="loading" data-testid="profile-loading">Chargement du profil...</div>;
