@@ -4500,8 +4500,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   const generateRecurringDisponibilites = (config, userId) => {
     const disponibilites = [];
-    const startDate = new Date(config.date);
-    const endDate = new Date(config.date_fin);
+    // Parser les dates en timezone local (pas UTC) pour éviter décalage d'un jour
+    const [startYear, startMonth, startDay] = config.date.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const [endYear, endMonth, endDay] = config.date_fin.split('-').map(Number);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
 
     if (config.type_recurrence === 'hebdomadaire') {
       // Pour chaque jour sélectionné
