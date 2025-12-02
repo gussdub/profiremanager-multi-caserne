@@ -6557,9 +6557,7 @@ async def export_remplacements_pdf(
         types_map = {t['id']: t for t in types_garde_list}
         
         # Créer le PDF avec branding
-        buffer = BytesIO()
-        doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=landscape(letter))
-        elements = []
+        buffer, doc, elements = create_branded_pdf(tenant, pagesize=landscape(letter))
         styles = getSampleStyleSheet()
         
         # Titre
