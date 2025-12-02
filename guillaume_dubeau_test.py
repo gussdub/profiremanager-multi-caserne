@@ -20,7 +20,7 @@ TESTS À EFFECTUER:
 5. Tester l'attribution automatique pour la période 2025-12-01 à 2026-01-04
 6. Vérifier les logs détaillés pour comprendre pourquoi 0 assignations sont créées
 
-Backend URL: https://asset-mgr-1.preview.emergentagent.com/api
+Backend URL: https://print-bug-fixer.preview.emergentagent.com/api
 """
 
 import requests
@@ -32,7 +32,7 @@ import time
 
 class GuillaumeDubeauTester:
     def __init__(self):
-        self.base_url = "https://asset-mgr-1.preview.emergentagent.com/api/demo"
+        self.base_url = "https://print-bug-fixer.preview.emergentagent.com/api/demo"
         self.headers = {}
         self.token = None
         self.credentials = {
@@ -361,7 +361,7 @@ class GuillaumeDubeauTester:
         """Exécute l'investigation complète"""
         print("🚀 DÉBUT DE L'INVESTIGATION - GUILLAUME DUBEAU ATTRIBUTION AUTOMATIQUE")
         print("🏢 Tenant: demo")
-        print("🌐 URL: https://asset-mgr-1.preview.emergentagent.com/api/demo")
+        print("🌐 URL: https://print-bug-fixer.preview.emergentagent.com/api/demo")
         print("👤 Credentials: gussdub@gmail.com / 230685Juin+")
         print("🎯 Guillaume User ID: f4bdfa76-a2a2-4a01-9734-2cf534d04d31")
         print("📅 Période de test: 2025-12-01 à 2026-01-04")
