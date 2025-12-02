@@ -4745,6 +4745,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     return formation ? formation.nom : formationId;
   };
 
+  const getCompetenceName = (competenceId) => {
+    const competence = competences.find(c => c.id === competenceId);
+    return competence ? competence.nom : competenceId;
+  };
+
   const handleFormationToggle = (formationId) => {
     const updatedFormations = newUser.formations.includes(formationId)
       ? newUser.formations.filter(id => id !== formationId)
