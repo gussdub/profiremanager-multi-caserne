@@ -1183,6 +1183,16 @@ body {
   .kpi-card p {
     font-size: 0.875rem;
   }
+  
+  /* Stats mois responsive */
+  .stats-mois-grid {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
 
   /* Boutons d'export et d'action */
   .export-buttons,
