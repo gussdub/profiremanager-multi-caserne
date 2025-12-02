@@ -14384,14 +14384,30 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         # Créer un index pour les indisponibilités
         # Structure: {user_id: {date: True}}
+        # PRIORITÉ: Les disponibilités manuelles ont priorité sur les indisponibilités auto-générées
         indispos_lookup = {}
         for indispo in all_indisponibilites:
             user_id = indispo.get("user_id")
             date = indispo.get("date")
+            source = indispo.get("source", "manuel")  # Par défaut: manuel
             
-            if user_id not in indispos_lookup:
-                indispos_lookup[user_id] = {}
-            indispos_lookup[user_id][date] = True
+            # Vérifier s'il existe une disponibilité manuelle pour ce user/date
+            has_manual_dispo = any(
+                d.get("user_id") == user_id and 
+                d.get("date") == date and 
+                d.get("source", "manuel") == "manuel"
+                for d in all_disponibilites
+            )
+            
+            # N'ajouter l'indisponibilité que si:
+            # - C'est une indispo manuelle OU
+            # - Il n'y a pas de dispo manuelle qui la contredit
+            if source == "manuel" or not has_manual_dispo:
+                if user_id not in indispos_lookup:
+                    indispos_lookup[user_id] = {}
+                indispos_lookup[user_id][date] = True
+            else:
+                logging.info(f"✅ [CONFLIT RÉSOLU] Indispo auto-générée ignorée pour {user_id} le {date} (dispo manuelle trouvée)")
         
         # Récupérer les paramètres d'équité
         params_planning = await db.parametres_validation_planning.find_one({"tenant_id": tenant.id})
