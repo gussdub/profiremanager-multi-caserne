@@ -4453,7 +4453,11 @@ async def get_types_garde(tenant_slug: str, current_user: User = Depends(get_cur
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    # OPTIMISATION: Projection explicite + exclusion _id
+    types_garde = await db.types_garde.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(1000)
     cleaned_types = [clean_mongo_doc(type_garde) for type_garde in types_garde]
     return [TypeGarde(**type_garde) for type_garde in cleaned_types]
 
