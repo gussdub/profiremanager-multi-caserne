@@ -15703,15 +15703,15 @@ const MonProfil = () => {
             <div className="formation-header">
               <h3>📚 Compétences</h3>
               <span className="statut-badge planifiee" style={{fontSize: '11px', background: '#FEE2E2', color: '#991B1B'}}>
-                {userProfile?.formations?.length || 0}
+                {userProfile?.competences?.length || 0}
               </span>
             </div>
             <div style={{padding: '0.75rem 1.5rem'}}>
-              {userProfile?.formations?.length > 0 ? (
+              {userProfile?.competences?.length > 0 ? (
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
-                  {userProfile.formations.map((formationId, index) => (
+                  {userProfile.competences.map((competenceId, index) => (
                     <span key={index} className="formation-badge-compact">
-                      {getFormationName(formationId)} ✅
+                      {getCompetenceName(competenceId)} ✅
                     </span>
                   ))}
                 </div>
