@@ -114,22 +114,42 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
-  // Imprimer (ouvre la fenêtre d'impression)
-  const imprimer = () => {
-    let debut, fin;
-    
-    if (modeSelection === 'mois') {
-      const [year, month] = moisSelectionne.split('-');
-      debut = `${year}-${month}-01`;
-      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-      fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    } else {
-      debut = dateDebut;
-      fin = dateFin;
+  // Imprimer (ouvre le PDF pour impression)
+  const imprimer = async () => {
+    try {
+      let debut, fin;
+      
+      if (modeSelection === 'mois') {
+        const [year, month] = moisSelectionne.split('-');
+        debut = `${year}-${month}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        fin = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      } else {
+        debut = dateDebut;
+        fin = dateFin;
+      }
+      
+      const response = await fetch(
+        buildApiUrl(tenantSlug, `/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`),
+        {
+          headers: {
+            'Authorization': `Bearer ${getTenantToken()}`
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur génération rapport');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Ouvrir le blob dans un nouvel onglet pour impression
+      window.open(url, '_blank');
+      
+    } catch (err) {
+      console.error('Erreur PDF:', err);
+      alert(`Erreur lors de la génération du PDF: ${err.message}`);
     }
-    
-    // Ouvrir directement l'URL du PDF dans un nouvel onglet (méthode du module prévention)
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/rapport-heures/export-pdf?date_debut=${debut}&date_fin=${fin}`, '_blank');
   };
   
   // Fonction pour gérer le tri
