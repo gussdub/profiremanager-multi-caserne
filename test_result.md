@@ -357,6 +357,21 @@ backend:
         agent: "testing"
         comment: "✅ SYSTÈME D'AUTHENTIFICATION HYBRIDE ENTIÈREMENT FONCTIONNEL - Tests complets réussis avec succès: 1) ✅ Login utilisateur existant (admin@firemanager.ca / Admin123!) réussi avec détection automatique du type de hash bcrypt, 2) ✅ Création utilisateur test et reset mot de passe par admin réussi, 3) ✅ Connexions multiples consécutives (4/4 tentatives) réussies avec même mot de passe temporaire, 4) ✅ Stabilité du hash vérifiée (aucun re-hashing entre connexions), 5) ✅ Logs backend confirment détection correcte des types de hash: '🔐 Type de hash détecté: bcrypt', '✅ Vérification bcrypt: True', '🔐 Nouveau mot de passe hashé avec bcrypt'. Le système supporte correctement les deux formats: hashs bcrypt (commence par $2) vérifiés avec bcrypt, hashs SHA256 (autres) vérifiés avec SHA256, création nouveaux mots de passe utilise bcrypt. Tenant: shefford. CRITÈRES DE SUCCÈS ATTEINTS: ✅ Utilisateurs existants (bcrypt) peuvent se connecter, ✅ Nouveaux mots de passe (bcrypt) fonctionnent, ✅ Resets de mot de passe fonctionnent plusieurs fois consécutives, ✅ Aucun re-hashing après connexion réussie."
 
+  - task: "Guillaume Dubeau Attribution Automatique Investigation"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW INVESTIGATION - Investigation du problème d'attribution automatique pour Guillaume Dubeau. L'utilisateur signale que l'attribution automatique crée 0 assignations alors que Guillaume Dubeau a des disponibilités pour décembre 2025. Tests à effectuer: 1) Authentification tenant demo (gussdub@gmail.com / 230685Juin+), 2) Vérification disponibilités Guillaume (ID: f4bdfa76-a2a2-4a01-9734-2cf534d04d31), 3) Test attribution automatique période 2025-12-01 à 2026-01-04, 4) Analyse comparative avec utilisateurs assignés."
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME IDENTIFIÉ - CONFLIT DE DISPONIBILITÉS MULTIPLES: Investigation complète terminée avec identification de la cause racine. RÉSULTATS CLÉS: 1) ✅ Authentification réussie sur tenant demo, 2) ✅ Guillaume Dubeau trouvé (temps_partiel, Lieutenant, 35h/sem max), 3) ✅ Attribution automatique FONCTIONNE (crée 2 assignations pour d'autres utilisateurs), 4) ❌ Guillaume N'EST PAS assigné malgré ses disponibilités. CAUSE RACINE IDENTIFIÉE: Guillaume a des DISPONIBILITÉS CONFLICTUELLES pour le 2025-12-01: - Multiples entrées 'indisponible: 00:00-23:59 (origine: montreal_7_24)' ET multiples entrées 'disponible: 06:00-18:00 (origine: manuelle)' pour la MÊME DATE. L'algorithme d'attribution détecte probablement ce conflit et exclut Guillaume pour éviter les erreurs. COMPARAISON: Les utilisateurs assignés (Sophie Després - temps_plein/Capitaine, Felix Dozois - temps_partiel/Lieutenant) n'ont pas de disponibilités conflictuelles. SOLUTION REQUISE: L'algorithme doit être modifié pour gérer les priorités entre disponibilités manuelles vs automatiques (montreal_7_24), ou nettoyer les doublons avant attribution. IMPACT: Guillaume et potentiellement d'autres utilisateurs avec des disponibilités générées automatiquement ET manuelles sont exclus de l'attribution automatique."
+
   - task: "Connexion MongoDB Atlas Production FINALE"
     implemented: true
     working: true
