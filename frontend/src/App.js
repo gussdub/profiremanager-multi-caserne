@@ -7578,11 +7578,35 @@ const Planning = () => {
   const kpis = calculateKPIs(kpiPeriode);
 
   // Fonctions d'export Planning
-  const handleExportPDFPlanning = () => {
-    const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
-    
-    // Ouvrir directement l'URL du PDF dans un nouvel onglet (méthode du module prévention)
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/planning/export-pdf?periode=${periode}&type=${viewMode}`, '_blank');
+  const handleExportPDFPlanning = async () => {
+    try {
+      const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      
+      const response = await fetch(
+        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`),
+        {
+          headers: {
+            'Authorization': `Bearer ${getTenantToken()}`
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur génération rapport');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Ouvrir le blob dans un nouvel onglet pour impression
+      window.open(url, '_blank');
+      
+    } catch (error) {
+      console.error('Erreur export PDF planning:', error);
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter le planning: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleExportExcelPlanning = async () => {
