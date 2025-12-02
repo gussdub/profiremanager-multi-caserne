@@ -10,7 +10,7 @@ import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
 import { useTenant } from "./contexts/TenantContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
-import SecteursMap from "./components/SecteursMap";
+const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
 import { fr } from "date-fns/locale";
