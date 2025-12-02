@@ -22357,9 +22357,12 @@ async def export_rapport_batiment_pdf(
     from PIL import Image as PILImage
     import base64
     
-    buffer = io.BytesIO()
-    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    story = []
+    buffer, doc, story = create_branded_pdf(
+        tenant, 
+        pagesize=letter, 
+        topMargin=0.5*inch, 
+        bottomMargin=0.5*inch
+    )
     styles = getSampleStyleSheet()
     
     # Style personnalisé
