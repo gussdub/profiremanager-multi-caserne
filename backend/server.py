@@ -11779,7 +11779,6 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
             pass
     
     # Présence aux formations
-    mes_inscriptions = [i for i in inscriptions_formations if i["user_id"] == current_user.id]
     formations_passees = 0
     presences = 0
     for insc in mes_inscriptions:
