@@ -114,7 +114,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
-  // Imprimer (déclenche la fenêtre d'impression système)
+  // Imprimer (ouvre le PDF dans un nouvel onglet)
   const imprimer = async () => {
     try {
       let debut, fin;
@@ -143,27 +143,8 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      // Créer un iframe caché pour déclencher l'impression
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      
-      // Attendre que le PDF soit chargé, puis déclencher l'impression
-      iframe.onload = () => {
-        try {
-          iframe.contentWindow.print();
-          // Nettoyer après un délai
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            window.URL.revokeObjectURL(url);
-          }, 1000);
-        } catch (e) {
-          console.error('Erreur impression:', e);
-          document.body.removeChild(iframe);
-          window.URL.revokeObjectURL(url);
-        }
-      };
+      // Ouvrir dans un nouvel onglet
+      window.open(url, '_blank');
       
     } catch (err) {
       console.error('Erreur PDF:', err);
