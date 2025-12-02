@@ -4380,8 +4380,24 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           // Vérifier si c'est une erreur de conflit (409)
           if (error.response && error.response.status === 409) {
             conflictCount++;
-            console.log(`Conflit détecté pour la date ${dispo.date}, ignoré et continué`);
-            // Continuer avec les autres disponibilités au lieu de s'arrêter
+            const conflictDetail = error.response.data;
+            console.log(`Conflit détecté pour ${dispo.date}:`, conflictDetail);
+            
+            // Si c'est le premier conflit, afficher les détails dans un modal
+            if (conflictCount === 1 && conflictDetail.conflicts && conflictDetail.conflicts.length > 0) {
+              // Afficher le modal avec les détails du conflit
+              setConflictData({
+                conflicts: conflictDetail.conflicts,
+                newItem: conflictDetail.new_item,
+                date: dispo.date,
+                action_required: conflictDetail.action_required
+              });
+              setShowConflictModal(true);
+              // Arrêter la création si conflit incompatible
+              if (conflictDetail.action_required === 'choose') {
+                break;
+              }
+            }
           } else {
             // Autre erreur
             errorCount++;
