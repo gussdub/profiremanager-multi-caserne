@@ -12428,17 +12428,6 @@ async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut:
     
     return conflicts
 
-def _generate_conflict_message(new_type, existing_type, is_covered, is_same_type):
-    """Génère un message de conflit approprié"""
-    if is_same_type and is_covered:
-        return "Cette plage horaire est déjà couverte par une entrée existante."
-    elif is_same_type:
-        return f"Chevauchement avec une autre {new_type}. Fusion automatique possible."
-    else:
-        action = "disponibilité" if new_type == "disponibilite" else "indisponibilité"
-        conflict = "indisponibilité" if existing_type == "indisponible" else "disponibilité"
-        return f"Incompatible: Vous essayez d'ajouter une {action} alors qu'une {conflict} existe déjà."
-
 # Disponibilités routes
 @api_router.post("/{tenant_slug}/disponibilites", response_model=Disponibilite)
 async def create_disponibilite(
