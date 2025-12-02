@@ -433,10 +433,10 @@ class GuillaumeDubeauAttributionTester:
             print(f"\n✅ SUCCÈS: Tous les utilisateurs ont des assignations complètes")
             return True
     
-    def find_francois_guay(self):
-        """Test 1: Identifier François Guay dans les utilisateurs"""
+    def find_guillaume_dubeau(self):
+        """Test 1: Identifier Guillaume Dubeau dans les utilisateurs"""
         print("\n" + "="*60)
-        print("🧪 TEST 1: IDENTIFIER FRANÇOIS GUAY")
+        print("🧪 TEST 1: IDENTIFIER GUILLAUME DUBEAU")
         print("="*60)
         
         users = self.get_users()
@@ -444,39 +444,37 @@ class GuillaumeDubeauAttributionTester:
             print("❌ Impossible de récupérer les utilisateurs")
             return False
         
-        # Chercher François Guay par nom (flexible)
-        francois_candidates = []
+        # Chercher Guillaume par ID spécifique
+        guillaume_user = None
         for user in users:
-            prenom = user.get('prenom', '').lower()
-            nom = user.get('nom', '').lower()
-            
-            # Recherche flexible pour François Guay
-            if ('francois' in prenom or 'françois' in prenom) and 'guay' in nom:
-                francois_candidates.append(user)
+            if user.get('id') == self.guillaume_user_id:
+                guillaume_user = user
+                break
         
-        if not francois_candidates:
-            print("❌ François Guay non trouvé dans les utilisateurs")
-            print("🔍 Recherche alternative par email...")
+        if not guillaume_user:
+            print(f"❌ Guillaume Dubeau non trouvé avec ID: {self.guillaume_user_id}")
+            print("🔍 Recherche alternative par nom...")
             
-            # Recherche alternative par email
+            # Recherche alternative par nom
             for user in users:
-                email = user.get('email', '').lower()
-                if 'francois' in email and 'guay' in email:
-                    francois_candidates.append(user)
+                prenom = user.get('prenom', '').lower()
+                nom = user.get('nom', '').lower()
+                if 'guillaume' in prenom and ('dubeau' in nom or 'dub' in nom):
+                    guillaume_user = user
+                    break
         
-        if not francois_candidates:
-            print("❌ ÉCHEC: François Guay non trouvé")
+        if not guillaume_user:
+            print("❌ ÉCHEC: Guillaume Dubeau non trouvé")
             return False
         
-        if len(francois_candidates) > 1:
-            print(f"⚠️ Plusieurs candidats trouvés ({len(francois_candidates)}), utilisation du premier")
-        
-        self.francois_guay_user = francois_candidates[0]
-        print(f"✅ François Guay trouvé:")
-        print(f"   - ID: {self.francois_guay_user['id']}")
-        print(f"   - Nom: {self.francois_guay_user.get('prenom', '')} {self.francois_guay_user.get('nom', '')}")
-        print(f"   - Email: {self.francois_guay_user.get('email', 'N/A')}")
-        print(f"   - Type emploi: {self.francois_guay_user.get('type_emploi', 'N/A')}")
+        self.guillaume_user = guillaume_user
+        print(f"✅ Guillaume Dubeau trouvé:")
+        print(f"   - ID: {self.guillaume_user['id']}")
+        print(f"   - Nom: {self.guillaume_user.get('prenom', '')} {self.guillaume_user.get('nom', '')}")
+        print(f"   - Email: {self.guillaume_user.get('email', 'N/A')}")
+        print(f"   - Type emploi: {self.guillaume_user.get('type_emploi', 'N/A')}")
+        print(f"   - Heures max/semaine: {self.guillaume_user.get('heures_max_semaine', 'N/A')}")
+        print(f"   - Grade: {self.guillaume_user.get('grade', 'N/A')}")
         
         return True
     
