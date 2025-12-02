@@ -10402,6 +10402,20 @@ body {
   color: #1f2937;
 }
 
+.batiments-header-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.view-mode-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px;
+}
+
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
