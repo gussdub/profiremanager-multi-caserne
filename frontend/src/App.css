@@ -1262,6 +1262,32 @@ body {
     text-align: center;
   }
   
+  /* Module Prévention - Bâtiments header responsive */
+  .batiments-header-controls {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    width: 100%;
+  }
+  
+  .batiments-header-controls button,
+  .batiments-header-controls .view-mode-toggle {
+    width: 100%;
+  }
+  
+  .view-mode-toggle {
+    justify-content: center;
+  }
+  
+  .prevention-batiments .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .prevention-batiments .page-header h2 {
+    margin-bottom: 0;
+  }
+  
   /* Stats mois responsive */
   .stats-mois-grid {
     grid-template-columns: 1fr;
