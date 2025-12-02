@@ -114,7 +114,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
     }
   };
   
-  // Imprimer (télécharge le PDF)
+  // Imprimer (ouvre la fenêtre d'impression)
   const imprimer = async () => {
     try {
       let debut, fin;
@@ -133,7 +133,7 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       if (window.toast) {
         window.toast({
           title: "Génération en cours",
-          description: "Téléchargement du rapport PDF..."
+          description: "Préparation du rapport PDF..."
         });
       }
       
@@ -150,19 +150,15 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `rapport_heures_${debut}_${fin}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Ouvrir dans un nouvel onglet pour permettre l'impression
+      window.open(url, '_blank');
       
       // Afficher toast de succès
       if (window.toast) {
         window.toast({
           title: "Rapport généré",
-          description: "Le PDF a été téléchargé avec succès",
+          description: "Le PDF a été ouvert avec succès",
           variant: "success"
         });
       }
