@@ -288,29 +288,19 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
               </p>
             </div>
 
-            {/* Informations du conducteur */}
+            {/* Personne mandatée */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ marginBottom: '10px', fontSize: '16px' }}>👤 Conducteur</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div>
-                  <Label>Nom *</Label>
-                  <Input
-                    type="text"
-                    value={formData.nom_conducteur}
-                    onChange={(e) => setFormData({ ...formData, nom_conducteur: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label>Prénom *</Label>
-                  <Input
-                    type="text"
-                    value={formData.prenom_conducteur}
-                    onChange={(e) => setFormData({ ...formData, prenom_conducteur: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
+              <Label>👤 Personne mandatée pour effectuer la ronde *</Label>
+              <Input
+                type="text"
+                value={formData.personne_mandatee}
+                onChange={(e) => setFormData({ ...formData, personne_mandatee: e.target.value })}
+                placeholder="Ex: Jean Tremblay"
+                required
+              />
+              <p style={{ fontSize: '12px', color: '#6c757d', marginTop: '5px' }}>
+                💡 La personne qui effectue ET qui conduira le véhicule
+              </p>
             </div>
 
             {/* Signatures */}
