@@ -15113,12 +15113,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             available_users = []
                     else:
                         logging.info(f"✅ [OFFICIER] {type_garde['nom']} - {date_str}: Officier déjà assigné, contrainte respectée - tous les candidats éligibles")
-                        # CORRECTION CRITIQUE: Réinitialiser available_users avec TOUS les candidats éligibles
-                        # L'étape précédente a peut-être filtré seulement les officiers
-                        # On doit maintenant traiter TOUS les candidats pour les niveaux N2-N5
+                        # CORRECTION: Réinitialiser available_users pour inclure tous les candidats
+                        # IMPORTANT: Le tri par niveaux N2-N5 sera fait APRÈS cette étape
                         available_users = []
                         for user in users:
-                            # Réappliquer les filtres de base (compétences, déjà assigné, indispo)
+                            # Réappliquer filtres de base seulement
                             if user.get("statut") != "Actif":
                                 continue
                             
@@ -15143,8 +15142,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             
                             available_users.append(user)
                 
-                # ÉTAPE 4: NOUVELLE LOGIQUE D'ATTRIBUTION PAR PRIORITÉ
-                # Séparer les candidats en 4 catégories de priorité (N2, N3, N4, N5)
+                # ÉTAPE 4: TRI PAR NIVEAUX DE PRIORITÉ (N2, N3, N4, N5)
+                # IMPORTANT: Ce tri doit se faire ICI, après l'étape officier
+                # Pour garantir que les niveaux sont appliqués sur la liste finale de candidats
                 
                 # Catégorie 1: Temps partiel DISPONIBLES (ont déclaré une disponibilité)
                 tp_disponibles = []
