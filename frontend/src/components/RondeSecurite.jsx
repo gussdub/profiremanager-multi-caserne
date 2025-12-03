@@ -16,9 +16,9 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
     date: new Date().toISOString().split('T')[0],
     heure: new Date().toTimeString().slice(0, 5),
     lieu: '',
+    position_gps: null,
     km: '',
-    nom_conducteur: '',
-    prenom_conducteur: '',
+    personne_mandatee: '',
     defectuosites: '',
     points_verification: {
       attelage: 'conforme',
