@@ -7507,9 +7507,6 @@ const Planning = () => {
     setShowAssignModal(true);
   };
 
-  // Nouvel état pour le sélecteur de période KPI
-  const [kpiPeriode, setKpiPeriode] = useState('actuel'); // 'actuel' ou 'suivant'
-
   const navigateWeek = (direction) => {
     const [year, month, day] = currentWeek.split('-').map(Number);
     const newDate = new Date(Date.UTC(year, month - 1, day));
@@ -7523,22 +7520,14 @@ const Planning = () => {
     setCurrentMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  // Calcul des KPIs pour le mois sélectionné (actuel ou suivant)
-  const calculateKPIs = (periode = 'actuel') => {
-    const today = new Date();
-    let targetMonthStart, targetMonthEnd, monthLabel;
+  // Calcul des KPIs pour le mois affiché dans le planning (currentMonth)
+  const calculateKPIs = (monthString = currentMonth) => {
+    const [year, month] = monthString.split('-').map(Number);
     
-    if (periode === 'actuel') {
-      // Mois actuel
-      targetMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    } else {
-      // Mois suivant
-      targetMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      targetMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-      monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    }
+    // Calculer le début et la fin du mois affiché
+    const targetMonthStart = new Date(year, month - 1, 1);
+    const targetMonthEnd = new Date(year, month, 0);
+    const monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     
     // Filtrer les assignations du mois cible
     const monthAssignations = assignations.filter(a => {
