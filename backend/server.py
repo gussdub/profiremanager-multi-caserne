@@ -24196,13 +24196,13 @@ async def create_ronde_securite(
         date=ronde_data.date,
         heure=ronde_data.heure,
         lieu=ronde_data.lieu,
+        position_gps=ronde_data.position_gps,
         km=ronde_data.km,
-        nom_conducteur=ronde_data.nom_conducteur,
-        prenom_conducteur=ronde_data.prenom_conducteur,
+        personne_mandatee=ronde_data.personne_mandatee,
         defectuosites=ronde_data.defectuosites,
         points_verification=ronde_data.points_verification,
-        signature_inspecteur=ronde_data.signature_inspecteur,
-        signature_conducteur=ronde_data.signature_conducteur,
+        signature_mandatee=ronde_data.signature_mandatee,
+        contre_signatures=[],
         created_by=current_user.id
     )
     
