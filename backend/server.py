@@ -15109,11 +15109,42 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Priorité 4: Aucun candidat qualifié
                         else:
                             logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible")
+                            # Si aucun officier trouvé mais contrainte active, skip cette garde
+                            available_users = []
                     else:
                         logging.info(f"✅ [OFFICIER] {type_garde['nom']} - {date_str}: Officier déjà assigné, contrainte respectée - tous les candidats éligibles")
+                        # CORRECTION CRITIQUE: Réinitialiser available_users avec TOUS les candidats éligibles
+                        # L'étape précédente a peut-être filtré seulement les officiers
+                        # On doit maintenant traiter TOUS les candidats pour les niveaux N2-N5
+                        available_users = []
+                        for user in users:
+                            # Réappliquer les filtres de base (compétences, déjà assigné, indispo)
+                            if user.get("statut") != "Actif":
+                                continue
+                            
+                            # Check indisponibilité
+                            if user["id"] in indispos_lookup and date_str in indispos_lookup[user["id"]]:
+                                continue
+                            
+                            # Check déjà assigné
+                            already_assigned = next((a for a in existing_assignations 
+                                                   if a["date"] == date_str 
+                                                   and a["user_id"] == user["id"]
+                                                   and a["type_garde_id"] == type_garde["id"]), None)
+                            if already_assigned:
+                                continue
+                            
+                            # Check compétences
+                            competences_requises = type_garde.get("competences_requises", [])
+                            if competences_requises:
+                                user_competences = user.get("competences", [])
+                                if not all(comp_id in user_competences for comp_id in competences_requises):
+                                    continue
+                            
+                            available_users.append(user)
                 
                 # ÉTAPE 4: NOUVELLE LOGIQUE D'ATTRIBUTION PAR PRIORITÉ
-                # Séparer les candidats en 4 catégories de priorité
+                # Séparer les candidats en 4 catégories de priorité (N2, N3, N4, N5)
                 
                 # Catégorie 1: Temps partiel DISPONIBLES (ont déclaré une disponibilité)
                 tp_disponibles = []
