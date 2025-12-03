@@ -303,57 +303,32 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
               </p>
             </div>
 
-            {/* Signatures */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <Label>✍️ Signature de l'inspecteur *</Label>
-                <div style={{ border: '2px solid #dee2e6', borderRadius: '8px', background: '#fff' }}>
-                  <SignatureCanvas
-                    ref={signatureInspecteurRef}
-                    canvasProps={{
-                      width: 400,
-                      height: 150,
-                      className: 'signature-canvas',
-                      style: { width: '100%', height: '150px' }
-                    }}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearSignature(signatureInspecteurRef)}
-                  style={{ marginTop: '5px', width: '100%' }}
-                >
-                  🗑️ Effacer
-                </Button>
+            {/* Signature */}
+            <div style={{ marginBottom: '20px' }}>
+              <Label>✍️ Signature de la personne mandatée *</Label>
+              <div style={{ border: '2px solid #dee2e6', borderRadius: '8px', background: '#fff', maxWidth: '600px' }}>
+                <SignatureCanvas
+                  ref={signatureMandateeRef}
+                  canvasProps={{
+                    width: 600,
+                    height: 150,
+                    className: 'signature-canvas',
+                    style: { width: '100%', height: '150px' }
+                  }}
+                />
               </div>
-
-              <div>
-                <Label>✍️ Signature du conducteur *</Label>
-                <div style={{ border: '2px solid #dee2e6', borderRadius: '8px', background: '#fff' }}>
-                  <SignatureCanvas
-                    ref={signatureConducteurRef}
-                    canvasProps={{
-                      width: 400,
-                      height: 150,
-                      className: 'signature-canvas',
-                      style: { width: '100%', height: '150px' }
-                    }}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearSignature(signatureConducteurRef)}
-                  style={{ marginTop: '5px', width: '100%' }}
-                >
-                  🗑️ Effacer
-                </Button>
-                <p style={{ fontSize: '12px', color: '#6c757d', marginTop: '8px', lineHeight: '1.4' }}>
-                  Le conducteur a toujours l'opportunité de refaire la vérification complète du véhicule et de remplir lui-même un rapport. J'ai pris connaissance du rapport de la ronde qui a été effectuée.
-                </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => clearSignature(signatureMandateeRef)}
+                style={{ marginTop: '5px' }}
+              >
+                🗑️ Effacer
+              </Button>
+              <div style={{ background: '#e3f2fd', padding: '12px', borderRadius: '6px', marginTop: '15px', fontSize: '13px' }}>
+                📋 <strong>Validité:</strong> Cette ronde est valide pour <strong>24 heures</strong>.<br/>
+                💡 Si une autre personne doit prendre ce véhicule dans les 24h, elle pourra <strong>contre-signer</strong> cette ronde sans avoir à en créer une nouvelle.
               </div>
             </div>
           </div>
