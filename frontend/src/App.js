@@ -7706,58 +7706,23 @@ const Planning = () => {
         </div>
       </div>
 
-      {/* Sélecteur de période pour KPIs */}
+      {/* Section KPIs pour le mois affiché */}
       <div style={{
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '1rem', 
-        marginBottom: '1.5rem',
-        padding: '1rem',
-        background: '#F9FAFB',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '1rem',
+        padding: '0.75rem 1rem',
+        background: 'white',
         borderRadius: '8px',
         border: '1px solid #E5E7EB'
       }}>
-        <span style={{fontWeight: '600', color: '#374151'}}>📊 Statistiques pour:</span>
-        <div style={{display: 'flex', gap: '0.5rem'}}>
-          <button
-            onClick={() => setKpiPeriode('actuel')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: kpiPeriode === 'actuel' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
-              background: kpiPeriode === 'actuel' ? '#EFF6FF' : 'white',
-              color: kpiPeriode === 'actuel' ? '#1E40AF' : '#6B7280',
-              fontWeight: kpiPeriode === 'actuel' ? '600' : '400',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            📅 Mois actuel
-          </button>
-          <button
-            onClick={() => setKpiPeriode('suivant')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: kpiPeriode === 'suivant' ? '2px solid #3B82F6' : '1px solid #D1D5DB',
-              background: kpiPeriode === 'suivant' ? '#EFF6FF' : 'white',
-              color: kpiPeriode === 'suivant' ? '#1E40AF' : '#6B7280',
-              fontWeight: kpiPeriode === 'suivant' ? '600' : '400',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            📆 Mois suivant
-          </button>
-        </div>
-        <span style={{
-          marginLeft: 'auto',
-          color: '#6B7280',
-          fontSize: '0.875rem',
-          fontWeight: '500'
-        }}>
-          {kpis.monthLabel}
-        </span>
+        <h3 style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          color: '#1F2937',
+          margin: 0
+        }}>📊 Statistiques - {kpis.monthLabel}</h3>
       </div>
 
       {/* KPIs du Mois */}
