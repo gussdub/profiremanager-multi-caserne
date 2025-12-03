@@ -254,6 +254,10 @@ const OfflineManager = ({ tenant }) => {
                   </div>
                 </div>
               )}
+
+              {/* Si module prévention actif, afficher les fonctionnalités */}
+              {hasPreventionModule && (
+                <>
               {/* Statut actuel */}
               <div style={{ 
                 background: isOnline ? '#d1f2eb' : '#f8d7da', 
