@@ -24262,6 +24262,70 @@ async def get_ronde_securite_by_id(
     
     return ronde
 
+@api_router.post("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/contre-signer")
+async def contre_signer_ronde(
+    tenant_slug: str,
+    ronde_id: str,
+    contre_signature_data: ContreSignatureCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Contre-signer une ronde de sécurité existante (dans les 24h)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer la ronde
+    ronde = await db.rondes_securite.find_one(
+        {"id": ronde_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not ronde:
+        raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
+    
+    # Vérifier que la ronde est encore valide (< 24h)
+    from datetime import datetime, timedelta
+    ronde_datetime = datetime.fromisoformat(f"{ronde['date']}T{ronde['heure']}")
+    now = datetime.now()
+    time_elapsed = now - ronde_datetime
+    
+    if time_elapsed > timedelta(hours=24):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cette ronde a expiré (effectuée il y a {int(time_elapsed.total_seconds() / 3600)}h). Vous devez créer une nouvelle ronde."
+        )
+    
+    # Vérifier si c'est la même personne qui a fait la ronde
+    nom_complet_actuel = f"{contre_signature_data.prenom_conducteur} {contre_signature_data.nom_conducteur}"
+    if nom_complet_actuel.lower().strip() == ronde['personne_mandatee'].lower().strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Vous êtes la personne qui a effectué cette ronde. Pas besoin de contre-signer."
+        )
+    
+    # Créer la contre-signature
+    contre_signature = ContreSignature(
+        nom_conducteur=contre_signature_data.nom_conducteur,
+        prenom_conducteur=contre_signature_data.prenom_conducteur,
+        signature=contre_signature_data.signature,
+        user_id=current_user.id
+    )
+    
+    # Ajouter la contre-signature à la ronde
+    await db.rondes_securite.update_one(
+        {"id": ronde_id},
+        {"$push": {"contre_signatures": contre_signature.dict()}}
+    )
+    
+    return {
+        "message": "Contre-signature ajoutée avec succès",
+        "ronde_id": ronde_id,
+        "temps_restant_heures": int((timedelta(hours=24) - time_elapsed).total_seconds() / 3600)
+    }
+
 
 # Include the router in the main app
 
