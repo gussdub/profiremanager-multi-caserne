@@ -317,6 +317,19 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onClose={() => setShowInspectionModal(false)}
         />
       )}
+
+      {showRondeSecuriteModal && selectedVehiculeForRonde && (
+        <RondeSecurite
+          vehicule={selectedVehiculeForRonde}
+          onClose={() => {
+            setShowRondeSecuriteModal(false);
+            setSelectedVehiculeForRonde(null);
+          }}
+          onSuccess={() => {
+            fetchVehicules();
+          }}
+        />
+      )}
     </div>
   );
 };
