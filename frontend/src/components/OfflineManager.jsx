@@ -52,20 +52,47 @@ const OfflineManager = () => {
     }
   };
 
+  const handleShowConfirmPopup = async () => {
+    setPreparing(true);
+    try {
+      // Récupérer les inspections planifiées
+      const inspections = await offlineService.getInspectionsPlanifiees(tenantSlug, apiGet, 7);
+      setInspectionsPlanifiees(inspections);
+      
+      if (inspections.length === 0) {
+        alert('⚠️ Aucune inspection planifiée dans les 7 prochains jours.\n\nVous pouvez planifier des inspections depuis le module Prévention.');
+        setPreparing(false);
+        return;
+      }
+      
+      setShowModal(false);
+      setShowConfirmPopup(true);
+    } catch (error) {
+      console.error('Erreur récupération inspections:', error);
+      alert('❌ Erreur: ' + error.message);
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   const handlePrepareOffline = async () => {
     setPreparing(true);
     try {
-      const result = await offlineService.prepareOfflineMode(tenantSlug, apiGet);
+      const result = await offlineService.prepareOfflineMode(tenantSlug, apiGet, 7);
       
-      alert(`✅ Mode offline prêt !\n\n📊 Données téléchargées :\n• ${result.batiments} bâtiments\n• ${result.grilles} grilles d'inspection\n\nVous pouvez maintenant travailler sans connexion !`);
+      if (result.inspections === 0) {
+        alert('⚠️ Aucune inspection planifiée à télécharger.');
+      } else {
+        alert(`✅ Mode offline prêt !\n\n📊 Données téléchargées :\n• ${result.inspections} inspection(s) planifiée(s)\n• ${result.batiments} bâtiment(s) (${result.nouveaux} nouveau(x))\n\nVous pouvez maintenant travailler sans connexion !`);
+      }
       
       await checkOfflineStatus();
+      setShowConfirmPopup(false);
     } catch (error) {
       console.error('Erreur préparation mode offline:', error);
       alert('❌ Erreur lors de la préparation du mode offline: ' + error.message);
     } finally {
       setPreparing(false);
-      setShowModal(false);
     }
   };
 
