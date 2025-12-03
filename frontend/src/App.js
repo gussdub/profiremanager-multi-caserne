@@ -46,6 +46,13 @@ const LoadingComponent = () => (
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
 
+// Fonction utilitaire pour parser une date string "YYYY-MM-DD" en timezone local
+const parseDateLocal = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 // Configure axios defaults
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
