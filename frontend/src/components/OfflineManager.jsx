@@ -353,6 +353,85 @@ const OfflineManager = () => {
           </div>
         </div>
       )}
+
+      {/* Popup de confirmation avec liste des inspections */}
+      {showConfirmPopup && (
+        <div className="modal-overlay" onClick={() => setShowConfirmPopup(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="modal-header">
+              <h2>📥 Télécharger pour mode offline</h2>
+              <button className="close-btn" onClick={() => setShowConfirmPopup(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div style={{ background: '#e7f3ff', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <strong>📊 {inspectionsPlanifiees.length} inspection(s) planifiée(s)</strong> dans les 7 prochains jours
+              </div>
+
+              {/* Liste des inspections */}
+              <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '20px' }}>
+                {inspectionsPlanifiees.map((insp, index) => (
+                  <div key={index} style={{ 
+                    background: '#f8f9fa', 
+                    padding: '12px', 
+                    borderRadius: '6px', 
+                    marginBottom: '10px',
+                    border: '1px solid #dee2e6'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                          🏢 {insp.batiment?.nom || 'Bâtiment inconnu'}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#6c757d' }}>
+                          📅 {new Date(insp.date_planifiee).toLocaleDateString('fr-FR', { 
+                            weekday: 'long', 
+                            day: '2-digit', 
+                            month: 'long' 
+                          })}
+                        </div>
+                        {insp.batiment?.adresse && (
+                          <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '2px' }}>
+                            📍 {insp.batiment.adresse}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ 
+                background: '#fff3cd', 
+                padding: '12px', 
+                borderRadius: '6px', 
+                fontSize: '13px',
+                marginBottom: '20px'
+              }}>
+                💡 <strong>Info :</strong> Seuls les bâtiments de ces inspections seront téléchargés
+              </div>
+
+              {/* Boutons d'action */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowConfirmPopup(false)}
+                  disabled={preparing}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handlePrepareOffline}
+                  disabled={preparing}
+                  style={{ background: '#28a745' }}
+                >
+                  {preparing ? '⏳ Téléchargement...' : `✅ Tout télécharger (${inspectionsPlanifiees.length})`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
