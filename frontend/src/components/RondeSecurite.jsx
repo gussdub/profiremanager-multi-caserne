@@ -42,6 +42,29 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
   });
 
   const [saving, setSaving] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Détecter la position GPS automatiquement au chargement
+  React.useEffect(() => {
+    if ('geolocation' in navigator) {
+      setGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFormData(prev => ({ 
+            ...prev, 
+            position_gps: [latitude, longitude],
+            lieu: prev.lieu || 'Position GPS détectée'
+          }));
+          setGpsLoading(false);
+        },
+        (error) => {
+          console.log('GPS non disponible:', error);
+          setGpsLoading(false);
+        }
+      );
+    }
+  }, []);
 
   const pointsVerification = [
     { key: 'attelage', label: '1 - Attelage' },
