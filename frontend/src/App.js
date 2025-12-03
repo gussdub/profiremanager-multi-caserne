@@ -12965,7 +12965,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           if (includeDate) {
             indisponibilitesACreer.push({
               user_id: targetUser.id,
-              date: currentDate.toISOString().split('T')[0],
+              date: formatDateLocal(currentDate),
               type_garde_id: null,
               heure_debut: manualIndispoConfig.heure_debut,
               heure_fin: manualIndispoConfig.heure_fin,
