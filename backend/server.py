@@ -24124,18 +24124,25 @@ async def generate_borne_qr_code(
 
 # ==================== RONDES DE SÉCURITÉ ====================
 
+class ContreSignature(BaseModel):
+    """Contre-signature d'une ronde par un 2e conducteur"""
+    nom_conducteur: str
+    prenom_conducteur: str
+    signature: str  # Base64 data URL
+    date_contre_signature: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: Optional[str] = None
+
 class RondeSecuriteCreate(BaseModel):
     vehicule_id: str
     date: str
     heure: str
     lieu: str
+    position_gps: Optional[List[float]] = None  # [latitude, longitude]
     km: int
-    nom_conducteur: str
-    prenom_conducteur: str
+    personne_mandatee: str  # Nom complet de la personne qui effectue la ronde
     defectuosites: Optional[str] = ""
     points_verification: Dict[str, str]  # { "attelage": "conforme", "chassis_carrosserie": "defectueux", ... }
-    signature_inspecteur: str  # Base64 data URL
-    signature_conducteur: str  # Base64 data URL
+    signature_mandatee: str  # Base64 data URL
 
 class RondeSecurite(BaseModel):
     id: str = Field(default_factory=lambda: f"ronde_{str(uuid.uuid4())[:12]}")
@@ -24144,15 +24151,21 @@ class RondeSecurite(BaseModel):
     date: str
     heure: str
     lieu: str
+    position_gps: Optional[List[float]] = None
     km: int
-    nom_conducteur: str
-    prenom_conducteur: str
+    personne_mandatee: str
     defectuosites: Optional[str] = ""
     points_verification: Dict[str, str]
-    signature_inspecteur: str
-    signature_conducteur: str
+    signature_mandatee: str
+    contre_signatures: List[ContreSignature] = []  # Liste des contre-signatures
     created_by: str  # User ID
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ContreSignatureCreate(BaseModel):
+    nom_conducteur: str
+    prenom_conducteur: str
+    signature: str
+    raison_refus: Optional[str] = None  # Si la personne refuse la ronde
 
 @api_router.post("/{tenant_slug}/actifs/rondes-securite", response_model=RondeSecurite)
 async def create_ronde_securite(
