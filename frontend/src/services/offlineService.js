@@ -316,6 +316,8 @@ export const getOfflineStats = async () => {
 export default {
   initOfflineDB,
   prepareOfflineMode,
+  prepareOfflineModeSelective,
+  getInspectionsPlanifiees,
   saveInspectionOffline,
   syncPendingInspections,
   isOfflineReady,
