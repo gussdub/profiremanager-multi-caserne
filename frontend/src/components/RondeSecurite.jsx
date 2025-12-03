@@ -7,7 +7,7 @@ import SignatureCanvas from 'react-signature-canvas';
 import { useTenant } from '../contexts/TenantContext';
 import { apiPost } from '../utils/api';
 
-const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
+const RondeSecurite = ({ vehicule, user, onClose, onSuccess }) => {
   const { tenantSlug } = useTenant();
   const signatureMandateeRef = useRef(null);
 
@@ -17,7 +17,7 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
     lieu: '',
     position_gps: null,
     km: '',
-    personne_mandatee: '',
+    personne_mandatee: user ? `${user.prenom || ''} ${user.nom || ''}`.trim() : '',
     defectuosites: '',
     points_verification: {
       attelage: 'conforme',
