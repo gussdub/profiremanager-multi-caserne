@@ -23314,7 +23314,7 @@ const App = () => {
   // Sinon, afficher l'interface normale
   return (
     <div className="App">
-      {user && <OfflineManager />}
+      {user && <OfflineManager tenant={tenant} />}
       {user ? <AppLayout /> : <Login />}
       <Toaster />
     </div>
