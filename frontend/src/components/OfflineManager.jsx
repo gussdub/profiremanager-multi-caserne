@@ -208,16 +208,52 @@ const OfflineManager = ({ tenant }) => {
         )}
       </div>
 
+      {/* Style pour l'animation du spinner */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+
       {/* Modal de gestion */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <div className="modal-header">
-              <h2>📱 Gestion du mode offline</h2>
+              <h2>{hasPreventionModule ? '📱 Gestion du mode offline' : '🌐 Indicateur réseau'}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
             </div>
 
             <div className="modal-body">
+              {/* Si module prévention pas actif */}
+              {!hasPreventionModule && (
+                <div style={{ 
+                  background: '#e7f3ff', 
+                  padding: '20px', 
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '40px', marginBottom: '15px' }}>
+                    {isOnline ? '🟢' : '🔴'}
+                  </div>
+                  <h3 style={{ marginTop: 0, marginBottom: '10px' }}>
+                    {isOnline ? 'Vous êtes en ligne' : 'Mode hors ligne'}
+                  </h3>
+                  <p style={{ color: '#6c757d', fontSize: '14px', marginBottom: '15px' }}>
+                    Cet indicateur affiche votre statut de connexion internet.
+                  </p>
+                  <div style={{ 
+                    background: '#fff3cd', 
+                    padding: '12px', 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    marginTop: '15px'
+                  }}>
+                    💡 <strong>Info :</strong> Les fonctionnalités offline ne sont pas disponibles pour votre compte. Contactez votre administrateur pour activer le module Prévention.
+                  </div>
+                </div>
+              )}
               {/* Statut actuel */}
               <div style={{ 
                 background: isOnline ? '#d1f2eb' : '#f8d7da', 
