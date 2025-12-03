@@ -12375,7 +12375,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           if (includeDate) {
             disponibilitesACreer.push({
               user_id: targetUser.id,
-              date: currentDate.toISOString().split('T')[0],
+              date: formatDateLocal(currentDate),
               type_garde_id: availabilityConfig.type_garde_id || null,
               heure_debut: availabilityConfig.heure_debut,
               heure_fin: availabilityConfig.heure_fin,
