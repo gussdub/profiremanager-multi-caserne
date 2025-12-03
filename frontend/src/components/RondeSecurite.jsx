@@ -9,8 +9,7 @@ import { apiPost } from '../utils/api';
 
 const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
   const { tenantSlug } = useTenant();
-  const signatureInspecteurRef = useRef(null);
-  const signatureConducteurRef = useRef(null);
+  const signatureMandateeRef = useRef(null);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
