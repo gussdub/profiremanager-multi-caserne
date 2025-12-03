@@ -26,6 +26,9 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [inspectionHistory, setInspectionHistory] = useState([]);
   const [showRondeSecuriteModal, setShowRondeSecuriteModal] = useState(false);
   const [selectedVehiculeForRonde, setSelectedVehiculeForRonde] = useState(null);
+  const [showHistoriqueRondesModal, setShowHistoriqueRondesModal] = useState(false);
+  const [showContreSignatureModal, setShowContreSignatureModal] = useState(false);
+  const [selectedRondeForCounterSign, setSelectedRondeForCounterSign] = useState(null);
 
   const { tenantSlug } = useTenant();
 
