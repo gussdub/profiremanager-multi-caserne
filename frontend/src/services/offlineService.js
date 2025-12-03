@@ -89,34 +89,62 @@ export const getMetadata = async (key) => {
   return data ? data.value : null;
 };
 
-// Télécharger toutes les données pour le mode offline
-export const prepareOfflineMode = async (tenantSlug, apiGet) => {
+// Récupérer les inspections planifiées pour les X prochains jours
+export const getInspectionsPlanifiees = async (tenantSlug, apiGet, days = 7) => {
   try {
-    console.log('📥 Téléchargement des données pour mode offline...');
+    const inspections = await apiGet(tenantSlug, `/prevention/inspections-planifiees?days=${days}`);
+    return inspections;
+  } catch (error) {
+    console.error('Erreur récupération inspections planifiées:', error);
+    return [];
+  }
+};
+
+// Télécharger les données pour des bâtiments spécifiques
+export const prepareOfflineModeSelective = async (tenantSlug, apiGet, batimentIds) => {
+  try {
+    console.log(`📥 Téléchargement sélectif pour ${batimentIds.length} bâtiment(s)...`);
     
-    // Télécharger les bâtiments
-    console.log('📥 Téléchargement des bâtiments...');
-    const batiments = await apiGet(tenantSlug, '/prevention/batiments');
+    // Télécharger les bâtiments sélectionnés
+    const allBatiments = await apiGet(tenantSlug, '/prevention/batiments');
+    const selectedBatiments = allBatiments.filter(b => batimentIds.includes(b.id));
+    
+    // Récupérer les bâtiments déjà téléchargés
+    const existingBatiments = await getAllFromStore('batiments');
+    
+    // Fusionner : garder les existants + ajouter les nouveaux (sans doublons)
+    const existingIds = existingBatiments.map(b => b.id);
+    const newBatiments = selectedBatiments.filter(b => !existingIds.includes(b.id));
+    const mergedBatiments = [...existingBatiments, ...newBatiments];
+    
     await clearStore('batiments');
-    await saveToStore('batiments', batiments);
-    console.log(`✅ ${batiments.length} bâtiments téléchargés`);
+    await saveToStore('batiments', mergedBatiments);
+    console.log(`✅ ${mergedBatiments.length} bâtiment(s) total(aux) en cache (${newBatiments.length} nouveaux)`);
     
-    // Télécharger les grilles d'inspection
-    console.log('📥 Téléchargement des grilles d\'inspection...');
-    const grilles = await apiGet(tenantSlug, '/prevention/grilles-inspection');
-    await clearStore('grilles_inspection');
-    await saveToStore('grilles_inspection', grilles);
-    console.log(`✅ ${grilles.length} grilles téléchargées`);
+    // Télécharger les grilles d'inspection si pas déjà fait
+    const existingGrilles = await getAllFromStore('grilles_inspection');
+    if (existingGrilles.length === 0) {
+      console.log('📥 Téléchargement des grilles d\'inspection...');
+      const grilles = await apiGet(tenantSlug, '/prevention/grilles-inspection');
+      await saveToStore('grilles_inspection', grilles);
+      console.log(`✅ ${grilles.length} grilles téléchargées`);
+    }
     
-    // Télécharger les plans d'intervention (optionnel)
+    // Télécharger les plans d'intervention pour ces bâtiments
     try {
-      console.log('📥 Téléchargement des plans d\'intervention...');
-      const plans = await apiGet(tenantSlug, '/prevention/plans-intervention');
+      const allPlans = await apiGet(tenantSlug, '/prevention/plans-intervention');
+      const selectedPlans = allPlans.filter(p => batimentIds.includes(p.batiment_id));
+      
+      const existingPlans = await getAllFromStore('plans_intervention');
+      const existingPlanIds = existingPlans.map(p => p.id);
+      const newPlans = selectedPlans.filter(p => !existingPlanIds.includes(p.id));
+      const mergedPlans = [...existingPlans, ...newPlans];
+      
       await clearStore('plans_intervention');
-      await saveToStore('plans_intervention', plans);
-      console.log(`✅ ${plans.length} plans téléchargés`);
+      await saveToStore('plans_intervention', mergedPlans);
+      console.log(`✅ ${mergedPlans.length} plan(s) total(aux)`);
     } catch (e) {
-      console.log('⚠️ Plans d\'intervention non disponibles (optionnel)');
+      console.log('⚠️ Plans d\'intervention non disponibles');
     }
     
     // Sauvegarder la date de dernière synchronisation
