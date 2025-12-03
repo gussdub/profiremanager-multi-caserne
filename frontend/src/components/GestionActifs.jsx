@@ -192,15 +192,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   };
 
   const handleViewInspections = async (vehicle) => {
-    try {
-      const data = await apiGet(tenantSlug, `/actifs/vehicules/${vehicle.id}/inspections`);
-      setInspectionHistory(data);
-      setSelectedItem(vehicle);
-      setShowInspectionModal(true);
-    } catch (error) {
-      console.error('Erreur inspections:', error);
-      alert('❌ Erreur lors du chargement des inspections');
-    }
+    setSelectedItem(vehicle);
+    setShowHistoriqueRondesModal(true);
   };
 
   const handleCreateInspection = (vehicle) => {
