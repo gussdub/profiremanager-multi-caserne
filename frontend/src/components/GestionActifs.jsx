@@ -321,6 +321,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       {showRondeSecuriteModal && selectedVehiculeForRonde && (
         <RondeSecurite
           vehicule={selectedVehiculeForRonde}
+          user={user}
           onClose={() => {
             setShowRondeSecuriteModal(false);
             setSelectedVehiculeForRonde(null);
