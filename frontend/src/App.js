@@ -53,6 +53,14 @@ const parseDateLocal = (dateStr) => {
   return new Date(year, month - 1, day);
 };
 
+// Fonction utilitaire pour formater une date en string "YYYY-MM-DD" en timezone local
+const formatDateLocal = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Configure axios defaults
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
