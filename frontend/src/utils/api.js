@@ -120,6 +120,16 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
       return;
     }
     
+    // Vérifier le content-type avant de parser en JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      // Si ce n'est pas du JSON (HTML, texte, etc.), créer une erreur explicite
+      const text = await response.text();
+      const error = new Error(`Réponse non-JSON reçue (${contentType}): ${text.substring(0, 100)}...`);
+      error.status = response.status;
+      throw error;
+    }
+    
     const data = await response.json();
     
     if (!response.ok) {
