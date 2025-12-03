@@ -3,6 +3,13 @@ import { Button } from './ui/button';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet } from '../utils/api';
 
+// Fonction utilitaire pour parser une date en timezone local
+const parseDateLocal = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) => {
   const { tenantSlug } = useTenant();
   const [rondes, setRondes] = useState([]);
