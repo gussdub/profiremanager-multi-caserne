@@ -289,7 +289,7 @@ const OfflineManager = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* Préparer mode offline */}
                 <Button
-                  onClick={handlePrepareOffline}
+                  onClick={handleShowConfirmPopup}
                   disabled={preparing || syncing}
                   style={{ 
                     width: '100%', 
@@ -298,7 +298,7 @@ const OfflineManager = () => {
                     fontSize: '15px'
                   }}
                 >
-                  {preparing ? '⏳ Téléchargement en cours...' : '📥 Préparer le mode offline'}
+                  {preparing ? '⏳ Chargement...' : '📥 Préparer le mode offline'}
                 </Button>
                 
                 {/* Description */}
