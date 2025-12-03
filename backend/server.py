@@ -24122,7 +24122,132 @@ async def generate_borne_qr_code(
         "message": "QR code généré avec succès"
     }
 
+# ==================== RONDES DE SÉCURITÉ ====================
 
+class RondeSecuriteCreate(BaseModel):
+    vehicule_id: str
+    date: str
+    heure: str
+    lieu: str
+    km: int
+    nom_conducteur: str
+    prenom_conducteur: str
+    defectuosites: Optional[str] = ""
+    points_verification: Dict[str, str]  # { "attelage": "conforme", "chassis_carrosserie": "defectueux", ... }
+    signature_inspecteur: str  # Base64 data URL
+    signature_conducteur: str  # Base64 data URL
+
+class RondeSecurite(BaseModel):
+    id: str = Field(default_factory=lambda: f"ronde_{str(uuid.uuid4())[:12]}")
+    tenant_id: str
+    vehicule_id: str
+    date: str
+    heure: str
+    lieu: str
+    km: int
+    nom_conducteur: str
+    prenom_conducteur: str
+    defectuosites: Optional[str] = ""
+    points_verification: Dict[str, str]
+    signature_inspecteur: str
+    signature_conducteur: str
+    created_by: str  # User ID
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.post("/{tenant_slug}/actifs/rondes-securite", response_model=RondeSecurite)
+async def create_ronde_securite(
+    tenant_slug: str,
+    ronde_data: RondeSecuriteCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Créer une nouvelle ronde de sécurité SAAQ pour un véhicule
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicle = await db.vehicules.find_one(
+        {"id": ronde_data.vehicule_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Créer la ronde
+    ronde = RondeSecurite(
+        tenant_id=tenant.id,
+        vehicule_id=ronde_data.vehicule_id,
+        date=ronde_data.date,
+        heure=ronde_data.heure,
+        lieu=ronde_data.lieu,
+        km=ronde_data.km,
+        nom_conducteur=ronde_data.nom_conducteur,
+        prenom_conducteur=ronde_data.prenom_conducteur,
+        defectuosites=ronde_data.defectuosites,
+        points_verification=ronde_data.points_verification,
+        signature_inspecteur=ronde_data.signature_inspecteur,
+        signature_conducteur=ronde_data.signature_conducteur,
+        created_by=current_user.id
+    )
+    
+    # Sauvegarder la ronde
+    await db.rondes_securite.insert_one(ronde.dict())
+    
+    # Mettre à jour la date de dernière inspection du véhicule
+    await db.vehicules.update_one(
+        {"id": ronde_data.vehicule_id},
+        {"$set": {"derniere_inspection_date": ronde_data.date}}
+    )
+    
+    return ronde
+
+@api_router.get("/{tenant_slug}/actifs/rondes-securite", response_model=List[RondeSecurite])
+async def get_rondes_securite(
+    tenant_slug: str,
+    vehicule_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupérer l'historique des rondes de sécurité
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    query = {"tenant_id": tenant.id}
+    if vehicule_id:
+        query["vehicule_id"] = vehicule_id
+    
+    rondes = await db.rondes_securite.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return rondes
+
+@api_router.get("/{tenant_slug}/actifs/rondes-securite/{ronde_id}", response_model=RondeSecurite)
+async def get_ronde_securite_by_id(
+    tenant_slug: str,
+    ronde_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupérer une ronde de sécurité spécifique par son ID
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    ronde = await db.rondes_securite.find_one(
+        {"id": ronde_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not ronde:
+        raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
+    
+    return ronde
 
 
 # Include the router in the main app
