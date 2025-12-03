@@ -342,6 +342,35 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           }}
         />
       )}
+
+      {showHistoriqueRondesModal && selectedItem && (
+        <HistoriqueRondesSecurite
+          vehicule={selectedItem}
+          onClose={() => {
+            setShowHistoriqueRondesModal(false);
+            setSelectedItem(null);
+          }}
+          onContreSignerClick={handleContreSignerClick}
+        />
+      )}
+
+      {showContreSignatureModal && selectedRondeForCounterSign && selectedItem && (
+        <ContreSignatureModal
+          ronde={selectedRondeForCounterSign}
+          vehicule={selectedItem}
+          user={user}
+          onClose={() => {
+            setShowContreSignatureModal(false);
+            setSelectedRondeForCounterSign(null);
+          }}
+          onSuccess={() => {
+            setShowHistoriqueRondesModal(true);
+            setShowContreSignatureModal(false);
+            setSelectedRondeForCounterSign(null);
+          }}
+          onRefuser={handleRefuserRonde}
+        />
+      )}
     </div>
   );
 };
