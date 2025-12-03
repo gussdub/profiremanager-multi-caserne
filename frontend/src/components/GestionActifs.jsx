@@ -199,9 +199,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   };
 
   const handleCreateInspection = (vehicle) => {
-    setSelectedItem(vehicle);
-    // Ouvrir le formulaire d'inspection
-    alert('🚧 Formulaire d\'inspection SAAQ à venir dans la prochaine itération');
+    setSelectedVehiculeForRonde(vehicle);
+    setShowRondeSecuriteModal(true);
   };
 
   return (
