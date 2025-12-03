@@ -12,6 +12,8 @@ const OfflineManager = () => {
   const [preparing, setPreparing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [inspectionsPlanifiees, setInspectionsPlanifiees] = useState([]);
 
   // Vérifier le statut offline au chargement
   useEffect(() => {
