@@ -34,6 +34,7 @@ const PlanificationView = lazy(() => import("./components/PlanificationView"));
 const CartePlanification = lazy(() => import("./components/CartePlanification"));
 const NonConformites = lazy(() => import("./components/NonConformites"));
 const InspectionTerrain = lazy(() => import("./components/InspectionTerrain"));
+import OfflineManager from "./components/OfflineManager";
 
 // Composant de chargement
 const LoadingComponent = () => (
