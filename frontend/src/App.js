@@ -4521,14 +4521,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   // Fonction pour générer les disponibilités récurrentes
-  // Fonction helper pour formater date en YYYY-MM-DD sans problème de timezone
-  const formatDateLocal = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const generateRecurringDisponibilites = (config, userId) => {
     const disponibilites = [];
     // Parser les dates en timezone local (pas UTC) pour éviter décalage d'un jour
