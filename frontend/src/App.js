@@ -7535,10 +7535,12 @@ const Planning = () => {
       return assignDate >= targetMonthStart && assignDate <= targetMonthEnd;
     });
     
-    // Calculer le total de gardes théoriques du mois ET les gardes couvertes
+    // Calculer les heures de personnel requises VS assignées
     const daysInMonth = targetMonthEnd.getDate();
+    let heuresPersonnelRequises = 0;
+    let heuresPersonnelAssignees = 0;
     let totalGardesTheoriques = 0;
-    let gardesCouvertes = 0;
+    let gardesAvecPersonnel = 0;
     
     // Pour chaque jour du mois
     for (let day = 1; day <= daysInMonth; day++) {
@@ -7552,50 +7554,53 @@ const Planning = () => {
         const isApplicable = shouldShowTypeGardeForDay(typeGarde, dayIndex);
         
         if (isApplicable) {
-          // Compter cette garde dans le total théorique
           totalGardesTheoriques++;
           
-          // Vérifier si elle est couverte
+          // Calculer la durée de cette garde en heures
+          let dureeGarde = 12; // défaut
+          if (typeGarde.heure_debut && typeGarde.heure_fin) {
+            const [heureDebut] = typeGarde.heure_debut.split(':').map(Number);
+            const [heureFin] = typeGarde.heure_fin.split(':').map(Number);
+            dureeGarde = heureFin > heureDebut ? heureFin - heureDebut : (24 - heureDebut) + heureFin;
+          }
+          
+          const personnelRequis = typeGarde.personnel_requis || 1;
+          
+          // Heures de personnel requises pour cette garde
+          heuresPersonnelRequises += dureeGarde * personnelRequis;
+          
+          // Vérifier combien de personnes sont assignées
           const gardeAssignations = monthAssignations.filter(a => 
             a.date === dateStr && a.type_garde_id === typeGarde.id
           );
           
-          const personnelRequis = typeGarde.personnel_requis || 1;
+          // Heures de personnel assignées (nombre de personnes × durée)
+          heuresPersonnelAssignees += gardeAssignations.length * dureeGarde;
           
-          // Une garde est couverte si elle a AU MOINS le nombre requis d'assignations
-          if (gardeAssignations.length >= personnelRequis) {
-            gardesCouvertes++;
+          // Compter les gardes avec au moins 1 personne
+          if (gardeAssignations.length > 0) {
+            gardesAvecPersonnel++;
           }
         }
       });
     }
     
-    const gardesNonCouvertes = totalGardesTheoriques - gardesCouvertes;
+    const gardesSansPersonnel = totalGardesTheoriques - gardesAvecPersonnel;
     
-    // Calculer les heures totales planifiées
-    const heuresTotales = monthAssignations.reduce((total, assignation) => {
-      const typeGarde = typesGarde.find(t => t.id === assignation.type_garde_id);
-      if (typeGarde && typeGarde.heure_debut && typeGarde.heure_fin) {
-        const [heureDebut] = typeGarde.heure_debut.split(':').map(Number);
-        const [heureFin] = typeGarde.heure_fin.split(':').map(Number);
-        const duree = heureFin > heureDebut ? heureFin - heureDebut : (24 - heureDebut) + heureFin;
-        return total + duree;
-      }
-      return total + 12; // Durée par défaut si non spécifiée
-    }, 0);
-    
-    // Calculer le taux de couverture
-    const tauxCouverture = totalGardesTheoriques > 0 
-      ? Math.round((gardesCouvertes / totalGardesTheoriques) * 100) 
+    // Calculer le taux de couverture basé sur les HEURES DE PERSONNEL
+    const tauxCouverture = heuresPersonnelRequises > 0 
+      ? Math.round((heuresPersonnelAssignees / heuresPersonnelRequises) * 100) 
       : 0;
     
     return {
-      totalQuarts: totalGardesTheoriques,
-      quartsCouverts: gardesCouvertes,
-      quartsNonCouverts: gardesNonCouvertes,
-      heuresTotales,
-      tauxCouverture,
-      monthLabel // Ajouté pour affichage
+      totalGardes: totalGardesTheoriques,
+      quartsCouverts: gardesAvecPersonnel,
+      quartsNonCouverts: gardesSansPersonnel,
+      heuresTotales: Math.round(heuresPersonnelAssignees), // Heures assignées
+      heuresRequises: Math.round(heuresPersonnelRequises), // Heures requises
+      tauxCouverture, // Basé sur heures, pas gardes!
+      membresActifs: new Set(monthAssignations.map(a => a.user_id)).size,
+      monthLabel
     };
   };
 
@@ -7727,10 +7732,6 @@ const Planning = () => {
 
       {/* KPIs du Mois */}
       <div className="kpi-grid" style={{marginBottom: '2rem'}}>
-        <div className="kpi-card" style={{background: '#FCA5A5'}}>
-          <h3>{kpis.totalQuarts}</h3>
-          <p>Total Quarts du Mois</p>
-        </div>
         <div className="kpi-card" style={{background: '#D1FAE5'}}>
           <h3>{kpis.quartsCouverts} / {kpis.quartsNonCouverts}</h3>
           <p>Couverts / Non Couverts</p>
