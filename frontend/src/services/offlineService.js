@@ -151,15 +151,55 @@ export const prepareOfflineModeSelective = async (tenantSlug, apiGet, batimentId
     await saveMetadata('last_offline_prep', new Date().toISOString());
     await saveMetadata('tenant_slug', tenantSlug);
     
-    console.log('✅ Mode offline prêt !');
+    console.log('✅ Mode offline sélectif prêt !');
     return {
       success: true,
-      batiments: batiments.length,
-      grilles: grilles.length,
+      batiments: mergedBatiments.length,
+      nouveaux: newBatiments.length,
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('❌ Erreur préparation mode offline:', error);
+    console.error('❌ Erreur préparation mode offline sélectif:', error);
+    throw error;
+  }
+};
+
+// Télécharger automatiquement pour les inspections planifiées des X prochains jours
+export const prepareOfflineMode = async (tenantSlug, apiGet, days = 7) => {
+  try {
+    console.log(`📥 Récupération des inspections planifiées (${days} prochains jours)...`);
+    
+    const inspections = await getInspectionsPlanifiees(tenantSlug, apiGet, days);
+    
+    if (inspections.length === 0) {
+      console.log('⚠️ Aucune inspection planifiée');
+      return {
+        success: true,
+        inspections: 0,
+        batiments: 0,
+        message: 'Aucune inspection planifiée à télécharger'
+      };
+    }
+    
+    // Extraire les IDs des bâtiments
+    const batimentIds = inspections.map(i => i.batiment_id).filter(Boolean);
+    const uniqueBatimentIds = [...new Set(batimentIds)];
+    
+    console.log(`📥 ${inspections.length} inspection(s) → ${uniqueBatimentIds.length} bâtiment(s) à télécharger`);
+    
+    // Télécharger sélectivement
+    const result = await prepareOfflineModeSelective(tenantSlug, apiGet, uniqueBatimentIds);
+    
+    return {
+      success: true,
+      inspections: inspections.length,
+      batiments: result.batiments,
+      nouveaux: result.nouveaux,
+      inspections_list: inspections,
+      timestamp: result.timestamp
+    };
+  } catch (error) {
+    console.error('❌ Erreur préparation mode offline auto:', error);
     throw error;
   }
 };
