@@ -5671,7 +5671,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 <h4 style={{ marginBottom: '1rem' }}>📋 Disponibilités existantes</h4>
                 {userDisponibilites.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {userDisponibilites.sort((a, b) => new Date(a.date) - new Date(b.date)).map(dispo => (
+                    {userDisponibilites.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date)).map(dispo => (
                       <div key={dispo.id} style={{ 
                         display: 'grid', 
                         gridTemplateColumns: '150px 120px 120px 150px auto', 
@@ -5683,7 +5683,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         alignItems: 'center'
                       }}>
                         <div>
-                          <strong>{new Date(dispo.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</strong>
+                          <strong>{parseDateLocal(dispo.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</strong>
                         </div>
                         <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
                           {dispo.heure_debut}
