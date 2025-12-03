@@ -7599,7 +7599,8 @@ const Planning = () => {
     };
   };
 
-  const kpis = calculateKPIs(kpiPeriode);
+  // KPIs calculées automatiquement pour le mois affiché (currentMonth)
+  const kpis = calculateKPIs(currentMonth);
 
   // Fonctions d'export Planning
   const handleExportPDFPlanning = async () => {
