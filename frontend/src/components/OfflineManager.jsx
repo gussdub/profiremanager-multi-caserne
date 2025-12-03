@@ -175,59 +175,36 @@ const OfflineManager = ({ tenant }) => {
           title={isOnline ? '🟢 En ligne - Cliquez pour gérer le mode offline' : '🔴 Hors ligne'}
         />
 
-        {/* Badge Mode offline prêt */}
-        {offlineReady && (
-          <div style={{
-            background: '#0dcaf0',
-            color: 'white',
-            padding: '8px 15px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-          }}>
-            📱 Mode offline prêt
-          </div>
-        )}
-
-        {/* Badge inspections en attente */}
+        {/* Badge inspections en attente - Petit et discret */}
         {stats && stats.pending_inspections > 0 && (
-          <div style={{
-            background: '#ffc107',
-            color: '#000',
-            padding: '8px 15px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            cursor: 'pointer'
-          }} onClick={() => setShowModal(true)}>
-            ⏳ {stats.pending_inspections} à synchroniser
+          <div 
+            style={{
+              background: '#ffc107',
+              color: '#000',
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              cursor: 'pointer'
+            }} 
+            onClick={() => setShowModal(true)}
+            title="Cliquez pour synchroniser"
+          >
+            {stats.pending_inspections}
           </div>
         )}
 
-        {/* Indicateur de synchronisation */}
+        {/* Indicateur de synchronisation - Petit spinner */}
         {syncing && (
           <div style={{
-            background: '#6610f2',
-            color: 'white',
-            padding: '8px 15px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-          }}>
-            🔄 Synchronisation...
-          </div>
+            width: '16px',
+            height: '16px',
+            border: '2px solid #0dcaf0',
+            borderTop: '2px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} title="Synchronisation en cours..." />
         )}
       </div>
 
