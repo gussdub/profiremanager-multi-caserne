@@ -148,33 +148,32 @@ const OfflineManager = ({ tenant }) => {
 
   return (
     <>
-      {/* Indicateur de statut (toujours visible) */}
+      {/* Indicateur de statut (toujours visible, discret) */}
       <div style={{ 
         position: 'fixed', 
         top: '70px', 
         right: '20px', 
         zIndex: 1000,
         display: 'flex',
-        gap: '10px',
+        gap: '8px',
         alignItems: 'center'
       }}>
-        {/* Badge Online/Offline */}
-        <div style={{
-          background: isOnline ? '#28a745' : '#dc3545',
-          color: 'white',
-          padding: '8px 15px',
-          borderRadius: '20px',
-          fontSize: '13px',
-          fontWeight: 'bold',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          cursor: 'pointer'
-        }} onClick={() => setShowModal(true)}>
-          <span style={{ fontSize: '16px' }}>{isOnline ? '🟢' : '🔴'}</span>
-          {isOnline ? 'Online' : 'Offline'}
-        </div>
+        {/* Badge Online/Offline - Version discrète */}
+        <div 
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: isOnline ? '#28a745' : '#dc3545',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+          }}
+          onClick={() => setShowModal(true)}
+          onMouseEnter={(e) => e.target.style.transform = 'scale(1.3)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          title={isOnline ? '🟢 En ligne - Cliquez pour gérer le mode offline' : '🔴 Hors ligne'}
+        />
 
         {/* Badge Mode offline prêt */}
         {offlineReady && (
