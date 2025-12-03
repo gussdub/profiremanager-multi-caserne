@@ -112,21 +112,15 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
       return;
     }
 
-    if (!formData.nom_conducteur || !formData.prenom_conducteur) {
-      alert('⚠️ Veuillez renseigner le nom du conducteur');
+    if (!formData.personne_mandatee) {
+      alert('⚠️ Veuillez renseigner le nom de la personne mandatée');
       return;
     }
 
-    const signatureInspecteur = signatureInspecteurRef.current?.toDataURL();
-    const signatureConducteur = signatureConducteurRef.current?.toDataURL();
+    const signatureMandatee = signatureMandateeRef.current?.toDataURL();
 
-    if (!signatureInspecteur || signatureInspecteurRef.current?.isEmpty()) {
-      alert('⚠️ La signature de l\'inspecteur est requise');
-      return;
-    }
-
-    if (!signatureConducteur || signatureConducteurRef.current?.isEmpty()) {
-      alert('⚠️ La signature du conducteur est requise');
+    if (!signatureMandatee || signatureMandateeRef.current?.isEmpty()) {
+      alert('⚠️ La signature de la personne mandatée est requise');
       return;
     }
 
