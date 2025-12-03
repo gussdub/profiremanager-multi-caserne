@@ -362,7 +362,7 @@ const OfflineManager = ({ tenant }) => {
                   <li>Au retour, la synchronisation se fait automatiquement</li>
                 </ul>
               </div>
-                </>
+              </>
               )}
             </div>
 
