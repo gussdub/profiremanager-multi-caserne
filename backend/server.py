@@ -15197,10 +15197,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         if has_dispo_covering:
                             tp_disponibles.append(u)
-                            logging.info(f"✅ [N2] {u['prenom']} {u['nom']} ajouté à TP DISPONIBLES pour {type_garde['nom']}")
+                            logging.info(f"✅ [N2] {u['prenom']} {u['nom']} ajouté à T.Partiel DISPONIBLES pour {type_garde['nom']}")
                         elif not has_indispo:  # Ni dispo ni indispo = stand-by
                             tp_standby.append(u)
-                            logging.info(f"⚠️ [N3] {u['prenom']} {u['nom']} ajouté à TP STAND-BY (pas de dispo couvrant l'horaire)")
+                            logging.info(f"⚠️ [N3] {u['prenom']} {u['nom']} ajouté à T.Partiel STAND-BY (pas de dispo couvrant l'horaire)")
                         # Si indispo, ne rien faire (exclu)
                     else:  # temps_plein
                         # Calculer les heures de LA SEMAINE CALENDAIRE de cette garde (lundi-dimanche)
@@ -15299,34 +15299,34 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if niveaux_actifs["niveau_2"]:
                     liste_niveaux.extend(tp_disponibles)
                 else:
-                    logging.info(f"⚠️ [NIVEAU 2 DÉSACTIVÉ] {len(tp_disponibles)} TP disponibles exclus")
+                    logging.info(f"⚠️ [NIVEAU 2 DÉSACTIVÉ] {len(tp_disponibles)} T.Partiel disponibles exclus")
                 
                 if niveaux_actifs["niveau_3"]:
                     liste_niveaux.extend(tp_standby)
                 else:
-                    logging.info(f"⚠️ [NIVEAU 3 DÉSACTIVÉ] {len(tp_standby)} TP stand-by exclus")
+                    logging.info(f"⚠️ [NIVEAU 3 DÉSACTIVÉ] {len(tp_standby)} T.Partiel stand-by exclus")
                 
                 if niveaux_actifs["niveau_4"]:
                     liste_niveaux.extend(tf_incomplets)
                 else:
-                    logging.info(f"⚠️ [NIVEAU 4 DÉSACTIVÉ] {len(tf_incomplets)} TF incomplets exclus")
+                    logging.info(f"⚠️ [NIVEAU 4 DÉSACTIVÉ] {len(tf_incomplets)} T.Plein incomplets exclus")
                 
                 if niveaux_actifs["niveau_5"]:
                     if activer_heures_sup:
                         liste_niveaux.extend(tf_complets)
                     else:
-                        logging.info(f"⚠️ [NIVEAU 5] Heures sup désactivées - {len(tf_complets)} TF complets exclus")
+                        logging.info(f"⚠️ [NIVEAU 5] Heures sup désactivées - {len(tf_complets)} T.Plein complets exclus")
                 else:
-                    logging.info(f"⚠️ [NIVEAU 5 DÉSACTIVÉ] {len(tf_complets)} TF complets exclus")
+                    logging.info(f"⚠️ [NIVEAU 5 DÉSACTIVÉ] {len(tf_complets)} T.Plein complets exclus")
                 
                 # Reconstruire available_users avec SEULEMENT les niveaux actifs
                 available_users = liste_niveaux
                 
                 logging.info(f"📊 [PRIORITÉ FILTRÉE] {type_garde['nom']} - {date_str}:")
-                logging.info(f"    TP Disponibles: {len(tp_disponibles)} {'✅' if niveaux_actifs['niveau_2'] else '❌ EXCLUS'}")
-                logging.info(f"    TP Stand-by: {len(tp_standby)} {'✅' if niveaux_actifs['niveau_3'] else '❌ EXCLUS'}")
-                logging.info(f"    TF Incomplets: {len(tf_incomplets)} {'✅' if niveaux_actifs['niveau_4'] else '❌ EXCLUS'}")
-                logging.info(f"    TF Complets: {len(tf_complets)} {'✅' if niveaux_actifs['niveau_5'] and activer_heures_sup else '❌ EXCLUS'}")
+                logging.info(f"    T.Partiel Disponibles: {len(tp_disponibles)} {'✅' if niveaux_actifs['niveau_2'] else '❌ EXCLUS'}")
+                logging.info(f"    T.Partiel Stand-by: {len(tp_standby)} {'✅' if niveaux_actifs['niveau_3'] else '❌ EXCLUS'}")
+                logging.info(f"    T.Plein Incomplets: {len(tf_incomplets)} {'✅' if niveaux_actifs['niveau_4'] else '❌ EXCLUS'}")
+                logging.info(f"    T.Plein Complets: {len(tf_complets)} {'✅' if niveaux_actifs['niveau_5'] and activer_heures_sup else '❌ EXCLUS'}")
                 logging.info(f"    Total candidats après filtrage: {len(available_users)}")
                 
                 # ÉTAPE 5: Les candidats sont déjà triés par priorité, équité et ancienneté
