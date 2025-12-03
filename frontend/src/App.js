@@ -4521,13 +4521,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     return `${year}-${month}-${day}`;
   };
 
-  // Fonction utilitaire pour parser une date string "YYYY-MM-DD" en timezone local
-  const parseDateLocal = (dateStr) => {
-    if (!dateStr) return null;
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
-  };
-
   const generateRecurringDisponibilites = (config, userId) => {
     const disponibilites = [];
     // Parser les dates en timezone local (pas UTC) pour éviter décalage d'un jour
