@@ -201,6 +201,19 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     setShowRondeSecuriteModal(true);
   };
 
+  const handleContreSignerClick = (ronde) => {
+    setSelectedRondeForCounterSign(ronde);
+    setShowHistoriqueRondesModal(false);
+    setShowContreSignatureModal(true);
+  };
+
+  const handleRefuserRonde = (raison) => {
+    console.log('Ronde refusée:', raison);
+    // Ouvrir le formulaire de nouvelle ronde
+    setShowContreSignatureModal(false);
+    setShowRondeSecuriteModal(true);
+  };
+
   return (
     <div className="gestion-actifs" style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
