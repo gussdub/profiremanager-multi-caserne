@@ -13097,7 +13097,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const getAvailableDates = () => {
     return userDisponibilites
       .filter(d => d.statut === 'disponible')
-      .map(d => new Date(d.date));
+      .map(d => parseDateLocal(d.date));
   };
 
   const getColorByTypeGarde = (typeGardeId) => {
