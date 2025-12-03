@@ -132,13 +132,12 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
         date: formData.date,
         heure: formData.heure,
         lieu: formData.lieu,
+        position_gps: formData.position_gps,
         km: parseInt(formData.km),
-        nom_conducteur: formData.nom_conducteur,
-        prenom_conducteur: formData.prenom_conducteur,
+        personne_mandatee: formData.personne_mandatee,
         defectuosites: formData.defectuosites,
         points_verification: formData.points_verification,
-        signature_inspecteur: signatureInspecteur,
-        signature_conducteur: signatureConducteur
+        signature_mandatee: signatureMandatee
       };
 
       await apiPost(tenantSlug, '/actifs/rondes-securite', rondeData);
