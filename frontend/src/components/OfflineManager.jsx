@@ -1,0 +1,331 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { useTenant } from '../contexts/TenantContext';
+import { apiGet } from '../utils/api';
+import offlineService from '../services/offlineService';
+
+const OfflineManager = () => {
+  const { tenantSlug } = useTenant();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  // Vérifier le statut offline au chargement
+  useEffect(() => {
+    checkOfflineStatus();
+    
+    // Écouter les changements de connectivité
+    const handleOnline = () => {
+      setIsOnline(true);
+      console.log('🟢 Connexion rétablie');
+      autoSync();
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      console.log('🔴 Mode offline activé');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const checkOfflineStatus = async () => {
+    try {
+      const ready = await offlineService.isOfflineReady();
+      setOfflineReady(ready);
+      
+      const offlineStats = await offlineService.getOfflineStats();
+      setStats(offlineStats);
+    } catch (error) {
+      console.error('Erreur vérification statut offline:', error);
+    }
+  };
+
+  const handlePrepareOffline = async () => {
+    setPreparing(true);
+    try {
+      const result = await offlineService.prepareOfflineMode(tenantSlug, apiGet);
+      
+      alert(`✅ Mode offline prêt !\n\n📊 Données téléchargées :\n• ${result.batiments} bâtiments\n• ${result.grilles} grilles d'inspection\n\nVous pouvez maintenant travailler sans connexion !`);
+      
+      await checkOfflineStatus();
+    } catch (error) {
+      console.error('Erreur préparation mode offline:', error);
+      alert('❌ Erreur lors de la préparation du mode offline: ' + error.message);
+    } finally {
+      setPreparing(false);
+      setShowModal(false);
+    }
+  };
+
+  const autoSync = async () => {
+    if (!isOnline) return;
+    
+    setSyncing(true);
+    try {
+      const { apiPost } = require('../utils/api');
+      const result = await offlineService.syncPendingInspections(tenantSlug, apiPost);
+      
+      if (result.synced > 0) {
+        console.log(`✅ ${result.synced} inspection(s) synchronisée(s)`);
+      }
+      
+      await checkOfflineStatus();
+    } catch (error) {
+      console.error('Erreur synchronisation auto:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!isOnline) {
+      alert('⚠️ Impossible de synchroniser : Vous êtes hors ligne');
+      return;
+    }
+    
+    setSyncing(true);
+    try {
+      const { apiPost } = require('../utils/api');
+      const result = await offlineService.syncPendingInspections(tenantSlug, apiPost);
+      
+      if (result.success) {
+        alert(`✅ Synchronisation réussie !\n\n${result.synced} inspection(s) synchronisée(s)`);
+      } else {
+        alert(`⚠️ Synchronisation partielle\n\n✅ ${result.synced} réussie(s)\n❌ ${result.errors.length} échec(s)`);
+      }
+      
+      await checkOfflineStatus();
+      setShowModal(false);
+    } catch (error) {
+      console.error('Erreur synchronisation:', error);
+      alert('❌ Erreur lors de la synchronisation: ' + error.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Indicateur de statut (toujours visible) */}
+      <div style={{ 
+        position: 'fixed', 
+        top: '70px', 
+        right: '20px', 
+        zIndex: 1000,
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center'
+      }}>
+        {/* Badge Online/Offline */}
+        <div style={{
+          background: isOnline ? '#28a745' : '#dc3545',
+          color: 'white',
+          padding: '8px 15px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          cursor: 'pointer'
+        }} onClick={() => setShowModal(true)}>
+          <span style={{ fontSize: '16px' }}>{isOnline ? '🟢' : '🔴'}</span>
+          {isOnline ? 'Online' : 'Offline'}
+        </div>
+
+        {/* Badge Mode offline prêt */}
+        {offlineReady && (
+          <div style={{
+            background: '#0dcaf0',
+            color: 'white',
+            padding: '8px 15px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}>
+            📱 Mode offline prêt
+          </div>
+        )}
+
+        {/* Badge inspections en attente */}
+        {stats && stats.pending_inspections > 0 && (
+          <div style={{
+            background: '#ffc107',
+            color: '#000',
+            padding: '8px 15px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            cursor: 'pointer'
+          }} onClick={() => setShowModal(true)}>
+            ⏳ {stats.pending_inspections} à synchroniser
+          </div>
+        )}
+
+        {/* Indicateur de synchronisation */}
+        {syncing && (
+          <div style={{
+            background: '#6610f2',
+            color: 'white',
+            padding: '8px 15px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}>
+            🔄 Synchronisation...
+          </div>
+        )}
+      </div>
+
+      {/* Modal de gestion */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>📱 Gestion du mode offline</h2>
+              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              {/* Statut actuel */}
+              <div style={{ 
+                background: isOnline ? '#d1f2eb' : '#f8d7da', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                marginBottom: '20px',
+                border: `2px solid ${isOnline ? '#28a745' : '#dc3545'}`
+              }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {isOnline ? '🟢 Vous êtes en ligne' : '🔴 Mode offline activé'}
+                </div>
+                <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                  {isOnline 
+                    ? 'Connexion internet disponible. Les données seront synchronisées automatiquement.' 
+                    : 'Aucune connexion internet. Vous pouvez continuer à travailler en mode offline.'}
+                </div>
+              </div>
+
+              {/* Statistiques */}
+              {stats && (
+                <div style={{ 
+                  background: '#f8f9fa', 
+                  padding: '15px', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px' }}>📊 Statistiques</h3>
+                  <div style={{ display: 'grid', gap: '8px', fontSize: '14px' }}>
+                    <div>✅ <strong>Bâtiments téléchargés:</strong> {stats.batiments}</div>
+                    <div>📋 <strong>Grilles d'inspection:</strong> {stats.grilles}</div>
+                    {stats.plans > 0 && <div>🗺️ <strong>Plans d'intervention:</strong> {stats.plans}</div>}
+                    <div style={{ 
+                      color: stats.pending_inspections > 0 ? '#ffc107' : '#28a745',
+                      fontWeight: 'bold'
+                    }}>
+                      {stats.pending_inspections > 0 ? '⏳' : '✅'} <strong>Inspections en attente:</strong> {stats.pending_inspections}
+                    </div>
+                    {stats.last_offline_prep && (
+                      <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '8px' }}>
+                        📅 Dernière préparation: {new Date(stats.last_offline_prep).toLocaleString('fr-FR')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Préparer mode offline */}
+                <Button
+                  onClick={handlePrepareOffline}
+                  disabled={preparing || syncing}
+                  style={{ 
+                    width: '100%', 
+                    padding: '15px',
+                    background: '#0dcaf0',
+                    fontSize: '15px'
+                  }}
+                >
+                  {preparing ? '⏳ Téléchargement en cours...' : '📥 Préparer le mode offline'}
+                </Button>
+                
+                {/* Description */}
+                <p style={{ 
+                  fontSize: '12px', 
+                  color: '#6c757d', 
+                  margin: '5px 0 15px 0',
+                  lineHeight: '1.5'
+                }}>
+                  💡 Télécharge toutes les fiches de bâtiments et grilles d'inspection pour travailler sans connexion
+                </p>
+
+                {/* Synchroniser manuellement */}
+                {stats && stats.pending_inspections > 0 && (
+                  <Button
+                    onClick={handleManualSync}
+                    disabled={!isOnline || syncing}
+                    style={{ 
+                      width: '100%', 
+                      padding: '15px',
+                      background: isOnline ? '#28a745' : '#6c757d',
+                      fontSize: '15px'
+                    }}
+                  >
+                    {syncing ? '🔄 Synchronisation...' : '🔄 Synchroniser maintenant'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Aide */}
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '12px', 
+                background: '#e7f3ff', 
+                borderRadius: '6px',
+                fontSize: '13px'
+              }}>
+                <strong>ℹ️ Comment ça marche ?</strong>
+                <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', lineHeight: '1.6' }}>
+                  <li>Cliquez sur "Préparer le mode offline" avant de partir sur terrain</li>
+                  <li>Faites vos inspections normalement (même sans connexion)</li>
+                  <li>Au retour, la synchronisation se fait automatiquement</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default OfflineManager;
