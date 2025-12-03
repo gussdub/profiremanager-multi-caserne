@@ -22,6 +22,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [ficheVieData, setFicheVieData] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [inspectionHistory, setInspectionHistory] = useState([]);
+  const [showRondeSecuriteModal, setShowRondeSecuriteModal] = useState(false);
+  const [selectedVehiculeForRonde, setSelectedVehiculeForRonde] = useState(null);
 
   const { tenantSlug } = useTenant();
 
