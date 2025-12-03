@@ -4,7 +4,7 @@ import { useTenant } from '../contexts/TenantContext';
 import { apiGet } from '../utils/api';
 import offlineService from '../services/offlineService';
 
-const OfflineManager = () => {
+const OfflineManager = ({ tenant }) => {
   const { tenantSlug } = useTenant();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [offlineReady, setOfflineReady] = useState(false);
@@ -14,6 +14,9 @@ const OfflineManager = () => {
   const [showModal, setShowModal] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [inspectionsPlanifiees, setInspectionsPlanifiees] = useState([]);
+  
+  // Vérifier si le module prévention est actif
+  const hasPreventionModule = tenant?.parametres?.module_prevention_active || false;
 
   // Vérifier le statut offline au chargement
   useEffect(() => {
