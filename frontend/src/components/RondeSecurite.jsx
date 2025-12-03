@@ -199,7 +199,7 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
                 />
               </div>
               <div>
-                <Label>Lieu *</Label>
+                <Label>Lieu * {gpsLoading && '📍 Détection GPS...'}</Label>
                 <Input
                   type="text"
                   value={formData.lieu}
@@ -207,6 +207,11 @@ const RondeSecurite = ({ vehicule, onClose, onSuccess }) => {
                   placeholder="Ex: Caserne principale"
                   required
                 />
+                {formData.position_gps && (
+                  <p style={{ fontSize: '11px', color: '#28a745', marginTop: '3px' }}>
+                    ✅ GPS: {formData.position_gps[0].toFixed(6)}, {formData.position_gps[1].toFixed(6)}
+                  </p>
+                )}
               </div>
               <div>
                 <Label>KM *</Label>
