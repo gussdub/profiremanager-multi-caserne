@@ -161,7 +161,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                       <div>
                         <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
-                          📅 {new Date(ronde.date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                          📅 {parseDateLocal(ronde.date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
                         </div>
                         <div style={{ color: '#6c757d', fontSize: '14px' }}>
                           🕐 {ronde.heure} • 📍 {ronde.lieu} • 🛣️ {ronde.km} km
