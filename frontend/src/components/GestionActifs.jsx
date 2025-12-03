@@ -488,13 +488,13 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
       {/* Actions secondaires */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         <ActionButton
-          label="📝 Inspections"
+          label="📝 Historique rondes de sécurité"
           color="#16a085"
           onClick={() => onViewInspections(vehicule)}
           small
         />
         <ActionButton
-          label="✅ Nouvelle inspection"
+          label="✅ Nouvelle ronde de sécurité"
           color="#27ae60"
           onClick={() => onCreateInspection(vehicule)}
           small
