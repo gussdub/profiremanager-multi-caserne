@@ -20120,6 +20120,48 @@ async def update_inspection(
     updated_inspection = await db.inspections.find_one({"id": inspection_id})
     return clean_mongo_doc(updated_inspection)
 
+@api_router.get("/{tenant_slug}/prevention/inspections-planifiees")
+async def get_inspections_planifiees(
+    tenant_slug: str,
+    days: int = 7,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les inspections planifiées pour les X prochains jours (pour mode offline)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Calculer la plage de dates
+    from datetime import datetime, timedelta, timezone
+    today = datetime.now(timezone.utc)
+    end_date = today + timedelta(days=days)
+    
+    # Récupérer les inspections planifiées (date_planifiee entre aujourd'hui et end_date)
+    # Note: Ajustez le champ selon votre modèle (date_planifiee, scheduled_date, etc.)
+    inspections = await db.inspections.find({
+        "tenant_id": tenant.id,
+        "date_planifiee": {
+            "$gte": today.isoformat(),
+            "$lte": end_date.isoformat()
+        }
+    }).sort("date_planifiee", 1).to_list(100)
+    
+    # Enrichir avec les infos du bâtiment
+    enriched = []
+    for insp in inspections:
+        batiment = await db.batiments.find_one(
+            {"id": insp.get("batiment_id"), "tenant_id": tenant.id},
+            {"_id": 0}
+        )
+        
+        enriched.append({
+            **clean_mongo_doc(insp),
+            "batiment": batiment
+        })
+    
+    return enriched
+
 @api_router.delete("/{tenant_slug}/prevention/inspections/{inspection_id}")
 async def delete_inspection(
     tenant_slug: str,
