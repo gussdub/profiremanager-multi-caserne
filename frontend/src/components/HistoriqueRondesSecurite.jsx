@@ -237,20 +237,38 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                       </div>
                     )}
 
-                    {/* Bouton contre-signer */}
-                    {statut.canCounterSign && (
-                      <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                    {/* Boutons d'action */}
+                    <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr' : '1fr', gap: '10px' }}>
+                        {/* Bouton PDF */}
                         <Button
-                          onClick={() => onContreSignerClick(ronde)}
-                          style={{ width: '100%', background: '#0d6efd' }}
+                          onClick={() => {
+                            const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/rondes-securite/${ronde.id}/export-pdf`;
+                            window.open(url, '_blank');
+                          }}
+                          variant="outline"
+                          style={{ width: '100%' }}
                         >
-                          ✍️ Contre-signer cette ronde
+                          📄 Exporter PDF
                         </Button>
+                        
+                        {/* Bouton contre-signer */}
+                        {statut.canCounterSign && (
+                          <Button
+                            onClick={() => onContreSignerClick(ronde)}
+                            style={{ width: '100%', background: '#0d6efd' }}
+                          >
+                            ✍️ Contre-signer
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {statut.canCounterSign && (
                         <p style={{ fontSize: '12px', color: '#6c757d', marginTop: '8px', textAlign: 'center' }}>
                           Si vous devez prendre ce véhicule, vous pouvez accepter cette ronde au lieu d'en créer une nouvelle
                         </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })}
