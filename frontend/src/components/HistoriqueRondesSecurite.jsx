@@ -33,6 +33,23 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
     }
   };
 
+  const handleSendEmail = async (rondeId) => {
+    if (!window.confirm('📧 Envoyer cette ronde par email aux superviseurs et administrateurs ?')) {
+      return;
+    }
+
+    setSendingEmail(rondeId);
+    try {
+      await apiPost(tenantSlug, `/actifs/rondes-securite/${rondeId}/send-email`, {});
+      alert('✅ Email envoyé avec succès aux superviseurs et administrateurs !');
+    } catch (error) {
+      console.error('Erreur envoi email:', error);
+      alert('❌ Erreur lors de l\'envoi de l\'email: ' + (error.data?.detail || error.message));
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
   const calculerStatutRonde = (ronde) => {
     const rondeDateTime = new Date(`${ronde.date}T${ronde.heure}`);
     const now = new Date();
