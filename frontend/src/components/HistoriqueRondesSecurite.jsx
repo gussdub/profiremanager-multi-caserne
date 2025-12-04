@@ -257,7 +257,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
 
                     {/* Boutons d'action */}
                     <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr' : '1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr 1fr' : '1fr 1fr', gap: '10px' }}>
                         {/* Bouton PDF */}
                         <Button
                           onClick={async () => {
@@ -290,7 +290,17 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                           variant="outline"
                           style={{ width: '100%' }}
                         >
-                          📄 Télécharger PDF
+                          📄 PDF
+                        </Button>
+                        
+                        {/* Bouton Email */}
+                        <Button
+                          onClick={() => handleSendEmail(ronde.id)}
+                          disabled={sendingEmail === ronde.id}
+                          variant="outline"
+                          style={{ width: '100%' }}
+                        >
+                          {sendingEmail === ronde.id ? '⏳' : '📧'} Email
                         </Button>
                         
                         {/* Bouton contre-signer */}
@@ -299,7 +309,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                             onClick={() => onContreSignerClick(ronde)}
                             style={{ width: '100%', background: '#0d6efd' }}
                           >
-                            ✍️ Contre-signer
+                            ✍️ Signer
                           </Button>
                         )}
                       </div>
