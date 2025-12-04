@@ -242,14 +242,37 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                       <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr' : '1fr', gap: '10px' }}>
                         {/* Bouton PDF */}
                         <Button
-                          onClick={() => {
-                            const url = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/rondes-securite/${ronde.id}/export-pdf`;
-                            window.open(url, '_blank');
+                          onClick={async () => {
+                            try {
+                              const token = localStorage.getItem('token');
+                              const response = await fetch(
+                                `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/rondes-securite/${ronde.id}/export-pdf`,
+                                {
+                                  headers: {
+                                    'Authorization': `Bearer ${token}`
+                                  }
+                                }
+                              );
+                              
+                              if (!response.ok) throw new Error('Erreur téléchargement PDF');
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `ronde_securite_${vehicule.nom}_${ronde.date}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (error) {
+                              alert('❌ Erreur lors du téléchargement du PDF');
+                            }
                           }}
                           variant="outline"
                           style={{ width: '100%' }}
                         >
-                          📄 Exporter PDF
+                          📄 Télécharger PDF
                         </Button>
                         
                         {/* Bouton contre-signer */}
