@@ -24528,17 +24528,24 @@ async def export_ronde_securite_pdf(
     if footer_text:
         elements.append(Paragraph(footer_text, footer_style))
     
-    # Générer le PDF
-    doc.build(elements)
-    buffer.seek(0)
-    
-    filename = f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf"
-    
-    return StreamingResponse(
-        buffer,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
+        # Générer le PDF
+        logger.info("📄 Génération du PDF...")
+        doc.build(elements)
+        buffer.seek(0)
+        
+        filename = f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf"
+        logger.info(f"✅ PDF généré avec succès - filename: {filename}")
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur génération PDF: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du PDF: {str(e)}")
 
 @api_router.post("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/send-email")
 async def send_ronde_securite_email(
