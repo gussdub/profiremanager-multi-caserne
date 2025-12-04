@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { useTenant } from '../contexts/TenantContext';
-import { apiGet } from '../utils/api';
+import { apiGet, apiPost } from '../utils/api';
 
 // Fonction utilitaire pour parser une date en timezone local
 const parseDateLocal = (dateStr) => {
