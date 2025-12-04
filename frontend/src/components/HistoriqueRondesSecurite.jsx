@@ -14,6 +14,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
   const { tenantSlug } = useTenant();
   const [rondes, setRondes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingEmail, setSendingEmail] = useState(null);
 
   useEffect(() => {
     fetchRondes();
