@@ -24311,19 +24311,27 @@ async def export_ronde_securite_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Exporter une ronde de sécurité en PDF (style rapport de temps)"""
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.tenant_id != tenant.id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Récupérer la ronde
-    ronde = await db.rondes_securite.find_one(
-        {"id": ronde_id, "tenant_id": tenant.id},
-        {"_id": 0}
-    )
-    
-    if not ronde:
-        raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
+    try:
+        logger.info(f"📄 Export PDF demandé - tenant: {tenant_slug}, ronde_id: {ronde_id}, user: {current_user.email}")
+        
+        tenant = await get_tenant_from_slug(tenant_slug)
+        logger.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
+        
+        if current_user.tenant_id != tenant.id:
+            logger.error(f"❌ Tenant mismatch - user.tenant_id: {current_user.tenant_id}, tenant.id: {tenant.id}")
+            raise HTTPException(status_code=403, detail="Accès refusé")
+        
+        # Récupérer la ronde
+        ronde = await db.rondes_securite.find_one(
+            {"id": ronde_id, "tenant_id": tenant.id},
+            {"_id": 0}
+        )
+        
+        if not ronde:
+            logger.error(f"❌ Ronde non trouvée - id: {ronde_id}, tenant_id: {tenant.id}")
+            raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
+        
+        logger.info(f"✅ Ronde trouvée - véhicule_id: {ronde.get('vehicule_id')}")
     
     # Récupérer le véhicule
     vehicule = await db.vehicules.find_one(
