@@ -24118,9 +24118,9 @@ async def generate_vehicle_qr_code(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
     
-    # Générer l'URL complète vers la fiche du véhicule
+    # Générer l'URL complète vers la page d'action du véhicule
     frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
-    vehicle_url = f"{frontend_url}/{tenant_slug}/actifs/vehicules/{vehicle_id}"
+    vehicle_url = f"{frontend_url}/qr/{tenant_slug}/vehicule/{vehicle_id}"
     
     # Générer le QR code
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
