@@ -24499,14 +24499,14 @@ async def export_ronde_securite_pdf(
             ('FONTSIZE', (0, 1), (-1, -1), 7),
         ]))
         elements.append(vehicule_table)
-        elements.append(Spacer(1, 0.1*inch))
+        elements.append(Spacer(1, 0.06*inch))
         
         # Personne mandatée
         elements.append(Paragraph("👤 Personne mandatée", section_style))
         mandatee_text = f"<b>{ronde['personne_mandatee']}</b>"
-        mandatee_para = ParagraphStyle('MandateeText', parent=styles['Normal'], fontSize=8)
+        mandatee_para = ParagraphStyle('MandateeText', fontSize=7.5)
         elements.append(Paragraph(mandatee_text, mandatee_para))
-        elements.append(Spacer(1, 0.08*inch))
+        elements.append(Spacer(1, 0.05*inch))
         
         # Points de vérification
         elements.append(Paragraph("✅ Points de vérification (19 points SAAQ)", section_style))
