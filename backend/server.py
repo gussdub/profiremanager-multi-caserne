@@ -24563,12 +24563,12 @@ async def export_ronde_securite_pdf(
         
         vehicule_table = Table(vehicule_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1*inch, 1*inch])
         vehicule_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (-1, 0), modern_styles['primary_color']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('GRID', (0, 0), (-1, -1), 0.5, modern_styles['grid']),
             ('FONTSIZE', (0, 1), (-1, -1), 7),
         ]))
         elements.append(vehicule_table)
