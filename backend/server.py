@@ -24352,34 +24352,34 @@ async def export_ronde_securite_pdf(
         buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
         from reportlab.lib.styles import getSampleStyleSheet
         styles = getSampleStyleSheet()
-    
-    # Styles personnalisés
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'Subtitle',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#6B7280'),
-        spaceAfter=20,
-        alignment=TA_CENTER
-    )
-    
-    section_style = ParagraphStyle(
-        'Section',
-        parent=styles['Heading2'],
-        fontSize=13,
-        textColor=colors.HexColor('#DC2626'),
-        spaceBefore=15,
-        spaceAfter=10
-    )
+        
+        # Styles personnalisés
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#DC2626'),
+            spaceAfter=12,
+            alignment=TA_CENTER
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'Subtitle',
+            parent=styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor('#6B7280'),
+            spaceAfter=20,
+            alignment=TA_CENTER
+        )
+        
+        section_style = ParagraphStyle(
+            'Section',
+            parent=styles['Heading2'],
+            fontSize=13,
+            textColor=colors.HexColor('#DC2626'),
+            spaceBefore=15,
+            spaceAfter=10
+        )
     
     # Titre
     elements.append(Paragraph("🔧 Ronde de Sécurité SAAQ", title_style))
