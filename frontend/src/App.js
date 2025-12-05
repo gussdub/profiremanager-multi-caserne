@@ -8,6 +8,7 @@ import { Label } from "./components/ui/label";
 import { Calendar } from "./components/ui/calendar";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
+import VehiculeQRAction from './components/VehiculeQRAction';
 import { useTenant } from "./contexts/TenantContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
