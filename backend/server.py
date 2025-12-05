@@ -30,10 +30,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from io import BytesIO
 import base64
-from sendgrid import SendGridAPIClient
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sendgrid.helpers.mail import Mail, Email
 import resend
 import firebase_admin
 from firebase_admin import credentials, messaging
