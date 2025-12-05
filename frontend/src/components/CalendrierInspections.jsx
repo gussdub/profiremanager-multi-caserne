@@ -466,6 +466,192 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
           <span>Complété</span>
         </div>
       </div>
+
+      {/* Modal de création d'inspection */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowCreateModal(false)}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>
+              📅 Planifier une inspection
+            </h2>
+            
+            <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+              Date: <strong>{selectedDate?.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Bâtiment */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Bâtiment *
+                </label>
+                <select
+                  value={newInspection.batiment_id}
+                  onChange={(e) => setNewInspection({...newInspection, batiment_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="">Sélectionner un bâtiment</option>
+                  {batiments.map(bat => (
+                    <option key={bat.id} value={bat.id}>
+                      {bat.nom_etablissement} - {bat.adresse_civique}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Grille d'inspection */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Grille d'inspection *
+                </label>
+                <select
+                  value={newInspection.grille_inspection_id}
+                  onChange={(e) => setNewInspection({...newInspection, grille_inspection_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="">Sélectionner une grille</option>
+                  {grilles.map(grille => (
+                    <option key={grille.id} value={grille.id}>
+                      {grille.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Préventionniste */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Préventionniste *
+                </label>
+                <select
+                  value={newInspection.preventionniste_id}
+                  onChange={(e) => setNewInspection({...newInspection, preventionniste_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="">Sélectionner un préventionniste</option>
+                  {preventionnistes.map(prev => (
+                    <option key={prev.id} value={prev.id}>
+                      {prev.prenom} {prev.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Heure de début */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Heure de début
+                </label>
+                <input
+                  type="time"
+                  value={newInspection.heure_debut}
+                  onChange={(e) => setNewInspection({...newInspection, heure_debut: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
+
+              {/* Type d'inspection */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Type d'inspection
+                </label>
+                <select
+                  value={newInspection.type_inspection}
+                  onChange={(e) => setNewInspection({...newInspection, type_inspection: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="reguliere">Régulière</option>
+                  <option value="suivi">Suivi</option>
+                  <option value="plainte">Plainte</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Boutons */}
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+              <Button
+                onClick={() => setShowCreateModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleCreateInspection}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                ✅ Planifier
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
