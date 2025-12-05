@@ -24639,6 +24639,57 @@ async def export_ronde_securite_pdf(
         logger.error(f"❌ Erreur génération PDF: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du PDF: {str(e)}")
 
+@api_router.get("/{tenant_slug}/actifs/configuration-emails-rondes")
+async def get_configuration_emails_rondes(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la configuration des emails automatiques pour les rondes de sécurité"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer la configuration depuis les paramètres du tenant
+    emails_config = tenant.parametres.get('emails_rondes_securite', [])
+    
+    return {"emails_rondes_securite": emails_config}
+
+@api_router.put("/{tenant_slug}/actifs/configuration-emails-rondes")
+async def update_configuration_emails_rondes(
+    tenant_slug: str,
+    config: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour la configuration des emails automatiques pour les rondes de sécurité"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou superviseur uniquement")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Valider les emails
+    emails = config.get('emails_rondes_securite', [])
+    if not isinstance(emails, list):
+        raise HTTPException(status_code=400, detail="Le format des emails est invalide")
+    
+    # Mettre à jour dans MongoDB
+    tenant_doc = await db.tenants.find_one({"id": tenant.id})
+    if not tenant_doc:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    current_parametres = tenant_doc.get('parametres', {})
+    current_parametres['emails_rondes_securite'] = emails
+    
+    await db.tenants.update_one(
+        {"id": tenant.id},
+        {"$set": {"parametres": current_parametres}}
+    )
+    
+    return {"message": "Configuration mise à jour", "emails_rondes_securite": emails}
+
 @api_router.post("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/send-email")
 async def send_ronde_securite_email(
     tenant_slug: str,
