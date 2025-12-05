@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-const CalendrierInspections = ({ tenantSlug, apiGet, user, toast, openBatimentModal }) => {
+const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openBatimentModal }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
@@ -10,6 +10,17 @@ const CalendrierInspections = ({ tenantSlug, apiGet, user, toast, openBatimentMo
   const [filtrePreventionniste, setFiltrePreventionniste] = useState('tous');
   const [preventionnistes, setPreventionnistes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [grilles, setGrilles] = useState([]);
+  const [newInspection, setNewInspection] = useState({
+    batiment_id: '',
+    grille_inspection_id: '',
+    preventionniste_id: '',
+    date_inspection: '',
+    heure_debut: '09:00',
+    type_inspection: 'reguliere'
+  });
 
   // Charger les données
   useEffect(() => {
