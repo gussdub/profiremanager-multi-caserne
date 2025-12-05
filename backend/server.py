@@ -24478,9 +24478,10 @@ async def export_ronde_securite_pdf(
         elements.append(points_table)
         
         # Résumé
-        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Spacer(1, 0.08*inch))
         resume_text = f"<b>Résumé:</b> {nb_conformes} point(s) conforme(s) • {nb_defectueux} point(s) défectueux"
-        elements.append(Paragraph(resume_text, styles['Normal']))
+        resume_para = ParagraphStyle('ResumeText', parent=styles['Normal'], fontSize=8)
+        elements.append(Paragraph(resume_text, resume_para))
         
         # Défectuosités
         if ronde.get('defectuosites'):
