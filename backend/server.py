@@ -8028,22 +8028,13 @@ async def generer_pdf_presence(rapport_data, annee, type_formation, total_pompie
     # Utiliser la fonction helper pour créer un PDF brandé
     buffer, doc, story = create_branded_pdf(tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = getSampleStyleSheet()
-    
-    # Style personnalisé pour le titre
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=20,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
+    modern_styles = get_modern_pdf_styles(styles)
     
     # Titre
     type_texte = "Formations Obligatoires" if type_formation == "obligatoires" else "Toutes les Formations"
-    story.append(Paragraph(f"Rapport de Présence - {type_texte}", title_style))
-    story.append(Paragraph(f"ProFireManager - Année {annee}", styles['Normal']))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(f"Rapport de Présence - {type_texte}", modern_styles['title']))
+    story.append(Paragraph(f"ProFireManager - Année {annee}", modern_styles['subheading']))
+    story.append(Spacer(1, 0.2*inch))
     
     # Statistiques globales
     stats_data = [
