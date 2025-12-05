@@ -410,7 +410,8 @@ const VehiculeQRAction = () => {
               Bientôt
             </span>
           </button>
-        </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{
