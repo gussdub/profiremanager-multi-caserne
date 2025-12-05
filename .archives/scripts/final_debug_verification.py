@@ -16,7 +16,7 @@ load_dotenv('/app/backend/.env')
 load_dotenv('/app/frontend/.env')
 
 # Configuration
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://bug-fix-heroes.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://offline-safety-1.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 # Credentials from review request
