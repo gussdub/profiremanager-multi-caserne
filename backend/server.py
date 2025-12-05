@@ -12117,14 +12117,14 @@ async def export_personnel_pdf(
         
         fiche_table = Table(fiche_data, colWidths=[2*inch, 4*inch])
         fiche_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#FCA5A5')),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (0, -1), modern_styles['bg_light']),
+            ('TEXTCOLOR', (0, 0), (0, -1), modern_styles['primary_color']),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('PADDING', (0, 0), (-1, -1), 8),
             ('BACKGROUND', (1, 0), (1, -1), colors.white),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('GRID', (0, 0), (-1, -1), 0.5, modern_styles['grid'])
         ]))
         
         story.append(fiche_table)
