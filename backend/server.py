@@ -24353,32 +24353,32 @@ async def export_ronde_securite_pdf(
         from reportlab.lib.styles import getSampleStyleSheet
         styles = getSampleStyleSheet()
         
-        # Styles personnalisés
+        # Styles personnalisés - optimisés pour une page
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=18,
+            fontSize=14,
             textColor=colors.HexColor('#DC2626'),
-            spaceAfter=12,
+            spaceAfter=6,
             alignment=TA_CENTER
         )
         
         subtitle_style = ParagraphStyle(
             'Subtitle',
             parent=styles['Normal'],
-            fontSize=11,
+            fontSize=9,
             textColor=colors.HexColor('#6B7280'),
-            spaceAfter=20,
+            spaceAfter=8,
             alignment=TA_CENTER
         )
         
         section_style = ParagraphStyle(
             'Section',
             parent=styles['Heading2'],
-            fontSize=13,
+            fontSize=10,
             textColor=colors.HexColor('#DC2626'),
-            spaceBefore=15,
-            spaceAfter=10
+            spaceBefore=6,
+            spaceAfter=4
         )
     
         # Titre
