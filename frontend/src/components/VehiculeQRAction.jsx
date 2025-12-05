@@ -210,6 +210,22 @@ const VehiculeQRAction = () => {
           )}
         </div>
 
+        {/* Statut de connexion */}
+        {!isAuthenticated && !showLogin && (
+          <div style={{
+            backgroundColor: '#FEF3C7',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            border: '1px solid #FCD34D'
+          }}>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#92400E' }}>
+              ℹ️ Connexion requise pour effectuer une action
+            </p>
+          </div>
+        )}
+
         {/* Titre section */}
         <h2 style={{
           fontSize: '1.25rem',
@@ -218,7 +234,7 @@ const VehiculeQRAction = () => {
           marginBottom: '20px',
           textAlign: 'center'
         }}>
-          Que souhaitez-vous faire?
+          {showLogin ? 'Connexion' : 'Que souhaitez-vous faire?'}
         </h2>
 
         {/* Boutons d'action */}
