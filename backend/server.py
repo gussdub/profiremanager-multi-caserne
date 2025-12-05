@@ -24527,7 +24527,7 @@ async def export_ronde_securite_pdf(
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],
-            fontSize=8,
+            fontSize=6,
             textColor=colors.grey,
             alignment=TA_CENTER
         )
