@@ -24335,11 +24335,11 @@ async def export_ronde_securite_pdf(
         
         # Récupérer le véhicule
         vehicule = await db.vehicules.find_one(
-        {"id": ronde["vehicule_id"], "tenant_id": tenant.id},
-        {"_id": 0}
-    )
-    
-    from io import BytesIO
+            {"id": ronde["vehicule_id"], "tenant_id": tenant.id},
+            {"_id": 0}
+        )
+        
+        from io import BytesIO
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import inch
