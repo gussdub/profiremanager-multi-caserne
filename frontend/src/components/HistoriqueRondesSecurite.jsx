@@ -262,7 +262,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                         <Button
                           onClick={async () => {
                             try {
-                              const token = localStorage.getItem('token');
+                              const token = localStorage.getItem(`${tenantSlug}_token`);
                               const response = await fetch(
                                 `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/rondes-securite/${ronde.id}/export-pdf`,
                                 {
