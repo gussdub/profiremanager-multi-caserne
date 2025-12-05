@@ -23364,6 +23364,7 @@ const App = () => {
   return (
     <div className="App">
       {user && <OfflineManager tenant={tenant} />}
+      {user && tenantSlug && <PWAInstallPrompt tenantSlug={tenantSlug} tenant={tenant} />}
       {user ? <AppLayout /> : <Login />}
       <Toaster />
     </div>
