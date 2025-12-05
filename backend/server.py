@@ -12893,20 +12893,11 @@ async def export_disponibilites_pdf(
         modern_styles = get_modern_pdf_styles(styles)
         
         # Titre
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            textColor=colors.HexColor('#EF4444'),
-            spaceAfter=30,
-            alignment=TA_CENTER
-        )
-        
         titre = "Disponibilités du Personnel Temps Partiel"
         if user_id and user_id in users_map:
             titre = f"Disponibilités de {users_map[user_id]['prenom']} {users_map[user_id]['nom']}"
         
-        elements.append(Paragraph(titre, title_style))
+        elements.append(Paragraph(titre, modern_styles['title']))
         elements.append(Spacer(1, 0.3*inch))
         
         # Construire le tableau
