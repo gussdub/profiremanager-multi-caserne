@@ -30,20 +30,82 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [insp, bat, prev] = await Promise.all([
+      const [insp, bat, prev, gril] = await Promise.all([
         apiGet(tenantSlug, '/prevention/inspections'),
         apiGet(tenantSlug, '/prevention/batiments'),
-        apiGet(tenantSlug, '/prevention/preventionnistes').catch(() => [])
+        apiGet(tenantSlug, '/prevention/preventionnistes').catch(() => []),
+        apiGet(tenantSlug, '/prevention/grilles-inspection').catch(() => [])
       ]);
       
       setInspections(insp);
       setBatiments(bat);
       setPreventionnistes(prev);
+      setGrilles(gril);
     } catch (error) {
       console.error('Erreur chargement données:', error);
       alert('Erreur: Impossible de charger les données du calendrier');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDayClick = (date) => {
+    // Vérifier si l'utilisateur est admin ou superviseur
+    if (user.role !== 'admin' && user.role !== 'superviseur') {
+      toast({
+        title: "Accès refusé",
+        description: "Seuls les administrateurs et superviseurs peuvent créer des inspections.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedDate(date);
+    setNewInspection({
+      ...newInspection,
+      date_inspection: date.toISOString().split('T')[0],
+      preventionniste_id: user.id // Pré-remplir avec l'utilisateur actuel
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleCreateInspection = async () => {
+    try {
+      if (!newInspection.batiment_id || !newInspection.grille_inspection_id || !newInspection.preventionniste_id) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez remplir tous les champs requis",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await apiPost(tenantSlug, '/prevention/inspections', newInspection);
+      
+      toast({
+        title: "Succès",
+        description: "Inspection planifiée avec succès"
+      });
+      
+      setShowCreateModal(false);
+      setNewInspection({
+        batiment_id: '',
+        grille_inspection_id: '',
+        preventionniste_id: user.id,
+        date_inspection: '',
+        heure_debut: '09:00',
+        type_inspection: 'reguliere'
+      });
+      
+      // Recharger les inspections
+      fetchData();
+    } catch (error) {
+      console.error('Erreur création inspection:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'inspection: " + (error.message || 'Erreur inconnue'),
+        variant: "destructive"
+      });
     }
   };
 
