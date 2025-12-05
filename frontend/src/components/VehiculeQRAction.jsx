@@ -84,13 +84,16 @@ const VehiculeQRAction = () => {
       setShowLogin(true);
       return;
     }
-    // Rediriger vers la page de gestion des actifs avec le véhicule pré-sélectionné
-    navigate(`/${tenantSlug}/actifs`, { 
-      state: { 
-        openRondeSecurite: true, 
-        selectedVehicule: vehicule 
-      } 
-    });
+    
+    // Sauvegarder les infos de l'action dans le localStorage pour les récupérer après connexion
+    localStorage.setItem('qr_action', JSON.stringify({
+      action: 'ronde_securite',
+      vehiculeId: vehiculeId,
+      vehicule: vehicule
+    }));
+    
+    // Rediriger vers la page principale de l'application
+    window.location.href = `/${tenantSlug}/actifs`;
   };
 
   const handleInventaire = () => {
