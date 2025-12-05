@@ -24599,9 +24599,9 @@ async def export_ronde_securite_pdf(
                 sig_base64 = sig_data.split(',')[1]
                 sig_bytes = base64.b64decode(sig_base64)
                 
-                # Créer une image temporaire
+                # Créer une image temporaire - version compacte
                 sig_buffer = BytesIO(sig_bytes)
-                sig_image = RLImage(sig_buffer, width=2.5*inch, height=0.8*inch)
+                sig_image = RLImage(sig_buffer, width=2*inch, height=0.65*inch)
                 elements.append(sig_image)
         except Exception as e:
             sig_error = ParagraphStyle('SigError', parent=styles['Normal'], fontSize=7)
