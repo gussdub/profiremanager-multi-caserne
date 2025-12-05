@@ -16,7 +16,16 @@ const VehiculeQRAction = () => {
   const loadVehicule = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, `/actifs/vehicules/${vehiculeId}`);
+      // Utiliser l'endpoint public (sans authentification)
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/vehicules/${vehiculeId}/public`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Véhicule non trouvé');
+      }
+      
+      const data = await response.json();
       setVehicule(data);
     } catch (err) {
       console.error('Erreur chargement véhicule:', err);
