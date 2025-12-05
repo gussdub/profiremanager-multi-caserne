@@ -24381,166 +24381,166 @@ async def export_ronde_securite_pdf(
             spaceAfter=10
         )
     
-    # Titre
-    elements.append(Paragraph("🔧 Ronde de Sécurité SAAQ", title_style))
-    
-    # Date et lieu
-    from datetime import datetime
-    date_ronde = datetime.strptime(ronde["date"], "%Y-%m-%d")
-    info_text = f"Date: {date_ronde.strftime('%d/%m/%Y')} • Heure: {ronde['heure']} • Lieu: {ronde['lieu']}"
-    elements.append(Paragraph(info_text, subtitle_style))
-    
-    # Informations du véhicule
-    elements.append(Paragraph("📋 Informations du véhicule", section_style))
-    vehicule_data = [
-        ['Type', 'N° Plaque', 'Marque', 'Année', 'KM'],
-        [
-            vehicule.get('type_vehicule', 'N/A'),
-            vehicule.get('nom', 'N/A'),
-            vehicule.get('marque', 'N/A'),
-            str(vehicule.get('annee', 'N/A')),
-            f"{ronde['km']} km"
+        # Titre
+        elements.append(Paragraph("🔧 Ronde de Sécurité SAAQ", title_style))
+        
+        # Date et lieu
+        from datetime import datetime
+        date_ronde = datetime.strptime(ronde["date"], "%Y-%m-%d")
+        info_text = f"Date: {date_ronde.strftime('%d/%m/%Y')} • Heure: {ronde['heure']} • Lieu: {ronde['lieu']}"
+        elements.append(Paragraph(info_text, subtitle_style))
+        
+        # Informations du véhicule
+        elements.append(Paragraph("📋 Informations du véhicule", section_style))
+        vehicule_data = [
+            ['Type', 'N° Plaque', 'Marque', 'Année', 'KM'],
+            [
+                vehicule.get('type_vehicule', 'N/A'),
+                vehicule.get('nom', 'N/A'),
+                vehicule.get('marque', 'N/A'),
+                str(vehicule.get('annee', 'N/A')),
+                f"{ronde['km']} km"
+            ]
         ]
-    ]
-    
-    vehicule_table = Table(vehicule_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1*inch, 1*inch])
-    vehicule_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-    ]))
-    elements.append(vehicule_table)
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Personne mandatée
-    elements.append(Paragraph("👤 Personne mandatée", section_style))
-    mandatee_text = f"<b>{ronde['personne_mandatee']}</b>"
-    elements.append(Paragraph(mandatee_text, styles['Normal']))
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Points de vérification
-    elements.append(Paragraph("✅ Points de vérification (19 points SAAQ)", section_style))
-    
-    points_labels = {
-        'attelage': '1 - Attelage',
-        'chassis_carrosserie': '2 - Châssis et carrosserie',
-        'chauffage_degivrage': '3 - Chauffage et dégivrage',
-        'commandes_conducteur_sirene': '4 - Commandes du conducteur et sirène',
-        'direction': '5 - Direction',
-        'essuie_glaces_lave_glace': '6 - Essuie-glaces/lave-glace',
-        'materiel_urgence': '7 - Matériel d\'urgence',
-        'phares_feux_gyrophares': '8 - Phares, feux et gyrophares',
-        'pneus': '9 - Pneus',
-        'portieres_autres_issues': '10 - Portières et autres issues',
-        'retroviseurs_vitrage': '11 - Rétroviseurs/Vitrage',
-        'roues_moyeux_fixation': '12 - Roues, Moyeux et pièces de fixation',
-        'siege': '13 - Siège',
-        'suspension': '14 - Suspension',
-        'systeme_alimentation_carburant': '15 - Système d\'alimentation en carburant',
-        'systeme_echappement': '16 - Système d\'échappement',
-        'systeme_freins_hydrauliques': '18 - Système de freins hydrauliques',
-        'systeme_freins_pneumatiques': '19 - Système de freins pneumatiques'
-    }
-    
-    points_data = [['Point de vérification', 'Statut']]
-    
-    nb_conformes = 0
-    nb_defectueux = 0
-    
-    for key, label in points_labels.items():
-        statut = ronde['points_verification'].get(key, 'conforme')
-        statut_display = '✅ Conforme' if statut == 'conforme' else '❌ Défectueux'
-        if statut == 'conforme':
-            nb_conformes += 1
-        else:
-            nb_defectueux += 1
-        points_data.append([label, statut_display])
-    
-    points_table = Table(points_data, colWidths=[4.5*inch, 2*inch])
-    points_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')])
-    ]))
-    elements.append(points_table)
-    
-    # Résumé
-    elements.append(Spacer(1, 0.2*inch))
-    resume_text = f"<b>Résumé:</b> {nb_conformes} point(s) conforme(s) • {nb_defectueux} point(s) défectueux"
-    elements.append(Paragraph(resume_text, styles['Normal']))
-    
-    # Défectuosités
-    if ronde.get('defectuosites'):
-        elements.append(Spacer(1, 0.2*inch))
-        elements.append(Paragraph("📝 Défectuosités constatées", section_style))
-        defects_text = ronde['defectuosites'].replace('\n', '<br/>')
-        elements.append(Paragraph(defects_text, styles['Normal']))
-    
-    # Contre-signatures
-    if ronde.get('contre_signatures') and len(ronde['contre_signatures']) > 0:
-        elements.append(Spacer(1, 0.2*inch))
-        elements.append(Paragraph("✍️ Contre-signatures", section_style))
         
-        for cs in ronde['contre_signatures']:
-            cs_date = datetime.fromisoformat(cs['date_contre_signature'])
-            cs_text = f"• {cs['prenom_conducteur']} {cs['nom_conducteur']} - {cs_date.strftime('%d/%m/%Y à %H:%M')}"
-            elements.append(Paragraph(cs_text, styles['Normal']))
-    
-    # Signature (image base64)
-    elements.append(Spacer(1, 0.3*inch))
-    elements.append(Paragraph("✍️ Signature de la personne mandatée", section_style))
-    
-    try:
-        # Extraire les données de la signature (base64)
-        sig_data = ronde['signature_mandatee']
-        if sig_data and sig_data.startswith('data:image'):
-            # Retirer le préfixe data:image/png;base64,
-            sig_base64 = sig_data.split(',')[1]
-            sig_bytes = base64.b64decode(sig_base64)
+        vehicule_table = Table(vehicule_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1*inch, 1*inch])
+        vehicule_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+        elements.append(vehicule_table)
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Personne mandatée
+        elements.append(Paragraph("👤 Personne mandatée", section_style))
+        mandatee_text = f"<b>{ronde['personne_mandatee']}</b>"
+        elements.append(Paragraph(mandatee_text, styles['Normal']))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Points de vérification
+        elements.append(Paragraph("✅ Points de vérification (19 points SAAQ)", section_style))
+        
+        points_labels = {
+            'attelage': '1 - Attelage',
+            'chassis_carrosserie': '2 - Châssis et carrosserie',
+            'chauffage_degivrage': '3 - Chauffage et dégivrage',
+            'commandes_conducteur_sirene': '4 - Commandes du conducteur et sirène',
+            'direction': '5 - Direction',
+            'essuie_glaces_lave_glace': '6 - Essuie-glaces/lave-glace',
+            'materiel_urgence': '7 - Matériel d\'urgence',
+            'phares_feux_gyrophares': '8 - Phares, feux et gyrophares',
+            'pneus': '9 - Pneus',
+            'portieres_autres_issues': '10 - Portières et autres issues',
+            'retroviseurs_vitrage': '11 - Rétroviseurs/Vitrage',
+            'roues_moyeux_fixation': '12 - Roues, Moyeux et pièces de fixation',
+            'siege': '13 - Siège',
+            'suspension': '14 - Suspension',
+            'systeme_alimentation_carburant': '15 - Système d\'alimentation en carburant',
+            'systeme_echappement': '16 - Système d\'échappement',
+            'systeme_freins_hydrauliques': '18 - Système de freins hydrauliques',
+            'systeme_freins_pneumatiques': '19 - Système de freins pneumatiques'
+        }
+        
+        points_data = [['Point de vérification', 'Statut']]
+        
+        nb_conformes = 0
+        nb_defectueux = 0
+        
+        for key, label in points_labels.items():
+            statut = ronde['points_verification'].get(key, 'conforme')
+            statut_display = '✅ Conforme' if statut == 'conforme' else '❌ Défectueux'
+            if statut == 'conforme':
+                nb_conformes += 1
+            else:
+                nb_defectueux += 1
+            points_data.append([label, statut_display])
+        
+        points_table = Table(points_data, colWidths=[4.5*inch, 2*inch])
+        points_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')])
+        ]))
+        elements.append(points_table)
+        
+        # Résumé
+        elements.append(Spacer(1, 0.2*inch))
+        resume_text = f"<b>Résumé:</b> {nb_conformes} point(s) conforme(s) • {nb_defectueux} point(s) défectueux"
+        elements.append(Paragraph(resume_text, styles['Normal']))
+        
+        # Défectuosités
+        if ronde.get('defectuosites'):
+            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Paragraph("📝 Défectuosités constatées", section_style))
+            defects_text = ronde['defectuosites'].replace('\n', '<br/>')
+            elements.append(Paragraph(defects_text, styles['Normal']))
+        
+        # Contre-signatures
+        if ronde.get('contre_signatures') and len(ronde['contre_signatures']) > 0:
+            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Paragraph("✍️ Contre-signatures", section_style))
             
-            # Créer une image temporaire
-            sig_buffer = BytesIO(sig_bytes)
-            sig_image = RLImage(sig_buffer, width=3*inch, height=1*inch)
-            elements.append(sig_image)
-    except Exception as e:
-        elements.append(Paragraph(f"<i>Signature non disponible</i>", styles['Normal']))
-    
-    # Footer
-    elements.append(Spacer(1, 0.5*inch))
-    footer_style = ParagraphStyle(
-        'Footer',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.grey,
-        alignment=TA_CENTER
-    )
-    footer_text = create_pdf_footer_text(tenant)
-    if footer_text:
-        elements.append(Paragraph(footer_text, footer_style))
-    
-        # Générer le PDF
-        logger.info("📄 Génération du PDF...")
-        doc.build(elements)
-        buffer.seek(0)
+            for cs in ronde['contre_signatures']:
+                cs_date = datetime.fromisoformat(cs['date_contre_signature'])
+                cs_text = f"• {cs['prenom_conducteur']} {cs['nom_conducteur']} - {cs_date.strftime('%d/%m/%Y à %H:%M')}"
+                elements.append(Paragraph(cs_text, styles['Normal']))
         
-        filename = f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf"
-        logger.info(f"✅ PDF généré avec succès - filename: {filename}")
+        # Signature (image base64)
+        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Paragraph("✍️ Signature de la personne mandatée", section_style))
         
-        return StreamingResponse(
-            buffer,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        try:
+            # Extraire les données de la signature (base64)
+            sig_data = ronde['signature_mandatee']
+            if sig_data and sig_data.startswith('data:image'):
+                # Retirer le préfixe data:image/png;base64,
+                sig_base64 = sig_data.split(',')[1]
+                sig_bytes = base64.b64decode(sig_base64)
+                
+                # Créer une image temporaire
+                sig_buffer = BytesIO(sig_bytes)
+                sig_image = RLImage(sig_buffer, width=3*inch, height=1*inch)
+                elements.append(sig_image)
+        except Exception as e:
+            elements.append(Paragraph(f"<i>Signature non disponible</i>", styles['Normal']))
+        
+        # Footer
+        elements.append(Spacer(1, 0.5*inch))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER
         )
+        footer_text = create_pdf_footer_text(tenant)
+        if footer_text:
+            elements.append(Paragraph(footer_text, footer_style))
+        
+            # Générer le PDF
+            logger.info("📄 Génération du PDF...")
+            doc.build(elements)
+            buffer.seek(0)
+            
+            filename = f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf"
+            logger.info(f"✅ PDF généré avec succès - filename: {filename}")
+            
+            return StreamingResponse(
+                buffer,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
     except HTTPException:
         raise
     except Exception as e:
