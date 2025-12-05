@@ -68,15 +68,23 @@ const VehiculeQRAction = () => {
       localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
       
       // Sauvegarder l'info de l'action QR pour redirection
-      localStorage.setItem('qr_action', JSON.stringify({
+      const qrActionData = {
         action: 'ronde_securite',
         vehiculeId: vehiculeId,
         vehicule: vehicule
-      }));
+      };
+      
+      console.log('💾 Sauvegarde qr_action:', qrActionData);
+      localStorage.setItem('qr_action', JSON.stringify(qrActionData));
+      
+      // Vérifier que c'est bien sauvegardé
+      const saved = localStorage.getItem('qr_action');
+      console.log('✅ Vérifié dans localStorage:', saved);
       
       setIsAuthenticated(true);
       
       // Rediriger vers l'application principale
+      console.log('🔄 Redirection vers:', `/${tenantSlug}/actifs`);
       window.location.href = `/${tenantSlug}/actifs`;
     } catch (err) {
       console.error('Erreur connexion:', err);
