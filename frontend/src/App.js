@@ -23333,6 +23333,9 @@ const AppWithProviders = () => {
             <Toaster />
           </AuthProvider>
         } />
+        <Route path="/qr/:tenantSlug/vehicule/:vehiculeId" element={
+          <VehiculeQRAction />
+        } />
         <Route path="*" element={
           <AuthProvider>
             <App />
