@@ -64,7 +64,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
     setNewInspection({
       ...newInspection,
       date_inspection: date.toISOString().split('T')[0],
-      preventionniste_id: user.id // Pré-remplir avec l'utilisateur actuel
+      preventionniste_id: '' // Vide par défaut - non assigné
     });
     setShowCreateModal(true);
   };
