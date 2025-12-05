@@ -24887,6 +24887,7 @@ async def get_all_tenants():
 
 
 app.include_router(api_router)
+app.include_router(pwa_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
