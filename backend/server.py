@@ -24340,18 +24340,18 @@ async def export_ronde_securite_pdf(
         )
         
         from io import BytesIO
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, PageBreak, Image as RLImage
-    from reportlab.lib.styles import ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
-    import base64
-    
-    # Créer le PDF brandé
-    buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
-    from reportlab.lib.styles import getSampleStyleSheet
-    styles = getSampleStyleSheet()
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, PageBreak, Image as RLImage
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        import base64
+        
+        # Créer le PDF brandé
+        buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
+        from reportlab.lib.styles import getSampleStyleSheet
+        styles = getSampleStyleSheet()
     
     # Styles personnalisés
     title_style = ParagraphStyle(
