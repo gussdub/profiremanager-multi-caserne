@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiGet } from '../utils/api';
+import axios from 'axios';
 
 const VehiculeQRAction = () => {
   const { tenantSlug, vehiculeId } = useParams();
@@ -8,6 +9,12 @@ const VehiculeQRAction = () => {
   const [vehicule, setVehicule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
     loadVehicule();
