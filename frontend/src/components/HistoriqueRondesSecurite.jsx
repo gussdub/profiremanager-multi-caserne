@@ -290,7 +290,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                       
                       {statut.canCounterSign && (
                         <p style={{ fontSize: '12px', color: '#6c757d', marginTop: '8px', textAlign: 'center' }}>
-                          Si vous devez prendre ce véhicule, vous pouvez accepter cette ronde au lieu d'en créer une nouvelle
+                          Si vous devez prendre ce véhicule, vous pouvez accepter cette ronde au lieu d&apos;en créer une nouvelle
                         </p>
                       )}
                     </div>
