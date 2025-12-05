@@ -24610,14 +24610,14 @@ async def export_ronde_securite_pdf(
             sig_error = ParagraphStyle('SigError', parent=styles['Normal'], fontSize=7)
             elements.append(Paragraph(f"<i>Signature non disponible</i>", sig_error))
         
-        # Footer
-        elements.append(Spacer(1, 0.1*inch))
+        # Footer ultra-compact
+        elements.append(Spacer(1, 0.05*inch))
         footer_style = ParagraphStyle(
             'Footer',
-            parent=styles['Normal'],
-            fontSize=6,
+            fontSize=5,
             textColor=colors.grey,
-            alignment=TA_CENTER
+            alignment=TA_CENTER,
+            spaceAfter=0
         )
         footer_text = create_pdf_footer_text(tenant)
         if footer_text:
