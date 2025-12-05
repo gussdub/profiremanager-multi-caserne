@@ -24895,14 +24895,13 @@ async def send_ronde_securite_email(
     pdf_bytes = buffer_pdf.read()
     pdf_base64 = base64.b64encode(pdf_bytes).decode()
     
-    # Envoyer l'email avec SendGrid
-    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    # Envoyer l'email avec Resend
+    resend_api_key = os.environ.get('RESEND_API_KEY')
     
-    if not sendgrid_api_key or sendgrid_api_key == 'your-sendgrid-api-key-here-test':
+    if not resend_api_key:
         raise HTTPException(status_code=500, detail="Service d'email non configuré")
     
-    from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+    resend.api_key = resend_api_key
     
     # Préparer les destinataires
     to_emails = [admin['email'] for admin in admins_superviseurs if admin.get('email')]
@@ -24912,6 +24911,7 @@ async def send_ronde_securite_email(
     
     # Message email
     subject = f"Ronde de Sécurité - {vehicule.get('nom', 'Véhicule')} - {date_ronde.strftime('%d/%m/%Y')}"
+    sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
     
     html_content = f"""
     <html>
@@ -24952,25 +24952,21 @@ async def send_ronde_securite_email(
     </html>
     """
     
-    # Créer le message
-    message = Mail(
-        from_email=Email(tenant.email_expediteur or 'noreply@profi remanager.com', tenant.nom),
-        to_emails=to_emails,
-        subject=subject,
-        html_content=html_content
-    )
-    
-    # Attacher le PDF
-    attachment = Attachment()
-    attachment.file_content = FileContent(pdf_base64)
-    attachment.file_type = FileType('application/pdf')
-    attachment.file_name = FileName(f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf")
-    attachment.disposition = Disposition('attachment')
-    message.attachment = attachment
-    
     try:
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
+        params = {
+            "from": sender_email,
+            "to": to_emails,
+            "subject": subject,
+            "html": html_content,
+            "attachments": [
+                {
+                    "filename": f"ronde_securite_{vehicule.get('nom', 'vehicule')}_{ronde['date']}.pdf",
+                    "content": pdf_base64,
+                }
+            ]
+        }
+        
+        response = resend.Emails.send(params)
         
         return {
             "message": "Email envoyé avec succès",
