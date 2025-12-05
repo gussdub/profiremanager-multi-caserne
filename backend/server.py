@@ -5576,34 +5576,16 @@ async def export_rapport_heures_pdf(
     # Utiliser la fonction helper pour créer un PDF brandé
     buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
     styles = getSampleStyleSheet()
-    
-    # Styles personnalisés
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'Subtitle',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#6B7280'),
-        spaceAfter=20,
-        alignment=TA_CENTER
-    )
+    modern_styles = get_modern_pdf_styles(styles)
     
     # Titre
-    elements.append(Paragraph("Rapport d'Heures", title_style))
+    elements.append(Paragraph("Rapport d'Heures", modern_styles['title']))
     
     # Période
     debut_dt = datetime.strptime(date_debut, "%Y-%m-%d")
     fin_dt = datetime.strptime(date_fin, "%Y-%m-%d")
     periode_text = f"Période: {debut_dt.strftime('%d/%m/%Y')} - {fin_dt.strftime('%d/%m/%Y')}"
-    elements.append(Paragraph(periode_text, subtitle_style))
+    elements.append(Paragraph(periode_text, modern_styles['subheading']))
     
     # Tableau des employés
     table_data = [
