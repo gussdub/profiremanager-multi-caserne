@@ -260,6 +260,11 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           active={activeTab === 'epi'}
           onClick={() => setActiveTab('epi')}
         />
+        <TabButton
+          label="⚙️ Paramètres"
+          active={activeTab === 'parametres'}
+          onClick={() => setActiveTab('parametres')}
+        />
       </div>
 
       {/* Content */}
