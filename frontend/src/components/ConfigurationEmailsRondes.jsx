@@ -3,23 +3,38 @@ import { Button } from './ui/button';
 import { apiGet, apiPut } from '../utils/api';
 
 const ConfigurationEmailsRondes = ({ tenantSlug }) => {
-  const [emails, setEmails] = useState([]);
-  const [newEmail, setNewEmail] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadConfiguration();
+    loadUsers();
   }, [tenantSlug]);
+
+  const loadUsers = async () => {
+    try {
+      const users = await apiGet(tenantSlug, '/users');
+      // Filtrer uniquement les admins et superviseurs
+      const adminsSuperviseurs = users.filter(u => 
+        u.role === 'admin' || u.role === 'superviseur'
+      );
+      setAllUsers(adminsSuperviseurs);
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error);
+      setAllUsers([]);
+    }
+  };
 
   const loadConfiguration = async () => {
     try {
       setLoading(true);
       const config = await apiGet(tenantSlug, '/actifs/configuration-emails-rondes');
-      setEmails(config.emails_rondes_securite || []);
+      setSelectedUsers(config.user_ids_rondes_securite || []);
     } catch (error) {
       console.error('Erreur chargement configuration:', error);
-      setEmails([]);
+      setSelectedUsers([]);
     } finally {
       setLoading(false);
     }
