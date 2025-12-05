@@ -109,7 +109,7 @@ const VehiculeQRAction = () => {
     }));
     
     // Rediriger vers la page principale de l'application
-    window.location.href = `/${tenantSlug}/actifs`;
+    window.location.href = `/${tenantSlug}`;
   };
 
   const handleInventaire = () => {
