@@ -4735,7 +4735,7 @@ async def export_planning_pdf(
             'JourStyle',
             parent=styles['Heading2'],
             fontSize=14,
-            textColor=colors.HexColor('#1e293b'),
+            textColor=modern_styles['secondary_color'],
             spaceAfter=10,
             spaceBefore=15,
             fontName='Helvetica-Bold'
