@@ -307,22 +307,35 @@ export const isOfflineReady = async () => {
 
 // Obtenir les statistiques du mode offline
 export const getOfflineStats = async () => {
-  const batiments = await getAllFromStore('batiments');
-  const grilles = await getAllFromStore('grilles_inspection');
-  const plans = await getAllFromStore('plans_intervention');
-  const pending = await getPendingInspections();
-  const lastPrep = await getMetadata('last_offline_prep');
-  const lastSync = await getMetadata('last_sync');
-  
-  return {
-    ready: batiments.length > 0 && grilles.length > 0,
-    batiments: batiments.length,
-    grilles: grilles.length,
-    plans: plans.length,
-    pending_inspections: pending.length,
-    last_offline_prep: lastPrep,
-    last_sync: lastSync
-  };
+  try {
+    const batiments = await getAllFromStore('batiments');
+    const grilles = await getAllFromStore('grilles_inspection');
+    const plans = await getAllFromStore('plans_intervention');
+    const pending = await getPendingInspections();
+    const lastPrep = await getMetadata('last_offline_prep');
+    const lastSync = await getMetadata('last_sync');
+    
+    return {
+      ready: batiments.length > 0 && grilles.length > 0,
+      batiments: batiments.length,
+      grilles: grilles.length,
+      plans: plans.length,
+      pending_inspections: pending.length,
+      last_offline_prep: lastPrep,
+      last_sync: lastSync
+    };
+  } catch (error) {
+    console.error('Erreur getOfflineStats:', error);
+    return {
+      ready: false,
+      batiments: 0,
+      grilles: 0,
+      plans: 0,
+      pending_inspections: 0,
+      last_offline_prep: null,
+      last_sync: null
+    };
+  }
 };
 
 export default {
