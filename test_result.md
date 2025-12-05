@@ -65,6 +65,18 @@ frontend:
         agent: "testing"
         comment: "🖨️ PLANNING MODULE PRINT BUTTONS TESTING COMPLETED - Comprehensive testing of both print buttons in Planning module completed with mixed results. TESTING ENVIRONMENT: URL: http://localhost:3000/demo, Credentials: gussdub@gmail.com / 230685Juin+, Module: Planning. DETAILED RESULTS: 1) ✅ LOGIN & NAVIGATION: Successfully logged in and navigated to Planning module, planning interface loaded correctly with calendar view, 2) ✅ PRINT PLANNING BUTTON: Button '🖨️ Imprimer Planning' found and clickable, triggers correct API call to /api/demo/planning/export-pdf?periode=2025-12&type=mois, ❌ BACKEND ERROR: Returns 500 Internal Server Error, frontend shows error message 'Erreur génération rapport', 3) ✅ RAPPORT D'HEURES MODAL: Modal opens correctly when clicking '📊 Rapport d'Heures' button, displays proper interface with month selector (2025-12), mode selection (Mois complet), 4) ✅ PRINT RAPPORT BUTTON: Button '🖨️ Imprimer' in modal found and clickable, triggers correct API call to /api/demo/planning/rapport-heures/export-pdf?date_debut=2025-12-01&date_fin=2025-12-31, ✅ SUCCESS: Returns 200 OK, no errors detected. TECHNICAL ANALYSIS: Frontend implementation is correct for both buttons, both buttons trigger appropriate API calls with correct parameters, PDF generation logic works (creates hidden iframe for printing), RapportHeuresModal component functions properly. BACKEND ISSUES: Planning export-pdf endpoint returns 500 error (backend implementation issue), Rapport d'Heures export-pdf endpoint works correctly. CONCLUSION: Print functionality is properly implemented in frontend, one backend endpoint needs fixing (planning export-pdf), user interface and user experience are working as expected."
 
+  - task: "Module Prévention - Assignation de Secteur Géographique"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Test du module Prévention pour l'assignation de secteur géographique. Le bug backend critique (shapely/numpy) a été résolu et l'assignation de secteur fonctionne maintenant parfaitement en backend (testé avec curl - 10 bâtiments assignés avec succès). Tests à effectuer: 1) Connexion à l'application avec gussdub@gmail.com / 230685Juin+, 2) Navigation vers le module Prévention, 3) Accès aux Secteurs Géographiques via l'onglet Préventionnistes → Vue Secteurs, 4) Vérification de l'interface d'assignation pour le secteur 'test' (ID: c3b921da-d4da-45c8-8b76-933fb74689dd), 5) Test d'assignation avec les préventionnistes disponibles (Jean Dupont actuellement assigné, Guillaume Dubeau et Felix Dozois disponibles). Points critiques: Interface charge sans erreurs, liste des préventionnistes visible et correcte, secteur 'test' visible, assignation actuelle affichée correctement, interface permet modification assignation, mise à jour après assignation."
+
 backend:
   - task: "Authentication System"
     implemented: true
