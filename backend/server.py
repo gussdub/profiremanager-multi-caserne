@@ -4708,42 +4708,24 @@ async def export_planning_pdf(
             bottomMargin=0.75*inch
         )
         styles = getSampleStyleSheet()
+        modern_styles = get_modern_pdf_styles(styles)
         
         # Le logo et le header sont déjà ajoutés par create_branded_pdf
         # Pas besoin de les ajouter à nouveau
         
         # Titre principal
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=20,
-            textColor=colors.HexColor('#EF4444'),
-            spaceAfter=10,
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold'
-        )
-        
         titre = f"PLANIFICATION DES GARDES"
-        elements.append(Paragraph(titre, title_style))
+        elements.append(Paragraph(titre, modern_styles['title']))
         
         # Sous-titre avec période
-        subtitle_style = ParagraphStyle(
-            'SubtitleStyle',
-            parent=styles['Normal'],
-            fontSize=12,
-            textColor=colors.HexColor('#475569'),
-            spaceAfter=20,
-            alignment=TA_CENTER,
-            fontName='Helvetica'
-        )
-        
         type_label = "Semaine" if type == "semaine" else "Mois"
         periode_str = f"{type_label} du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
-        elements.append(Paragraph(periode_str, subtitle_style))
+        elements.append(Paragraph(periode_str, modern_styles['subheading']))
+        elements.append(Spacer(1, 0.1*inch))
         
         # Ligne de séparation
         from reportlab.platypus import HRFlowable
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#e2e8f0'), spaceAfter=0.3*inch))
+        elements.append(HRFlowable(width="100%", thickness=1, color=modern_styles['grid'], spaceAfter=0.3*inch))
         
         # NOUVEAU FORMAT ÉPURÉ - Liste par jour
         jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
