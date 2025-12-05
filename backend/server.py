@@ -24485,10 +24485,11 @@ async def export_ronde_securite_pdf(
         
         # Défectuosités
         if ronde.get('defectuosites'):
-            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Spacer(1, 0.08*inch))
             elements.append(Paragraph("📝 Défectuosités constatées", section_style))
             defects_text = ronde['defectuosites'].replace('\n', '<br/>')
-            elements.append(Paragraph(defects_text, styles['Normal']))
+            defects_para = ParagraphStyle('DefectsText', parent=styles['Normal'], fontSize=7)
+            elements.append(Paragraph(defects_text, defects_para))
         
         # Contre-signatures
         if ronde.get('contre_signatures') and len(ronde['contre_signatures']) > 0:
