@@ -83,9 +83,10 @@ const VehiculeQRAction = () => {
       
       setIsAuthenticated(true);
       
-      // Rediriger vers l'application principale
-      console.log('🔄 Redirection vers:', `/${tenantSlug}/actifs`);
-      window.location.href = `/${tenantSlug}/actifs`;
+      // Rediriger vers l'application principale (page d'accueil)
+      // AppLayout détectera qr_action et changera vers 'actifs'
+      console.log('🔄 Redirection vers:', `/${tenantSlug}`);
+      window.location.href = `/${tenantSlug}`;
     } catch (err) {
       console.error('Erreur connexion:', err);
       setLoginError('Email ou mot de passe incorrect');
