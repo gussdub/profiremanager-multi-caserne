@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import CalendrierInspections from './CalendrierInspections';
 import CartePlanification from './CartePlanification';
-import { apiGet, getTenantToken } from '../utils/api';
+import { apiGet, apiPost, getTenantToken } from '../utils/api';
 import { useToast } from '../hooks/use-toast';
 
 const PlanificationView = ({ 
