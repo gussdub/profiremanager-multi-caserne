@@ -11518,23 +11518,15 @@ async def export_salaires_pdf(
     
     story = []
     styles = getSampleStyleSheet()
+    modern_styles = get_modern_pdf_styles(styles)
     
     # Header personnalisé (logo + nom service)
     header_elements = create_pdf_header_elements(tenant, styles)
     story.extend(header_elements)
     
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
-    story.append(Paragraph("Rapport de Coûts Salariaux Détaillés", title_style))
-    story.append(Paragraph(f"Période: {date_debut} au {date_fin}", styles['Normal']))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph("Rapport de Coûts Salariaux Détaillés", modern_styles['title']))
+    story.append(Paragraph(f"Période: {date_debut} au {date_fin}", modern_styles['subheading']))
+    story.append(Spacer(1, 0.2*inch))
     
     # Résumé
     summary_data = [
