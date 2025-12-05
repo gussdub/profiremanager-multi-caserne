@@ -220,10 +220,17 @@ export const saveInspectionOffline = async (inspectionData) => {
 
 // Récupérer les inspections non synchronisées
 export const getPendingInspections = async () => {
-  const db = await initOfflineDB();
-  const tx = db.transaction('inspections_pending', 'readonly');
-  const index = tx.store.index('synced');
-  return index.getAll(false);
+  try {
+    const db = await initOfflineDB();
+    const tx = db.transaction('inspections_pending', 'readonly');
+    const index = tx.store.index('synced');
+    const allInspections = await index.getAll();
+    // Filtrer manuellement pour les inspections non synchronisées
+    return allInspections.filter(inspection => inspection.synced === false);
+  } catch (error) {
+    console.error('Erreur getPendingInspections:', error);
+    return [];
+  }
 };
 
 // Marquer une inspection comme synchronisée
