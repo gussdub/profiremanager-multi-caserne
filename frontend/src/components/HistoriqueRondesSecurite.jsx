@@ -257,7 +257,7 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
 
                     {/* Boutons d'action */}
                     <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr 1fr' : '1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: statut.canCounterSign ? '1fr 1fr' : '1fr', gap: '10px' }}>
                         {/* Bouton PDF */}
                         <Button
                           onClick={async () => {
