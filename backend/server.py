@@ -8286,6 +8286,7 @@ async def generer_pdf_competences(rapport_data, annee, user_nom, tenant):
     # Utiliser la fonction helper pour créer un PDF brandé
     buffer, doc, story = create_branded_pdf(tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = getSampleStyleSheet()
+    modern_styles = get_modern_pdf_styles(styles)
     
     title_style = ParagraphStyle(
         'CustomTitle',
