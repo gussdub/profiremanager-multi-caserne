@@ -67,10 +67,17 @@ const VehiculeQRAction = () => {
       localStorage.setItem(`${tenantSlug}_token`, response.data.access_token);
       localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
       
+      // Sauvegarder l'info de l'action QR pour redirection
+      localStorage.setItem('qr_action', JSON.stringify({
+        action: 'ronde_securite',
+        vehiculeId: vehiculeId,
+        vehicule: vehicule
+      }));
+      
       setIsAuthenticated(true);
-      setShowLogin(false);
-      setEmail('');
-      setPassword('');
+      
+      // Rediriger vers l'application principale
+      window.location.href = `/${tenantSlug}/actifs`;
     } catch (err) {
       console.error('Erreur connexion:', err);
       setLoginError('Email ou mot de passe incorrect');
