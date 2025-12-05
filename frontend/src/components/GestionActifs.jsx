@@ -293,6 +293,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
             />
           ) : activeTab === 'epi' ? (
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
+          ) : activeTab === 'parametres' ? (
+            <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
           ) : (
             <InventairesTab 
               tenantSlug={tenantSlug}
