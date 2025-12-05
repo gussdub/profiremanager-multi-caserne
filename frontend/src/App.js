@@ -23161,6 +23161,31 @@ const AppLayout = () => {
     }
   }, [user]);
 
+  // Enregistrer le Service Worker PWA et le manifest dynamique
+  useEffect(() => {
+    if ('serviceWorker' in navigator && tenantSlug) {
+      // Enregistrer le Service Worker
+      navigator.serviceWorker.register('/service-worker.js')
+        .then((registration) => {
+          console.log('✅ Service Worker enregistré:', registration.scope);
+        })
+        .catch((error) => {
+          console.log('❌ Erreur Service Worker:', error);
+        });
+
+      // Mettre à jour le manifest dynamique
+      const manifestLink = document.querySelector('link[rel="manifest"]');
+      if (manifestLink) {
+        manifestLink.href = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/manifest.json`;
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/manifest.json`;
+        document.head.appendChild(link);
+      }
+    }
+  }, [tenantSlug]);
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
