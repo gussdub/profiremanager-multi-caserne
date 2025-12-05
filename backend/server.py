@@ -24306,6 +24306,20 @@ async def create_ronde_securite(
         {"$set": {"derniere_inspection_date": ronde_data.date}}
     )
     
+    # Envoyer automatiquement les emails configurés
+    try:
+        emails_config = tenant.parametres.get('emails_rondes_securite', [])
+        if emails_config and len(emails_config) > 0:
+            # Envoyer l'email en arrière-plan (fire and forget)
+            import asyncio
+            asyncio.create_task(
+                send_ronde_email_background(tenant, ronde.id, vehicle, emails_config)
+            )
+            logger.info(f"📧 Email de ronde programmé pour {len(emails_config)} destinataire(s)")
+    except Exception as e:
+        logger.error(f"❌ Erreur programmation email ronde: {e}")
+        # Ne pas bloquer la création de la ronde si l'email échoue
+    
     return ronde
 
 @api_router.get("/{tenant_slug}/actifs/rondes-securite", response_model=List[RondeSecurite])
