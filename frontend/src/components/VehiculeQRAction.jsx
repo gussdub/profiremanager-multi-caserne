@@ -49,7 +49,41 @@ const VehiculeQRAction = () => {
     }
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoggingIn(true);
+
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/auth/login`,
+        {
+          email: email,
+          mot_de_passe: password
+        }
+      );
+
+      // Sauvegarder le token
+      localStorage.setItem(`${tenantSlug}_token`, response.data.access_token);
+      localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
+      
+      setIsAuthenticated(true);
+      setShowLogin(false);
+      setEmail('');
+      setPassword('');
+    } catch (err) {
+      console.error('Erreur connexion:', err);
+      setLoginError('Email ou mot de passe incorrect');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
   const handleRondeSecurite = () => {
+    if (!isAuthenticated) {
+      setShowLogin(true);
+      return;
+    }
     // Rediriger vers la page de gestion des actifs avec le véhicule pré-sélectionné
     navigate(`/${tenantSlug}/actifs`, { 
       state: { 
@@ -60,6 +94,10 @@ const VehiculeQRAction = () => {
   };
 
   const handleInventaire = () => {
+    if (!isAuthenticated) {
+      setShowLogin(true);
+      return;
+    }
     // Pour l'instant, afficher un message (fonctionnalité à venir)
     alert('📦 Module Inventaire à venir prochainement!');
   };
