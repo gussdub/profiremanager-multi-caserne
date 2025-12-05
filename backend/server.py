@@ -1526,6 +1526,52 @@ def create_branded_pdf(tenant, pagesize=A4, **kwargs):
     
     return buffer, doc, elements
 
+
+def get_modern_pdf_styles(styles):
+    """
+    Retourne les styles modernes standardisés pour tous les PDFs
+    Basé sur le design du rapport d'inspection (Ronde de sécurité)
+    """
+    title_style = ParagraphStyle(
+        'ModernTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#1f2937'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'ModernHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#374151'),
+        spaceAfter=12,
+        spaceBefore=20
+    )
+    
+    subheading_style = ParagraphStyle(
+        'ModernSubheading',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.HexColor('#374151'),
+        spaceAfter=10,
+        alignment=TA_CENTER
+    )
+    
+    return {
+        'title': title_style,
+        'heading': heading_style,
+        'subheading': subheading_style,
+        'primary_color': colors.HexColor('#1f2937'),
+        'secondary_color': colors.HexColor('#374151'),
+        'bg_light': colors.HexColor('#f3f4f6'),
+        'success': colors.HexColor('#10b981'),
+        'error': colors.HexColor('#ef4444'),
+        'grid': colors.HexColor('#e5e7eb'),
+        'warning_bg': colors.HexColor('#fef2f2')
+    }
+
 # ==================== FIN HELPERS PDF ====================
 
 def get_password_hash(password: str) -> str:
