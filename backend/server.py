@@ -24767,10 +24767,10 @@ async def update_configuration_emails_rondes(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Valider les emails
-    emails = config.get('emails_rondes_securite', [])
-    if not isinstance(emails, list):
-        raise HTTPException(status_code=400, detail="Le format des emails est invalide")
+    # Valider les IDs utilisateurs
+    user_ids = config.get('user_ids_rondes_securite', [])
+    if not isinstance(user_ids, list):
+        raise HTTPException(status_code=400, detail="Le format des IDs utilisateurs est invalide")
     
     # Mettre à jour dans MongoDB
     tenant_doc = await db.tenants.find_one({"id": tenant.id})
@@ -24778,14 +24778,14 @@ async def update_configuration_emails_rondes(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     current_parametres = tenant_doc.get('parametres', {})
-    current_parametres['emails_rondes_securite'] = emails
+    current_parametres['user_ids_rondes_securite'] = user_ids
     
     await db.tenants.update_one(
         {"id": tenant.id},
         {"$set": {"parametres": current_parametres}}
     )
     
-    return {"message": "Configuration mise à jour", "emails_rondes_securite": emails}
+    return {"message": "Configuration mise à jour", "user_ids_rondes_securite": user_ids}
 
 @api_router.post("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/send-email")
 async def send_ronde_securite_email(
