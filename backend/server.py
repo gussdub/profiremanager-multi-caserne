@@ -3580,7 +3580,7 @@ async def create_super_admin(
     if email_sent:
         logging.info(f"✅ Email de bienvenue super admin envoyé à {new_super_admin.email}")
     else:
-        logging.warning(f"⚠️ Email non envoyé à {new_super_admin.email} (SendGrid non configuré ou erreur)")
+        logging.warning(f"⚠️ Email non envoyé à {new_super_admin.email} (Resend non configuré ou erreur)")
     
     return {"message": "Super admin créé avec succès", "id": new_super_admin.id, "email_sent": email_sent}
 
