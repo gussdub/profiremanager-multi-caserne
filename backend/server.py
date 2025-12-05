@@ -15895,6 +15895,55 @@ async def get_parametres_validation(tenant_slug: str, current_user: User = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur récupération paramètres: {str(e)}")
 
+@api_router.get("/{tenant_slug}/parametres/formations")
+async def get_parametres_formations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """
+    Récupérer les paramètres de formations pour le tenant
+    """
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer les paramètres de formations ou retourner valeurs par défaut
+        formation_params = tenant.parametres.get('formations', {
+            'heures_minimales_annuelles': 100,
+            'delai_notification_liste_attente': 7,
+            'email_notifications_actif': True
+        })
+        
+        return formation_params
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur récupération paramètres formations: {str(e)}")
+
+@api_router.put("/{tenant_slug}/parametres/formations")
+async def update_parametres_formations(tenant_slug: str, parametres: dict, current_user: User = Depends(get_current_user)):
+    """
+    Mettre à jour les paramètres de formations
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        tenant_doc = await db.tenants.find_one({"id": tenant.id})
+        
+        if not tenant_doc:
+            raise HTTPException(status_code=404, detail="Tenant non trouvé")
+        
+        # Mettre à jour les paramètres
+        current_parametres = tenant_doc.get('parametres', {})
+        current_parametres['formations'] = parametres
+        
+        await db.tenants.update_one(
+            {"id": tenant.id},
+            {"$set": {"parametres": current_parametres}}
+        )
+        
+        return {"message": "Paramètres mis à jour", "parametres": parametres}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur mise à jour paramètres formations: {str(e)}")
+
 @api_router.put("/{tenant_slug}/parametres/validation-planning")
 async def update_parametres_validation(tenant_slug: str, parametres: dict, current_user: User = Depends(get_current_user)):
     """
