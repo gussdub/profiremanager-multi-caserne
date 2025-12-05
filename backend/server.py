@@ -24748,9 +24748,9 @@ async def get_configuration_emails_rondes(
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Récupérer la configuration depuis les paramètres du tenant
-    emails_config = tenant.parametres.get('emails_rondes_securite', [])
+    user_ids_config = tenant.parametres.get('user_ids_rondes_securite', [])
     
-    return {"emails_rondes_securite": emails_config}
+    return {"user_ids_rondes_securite": user_ids_config}
 
 @api_router.put("/{tenant_slug}/actifs/configuration-emails-rondes")
 async def update_configuration_emails_rondes(
