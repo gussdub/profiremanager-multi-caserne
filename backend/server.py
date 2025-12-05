@@ -20179,18 +20179,22 @@ async def get_inspections_planifiees(
     
     # Calculer la plage de dates
     from datetime import datetime, timedelta, timezone
-    today = datetime.now(timezone.utc)
+    today = datetime.now(timezone.utc).date()
     end_date = today + timedelta(days=days)
     
-    # Récupérer les inspections planifiées (date_planifiee entre aujourd'hui et end_date)
-    # Note: Ajustez le champ selon votre modèle (date_planifiee, scheduled_date, etc.)
+    # Convertir en format ISO string YYYY-MM-DD pour comparaison
+    today_str = today.isoformat()
+    end_date_str = end_date.isoformat()
+    
+    # Récupérer les inspections planifiées (date_inspection entre aujourd'hui et end_date)
     inspections = await db.inspections.find({
         "tenant_id": tenant.id,
-        "date_planifiee": {
-            "$gte": today.isoformat(),
-            "$lte": end_date.isoformat()
-        }
-    }).sort("date_planifiee", 1).to_list(100)
+        "date_inspection": {
+            "$gte": today_str,
+            "$lte": end_date_str
+        },
+        "statut": {"$in": ["planifiee", "en_cours", "a_faire", None]}  # Exclure les terminées
+    }).sort("date_inspection", 1).to_list(100)
     
     # Enrichir avec les infos du bâtiment
     enriched = []
