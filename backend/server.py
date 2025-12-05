@@ -11414,23 +11414,15 @@ async def export_dashboard_pdf(tenant_slug: str, current_user: User = Depends(ge
     
     story = []
     styles = getSampleStyleSheet()
+    modern_styles = get_modern_pdf_styles(styles)
     
     # Header personnalisé (logo + nom service)
     header_elements = create_pdf_header_elements(tenant, styles)
     story.extend(header_elements)
     
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=20,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
-    story.append(Paragraph("Dashboard Interne ProFireManager", title_style))
-    story.append(Paragraph(f"Période: {debut_mois.strftime('%B %Y')}", styles['Normal']))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph("Dashboard Interne ProFireManager", modern_styles['title']))
+    story.append(Paragraph(f"Période: {debut_mois.strftime('%B %Y')}", modern_styles['subheading']))
+    story.append(Spacer(1, 0.2*inch))
     
     # KPIs
     kpi_data = [
