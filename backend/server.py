@@ -24493,13 +24493,14 @@ async def export_ronde_securite_pdf(
         
         # Contre-signatures
         if ronde.get('contre_signatures') and len(ronde['contre_signatures']) > 0:
-            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Spacer(1, 0.08*inch))
             elements.append(Paragraph("✍️ Contre-signatures", section_style))
             
+            cs_para = ParagraphStyle('CSText', parent=styles['Normal'], fontSize=7)
             for cs in ronde['contre_signatures']:
                 cs_date = datetime.fromisoformat(cs['date_contre_signature'])
                 cs_text = f"• {cs['prenom_conducteur']} {cs['nom_conducteur']} - {cs_date.strftime('%d/%m/%Y à %H:%M')}"
-                elements.append(Paragraph(cs_text, styles['Normal']))
+                elements.append(Paragraph(cs_text, cs_para))
         
         # Signature (image base64)
         elements.append(Spacer(1, 0.3*inch))
