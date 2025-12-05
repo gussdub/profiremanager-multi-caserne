@@ -24563,32 +24563,32 @@ async def export_ronde_securite_pdf(
         elements.append(points_table)
         
         # Résumé
-        elements.append(Spacer(1, 0.08*inch))
+        elements.append(Spacer(1, 0.05*inch))
         resume_text = f"<b>Résumé:</b> {nb_conformes} point(s) conforme(s) • {nb_defectueux} point(s) défectueux"
-        resume_para = ParagraphStyle('ResumeText', parent=styles['Normal'], fontSize=8)
+        resume_para = ParagraphStyle('ResumeText', fontSize=7.5)
         elements.append(Paragraph(resume_text, resume_para))
         
         # Défectuosités
         if ronde.get('defectuosites'):
-            elements.append(Spacer(1, 0.08*inch))
+            elements.append(Spacer(1, 0.05*inch))
             elements.append(Paragraph("📝 Défectuosités constatées", section_style))
             defects_text = ronde['defectuosites'].replace('\n', '<br/>')
-            defects_para = ParagraphStyle('DefectsText', parent=styles['Normal'], fontSize=7)
+            defects_para = ParagraphStyle('DefectsText', fontSize=6.5)
             elements.append(Paragraph(defects_text, defects_para))
         
         # Contre-signatures
         if ronde.get('contre_signatures') and len(ronde['contre_signatures']) > 0:
-            elements.append(Spacer(1, 0.08*inch))
+            elements.append(Spacer(1, 0.05*inch))
             elements.append(Paragraph("✍️ Contre-signatures", section_style))
             
-            cs_para = ParagraphStyle('CSText', parent=styles['Normal'], fontSize=7)
+            cs_para = ParagraphStyle('CSText', fontSize=6.5)
             for cs in ronde['contre_signatures']:
                 cs_date = datetime.fromisoformat(cs['date_contre_signature'])
                 cs_text = f"• {cs['prenom_conducteur']} {cs['nom_conducteur']} - {cs_date.strftime('%d/%m/%Y à %H:%M')}"
                 elements.append(Paragraph(cs_text, cs_para))
         
         # Signature (image base64)
-        elements.append(Spacer(1, 0.1*inch))
+        elements.append(Spacer(1, 0.06*inch))
         elements.append(Paragraph("✍️ Signature de la personne mandatée", section_style))
         
         try:
