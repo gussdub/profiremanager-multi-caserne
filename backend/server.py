@@ -24397,8 +24397,47 @@ async def export_ronde_securite_pdf(
         from reportlab.lib.enums import TA_CENTER, TA_LEFT
         import base64
         
-        # Créer le PDF brandé
-        buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
+        # Créer le PDF manuellement avec header compact
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+        elements = []
+        
+        # Header compact avec logo (si présent)
+        if hasattr(tenant, 'logo_url') and tenant.logo_url:
+            try:
+                if tenant.logo_url.startswith('data:image/'):
+                    header_logo, encoded = tenant.logo_url.split(',', 1)
+                    logo_data = base64.b64decode(encoded)
+                    logo_buffer = BytesIO(logo_data)
+                    
+                    from PIL import Image as PILImage
+                    pil_image = PILImage.open(logo_buffer)
+                    img_width, img_height = pil_image.size
+                    
+                    # Logo plus petit pour le PDF compact
+                    target_width = 1 * inch
+                    aspect_ratio = img_height / img_width
+                    target_height = target_width * aspect_ratio
+                    
+                    logo_buffer.seek(0)
+                    logo = RLImage(logo_buffer, width=target_width, height=target_height)
+                    logo.hAlign = 'CENTER'
+                    elements.append(logo)
+                    elements.append(Spacer(1, 0.05*inch))
+            except Exception as e:
+                logger.error(f"Erreur chargement logo: {e}")
+        
+        # Nom du service compact
+        nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom
+        header_style_compact = ParagraphStyle(
+            'ServiceHeaderCompact',
+            fontSize=10,
+            textColor=colors.HexColor('#1f2937'),
+            spaceAfter=6,
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph(nom_service, header_style_compact))
+        elements.append(Spacer(1, 0.05*inch))
         from reportlab.lib.styles import getSampleStyleSheet
         styles = getSampleStyleSheet()
         
