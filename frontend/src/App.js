@@ -23138,6 +23138,28 @@ const AppLayout = () => {
     }
   }, [tenantSlug, user]);
 
+  // Détecter si l'utilisateur vient d'un QR code et rediriger vers le bon module
+  useEffect(() => {
+    const qrActionData = localStorage.getItem('qr_action');
+    console.log('🔍 AppLayout - Vérification qr_action:', qrActionData);
+    
+    if (qrActionData) {
+      try {
+        const qrAction = JSON.parse(qrActionData);
+        console.log('✅ AppLayout - QR Action trouvée:', qrAction);
+        
+        if (qrAction.action === 'ronde_securite') {
+          console.log('🚀 AppLayout - Changement de page vers actifs');
+          setCurrentPage('actifs');
+        }
+        // Ne pas supprimer ici, laisser GestionActifs le faire après avoir ouvert le modal
+      } catch (err) {
+        console.error('❌ AppLayout - Erreur parsing qr_action:', err);
+        localStorage.removeItem('qr_action');
+      }
+    }
+  }, [user]);
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
