@@ -19597,9 +19597,27 @@ const GestionPreventionnistes = () => {
       const preventionnisteId = secteurData.preventionniste_assigne_id || secteurData.preventionniste_id;
       console.log('🎯 Assignation - secteurId:', secteurId, 'preventionnisteId:', preventionnisteId, 'geometry:', geometry);
       
-      // Assigner automatiquement les bâtiments dans le secteur au préventionniste
-      if (preventionnisteId && geometry) {
-        await assignBatimentsToSecteur(secteurId, preventionnisteId, geometry);
+      // Utiliser l'endpoint backend dédié pour assigner le préventionniste au secteur
+      // Cet endpoint s'occupe aussi d'assigner automatiquement tous les bâtiments du secteur
+      if (preventionnisteId) {
+        try {
+          const response = await apiPut(tenantSlug, `/prevention/secteurs/${secteurId}/assigner`, {
+            preventionniste_id: preventionnisteId,
+            assigner_batiments: true
+          });
+          
+          toast({
+            title: "Assignation réussie",
+            description: `Secteur et ${response.nb_batiments_assignes || 0} bâtiment(s) assignés au préventionniste`
+          });
+        } catch (error) {
+          console.error('Erreur assignation secteur:', error);
+          toast({
+            title: "Avertissement",
+            description: "Secteur sauvegardé mais erreur lors de l'assignation",
+            variant: "warning"
+          });
+        }
       }
       
       // Fermer le modal et rafraîchir les données
