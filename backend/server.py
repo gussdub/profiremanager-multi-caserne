@@ -8289,20 +8289,11 @@ async def generer_pdf_competences(rapport_data, annee, user_nom, tenant):
     styles = getSampleStyleSheet()
     modern_styles = get_modern_pdf_styles(styles)
     
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=20,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
     # Titre
     titre = f"Rapport par Compétences - {user_nom}" if user_nom else "Rapport par Compétences"
-    story.append(Paragraph(titre, title_style))
-    story.append(Paragraph(f"ProFireManager - Année {annee}", styles['Normal']))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(titre, modern_styles['title']))
+    story.append(Paragraph(f"ProFireManager - Année {annee}", modern_styles['subheading']))
+    story.append(Spacer(1, 0.2*inch))
     
     # Statistiques globales
     total_formations = sum([c["total_formations"] for c in rapport_data])
