@@ -91,7 +91,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
       setNewInspection({
         batiment_id: '',
         grille_inspection_id: '',
-        preventionniste_id: user.id,
+        preventionniste_id: '',
         date_inspection: '',
         heure_debut: '09:00',
         type_inspection: 'reguliere'
