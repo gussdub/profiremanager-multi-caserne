@@ -23264,6 +23264,21 @@ async def get_vehicules(tenant_slug: str, current_user: User = Depends(get_curre
     
     return vehicules
 
+@api_router.get("/{tenant_slug}/actifs/vehicules/{vehicule_id}/public")
+async def get_vehicule_public(tenant_slug: str, vehicule_id: str):
+    """Récupère les informations publiques d'un véhicule (pour QR code) - Sans authentification"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    vehicule = await db.vehicules.find_one(
+        {"id": vehicule_id, "tenant_id": tenant.id},
+        {"_id": 0, "nom": 1, "type_vehicule": 1, "marque": 1, "modele": 1, "numero_plaque": 1, "id": 1}
+    )
+    
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    return vehicule
+
 @api_router.get("/{tenant_slug}/actifs/vehicules/{vehicule_id}", response_model=Vehicule)
 async def get_vehicule(
     tenant_slug: str,
