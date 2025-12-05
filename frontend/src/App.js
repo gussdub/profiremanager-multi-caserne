@@ -23338,7 +23338,7 @@ const AppLayout = () => {
 // Main App Component
 const App = () => {
   const { user, tenant, loading, logout } = useAuth();
-  const { isSuperAdmin } = useTenant();
+  const { isSuperAdmin, tenantSlug } = useTenant();
 
   if (loading) {
     return (
