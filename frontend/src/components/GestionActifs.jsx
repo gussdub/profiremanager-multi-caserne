@@ -41,6 +41,28 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     }
   }, [activeTab]);
 
+  // Détecter si l'utilisateur vient d'un QR code
+  useEffect(() => {
+    const qrActionData = localStorage.getItem('qr_action');
+    if (qrActionData) {
+      try {
+        const qrAction = JSON.parse(qrActionData);
+        
+        if (qrAction.action === 'ronde_securite' && qrAction.vehicule) {
+          // Ouvrir automatiquement la ronde de sécurité avec le véhicule
+          setSelectedVehiculeForRonde(qrAction.vehicule);
+          setShowRondeSecuriteModal(true);
+          
+          // Supprimer l'action du localStorage
+          localStorage.removeItem('qr_action');
+        }
+      } catch (err) {
+        console.error('Erreur parsing qr_action:', err);
+        localStorage.removeItem('qr_action');
+      }
+    }
+  }, []);
+
   const fetchVehicules = async () => {
     setLoading(true);
     try {
