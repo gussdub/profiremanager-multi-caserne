@@ -24332,9 +24332,9 @@ async def export_ronde_securite_pdf(
             raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
         
         logger.info(f"✅ Ronde trouvée - véhicule_id: {ronde.get('vehicule_id')}")
-    
-    # Récupérer le véhicule
-    vehicule = await db.vehicules.find_one(
+        
+        # Récupérer le véhicule
+        vehicule = await db.vehicules.find_one(
         {"id": ronde["vehicule_id"], "tenant_id": tenant.id},
         {"_id": 0}
     )
