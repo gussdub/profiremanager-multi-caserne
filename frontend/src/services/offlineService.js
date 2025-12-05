@@ -291,13 +291,18 @@ export const syncPendingInspections = async (tenantSlug, apiPost) => {
 
 // Vérifier si le mode offline est prêt
 export const isOfflineReady = async () => {
-  const lastPrep = await getMetadata('last_offline_prep');
-  if (!lastPrep) return false;
-  
-  const batiments = await getAllFromStore('batiments');
-  const grilles = await getAllFromStore('grilles_inspection');
-  
-  return batiments.length > 0 && grilles.length > 0;
+  try {
+    const lastPrep = await getMetadata('last_offline_prep');
+    if (!lastPrep) return false;
+    
+    const batiments = await getAllFromStore('batiments');
+    const grilles = await getAllFromStore('grilles_inspection');
+    
+    return batiments.length > 0 && grilles.length > 0;
+  } catch (error) {
+    console.error('Erreur isOfflineReady:', error);
+    return false;
+  }
 };
 
 // Obtenir les statistiques du mode offline
