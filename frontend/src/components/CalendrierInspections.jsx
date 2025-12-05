@@ -71,10 +71,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
 
   const handleCreateInspection = async () => {
     try {
-      if (!newInspection.batiment_id || !newInspection.grille_inspection_id || !newInspection.preventionniste_id) {
+      if (!newInspection.batiment_id || !newInspection.grille_inspection_id) {
         toast({
           title: "Erreur",
-          description: "Veuillez remplir tous les champs requis",
+          description: "Veuillez remplir tous les champs requis (Bâtiment et Grille)",
           variant: "destructive"
         });
         return;
