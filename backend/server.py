@@ -3669,19 +3669,18 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     
     # Bloquer si la limite du palier est atteinte
     if limite and current_count >= limite:
-        # Envoyer email au super admin
+        # Envoyer email au super admin via Resend
         super_admin_email = "gussdub@icloud.com"
         try:
-            sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-            if sendgrid_api_key and sendgrid_api_key != 'your-sendgrid-api-key-here-test':
-                from sendgrid import SendGridAPIClient
-                from sendgrid.helpers.mail import Mail
+            resend_api_key = os.environ.get('RESEND_API_KEY')
+            if resend_api_key:
+                resend.api_key = resend_api_key
                 
-                message = Mail(
-                    from_email=os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca'),
-                    to_emails=super_admin_email,
-                    subject=f'⚠️ Limite de palier atteinte - {tenant.nom}',
-                    html_content=f"""
+                params = {
+                    "from": os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca'),
+                    "to": [super_admin_email],
+                    "subject": f'⚠️ Limite de palier atteinte - {tenant.nom}',
+                    "html": f"""
                     <h2>Alerte - Limite de palier atteinte</h2>
                     <p><strong>Caserne:</strong> {tenant.nom} ({tenant_slug})</p>
                     <p><strong>Palier actuel:</strong> {palier}</p>
@@ -3690,9 +3689,8 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
                     <p>L'administrateur a tenté de créer un {current_count + 1}e pompier mais la limite est atteinte.</p>
                     <p><strong>Action requise:</strong> Contacter le client pour upgrade vers palier supérieur.</p>
                     """
-                )
-                sg = SendGridAPIClient(sendgrid_api_key)
-                sg.send(message)
+                }
+                resend.Emails.send(params)
         except Exception as e:
             print(f"Erreur envoi email super admin: {str(e)}")
         
