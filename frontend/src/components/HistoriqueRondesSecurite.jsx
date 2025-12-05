@@ -293,16 +293,6 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                           📄 PDF
                         </Button>
                         
-                        {/* Bouton Email */}
-                        <Button
-                          onClick={() => handleSendEmail(ronde.id)}
-                          disabled={sendingEmail === ronde.id}
-                          variant="outline"
-                          style={{ width: '100%' }}
-                        >
-                          {sendingEmail === ronde.id ? '⏳' : '📧'} Email
-                        </Button>
-                        
                         {/* Bouton contre-signer */}
                         {statut.canCounterSign && (
                           <Button
