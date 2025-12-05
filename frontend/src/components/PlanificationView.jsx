@@ -108,6 +108,7 @@ const PlanificationView = ({
           <CalendrierInspections
             tenantSlug={tenantSlug}
             apiGet={apiGet}
+            apiPost={apiPost}
             user={user}
             toast={toast}
             setCurrentView={setCurrentView}
