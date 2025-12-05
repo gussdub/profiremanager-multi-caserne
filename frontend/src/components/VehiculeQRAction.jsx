@@ -237,10 +237,107 @@ const VehiculeQRAction = () => {
           {showLogin ? 'Connexion' : 'Que souhaitez-vous faire?'}
         </h2>
 
-        {/* Boutons d'action */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {/* Bouton Ronde de Sécurité */}
-          <button
+        {/* Formulaire de connexion */}
+        {showLogin ? (
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {loginError && (
+              <div style={{
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                textAlign: 'center'
+              }}>
+                {loginError}
+              </div>
+            )}
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+                placeholder="votre.email@example.com"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Mot de passe
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loggingIn}
+              style={{
+                backgroundColor: '#DC2626',
+                color: 'white',
+                padding: '14px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: loggingIn ? 'not-allowed' : 'pointer',
+                fontSize: '1rem',
+                fontWeight: '600',
+                opacity: loggingIn ? 0.6 : 1
+              }}
+            >
+              {loggingIn ? '⏳ Connexion...' : '🔐 Se connecter'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowLogin(false);
+                setLoginError('');
+                setEmail('');
+                setPassword('');
+              }}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#6B7280',
+                padding: '10px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              ← Retour
+            </button>
+          </form>
+        ) : (
+          /* Boutons d'action */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {/* Bouton Ronde de Sécurité */}
+            <button
             onClick={handleRondeSecurite}
             style={{
               backgroundColor: '#DC2626',
