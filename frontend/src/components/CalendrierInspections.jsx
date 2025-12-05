@@ -552,7 +552,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
               {/* Préventionniste */}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Préventionniste *
+                  Préventionniste <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>(optionnel)</span>
                 </label>
                 <select
                   value={newInspection.preventionniste_id}
@@ -565,7 +565,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                     fontSize: '0.875rem'
                   }}
                 >
-                  <option value="">Sélectionner un préventionniste</option>
+                  <option value="">Non assigné - Disponible pour tous</option>
                   {preventionnistes.map(prev => (
                     <option key={prev.id} value={prev.id}>
                       {prev.prenom} {prev.nom}
