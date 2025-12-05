@@ -24260,13 +24260,11 @@ class ContreSignatureCreate(BaseModel):
 
 async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, recipient_emails: list):
     """
-    Fonction helper pour envoyer l'email de ronde en arrière-plan
+    Fonction helper pour envoyer l'email de ronde en arrière-plan via Resend
     """
     try:
         import os
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
-        import base64
+        import resend
         
         # Récupérer la ronde
         ronde = await db.rondes_securite.find_one(
@@ -24278,12 +24276,17 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
             logger.error(f"❌ Ronde {ronde_id} non trouvée pour envoi email")
             return
         
-        # Générer le PDF (réutiliser la logique de l'endpoint export_ronde_securite_pdf)
-        # Pour l'instant, on va appeler directement l'URL interne
-        # Note: Dans une vraie production, il faudrait extraire la logique de génération PDF en fonction
+        # Configurer Resend
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.error("❌ RESEND_API_KEY non configurée")
+            return
+        
+        resend.api_key = resend_api_key
         
         nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom
         date_ronde_str = ronde["date"]
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         
         subject = f"🔧 Nouvelle Ronde de Sécurité - {vehicle.get('nom', 'Véhicule')} - {date_ronde_str}"
         
@@ -24300,7 +24303,7 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
             <p><strong>Personne mandatée:</strong> {ronde.get('personne_mandatee', 'N/A')}</p>
             
             <p style="margin-top: 20px;">
-                Le rapport PDF complet est disponible en pièce jointe.
+                Une nouvelle ronde de sécurité a été complétée. Vous pouvez consulter les détails dans l'application.
             </p>
             
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #E5E7EB;">
@@ -24312,28 +24315,18 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
         </div>
         """
         
-        # Créer l'email pour chaque destinataire
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        if not sendgrid_api_key:
-            logger.error("❌ SENDGRID_API_KEY non configurée")
-            return
-        
-        sg = SendGridAPIClient(sendgrid_api_key)
-        
+        # Envoyer l'email à tous les destinataires
         for email in recipient_emails:
             try:
-                message = Mail(
-                    from_email='noreply@profiremanager.com',
-                    to_emails=email,
-                    subject=subject,
-                    html_content=html_content
-                )
+                params = {
+                    "from": sender_email,
+                    "to": [email],
+                    "subject": subject,
+                    "html": html_content,
+                }
                 
-                # Note: Pour attacher le PDF, il faudrait le générer ici
-                # Pour l'instant, on envoie juste la notification
-                
-                response = sg.send(message)
-                logger.info(f"✅ Email envoyé à {email} - Status: {response.status_code}")
+                response = resend.Emails.send(params)
+                logger.info(f"✅ Email envoyé à {email} via Resend - ID: {response.get('id', 'N/A')}")
                 
             except Exception as e:
                 logger.error(f"❌ Erreur envoi email à {email}: {e}")
