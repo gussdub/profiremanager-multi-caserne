@@ -363,6 +363,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             return (
               <div
                 key={index}
+                onClick={() => day.isCurrentMonth && handleDayClick(day.date)}
                 style={{
                   minHeight: '100px',
                   border: '1px solid #e5e7eb',
@@ -371,8 +372,11 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                   background: !day.isCurrentMonth ? '#f9fafb' : 
                              isToday ? '#dbeafe' : 'white',
                   opacity: day.isCurrentMonth ? 1 : 0.5,
-                  cursor: 'pointer'
+                  cursor: day.isCurrentMonth ? 'pointer' : 'default',
+                  transition: 'all 0.2s'
                 }}
+                onMouseEnter={(e) => day.isCurrentMonth && (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
               >
                 <div style={{
                   fontSize: '0.875rem',
