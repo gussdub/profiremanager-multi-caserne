@@ -60,7 +60,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
     try {
       setSaving(true);
       await apiPut(tenantSlug, '/actifs/configuration-emails-rondes', {
-        emails_rondes_securite: emails
+        user_ids_rondes_securite: selectedUsers
       });
       alert('✅ Configuration sauvegardée avec succès');
     } catch (error) {
@@ -69,6 +69,10 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const getSelectedUsersDetails = () => {
+    return allUsers.filter(u => selectedUsers.includes(u.id));
   };
 
   if (loading) {
