@@ -43,24 +43,39 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   // Détecter si l'utilisateur vient d'un QR code
   useEffect(() => {
-    const qrActionData = localStorage.getItem('qr_action');
-    if (qrActionData) {
-      try {
-        const qrAction = JSON.parse(qrActionData);
-        
-        if (qrAction.action === 'ronde_securite' && qrAction.vehicule) {
-          // Ouvrir automatiquement la ronde de sécurité avec le véhicule
-          setSelectedVehiculeForRonde(qrAction.vehicule);
-          setShowRondeSecuriteModal(true);
+    // Petit délai pour s'assurer que le composant est monté
+    const timer = setTimeout(() => {
+      const qrActionData = localStorage.getItem('qr_action');
+      console.log('🔍 Vérification qr_action:', qrActionData);
+      
+      if (qrActionData) {
+        try {
+          const qrAction = JSON.parse(qrActionData);
+          console.log('✅ QR Action trouvée:', qrAction);
           
-          // Supprimer l'action du localStorage
+          if (qrAction.action === 'ronde_securite' && qrAction.vehicule) {
+            console.log('🚀 Ouverture du modal avec véhicule:', qrAction.vehicule);
+            
+            // S'assurer que l'onglet véhicules est actif
+            setActiveTab('vehicules');
+            
+            // Ouvrir automatiquement la ronde de sécurité avec le véhicule
+            setSelectedVehiculeForRonde(qrAction.vehicule);
+            setShowRondeSecuriteModal(true);
+            
+            // Supprimer l'action du localStorage
+            localStorage.removeItem('qr_action');
+          }
+        } catch (err) {
+          console.error('❌ Erreur parsing qr_action:', err);
           localStorage.removeItem('qr_action');
         }
-      } catch (err) {
-        console.error('Erreur parsing qr_action:', err);
-        localStorage.removeItem('qr_action');
+      } else {
+        console.log('ℹ️ Pas de qr_action dans localStorage');
       }
-    }
+    }, 500); // Délai de 500ms
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchVehicules = async () => {
