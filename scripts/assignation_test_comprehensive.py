@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://auto-assign-patch.preview.emergentagent.com/api"
+BACKEND_URL = "https://bug-fix-heroes.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
