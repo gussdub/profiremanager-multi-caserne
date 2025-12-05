@@ -17,8 +17,15 @@ const VehiculeQRAction = () => {
   const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
+    checkAuthentication();
     loadVehicule();
   }, [vehiculeId, tenantSlug]);
+
+  const checkAuthentication = () => {
+    // Vérifier si un token existe
+    const token = localStorage.getItem(`${tenantSlug}_token`);
+    setIsAuthenticated(!!token);
+  };
 
   const loadVehicule = async () => {
     try {
