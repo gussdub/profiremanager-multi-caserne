@@ -12890,6 +12890,7 @@ async def export_disponibilites_pdf(
         # Créer le PDF avec branding
         buffer, doc, elements = create_branded_pdf(tenant, pagesize=letter)
         styles = getSampleStyleSheet()
+        modern_styles = get_modern_pdf_styles(styles)
         
         # Titre
         title_style = ParagraphStyle(
