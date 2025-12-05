@@ -21817,26 +21817,12 @@ async def export_plan_intervention_pdf(
     
     # Styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=30,
-        alignment=TA_CENTER
-    )
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=16,
-        textColor=colors.HexColor('#1F2937'),
-        spaceAfter=12,
-        spaceBefore=12
-    )
+    modern_styles = get_modern_pdf_styles(styles)
+    heading_style = modern_styles['heading']
     normal_style = styles['Normal']
     
     # En-tête avec titre du plan
-    elements.append(Paragraph(f"🔥 Plan d'Intervention", title_style))
+    elements.append(Paragraph(f"🔥 Plan d'Intervention", modern_styles['title']))
     plan_title = plan.get('titre') or plan.get('nom_plan') or f"Plan - {batiment.get('nom_etablissement', 'Sans titre') if batiment else 'Sans titre'}"
     elements.append(Paragraph(f"<b>{plan_title}</b>", heading_style))
     elements.append(Spacer(1, 0.2*inch))
