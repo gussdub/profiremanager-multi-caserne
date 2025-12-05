@@ -40,33 +40,20 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
     }
   };
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+  const handleToggleUser = (userId) => {
+    if (selectedUsers.includes(userId)) {
+      setSelectedUsers(selectedUsers.filter(id => id !== userId));
+    } else {
+      setSelectedUsers([...selectedUsers, userId]);
+    }
   };
 
-  const handleAddEmail = () => {
-    if (!newEmail.trim()) {
-      alert('⚠️ Veuillez entrer une adresse email');
-      return;
-    }
-
-    if (!validateEmail(newEmail)) {
-      alert('⚠️ Adresse email invalide');
-      return;
-    }
-
-    if (emails.includes(newEmail)) {
-      alert('⚠️ Cette adresse email est déjà dans la liste');
-      return;
-    }
-
-    setEmails([...emails, newEmail]);
-    setNewEmail('');
+  const handleSelectAll = () => {
+    setSelectedUsers(allUsers.map(u => u.id));
   };
 
-  const handleRemoveEmail = (emailToRemove) => {
-    setEmails(emails.filter(email => email !== emailToRemove));
+  const handleDeselectAll = () => {
+    setSelectedUsers([]);
   };
 
   const handleSave = async () => {
