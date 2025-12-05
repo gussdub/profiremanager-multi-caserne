@@ -24503,7 +24503,7 @@ async def export_ronde_securite_pdf(
                 elements.append(Paragraph(cs_text, cs_para))
         
         # Signature (image base64)
-        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Spacer(1, 0.1*inch))
         elements.append(Paragraph("✍️ Signature de la personne mandatée", section_style))
         
         try:
@@ -24516,13 +24516,14 @@ async def export_ronde_securite_pdf(
                 
                 # Créer une image temporaire
                 sig_buffer = BytesIO(sig_bytes)
-                sig_image = RLImage(sig_buffer, width=3*inch, height=1*inch)
+                sig_image = RLImage(sig_buffer, width=2.5*inch, height=0.8*inch)
                 elements.append(sig_image)
         except Exception as e:
-            elements.append(Paragraph(f"<i>Signature non disponible</i>", styles['Normal']))
+            sig_error = ParagraphStyle('SigError', parent=styles['Normal'], fontSize=7)
+            elements.append(Paragraph(f"<i>Signature non disponible</i>", sig_error))
         
         # Footer
-        elements.append(Spacer(1, 0.5*inch))
+        elements.append(Spacer(1, 0.1*inch))
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],
