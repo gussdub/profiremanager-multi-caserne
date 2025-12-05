@@ -12057,23 +12057,15 @@ async def export_personnel_pdf(
     
     story = []
     styles = getSampleStyleSheet()
+    modern_styles = get_modern_pdf_styles(styles)
     
     # Header personnalisé (logo + nom service)
     header_elements = create_pdf_header_elements(tenant, styles)
     story.extend(header_elements)
     
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
     titre = "Fiche Employé" if user_id else "Liste du Personnel"
-    story.append(Paragraph(titre, title_style))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(titre, modern_styles['title']))
+    story.append(Spacer(1, 0.2*inch))
     
     if not user_id:
         # Statistiques globales
