@@ -24855,9 +24855,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-
 # ==================== MODULE APPROVISIONNEMENT EN EAU ====================
 
 # Modèles Pydantic pour les points d'eau
