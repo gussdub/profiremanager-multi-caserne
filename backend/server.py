@@ -25239,7 +25239,8 @@ async def programmer_test_borne_seche(
     
     return {"message": "Date de test programmée avec succès"}
 
-
+# Configure logging
+logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
