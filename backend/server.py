@@ -25000,6 +25000,274 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ==================== MODULE BORNES SÈCHES - TEMPLATES & INSPECTIONS ====================
+
+# Modèles Pydantic pour les templates de bornes sèches
+class BorneSecheTemplateCreate(BaseModel):
+    nom_borne: str
+    municipalite: str = "Canton de Shefford"
+    adresse_proximite: Optional[str] = None
+    transversale: Optional[str] = None
+    lien_itineraire: Optional[str] = None
+    notes_importantes: Optional[str] = None
+    # Caractéristiques techniques
+    type_borne: Optional[str] = "PVC"
+    angle: Optional[str] = "90°"
+    diametre_tuyau: Optional[str] = '6"'
+    diametre_raccordement: Optional[str] = '6"'
+    type_branchement: Optional[str] = "Fileté"
+    # Photos et schémas (URLs ou Base64)
+    photo_localisation: Optional[str] = None
+    photo_borne: Optional[str] = None
+    schema_1: Optional[str] = None  # Centre borne
+    schema_2: Optional[str] = None  # Centre entrée pompe
+    schema_3: Optional[str] = None  # Centre sortie borne
+    schema_4: Optional[str] = None  # Distance borne à berge
+    schema_5: Optional[str] = None  # Centre sortie borne et entrée pompe
+
+class BorneSecheTemplateUpdate(BaseModel):
+    nom_borne: Optional[str] = None
+    municipalite: Optional[str] = None
+    adresse_proximite: Optional[str] = None
+    transversale: Optional[str] = None
+    lien_itineraire: Optional[str] = None
+    notes_importantes: Optional[str] = None
+    type_borne: Optional[str] = None
+    angle: Optional[str] = None
+    diametre_tuyau: Optional[str] = None
+    diametre_raccordement: Optional[str] = None
+    type_branchement: Optional[str] = None
+    photo_localisation: Optional[str] = None
+    photo_borne: Optional[str] = None
+    schema_1: Optional[str] = None
+    schema_2: Optional[str] = None
+    schema_3: Optional[str] = None
+    schema_4: Optional[str] = None
+    schema_5: Optional[str] = None
+
+# Modèle pour les inspections de bornes sèches
+class InspectionBorneSecheCreate(BaseModel):
+    borne_seche_id: str
+    inspecteur_id: str
+    date_inspection: str
+    # Page 3 - Questions d'inspection
+    accessibilite: List[str] = []  # ["Sécuritaire", "Facile", "Dangereuse", "Difficile"]
+    conditions_atmospheriques: str  # "Nuageux", "Dégagé", "Froid", "Pluvieux", "Enneigé"
+    temperature_exterieure: Optional[str] = None
+    # Inspection visuelle (8 items)
+    joint_present: str = "N/A"  # Conforme, Non conforme, Défectuosité, N/A
+    joint_bon_etat: str = "N/A"
+    site_accessible: str = "N/A"
+    site_bien_deneige: str = "N/A"
+    vanne_sortie_storz_4: str = "N/A"
+    vanne_sortie_6_filetee: str = "N/A"
+    vanne_sortie_4_filetee: str = "N/A"
+    niveau_plan_eau: str = "N/A"
+    # Essai de pompage
+    pompage_continu_5min: str = "Non conforme"  # Conforme, Non conforme
+    temps_amorcage_secondes: Optional[int] = None  # Chronomètre
+    # Commentaires et signature
+    commentaire: Optional[str] = None
+    matricule_pompier: Optional[str] = None
+    photos_defauts: Optional[List[str]] = []  # URLs ou Base64 des photos prises
+
+# Endpoints API pour les templates de bornes sèches
+@api_router.get("/{tenant_slug}/bornes-seches/templates")
+async def get_templates_bornes_seches(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les templates de bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    templates = await db.bornes_seches_templates.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return templates
+
+@api_router.get("/{tenant_slug}/bornes-seches/templates/{template_id}")
+async def get_template_borne_seche(
+    tenant_slug: str,
+    template_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un template de borne sèche spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    template = await db.bornes_seches_templates.find_one(
+        {"id": template_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template de borne sèche non trouvé")
+    
+    return template
+
+@api_router.post("/{tenant_slug}/bornes-seches/templates")
+async def create_template_borne_seche(
+    tenant_slug: str,
+    template_data: BorneSecheTemplateCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau template de borne sèche (Admin/Superviseur uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    template_dict = template_data.dict()
+    template_dict['id'] = str(uuid4())
+    template_dict['tenant_id'] = tenant.id
+    template_dict['created_by_id'] = current_user.id
+    template_dict['created_at'] = datetime.now(timezone.utc).isoformat()
+    template_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.bornes_seches_templates.insert_one(template_dict)
+    
+    return {"message": "Template de borne sèche créé avec succès", "id": template_dict['id']}
+
+@api_router.put("/{tenant_slug}/bornes-seches/templates/{template_id}")
+async def update_template_borne_seche(
+    tenant_slug: str,
+    template_id: str,
+    template_update: BorneSecheTemplateUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un template de borne sèche (Admin/Superviseur uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    update_data = {k: v for k, v in template_update.dict().items() if v is not None}
+    if not update_data:
+        return {"message": "Aucune modification"}
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.bornes_seches_templates.update_one(
+        {"id": template_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template de borne sèche non trouvé")
+    
+    return {"message": "Template de borne sèche mis à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/bornes-seches/templates/{template_id}")
+async def delete_template_borne_seche(
+    tenant_slug: str,
+    template_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un template de borne sèche (Admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions (admin uniquement)
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    result = await db.bornes_seches_templates.delete_one(
+        {"id": template_id, "tenant_id": tenant.id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template de borne sèche non trouvé")
+    
+    # Supprimer aussi les inspections associées
+    await db.inspections_bornes_seches.delete_many(
+        {"borne_seche_id": template_id, "tenant_id": tenant.id}
+    )
+    
+    return {"message": "Template de borne sèche supprimé avec succès"}
+
+# Endpoints API pour les inspections de bornes sèches
+@api_router.post("/{tenant_slug}/bornes-seches/inspections")
+async def create_inspection_borne_seche(
+    tenant_slug: str,
+    inspection_data: InspectionBorneSecheCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection de borne sèche"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que la borne existe
+    borne = await db.bornes_seches_templates.find_one(
+        {"id": inspection_data.borne_seche_id, "tenant_id": tenant.id}
+    )
+    
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
+    
+    inspection_dict = inspection_data.dict()
+    inspection_dict['id'] = str(uuid4())
+    inspection_dict['tenant_id'] = tenant.id
+    inspection_dict['inspecteur_nom'] = f"{current_user.prenom} {current_user.nom}"
+    inspection_dict['created_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.inspections_bornes_seches.insert_one(inspection_dict)
+    
+    # Mettre à jour la date de dernière inspection de la borne
+    await db.bornes_seches_templates.update_one(
+        {"id": inspection_data.borne_seche_id},
+        {"$set": {
+            "date_derniere_inspection": inspection_data.date_inspection,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Inspection de borne sèche créée avec succès", "id": inspection_dict['id']}
+
+@api_router.get("/{tenant_slug}/bornes-seches/inspections")
+async def get_inspections_bornes_seches(
+    tenant_slug: str,
+    borne_seche_id: Optional[str] = None,
+    inspecteur_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les inspections de bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {"tenant_id": tenant.id}
+    if borne_seche_id:
+        query["borne_seche_id"] = borne_seche_id
+    if inspecteur_id:
+        query["inspecteur_id"] = inspecteur_id
+    
+    inspections = await db.inspections_bornes_seches.find(
+        query,
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=None)
+    
+    return inspections
+
+@api_router.get("/{tenant_slug}/bornes-seches/inspections/{inspection_id}")
+async def get_inspection_borne_seche(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une inspection spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspection = await db.inspections_bornes_seches.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    return inspection
+
+
 # ==================== MODULE APPROVISIONNEMENT EN EAU ====================
 
 # Modèles Pydantic pour les points d'eau
