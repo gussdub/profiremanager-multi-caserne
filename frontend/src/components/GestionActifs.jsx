@@ -383,6 +383,32 @@ const GestionActifs = ({ user, ModuleEPI }) => {
             />
           ) : activeTab === 'epi' ? (
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
+          ) : activeTab === 'bornes-seches' ? (
+            <BornesSechesTab 
+              bornesSeches={bornesSeches}
+              onEdit={(borne) => {
+                setSelectedBorneSeche(borne);
+                setShowBorneSecheModal(true);
+              }}
+              onDelete={async (id) => {
+                if (!confirm('Supprimer cette borne sèche ?')) return;
+                try {
+                  await apiDelete(tenantSlug, `/bornes-seches/templates/${id}`);
+                  fetchBornesSeches();
+                  alert('✅ Borne sèche supprimée');
+                } catch (error) {
+                  alert('❌ Erreur lors de la suppression');
+                }
+              }}
+              onInspect={(borne) => {
+                setSelectedBorneSeche(borne);
+                setShowInspectionBorneSecheModal(true);
+              }}
+              onCreate={() => {
+                setSelectedBorneSeche(null);
+                setShowBorneSecheModal(true);
+              }}
+            />
           ) : activeTab === 'parametres' ? (
             <ParametresActifsTab tenantSlug={tenantSlug} user={user} />
           ) : (
