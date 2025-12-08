@@ -9,6 +9,10 @@ import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 import uuid
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 # Configuration
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
