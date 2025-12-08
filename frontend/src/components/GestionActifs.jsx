@@ -1303,28 +1303,43 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleBackdropClick = (e) => {
+    // Cliquer sur le backdrop (fond) soumet le formulaire
+    if (e.target === e.currentTarget) {
+      // Créer un événement de soumission factice
+      const fakeEvent = { preventDefault: () => {} };
+      onSubmit(fakeEvent);
+    }
+  };
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '30px',
-        maxWidth: '600px',
-        width: '90%',
-        maxHeight: '90vh',
-        overflow: 'auto'
-      }}>
+    <div 
+      onClick={handleBackdropClick}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '30px',
+          maxWidth: '600px',
+          width: '90%',
+          maxHeight: '90vh',
+          overflow: 'auto'
+        }}
+      >
         <h2 style={{ marginTop: 0 }}>
           {mode === 'create' ? 'Ajouter' : 'Modifier'} {type === 'vehicules' ? 'un véhicule' : 'une borne'}
         </h2>
