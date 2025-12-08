@@ -336,6 +336,11 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onClick={() => setActiveTab('bornes')}
         />
         <TabButton
+          label="🔥 Bornes Sèches"
+          active={activeTab === 'bornes-seches'}
+          onClick={() => setActiveTab('bornes-seches')}
+        />
+        <TabButton
           label="📋 Inventaires"
           active={activeTab === 'inventaires'}
           onClick={() => setActiveTab('inventaires')}
