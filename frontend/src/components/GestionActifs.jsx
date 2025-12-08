@@ -930,7 +930,8 @@ const BorneForm = ({ formData, handleChange }) => (
       required
       options={[
         { value: 'seche', label: 'Borne sèche' },
-        { value: 'fontaine', label: 'Borne fontaine' }
+        { value: 'fontaine', label: 'Borne fontaine' },
+        { value: 'point_eau_statique', label: 'Point d\'eau statique' }
       ]}
     />
 
