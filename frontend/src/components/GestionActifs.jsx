@@ -5,6 +5,7 @@ import RondeSecurite from './RondeSecurite';
 import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
 import ContreSignatureModal from './ContreSignatureModal';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
+import CarteApprovisionnementEau from './CarteApprovisionnementEau';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
