@@ -12,7 +12,7 @@ import uuid
 
 # Configuration
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-DATABASE_NAME = "profiremanager"
+DATABASE_NAME = os.environ.get("DB_NAME", "profiremanager")
 
 # Import depuis server.py
 sys.path.insert(0, '/app/backend')
