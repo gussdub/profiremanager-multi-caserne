@@ -25121,7 +25121,7 @@ async def create_template_borne_seche(
         raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
     
     template_dict = template_data.dict()
-    template_dict['id'] = str(uuid4())
+    template_dict['id'] = str(uuid.uuid4())
     template_dict['tenant_id'] = tenant.id
     template_dict['created_by_id'] = current_user.id
     template_dict['created_at'] = datetime.now(timezone.utc).isoformat()
