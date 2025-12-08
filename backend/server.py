@@ -25257,6 +25257,165 @@ async def get_inspection_borne_seche(
     return inspection
 
 
+
+# ==================== MODULE APPROVISIONNEMENT EN EAU - POINTS D'EAU ====================
+
+# Modèles Pydantic pour les points d'eau
+class PointEauCreate(BaseModel):
+    type: str  # "borne_fontaine", "borne_seche", "point_eau_statique"
+    numero_identification: str
+    latitude: float
+    longitude: float
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    secteur_id: Optional[str] = None
+    notes: Optional[str] = None
+    # Champs spécifiques aux bornes fontaines
+    debit_gpm: Optional[str] = None
+    pression_statique_psi: Optional[str] = None
+    pression_dynamique_psi: Optional[str] = None
+    diametre_raccordement: Optional[str] = None
+    etat: Optional[str] = "fonctionnelle"  # fonctionnelle, hors_service, en_inspection
+    date_dernier_test: Optional[str] = None
+    # Champs spécifiques aux points d'eau statiques
+    capacite_litres: Optional[str] = None
+    accessibilite: Optional[str] = "facile"  # facile, moyenne, difficile
+
+class PointEauUpdate(BaseModel):
+    type: Optional[str] = None
+    numero_identification: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    secteur_id: Optional[str] = None
+    notes: Optional[str] = None
+    debit_gpm: Optional[str] = None
+    pression_statique_psi: Optional[str] = None
+    pression_dynamique_psi: Optional[str] = None
+    diametre_raccordement: Optional[str] = None
+    etat: Optional[str] = None
+    date_dernier_test: Optional[str] = None
+    capacite_litres: Optional[str] = None
+    accessibilite: Optional[str] = None
+
+# Endpoints API pour les points d'eau
+@api_router.get("/{tenant_slug}/points-eau")
+async def get_points_eau(
+    tenant_slug: str,
+    type_filter: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les points d'eau"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {"tenant_id": tenant.id}
+    if type_filter:
+        query["type"] = type_filter
+    
+    points = await db.points_eau.find(
+        query,
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return points
+
+@api_router.get("/{tenant_slug}/points-eau/{point_id}")
+async def get_point_eau(
+    tenant_slug: str,
+    point_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un point d'eau spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    point = await db.points_eau.find_one(
+        {"id": point_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not point:
+        raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
+    
+    return point
+
+@api_router.post("/{tenant_slug}/points-eau")
+async def create_point_eau(
+    tenant_slug: str,
+    point_data: PointEauCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau point d'eau"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions (admin/superviseur)
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    point_dict = point_data.dict()
+    point_dict['id'] = str(uuid.uuid4())
+    point_dict['tenant_id'] = tenant.id
+    point_dict['created_by_id'] = current_user.id
+    point_dict['created_at'] = datetime.now(timezone.utc).isoformat()
+    point_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.points_eau.insert_one(point_dict)
+    
+    return {"message": "Point d'eau créé avec succès", "id": point_dict['id']}
+
+@api_router.put("/{tenant_slug}/points-eau/{point_id}")
+async def update_point_eau(
+    tenant_slug: str,
+    point_id: str,
+    point_update: PointEauUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un point d'eau"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    update_data = {k: v for k, v in point_update.dict().items() if v is not None}
+    if not update_data:
+        return {"message": "Aucune modification"}
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.points_eau.update_one(
+        {"id": point_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
+    
+    return {"message": "Point d'eau mis à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/points-eau/{point_id}")
+async def delete_point_eau(
+    tenant_slug: str,
+    point_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un point d'eau"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions (admin uniquement)
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    result = await db.points_eau.delete_one(
+        {"id": point_id, "tenant_id": tenant.id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
+    
+    return {"message": "Point d'eau supprimé avec succès"}
+
+
 app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
 
