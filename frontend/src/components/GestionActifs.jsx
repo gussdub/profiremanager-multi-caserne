@@ -874,8 +874,7 @@ const BorneCard = ({ borne, onEdit, onDelete, onGenerateQR }) => {
 
 
 // ==================== ONGLET BORNES SÈCHES ====================
-const BornesSechesTab = ({ bornesSeches, onEdit, onDelete, onInspect, onCreate }) => {
-  const { user } = useAuth();
+const BornesSechesTab = ({ bornesSeches, onEdit, onDelete, onInspect, onCreate, user }) => {
 
   return (
     <div>
