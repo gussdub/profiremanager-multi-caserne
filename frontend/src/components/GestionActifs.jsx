@@ -375,86 +375,14 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               onViewInspections={handleViewInspections}
               onCreateInspection={handleCreateInspection}
             />
-          ) : activeTab === 'bornes' ? (
-            <div>
-              {/* Sous-onglets pour Bornes fontaines / Bornes sèches */}
-              <div style={{ 
-                display: 'flex', 
-                gap: '10px', 
-                marginBottom: '20px',
-                borderBottom: '2px solid #e0e0e0',
-                paddingBottom: '10px'
-              }}>
-                <button
-                  onClick={() => setBornesSubTab('fontaines')}
-                  style={{
-                    padding: '10px 20px',
-                    background: bornesSubTab === 'fontaines' ? '#e74c3c' : 'transparent',
-                    color: bornesSubTab === 'fontaines' ? 'white' : '#555',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  💧 Bornes Fontaines
-                </button>
-                <button
-                  onClick={() => setBornesSubTab('seches')}
-                  style={{
-                    padding: '10px 20px',
-                    background: bornesSubTab === 'seches' ? '#e74c3c' : 'transparent',
-                    color: bornesSubTab === 'seches' ? 'white' : '#555',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  🔥 Bornes Sèches
-                </button>
-              </div>
-
-              {/* Contenu selon le sous-onglet */}
-              {bornesSubTab === 'fontaines' ? (
-                <BornesTab 
-                  bornes={bornes} 
-                  onEdit={openEditModal} 
-                  onDelete={handleDelete}
-                  onGenerateQR={handleGenerateQR}
-                />
-              ) : (
-                <BornesSechesTab 
-                  bornesSeches={bornesSeches}
-                  user={user}
-                  onEdit={(borne) => {
-                    setSelectedBorneSeche(borne);
-                    setShowBorneSecheModal(true);
-                  }}
-                  onDelete={async (id) => {
-                    if (!confirm('Supprimer cette borne sèche ?')) return;
-                    try {
-                      await apiDelete(tenantSlug, `/bornes-seches/templates/${id}`);
-                      fetchBornesSeches();
-                      alert('✅ Borne sèche supprimée');
-                    } catch (error) {
-                      alert('❌ Erreur lors de la suppression');
-                    }
-                  }}
-                  onInspect={(borne) => {
-                    setSelectedBorneSeche(borne);
-                    setShowInspectionBorneSecheModal(true);
-                  }}
-                  onCreate={() => {
-                    setSelectedBorneSeche(null);
-                    setShowBorneSecheModal(true);
-                  }}
-                />
-              )}
+          ) : activeTab === 'eau' ? (
+            <CarteApprovisionnementEau user={user} />
+          ) : activeTab === 'inspections-seches' ? (
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <h2>🔥 Inspections Bornes Sèches</h2>
+              <p style={{ color: '#666', marginTop: '10px' }}>
+                Module en cours de développement. Carte avec code couleur (rouge/orange/vert) et formulaire d'inspection 3 pages.
+              </p>
             </div>
           ) : activeTab === 'epi' ? (
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
