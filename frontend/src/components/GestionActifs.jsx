@@ -765,6 +765,521 @@ const BorneCard = ({ borne, onEdit, onDelete, onGenerateQR }) => {
   );
 };
 
+
+
+// ==================== ONGLET PARAMÈTRES ====================
+const ParametresActifsTab = ({ tenantSlug, user }) => {
+  const [loading, setLoading] = useState(false);
+  const [parametres, setParametres] = useState({
+    dates_tests_bornes_seches: []  // [{date: '2024-06-15', description: 'Test printemps'}]
+  });
+  const [nouvelleDate, setNouvelleDate] = useState('');
+  const [nouvelleDescription, setNouvelleDescription] = useState('');
+
+  useEffect(() => {
+    fetchParametres();
+  }, [tenantSlug]);
+
+  const fetchParametres = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/actifs/parametres');
+      if (data && data.dates_tests_bornes_seches) {
+        setParametres(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement paramètres:', error);
+    }
+  };
+
+  const ajouterDateTest = async () => {
+    if (!nouvelleDate) {
+      alert('Veuillez sélectionner une date');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const nouvelleDateObj = {
+        date: nouvelleDate,
+        description: nouvelleDescription || 'Test planifié',
+        created_at: new Date().toISOString(),
+        created_by: user?.id
+      };
+
+      const nouvellesParam = {
+        ...parametres,
+        dates_tests_bornes_seches: [...(parametres.dates_tests_bornes_seches || []), nouvelleDateObj]
+      };
+
+      await apiPut(tenantSlug, '/actifs/parametres', nouvellesParam);
+      setParametres(nouvellesParam);
+      setNouvelleDate('');
+      setNouvelleDescription('');
+      alert('✅ Date de test ajoutée avec succès');
+    } catch (error) {
+      console.error('Erreur ajout date:', error);
+      alert('❌ Erreur lors de l\'ajout de la date');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const supprimerDateTest = async (index) => {
+    if (!confirm('Supprimer cette date de test ?')) return;
+
+    setLoading(true);
+    try {
+      const nouvellesParam = {
+        ...parametres,
+        dates_tests_bornes_seches: parametres.dates_tests_bornes_seches.filter((_, i) => i !== index)
+      };
+
+      await apiPut(tenantSlug, '/actifs/parametres', nouvellesParam);
+      setParametres(nouvellesParam);
+      alert('✅ Date de test supprimée');
+    } catch (error) {
+      console.error('Erreur suppression date:', error);
+      alert('❌ Erreur lors de la suppression');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      {/* Section Configuration des emails (existante) */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '20px', color: '#2c3e50' }}>
+          📧 Configuration des Emails
+        </h2>
+        <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
+      </div>
+
+      {/* Section Dates de tests bornes sèches */}
+      <div style={{ 
+        background: 'white', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e0e0e0'
+      }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
+          🔥 Dates de Tests - Bornes Sèches
+        </h2>
+        <p style={{ color: '#7f8c8d', marginBottom: '30px', fontSize: '14px' }}>
+          Configurer les dates auxquelles les tests des bornes sèches doivent être effectués
+        </p>
+
+        {/* Formulaire d'ajout */}
+        <div style={{ 
+          background: '#f8f9fa', 
+          padding: '20px', 
+          borderRadius: '8px', 
+          marginBottom: '30px',
+          border: '1px solid #dee2e6'
+        }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
+            Ajouter une nouvelle date de test
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '15px', alignItems: 'end' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                Date *
+              </label>
+              <input
+                type="date"
+                value={nouvelleDate}
+                onChange={(e) => setNouvelleDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ced4da',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                Description
+              </label>
+              <input
+                type="text"
+                value={nouvelleDescription}
+                onChange={(e) => setNouvelleDescription(e.target.value)}
+                placeholder="Ex: Test printemps, Test automne..."
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ced4da',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <button
+              onClick={ajouterDateTest}
+              disabled={loading || !nouvelleDate}
+              style={{
+                padding: '10px 20px',
+                background: '#27ae60',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: loading || !nouvelleDate ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                opacity: loading || !nouvelleDate ? 0.6 : 1
+              }}
+            >
+              {loading ? 'Ajout...' : '+ Ajouter'}
+            </button>
+          </div>
+        </div>
+
+        {/* Liste des dates configurées */}
+        <div>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
+            Dates de tests planifiées
+          </h3>
+          {!parametres.dates_tests_bornes_seches || parametres.dates_tests_bornes_seches.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px', 
+              background: '#f8f9fa', 
+              borderRadius: '8px',
+              color: '#7f8c8d'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📅</div>
+              <p>Aucune date de test configurée</p>
+              <p style={{ fontSize: '13px', marginTop: '5px' }}>Ajoutez une date ci-dessus pour commencer</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {parametres.dates_tests_bornes_seches
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map((dateTest, index) => {
+                  const dateObj = new Date(dateTest.date);
+                  const estPasse = dateObj < new Date();
+                  const estProche = !estPasse && (dateObj - new Date()) < (30 * 24 * 60 * 60 * 1000); // < 30 jours
+
+                  return (
+                    <div 
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '15px 20px',
+                        background: estPasse ? '#fff3cd' : estProche ? '#d1ecf1' : 'white',
+                        border: `1px solid ${estPasse ? '#ffc107' : estProche ? '#0dcaf0' : '#dee2e6'}`,
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px', color: '#2c3e50' }}>
+                          📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                          {dateTest.description}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        {estPasse && (
+                          <span style={{
+                            padding: '4px 12px',
+                            background: '#ffc107',
+                            color: '#000',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            Passé
+                          </span>
+                        )}
+                        {estProche && !estPasse && (
+                          <span style={{
+                            padding: '4px 12px',
+                            background: '#0dcaf0',
+                            color: '#000',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            Proche
+                          </span>
+                        )}
+                        <button
+                          onClick={() => supprimerDateTest(index)}
+                          disabled={loading}
+                          style={{
+                            padding: '8px 16px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: loading ? 0.6 : 1
+                          }}
+                        >
+                          🗑️ Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal d'import CSV pour inspections de bornes fontaines
+const ImportCSVModal = ({ onClose, onSuccess, tenantSlug }) => {
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      if (!selectedFile.name.endsWith('.csv')) {
+        alert('Veuillez sélectionner un fichier CSV');
+        return;
+      }
+      setFile(selectedFile);
+      
+      // Prévisualiser les premières lignes
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        const lines = text.split('\n').slice(0, 4); // Header + 3 premières lignes
+        setPreviewData(lines.join('\n'));
+      };
+      reader.readAsText(selectedFile);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file) {
+      alert('Veuillez sélectionner un fichier');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/bornes/import-inspections`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur lors de l\'import');
+      }
+
+      const result = await response.json();
+      alert(`✅ Import réussi!\n\n${result.imported || 0} inspection(s) importée(s)\n${result.errors || 0} erreur(s)`);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Erreur import:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = `numero_borne,date_inspection,debit_gpm,etat,observations
+BF-001,2024-01-15,1000,conforme,Borne en bon état
+BF-002,2024-01-16,950,conforme,RAS
+BF-003,2024-01-17,800,non_conforme,Débit faible`;
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'template_import_inspections.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        maxWidth: '700px',
+        width: '100%',
+        padding: '30px',
+        maxHeight: '90vh',
+        overflow: 'auto'
+      }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>
+          📥 Importer des Inspections (CSV)
+        </h2>
+        <p style={{ color: '#7f8c8d', marginBottom: '25px', fontSize: '14px' }}>
+          Importez les données d'inspection des bornes fontaines réalisées par un service externe
+        </p>
+
+        {/* Instructions */}
+        <div style={{ 
+          background: '#e8f4f8', 
+          padding: '15px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          border: '1px solid #bee5eb'
+        }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '10px', color: '#0c5460' }}>
+            📋 Format requis
+          </h3>
+          <p style={{ fontSize: '13px', color: '#0c5460', marginBottom: '10px' }}>
+            Le fichier CSV doit contenir les colonnes suivantes:
+          </p>
+          <ul style={{ fontSize: '13px', color: '#0c5460', paddingLeft: '20px' }}>
+            <li><strong>numero_borne</strong> - Numéro d'identification de la borne</li>
+            <li><strong>date_inspection</strong> - Date au format YYYY-MM-DD</li>
+            <li><strong>debit_gpm</strong> - Débit mesuré en GPM</li>
+            <li><strong>etat</strong> - conforme, non_conforme ou defectueux</li>
+            <li><strong>observations</strong> - Notes additionnelles (optionnel)</li>
+          </ul>
+        </div>
+
+        {/* Bouton télécharger template */}
+        <button
+          onClick={downloadTemplate}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#17a2b8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            marginBottom: '20px'
+          }}
+        >
+          📄 Télécharger le modèle CSV
+        </button>
+
+        {/* Sélection de fichier */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '10px', 
+            fontSize: '14px', 
+            fontWeight: '600',
+            color: '#555'
+          }}>
+            Fichier CSV *
+          </label>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '2px dashed #ced4da',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        {/* Prévisualisation */}
+        {previewData && (
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '10px', 
+              fontSize: '14px', 
+              fontWeight: '600',
+              color: '#555'
+            }}>
+              Prévisualisation
+            </label>
+            <pre style={{
+              background: '#f8f9fa',
+              padding: '15px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              overflowX: 'auto',
+              border: '1px solid #dee2e6'
+            }}>
+              {previewData}
+            </pre>
+          </div>
+        )}
+
+        {/* Boutons */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '25px' }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleImport}
+            disabled={loading || !file}
+            style={{
+              padding: '12px 24px',
+              background: '#27ae60',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: loading || !file ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              opacity: loading || !file ? 0.6 : 1
+            }}
+          >
+            {loading ? 'Import en cours...' : 'Importer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // ==================== MODALS ====================
 
 const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
