@@ -282,30 +282,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>🚒 Gestion des Actifs</h1>
         
-        {/* Bouton Import CSV au centre (visible uniquement pour onglet bornes) */}
-        {activeTab === 'bornes' && (
-          <button 
-            onClick={() => setShowImportCSVModal(true)}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)'
-            }}
-          >
-            📥 Importer inspections (CSV)
-          </button>
-        )}
-        
         {/* Bouton Ajouter à droite */}
-        {activeTab !== 'inventaires' && activeTab !== 'epi' && activeTab !== 'parametres' && (
+        {activeTab === 'vehicules' && (
           <button 
             onClick={openCreateModal}
             style={{
@@ -319,7 +297,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               fontWeight: 'bold'
             }}
           >
-            + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
+            + Ajouter un véhicule
           </button>
         )}
       </div>
