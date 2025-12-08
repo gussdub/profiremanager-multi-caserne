@@ -258,43 +258,46 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     <div className="gestion-actifs" style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>🚒 Gestion des Actifs</h1>
-        {activeTab !== 'inventaires' && activeTab !== 'epi' && (
-          <>
-            <button 
-              onClick={openCreateModal}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
-            >
-              + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
-            </button>
-            
-            {activeTab === 'bornes' && (
-              <button 
-                onClick={() => setShowImportCSVModal(true)}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#3498db',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  marginLeft: '10px'
-                }}
-              >
-                📥 Importer inspections (CSV)
-              </button>
-            )}
-          </>
+        
+        {/* Bouton Import CSV au centre (visible uniquement pour onglet bornes) */}
+        {activeTab === 'bornes' && (
+          <button 
+            onClick={() => setShowImportCSVModal(true)}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#3498db',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}
+          >
+            📥 Importer inspections (CSV)
+          </button>
+        )}
+        
+        {/* Bouton Ajouter à droite */}
+        {activeTab !== 'inventaires' && activeTab !== 'epi' && activeTab !== 'parametres' && (
+          <button 
+            onClick={openCreateModal}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            + Ajouter {activeTab === 'vehicules' ? 'un véhicule' : 'une borne'}
+          </button>
         )}
       </div>
 
