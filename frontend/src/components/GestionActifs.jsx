@@ -45,7 +45,6 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       fetchVehicules();
     } else if (activeTab === 'bornes') {
       fetchBornes();
-    } else if (activeTab === 'bornes-seches') {
       fetchBornesSeches();
     }
   }, [activeTab]);
