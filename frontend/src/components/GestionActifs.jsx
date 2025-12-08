@@ -734,7 +734,11 @@ const BorneCard = ({ borne, onEdit, onDelete, onGenerateQR }) => {
       </div>
       
       <div style={{ marginBottom: '15px', color: '#555' }}>
-        <p><strong>Type:</strong> {borne.type_borne === 'seche' ? 'Borne sèche' : 'Borne fontaine'}</p>
+        <p><strong>Type:</strong> {
+          borne.type_borne === 'seche' ? 'Borne sèche' : 
+          borne.type_borne === 'fontaine' ? 'Borne fontaine' : 
+          'Point d\'eau statique'
+        }</p>
         {borne.municipalite && <p><strong>Municipalité:</strong> {borne.municipalite}</p>}
         {borne.adresse && <p><strong>Adresse:</strong> {borne.adresse}</p>}
         {borne.transversale && <p><strong>Transversale:</strong> {borne.transversale}</p>}
