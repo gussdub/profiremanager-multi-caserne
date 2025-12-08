@@ -37,6 +37,17 @@ const CartePlanification = lazy(() => import("./components/CartePlanification"))
 const NonConformites = lazy(() => import("./components/NonConformites"));
 const InspectionTerrain = lazy(() => import("./components/InspectionTerrain"));
 import OfflineManager from "./components/OfflineManager";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix pour les icônes Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
 // Composant de chargement
 const LoadingComponent = () => (
