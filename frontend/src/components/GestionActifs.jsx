@@ -114,6 +114,22 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     }
   };
 
+
+  const fetchBornesSeches = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet(tenantSlug, '/bornes-seches/templates');
+      setBornesSeches(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des bornes sèches:', error);
+      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
+      alert('❌ Erreur lors du chargement des bornes sèches: ' + errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedItem(null);
