@@ -24186,6 +24186,151 @@ async def generate_borne_qr_code(
         "message": "QR code généré avec succès"
     }
 
+
+# Endpoint pour importer des inspections de bornes fontaines via CSV
+@api_router.post("/{tenant_slug}/actifs/bornes/import-inspections")
+async def import_inspections_bornes(
+    tenant_slug: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Importer des inspections de bornes fontaines depuis un fichier CSV"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions (admin ou superviseur)
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Lire le fichier CSV
+    contents = await file.read()
+    try:
+        csv_text = contents.decode('utf-8')
+    except UnicodeDecodeError:
+        csv_text = contents.decode('latin-1')
+    
+    import csv
+    from io import StringIO
+    
+    csv_reader = csv.DictReader(StringIO(csv_text))
+    
+    imported = 0
+    errors = 0
+    error_details = []
+    
+    for row in csv_reader:
+        try:
+            numero_borne = row.get('numero_borne', '').strip()
+            date_inspection = row.get('date_inspection', '').strip()
+            debit_gpm = row.get('debit_gpm', '').strip()
+            etat = row.get('etat', 'conforme').strip()
+            observations = row.get('observations', '').strip()
+            
+            if not numero_borne or not date_inspection:
+                errors += 1
+                error_details.append(f"Ligne ignorée: numero_borne ou date_inspection manquant")
+                continue
+            
+            # Trouver la borne
+            borne = await db.bornes_incendie.find_one({
+                "tenant_id": tenant.id,
+                "nom": numero_borne
+            })
+            
+            if not borne:
+                errors += 1
+                error_details.append(f"Borne {numero_borne} non trouvée")
+                continue
+            
+            # Créer l'inspection
+            inspection = {
+                "id": str(uuid4()),
+                "tenant_id": tenant.id,
+                "borne_id": borne['id'],
+                "numero_borne": numero_borne,
+                "date_inspection": date_inspection,
+                "debit_mesure_gpm": float(debit_gpm) if debit_gpm else None,
+                "etat_general": etat,
+                "observations": observations,
+                "inspecteur_id": current_user.id,
+                "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
+                "source": "import_csv",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.inspections_bornes.insert_one(inspection)
+            
+            # Mettre à jour la dernière inspection de la borne
+            await db.bornes_incendie.update_one(
+                {"id": borne['id']},
+                {"$set": {
+                    "date_derniere_inspection": date_inspection,
+                    "dernier_etat_inspection": etat,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            imported += 1
+            
+        except Exception as e:
+            errors += 1
+            error_details.append(f"Erreur ligne {csv_reader.line_num}: {str(e)}")
+            continue
+    
+    return {
+        "imported": imported,
+        "errors": errors,
+        "error_details": error_details[:10],  # Max 10 erreurs affichées
+        "message": f"{imported} inspection(s) importée(s), {errors} erreur(s)"
+    }
+
+# Endpoints pour les paramètres des actifs
+@api_router.get("/{tenant_slug}/actifs/parametres")
+async def get_parametres_actifs(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les paramètres du module actifs"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Chercher les paramètres dans la collection tenant
+    parametres = tenant.parametres.get('actifs', {}) if tenant.parametres else {}
+    
+    # Valeurs par défaut si non configuré
+    if not parametres:
+        parametres = {
+            "dates_tests_bornes_seches": []
+        }
+    
+    return parametres
+
+@api_router.put("/{tenant_slug}/actifs/parametres")
+async def update_parametres_actifs(
+    tenant_slug: str,
+    parametres: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les paramètres du module actifs (admin/superviseur seulement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permissions
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    # Mettre à jour les paramètres dans le tenant
+    current_params = tenant.parametres or {}
+    current_params['actifs'] = parametres
+    
+    await db.tenants.update_one(
+        {"id": tenant.id},
+        {"$set": {
+            "parametres": current_params,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Paramètres mis à jour avec succès", "parametres": parametres}
+
+
 # ==================== RONDES DE SÉCURITÉ ====================
 
 class ContreSignature(BaseModel):
