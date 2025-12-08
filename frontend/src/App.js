@@ -1082,6 +1082,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe'] },
     { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'] },  // Supprimé requiresModule temporairement
+    { id: 'approvisionnement-eau', label: 'Approvisionnement en Eau', icon: '💧', roles: ['admin', 'superviseur'] },
     { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧', roles: ['admin'], superAdminOnly: true },
