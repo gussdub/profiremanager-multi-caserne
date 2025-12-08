@@ -506,6 +506,39 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           }}
         />
       )}
+
+      {showBorneSecheModal && (
+        <BorneSecheModal
+          borne={selectedBorneSeche}
+          tenantSlug={tenantSlug}
+          onClose={() => {
+            setShowBorneSecheModal(false);
+            setSelectedBorneSeche(null);
+          }}
+          onSuccess={() => {
+            fetchBornesSeches();
+            setShowBorneSecheModal(false);
+            setSelectedBorneSeche(null);
+          }}
+        />
+      )}
+
+      {showInspectionBorneSecheModal && selectedBorneSeche && (
+        <InspectionBorneSecheModal
+          borne={selectedBorneSeche}
+          tenantSlug={tenantSlug}
+          user={user}
+          onClose={() => {
+            setShowInspectionBorneSecheModal(false);
+            setSelectedBorneSeche(null);
+          }}
+          onSuccess={() => {
+            fetchBornesSeches();
+            setShowInspectionBorneSecheModal(false);
+            setSelectedBorneSeche(null);
+          }}
+        />
+      )}
     </div>
   );
 };
