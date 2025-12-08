@@ -30,6 +30,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [showHistoriqueRondesModal, setShowHistoriqueRondesModal] = useState(false);
   const [showContreSignatureModal, setShowContreSignatureModal] = useState(false);
   const [selectedRondeForCounterSign, setSelectedRondeForCounterSign] = useState(null);
+  const [showImportCSVModal, setShowImportCSVModal] = useState(false);
+  const [showParametresModal, setShowParametresModal] = useState(false);
 
   const { tenantSlug } = useTenant();
 
