@@ -32,6 +32,10 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [selectedRondeForCounterSign, setSelectedRondeForCounterSign] = useState(null);
   const [showImportCSVModal, setShowImportCSVModal] = useState(false);
   const [showParametresModal, setShowParametresModal] = useState(false);
+  const [bornesSeches, setBornesSeches] = useState([]);
+  const [showBorneSecheModal, setShowBorneSecheModal] = useState(false);
+  const [showInspectionBorneSecheModal, setShowInspectionBorneSecheModal] = useState(false);
+  const [selectedBorneSeche, setSelectedBorneSeche] = useState(null);
 
   const { tenantSlug } = useTenant();
 
