@@ -439,6 +439,17 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onRefuser={handleRefuserRonde}
         />
       )}
+
+      {showImportCSVModal && (
+        <ImportCSVModal
+          tenantSlug={tenantSlug}
+          onClose={() => setShowImportCSVModal(false)}
+          onSuccess={() => {
+            fetchBornes();
+            setShowImportCSVModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };
