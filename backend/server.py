@@ -25207,7 +25207,7 @@ async def create_inspection_borne_seche(
         raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
     
     inspection_dict = inspection_data.dict()
-    inspection_dict['id'] = str(uuid4())
+    inspection_dict['id'] = str(uuid.uuid4())
     inspection_dict['tenant_id'] = tenant.id
     inspection_dict['inspecteur_nom'] = f"{current_user.prenom} {current_user.nom}"
     inspection_dict['created_at'] = datetime.now(timezone.utc).isoformat()
@@ -25545,7 +25545,7 @@ async def create_inspection_point_eau(
         raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
     
     inspection_dict = inspection_data.dict()
-    inspection_dict['id'] = str(uuid4())
+    inspection_dict['id'] = str(uuid.uuid4())
     inspection_dict['tenant_id'] = tenant.id
     inspection_dict['created_at'] = datetime.now(timezone.utc).isoformat()
     
