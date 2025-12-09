@@ -23227,39 +23227,62 @@ const ApprovisionnementEau = () => {
                       {point.etat || 'Non défini'}
                     </span></p>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                    <button
-                      onClick={() => {
-                        openPointModal(point);
-                      }}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       style={{
-                        flex: 1,
                         padding: '0.5rem',
-                        background: '#3b82f6',
+                        background: '#059669',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        fontSize: '0.875rem'
+                        fontSize: '0.875rem',
+                        textAlign: 'center',
+                        textDecoration: 'none',
+                        fontWeight: '500'
                       }}
                     >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => openInspectionModal(point)}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        background: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      Inspecter
-                    </button>
+                      🗺️ Navigation (Google Maps)
+                    </a>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={() => {
+                          openPointModal(point);
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem',
+                          background: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        Modifier
+                      </button>
+                      {point.type === 'borne_seche' && (
+                        <button
+                          onClick={() => openInspectionModal(point)}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          Inspecter
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Popup>
