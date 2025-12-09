@@ -318,8 +318,9 @@ const CarteApprovisionnementEau = ({ user }) => {
             >
               <Popup>
                 <div style={{ minWidth: '250px' }}>
-                  <h3 style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '1rem' }}>
-                    {getTypeIcon(point.type)} {point.numero_identification}
+                  <h3 style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '24px', height: '24px' }} />
+                    {point.numero_identification}
                   </h3>
                   <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                     <p><strong>Type:</strong> {
