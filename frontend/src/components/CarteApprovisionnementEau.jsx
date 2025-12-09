@@ -342,8 +342,8 @@ const CarteApprovisionnementEau = ({ user }) => {
                       borderRadius: '12px',
                       fontSize: '0.75rem',
                       fontWeight: '500',
-                      background: getMarkerColor(point.statut_couleur) + '20',
-                      color: getMarkerColor(point.statut_couleur)
+                      background: getMarkerColor(point) + '20',
+                      color: getMarkerColor(point)
                     }}>
                       {point.etat || 'Non défini'}
                     </span></p>
