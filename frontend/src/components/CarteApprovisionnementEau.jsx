@@ -673,7 +673,8 @@ const CarteApprovisionnementEau = ({ user }) => {
         </>
       )}
 
-      {/* Modal de création/édition sera ajouté ici */}
+      {/* Modal de création/édition de point d'eau */}
+      {showPointModal && <PointEauModal />}
 
       {showInspectionModal && (
         <InspectionModal
