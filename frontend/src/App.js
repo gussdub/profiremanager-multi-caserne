@@ -23113,16 +23113,34 @@ const ApprovisionnementEau = () => {
     }
   };
 
-  // Obtenir l'icône Leaflet personnalisée pour chaque type
-  const getLeafletIcon = (type) => {
+  // Obtenir l'icône Leaflet personnalisée avec badge coloré
+  const getLeafletIcon = (type, statutCouleur) => {
     const iconUrls = {
       borne_fontaine: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
       borne_seche: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
       point_eau_statique: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
     };
 
-    return L.icon({
-      iconUrl: iconUrls[type] || iconUrls.point_eau_statique,
+    const badgeColor = statutCouleur === 'vert' ? '#10b981' : statutCouleur === 'jaune' ? '#f59e0b' : statutCouleur === 'rouge' ? '#ef4444' : '#6b7280';
+
+    return L.divIcon({
+      html: `
+        <div style="position: relative; width: 40px; height: 40px;">
+          <img src="${iconUrls[type] || iconUrls.point_eau_statique}" style="width: 40px; height: 40px;" />
+          <div style="
+            position: absolute;
+            bottom: 0px;
+            right: 0px;
+            width: 14px;
+            height: 14px;
+            background: ${badgeColor};
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          "></div>
+        </div>
+      `,
+      className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 40],
       popupAnchor: [0, -40]
