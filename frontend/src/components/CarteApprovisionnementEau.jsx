@@ -433,8 +433,8 @@ const CarteApprovisionnementEau = ({ user }) => {
           ) : (
             filteredPoints.map(point => (
               <tr key={point.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: '1rem', fontSize: '1.5rem' }}>
-                  {getTypeIcon(point.type)}
+                <td style={{ padding: '1rem' }}>
+                  <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '32px', height: '32px' }} />
                 </td>
                 <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '500' }}>
                   {point.numero_identification}
