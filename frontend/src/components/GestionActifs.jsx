@@ -394,12 +394,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               {eauSubTab === 'carte' ? (
                 <CarteApprovisionnementEau user={user} />
               ) : (
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h2>🔥 Inspections Bornes Sèches</h2>
-                  <p style={{ color: '#666', marginTop: '10px' }}>
-                    Carte avec code couleur (rouge/orange/vert) et formulaire d'inspection - En développement
-                  </p>
-                </div>
+                <InspectionsBornesSeches user={user} />
               )}
             </div>
           ) : activeTab === 'epi' ? (
