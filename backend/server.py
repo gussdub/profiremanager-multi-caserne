@@ -25415,6 +25415,85 @@ async def delete_point_eau(
     
     return {"message": "Point d'eau supprimé avec succès"}
 
+# Endpoints pour les inspections de bornes sèches
+@api_router.post("/{tenant_slug}/points-eau/{point_id}/inspections")
+async def create_inspection_borne_seche(
+    tenant_slug: str,
+    point_id: str,
+    inspection_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection de borne sèche"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le point existe et est une borne sèche
+    point = await db.points_eau.find_one(
+        {"id": point_id, "tenant_id": tenant.id, "type": "borne_seche"}
+    )
+    if not point:
+        raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
+    
+    # Créer l'inspection
+    inspection = {
+        "id": str(uuid.uuid4()),
+        "point_eau_id": point_id,
+        "tenant_id": tenant.id,
+        "date_inspection": inspection_data.get("date_inspection"),
+        "etat_trouve": inspection_data.get("etat_trouve"),
+        "notes": inspection_data.get("notes", ""),
+        "photos": inspection_data.get("photos", []),
+        "nom_inspecteur": inspection_data.get("nom_inspecteur"),
+        "prenom_inspecteur": inspection_data.get("prenom_inspecteur"),
+        "inspecteur_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections_bornes_seches.insert_one(inspection)
+    
+    # Mettre à jour le point d'eau avec la dernière inspection
+    update_data = {
+        "derniere_inspection_date": inspection_data.get("date_inspection"),
+        "statut_inspection": inspection_data.get("statut_inspection", "conforme"),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.points_eau.update_one(
+        {"id": point_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
+
+@api_router.get("/{tenant_slug}/points-eau/{point_id}/inspections")
+async def get_inspections_borne_seche(
+    tenant_slug: str,
+    point_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections d'une borne sèche"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspections = await db.inspections_bornes_seches.find(
+        {"point_eau_id": point_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(100)
+    
+    return inspections
+
+@api_router.get("/{tenant_slug}/parametres/dates-tests-bornes-seches")
+async def get_dates_tests_bornes_seches(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les dates de tests configurées pour les bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Chercher dans les paramètres du tenant
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    dates_tests = parametres.get('dates_tests_bornes_seches', [])
+    
+    return {"dates": dates_tests}
+
 
 app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
