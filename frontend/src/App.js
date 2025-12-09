@@ -23163,6 +23163,24 @@ const ApprovisionnementEau = () => {
     }
   };
 
+  // Composant pour gérer le clic sur la carte
+  const MapClickHandler = () => {
+    const map = useMapEvents({
+      click: (e) => {
+        // Seulement pour admin/superviseur
+        if (user?.role === 'admin' || user?.role === 'superviseur') {
+          openPointModal({
+            latitude: e.latlng.lat,
+            longitude: e.latlng.lng,
+            type: 'borne_fontaine',
+            ville: 'Shefford'
+          });
+        }
+      }
+    });
+    return null;
+  };
+
   // Rendu de la carte
   const renderCarte = () => (
     <div style={{ height: 'calc(100vh - 300px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
@@ -23176,6 +23194,7 @@ const ApprovisionnementEau = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapClickHandler />
         {filteredPoints.map(point => (
           point.latitude && point.longitude && (
             <Marker
