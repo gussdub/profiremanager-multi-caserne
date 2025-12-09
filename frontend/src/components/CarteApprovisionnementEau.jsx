@@ -29,6 +29,27 @@ const CarteApprovisionnementEau = ({ user }) => {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [showPointModal, setShowPointModal] = useState(false);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
+  
+  // States pour le modal de point d'eau
+  const [formData, setFormData] = useState({
+    type: 'borne_fontaine',
+    numero_identification: '',
+    latitude: '',
+    longitude: '',
+    adresse: '',
+    ville: 'Shefford',
+    notes: '',
+    debit_gpm: '',
+    pression_dynamique_psi: '',
+    diametre_raccordement: '',
+    etat: 'fonctionnelle',
+    date_dernier_test: '',
+    debit_max_statique_gpm: '',
+    capacite_litres: '',
+    accessibilite: 'facile',
+    photos: []
+  });
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
   const [statutFilter, setStatutFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
