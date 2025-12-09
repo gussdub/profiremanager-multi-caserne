@@ -6,6 +6,7 @@ import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
 import ContreSignatureModal from './ContreSignatureModal';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
 import CarteApprovisionnementEau from './CarteApprovisionnementEau';
+import InspectionsBornesSeches from './InspectionsBornesSeches';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
