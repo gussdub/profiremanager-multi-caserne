@@ -213,7 +213,22 @@ const CarteApprovisionnementEau = ({ user }) => {
   const MapClickHandler = () => {
     const map = useMapEvents({
       click: (e) => {
-        // Seulement pour admin/superviseur
+        // Si on est en mode sélection (callback définie)
+        if (window._mapSelectionCallback) {
+          window._mapSelectionCallback(e.latlng.lat, e.latlng.lng);
+          delete window._mapSelectionCallback;
+          
+          // Réouvrir le modal avec les coordonnées
+          openPointModal({
+            latitude: e.latlng.lat,
+            longitude: e.latlng.lng,
+            type: 'borne_fontaine',
+            ville: 'Shefford'
+          });
+          return;
+        }
+        
+        // Sinon, comportement normal : ouvrir modal pour admin/superviseur
         if (user?.role === 'admin' || user?.role === 'superviseur') {
           openPointModal({
             latitude: e.latlng.lat,
