@@ -148,14 +148,14 @@ const CarteApprovisionnementEau = ({ user }) => {
   };
 
   // Obtenir l'icône Leaflet personnalisée avec badge coloré
-  const getLeafletIcon = (type, statutCouleur) => {
+  const getLeafletIcon = (point) => {
     const iconUrls = {
       borne_fontaine: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
       borne_seche: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
       point_eau_statique: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
     };
 
-    const badgeColor = statutCouleur === 'vert' ? '#10b981' : statutCouleur === 'jaune' ? '#f59e0b' : statutCouleur === 'rouge' ? '#ef4444' : '#6b7280';
+    const badgeColor = getMarkerColor(point);
 
     return L.divIcon({
       html: `
