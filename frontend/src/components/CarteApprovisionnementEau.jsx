@@ -787,31 +787,43 @@ const CarteApprovisionnementEau = ({ user }) => {
 
       {/* Modal de création/édition de point d'eau */}
       {showPointModal && (
-        (() => {
-          const [formData, setFormData] = useState({
-            type: selectedPoint?.type || 'borne_fontaine',
-            numero_identification: selectedPoint?.numero_identification || '',
-            latitude: selectedPoint?.latitude || '',
-            longitude: selectedPoint?.longitude || '',
-            adresse: selectedPoint?.adresse || '',
-            ville: selectedPoint?.ville || 'Shefford',
-            notes: selectedPoint?.notes || '',
-            debit_gpm: selectedPoint?.debit_gpm || '',
-            pression_dynamique_psi: selectedPoint?.pression_dynamique_psi || '',
-            diametre_raccordement: selectedPoint?.diametre_raccordement || '',
-            etat: selectedPoint?.etat || 'fonctionnelle',
-            date_dernier_test: selectedPoint?.date_dernier_test || '',
-            debit_max_statique_gpm: selectedPoint?.debit_max_statique_gpm || '',
-            capacite_litres: selectedPoint?.capacite_litres || '',
-            accessibilite: selectedPoint?.accessibilite || 'facile',
-            photos: selectedPoint?.photos || []
-          });
-          
-          const [loading, setLoading] = useState(false);
-          const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-          return PointEauModal();
-        })()
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '1rem' }}>Modal en développement</h2>
+            <p>Latitude: {selectedPoint?.latitude || formData.latitude}</p>
+            <p>Longitude: {selectedPoint?.longitude || formData.longitude}</p>
+            <button 
+              onClick={() => setShowPointModal(false)}
+              style={{
+                marginTop: '1rem',
+                padding: '0.75rem 1.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
       )}
 
       {showInspectionModal && (
