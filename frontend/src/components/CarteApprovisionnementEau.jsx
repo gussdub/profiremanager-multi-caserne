@@ -194,7 +194,7 @@ const CarteApprovisionnementEau = ({ user }) => {
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 200px)', gap: '1rem' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 300px)', gap: '1rem' }}>
       {/* Panel latéral */}
       <div style={{ width: '350px', overflowY: 'auto', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
