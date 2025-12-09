@@ -22297,7 +22297,7 @@ const PointEauModal = ({ point, onClose, onSave }) => {
           description: "Point d'eau modifié avec succès"
         });
       } else {
-        await apiPost(tenantSlug, '/approvisionnement-eau/points-eau', formData);
+        await apiPost(tenantSlug, '/points-eau', formData);
         toast({
           title: "Succès",
           description: "Point d'eau créé avec succès"
