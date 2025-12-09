@@ -23202,7 +23202,50 @@ const ApprovisionnementEau = () => {
 
   // Rendu de la carte
   const renderCarte = () => (
-    <div style={{ height: 'calc(100vh - 300px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+    <div style={{ height: 'calc(100vh - 300px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' }}>
+      {/* Toggle Plan/Satellite */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        zIndex: 1000,
+        background: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        display: 'flex'
+      }}>
+        <button
+          onClick={() => setMapLayer('plan')}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            background: mapLayer === 'plan' ? '#3b82f6' : 'white',
+            color: mapLayer === 'plan' ? 'white' : '#6b7280',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            borderRadius: '8px 0 0 8px',
+            borderRight: '1px solid #e5e7eb'
+          }}
+        >
+          🗺️ Plan
+        </button>
+        <button
+          onClick={() => setMapLayer('satellite')}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            background: mapLayer === 'satellite' ? '#3b82f6' : 'white',
+            color: mapLayer === 'satellite' ? 'white' : '#6b7280',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            borderRadius: '0 8px 8px 0'
+          }}
+        >
+          🛰️ Satellite
+        </button>
+      </div>
       <MapContainer 
         center={mapCenter} 
         zoom={mapZoom} 
