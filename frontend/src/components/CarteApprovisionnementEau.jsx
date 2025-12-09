@@ -541,21 +541,21 @@ const CarteApprovisionnementEau = ({ user }) => {
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⛲</div>
+            <img src={iconUrls.borne_fontaine} alt="Borne fontaine" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
               {stats.par_type?.bornes_fontaines || 0}
             </div>
             <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Bornes-fontaines</div>
           </div>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔥</div>
+            <img src={iconUrls.borne_seche} alt="Borne sèche" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
               {stats.par_type?.bornes_seches || 0}
             </div>
             <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Bornes sèches</div>
           </div>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💧</div>
+            <img src={iconUrls.point_eau_statique} alt="Point statique" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
               {stats.par_type?.points_statiques || 0}
             </div>
