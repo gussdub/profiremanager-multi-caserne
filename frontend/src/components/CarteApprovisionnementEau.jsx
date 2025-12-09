@@ -672,22 +672,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         </>
       )}
 
-      {/* Modals (à implémenter avec les formulaires complets) */}
-      {showPointModal && (
-        <PointEauModal
-          point={selectedPoint}
-          onClose={() => {
-            setShowPointModal(false);
-            setSelectedPoint(null);
-          }}
-          onSave={() => {
-            fetchPointsEau();
-            fetchStats();
-            setShowPointModal(false);
-            setSelectedPoint(null);
-          }}
-        />
-      )}
+      {/* Modal de création/édition sera ajouté ici */}
 
       {showInspectionModal && (
         <InspectionModal
