@@ -23130,7 +23130,7 @@ const ApprovisionnementEau = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce point d\'eau ?')) return;
     
     try {
-      await apiDelete(tenantSlug, `/approvisionnement-eau/points-eau/${pointId}`);
+      await apiDelete(tenantSlug, `/points-eau/${pointId}`);
       toast({
         title: "Succès",
         description: "Point d'eau supprimé avec succès"
