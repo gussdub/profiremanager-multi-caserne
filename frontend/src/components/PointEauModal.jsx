@@ -33,6 +33,14 @@ const PointEauModal = ({
   
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectingOnMap, setSelectingOnMap] = useState(false);
+
+  // URLs des icônes
+  const iconUrls = {
+    borne_fontaine: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
+    borne_seche: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
+    point_eau_statique: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
+  };
 
   // Charger les données du point si modification
   useEffect(() => {
@@ -58,6 +66,66 @@ const PointEauModal = ({
     }
   }, [point]);
 
+  // Parser les coordonnées Google Maps
+  const parseGoogleMapsCoords = (input) => {
+    if (!input) return null;
+    
+    // Format: "45.3778, -72.6839" ou "45.3778,-72.6839"
+    const decimalPattern = /^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/;
+    const match = input.match(decimalPattern);
+    
+    if (match) {
+      return {
+        latitude: parseFloat(match[1]),
+        longitude: parseFloat(match[2])
+      };
+    }
+    
+    // Format DMS: "45°22'40.1\"N 72°41'02.0\"W"
+    const dmsPattern = /(\d+)°(\d+)'([\d.]+)\"([NS])\s+(\d+)°(\d+)'([\d.]+)\"([EW])/;
+    const dmsMatch = input.match(dmsPattern);
+    
+    if (dmsMatch) {
+      const latDeg = parseInt(dmsMatch[1]);
+      const latMin = parseInt(dmsMatch[2]);
+      const latSec = parseFloat(dmsMatch[3]);
+      const latDir = dmsMatch[4];
+      
+      const lonDeg = parseInt(dmsMatch[5]);
+      const lonMin = parseInt(dmsMatch[6]);
+      const lonSec = parseFloat(dmsMatch[7]);
+      const lonDir = dmsMatch[8];
+      
+      let lat = latDeg + (latMin / 60) + (latSec / 3600);
+      let lon = lonDeg + (lonMin / 60) + (lonSec / 3600);
+      
+      if (latDir === 'S') lat = -lat;
+      if (lonDir === 'W') lon = -lon;
+      
+      return { latitude: lat, longitude: lon };
+    }
+    
+    return null;
+  };
+
+  // Handler pour le changement de coordonnées
+  const handleCoordChange = (field, value) => {
+    // Si c'est la latitude et qu'on détecte un format Google Maps
+    if (field === 'latitude' && value.includes(',')) {
+      const parsed = parseGoogleMapsCoords(value);
+      if (parsed) {
+        setFormData(prev => ({
+          ...prev,
+          latitude: parsed.latitude.toString(),
+          longitude: parsed.longitude.toString()
+        }));
+        return;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -73,7 +141,9 @@ const PointEauModal = ({
         ...formData,
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
-        statut_couleur: formData.etat === 'fonctionnelle' ? 'vert' : formData.etat === 'attention' ? 'jaune' : 'rouge'
+        // Mapper l'état à la couleur correcte
+        statut_couleur: formData.etat === 'fonctionnelle' ? 'vert' : 
+                        formData.etat === 'attention' ? 'orange' : 'rouge'
       };
 
       if (point?.id) {
@@ -122,6 +192,28 @@ const PointEauModal = ({
     setFormData(prev => ({
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Handler pour la sélection sur la carte
+  const handleSelectOnMap = () => {
+    setSelectingOnMap(true);
+    alert('Cliquez sur la carte pour sélectionner l\'emplacement. Le modal se rouvrira automatiquement.');
+    onClose();
+    
+    // Émettre un événement personnalisé pour informer le parent
+    window.dispatchEvent(new CustomEvent('selectLocationOnMap', {
+      detail: {
+        callback: (lat, lng) => {
+          // Cette callback sera appelée par le parent
+          setFormData(prev => ({
+            ...prev,
+            latitude: lat.toString(),
+            longitude: lng.toString()
+          }));
+          setSelectingOnMap(false);
+        }
+      }
     }));
   };
 
@@ -177,27 +269,49 @@ const PointEauModal = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
-          {/* Type */}
+          {/* Type avec icônes */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
               Type de point d'eau <span style={{ color: 'red' }}>*</span>
             </label>
-            <select
-              required
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem'
-              }}
-            >
-              <option value="borne_fontaine">🔴 Borne fontaine</option>
-              <option value="borne_seche">🟠 Borne sèche</option>
-              <option value="point_eau_statique">💧 Point d'eau statique</option>
-            </select>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+              {Object.entries({
+                borne_fontaine: 'Borne fontaine',
+                borne_seche: 'Borne sèche',
+                point_eau_statique: 'Point statique'
+              }).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, type: value })}
+                  style={{
+                    padding: '1rem',
+                    border: formData.type === value ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    background: formData.type === value ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <img 
+                    src={iconUrls[value]} 
+                    alt={label}
+                    style={{ width: '40px', height: '40px' }}
+                  />
+                  <span style={{ 
+                    fontSize: '0.875rem', 
+                    fontWeight: formData.type === value ? '600' : '400',
+                    color: formData.type === value ? '#3b82f6' : '#6b7280'
+                  }}>
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* N° Identification */}
@@ -220,48 +334,77 @@ const PointEauModal = ({
             />
           </div>
 
-          {/* Coordonnées GPS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                Latitude <span style={{ color: 'red' }}>*</span>
-              </label>
-              <input
-                type="number"
-                step="0.000001"
-                required
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                placeholder="45.3778"
+          {/* Coordonnées GPS avec bouton */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+              Coordonnées GPS <span style={{ color: 'red' }}>*</span>
+            </label>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={handleSelectOnMap}
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  border: '1px solid #d1d5db',
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '8px',
-                  fontSize: '1rem'
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
                 }}
-              />
+              >
+                📍 Sélectionner sur la carte
+              </button>
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                Longitude <span style={{ color: 'red' }}>*</span>
-              </label>
-              <input
-                type="number"
-                step="0.000001"
-                required
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                placeholder="-72.6839"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem'
-                }}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                  Latitude
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.latitude}
+                  onChange={(e) => handleCoordChange('latitude', e.target.value)}
+                  placeholder="45.3778 ou collez Google Maps"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                  Longitude
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.longitude}
+                  onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                  placeholder="-72.6839"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
             </div>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+              💡 Astuce : Copiez-collez les coordonnées depuis Google Maps (ex: 45.3778, -72.6839)
+            </p>
           </div>
 
           {/* Adresse */}
@@ -293,6 +436,7 @@ const PointEauModal = ({
               type="text"
               value={formData.ville}
               onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
+              placeholder="Shefford"
               style={{
                 width: '100%',
                 padding: '0.75rem',
@@ -327,13 +471,13 @@ const PointEauModal = ({
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                    Pression dynamique (PSI)
+                    Pression (PSI)
                   </label>
                   <input
                     type="number"
                     value={formData.pression_dynamique_psi}
                     onChange={(e) => setFormData({ ...formData, pression_dynamique_psi: e.target.value })}
-                    placeholder="50"
+                    placeholder="60"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
