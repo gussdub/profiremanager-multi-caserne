@@ -85,6 +85,29 @@ const CarteApprovisionnementEau = ({ user }) => {
     fetchStats();
   }, [tenantSlug, typeFilter, statutFilter]);
 
+  // Écouter l'événement de sélection sur carte depuis le modal
+  useEffect(() => {
+    const handleSelectLocation = (event) => {
+      const { callback } = event.detail;
+      
+      // Stocker la callback dans le state
+      window._mapSelectionCallback = callback;
+      
+      // Afficher un message
+      toast({
+        title: "Mode sélection",
+        description: "Cliquez sur la carte pour définir l'emplacement"
+      });
+    };
+    
+    window.addEventListener('selectLocationOnMap', handleSelectLocation);
+    
+    return () => {
+      window.removeEventListener('selectLocationOnMap', handleSelectLocation);
+      delete window._mapSelectionCallback;
+    };
+  }, []);
+
   // Filtrer les points selon la recherche
   const filteredPoints = pointsEau.filter(point => {
     if (!searchTerm) return true;
