@@ -23035,6 +23035,7 @@ const ApprovisionnementEau = () => {
   const [map, setMap] = useState(null);
   const [mapCenter, setMapCenter] = useState([45.5017, -73.5673]); // Montréal par défaut
   const [mapZoom, setMapZoom] = useState(12);
+  const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
 
   // Charger les points d'eau
   const fetchPointsEau = async () => {
