@@ -23618,8 +23618,11 @@ const ApprovisionnementEau = () => {
           }}
         />
 
+        {/* Spacer pour pousser le toggle à droite */}
+        <div style={{ flex: 1, minWidth: '50px' }}></div>
+
         {/* Toggle Vue */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={() => setCurrentView('carte')}
             style={{
@@ -23630,7 +23633,8 @@ const ApprovisionnementEau = () => {
               color: currentView === 'carte' ? '#3b82f6' : '#6b7280',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.95rem'
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap'
             }}
           >
             🗺️ Carte
@@ -23645,7 +23649,8 @@ const ApprovisionnementEau = () => {
               color: currentView === 'liste' ? '#3b82f6' : '#6b7280',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.95rem'
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap'
             }}
           >
             📋 Liste
