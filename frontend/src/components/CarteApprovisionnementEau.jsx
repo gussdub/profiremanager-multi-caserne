@@ -249,23 +249,19 @@ const CarteApprovisionnementEau = ({ user }) => {
       <MapContainer 
         center={mapCenter} 
         zoom={mapZoom} 
-        maxZoom={19}
-        style={{ height: '100%', width: '100%', background: '#e8f4f8' }}
+        style={{ height: '100%', width: '100%' }}
         whenCreated={setMap}
       >
         {mapLayer === 'plan' ? (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={18}
-            maxNativeZoom={18}
           />
         ) : (
           <TileLayer
-            attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={19}
-            maxNativeZoom={18}
+            url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+            attribution='&copy; Google'
           />
         )}
         <MapClickHandler />
