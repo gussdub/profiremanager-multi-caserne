@@ -250,7 +250,7 @@ const CarteApprovisionnementEau = ({ user }) => {
       <MapContainer 
         center={mapCenter} 
         zoom={mapZoom} 
-        maxZoom={20}
+        maxZoom={19}
         style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
         whenCreated={setMap}
       >
