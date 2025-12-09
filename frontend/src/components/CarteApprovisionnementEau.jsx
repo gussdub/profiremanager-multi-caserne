@@ -20,15 +20,9 @@ const createCustomIcon = (iconUrl, iconSize = [32, 32]) => {
 
 // Icônes pour chaque type de borne
 const ICONS = {
-  borne_fontaine: createCustomIcon('https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/xsxxj1t0_image.png', [40, 40]),
-  borne_seche: createCustomIcon('https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wg6rot1b_image.png', [40, 40]),
-  point_eau_statique: L.divIcon({
-    html: '<div style="font-size: 32px;">💧</div>',
-    className: 'custom-div-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-  })
+  borne_fontaine: createCustomIcon('https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png', [40, 40]),
+  borne_seche: createCustomIcon('https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png', [40, 40]),
+  point_eau_statique: createCustomIcon('https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png', [40, 40])
 };
 
 // Composant pour recentrer la carte
