@@ -160,7 +160,7 @@ const CarteApprovisionnementEau = ({ user }) => {
     return L.divIcon({
       html: `
         <div style="position: relative; width: 40px; height: 40px;">
-          <img src="${iconUrls[type] || iconUrls.point_eau_statique}" style="width: 40px; height: 40px;" />
+          <img src="${iconUrls[point.type] || iconUrls.point_eau_statique}" style="width: 40px; height: 40px;" />
           <div style="
             position: absolute;
             bottom: 0px;
