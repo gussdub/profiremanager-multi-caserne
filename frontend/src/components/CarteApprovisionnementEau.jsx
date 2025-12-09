@@ -674,44 +674,28 @@ const CarteApprovisionnementEau = ({ user }) => {
         </>
       )}
 
-      {/* Modal temporaire - À remplacer par composant externe */}
+      {/* Modal Ajout/Modification Point d'Eau */}
       {showPointModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '500px'
-          }}>
-            <h3 style={{ marginBottom: '1rem' }}>Modal en développement</h3>
-            <p>Coordonnées GPS : {selectedPoint?.latitude || 'N/A'}, {selectedPoint?.longitude || 'N/A'}</p>
-            <button 
-              onClick={() => {
-                setShowPointModal(false);
-                setSelectedPoint(null);
-              }}
-              style={{
-                marginTop: '1rem',
-                padding: '0.75rem 1.5rem',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
+        <PointEauModal
+          point={selectedPoint}
+          tenantSlug={tenantSlug}
+          apiPost={apiPost}
+          apiPut={apiPut}
+          onClose={() => {
+            setShowPointModal(false);
+            setSelectedPoint(null);
+          }}
+          onSave={() => {
+            setShowPointModal(false);
+            setSelectedPoint(null);
+            fetchPointsEau();
+            fetchStats();
+            toast({
+              title: "Succès",
+              description: selectedPoint?.id ? "Point d'eau modifié avec succès" : "Point d'eau créé avec succès"
+            });
+          }}
+        />
       )}
 
       {showInspectionModal && (
