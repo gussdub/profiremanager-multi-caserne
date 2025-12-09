@@ -151,10 +151,8 @@ const CarteApprovisionnementEau = ({ user }) => {
 
   // Ouvrir le modal d'ajout/modification
   const openPointModal = (point = null) => {
-    // TODO: Créer le modal complet de création/édition
-    alert(`Fonctionnalité en développement.\n\nCoordonnées : ${point?.latitude}, ${point?.longitude}\n\nUtilisez le bouton "+ Ajouter un point d'eau" pour l'instant.`);
-    // setSelectedPoint(point);
-    // setShowPointModal(true);
+    setSelectedPoint(point);
+    setShowPointModal(true);
   };
 
   // Ouvrir le modal d'inspection
