@@ -24695,8 +24695,6 @@ const AppLayout = () => {
         return <Formations />;
       case 'prevention':
         return <Prevention />;
-      case 'approvisionnement-eau':
-        return <ApprovisionnementEau />;
       case 'rapports':
         return <Rapports />;
       case 'parametres':
