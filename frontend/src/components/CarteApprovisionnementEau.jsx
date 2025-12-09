@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
+import PointEauModal from './PointEauModal';
 
 // Hook toast fallback
 const useToast = () => {
