@@ -249,7 +249,7 @@ const CarteApprovisionnementEau = ({ user }) => {
       <MapContainer 
         center={mapCenter} 
         zoom={mapZoom} 
-        maxZoom={19}
+        maxZoom={21}
         style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
         whenCreated={setMap}
       >
@@ -263,7 +263,7 @@ const CarteApprovisionnementEau = ({ user }) => {
           <TileLayer
             attribution='&copy; Esri'
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={19}
+            maxZoom={21}
           />
         )}
         <MapClickHandler />
