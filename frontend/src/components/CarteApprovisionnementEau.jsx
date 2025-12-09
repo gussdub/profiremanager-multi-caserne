@@ -753,6 +753,47 @@ const CarteApprovisionnementEau = ({ user }) => {
   // Ouvrir le modal d'ajout/modification
   const openPointModal = (point = null) => {
     setSelectedPoint(point);
+    if (point) {
+      // Mode édition : pré-remplir avec les données existantes
+      setFormData({
+        type: point.type || 'borne_fontaine',
+        numero_identification: point.numero_identification || '',
+        latitude: point.latitude || '',
+        longitude: point.longitude || '',
+        adresse: point.adresse || '',
+        ville: point.ville || 'Shefford',
+        notes: point.notes || '',
+        debit_gpm: point.debit_gpm || '',
+        pression_dynamique_psi: point.pression_dynamique_psi || '',
+        diametre_raccordement: point.diametre_raccordement || '',
+        etat: point.etat || 'fonctionnelle',
+        date_dernier_test: point.date_dernier_test || '',
+        debit_max_statique_gpm: point.debit_max_statique_gpm || '',
+        capacite_litres: point.capacite_litres || '',
+        accessibilite: point.accessibilite || 'facile',
+        photos: point.photos || []
+      });
+    } else {
+      // Mode création : réinitialiser
+      setFormData({
+        type: 'borne_fontaine',
+        numero_identification: '',
+        latitude: '',
+        longitude: '',
+        adresse: '',
+        ville: 'Shefford',
+        notes: '',
+        debit_gpm: '',
+        pression_dynamique_psi: '',
+        diametre_raccordement: '',
+        etat: 'fonctionnelle',
+        date_dernier_test: '',
+        debit_max_statique_gpm: '',
+        capacite_litres: '',
+        accessibilite: 'facile',
+        photos: []
+      });
+    }
     setShowPointModal(true);
   };
 
