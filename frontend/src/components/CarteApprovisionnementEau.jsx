@@ -119,9 +119,15 @@ const CarteApprovisionnementEau = ({ user }) => {
     );
   });
 
-  // Déterminer la couleur du marqueur selon le statut
-  const getMarkerColor = (statutCouleur) => {
-    switch (statutCouleur) {
+  // Déterminer la couleur du marqueur selon l'état ET le statut
+  const getMarkerColor = (point) => {
+    // Priorité à l'état du point
+    if (point.etat === 'fonctionnelle') return '#10b981'; // Vert
+    if (point.etat === 'attention') return '#f59e0b'; // Orange
+    if (point.etat === 'hors_service') return '#ef4444'; // Rouge
+    
+    // Sinon, utiliser statut_couleur (basé sur inspections)
+    switch (point.statut_couleur) {
       case 'vert': return '#10b981';
       case 'orange': return '#f59e0b';
       case 'rouge': return '#ef4444';
