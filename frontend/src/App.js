@@ -23040,7 +23040,7 @@ const ApprovisionnementEau = () => {
   const fetchPointsEau = async () => {
     try {
       setLoading(true);
-      let url = '/approvisionnement-eau/points-eau';
+      let url = '/points-eau';
       const params = new URLSearchParams();
       
       if (typeFilter !== 'all') params.append('type', typeFilter);
