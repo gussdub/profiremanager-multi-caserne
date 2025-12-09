@@ -22291,7 +22291,7 @@ const PointEauModal = ({ point, onClose, onSave }) => {
 
     try {
       if (point?.id) {
-        await apiPut(tenantSlug, `/approvisionnement-eau/points-eau/${point.id}`, formData);
+        await apiPut(tenantSlug, `/points-eau/${point.id}`, formData);
         toast({
           title: "Succès",
           description: "Point d'eau modifié avec succès"
