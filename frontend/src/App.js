@@ -23070,7 +23070,7 @@ const ApprovisionnementEau = () => {
   // Charger les statistiques
   const fetchStats = async () => {
     try {
-      const data = await apiGet(tenantSlug, '/approvisionnement-eau/statistiques');
+      const data = await apiGet(tenantSlug, '/points-eau-statistiques');
       setStats(data);
     } catch (error) {
       console.error('Erreur chargement statistiques:', error);
