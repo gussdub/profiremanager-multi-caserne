@@ -1590,18 +1590,4 @@ const Prevention = () => {
   );
 };
 
-// Main Application Layout
-const AppLayout = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
-  const [personnalisation, setPersonnalisation] = useState({
-    logo_url: '',
-    nom_service: '',
-    afficher_profiremanager: true
-  });
-  // user passé en props
-  const { tenantSlug } = useTenant();
-
-
-
 export default CarteApprovisionnementEau;
