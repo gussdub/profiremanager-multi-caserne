@@ -109,35 +109,8 @@ const CarteApprovisionnementEau = ({ user }) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
 
-  // Composant Modal pour créer/éditer un point d'eau
-  const PointEauModal = () => {
-    const [formData, setFormData] = useState({
-      type: selectedPoint?.type || 'borne_fontaine',
-      numero_identification: selectedPoint?.numero_identification || '',
-      latitude: selectedPoint?.latitude || '',
-      longitude: selectedPoint?.longitude || '',
-      adresse: selectedPoint?.adresse || '',
-      ville: selectedPoint?.ville || 'Shefford',
-      notes: selectedPoint?.notes || '',
-      // Bornes fontaines
-      debit_gpm: selectedPoint?.debit_gpm || '',
-      pression_dynamique_psi: selectedPoint?.pression_dynamique_psi || '',
-      diametre_raccordement: selectedPoint?.diametre_raccordement || '',
-      etat: selectedPoint?.etat || 'fonctionnelle',
-      date_dernier_test: selectedPoint?.date_dernier_test || '',
-      // Bornes sèches
-      debit_max_statique_gpm: selectedPoint?.debit_max_statique_gpm || '',
-      // Points d'eau statiques
-      capacite_litres: selectedPoint?.capacite_litres || '',
-      accessibilite: selectedPoint?.accessibilite || 'facile',
-      // Photos
-      photos: selectedPoint?.photos || []
-    });
-    
-    const [loading, setLoading] = useState(false);
-    const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-    const handleSubmit = async (e) => {
+  // Gestion de la soumission du formulaire modal
+  const handleModalSubmit = async (e) => {
       e.preventDefault();
       
       // Validation
