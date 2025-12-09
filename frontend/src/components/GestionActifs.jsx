@@ -37,7 +37,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [showBorneSecheModal, setShowBorneSecheModal] = useState(false);
   const [showInspectionBorneSecheModal, setShowInspectionBorneSecheModal] = useState(false);
   const [selectedBorneSeche, setSelectedBorneSeche] = useState(null);
-  const [bornesSubTab, setBornesSubTab] = useState('fontaines'); // 'fontaines' ou 'seches'
+  const [eauSubTab, setEauSubTab] = useState('carte');
 
   const { tenantSlug } = useTenant();
 
