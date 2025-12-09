@@ -1254,7 +1254,33 @@ const CarteApprovisionnementEau = ({ user }) => {
       )}
 
       {/* Modal de création/édition de point d'eau */}
-      {showPointModal && PointEauModal()}
+      {showPointModal && (
+        (() => {
+          const [formData, setFormData] = useState({
+            type: selectedPoint?.type || 'borne_fontaine',
+            numero_identification: selectedPoint?.numero_identification || '',
+            latitude: selectedPoint?.latitude || '',
+            longitude: selectedPoint?.longitude || '',
+            adresse: selectedPoint?.adresse || '',
+            ville: selectedPoint?.ville || 'Shefford',
+            notes: selectedPoint?.notes || '',
+            debit_gpm: selectedPoint?.debit_gpm || '',
+            pression_dynamique_psi: selectedPoint?.pression_dynamique_psi || '',
+            diametre_raccordement: selectedPoint?.diametre_raccordement || '',
+            etat: selectedPoint?.etat || 'fonctionnelle',
+            date_dernier_test: selectedPoint?.date_dernier_test || '',
+            debit_max_statique_gpm: selectedPoint?.debit_max_statique_gpm || '',
+            capacite_litres: selectedPoint?.capacite_litres || '',
+            accessibilite: selectedPoint?.accessibilite || 'facile',
+            photos: selectedPoint?.photos || []
+          });
+          
+          const [loading, setLoading] = useState(false);
+          const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+          return PointEauModal();
+        })()
+      )}
 
       {showInspectionModal && (
         <InspectionModal
