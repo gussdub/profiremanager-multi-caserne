@@ -317,9 +317,9 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onClick={() => setActiveTab('eau')}
         />
         <TabButton
-          label="📋 Inventaires"
-          active={activeTab === 'inventaires'}
-          onClick={() => setActiveTab('inventaires')}
+          label="🔧 Matériel & Équipements"
+          active={activeTab === 'materiel'}
+          onClick={() => setActiveTab('materiel')}
         />
         <TabButton
           label="🛡️ Gestion EPI"
