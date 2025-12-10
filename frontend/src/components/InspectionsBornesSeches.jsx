@@ -61,14 +61,14 @@ const InspectionsBornesSeches = ({ user }) => {
     fetchDatesTests();
   }, [tenantSlug]);
 
-  // Calculer la couleur selon l'état d'inspection
+  // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état de la borne)
   const getInspectionColor = (borne) => {
-    // Si statut manuel "à refaire"
+    // Si statut manuel "à refaire" par admin
     if (borne.statut_inspection === 'a_refaire') {
-      return '#f59e0b'; // Orange
+      return '#f59e0b'; // Orange - À refaire
     }
 
-    // Vérifier si une date de test est dépassée
+    // Vérifier si une date de test bi-annuelle est dépassée
     const today = new Date();
     const hasPassedTestDate = datesTests.some(dateTest => {
       const testDate = new Date(dateTest.date);
@@ -76,24 +76,33 @@ const InspectionsBornesSeches = ({ user }) => {
     });
 
     if (hasPassedTestDate) {
-      return '#ef4444'; // Rouge - Date de test dépassée
+      return '#ef4444'; // Rouge - Date de test dépassée, toutes repassent en rouge
     }
 
-    // Si pas d'inspection ou ancienne
+    // Si pas d'inspection = pas encore inspectée
     if (!borne.derniere_inspection_date) {
-      return '#ef4444'; // Rouge
+      return '#ef4444'; // Rouge - Non inspectée
     }
 
+    // Si inspection il y a plus de 6 mois
     const derniereInspection = new Date(borne.derniere_inspection_date);
     const sixMoisEnMs = 6 * 30 * 24 * 60 * 60 * 1000;
     const tempsPasse = today - derniereInspection;
 
-    // Inspection récente (moins de 6 mois)
     if (tempsPasse < sixMoisEnMs) {
-      return '#10b981'; // Vert
+      return '#10b981'; // Vert - Inspectée récemment (< 6 mois)
     }
 
-    return '#ef4444'; // Rouge - Plus de 6 mois
+    return '#ef4444'; // Rouge - Inspection trop ancienne (> 6 mois)
+  };
+  
+  // Obtenir le label du statut d'inspection
+  const getInspectionLabel = (borne) => {
+    const color = getInspectionColor(borne);
+    if (color === '#10b981') return '✓ Inspectée';
+    if (color === '#f59e0b') return '⚠ À refaire';
+    if (!borne.derniere_inspection_date) return '✗ Non inspectée';
+    return '✗ Inspection expirée';
   };
 
   // Créer l'icône Leaflet avec badge coloré
