@@ -1717,6 +1717,111 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           )}
         </div>
       </div>
+
+      {/* Section Notifications Défauts Bornes Sèches */}
+      <div style={{ 
+        background: 'white', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e0e0e0',
+        marginTop: '40px'
+      }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
+          📧 Notifications - Défauts Bornes Sèches
+        </h2>
+        <p style={{ color: '#7f8c8d', marginBottom: '30px', fontSize: '14px' }}>
+          Sélectionnez les administrateurs et superviseurs qui recevront un email lorsqu'un défaut est détecté lors d'une inspection
+        </p>
+
+        {adminsSuperviseurs.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px', 
+            background: '#f8f9fa', 
+            borderRadius: '8px',
+            color: '#7f8c8d'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '10px' }}>👥</div>
+            <p>Aucun administrateur ou superviseur trouvé</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {adminsSuperviseurs.map(utilisateur => {
+              const isSelected = (parametres.emails_notifications_bornes_seches || []).includes(utilisateur.id);
+              
+              return (
+                <div
+                  key={utilisateur.id}
+                  onClick={() => toggleNotificationUser(utilisateur.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '15px 20px',
+                    background: isSelected ? '#e8f5e9' : 'white',
+                    border: `2px solid ${isSelected ? '#4caf50' : '#dee2e6'}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    ':hover': { background: '#f8f9fa' }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {}}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      marginRight: '15px',
+                      cursor: 'pointer',
+                      accentColor: '#4caf50'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '3px', color: '#2c3e50' }}>
+                      {utilisateur.prenom} {utilisateur.nom}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                      {utilisateur.email}
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '4px 12px',
+                    background: utilisateur.role === 'admin' ? '#3498db' : '#9b59b6',
+                    color: 'white',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    {utilisateur.role === 'admin' ? 'Admin' : 'Superviseur'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {adminsSuperviseurs.length > 0 && (
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '15px', 
+            background: '#e3f2fd', 
+            borderRadius: '8px',
+            border: '1px solid #90caf9'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#1565c0', fontSize: '14px' }}>
+              <span style={{ fontSize: '20px' }}>ℹ️</span>
+              <div>
+                <strong>{(parametres.emails_notifications_bornes_seches || []).length} personne(s) sélectionnée(s)</strong> 
+                <span style={{ marginLeft: '5px' }}>
+                  recevront un email automatiquement lorsqu'un défaut est détecté sur une borne sèche
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
