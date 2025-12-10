@@ -300,6 +300,7 @@ const InspectionsBornesSeches = ({ user }) => {
         </div>
 
         <MapContainer
+          key={`${mapCenter[0]}-${mapCenter[1]}`}
           center={mapCenter}
           zoom={mapZoom}
           style={{ height: '100%', width: '100%' }}
