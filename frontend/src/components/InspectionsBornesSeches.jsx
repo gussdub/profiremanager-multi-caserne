@@ -859,6 +859,29 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
 
           {/* Formulaire */}
           <form onSubmit={handleSubmit}>
+            {/* Erreurs de validation */}
+            {validationErrors.length > 0 && (
+              <div style={{
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.25rem', marginRight: '0.5rem' }}>⚠️</span>
+                  <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#dc2626', margin: 0 }}>
+                    Champs obligatoires manquants
+                  </h4>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#dc2626' }}>
+                  {validationErrors.map((error, index) => (
+                    <li key={index} style={{ fontSize: '0.875rem' }}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
             {/* Section 1: Conditions extérieures */}
             <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #e5e7eb' }}>
               <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
