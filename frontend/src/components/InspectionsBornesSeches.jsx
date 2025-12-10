@@ -1129,11 +1129,8 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                   placeholder="Ex: 30"
                   disabled={amorcageTime !== null}
                   style={{
+                    ...getFieldStyle('temps'),
                     width: '200px',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
                     background: amorcageTime !== null ? '#f3f4f6' : 'white'
                   }}
                 />
