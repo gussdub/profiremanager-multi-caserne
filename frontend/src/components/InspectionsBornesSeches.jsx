@@ -522,19 +522,19 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
     conditions_atmospheriques: '',
     temperature_exterieure: '',
     
-    // Section 2: Inspection visuelle
-    joint_present: '',
-    joint_bon_etat: '',
-    site_accessible: '',
-    site_deneige: '',
-    vanne_storz: '',
-    vanne_6_pouces: '',
-    vanne_4_pouces: '',
-    niveau_eau: '',
+    // Section 2: Inspection visuelle (valeurs par défaut "conforme")
+    joint_present: 'conforme',
+    joint_bon_etat: 'conforme',
+    site_accessible: 'conforme',
+    site_deneige: 'conforme',
+    vanne_storz: 'conforme',
+    vanne_6_pouces: 'conforme',
+    vanne_4_pouces: 'conforme',
+    niveau_eau: 'conforme',
     
-    // Section 3: Essai de pompage
-    pompage_continu: '',
-    cavitation: '',
+    // Section 3: Essai de pompage (valeurs par défaut "conforme")
+    pompage_continu: 'conforme',
+    cavitation: 'conforme',
     temps_amorcage: '',
     
     // Section 4: Finalisation
