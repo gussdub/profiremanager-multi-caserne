@@ -25450,6 +25450,12 @@ async def create_inspection_borne_seche(
     
     await db.inspections_bornes_seches.insert_one(inspection)
     
+    # Incrémenter le compteur d'inspections
+    await db.points_eau.update_one(
+        {"id": point_id, "tenant_id": tenant.id},
+        {"$inc": {"nombre_inspections": 1}}
+    )
+    
     # Mettre à jour le point d'eau avec la dernière inspection
     update_data = {
         "derniere_inspection_date": inspection_data.get("date_inspection"),
@@ -25461,6 +25467,26 @@ async def create_inspection_borne_seche(
         {"id": point_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
+    
+    # Si défaut détecté, envoyer email aux admins/superviseurs
+    if inspection_data.get("etat_trouve") == "a_refaire":
+        # Récupérer les paramètres d'email
+        parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+        emails_notifications = parametres.get('emails_notifications_bornes_seches', [])
+        
+        if emails_notifications:
+            # Envoyer email de notification (à implémenter selon votre système d'email)
+            from email_utils import send_defaut_borne_email
+            try:
+                await send_defaut_borne_email(
+                    tenant_slug=tenant_slug,
+                    borne=point,
+                    inspection=inspection,
+                    inspecteur=f"{inspection_data.get('prenom_pompier')} {inspection_data.get('nom_pompier')}",
+                    emails=emails_notifications
+                )
+            except Exception as e:
+                logging.error(f"Erreur envoi email défaut borne: {e}")
     
     return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
 
