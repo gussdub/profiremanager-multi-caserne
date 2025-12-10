@@ -25480,12 +25480,12 @@ async def create_inspection_borne_seche(
     """Créer une nouvelle inspection de borne sèche"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que le point existe et est une borne sèche
+    # Vérifier que le point d'eau existe
     point = await db.points_eau.find_one(
-        {"id": point_id, "tenant_id": tenant.id, "type": "borne_seche"}
+        {"id": point_id, "tenant_id": tenant.id}
     )
     if not point:
-        raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
+        raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
     
     # Créer l'inspection avec tous les champs du formulaire
     inspection = {
