@@ -25599,8 +25599,33 @@ async def create_inspection_borne_seche(
         # Récupérer les paramètres d'email
         parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
         print(f"🚨 DEBUG: Paramètres tenant = {parametres}")
-        emails_notifications = parametres.get('emails_notifications_bornes_seches', [])
-        print(f"🚨 DEBUG: Emails notifications = {emails_notifications}")
+        user_ids_ou_emails = parametres.get('emails_notifications_bornes_seches', [])
+        print(f"🚨 DEBUG: User IDs ou Emails bruts = {user_ids_ou_emails}")
+        
+        # Convertir les user IDs en adresses email si nécessaire
+        emails_notifications = []
+        if user_ids_ou_emails:
+            for item in user_ids_ou_emails:
+                # Vérifier si c'est un email (contient @) ou un user ID
+                if '@' in str(item):
+                    # C'est déjà une adresse email
+                    emails_notifications.append(item)
+                else:
+                    # C'est un user ID, récupérer l'email
+                    try:
+                        user = await db.users.find_one(
+                            {"id": item, "tenant_id": tenant.id},
+                            {"_id": 0, "email": 1}
+                        )
+                        if user and user.get('email'):
+                            emails_notifications.append(user['email'])
+                            print(f"✅ DEBUG: User ID {item} → Email {user['email']}")
+                        else:
+                            print(f"⚠️ DEBUG: User ID {item} non trouvé")
+                    except Exception as e:
+                        print(f"❌ DEBUG: Erreur récupération user {item}: {e}")
+        
+        print(f"🚨 DEBUG: Emails finaux pour notification = {emails_notifications}")
         
         if emails_notifications:
             print(f"🚨 DEBUG: Tentative d'envoi email à {len(emails_notifications)} destinataire(s)")
@@ -25620,8 +25645,8 @@ async def create_inspection_borne_seche(
                 print(f"❌ DEBUG: Erreur envoi email - {str(e)}")
                 logging.error(f"Erreur envoi email défaut borne: {e}")
         else:
-            print(f"⚠️ DEBUG: Aucun email configuré dans les paramètres")
-            logging.warning(f"Aucun email de notification configuré pour les défauts de bornes sèches")
+            print(f"⚠️ DEBUG: Aucun email valide trouvé après conversion")
+            logging.warning(f"Aucun email de notification valide configuré pour les défauts de bornes sèches")
     
     return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
 
