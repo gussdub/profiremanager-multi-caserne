@@ -1502,6 +1502,29 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     }
   };
 
+  const toggleNotificationUser = async (userId) => {
+    setLoading(true);
+    try {
+      const currentList = parametres.emails_notifications_bornes_seches || [];
+      const newList = currentList.includes(userId)
+        ? currentList.filter(id => id !== userId)
+        : [...currentList, userId];
+
+      const nouvellesParam = {
+        ...parametres,
+        emails_notifications_bornes_seches: newList
+      };
+
+      await apiPut(tenantSlug, '/actifs/parametres', nouvellesParam);
+      setParametres(nouvellesParam);
+    } catch (error) {
+      console.error('Erreur mise à jour notifications:', error);
+      alert('❌ Erreur lors de la mise à jour');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       {/* Section Configuration des emails (existante) */}
