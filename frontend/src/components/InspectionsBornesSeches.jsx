@@ -11,7 +11,6 @@ const InspectionsBornesSeches = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [selectedBorne, setSelectedBorne] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentView, setCurrentView] = useState('carte');
   const [mapCenter, setMapCenter] = useState([45.5017, -73.5673]);
   const [mapZoom, setMapZoom] = useState(12);
