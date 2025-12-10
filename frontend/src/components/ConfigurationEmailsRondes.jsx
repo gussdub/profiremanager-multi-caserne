@@ -214,10 +214,10 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
             border: '1px solid #A7F3D0',
             marginBottom: '1rem'
           }}>
-            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
               ✅ Destinataires configurés:
             </div>
-            <div style={{ fontSize: '0.813rem', color: '#047857' }}>
+            <div style={{ fontSize: '13px', color: '#047857' }}>
               {selectedUsersDetails.map((u, i) => (
                 <span key={u.id}>
                   {u.prenom} {u.nom} ({u.email})
@@ -240,7 +240,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
               borderRadius: '8px',
               border: 'none',
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '0.938rem',
+              fontSize: '15px',
               fontWeight: '600',
               opacity: saving ? 0.5 : 1
             }}
