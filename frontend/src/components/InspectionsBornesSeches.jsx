@@ -429,6 +429,14 @@ const InspectionsBornesSeches = ({ user }) => {
                         ? new Date(borne.derniere_inspection_date).toLocaleDateString('fr-FR')
                         : 'Jamais'}
                     </td>
+                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                      {borne.derniere_inspection_date 
+                        ? new Date(new Date(borne.derniere_inspection_date).getTime() + 6 * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                        : 'À déterminer'}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '600', textAlign: 'center' }}>
+                      {borne.nombre_inspections || 0}
+                    </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{
                         padding: '4px 12px',
@@ -438,9 +446,7 @@ const InspectionsBornesSeches = ({ user }) => {
                         background: getInspectionColor(borne) + '20',
                         color: getInspectionColor(borne)
                       }}>
-                        {getInspectionColor(borne) === '#10b981' && '✓ Conforme'}
-                        {getInspectionColor(borne) === '#f59e0b' && '⚠ À refaire'}
-                        {getInspectionColor(borne) === '#ef4444' && '✗ En défaut'}
+                        {getInspectionLabel(borne)}
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
@@ -460,23 +466,21 @@ const InspectionsBornesSeches = ({ user }) => {
                         >
                           📋 Inspecter
                         </button>
-                        {(user?.role === 'admin' || user?.role === 'superviseur') && (
-                          <button
-                            onClick={() => setSelectedBorne(borne) || setShowCreateModal(true)}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              background: '#3b82f6',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem',
-                              fontWeight: '500'
-                            }}
-                          >
-                            ✏️ Modifier
-                          </button>
-                        )}
+                        <button
+                          onClick={() => openInspectionModal(borne)}
+                          style={{
+                            padding: '0.5rem 0.75rem',
+                            background: '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          ✏️ Modifier
+                        </button>
                       </div>
                     </td>
                   </tr>
