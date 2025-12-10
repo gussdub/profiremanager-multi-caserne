@@ -1423,9 +1423,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
   
   // États pour la configuration EPI
   const [epiSettings, setEpiSettings] = useState({
-    epi_notifications_actives: false,
     epi_jours_avance_expiration: 30,
-    epi_jours_avance_inspection: 14
+    epi_jour_alerte_inspection_mensuelle: 20
   });
 
   useEffect(() => {
