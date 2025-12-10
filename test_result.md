@@ -83,9 +83,9 @@ frontend:
 backend:
   - task: "Email Notification Workflow for Defective Dry Hydrants"
     implemented: true
-    working: true
+    working: false
     file: "backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
     needs_retesting: false
     status_history:
@@ -95,6 +95,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "🎉 EMAIL NOTIFICATION WORKFLOW FULLY FUNCTIONAL - Comprehensive testing completed successfully with 100% functionality verification! TESTING ENVIRONMENT: Tenant: shefford, URL: https://defect-workflow.preview.emergentagent.com/shefford, Credentials: admin@firemanager.ca / admin123, Email configured: delivered@resend.dev. PERFECT RESULTS: 1) ✅ INSPECTION WITH DEFECTS CREATED: Successfully created inspection with etat_trouve='a_refaire', statut_inspection='a_refaire', joint_present='non_conforme', vanne_storz='defectuosite', niveau_eau='conforme' for borne ID d1a732d9-63a8-4d75-8d72-ed7611abe4f0, inspection ID: 3c30e349-a826-4bb4-aea6-5ca38ccd1d0e, 2) ✅ HYDRANT STATUS UPDATE VERIFIED: Borne correctly marked as 'hors_service' with statut_inspection='a_refaire' and derniere_inspection_date='2025-12-10', 3) ✅ EMAIL NOTIFICATION CONFIRMED: Backend logs show 'Email de notification envoyé avec succès détecté' - email successfully sent to delivered@resend.dev via Resend API, 4) ✅ REACTIVATION TESTED: Created compliant inspection (etat_trouve='conforme') and verified borne reactivated to 'fonctionnelle' status, 5) ✅ CONFIGURATION VERIFIED: Tenant shefford correctly configured with emails_notifications_bornes_seches=['delivered@resend.dev']. WORKFLOW COMPLETE: The entire defect notification workflow is operational - inspections with defects trigger email notifications and update hydrant status, compliant inspections reactivate hydrants. All review request objectives achieved!"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL CONFIGURATION ISSUE IDENTIFIED - DEMO TENANT USER ID MISMATCH: Comprehensive testing of User ID → Email conversion for DEMO tenant revealed critical configuration error. TESTING RESULTS: 1) ✅ INSPECTION CREATION: Successfully created inspection with defects (ID: 733ad0df-6b22-4078-94ed-ca0bcd8428df) for borne 24acb3de-cd88-44dd-a069-25a9c09ad036, 2) ✅ HYDRANT STATUS UPDATE: Borne correctly marked as 'hors_service' with statut_inspection='a_refaire', 3) ❌ CONVERSION FAILURE: Backend logs show '⚠️ DEBUG: User ID 426c0f86-91f2-48fb-9e77-c762f0e9e7dc non trouvé' and 'Emails finaux pour notification = []', 4) ✅ CONVERSION LOGIC WORKING: System correctly detects configured User ID but cannot find it in database. ROOT CAUSE: Tenant demo configuration has emails_notifications_bornes_seches=['426c0f86-91f2-48fb-9e77-c762f0e9e7dc'] but this User ID does not exist in demo tenant. ACTUAL Guillaume Dubeau User ID: f4bdfa76-a2a2-4a01-9734-2cf534d04d31. IMPACT: No email notifications sent because User ID conversion fails. SOLUTION REQUIRED: Update demo tenant configuration to use correct User ID f4bdfa76-a2a2-4a01-9734-2cf534d04d31 instead of 426c0f86-91f2-48fb-9e77-c762f0e9e7dc."
 
   - task: "Authentication System"
     implemented: true
