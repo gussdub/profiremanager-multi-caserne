@@ -436,9 +436,9 @@ const ModeleModal = ({ modele, onClose, tenantSlug, fetchModeles }) => {
 
     try {
       if (modele) {
-        await apiPut(tenantSlug, `/inventaire/modeles/${modele.id}`, formData);
+        await apiPut(tenantSlug, `/actifs/inventaires/modeles/${modele.id}`, formData);
       } else {
-        await apiPost(tenantSlug, `/inventaire/modeles`, formData);
+        await apiPost(tenantSlug, `/actifs/inventaires/modeles`, formData);
       }
       alert('✅ Modèle sauvegardé avec succès');
       fetchModeles();
