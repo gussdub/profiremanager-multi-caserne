@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://notification-setup.preview.emergentagent.com
+- **URL** : https://defect-workflow.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://notification-setup.preview.emergentagent.com"
+  "apiUrl": "https://defect-workflow.preview.emergentagent.com"
 }
 ```
 

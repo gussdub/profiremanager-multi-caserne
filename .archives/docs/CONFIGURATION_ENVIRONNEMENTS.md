@@ -18,8 +18,8 @@ Ce document décrit la configuration des différents environnements pour ProFire
   ```
 
 ### **2. Preview / Development**
-- **URL Frontend** : https://notification-setup.preview.emergentagent.com
-- **URL Backend** : https://notification-setup.preview.emergentagent.com/api
+- **URL Frontend** : https://defect-workflow.preview.emergentagent.com
+- **URL Backend** : https://defect-workflow.preview.emergentagent.com/api
 - **Base de Données** : `profiremanager-dev` (MongoDB Atlas - Cluster: profiremanager-prod)
 - **Connection String** :
   ```
@@ -61,7 +61,7 @@ CORS_ORIGINS="*"
 SENDGRID_API_KEY="your-sendgrid-key-here"
 RESEND_API_KEY="re_6BuFZ8Ut_PNXyQuTA3m9jrCLdmaKRa51A"
 SENDER_EMAIL="noreply@profiremanager.ca"
-FRONTEND_URL="https://notification-setup.preview.emergentagent.com"
+FRONTEND_URL="https://defect-workflow.preview.emergentagent.com"
 ```
 
 ### **Backend `.env` (Production)**
