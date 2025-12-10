@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
 import { apiGet, apiPut } from '../utils/api';
 
 const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadConfiguration();
@@ -38,124 +40,225 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
     }
   };
 
-  const toggleUser = async (userId) => {
-    try {
-      const newSelection = selectedUsers.includes(userId)
-        ? selectedUsers.filter(id => id !== userId)
-        : [...selectedUsers, userId];
-
-      // Sauvegarder immédiatement
-      const config = await apiGet(tenantSlug, '/actifs/parametres');
-      await apiPut(tenantSlug, '/actifs/parametres', {
-        ...config,
-        emails_notifications_bornes_seches: newSelection
-      });
-
-      setSelectedUsers(newSelection);
-    } catch (error) {
-      console.error('Erreur mise à jour:', error);
-      alert('❌ Erreur lors de la mise à jour');
+  const handleToggleUser = (userId) => {
+    if (selectedUsers.includes(userId)) {
+      setSelectedUsers(selectedUsers.filter(id => id !== userId));
+    } else {
+      setSelectedUsers([...selectedUsers, userId]);
     }
   };
 
+  const handleSelectAll = () => {
+    setSelectedUsers(allUsers.map(u => u.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedUsers([]);
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const config = await apiGet(tenantSlug, '/actifs/parametres');
+      await apiPut(tenantSlug, '/actifs/parametres', {
+        ...config,
+        emails_notifications_bornes_seches: selectedUsers
+      });
+      alert('✅ Configuration sauvegardée avec succès');
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      alert('❌ Erreur lors de la sauvegarde: ' + (error.data?.detail || error.message));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getSelectedUsersDetails = () => {
+    return allUsers.filter(u => selectedUsers.includes(u.id));
+  };
+
   if (loading) {
-    return <div style={{ padding: '1rem', color: '#6c757d' }}>Chargement...</div>;
+    return <div style={{ padding: '2rem' }}>Chargement...</div>;
   }
 
-  if (allUsers.length === 0) {
-    return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '40px', 
-        background: '#f8f9fa', 
-        borderRadius: '8px',
-        color: '#7f8c8d'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '10px' }}>👥</div>
-        <p>Aucun administrateur ou superviseur trouvé</p>
-      </div>
-    );
-  }
+  const selectedUsersDetails = getSelectedUsersDetails();
 
   return (
-    <div>
-      <p style={{ color: '#7f8c8d', marginBottom: '20px', fontSize: '14px' }}>
-        Sélectionnez les administrateurs et superviseurs qui recevront un email lorsqu'un défaut est détecté lors d'une inspection
+    <div style={{ padding: '2rem' }}>
+      <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1F2937' }}>
+        ⚙️ Paramètres - Gestion des Actifs
+      </h2>
+      <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: '0.95rem' }}>
+        Configurez les notifications automatiques et les paramètres de chaque module
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {allUsers.map(utilisateur => {
-          const isSelected = selectedUsers.includes(utilisateur.id);
-          
-          return (
-            <div
-              key={utilisateur.id}
-              onClick={() => toggleUser(utilisateur.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '15px 20px',
-                background: isSelected ? '#e8f5e9' : 'white',
-                border: `2px solid ${isSelected ? '#4caf50' : '#dee2e6'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => {}}
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  marginRight: '15px',
-                  cursor: 'pointer',
-                  accentColor: '#4caf50'
-                }}
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '3px', color: '#2c3e50' }}>
-                  {utilisateur.prenom} {utilisateur.nom}
-                </div>
-                <div style={{ fontSize: '14px', color: '#6c757d' }}>
-                  {utilisateur.email}
-                </div>
-              </div>
-              <span style={{
-                padding: '4px 12px',
-                background: utilisateur.role === 'admin' ? '#3498db' : '#9b59b6',
-                color: 'white',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '600'
-              }}>
-                {utilisateur.role === 'admin' ? 'Admin' : 'Superviseur'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {allUsers.length > 0 && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '15px', 
-          background: '#e3f2fd', 
-          borderRadius: '8px',
-          border: '1px solid #90caf9'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#1565c0', fontSize: '14px' }}>
-            <span style={{ fontSize: '20px' }}>ℹ️</span>
-            <div>
-              <strong>{selectedUsers.length} personne(s) sélectionnée(s)</strong> 
-              <span style={{ marginLeft: '5px' }}>
-                recevront un email automatiquement lorsqu'un défaut est détecté sur une borne sèche
-              </span>
-            </div>
+      {/* Section Notifications Bornes Sèches */}
+      <div style={{ 
+        backgroundColor: 'white', 
+        padding: '2rem', 
+        borderRadius: '12px', 
+        border: '1px solid #E5E7EB',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        marginBottom: '1.5rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <span style={{ fontSize: '2rem' }}>🔥</span>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, color: '#111827' }}>
+              Inspections Bornes Sèches
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
+              Notifications automatiques lorsqu'un défaut est détecté lors d'une inspection
+            </p>
           </div>
         </div>
-      )}
+
+        <div style={{ 
+          backgroundColor: '#F9FAFB', 
+          padding: '1.25rem', 
+          borderRadius: '8px',
+          marginBottom: '1.25rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', margin: 0, color: '#374151' }}>
+              👥 Destinataires ({selectedUsersDetails.length})
+            </h4>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleSelectAll}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: 'white',
+                  color: '#DC2626',
+                  border: '1px solid #DC2626',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.813rem',
+                  fontWeight: '500'
+                }}
+              >
+                Tout sélectionner
+              </button>
+              <button
+                onClick={handleDeselectAll}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: 'white',
+                  color: '#6B7280',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.813rem',
+                  fontWeight: '500'
+                }}
+              >
+                Tout désélectionner
+              </button>
+            </div>
+          </div>
+
+          {/* Liste des utilisateurs sélectionnables */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            {allUsers.map(user => {
+              const isSelected = selectedUsers.includes(user.id);
+              return (
+                <div
+                  key={user.id}
+                  onClick={() => handleToggleUser(user.id)}
+                  style={{
+                    padding: '0.875rem',
+                    backgroundColor: isSelected ? '#FEE2E2' : 'white',
+                    border: isSelected ? '2px solid #DC2626' : '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', fontSize: '0.875rem', color: '#111827', marginBottom: '0.25rem' }}>
+                      {user.prenom} {user.nom}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.15rem' }}>
+                      ✉️ {user.email}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: '500' }}>
+                      {user.role === 'admin' ? '👑 Administrateur' : '👔 Superviseur'}
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: isSelected ? '#DC2626' : 'white',
+                    border: isSelected ? 'none' : '2px solid #D1D5DB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: '700'
+                  }}>
+                    {isSelected && '✓'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {allUsers.length === 0 && (
+            <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
+              Aucun administrateur ou superviseur trouvé
+            </p>
+          )}
+        </div>
+
+        {/* Résumé des destinataires sélectionnés */}
+        {selectedUsersDetails.length > 0 && (
+          <div style={{ 
+            backgroundColor: '#ECFDF5', 
+            padding: '1rem', 
+            borderRadius: '6px',
+            border: '1px solid #A7F3D0',
+            marginBottom: '1rem'
+          }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
+              ✅ Destinataires configurés:
+            </div>
+            <div style={{ fontSize: '0.813rem', color: '#047857' }}>
+              {selectedUsersDetails.map((u, i) => (
+                <span key={u.id}>
+                  {u.prenom} {u.nom} ({u.email})
+                  {i < selectedUsersDetails.length - 1 && ' • '}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bouton de sauvegarde */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              backgroundColor: '#DC2626',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              fontSize: '0.938rem',
+              fontWeight: '600',
+              opacity: saving ? 0.5 : 1
+            }}
+          >
+            {saving ? 'Enregistrement...' : '💾 Enregistrer la configuration'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
