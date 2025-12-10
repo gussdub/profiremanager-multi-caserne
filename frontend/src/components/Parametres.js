@@ -2587,6 +2587,11 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
+        {/* Onglet Inventaires Véhicules */}
+        {activeTab === 'inventaires' && (
+          <ParametresInventairesVehicules tenantSlug={tenantSlug} user={user} />
+        )}
+
         {/* Onglet Personnalisation */}
         {activeTab === 'personnalisation' && (
           <Personnalisation tenantSlug={tenantSlug} toast={toast} />
