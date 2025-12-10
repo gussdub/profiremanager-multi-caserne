@@ -728,7 +728,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
 
       console.log('🔍 Tentative sauvegarde inspection:', {
         borneId: borne.id,
-        borneNumero: borne.numero,
+        borneNumero: borne.numero_identification || borne.numero,
         tenantSlug,
         apiPath: `/points-eau/${borne.id}/inspections`,
         payload
