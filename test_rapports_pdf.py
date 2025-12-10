@@ -46,12 +46,11 @@ class RapportsPDFTester:
         """Authentification tenant demo"""
         print(f"🔐 Authentification tenant {self.tenant_slug}...")
         
-        # Utiliser l'endpoint tenant-login comme spécifié dans la requête
-        auth_url = f"{self.base_url}/auth/tenant-login"
+        # Utiliser l'endpoint correct /{tenant_slug}/auth/login
+        auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
         login_data = {
-            "tenant_slug": self.tenant_slug,
             "email": self.credentials["email"],
-            "password": self.credentials["password"]
+            "mot_de_passe": self.credentials["password"]  # Le backend utilise "mot_de_passe"
         }
         
         try:
