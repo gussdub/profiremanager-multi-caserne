@@ -349,17 +349,48 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.nom_inspecteur || !formData.prenom_inspecteur) {
-      alert('Nom et prénom de l\'inspecteur sont obligatoires');
+    // Validation des champs obligatoires
+    if (!formData.temperature_exterieure) {
+      alert('Température extérieure est obligatoire');
+      return;
+    }
+    if (!formData.temps_amorcage) {
+      alert('Temps d\'amorçage est obligatoire');
+      return;
+    }
+    if (!formData.matricule_pompier) {
+      alert('Matricule du pompier est obligatoire');
+      return;
+    }
+    if (formData.accessibilite_borne.length === 0) {
+      alert('Accessibilité de la borne est obligatoire');
+      return;
+    }
+    if (!formData.conditions_atmospheriques_test) {
+      alert('Conditions atmosphériques lors du test est obligatoire');
       return;
     }
 
     setLoading(true);
     try {
+      // Déterminer le statut global
+      let etat_trouve = 'conforme';
+      const inspectionFields = [
+        formData.joint_present, formData.joint_bon_etat, formData.site_accessible,
+        formData.site_deneige, formData.vanne_storz, formData.vanne_6_pouces,
+        formData.vanne_4_pouces, formData.niveau_eau, formData.pompage_continu,
+        formData.cavitation
+      ];
+      
+      if (inspectionFields.some(f => f === 'non_conforme' || f === 'defectuosite')) {
+        etat_trouve = 'a_refaire';
+      }
+
       const payload = {
         ...formData,
         point_eau_id: borne.id,
-        statut_inspection: formData.etat_trouve === 'a_refaire' ? 'a_refaire' : 'conforme'
+        etat_trouve,
+        statut_inspection: etat_trouve
       };
 
       await apiPost(tenantSlug, `/points-eau/${borne.id}/inspections`, payload);
