@@ -29,8 +29,16 @@ const InspectionsBornesSeches = ({ user }) => {
       const data = await apiGet(tenantSlug, '/points-eau?type=borne_seche');
       setBornesSeches(data);
       
-      if (data.length > 0 && data[0].latitude && data[0].longitude) {
-        setMapCenter([data[0].latitude, data[0].longitude]);
+      // Calculer le centre de la carte basé sur toutes les bornes
+      if (data.length > 0) {
+        const validBornes = data.filter(b => b.latitude && b.longitude);
+        if (validBornes.length > 0) {
+          // Calculer le centre moyen de toutes les bornes
+          const avgLat = validBornes.reduce((sum, b) => sum + b.latitude, 0) / validBornes.length;
+          const avgLng = validBornes.reduce((sum, b) => sum + b.longitude, 0) / validBornes.length;
+          setMapCenter([avgLat, avgLng]);
+          setMapZoom(13); // Zoom approprié pour voir toutes les bornes
+        }
       }
     } catch (error) {
       console.error('Erreur chargement bornes sèches:', error);
