@@ -8900,6 +8900,251 @@ class RetraitEPICreate(BaseModel):
     notes: str = ""
 
 
+
+# ==================== MATÉRIEL & ÉQUIPEMENTS MODELS ====================
+
+class CategorieMateriel(BaseModel):
+    """Catégorie de matériel personnalisable"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    description: str = ""
+    icone: str = "📦"  # Emoji pour l'affichage
+    couleur: str = "#3b82f6"  # Couleur hex pour l'UI
+    ordre: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CategorieMaterielCreate(BaseModel):
+    nom: str
+    description: str = ""
+    icone: str = "📦"
+    couleur: str = "#3b82f6"
+    ordre: int = 0
+
+class CategorieMaterielUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    icone: Optional[str] = None
+    couleur: Optional[str] = None
+    ordre: Optional[int] = None
+
+class Materiel(BaseModel):
+    """Item de matériel avec gestion complète"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    
+    # Identification
+    numero_identification: str  # Code unique (ex: "COMP-001", "LANCE-042")
+    nom: str  # Nom descriptif (ex: "Compresse stérile 10x10")
+    categorie_id: str  # Référence à CategorieMateriel
+    
+    # Quantités et stock
+    quantite_stock: int = 0
+    quantite_minimum: int = 0  # Seuil d'alerte
+    unite_mesure: str = "unité"  # unité, paquet, boîte, etc.
+    
+    # Dates
+    date_acquisition: Optional[str] = None
+    date_expiration: Optional[str] = None
+    date_prochaine_maintenance: Optional[str] = None
+    
+    # État et localisation
+    etat: str = "bon"  # bon, a_reparer, hors_service, en_maintenance
+    localisation_type: str = "stock"  # stock, vehicule, caserne, personne
+    localisation_id: Optional[str] = None  # ID du véhicule, caserne, ou personne
+    localisation_details: str = ""  # Description textuelle (ex: "Entrepôt A, Étagère 3")
+    
+    # Fournisseur et coûts
+    fournisseur: str = ""
+    numero_modele: str = ""
+    cout_unitaire: float = 0.0
+    cout_total: float = 0.0  # quantite * cout_unitaire
+    
+    # Photos et documents
+    photos: List[str] = []  # URLs des photos
+    documents: List[str] = []  # URLs des documents (manuels, certificats, etc.)
+    
+    # Maintenance
+    frequence_maintenance: Optional[str] = None  # mensuelle, trimestrielle, annuelle, personnalisee
+    frequence_maintenance_jours: Optional[int] = None  # Pour fréquence personnalisée
+    derniere_maintenance: Optional[str] = None
+    
+    # Métadonnées
+    notes: str = ""
+    code_barre: Optional[str] = None
+    qr_code: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaterielCreate(BaseModel):
+    numero_identification: str
+    nom: str
+    categorie_id: str
+    quantite_stock: int = 0
+    quantite_minimum: int = 0
+    unite_mesure: str = "unité"
+    date_acquisition: Optional[str] = None
+    date_expiration: Optional[str] = None
+    etat: str = "bon"
+    localisation_type: str = "stock"
+    localisation_id: Optional[str] = None
+    localisation_details: str = ""
+    fournisseur: str = ""
+    numero_modele: str = ""
+    cout_unitaire: float = 0.0
+    photos: List[str] = []
+    documents: List[str] = []
+    frequence_maintenance: Optional[str] = None
+    frequence_maintenance_jours: Optional[int] = None
+    notes: str = ""
+
+class MaterielUpdate(BaseModel):
+    numero_identification: Optional[str] = None
+    nom: Optional[str] = None
+    categorie_id: Optional[str] = None
+    quantite_stock: Optional[int] = None
+    quantite_minimum: Optional[int] = None
+    unite_mesure: Optional[str] = None
+    date_acquisition: Optional[str] = None
+    date_expiration: Optional[str] = None
+    date_prochaine_maintenance: Optional[str] = None
+    etat: Optional[str] = None
+    localisation_type: Optional[str] = None
+    localisation_id: Optional[str] = None
+    localisation_details: Optional[str] = None
+    fournisseur: Optional[str] = None
+    numero_modele: Optional[str] = None
+    cout_unitaire: Optional[float] = None
+    photos: Optional[List[str]] = None
+    documents: Optional[List[str]] = None
+    frequence_maintenance: Optional[str] = None
+    frequence_maintenance_jours: Optional[int] = None
+    derniere_maintenance: Optional[str] = None
+    notes: Optional[str] = None
+
+class MouvementStock(BaseModel):
+    """Historique des mouvements de stock"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    materiel_id: str
+    type_mouvement: str  # entree, sortie, ajustement, inventaire
+    quantite: int  # Positif pour entrée, négatif pour sortie
+    quantite_avant: int
+    quantite_apres: int
+    raison: str  # reception_commande, utilisation, perte, casse, inventaire, correction, etc.
+    reference: str = ""  # Numéro de commande, bon de sortie, etc.
+    effectue_par: str
+    effectue_par_id: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MouvementStockCreate(BaseModel):
+    materiel_id: str
+    type_mouvement: str
+    quantite: int
+    raison: str
+    reference: str = ""
+    notes: str = ""
+
+class MaintenanceMateriel(BaseModel):
+    """Maintenance préventive ou corrective"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    materiel_id: str
+    type_maintenance: str  # preventive, corrective
+    statut: str  # planifiee, en_cours, terminee, annulee
+    
+    # Dates
+    date_prevue: str
+    date_debut: Optional[str] = None
+    date_fin: Optional[str] = None
+    
+    # Responsable
+    responsable_type: str = "interne"  # interne, externe
+    responsable_nom: str = ""
+    responsable_id: Optional[str] = None  # Si interne
+    fournisseur_externe: str = ""  # Si externe
+    
+    # Détails
+    description_travaux: str = ""
+    pieces_remplacees: List[str] = []
+    cout: float = 0.0
+    temps_hors_service_heures: float = 0.0
+    
+    # Résultat
+    resultat: str = ""  # conforme, non_conforme, a_surveiller
+    prochaine_maintenance: Optional[str] = None
+    notes: str = ""
+    
+    # Photos et documents
+    photos_avant: List[str] = []
+    photos_apres: List[str] = []
+    documents: List[str] = []  # Rapports, factures, etc.
+    
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaintenanceMaterielCreate(BaseModel):
+    materiel_id: str
+    type_maintenance: str
+    statut: str = "planifiee"
+    date_prevue: str
+    responsable_type: str = "interne"
+    responsable_nom: str = ""
+    responsable_id: Optional[str] = None
+    fournisseur_externe: str = ""
+    description_travaux: str = ""
+    notes: str = ""
+
+class MaintenanceMaterielUpdate(BaseModel):
+    statut: Optional[str] = None
+    date_debut: Optional[str] = None
+    date_fin: Optional[str] = None
+    responsable_type: Optional[str] = None
+    responsable_nom: Optional[str] = None
+    responsable_id: Optional[str] = None
+    fournisseur_externe: Optional[str] = None
+    description_travaux: Optional[str] = None
+    pieces_remplacees: Optional[List[str]] = None
+    cout: Optional[float] = None
+    temps_hors_service_heures: Optional[float] = None
+    resultat: Optional[str] = None
+    prochaine_maintenance: Optional[str] = None
+    notes: Optional[str] = None
+    photos_avant: Optional[List[str]] = None
+    photos_apres: Optional[List[str]] = None
+    documents: Optional[List[str]] = None
+
+class InspectionMateriel(BaseModel):
+    """Inspection rapide de l'état du matériel"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    materiel_id: str
+    date_inspection: str
+    inspecteur: str
+    inspecteur_id: Optional[str] = None
+    etat_constate: str  # bon, endommage, defectueux, manquant
+    fonctionnel: bool = True
+    defauts: List[str] = []  # Liste des défauts constatés
+    action_requise: str = "aucune"  # aucune, nettoyage, reparation, remplacement
+    notes: str = ""
+    photos: List[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionMaterielCreate(BaseModel):
+    materiel_id: str
+    date_inspection: str
+    etat_constate: str
+    fonctionnel: bool = True
+    defauts: List[str] = []
+    action_requise: str = "aucune"
+    notes: str = ""
+    photos: List[str] = []
+
+
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
 # Cache simple pour les tenants (60 secondes)
