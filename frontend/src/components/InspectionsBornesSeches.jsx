@@ -664,24 +664,33 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
     e.preventDefault();
     
     // Validation des champs obligatoires
-    if (!formData.temperature_exterieure) {
-      alert('Température extérieure est obligatoire');
+    const errors = [];
+    if (!formData.date_inspection) {
+      errors.push('Date d\'inspection');
+    }
+    if (!formData.temperature_exterieure && formData.temperature_exterieure !== 0) {
+      errors.push('Température extérieure');
+    }
+    if (!formData.temps_amorcage && formData.temps_amorcage !== 0) {
+      errors.push('Temps d\'amorçage');
+    }
+    if (!formData.prenom_pompier || formData.prenom_pompier.trim() === '') {
+      errors.push('Prénom du pompier');
+    }
+    if (!formData.nom_pompier || formData.nom_pompier.trim() === '') {
+      errors.push('Nom du pompier');
+    }
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      // Scroller vers le haut du formulaire pour voir l'erreur
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (!formData.temps_amorcage) {
-      alert('Temps d\'amorçage est obligatoire');
-      return;
-    }
-    if (!formData.nom_pompier || !formData.prenom_pompier) {
-      alert('Nom et prénom du pompier sont obligatoires');
-      return;
-    }
-    if (formData.accessibilite_borne.length === 0) {
-      alert('Accessibilité de la borne est obligatoire');
-      return;
-    }
-
+    
+    setValidationErrors([]);
     setLoading(true);
+
     try {
       // Déterminer le statut global
       let etat_trouve = 'conforme';
