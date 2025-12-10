@@ -215,7 +215,7 @@ const InspectionsBornesSeches = ({ user }) => {
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#10b981', marginBottom: '0.25rem' }}>
             {bornesSeches.filter(b => getInspectionColor(b) === '#10b981').length}
           </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✓ Conformes</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✓ Inspectées</div>
         </div>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#f59e0b', marginBottom: '0.25rem' }}>
@@ -227,7 +227,7 @@ const InspectionsBornesSeches = ({ user }) => {
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ef4444', marginBottom: '0.25rem' }}>
             {bornesSeches.filter(b => getInspectionColor(b) === '#ef4444').length}
           </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✗ En défaut</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✗ Non/Expirées</div>
         </div>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
