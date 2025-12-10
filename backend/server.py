@@ -11742,7 +11742,7 @@ async def export_dashboard_pdf(tenant_slug: str, current_user: User = Depends(ge
     
     # Définir le page template avec frame
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
-    template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+    template = PageTemplate(id='branded', frames=frame)
     doc.addPageTemplates([template])
     
     story = []
@@ -11846,7 +11846,7 @@ async def export_salaires_pdf(
     
     # Définir le page template avec frame
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
-    template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+    template = PageTemplate(id='branded', frames=frame)
     doc.addPageTemplates([template])
     
     story = []
@@ -12385,7 +12385,7 @@ async def export_personnel_pdf(
     
     # Définir le page template avec frame
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
-    template = PageTemplate(id='branded', frames=frame, onPage=doc.afterPage)
+    template = PageTemplate(id='branded', frames=frame)
     doc.addPageTemplates([template])
     
     story = []
