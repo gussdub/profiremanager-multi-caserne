@@ -121,6 +121,28 @@ const InspectionsBornesSeches = ({ user }) => {
     setShowInspectionModal(true);
   };
 
+  // Changer le statut d'une borne (admin/superviseur uniquement)
+  const changeStatutBorne = async (borneId, nouveauStatut) => {
+    try {
+      const payload = {
+        statut_inspection: nouveauStatut
+      };
+      
+      await apiPut(tenantSlug, `/points-eau/${borneId}`, payload);
+      
+      // Rafraîchir la liste
+      fetchBornesSeches();
+      
+      const message = nouveauStatut === 'a_refaire' 
+        ? 'Borne marquée "À refaire"' 
+        : 'Statut réinitialisé';
+      alert(message);
+    } catch (error) {
+      console.error('Erreur changement statut:', error);
+      alert('Erreur lors du changement de statut');
+    }
+  };
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
       {/* En-tête */}
