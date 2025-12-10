@@ -32,12 +32,12 @@ from typing import Dict, List, Optional
 
 class DefectWorkflowTester:
     def __init__(self):
-        self.base_url = "https://defect-workflow.preview.emergentagent.com/api/shefford"
+        self.base_url = "https://defect-workflow.preview.emergentagent.com/api/demo"
         self.headers = {}
         self.token = None
         self.admin_credentials = {
-            "email": "admin@shefford.ca",
-            "mot_de_passe": "password"
+            "email": "gussdub@gmail.com",
+            "mot_de_passe": "230685Juin+"
         }
         self.test_point_id = None
         self.test_inspection_id = None
