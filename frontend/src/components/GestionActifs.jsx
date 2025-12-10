@@ -1632,17 +1632,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
             {!parametres.dates_tests_bornes_seches || parametres.dates_tests_bornes_seches.length === 0 ? (
               <div style={{ 
                 textAlign: 'center', 
-                padding: '40px', 
+                padding: '25px', 
                 background: '#f8f9fa', 
-                borderRadius: '8px',
+                borderRadius: '6px',
                 color: '#7f8c8d'
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '10px' }}>📅</div>
-                <p>Aucune date de test configurée</p>
-                <p style={{ fontSize: '13px', marginTop: '5px' }}>Ajoutez une date ci-dessus pour commencer</p>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>📅</div>
+                <p style={{ margin: 0, fontSize: '13px' }}>Aucune date configurée</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {parametres.dates_tests_bornes_seches
                   .sort((a, b) => new Date(a.date) - new Date(b.date))
                   .map((dateTest, index) => {
@@ -1657,32 +1656,32 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          padding: '15px 20px',
+                          padding: '10px 15px',
                           background: estPasse ? '#fff3cd' : estProche ? '#d1ecf1' : 'white',
                           border: `1px solid ${estPasse ? '#ffc107' : estProche ? '#0dcaf0' : '#dee2e6'}`,
-                          borderRadius: '8px'
+                          borderRadius: '6px'
                         }}
                       >
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px', color: '#2c3e50' }}>
+                          <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '3px', color: '#2c3e50' }}>
                             📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
                               year: 'numeric', 
                               month: 'long', 
                               day: 'numeric' 
                             })}
                           </div>
-                          <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                          <div style={{ fontSize: '13px', color: '#6c757d' }}>
                             {dateTest.description}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           {estPasse && (
                             <span style={{
-                              padding: '4px 12px',
+                              padding: '3px 10px',
                               background: '#ffc107',
                               color: '#000',
-                              borderRadius: '12px',
-                              fontSize: '12px',
+                              borderRadius: '10px',
+                              fontSize: '11px',
                               fontWeight: '600'
                             }}>
                               Passé
