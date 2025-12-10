@@ -1079,7 +1079,6 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'comptes', icon: '👥', title: 'Comptes', desc: 'Utilisateurs' },
           { id: 'remplacements', icon: '🔄', title: 'Remplacements', desc: 'Règles' },
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
-          { id: 'epi', icon: '🛡️', title: 'EPI', desc: 'Équipements' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
           { id: 'personnalisation', icon: '🎨', title: 'Personnalisation', desc: 'Logo et branding' },
           { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' }
