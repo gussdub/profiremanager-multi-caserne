@@ -269,6 +269,43 @@ const InspectionsBornesSeches = ({ user }) => {
                     >
                       📋 Effectuer une inspection
                     </button>
+                    
+                    {(user?.role === 'admin' || user?.role === 'superviseur') && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => changeStatutBorne(borne.id, 'a_refaire')}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: '#f59e0b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          ⚠ À refaire
+                        </button>
+                        <button
+                          onClick={() => changeStatutBorne(borne.id, null)}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          ✓ Réinitialiser
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Popup>
