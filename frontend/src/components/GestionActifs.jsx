@@ -405,6 +405,12 @@ const GestionActifs = ({ user, ModuleEPI }) => {
             ModuleEPI ? <ModuleEPI user={user} /> : <div>Module EPI non disponible</div>
           ) : activeTab === 'parametres' ? (
             <ParametresActifsTab tenantSlug={tenantSlug} user={user} />
+          ) : activeTab === 'materiel' ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>🔧 Module Matériel & Équipements</h2>
+              <p style={{ color: '#6b7280' }}>Ce module est en cours de développement et sera disponible prochainement.</p>
+              <p style={{ color: '#6b7280', marginTop: '1rem' }}>Il permettra la gestion complète de votre matériel et équipements avec suivi des stocks, maintenances et inspections.</p>
+            </div>
           ) : (
             <InventairesTab 
               tenantSlug={tenantSlug}
