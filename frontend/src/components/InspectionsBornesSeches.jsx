@@ -1207,13 +1207,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                     value={formData.nom_pompier}
                     onChange={(e) => setFormData({ ...formData, nom_pompier: e.target.value })}
                     placeholder="Nom"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '1rem'
-                    }}
+                    style={{...getFieldStyle('nom'), flex: 1}}
                   />
                 </div>
               </div>
