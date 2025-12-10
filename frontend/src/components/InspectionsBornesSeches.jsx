@@ -299,6 +299,8 @@ const InspectionsBornesSeches = ({ user }) => {
 
 // Composant Modal d'inspection
 const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
+  const { user } = useTenant();
+  
   const [formData, setFormData] = useState({
     // Section 1: Conditions extérieures
     conditions_atmospheriques: '',
@@ -322,12 +324,21 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
     // Section 4: Finalisation
     commentaire: '',
     date_inspection: new Date().toISOString().split('T')[0],
-    matricule_pompier: '',
+    nom_pompier: user?.nom || '',
+    prenom_pompier: user?.prenom || '',
     accessibilite_borne: [],
-    conditions_atmospheriques_test: '',
     
     photos: []
   });
+  
+  // État du chronomètre
+  const [chronometerRunning, setChronometerRunning] = useState(false);
+  const [chronometerTime, setChronometerTime] = useState(0);
+  const [amorcageTime, setAmorcageTime] = useState(null);
+  const [pompageStarted, setPompageStarted] = useState(false);
+  const chronometerInterval = React.useRef(null);
+  const audioRef = React.useRef(null);
+  
   const [loading, setLoading] = useState(false);
   const [historique, setHistorique] = useState([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
