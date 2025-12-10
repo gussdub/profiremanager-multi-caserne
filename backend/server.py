@@ -25549,25 +25549,32 @@ async def create_inspection_borne_seche(
     
     # Si défaut détecté, envoyer email aux admins/superviseurs
     if etat_trouve == "a_refaire":
+        print(f"🚨 DEBUG: Défaut détecté - etat_trouve = {etat_trouve}")
         # Récupérer les paramètres d'email
         parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+        print(f"🚨 DEBUG: Paramètres tenant = {parametres}")
         emails_notifications = parametres.get('emails_notifications_bornes_seches', [])
+        print(f"🚨 DEBUG: Emails notifications = {emails_notifications}")
         
         if emails_notifications:
+            print(f"🚨 DEBUG: Tentative d'envoi email à {len(emails_notifications)} destinataire(s)")
             # Envoyer email de notification
             from utils.emails import send_defaut_borne_email
             try:
-                await send_defaut_borne_email(
+                result = await send_defaut_borne_email(
                     tenant_slug=tenant_slug,
                     borne=point,
                     inspection=inspection,
                     inspecteur=f"{inspection_data.get('prenom_pompier')} {inspection_data.get('nom_pompier')}",
                     emails=emails_notifications
                 )
+                print(f"✅ DEBUG: Résultat envoi email = {result}")
                 logging.info(f"Email de notification envoyé avec succès pour la borne {point_id}")
             except Exception as e:
+                print(f"❌ DEBUG: Erreur envoi email - {str(e)}")
                 logging.error(f"Erreur envoi email défaut borne: {e}")
         else:
+            print(f"⚠️ DEBUG: Aucun email configuré dans les paramètres")
             logging.warning(f"Aucun email de notification configuré pour les défauts de bornes sèches")
     
     return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
