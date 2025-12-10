@@ -1682,109 +1682,153 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         </div>
       </div>
 
-      {/* Section Notifications Défauts Bornes Sèches */}
+      {/* Section Approvisionnement en Eau */}
       <div style={{ 
-        background: 'white', 
+        background: '#f8f9fa', 
         padding: '30px', 
         borderRadius: '12px', 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        border: '1px solid #e0e0e0',
+        border: '2px solid #e0e0e0',
         marginTop: '40px'
       }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
-          📧 Notifications - Défauts Bornes Sèches
+        <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
+          💧 Approvisionnement en Eau
         </h2>
         <p style={{ color: '#7f8c8d', marginBottom: '30px', fontSize: '14px' }}>
-          Sélectionnez les administrateurs et superviseurs qui recevront un email lorsqu'un défaut est détecté lors d'une inspection
+          Configuration des paramètres pour le module Approvisionnement en Eau
         </p>
 
-        {adminsSuperviseurs.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            background: '#f8f9fa', 
-            borderRadius: '8px',
-            color: '#7f8c8d'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '10px' }}>👥</div>
-            <p>Aucun administrateur ou superviseur trouvé</p>
+        {/* Sous-section : Dates de Tests */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#34495e' }}>
+            🔥 Dates de Tests - Bornes Sèches
+          </h3>
+          <p style={{ color: '#7f8c8d', marginBottom: '20px', fontSize: '13px' }}>
+            Configurez les dates bi-annuelles où toutes les bornes sèches doivent être testées
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px', color: '#2c3e50' }}>
+                Date du test
+              </label>
+              <input
+                type="date"
+                value={nouvelleDate}
+                onChange={(e) => setNouvelleDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ flex: 2 }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px', color: '#2c3e50' }}>
+                Description
+              </label>
+              <input
+                type="text"
+                value={nouvelleDescription}
+                onChange={(e) => setNouvelleDescription(e.target.value)}
+                placeholder="Ex: Test de printemps"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <button
+              onClick={ajouterDateTest}
+              disabled={!nouvelleDate || loading}
+              style={{
+                padding: '10px 20px',
+                background: (!nouvelleDate || loading) ? '#bbb' : '#27ae60',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: (!nouvelleDate || loading) ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '14px'
+              }}
+            >
+              ➕ Ajouter
+            </button>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {adminsSuperviseurs.map(utilisateur => {
-              const isSelected = (parametres.emails_notifications_bornes_seches || []).includes(utilisateur.id);
-              
-              return (
+
+          {parametres.dates_tests_bornes_seches && parametres.dates_tests_bornes_seches.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {parametres.dates_tests_bornes_seches.map((dateTest, index) => (
                 <div
-                  key={utilisateur.id}
-                  onClick={() => toggleNotificationUser(utilisateur.id)}
+                  key={index}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: '15px 20px',
-                    background: isSelected ? '#e8f5e9' : 'white',
-                    border: `2px solid ${isSelected ? '#4caf50' : '#dee2e6'}`,
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    ':hover': { background: '#f8f9fa' }
+                    justifyContent: 'space-between',
+                    padding: '15px',
+                    background: '#f8f9fa',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '8px'
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => {}}
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      marginRight: '15px',
-                      cursor: 'pointer',
-                      accentColor: '#4caf50'
-                    }}
-                  />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '3px', color: '#2c3e50' }}>
-                      {utilisateur.prenom} {utilisateur.nom}
+                    <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px', color: '#2c3e50' }}>
+                      📅 {new Date(dateTest.date).toLocaleDateString('fr-FR')}
                     </div>
-                    <div style={{ fontSize: '14px', color: '#6c757d' }}>
-                      {utilisateur.email}
-                    </div>
+                    {dateTest.description && (
+                      <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                        {dateTest.description}
+                      </div>
+                    )}
                   </div>
-                  <span style={{
-                    padding: '4px 12px',
-                    background: utilisateur.role === 'admin' ? '#3498db' : '#9b59b6',
-                    color: 'white',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                  }}>
-                    {utilisateur.role === 'admin' ? 'Admin' : 'Superviseur'}
-                  </span>
+                  <button
+                    onClick={() => supprimerDateTest(index)}
+                    disabled={loading}
+                    style={{
+                      padding: '8px 16px',
+                      background: loading ? '#ddd' : '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    🗑️ Supprimer
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {adminsSuperviseurs.length > 0 && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            background: '#e3f2fd', 
-            borderRadius: '8px',
-            border: '1px solid #90caf9'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#1565c0', fontSize: '14px' }}>
-              <span style={{ fontSize: '20px' }}>ℹ️</span>
-              <div>
-                <strong>{(parametres.emails_notifications_bornes_seches || []).length} personne(s) sélectionnée(s)</strong> 
-                <span style={{ marginLeft: '5px' }}>
-                  recevront un email automatiquement lorsqu'un défaut est détecté sur une borne sèche
-                </span>
-              </div>
+              ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#999', background: '#f8f9fa', borderRadius: '8px' }}>
+              Aucune date de test configurée
+            </div>
+          )}
+        </div>
+
+        {/* Sous-section : Notifications */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#34495e' }}>
+            📧 Notifications - Défauts Bornes Sèches
+          </h3>
+          <ConfigurationEmailsBornesSeches tenantSlug={tenantSlug} />
+        </div>
       </div>
     </div>
   );
