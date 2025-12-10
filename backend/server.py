@@ -25547,8 +25547,8 @@ async def create_inspection_borne_seche(
         emails_notifications = parametres.get('emails_notifications_bornes_seches', [])
         
         if emails_notifications:
-            # Envoyer email de notification (à implémenter selon votre système d'email)
-            from email_utils import send_defaut_borne_email
+            # Envoyer email de notification
+            from utils.emails import send_defaut_borne_email
             try:
                 await send_defaut_borne_email(
                     tenant_slug=tenant_slug,
