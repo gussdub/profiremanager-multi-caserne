@@ -61,11 +61,13 @@ class RapportsPDFTester:
             
             if response.status_code == 200:
                 data = response.json()
-                self.token = data.get('token')  # Utiliser 'token' comme dans l'exemple curl
+                self.token = data.get('access_token')  # Le backend retourne 'access_token'
                 if self.token:
                     self.headers = {'Authorization': f'Bearer {self.token}'}
                     print(f"✅ Authentification réussie - Token obtenu")
                     print(f"🔑 Token: {self.token[:20]}...")
+                    user_info = data.get('user', {})
+                    print(f"👤 User: {user_info.get('email')} - Role: {user_info.get('role')}")
                     return True
                 else:
                     print(f"❌ Token manquant dans la réponse: {data}")
