@@ -1471,6 +1471,15 @@ class BrandedDocTemplate(SimpleDocTemplate):
         self.tenant = tenant
         # Appeler le constructeur de SimpleDocTemplate
         SimpleDocTemplate.__init__(self, filename, **kwargs)
+    
+    def afterPage(self):
+        """
+        Méthode appelée après chaque page pour ajouter le branding
+        Compatible avec ReportLab 4.x
+        """
+        # Cette méthode peut être étendue pour ajouter des éléments de branding
+        # comme des footers, logos, etc.
+        pass
 
 
 
