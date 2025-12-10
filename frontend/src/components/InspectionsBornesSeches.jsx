@@ -1000,7 +1000,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                   </div>
                   {amorcageTime !== null && (
                     <div style={{ fontSize: '0.875rem', color: '#10b981', fontWeight: '600', marginTop: '0.5rem' }}>
-                      ✓ Temps d'amorçage: {amorcageTime}s
+                      ✓ Temps d&apos;amorçage: {amorcageTime}s
                     </div>
                   )}
                   {pompageStarted && chronometerTime < 300 && (
