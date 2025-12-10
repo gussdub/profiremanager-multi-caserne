@@ -92,12 +92,12 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
         border: '1px solid #e0e0e0'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '2rem' }}>🔧</span>
+          <span style={{ fontSize: '2rem' }}>📧</span>
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, color: '#111827' }}>
-              Rondes de Sécurité (Véhicules)
+            <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+              Notifications - Rondes de Sécurité
             </h3>
-            <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
+            <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
               Notifications automatiques des rapports de rondes de sécurité SAAQ
             </p>
           </div>
