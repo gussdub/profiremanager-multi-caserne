@@ -271,49 +271,51 @@ const PointEauModal = ({
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
           {/* Type avec icônes */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-              Type de point d'eau <span style={{ color: 'red' }}>*</span>
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-              {Object.entries({
-                borne_fontaine: 'Borne fontaine',
-                borne_seche: 'Borne sèche',
-                point_eau_statique: 'Point statique'
-              }).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, type: value })}
-                  style={{
-                    padding: '1rem',
-                    border: formData.type === value ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    background: formData.type === value ? '#eff6ff' : 'white',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <img 
-                    src={iconUrls[value]} 
-                    alt={label}
-                    style={{ width: '40px', height: '40px' }}
-                  />
-                  <span style={{ 
-                    fontSize: '0.875rem', 
-                    fontWeight: formData.type === value ? '600' : '400',
-                    color: formData.type === value ? '#3b82f6' : '#6b7280'
-                  }}>
-                    {label}
-                  </span>
-                </button>
-              ))}
+          {!forcedType && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                Type de point d'eau <span style={{ color: 'red' }}>*</span>
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                {Object.entries({
+                  borne_fontaine: 'Borne fontaine',
+                  borne_seche: 'Borne sèche',
+                  point_eau_statique: 'Point statique'
+                }).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: value })}
+                    style={{
+                      padding: '1rem',
+                      border: formData.type === value ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      background: formData.type === value ? '#eff6ff' : 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <img 
+                      src={iconUrls[value]} 
+                      alt={label}
+                      style={{ width: '40px', height: '40px' }}
+                    />
+                    <span style={{ 
+                      fontSize: '0.875rem', 
+                      fontWeight: formData.type === value ? '600' : '400',
+                      color: formData.type === value ? '#3b82f6' : '#6b7280'
+                    }}>
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* N° Identification */}
           <div style={{ marginBottom: '1.25rem' }}>
