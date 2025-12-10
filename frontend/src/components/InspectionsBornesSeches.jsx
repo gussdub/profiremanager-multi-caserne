@@ -500,12 +500,21 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
     }
   };
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files[0];
+  const handlePhotoFromFile = async (file) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
       alert('La photo est trop grande (max 5MB)');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Format non supporté. Utilisez JPEG, PNG ou WEBP');
+      return;
+    }
+
+    if (formData.photos.length >= 10) {
+      alert('Maximum 10 photos autorisées');
       return;
     }
 
@@ -524,6 +533,13 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
     } catch (error) {
       console.error('Erreur upload:', error);
       setUploadingPhoto(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      await handlePhotoFromFile(file);
     }
   };
 
