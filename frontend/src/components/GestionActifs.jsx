@@ -1689,11 +1689,11 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           )}
                           {estProche && !estPasse && (
                             <span style={{
-                              padding: '4px 12px',
+                              padding: '3px 10px',
                               background: '#0dcaf0',
                               color: '#000',
-                              borderRadius: '12px',
-                              fontSize: '12px',
+                              borderRadius: '10px',
+                              fontSize: '11px',
                               fontWeight: '600'
                             }}>
                               Proche
@@ -1703,17 +1703,17 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             onClick={() => supprimerDateTest(index)}
                             disabled={loading}
                             style={{
-                              padding: '8px 16px',
+                              padding: '6px 12px',
                               background: '#e74c3c',
                               color: 'white',
                               border: 'none',
                               borderRadius: '6px',
                               cursor: loading ? 'not-allowed' : 'pointer',
-                              fontSize: '14px',
+                              fontSize: '13px',
                               opacity: loading ? 0.6 : 1
                             }}
                           >
-                            🗑️ Supprimer
+                            🗑️
                           </button>
                         </div>
                       </div>
