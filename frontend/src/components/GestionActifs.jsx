@@ -1430,6 +1430,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
   useEffect(() => {
     fetchParametres();
+    fetchEpiSettings();
   }, [tenantSlug]);
 
   const fetchParametres = async () => {
@@ -1442,6 +1443,36 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       }
     } catch (error) {
       console.error('Erreur chargement paramètres:', error);
+    }
+  };
+
+  const fetchEpiSettings = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/epi/parametres');
+      if (data) {
+        setEpiSettings({
+          epi_notifications_actives: data.epi_notifications_actives || false,
+          epi_jours_avance_expiration: data.epi_jours_avance_expiration || 30,
+          epi_jours_avance_inspection: data.epi_jours_avance_inspection || 14
+        });
+      }
+    } catch (error) {
+      console.error('Erreur chargement paramètres EPI:', error);
+    }
+  };
+
+  const handleEpiSettingChange = async (field, value) => {
+    setEpiSettings(prev => ({ ...prev, [field]: value }));
+    
+    try {
+      const data = await apiGet(tenantSlug, '/epi/parametres');
+      await apiPut(tenantSlug, '/epi/parametres', {
+        ...data,
+        [field]: value
+      });
+    } catch (error) {
+      console.error('Erreur sauvegarde paramètre EPI:', error);
+      alert('❌ Erreur lors de la sauvegarde');
     }
   };
 
