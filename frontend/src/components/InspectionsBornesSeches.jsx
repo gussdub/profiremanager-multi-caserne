@@ -1111,7 +1111,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
 
               <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Temps d'amorçage (en secondes) <span style={{ color: 'red' }}>*</span>
+                  Temps d&apos;amorçage (en secondes) <span style={{ color: 'red' }}>*</span>
                 </label>
                 <input
                   type="number"
