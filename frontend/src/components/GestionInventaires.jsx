@@ -196,7 +196,7 @@ const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles }) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
 
     try {
-      await apiDelete(tenantSlug, `/inventaire/modeles/${modeleId}`);
+      await apiDelete(tenantSlug, `/actifs/inventaires/modeles/${modeleId}`);
       alert('✅ Modèle supprimé avec succès');
       fetchModeles();
     } catch (error) {
