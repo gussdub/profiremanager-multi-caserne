@@ -82,22 +82,14 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
   const selectedUsersDetails = getSelectedUsersDetails();
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1F2937' }}>
-        ⚙️ Paramètres - Gestion des Actifs
-      </h2>
-      <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: '0.95rem' }}>
-        Configurez les notifications automatiques et les paramètres de chaque module
-      </p>
-
+    <div>
       {/* Section Rondes de Sécurité */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: '2rem', 
-        borderRadius: '12px', 
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '1.5rem'
+        padding: '25px', 
+        borderRadius: '10px', 
+        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+        border: '1px solid #e0e0e0'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <span style={{ fontSize: '2rem' }}>🔧</span>
