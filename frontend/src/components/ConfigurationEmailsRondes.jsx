@@ -168,13 +168,13 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '0.875rem', color: '#111827', marginBottom: '0.25rem' }}>
+                    <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '0.25rem' }}>
                       {user.prenom} {user.nom}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.15rem' }}>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '0.15rem' }}>
                       ✉️ {user.email}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: '500' }}>
+                    <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '500' }}>
                       {user.role === 'admin' ? '👑 Administrateur' : '👔 Superviseur'}
                     </div>
                   </div>
@@ -188,7 +188,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '0.75rem',
+                    fontSize: '12px',
                     fontWeight: '700'
                   }}>
                     {isSelected && '✓'}
