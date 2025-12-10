@@ -5,6 +5,7 @@ import RondeSecurite from './RondeSecurite';
 import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
 import ContreSignatureModal from './ContreSignatureModal';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
+import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
 import CarteApprovisionnementEau from './CarteApprovisionnementEau';
 import InspectionsBornesSeches from './InspectionsBornesSeches';
 import { useTenant } from '../contexts/TenantContext';
