@@ -558,6 +558,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [historique, setHistorique] = useState([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [validationErrors, setValidationErrors] = useState([]);
 
   // Charger l'historique des inspections
   useEffect(() => {
