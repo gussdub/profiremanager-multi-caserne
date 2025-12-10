@@ -488,8 +488,8 @@ class DemoEmailConversionTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = DefectWorkflowTester()
-    success = tester.run_defect_workflow_tests()
+    tester = DemoEmailConversionTester()
+    success = tester.run_demo_email_conversion_tests()
     
     # Code de sortie
     sys.exit(0 if success else 1)
