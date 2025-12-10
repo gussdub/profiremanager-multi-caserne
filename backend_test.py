@@ -332,9 +332,10 @@ class DefectWorkflowTester:
     def run_defect_workflow_tests(self):
         """Exécute tous les tests du workflow de défauts"""
         print("🚀 DÉBUT DES TESTS - WORKFLOW NOTIFICATION DÉFAUTS BORNES SÈCHES")
-        print("🏢 Tenant: demo")
-        print("🌐 URL: https://defect-workflow.preview.emergentagent.com/demo")
-        print("👤 Credentials: gussdub@gmail.com / 230685Juin+")
+        print("🏢 Tenant: shefford")
+        print("🌐 URL: https://defect-workflow.preview.emergentagent.com/shefford")
+        print("👤 Credentials: admin@firemanager.ca / Admin123!")
+        print("📧 Email de test configuré: delivered@resend.dev")
         print("📧 Variables d'env: RESEND_API_KEY, SENDER_EMAIL, FRONTEND_URL")
         
         # Authentification
