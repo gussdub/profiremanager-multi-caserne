@@ -1841,98 +1841,90 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
             <span>🔔</span> Configuration des Alertes EPI
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
-            Alertes automatiques pour inspections et remplacements
+            Définir les délais pour les alertes automatiques
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {/* Toggle activer notifications */}
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '12px 15px',
-              background: '#f8f9fa',
+            {/* Alerte expiration pour admins/superviseurs */}
+            <div style={{ 
+              padding: '15px',
+              background: '#fff3cd',
               borderRadius: '8px',
-              cursor: 'pointer',
-              border: '1px solid #dee2e6'
+              border: '1px solid #ffc107'
             }}>
-              <div>
-                <div style={{ fontWeight: '600', fontSize: '14px', color: '#2c3e50', marginBottom: '3px' }}>
-                  Activer les notifications EPI
-                </div>
-                <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                  Alertes automatiques pour inspections et remplacements
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '18px' }}>👑</span>
+                <Label style={{ fontSize: '15px', fontWeight: '600', color: '#856404', margin: 0 }}>
+                  Alerte expiration EPI (Admins/Superviseurs)
+                </Label>
               </div>
-              <input
-                type="checkbox"
-                checked={epiSettings.epi_notifications_actives}
-                onChange={(e) => handleEpiSettingChange('epi_notifications_actives', e.target.checked)}
-                style={{ 
-                  width: '20px', 
-                  height: '20px',
-                  cursor: 'pointer'
-                }}
-              />
-            </label>
+              <p style={{ fontSize: '12px', color: '#856404', marginBottom: '10px' }}>
+                Les administrateurs et superviseurs seront notifiés X jours avant l&apos;expiration d&apos;un EPI
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Input
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={epiSettings.epi_jours_avance_expiration}
+                  onChange={(e) => handleEpiSettingChange('epi_jours_avance_expiration', parseInt(e.target.value))}
+                  style={{ 
+                    width: '100px',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#856404' }}>
+                  jours avant l&apos;échéance
+                </span>
+              </div>
+              <small style={{ fontSize: '11px', color: '#856404', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
+                💡 Exemple : Avec 30 jours, une notification sera envoyée le 1er mars pour un EPI expirant le 31 mars
+              </small>
+            </div>
 
-            {epiSettings.epi_notifications_actives && (
-              <>
-                {/* Alerte expiration */}
-                <div style={{ 
-                  padding: '15px',
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  border: '1px solid #dee2e6'
-                }}>
-                  <Label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#2c3e50' }}>
-                    Alerte expiration (jours d&apos;avance)
-                  </Label>
-                  <Input
-                    type="number"
-                    min="7"
-                    max="180"
-                    value={epiSettings.epi_jours_avance_expiration}
-                    onChange={(e) => handleEpiSettingChange('epi_jours_avance_expiration', parseInt(e.target.value))}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px',
-                      fontSize: '14px'
-                    }}
-                  />
-                  <small style={{ fontSize: '12px', color: '#6c757d', display: 'block', marginTop: '5px' }}>
-                    Notifier {epiSettings.epi_jours_avance_expiration} jours avant expiration
-                  </small>
-                </div>
-
-                {/* Alerte inspection */}
-                <div style={{ 
-                  padding: '15px',
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  border: '1px solid #dee2e6'
-                }}>
-                  <Label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#2c3e50' }}>
-                    Alerte inspection (jours d&apos;avance)
-                  </Label>
-                  <Input
-                    type="number"
-                    min="3"
-                    max="60"
-                    value={epiSettings.epi_jours_avance_inspection}
-                    onChange={(e) => handleEpiSettingChange('epi_jours_avance_inspection', parseInt(e.target.value))}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px',
-                      fontSize: '14px'
-                    }}
-                  />
-                  <small style={{ fontSize: '12px', color: '#6c757d', display: 'block', marginTop: '5px' }}>
-                    Notifier {epiSettings.epi_jours_avance_inspection} jours avant inspection
-                  </small>
-                </div>
-              </>
-            )}
+            {/* Alerte inspection mensuelle pour tous les utilisateurs */}
+            <div style={{ 
+              padding: '15px',
+              background: '#d1ecf1',
+              borderRadius: '8px',
+              border: '1px solid #0dcaf0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '18px' }}>👥</span>
+                <Label style={{ fontSize: '15px', fontWeight: '600', color: '#055160', margin: 0 }}>
+                  Alerte inspection de routine mensuelle (Tous les utilisateurs)
+                </Label>
+              </div>
+              <p style={{ fontSize: '12px', color: '#055160', marginBottom: '10px' }}>
+                Tous les utilisateurs seront notifiés le X du mois s&apos;ils n&apos;ont pas effectué leur inspection mensuelle
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#055160' }}>
+                  Le
+                </span>
+                <Input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={epiSettings.epi_jour_alerte_inspection_mensuelle}
+                  onChange={(e) => handleEpiSettingChange('epi_jour_alerte_inspection_mensuelle', parseInt(e.target.value))}
+                  style={{ 
+                    width: '80px',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#055160' }}>
+                  de chaque mois
+                </span>
+              </div>
+              <small style={{ fontSize: '11px', color: '#055160', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
+                💡 Exemple : Avec le 20e jour, si un utilisateur n&apos;a pas fait son inspection mensuelle avant le 20, il recevra une notification ce jour-là
+              </small>
+            </div>
           </div>
         </div>
 
