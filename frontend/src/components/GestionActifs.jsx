@@ -1450,9 +1450,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       const data = await apiGet(tenantSlug, '/epi/parametres');
       if (data) {
         setEpiSettings({
-          epi_notifications_actives: data.epi_notifications_actives || false,
           epi_jours_avance_expiration: data.epi_jours_avance_expiration || 30,
-          epi_jours_avance_inspection: data.epi_jours_avance_inspection || 14
+          epi_jour_alerte_inspection_mensuelle: data.epi_jour_alerte_inspection_mensuelle || 20
         });
       }
     } catch (error) {
