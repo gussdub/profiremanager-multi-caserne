@@ -1187,7 +1187,6 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.prenom_pompier}
                     onChange={(e) => setFormData({ ...formData, prenom_pompier: e.target.value })}
                     placeholder="Prénom"
@@ -1200,7 +1199,6 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.nom_pompier}
                     onChange={(e) => setFormData({ ...formData, nom_pompier: e.target.value })}
                     placeholder="Nom"
