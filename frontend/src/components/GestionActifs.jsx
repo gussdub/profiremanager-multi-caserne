@@ -1420,7 +1420,6 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
   useEffect(() => {
     fetchParametres();
-    fetchAdminsSuperviseurs();
   }, [tenantSlug]);
 
   const fetchParametres = async () => {
@@ -1428,22 +1427,11 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       const data = await apiGet(tenantSlug, '/actifs/parametres');
       if (data) {
         setParametres({
-          dates_tests_bornes_seches: data.dates_tests_bornes_seches || [],
-          emails_notifications_bornes_seches: data.emails_notifications_bornes_seches || []
+          dates_tests_bornes_seches: data.dates_tests_bornes_seches || []
         });
       }
     } catch (error) {
       console.error('Erreur chargement paramètres:', error);
-    }
-  };
-
-  const fetchAdminsSuperviseurs = async () => {
-    try {
-      const data = await apiGet(tenantSlug, '/utilisateurs');
-      const filtres = data.filter(u => u.role === 'admin' || u.role === 'superviseur');
-      setAdminsSuperviseurs(filtres);
-    } catch (error) {
-      console.error('Erreur chargement utilisateurs:', error);
     }
   };
 
