@@ -25529,11 +25529,18 @@ async def create_inspection_borne_seche(
     )
     
     # Mettre à jour le point d'eau avec la dernière inspection
+    etat_trouve = inspection_data.get("etat_trouve", "conforme")
     update_data = {
         "derniere_inspection_date": inspection_data.get("date_inspection"),
         "statut_inspection": inspection_data.get("statut_inspection", "conforme"),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Si défaut détecté, marquer la borne comme hors service
+    if etat_trouve == "a_refaire":
+        update_data["etat"] = "hors_service"
+    elif etat_trouve == "conforme":
+        update_data["etat"] = "fonctionnelle"
     
     await db.points_eau.update_one(
         {"id": point_id, "tenant_id": tenant.id},
@@ -25541,7 +25548,7 @@ async def create_inspection_borne_seche(
     )
     
     # Si défaut détecté, envoyer email aux admins/superviseurs
-    if inspection_data.get("etat_trouve") == "a_refaire":
+    if etat_trouve == "a_refaire":
         # Récupérer les paramètres d'email
         parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
         emails_notifications = parametres.get('emails_notifications_bornes_seches', [])
@@ -25557,8 +25564,11 @@ async def create_inspection_borne_seche(
                     inspecteur=f"{inspection_data.get('prenom_pompier')} {inspection_data.get('nom_pompier')}",
                     emails=emails_notifications
                 )
+                logging.info(f"Email de notification envoyé avec succès pour la borne {point_id}")
             except Exception as e:
                 logging.error(f"Erreur envoi email défaut borne: {e}")
+        else:
+            logging.warning(f"Aucun email de notification configuré pour les défauts de bornes sèches")
     
     return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
 
