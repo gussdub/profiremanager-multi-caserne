@@ -901,16 +901,36 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                 />
               </div>
 
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Date <span style={{ color: 'red' }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date_inspection}
+                  onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+                  style={{
+                    width: '300px',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                    Date <span style={{ color: 'red' }}>*</span>
+                    Prénom du pompier <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    type="date"
+                    type="text"
                     required
-                    value={formData.date_inspection}
-                    onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+                    value={formData.prenom_pompier}
+                    onChange={(e) => setFormData({ ...formData, prenom_pompier: e.target.value })}
+                    placeholder="Prénom"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -922,14 +942,14 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                    Matricule du pompier <span style={{ color: 'red' }}>*</span>
+                    Nom du pompier <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    value={formData.matricule_pompier}
-                    onChange={(e) => setFormData({ ...formData, matricule_pompier: e.target.value })}
-                    placeholder="Ex: 12345"
+                    value={formData.nom_pompier}
+                    onChange={(e) => setFormData({ ...formData, nom_pompier: e.target.value })}
+                    placeholder="Nom"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -962,27 +982,6 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                         style={{ marginRight: '0.5rem' }}
                       />
                       <span>{acc}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Conditions atmosphériques lors du test <span style={{ color: 'red' }}>*</span>
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {['Dégagé', 'Nuageux', 'Pluvieux'].map(cond => (
-                    <label key={cond} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="conditions_atmospheriques_test"
-                        value={cond.toLowerCase()}
-                        checked={formData.conditions_atmospheriques_test === cond.toLowerCase()}
-                        onChange={(e) => setFormData({ ...formData, conditions_atmospheriques_test: e.target.value })}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      <span>{cond}</span>
                     </label>
                   ))}
                 </div>
