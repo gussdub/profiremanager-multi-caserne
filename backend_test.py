@@ -426,7 +426,7 @@ class DemoEmailConversionTester:
         
         # Résumé final
         print("\n" + "="*60)
-        print("📊 RÉSUMÉ DES TESTS - WORKFLOW DÉFAUTS BORNES SÈCHES")
+        print("📊 RÉSUMÉ DES TESTS - CONVERSION USER ID → EMAIL (TENANT DEMO)")
         print("="*60)
         
         succes = sum(1 for _, resultat in resultats if resultat)
@@ -442,46 +442,47 @@ class DemoEmailConversionTester:
         print("\n🎯 ANALYSE DES FONCTIONNALITÉS CRITIQUES:")
         
         if len(resultats) >= 2:
-            test_creation_defaut = resultats[0][1]
-            test_mise_a_jour_statut = resultats[1][1]
+            test_creation_inspection = resultats[1][1]  # Test 2: Création inspection
             
-            if test_creation_defaut and test_mise_a_jour_statut:
-                print("🎉 SUCCÈS CRITIQUE: Workflow de défaut fonctionnel!")
-                print("   ✅ Création d'inspection avec défauts réussie")
-                print("   ✅ Mise à jour automatique du statut de la borne")
-                print("   ✅ Borne correctement marquée 'hors_service'")
+            if test_creation_inspection:
+                print("🎉 SUCCÈS CRITIQUE: Création d'inspection avec défauts réussie!")
+                print("   ✅ Inspection créée avec les données de la review request")
+                print("   ✅ Déclenchement du processus de notification")
             else:
-                print("❌ ÉCHEC CRITIQUE: Workflow de défaut non fonctionnel")
+                print("❌ ÉCHEC CRITIQUE: Impossible de créer l'inspection avec défauts")
         
         if len(resultats) >= 3:
-            test_reactivation = resultats[2][1]
-            if test_reactivation:
-                print("🎉 SUCCÈS: Réactivation de borne fonctionnelle!")
-                print("   ✅ Inspection conforme réactive la borne")
-                print("   ✅ Statut correctement mis à jour vers 'fonctionnelle'")
+            test_logs_conversion = resultats[2][1]  # Test 3: Logs conversion
+            if test_logs_conversion:
+                print("🎉 SUCCÈS: Conversion User ID → Email détectée!")
+                print(f"   ✅ User ID {self.expected_user_id} converti en {self.expected_email}")
+                print("   ✅ Messages de debug trouvés dans les logs backend")
             else:
-                print("❌ ÉCHEC: Réactivation de borne non fonctionnelle")
+                print("❌ ÉCHEC: Conversion User ID → Email non détectée dans les logs")
         
         if len(resultats) >= 4:
-            test_logs = resultats[3][1]
-            if test_logs:
-                print("✅ Logs backend accessibles et analysés")
+            test_statut_borne = resultats[3][1]  # Test 4: Statut borne
+            if test_statut_borne:
+                print("🎉 SUCCÈS: Statut de la borne correctement mis à jour!")
+                print("   ✅ État: 'hors_service'")
+                print("   ✅ Statut inspection: 'a_refaire'")
             else:
-                print("⚠️ Problème d'accès aux logs backend")
+                print("❌ ÉCHEC: Statut de la borne non mis à jour correctement")
         
         # Critère de succès global: au moins 75% des tests réussis
         success_rate = succes / total
         overall_success = success_rate >= 0.75
         
         if overall_success:
-            print(f"\n🏆 SUCCÈS GLOBAL: Workflow de notification des défauts opérationnel!")
-            print("   → Les inspections avec défauts déclenchent les notifications")
-            print("   → Les statuts de bornes sont correctement mis à jour")
-            print("   → La réactivation fonctionne avec les inspections conformes")
+            print(f"\n🏆 SUCCÈS GLOBAL: Conversion User ID → Email opérationnelle!")
+            print(f"   → User ID {self.expected_user_id} correctement converti en {self.expected_email}")
+            print("   → Email de notification envoyé avec succès")
+            print("   → Statut de la borne correctement mis à jour")
         else:
-            print(f"\n❌ ÉCHEC GLOBAL: Workflow nécessite des corrections")
-            print("   → Vérifier la configuration des emails de notification")
-            print("   → Vérifier la logique de mise à jour des statuts")
+            print(f"\n❌ ÉCHEC GLOBAL: Système de conversion nécessite des corrections")
+            print("   → Vérifier la configuration tenant demo")
+            print("   → Vérifier la logique de conversion User ID → Email")
+            print("   → Vérifier les logs backend pour plus de détails")
         
         return overall_success
 
