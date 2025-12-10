@@ -105,9 +105,9 @@ class DemoEmailConversionTester:
             return False
     
     def create_defect_inspection(self):
-        """TEST 1: Créer une inspection avec défauts (NON-CONFORME)"""
+        """TEST 2: Créer une inspection avec défauts pour déclencher la conversion User ID → Email"""
         print("\n" + "="*60)
-        print("🧪 TEST 1: CRÉER INSPECTION AVEC DÉFAUTS (NON-CONFORME)")
+        print("🧪 TEST 2: CRÉER INSPECTION AVEC DÉFAUTS - CONVERSION USER ID → EMAIL")
         print("="*60)
         
         if not self.test_point_id:
@@ -119,23 +119,28 @@ class DemoEmailConversionTester:
             "date_inspection": "2025-12-10",
             "etat_trouve": "a_refaire",
             "statut_inspection": "a_refaire",
-            "nom_pompier": "Agent",
-            "prenom_pompier": "Test",
-            "temperature_exterieure": "5",
-            "temps_amorcage": "30",
-            "notes": "Test envoi email - Défauts détectés",
+            "nom_pompier": "Dubeau",
+            "prenom_pompier": "Guillaume",
+            "temperature_exterieure": "3",
+            "temps_amorcage": "25",
+            "notes": "Test final - Conversion user ID vers email",
             "joint_present": "non_conforme",
             "site_accessible": "conforme",
-            "vanne_storz": "defectuosite",
-            "niveau_eau": "conforme"
+            "vanne_storz": "defectuosite"
         }
         
         url = f"{self.base_url}/points-eau/{self.test_point_id}/inspections"
         
         print(f"📝 Création d'inspection avec défauts pour borne {self.test_point_id}...")
+        print(f"   - Pompier: {inspection_data['prenom_pompier']} {inspection_data['nom_pompier']}")
         print(f"   - État trouvé: {inspection_data['etat_trouve']}")
         print(f"   - Statut inspection: {inspection_data['statut_inspection']}")
         print(f"   - Défauts: joint_present=non_conforme, vanne_storz=defectuosite")
+        print(f"   - Notes: {inspection_data['notes']}")
+        
+        print(f"\n🎯 CONVERSION ATTENDUE:")
+        print(f"   - User ID: {self.expected_user_id}")
+        print(f"   - Email attendu: {self.expected_email}")
         
         response = requests.post(url, headers=self.headers, json=inspection_data)
         
@@ -143,8 +148,13 @@ class DemoEmailConversionTester:
             result = response.json()
             self.test_inspection_id = result.get('id')
             print(f"✅ Inspection créée avec succès - ID: {self.test_inspection_id}")
-            print(f"📧 Vérification attendue: Email de notification envoyé")
+            print(f"📧 Vérification attendue: Conversion User ID → Email dans les logs")
             print(f"🔄 Vérification attendue: Statut borne mis à jour vers 'hors_service'")
+            
+            # Attendre un peu pour que les logs soient écrits
+            print(f"⏳ Attente de 3 secondes pour l'écriture des logs...")
+            time.sleep(3)
+            
             return True
         else:
             print(f"❌ Erreur création inspection: {response.status_code} - {response.text}")
