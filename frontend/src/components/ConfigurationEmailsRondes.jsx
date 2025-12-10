@@ -110,7 +110,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
           marginBottom: '1.25rem'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', margin: 0, color: '#374151' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
               👥 Destinataires ({selectedUsersDetails.length})
             </h4>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -123,7 +123,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
                   border: '1px solid #DC2626',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '0.813rem',
+                  fontSize: '13px',
                   fontWeight: '500'
                 }}
               >
@@ -138,7 +138,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
                   border: '1px solid #D1D5DB',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '0.813rem',
+                  fontSize: '13px',
                   fontWeight: '500'
                 }}
               >
