@@ -734,8 +734,16 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
         payload
       });
       
-      await apiPost(tenantSlug, `/points-eau/${borne.id}/inspections`, payload);
-      console.log('✅ Inspection sauvegardée avec succès');
+      const response = await apiPost(tenantSlug, `/points-eau/${borne.id}/inspections`, payload);
+      console.log('✅ Inspection sauvegardée avec succès', response);
+      
+      // Message de confirmation visuel
+      if (etat_trouve === 'a_refaire') {
+        alert('✅ Inspection enregistrée avec succès\n\n⚠️ Des défauts ont été détectés. Une notification par email va être envoyée aux responsables.');
+      } else {
+        alert('✅ Inspection enregistrée avec succès\n\n✓ Aucun défaut détecté. La borne est conforme.');
+      }
+      
       onSave();
     } catch (error) {
       console.error('❌ Erreur sauvegarde inspection:', {
@@ -745,7 +753,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
         errorDetail: error.detail,
         errorResponse: error.response
       });
-      alert('Erreur lors de la sauvegarde de l\'inspection');
+      alert('❌ Erreur lors de la sauvegarde de l\'inspection');
     } finally {
       setLoading(false);
     }
