@@ -9145,6 +9145,82 @@ class InspectionMaterielCreate(BaseModel):
     photos: List[str] = []
 
 
+
+# ==================== INVENTAIRES VÉHICULES MODELS ====================
+
+class ItemInventaireVehicule(BaseModel):
+    """Item individuel dans un modèle d'inventaire véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str
+    obligatoire: bool = False
+    photo_requise: bool = False
+    ordre: int = 0
+
+class SectionInventaireVehicule(BaseModel):
+    """Section dans un modèle d'inventaire véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    titre: str
+    items: List[ItemInventaireVehicule] = []
+    ordre: int = 0
+
+class ModeleInventaireVehicule(BaseModel):
+    """Modèle d'inventaire pour un type de véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Inventaire Autopompe", "Inventaire Échelle"
+    type_vehicule: str  # autopompe, echelle_aerienne, camion_citerne, etc.
+    description: str = ""
+    sections: List[SectionInventaireVehicule] = []
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ModeleInventaireVehiculeCreate(BaseModel):
+    nom: str
+    type_vehicule: str
+    description: str = ""
+    sections: List[dict] = []  # [{titre, items: [{nom, obligatoire, photo_requise}]}]
+
+class ModeleInventaireVehiculeUpdate(BaseModel):
+    nom: Optional[str] = None
+    type_vehicule: Optional[str] = None
+    description: Optional[str] = None
+    sections: Optional[List[dict]] = None
+
+class ItemInventaireVehiculeRempli(BaseModel):
+    """Item rempli lors d'un inventaire"""
+    item_id: str
+    nom: str
+    statut: str  # present, absent, defectueux
+    photo: Optional[str] = None
+    notes: str = ""
+
+class InventaireVehicule(BaseModel):
+    """Inventaire hebdomadaire effectué sur un véhicule"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    vehicule_id: str
+    vehicule_nom: str  # Pour affichage
+    modele_id: str
+    modele_nom: str
+    date_inventaire: str
+    effectue_par: str
+    effectue_par_id: str
+    items_coches: List[ItemInventaireVehiculeRempli] = []
+    statut_global: str = "conforme"  # conforme, non_conforme
+    items_manquants: int = 0
+    items_defectueux: int = 0
+    notes_generales: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InventaireVehiculeCreate(BaseModel):
+    vehicule_id: str
+    modele_id: str
+    date_inventaire: str
+    items_coches: List[dict]  # [{item_id, nom, statut, photo, notes}]
+    notes_generales: str = ""
+
+
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
 # Cache simple pour les tenants (60 secondes)
