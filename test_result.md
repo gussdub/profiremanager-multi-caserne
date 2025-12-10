@@ -492,6 +492,21 @@ backend:
         agent: "main"
         comment: "✅ OBJECTID SERIALIZATION FIX APPLIED - Fixed the MongoDB ObjectId serialization error in endpoints GET /api/{tenant}/prevention/preventionnistes/{id}/batiments and GET /api/{tenant}/prevention/preventionnistes/{id}/secteurs. Added code to remove '_id' field from documents before returning JSON response. This resolves the 500 Internal Server Error. All 9/9 tests should now pass."
 
+  - task: "Test des 13 Rapports PDF Refactorisés"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "NEW TESTING - Comprehensive testing of 13 refactored PDF reports as requested in French review. Testing PDF generation endpoints across multiple modules: Planning, Prevention, Personnel, Remplacements, Dashboard, etc. Using tenants demo and shefford with credentials gussdub@gmail.com / 230685Juin+. Testing endpoints: /{tenant}/planning/export-pdf, /{tenant}/planning/rapport-heures/export-pdf, /{tenant}/remplacements/export-pdf, /{tenant}/rapports/export-dashboard-pdf, /{tenant}/rapports/export-salaires-pdf, /{tenant}/personnel/export-pdf, /{tenant}/disponibilites/export-pdf, /{tenant}/prevention/inspections/{id}/rapport-pdf, /{tenant}/prevention/plans-intervention/{id}/export-pdf, /{tenant}/prevention/batiments/{id}/rapport-pdf, /{tenant}/actifs/rondes-securite/{id}/export-pdf, /rapports/export-pdf."
+      - working: false
+        agent: "testing"
+        comment: "❌ RÉSULTATS MIXTES - 13 RAPPORTS PDF TESTÉS AVEC SUCCÈS PARTIEL: Comprehensive testing completed on both demo and shefford tenants with 58.3% success rate (7/12 tests passed on shefford). WORKING PDF REPORTS (✅ 7 SUCCÈS): 1) ✅ Planning Export PDF (Mois): 545,681 bytes - application/pdf, 2) ✅ Rapport Heures Travaillées PDF: 536,981 bytes - application/pdf, 3) ✅ Remplacements Export PDF: 533,503 bytes - application/pdf, 4) ✅ Rapport Inspection Prévention PDF: 534,793 bytes - application/pdf, 5) ✅ Rapport Bâtiment PDF: 535,134 bytes - application/pdf, 6) ✅ Ronde de Sécurité Export PDF: 538,129 bytes - application/pdf, 7) ✅ Planning Export PDF (Semaine): 539,392 bytes - application/pdf. FAILING PDF REPORTS (❌ 5 ÉCHECS): 1) ❌ Dashboard Export PDF: HTTP 500 Internal Server Error, 2) ❌ Rapport Salaires PDF: HTTP 500 Internal Server Error, 3) ❌ Personnel Export PDF: HTTP 500 Internal Server Error, 4) ❌ Disponibilités Export PDF: Returns JSON instead of PDF (application/json), 5) ❌ Rapport Global PDF: Returns JSON with base64 PDF data instead of direct PDF stream. TECHNICAL ANALYSIS: Working reports generate proper PDF files with correct Content-Type (application/pdf) and Content-Disposition headers. Failing reports either return 500 errors (likely missing data or implementation issues) or return JSON responses instead of PDF streams. TENANT COMPARISON: Both demo and shefford tenants show similar patterns - core planning/prevention reports work, but dashboard/personnel/salary reports fail. MISSING ENDPOINTS: Plan d'intervention export not found on shefford tenant (no plans available). RECOMMENDATIONS: Fix 500 errors in dashboard/salaires/personnel endpoints, correct response format for disponibilités/global reports to return PDF streams instead of JSON."
+
   - task: "Système Automatisé de Remplacement"
     implemented: true
     working: true
