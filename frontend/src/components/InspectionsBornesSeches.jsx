@@ -455,16 +455,12 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
       alert('Temps d\'amorçage est obligatoire');
       return;
     }
-    if (!formData.matricule_pompier) {
-      alert('Matricule du pompier est obligatoire');
+    if (!formData.nom_pompier || !formData.prenom_pompier) {
+      alert('Nom et prénom du pompier sont obligatoires');
       return;
     }
     if (formData.accessibilite_borne.length === 0) {
       alert('Accessibilité de la borne est obligatoire');
-      return;
-    }
-    if (!formData.conditions_atmospheriques_test) {
-      alert('Conditions atmosphériques lors du test est obligatoire');
       return;
     }
 
