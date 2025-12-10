@@ -63,12 +63,24 @@ const InspectionsBornesSeches = ({ user }) => {
 
   // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état de la borne)
   const getInspectionColor = (borne) => {
-    // Si statut manuel "à refaire" par admin
+    // PRIORITÉ 1 : Vérifier l'état explicite de la borne (hors_service, fonctionnelle, en_inspection)
+    // Ceci permet aux boutons "À refaire" et "Réinitialiser" de fonctionner correctement
+    if (borne.etat === 'hors_service') {
+      return '#ef4444'; // Rouge - Hors service
+    }
+    if (borne.etat === 'fonctionnelle') {
+      return '#10b981'; // Vert - Fonctionnelle
+    }
+    if (borne.etat === 'en_inspection') {
+      return '#f59e0b'; // Orange - En inspection
+    }
+
+    // PRIORITÉ 2 : Si statut manuel "à refaire" par admin
     if (borne.statut_inspection === 'a_refaire') {
       return '#f59e0b'; // Orange - À refaire
     }
 
-    // Vérifier si une date de test bi-annuelle est dépassée
+    // PRIORITÉ 3 : Vérifier si une date de test bi-annuelle est dépassée
     const today = new Date();
     const hasPassedTestDate = datesTests.some(dateTest => {
       const testDate = new Date(dateTest.date);
@@ -79,12 +91,12 @@ const InspectionsBornesSeches = ({ user }) => {
       return '#ef4444'; // Rouge - Date de test dépassée, toutes repassent en rouge
     }
 
-    // Si pas d'inspection = pas encore inspectée
+    // PRIORITÉ 4 : Si pas d'inspection = pas encore inspectée
     if (!borne.derniere_inspection_date) {
       return '#ef4444'; // Rouge - Non inspectée
     }
 
-    // Si inspection il y a plus de 6 mois
+    // PRIORITÉ 5 : Si inspection il y a plus de 6 mois
     const derniereInspection = new Date(borne.derniere_inspection_date);
     const sixMoisEnMs = 6 * 30 * 24 * 60 * 60 * 1000;
     const tempsPasse = today - derniereInspection;
