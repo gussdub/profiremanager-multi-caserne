@@ -292,67 +292,94 @@ class DemoEmailConversionTester:
             print(f"❌ Erreur vérification réactivation: {response.status_code}")
             return False
     
-    def check_backend_logs(self):
-        """TEST 4: Vérifier les logs backend pour l'envoi d'email"""
+    def check_backend_logs_conversion(self):
+        """TEST 3: Vérifier les logs backend pour la conversion User ID → Email"""
         print("\n" + "="*60)
-        print("🧪 TEST 4: VÉRIFIER LOGS BACKEND POUR ENVOI EMAIL")
+        print("🧪 TEST 3: VÉRIFIER LOGS BACKEND - CONVERSION USER ID → EMAIL")
         print("="*60)
         
-        print("📋 Vérification des logs backend...")
-        print("🔍 Recherche des messages suivants dans /var/log/supervisor/backend.*.log:")
-        print("   - 'Email de notification envoyé avec succès'")
-        print("   - 'Aucun email de notification configuré'")
-        print("   - Messages d'erreur Resend API")
+        print("📋 Vérification des logs backend pour la conversion...")
+        print("🔍 Recherche des messages DEBUG attendus:")
+        print(f"   - 🚨 DEBUG: User IDs ou Emails bruts = ['{self.expected_user_id}']")
+        print(f"   - ✅ DEBUG: User ID {self.expected_user_id} → Email {self.expected_email}")
+        print(f"   - 🚨 DEBUG: Emails finaux pour notification = ['{self.expected_email}']")
+        print(f"   - ✅ DEBUG: Résultat envoi email = {{'success': True, ...}}")
         
         try:
-            # Lire les logs backend
+            # Lire les logs backend (out.log pour les messages de debug)
             import subprocess
-            result = subprocess.run(
-                ["tail", "-n", "100", "/var/log/supervisor/backend.err.log"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
             
-            if result.returncode == 0:
-                logs = result.stdout
+            # Essayer d'abord backend.out.log puis backend.err.log
+            log_files = ["/var/log/supervisor/backend.out.log", "/var/log/supervisor/backend.err.log"]
+            logs_content = ""
+            
+            for log_file in log_files:
+                try:
+                    result = subprocess.run(
+                        ["tail", "-n", "50", log_file],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if result.returncode == 0:
+                        logs_content += f"\n=== {log_file} ===\n" + result.stdout
+                except:
+                    continue
+            
+            if logs_content:
+                print(f"\n📊 Analyse des logs de conversion:")
                 
-                # Rechercher les messages pertinents
-                email_success = "Email de notification envoyé avec succès" in logs
-                email_not_configured = "Aucun email de notification configuré" in logs
-                resend_error = "Erreur Resend" in logs or "RESEND_API_KEY" in logs
+                # Rechercher les messages spécifiques de conversion
+                conversion_messages = {
+                    "user_ids_bruts": "🚨 DEBUG: User IDs ou Emails bruts",
+                    "conversion_success": f"✅ DEBUG: User ID {self.expected_user_id}",
+                    "emails_finaux": "🚨 DEBUG: Emails finaux pour notification",
+                    "envoi_success": "✅ DEBUG: Résultat envoi email"
+                }
                 
-                print(f"\n📊 Analyse des logs:")
-                if email_success:
-                    print("✅ Email de notification envoyé avec succès détecté")
-                elif email_not_configured:
-                    print("⚠️ Aucun email de notification configuré détecté")
-                    print("   → Comportement normal si aucun email n'est configuré dans les paramètres")
-                elif resend_error:
-                    print("❌ Erreur Resend API détectée dans les logs")
+                found_messages = {}
+                for key, pattern in conversion_messages.items():
+                    found = pattern in logs_content
+                    found_messages[key] = found
+                    status = "✅" if found else "❌"
+                    print(f"   {status} {pattern}: {'TROUVÉ' if found else 'NON TROUVÉ'}")
+                
+                # Extraire et afficher les lignes contenant les messages de debug
+                log_lines = logs_content.split('\n')
+                debug_lines = [line for line in log_lines if any(keyword in line for keyword in 
+                              ['🚨 DEBUG', '✅ DEBUG', 'User ID', 'Email', self.expected_user_id, self.expected_email])]
+                
+                if debug_lines:
+                    print(f"\n📝 Messages de debug trouvés ({len(debug_lines)} lignes):")
+                    for line in debug_lines[-10:]:  # Afficher les 10 dernières
+                        if line.strip():
+                            print(f"   {line}")
                 else:
-                    print("ℹ️ Aucun message d'email spécifique trouvé dans les logs récents")
+                    print(f"\n⚠️ Aucun message de debug spécifique trouvé")
                 
-                # Afficher les dernières lignes pertinentes
-                log_lines = logs.split('\n')
-                relevant_lines = [line for line in log_lines if any(keyword in line.lower() for keyword in 
-                                ['email', 'notification', 'resend', 'défaut', 'borne'])]
+                # Vérifier si au moins la conversion principale a eu lieu
+                conversion_success = found_messages.get("conversion_success", False)
+                emails_finaux = found_messages.get("emails_finaux", False)
                 
-                if relevant_lines:
-                    print(f"\n📝 Logs pertinents trouvés ({len(relevant_lines)} lignes):")
-                    for line in relevant_lines[-5:]:  # Afficher les 5 dernières
-                        print(f"   {line}")
+                if conversion_success and emails_finaux:
+                    print(f"\n🎉 SUCCÈS: Conversion User ID → Email détectée dans les logs!")
+                    return True
+                elif conversion_success:
+                    print(f"\n⚠️ PARTIEL: Conversion détectée mais emails finaux non confirmés")
+                    return True
+                else:
+                    print(f"\n❌ ÉCHEC: Aucune trace de conversion User ID → Email dans les logs")
+                    return False
                 
-                return True
             else:
-                print(f"❌ Erreur lecture logs: {result.stderr}")
+                print(f"❌ Erreur: Impossible de lire les logs backend")
                 return False
                 
         except Exception as e:
             print(f"❌ Erreur accès aux logs: {str(e)}")
-            print("ℹ️ Vérification manuelle des logs recommandée:")
-            print("   tail -n 100 /var/log/supervisor/backend.*.log | grep -i 'email\\|notification\\|resend'")
-            return True  # Ne pas faire échouer le test pour un problème d'accès aux logs
+            print("ℹ️ Commande manuelle recommandée:")
+            print(f"   tail -n 50 /var/log/supervisor/backend.out.log | grep -E '🚨|✅|User ID|Email'")
+            return False
     
     def run_defect_workflow_tests(self):
         """Exécute tous les tests du workflow de défauts"""
