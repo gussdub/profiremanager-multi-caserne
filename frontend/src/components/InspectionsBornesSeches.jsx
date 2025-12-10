@@ -1176,7 +1176,6 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                 </label>
                 <input
                   type="date"
-                  required
                   value={formData.date_inspection}
                   onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
                   style={getFieldStyle('date')}
