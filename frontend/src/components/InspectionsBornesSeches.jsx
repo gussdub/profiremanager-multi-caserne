@@ -722,6 +722,95 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                 🔥 Section 3: Essai de pompage <span style={{ color: 'red' }}>*</span>
               </h3>
               
+              {/* Chronomètre */}
+              <div style={{ 
+                marginBottom: '1.5rem', 
+                padding: '1.5rem', 
+                background: chronometerTime >= 300 ? '#fef2f2' : '#f0f9ff', 
+                borderRadius: '12px', 
+                border: `2px solid ${chronometerTime >= 300 ? '#ef4444' : '#3b82f6'}` 
+              }}>
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '3rem', fontWeight: '700', color: chronometerTime >= 300 ? '#ef4444' : '#1f2937', fontFamily: 'monospace' }}>
+                    {formatTime(chronometerTime)}
+                  </div>
+                  {amorcageTime !== null && (
+                    <div style={{ fontSize: '0.875rem', color: '#10b981', fontWeight: '600', marginTop: '0.5rem' }}>
+                      ✓ Temps d'amorçage: {amorcageTime}s
+                    </div>
+                  )}
+                  {pompageStarted && chronometerTime < 300 && (
+                    <div style={{ fontSize: '0.875rem', color: '#f59e0b', fontWeight: '600', marginTop: '0.5rem' }}>
+                      ⏱️ Pompage en continu en cours...
+                    </div>
+                  )}
+                  {chronometerTime >= 300 && (
+                    <div style={{ fontSize: '0.875rem', color: '#ef4444', fontWeight: '700', marginTop: '0.5rem' }}>
+                      🔔 5 MINUTES ÉCOULÉES !
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                  {!chronometerRunning && chronometerTime === 0 && (
+                    <button
+                      type="button"
+                      onClick={startChronometer}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ▶️ START
+                    </button>
+                  )}
+                  {chronometerRunning && (
+                    <button
+                      type="button"
+                      onClick={() => stopChronometer()}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: pompageStarted ? '#ef4444' : '#f59e0b',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {pompageStarted ? '⏹️ ARRÊTER' : '⏸️ STOP (Amorçage)'}
+                    </button>
+                  )}
+                  {chronometerTime > 0 && (
+                    <button
+                      type="button"
+                      onClick={resetChronometer}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔄 RESET
+                    </button>
+                  )}
+                </div>
+                <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                  1️⃣ START → 2️⃣ STOP (eau arrive) → ⏱️ Continue auto → 🔔 Alarme à 5min
+                </div>
+              </div>
+
               <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                   <thead>
@@ -766,15 +855,22 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                   value={formData.temps_amorcage}
                   onChange={(e) => setFormData({ ...formData, temps_amorcage: e.target.value })}
                   placeholder="Ex: 30"
+                  disabled={amorcageTime !== null}
                   style={{
                     width: '200px',
                     padding: '0.75rem',
                     border: '1px solid #d1d5db',
                     borderRadius: '8px',
-                    fontSize: '1rem'
+                    fontSize: '1rem',
+                    background: amorcageTime !== null ? '#f3f4f6' : 'white'
                   }}
                 />
                 <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>secondes</span>
+                {amorcageTime !== null && (
+                  <span style={{ marginLeft: '0.5rem', color: '#10b981', fontSize: '0.875rem', fontWeight: '600' }}>
+                    ✓ Enregistré automatiquement
+                  </span>
+                )}
               </div>
             </div>
 
