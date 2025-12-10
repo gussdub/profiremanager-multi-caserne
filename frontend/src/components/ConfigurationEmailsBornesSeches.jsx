@@ -11,7 +11,8 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
   useEffect(() => {
     loadConfiguration();
     loadUsers();
-  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
+  }, [tenantSlug]);
 
   const loadUsers = async () => {
     try {
