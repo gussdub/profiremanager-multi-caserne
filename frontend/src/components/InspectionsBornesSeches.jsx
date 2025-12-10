@@ -488,110 +488,300 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
         </div>
 
         <div style={{ padding: '1.5rem' }}>
+          {/* Photos de référence de la borne */}
+          {borne.photo_url && (
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.75rem', color: '#1f2937' }}>
+                📷 Photo de référence
+              </h3>
+              <img 
+                src={borne.photo_url} 
+                alt={borne.nom}
+                style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', borderRadius: '6px' }}
+              />
+              {borne.notes && (
+                <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  <strong>Notes importantes:</strong> {borne.notes}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Formulaire */}
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div>
+            {/* Section 1: Conditions extérieures */}
+            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #e5e7eb' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                🌤️ Section 1: Conditions extérieures
+              </h3>
+              
+              <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Date d'inspection <span style={{ color: 'red' }}>*</span>
+                  Conditions atmosphériques
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {['Pluvieux', 'Enneigé', 'Froid', 'Dégagé', 'Nuageux'].map(cond => (
+                    <label key={cond} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="conditions_atmospheriques"
+                        value={cond.toLowerCase()}
+                        checked={formData.conditions_atmospheriques === cond.toLowerCase()}
+                        onChange={(e) => setFormData({ ...formData, conditions_atmospheriques: e.target.value })}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      <span>{cond}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Température extérieure <span style={{ color: 'red' }}>*</span>
                 </label>
                 <input
-                  type="date"
+                  type="number"
                   required
-                  value={formData.date_inspection}
-                  onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+                  value={formData.temperature_exterieure}
+                  onChange={(e) => setFormData({ ...formData, temperature_exterieure: e.target.value })}
+                  placeholder="Ex: -5, 20"
                   style={{
-                    width: '100%',
+                    width: '200px',
                     padding: '0.75rem',
                     border: '1px solid #d1d5db',
                     borderRadius: '8px',
                     fontSize: '1rem'
                   }}
                 />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  État trouvé <span style={{ color: 'red' }}>*</span>
-                </label>
-                <select
-                  required
-                  value={formData.etat_trouve}
-                  onChange={(e) => setFormData({ ...formData, etat_trouve: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <option value="conforme">✓ Conforme</option>
-                  <option value="a_refaire">⚠ À refaire</option>
-                  <option value="en_defaut">✗ En défaut</option>
-                </select>
+                <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>°C</span>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Prénom inspecteur <span style={{ color: 'red' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.prenom_inspecteur}
-                  onChange={(e) => setFormData({ ...formData, prenom_inspecteur: e.target.value })}
-                  placeholder="Jean"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Nom inspecteur <span style={{ color: 'red' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nom_inspecteur}
-                  onChange={(e) => setFormData({ ...formData, nom_inspecteur: e.target.value })}
-                  placeholder="Dupont"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
-                />
+            {/* Section 2: Inspection visuelle */}
+            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #e5e7eb' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                👁️ Section 2: Inspection visuelle <span style={{ color: 'red' }}>*</span>
+              </h3>
+              
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f3f4f6' }}>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Élément</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Conforme</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Non conforme</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Défectuosité</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>N/A</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'Joint présent', field: 'joint_present' },
+                      { label: 'Joint en bon état', field: 'joint_bon_etat' },
+                      { label: 'Site accessible', field: 'site_accessible' },
+                      { label: 'Site bien déneigé', field: 'site_deneige' },
+                      { label: 'Vanne de sortie Storz', field: 'vanne_storz' },
+                      { label: 'Vanne de sortie 6"', field: 'vanne_6_pouces' },
+                      { label: 'Vanne de sortie 4"', field: 'vanne_4_pouces' },
+                      { label: 'Niveau du plan d\'eau', field: 'niveau_eau' }
+                    ].map(item => (
+                      <tr key={item.field} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem', fontWeight: '500' }}>{item.label}</td>
+                        {['conforme', 'non_conforme', 'defectuosite', 'na'].map(val => (
+                          <td key={val} style={{ padding: '0.75rem', textAlign: 'center' }}>
+                            <input
+                              type="radio"
+                              name={item.field}
+                              value={val}
+                              checked={formData[item.field] === val}
+                              onChange={(e) => setFormData({ ...formData, [item.field]: e.target.value })}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes importantes..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-              />
+            {/* Section 3: Essai de pompage */}
+            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #e5e7eb' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                🔥 Section 3: Essai de pompage <span style={{ color: 'red' }}>*</span>
+              </h3>
+              
+              <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f3f4f6' }}>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Test</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Conforme</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', borderBottom: '2px solid #d1d5db' }}>Non conforme</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'Pompage en continu (5 minutes)', field: 'pompage_continu' },
+                      { label: 'Cavitation durant le pompage', field: 'cavitation' }
+                    ].map(item => (
+                      <tr key={item.field} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem', fontWeight: '500' }}>{item.label}</td>
+                        {['conforme', 'non_conforme'].map(val => (
+                          <td key={val} style={{ padding: '0.75rem', textAlign: 'center' }}>
+                            <input
+                              type="radio"
+                              name={item.field}
+                              value={val}
+                              checked={formData[item.field] === val}
+                              onChange={(e) => setFormData({ ...formData, [item.field]: e.target.value })}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Temps d'amorçage (en secondes) <span style={{ color: 'red' }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={formData.temps_amorcage}
+                  onChange={(e) => setFormData({ ...formData, temps_amorcage: e.target.value })}
+                  placeholder="Ex: 30"
+                  style={{
+                    width: '200px',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+                <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>secondes</span>
+              </div>
+            </div>
+
+            {/* Section 4: Finalisation */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                ✅ Section 4: Finalisation
+              </h3>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Commentaire
+                </label>
+                <textarea
+                  value={formData.commentaire}
+                  onChange={(e) => setFormData({ ...formData, commentaire: e.target.value })}
+                  placeholder="Notes additionnelles..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                    Date <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.date_inspection}
+                    onChange={(e) => setFormData({ ...formData, date_inspection: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                    Matricule du pompier <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.matricule_pompier}
+                    onChange={(e) => setFormData({ ...formData, matricule_pompier: e.target.value })}
+                    placeholder="Ex: 12345"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Accessibilité de la borne <span style={{ color: 'red' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {['Sécuritaire', 'Facile', 'Dangereuse', 'Difficile'].map(acc => (
+                    <label key={acc} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        value={acc.toLowerCase()}
+                        checked={formData.accessibilite_borne.includes(acc.toLowerCase())}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const newAcc = e.target.checked
+                            ? [...formData.accessibilite_borne, val]
+                            : formData.accessibilite_borne.filter(a => a !== val);
+                          setFormData({ ...formData, accessibilite_borne: newAcc });
+                        }}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      <span>{acc}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Conditions atmosphériques lors du test <span style={{ color: 'red' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {['Dégagé', 'Nuageux', 'Pluvieux'].map(cond => (
+                    <label key={cond} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="conditions_atmospheriques_test"
+                        value={cond.toLowerCase()}
+                        checked={formData.conditions_atmospheriques_test === cond.toLowerCase()}
+                        onChange={(e) => setFormData({ ...formData, conditions_atmospheriques_test: e.target.value })}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      <span>{cond}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={{ marginBottom: '1.25rem' }}>
