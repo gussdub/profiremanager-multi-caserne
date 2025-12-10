@@ -97,16 +97,16 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
         </div>
       </div>
 
-        <div style={{ 
-          backgroundColor: '#F9FAFB', 
-          padding: '1.25rem', 
-          borderRadius: '8px',
-          marginBottom: '1.25rem'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', margin: 0, color: '#374151' }}>
-              👥 Destinataires ({selectedUsersDetails.length})
-            </h4>
+      <div style={{ 
+        backgroundColor: '#F9FAFB', 
+        padding: '1.25rem', 
+        borderRadius: '8px',
+        marginBottom: '1.25rem'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+            👥 Destinataires ({selectedUsersDetails.length})
+          </h4>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 onClick={handleSelectAll}
