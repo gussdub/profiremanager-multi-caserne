@@ -282,6 +282,7 @@ const InspectionsBornesSeches = ({ user }) => {
         <InspectionModal
           borne={selectedBorne}
           tenantSlug={tenantSlug}
+          user={user}
           onClose={() => {
             setShowInspectionModal(false);
             setSelectedBorne(null);
