@@ -702,10 +702,25 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
         statut_inspection: etat_trouve
       };
 
+      console.log('🔍 Tentative sauvegarde inspection:', {
+        borneId: borne.id,
+        borneNumero: borne.numero,
+        tenantSlug,
+        apiPath: `/points-eau/${borne.id}/inspections`,
+        payload
+      });
+      
       await apiPost(tenantSlug, `/points-eau/${borne.id}/inspections`, payload);
+      console.log('✅ Inspection sauvegardée avec succès');
       onSave();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('❌ Erreur sauvegarde inspection:', {
+        borneId: borne?.id,
+        error: error,
+        errorMessage: error.message,
+        errorDetail: error.detail,
+        errorResponse: error.response
+      });
       alert('Erreur lors de la sauvegarde de l\'inspection');
     } finally {
       setLoading(false);
