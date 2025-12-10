@@ -49,18 +49,27 @@ class DemoEmailConversionTester:
         self.expected_email = "gussdub@gmail.com"
         
     def authenticate(self):
-        """Authentification sur tenant shefford"""
-        print("🔐 Authentification tenant shefford...")
+        """Authentification sur tenant demo"""
+        print("🔐 Authentification tenant demo...")
         
         auth_url = f"{self.base_url}/auth/login"
-        response = requests.post(auth_url, json=self.admin_credentials)
+        response = requests.post(auth_url, json=self.demo_credentials)
         
         if response.status_code == 200:
             data = response.json()
             self.token = data.get('access_token')
             self.headers = {'Authorization': f'Bearer {self.token}'}
+            user_info = data.get('user', {})
             print(f"✅ Authentification réussie - Token obtenu")
-            print(f"🔍 User info: {data.get('user', {}).get('email')} - Role: {data.get('user', {}).get('role')}")
+            print(f"🔍 User info: {user_info.get('email')} - Role: {user_info.get('role')}")
+            print(f"🆔 User ID: {user_info.get('id')} (attendu: {self.expected_user_id})")
+            
+            # Vérifier que c'est bien le bon user ID
+            if user_info.get('id') == self.expected_user_id:
+                print(f"✅ User ID correspond à la configuration attendue")
+            else:
+                print(f"⚠️ User ID différent de celui attendu dans la configuration")
+            
             return True
         else:
             print(f"❌ Échec authentification: {response.status_code} - {response.text}")
