@@ -43,8 +43,8 @@ class DefectWorkflowTester:
         self.test_inspection_id = None
         
     def authenticate(self):
-        """Authentification sur tenant demo"""
-        print("🔐 Authentification tenant demo...")
+        """Authentification sur tenant shefford"""
+        print("🔐 Authentification tenant shefford...")
         
         auth_url = f"{self.base_url}/auth/login"
         response = requests.post(auth_url, json=self.admin_credentials)
