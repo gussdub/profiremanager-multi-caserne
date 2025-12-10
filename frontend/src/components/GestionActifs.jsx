@@ -1810,35 +1810,143 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         </div>
       </div>
 
-      {/* ========== MODULE GESTION EPI (À VENIR) ========== */}
+      {/* ========== MODULE GESTION EPI ========== */}
       <div style={{ 
         background: '#f8f9fa', 
         padding: '30px', 
         borderRadius: '12px', 
         border: '2px solid #e0e0e0',
-        opacity: 0.6
+        marginBottom: '30px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
           <span style={{ fontSize: '32px' }}>🛡️</span>
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
               Gestion EPI
             </h2>
             <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
-              Configuration des notifications pour les équipements de protection
+              Configuration des alertes et notifications pour les équipements de protection
             </p>
           </div>
         </div>
+
+        {/* Sous-section: Configuration des Alertes */}
         <div style={{ 
-          padding: '30px', 
-          backgroundColor: 'white', 
-          borderRadius: '10px',
-          textAlign: 'center',
-          border: '2px dashed #D1D5DB'
+          background: 'white', 
+          padding: '20px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginBottom: '15px'
         }}>
-          <p style={{ color: '#6B7280', fontSize: '15px', margin: 0 }}>
-            🚧 Configuration à venir
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🔔</span> Configuration des Alertes EPI
+          </h3>
+          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+            Alertes automatiques pour inspections et remplacements
           </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {/* Toggle activer notifications */}
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              padding: '12px 15px',
+              background: '#f8f9fa',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              border: '1px solid #dee2e6'
+            }}>
+              <div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: '#2c3e50', marginBottom: '3px' }}>
+                  Activer les notifications EPI
+                </div>
+                <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                  Alertes automatiques pour inspections et remplacements
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={epiSettings.epi_notifications_actives}
+                onChange={(e) => handleEpiSettingChange('epi_notifications_actives', e.target.checked)}
+                style={{ 
+                  width: '20px', 
+                  height: '20px',
+                  cursor: 'pointer'
+                }}
+              />
+            </label>
+
+            {epiSettings.epi_notifications_actives && (
+              <>
+                {/* Alerte expiration */}
+                <div style={{ 
+                  padding: '15px',
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <Label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#2c3e50' }}>
+                    Alerte expiration (jours d&apos;avance)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="7"
+                    max="180"
+                    value={epiSettings.epi_jours_avance_expiration}
+                    onChange={(e) => handleEpiSettingChange('epi_jours_avance_expiration', parseInt(e.target.value))}
+                    style={{ 
+                      width: '100%',
+                      padding: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <small style={{ fontSize: '12px', color: '#6c757d', display: 'block', marginTop: '5px' }}>
+                    Notifier {epiSettings.epi_jours_avance_expiration} jours avant expiration
+                  </small>
+                </div>
+
+                {/* Alerte inspection */}
+                <div style={{ 
+                  padding: '15px',
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <Label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#2c3e50' }}>
+                    Alerte inspection (jours d&apos;avance)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="3"
+                    max="60"
+                    value={epiSettings.epi_jours_avance_inspection}
+                    onChange={(e) => handleEpiSettingChange('epi_jours_avance_inspection', parseInt(e.target.value))}
+                    style={{ 
+                      width: '100%',
+                      padding: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <small style={{ fontSize: '12px', color: '#6c757d', display: 'block', marginTop: '5px' }}>
+                    Notifier {epiSettings.epi_jours_avance_inspection} jours avant inspection
+                  </small>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Sous-section: Notifications Destinataires */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0'
+        }}>
+          <ConfigurationEmailsEPI tenantSlug={tenantSlug} />
         </div>
       </div>
     </div>
