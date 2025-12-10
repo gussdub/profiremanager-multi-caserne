@@ -1122,7 +1122,6 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                 </label>
                 <input
                   type="number"
-                  required
                   value={formData.temps_amorcage}
                   onChange={(e) => setFormData({ ...formData, temps_amorcage: e.target.value })}
                   placeholder="Ex: 30"
