@@ -1413,12 +1413,10 @@ const BorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) => {
 const ParametresActifsTab = ({ tenantSlug, user }) => {
   const [loading, setLoading] = useState(false);
   const [parametres, setParametres] = useState({
-    dates_tests_bornes_seches: [],  // [{date: '2024-06-15', description: 'Test printemps'}]
-    emails_notifications_bornes_seches: []  // Liste des user IDs à notifier
+    dates_tests_bornes_seches: []  // [{date: '2024-06-15', description: 'Test printemps'}]
   });
   const [nouvelleDate, setNouvelleDate] = useState('');
   const [nouvelleDescription, setNouvelleDescription] = useState('');
-  const [adminsSuperviseurs, setAdminsSuperviseurs] = useState([]);
 
   useEffect(() => {
     fetchParametres();
