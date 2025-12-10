@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 """
-TEST CRITIQUE: Workflow de notification des défauts de bornes sèches
+TEST CRITIQUE: Workflow de notification email avec conversion User ID → Email (TENANT DEMO)
 
-CONTEXTE:
-L'utilisateur a implémenté le workflow de notification des défauts de bornes sèches avec:
-1. Création de /app/backend/utils/emails.py avec send_defaut_borne_email utilisant Resend API
-2. Correction de l'import dans /app/backend/server.py
-3. Logique de mise à jour du statut etat de la borne dans points_eau
-4. Tests unitaires de la fonction d'email: 3/3 tests passés
+CONTEXTE DE LA REVIEW REQUEST:
+L'utilisateur a corrigé le système de notification email pour qu'il convertisse automatiquement 
+les user IDs en adresses email. Configuration tenant demo mise à jour avec:
+- User ID configuré: 426c0f86-91f2-48fb-9e77-c762f0e9e7dc
+- Email attendu après conversion: gussdub@gmail.com
+- Endpoint /points-eau-statistiques créé (plus d'erreur 404)
 
-TESTS À EFFECTUER:
-1. Créer une inspection avec défauts (NON-CONFORME) - doit déclencher email et mettre à jour statut
-2. Vérifier la mise à jour du statut de la borne
-3. Créer une inspection CONFORME pour réactiver la borne
-4. Vérifier les logs backend pour l'envoi d'email
+TESTS À EFFECTUER (TENANT DEMO):
+1. Récupérer un point_id valide du tenant demo (type: borne_seche)
+2. Créer une inspection avec défauts pour déclencher la conversion User ID → Email
+3. Vérifier les logs backend pour la conversion (🚨 DEBUG messages attendus)
+4. Vérifier le statut de la borne (etat: "hors_service", statut_inspection: "a_refaire")
+
+MESSAGES LOGS ATTENDUS:
+- 🚨 DEBUG: User IDs ou Emails bruts = ['426c0f86-91f2-48fb-9e77-c762f0e9e7dc']
+- ✅ DEBUG: User ID 426c0f86-91f2-48fb-9e77-c762f0e9e7dc → Email gussdub@gmail.com
+- 🚨 DEBUG: Emails finaux pour notification = ['gussdub@gmail.com']
+- ✅ DEBUG: Résultat envoi email = {'success': True, ...}
 
 PRÉREQUIS:
-- Utiliser un point_id existant d'une borne sèche (type: "borne_seche")
-- Authentification: admin@shefford.ca / password
-- Variables d'env configurées: RESEND_API_KEY, SENDER_EMAIL, FRONTEND_URL
-
-Backend URL: https://defect-workflow.preview.emergentagent.com
+- Tenant: demo
+- Credentials: gussdub@gmail.com / 230685Juin+
+- Backend URL: https://defect-workflow.preview.emergentagent.com
 """
 
 import requests
