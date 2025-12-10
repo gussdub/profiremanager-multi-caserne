@@ -300,12 +300,33 @@ const InspectionsBornesSeches = ({ user }) => {
 // Composant Modal d'inspection
 const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
   const [formData, setFormData] = useState({
+    // Section 1: Conditions extérieures
+    conditions_atmospheriques: '',
+    temperature_exterieure: '',
+    
+    // Section 2: Inspection visuelle
+    joint_present: '',
+    joint_bon_etat: '',
+    site_accessible: '',
+    site_deneige: '',
+    vanne_storz: '',
+    vanne_6_pouces: '',
+    vanne_4_pouces: '',
+    niveau_eau: '',
+    
+    // Section 3: Essai de pompage
+    pompage_continu: '',
+    cavitation: '',
+    temps_amorcage: '',
+    
+    // Section 4: Finalisation
+    commentaire: '',
     date_inspection: new Date().toISOString().split('T')[0],
-    etat_trouve: 'conforme',
-    notes: '',
-    photos: [],
-    nom_inspecteur: '',
-    prenom_inspecteur: ''
+    matricule_pompier: '',
+    accessibilite_borne: [],
+    conditions_atmospheriques_test: '',
+    
+    photos: []
   });
   const [loading, setLoading] = useState(false);
   const [historique, setHistorique] = useState([]);
