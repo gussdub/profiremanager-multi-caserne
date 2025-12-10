@@ -560,6 +560,20 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
 
+  // Helper pour obtenir le style d'un champ (avec bordure rouge si erreur)
+  const getFieldStyle = (fieldName) => {
+    const hasError = validationErrors.some(err => err.toLowerCase().includes(fieldName.toLowerCase()));
+    return {
+      padding: '0.75rem',
+      border: hasError ? '2px solid #dc2626' : '1px solid #d1d5db',
+      borderRadius: '6px',
+      fontSize: '1rem',
+      width: '100%',
+      transition: 'border-color 0.2s',
+      background: hasError ? '#fef2f2' : 'white'
+    };
+  };
+
   // Charger l'historique des inspections
   useEffect(() => {
     const fetchHistorique = async () => {
