@@ -318,7 +318,7 @@ const InspectionsBornesSeches = ({ user }) => {
                     <p><strong>Dernière inspection:</strong> {borne.derniere_inspection_date 
                       ? new Date(borne.derniere_inspection_date).toLocaleDateString('fr-FR')
                       : 'Jamais'}</p>
-                    <p><strong>État:</strong> <span style={{
+                    <p><strong>Statut inspection:</strong> <span style={{
                       padding: '2px 8px',
                       borderRadius: '12px',
                       fontSize: '0.75rem',
@@ -326,9 +326,7 @@ const InspectionsBornesSeches = ({ user }) => {
                       background: getInspectionColor(borne) + '20',
                       color: getInspectionColor(borne)
                     }}>
-                      {getInspectionColor(borne) === '#10b981' && '✓ Conforme'}
-                      {getInspectionColor(borne) === '#f59e0b' && '⚠ À refaire'}
-                      {getInspectionColor(borne) === '#ef4444' && '✗ En défaut'}
+                      {getInspectionLabel(borne)}
                     </span></p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
