@@ -37,7 +37,7 @@ class DefectWorkflowTester:
         self.token = None
         self.admin_credentials = {
             "email": "admin@firemanager.ca",
-            "mot_de_passe": "Admin123!"
+            "mot_de_passe": "admin123"
         }
         self.test_point_id = None
         self.test_inspection_id = None
