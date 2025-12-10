@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { apiGet, apiPost, apiPut } from '../utils/api';
+import { apiGet, apiPost } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
-import PointEauModal from './PointEauModal';
 
 const InspectionsBornesSeches = ({ user }) => {
   const { tenantSlug } = useTenant();
