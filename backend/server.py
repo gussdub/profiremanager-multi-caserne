@@ -25917,6 +25917,60 @@ async def programmer_test_borne_seche(
     
     return {"message": "Date de test programmée avec succès"}
 
+
+# ==================== EPI ENDPOINTS ====================
+
+@api_router.get("/{tenant_slug}/epi/parametres")
+async def get_epi_parametres(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les paramètres EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Retourner les paramètres EPI depuis les paramètres du tenant
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    
+    return {
+        "epi_jours_avance_expiration": parametres.get('epi_jours_avance_expiration', 30),
+        "epi_jour_alerte_inspection_mensuelle": parametres.get('epi_jour_alerte_inspection_mensuelle', 20),
+        "emails_notifications_epi": parametres.get('emails_notifications_epi', [])
+    }
+
+@api_router.put("/{tenant_slug}/epi/parametres")
+async def update_epi_parametres(
+    tenant_slug: str,
+    parametres_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les paramètres EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions (admin ou superviseur)
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Récupérer les paramètres actuels
+    current_parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    
+    # Mettre à jour seulement les champs EPI fournis
+    if 'epi_jours_avance_expiration' in parametres_data:
+        current_parametres['epi_jours_avance_expiration'] = parametres_data['epi_jours_avance_expiration']
+    
+    if 'epi_jour_alerte_inspection_mensuelle' in parametres_data:
+        current_parametres['epi_jour_alerte_inspection_mensuelle'] = parametres_data['epi_jour_alerte_inspection_mensuelle']
+    
+    if 'emails_notifications_epi' in parametres_data:
+        current_parametres['emails_notifications_epi'] = parametres_data['emails_notifications_epi']
+    
+    # Sauvegarder dans la base de données
+    await db.tenants.update_one(
+        {"slug": tenant_slug},
+        {"$set": {"parametres": current_parametres}}
+    )
+    
+    return {"message": "Paramètres EPI mis à jour avec succès"}
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
