@@ -148,13 +148,35 @@ const InspectionsBornesSeches = ({ user }) => {
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
       {/* En-tête */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1f2937' }}>
-          🔥 Inspections Bornes Sèches
-        </h1>
-        <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>
-          Suivi des inspections et tests des bornes sèches
-        </p>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1f2937' }}>
+            🔥 Inspections Bornes Sèches
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>
+            Suivi des inspections et tests des bornes sèches
+          </p>
+        </div>
+        {(user?.role === 'admin' || user?.role === 'superviseur') && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            ➕ Ajouter une borne sèche
+          </button>
+        )}
       </div>
 
       {/* Statistiques */}
