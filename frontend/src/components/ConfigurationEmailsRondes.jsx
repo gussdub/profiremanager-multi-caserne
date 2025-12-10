@@ -11,7 +11,7 @@ const ConfigurationEmailsRondes = ({ tenantSlug }) => {
   useEffect(() => {
     loadConfiguration();
     loadUsers();
-  }, [tenantSlug]);
+  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadUsers = async () => {
     try {
