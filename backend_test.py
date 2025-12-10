@@ -34,17 +34,19 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-class DefectWorkflowTester:
+class DemoEmailConversionTester:
     def __init__(self):
-        self.base_url = "https://defect-workflow.preview.emergentagent.com/api/shefford"
+        self.base_url = "https://defect-workflow.preview.emergentagent.com/api/demo"
         self.headers = {}
         self.token = None
-        self.admin_credentials = {
-            "email": "admin@firemanager.ca",
-            "mot_de_passe": "admin123"
+        self.demo_credentials = {
+            "email": "gussdub@gmail.com",
+            "mot_de_passe": "230685Juin+"
         }
         self.test_point_id = None
         self.test_inspection_id = None
+        self.expected_user_id = "426c0f86-91f2-48fb-9e77-c762f0e9e7dc"
+        self.expected_email = "gussdub@gmail.com"
         
     def authenticate(self):
         """Authentification sur tenant shefford"""
