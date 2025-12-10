@@ -107,42 +107,42 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
           <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
             👥 Destinataires ({selectedUsersDetails.length})
           </h4>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={handleSelectAll}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  backgroundColor: 'white',
-                  color: '#DC2626',
-                  border: '1px solid #DC2626',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.813rem',
-                  fontWeight: '500'
-                }}
-              >
-                Tout sélectionner
-              </button>
-              <button
-                onClick={handleDeselectAll}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  backgroundColor: 'white',
-                  color: '#6B7280',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.813rem',
-                  fontWeight: '500'
-                }}
-              >
-                Tout désélectionner
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={handleSelectAll}
+              style={{
+                padding: '0.4rem 0.75rem',
+                backgroundColor: 'white',
+                color: '#DC2626',
+                border: '1px solid #DC2626',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500'
+              }}
+            >
+              Tout sélectionner
+            </button>
+            <button
+              onClick={handleDeselectAll}
+              style={{
+                padding: '0.4rem 0.75rem',
+                backgroundColor: 'white',
+                color: '#6B7280',
+                border: '1px solid #D1D5DB',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500'
+              }}
+            >
+              Tout désélectionner
+            </button>
           </div>
+        </div>
 
-          {/* Liste des utilisateurs sélectionnables */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+        {/* Liste des utilisateurs sélectionnables */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
             {allUsers.map(user => {
               const isSelected = selectedUsers.includes(user.id);
               return (
