@@ -84,34 +84,18 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
   const selectedUsersDetails = getSelectedUsersDetails();
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1F2937' }}>
-        ⚙️ Paramètres - Gestion des Actifs
-      </h2>
-      <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: '0.95rem' }}>
-        Configurez les notifications automatiques et les paramètres de chaque module
-      </p>
-
-      {/* Section Notifications Bornes Sèches */}
-      <div style={{ 
-        backgroundColor: 'white', 
-        padding: '2rem', 
-        borderRadius: '12px', 
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '1.5rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '2rem' }}>🔥</span>
-          <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, color: '#111827' }}>
-              Inspections Bornes Sèches
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
-              Notifications automatiques lorsqu&apos;un défaut est détecté lors d&apos;une inspection
-            </p>
-          </div>
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <span style={{ fontSize: '2rem' }}>📧</span>
+        <div>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+            Notifications - Défauts Bornes Sèches
+          </h3>
+          <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
+            Notifications automatiques lorsqu&apos;un défaut est détecté lors d&apos;une inspection
+          </p>
         </div>
+      </div>
 
         <div style={{ 
           backgroundColor: '#F9FAFB', 
