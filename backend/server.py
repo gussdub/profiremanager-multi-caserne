@@ -25433,18 +25433,36 @@ async def create_inspection_borne_seche(
     if not point:
         raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
     
-    # Créer l'inspection
+    # Créer l'inspection avec tous les champs du formulaire
     inspection = {
         "id": str(uuid.uuid4()),
         "point_eau_id": point_id,
         "tenant_id": tenant.id,
         "date_inspection": inspection_data.get("date_inspection"),
         "etat_trouve": inspection_data.get("etat_trouve"),
+        "statut_inspection": inspection_data.get("statut_inspection", "conforme"),
         "notes": inspection_data.get("notes", ""),
         "photos": inspection_data.get("photos", []),
-        "nom_inspecteur": inspection_data.get("nom_inspecteur"),
-        "prenom_inspecteur": inspection_data.get("prenom_inspecteur"),
+        "nom_pompier": inspection_data.get("nom_pompier", ""),
+        "prenom_pompier": inspection_data.get("prenom_pompier", ""),
+        "nom_inspecteur": inspection_data.get("nom_pompier", ""),
+        "prenom_inspecteur": inspection_data.get("prenom_pompier", ""),
         "inspecteur_id": current_user.id,
+        "temperature_exterieure": inspection_data.get("temperature_exterieure"),
+        "temps_amorcage": inspection_data.get("temps_amorcage"),
+        "resultats": {
+            "accessibilite_borne": inspection_data.get("accessibilite_borne", []),
+            "joint_present": inspection_data.get("joint_present", "conforme"),
+            "joint_bon_etat": inspection_data.get("joint_bon_etat", "conforme"),
+            "site_accessible": inspection_data.get("site_accessible", "conforme"),
+            "site_deneige": inspection_data.get("site_deneige", "conforme"),
+            "vanne_storz": inspection_data.get("vanne_storz", "conforme"),
+            "vanne_6_pouces": inspection_data.get("vanne_6_pouces", "conforme"),
+            "vanne_4_pouces": inspection_data.get("vanne_4_pouces", "conforme"),
+            "niveau_eau": inspection_data.get("niveau_eau", "conforme"),
+            "pompage_continu": inspection_data.get("pompage_continu", "conforme"),
+            "cavitation": inspection_data.get("cavitation", "conforme")
+        },
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
