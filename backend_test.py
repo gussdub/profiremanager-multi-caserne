@@ -99,19 +99,20 @@ class DefectWorkflowTester:
             print("❌ Aucun point_id disponible pour le test")
             return False
         
-        # Données d'inspection avec défauts
+        # Données d'inspection avec défauts (format exact de la review request)
         inspection_data = {
             "date_inspection": "2025-12-10",
             "etat_trouve": "a_refaire",
             "statut_inspection": "a_refaire",
-            "nom_pompier": "Test",
-            "prenom_pompier": "Agent",
+            "nom_pompier": "Agent",
+            "prenom_pompier": "Test",
             "temperature_exterieure": "5",
             "temps_amorcage": "30",
-            "notes": "Test de workflow avec défauts",
+            "notes": "Test envoi email - Défauts détectés",
             "joint_present": "non_conforme",
             "site_accessible": "conforme",
-            "vanne_storz": "defectuosite"
+            "vanne_storz": "defectuosite",
+            "niveau_eau": "conforme"
         }
         
         url = f"{self.base_url}/points-eau/{self.test_point_id}/inspections"
