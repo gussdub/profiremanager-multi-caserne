@@ -74,8 +74,12 @@ class PDFReportsTester:
         """Authentification sur le tenant"""
         print(f"🔐 Authentification tenant {self.tenant_slug}...")
         
-        auth_url = f"{self.base_url}/auth/tenant-login"
-        response = requests.post(auth_url, json=self.credentials)
+        auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
+        login_data = {
+            "email": self.credentials["email"],
+            "mot_de_passe": self.credentials["password"]
+        }
+        response = requests.post(auth_url, json=login_data)
         
         if response.status_code == 200:
             data = response.json()
