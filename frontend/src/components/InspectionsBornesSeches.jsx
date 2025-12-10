@@ -357,6 +357,92 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
     fetchHistorique();
   }, [borne.id, tenantSlug]);
 
+  // Gestion du chronomètre
+  useEffect(() => {
+    if (chronometerRunning) {
+      chronometerInterval.current = setInterval(() => {
+        setChronometerTime(prev => {
+          const newTime = prev + 1;
+          // Arrêt automatique à 5 minutes (300 secondes)
+          if (newTime >= 300) {
+            stopChronometer(true);
+            playAlarm();
+            return 300;
+          }
+          return newTime;
+        });
+      }, 1000);
+    } else {
+      if (chronometerInterval.current) {
+        clearInterval(chronometerInterval.current);
+      }
+    }
+    return () => {
+      if (chronometerInterval.current) {
+        clearInterval(chronometerInterval.current);
+      }
+    };
+  }, [chronometerRunning]);
+
+  // Support Ctrl+V pour coller des images
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            handlePhotoFromFile(blob);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [formData.photos]);
+
+  const startChronometer = () => {
+    setChronometerRunning(true);
+    setPompageStarted(false);
+  };
+
+  const stopChronometer = (isAutoStop = false) => {
+    if (!pompageStarted && !isAutoStop) {
+      // Premier stop = temps d'amorçage
+      setAmorcageTime(chronometerTime);
+      setFormData(prev => ({ ...prev, temps_amorcage: chronometerTime.toString() }));
+      setPompageStarted(true);
+      // Continue automatiquement pour le pompage continu
+    } else {
+      // Arrêt final
+      setChronometerRunning(false);
+    }
+  };
+
+  const resetChronometer = () => {
+    setChronometerRunning(false);
+    setChronometerTime(0);
+    setAmorcageTime(null);
+    setPompageStarted(false);
+    setFormData(prev => ({ ...prev, temps_amorcage: '' }));
+  };
+
+  const playAlarm = () => {
+    // Alarme sonore simple
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBi6Azfv');
+    audio.play().catch(e => console.log('Alarm sound failed:', e));
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
