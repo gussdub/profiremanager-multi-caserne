@@ -51,11 +51,11 @@ class PDFReportsTester:
         self.base_url = "https://defect-workflow.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
-        self.tenant_slug = "demo"  # Commencer par demo
+        self.tenant_slug = "shefford"  # Tester shefford
         self.credentials = {
-            "tenant_slug": "demo",
-            "email": "gussdub@gmail.com",
-            "password": "230685Juin+"
+            "tenant_slug": "shefford",
+            "email": "admin@firemanager.ca",
+            "password": "Admin123!"
         }
         
         # Résultats des tests
