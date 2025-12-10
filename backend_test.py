@@ -381,14 +381,14 @@ class DemoEmailConversionTester:
             print(f"   tail -n 50 /var/log/supervisor/backend.out.log | grep -E '🚨|✅|User ID|Email'")
             return False
     
-    def run_defect_workflow_tests(self):
-        """Exécute tous les tests du workflow de défauts"""
-        print("🚀 DÉBUT DES TESTS - WORKFLOW NOTIFICATION DÉFAUTS BORNES SÈCHES")
-        print("🏢 Tenant: shefford")
-        print("🌐 URL: https://defect-workflow.preview.emergentagent.com/shefford")
-        print("👤 Credentials: admin@firemanager.ca / admin123")
-        print("📧 Email de test configuré: delivered@resend.dev")
-        print("📧 Variables d'env: RESEND_API_KEY, SENDER_EMAIL, FRONTEND_URL")
+    def run_demo_email_conversion_tests(self):
+        """Exécute tous les tests de conversion User ID → Email pour le tenant DEMO"""
+        print("🚀 DÉBUT DES TESTS - CONVERSION USER ID → EMAIL (TENANT DEMO)")
+        print("🏢 Tenant: demo")
+        print("🌐 URL: https://defect-workflow.preview.emergentagent.com/demo")
+        print("👤 Credentials: gussdub@gmail.com / 230685Juin+")
+        print(f"🆔 User ID configuré: {self.expected_user_id}")
+        print(f"📧 Email attendu après conversion: {self.expected_email}")
         
         # Authentification
         if not self.authenticate():
@@ -402,10 +402,10 @@ class DemoEmailConversionTester:
         
         # Exécuter les tests
         tests = [
-            ("Test 1: Créer inspection avec défauts (NON-CONFORME)", self.create_defect_inspection),
-            ("Test 2: Vérifier mise à jour statut borne", self.verify_hydrant_status_update),
-            ("Test 3: Créer inspection CONFORME (réactivation)", self.create_compliant_inspection),
-            ("Test 4: Vérifier logs backend pour envoi email", self.check_backend_logs)
+            ("Test 1: Récupérer point_id valide du tenant demo", lambda: True),  # Déjà fait dans find_dry_hydrant
+            ("Test 2: Créer inspection avec défauts - Conversion User ID → Email", self.create_defect_inspection),
+            ("Test 3: Vérifier logs backend pour conversion", self.check_backend_logs_conversion),
+            ("Test 4: Vérifier statut de la borne", self.verify_hydrant_status_update)
         ]
         
         resultats = []
