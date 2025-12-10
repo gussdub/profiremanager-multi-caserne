@@ -990,13 +990,14 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
 
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                Photos
+                Photos ({formData.photos.length}/10)
               </label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
                 onChange={handlePhotoUpload}
-                disabled={uploadingPhoto}
+                disabled={uploadingPhoto || formData.photos.length >= 10}
                 style={{
                   width: '100%',
                   padding: '0.75rem',
@@ -1005,6 +1006,9 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                   fontSize: '0.875rem'
                 }}
               />
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                💡 Astuce : Vous pouvez coller des images avec <strong>Ctrl+V</strong> (max 10 photos, 5MB chacune, JPEG/PNG/WEBP)
+              </p>
               {uploadingPhoto && <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>Téléchargement...</p>}
               
               {formData.photos.length > 0 && (
@@ -1014,7 +1018,7 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                       <img
                         src={photo}
                         alt={`Photo ${index + 1}`}
-                        style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e5e7eb' }}
+                        style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e5e7eb' }}
                       />
                       <button
                         type="button"
@@ -1030,7 +1034,10 @@ const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
                           width: '24px',
                           height: '24px',
                           cursor: 'pointer',
-                          fontSize: '0.75rem'
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                       >
                         ✕
