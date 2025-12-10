@@ -481,26 +481,6 @@ const InspectionsBornesSeches = ({ user }) => {
         </div>
       )}
 
-      {/* Modal de création/modification de borne */}
-      {showCreateModal && (
-        <PointEauModal
-          point={selectedBorne}
-          tenantSlug={tenantSlug}
-          apiPost={apiPost}
-          apiPut={apiPut}
-          onClose={() => {
-            setShowCreateModal(false);
-            setSelectedBorne(null);
-          }}
-          onSave={() => {
-            setShowCreateModal(false);
-            setSelectedBorne(null);
-            fetchBornesSeches();
-          }}
-          forcedType="borne_seche"
-        />
-      )}
-
       {/* Modal d'inspection */}
       {showInspectionModal && (
         <InspectionModal
