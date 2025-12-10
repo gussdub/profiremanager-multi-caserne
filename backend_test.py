@@ -54,8 +54,8 @@ class PDFReportsTester:
         self.tenant_slug = "shefford"  # Tester shefford
         self.credentials = {
             "tenant_slug": "shefford",
-            "email": "admin@firemanager.ca",
-            "password": "Admin123!"
+            "email": "gussdub@gmail.com",
+            "password": "230685Juin+"
         }
         
         # Résultats des tests
