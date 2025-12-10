@@ -83,7 +83,7 @@ class PDFReportsTester:
         
         if response.status_code == 200:
             data = response.json()
-            self.token = data.get('token')
+            self.token = data.get('access_token')
             self.headers = {'Authorization': f'Bearer {self.token}'}
             user_info = data.get('user', {})
             print(f"✅ Authentification réussie - Token obtenu")
