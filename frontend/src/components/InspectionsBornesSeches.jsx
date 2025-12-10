@@ -396,6 +396,104 @@ const InspectionsBornesSeches = ({ user }) => {
           ))}
         </MapContainer>
       </div>
+      ) : (
+        /* Vue Liste */
+        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Icône</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>N° Identification</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Nom</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Adresse</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Dernière Inspection</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Statut</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bornesSeches.map(borne => (
+                  <tr key={borne.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '1rem' }}>
+                      <img src={borneSecheIcon} alt="icon" style={{ width: '40px', height: '40px' }} />
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                      {borne.numero_identification}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                      {borne.nom}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                      {borne.adresse || 'Non défini'}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                      {borne.derniere_inspection_date 
+                        ? new Date(borne.derniere_inspection_date).toLocaleDateString('fr-FR')
+                        : 'Jamais'}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        background: getInspectionColor(borne) + '20',
+                        color: getInspectionColor(borne)
+                      }}>
+                        {getInspectionColor(borne) === '#10b981' && '✓ Conforme'}
+                        {getInspectionColor(borne) === '#f59e0b' && '⚠ À refaire'}
+                        {getInspectionColor(borne) === '#ef4444' && '✗ En défaut'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => openInspectionModal(borne)}
+                          style={{
+                            padding: '0.5rem 0.75rem',
+                            background: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          📋 Inspecter
+                        </button>
+                        {(user?.role === 'admin' || user?.role === 'superviseur') && (
+                          <button
+                            onClick={() => setSelectedBorne(borne) || setShowCreateModal(true)}
+                            style={{
+                              padding: '0.5rem 0.75rem',
+                              background: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            ✏️ Modifier
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {bornesSeches.length === 0 && (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
+              Aucune borne sèche trouvée
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal d'inspection */}
       {showInspectionModal && (
