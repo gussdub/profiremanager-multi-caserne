@@ -1543,33 +1543,33 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Dates de Tests */}
         <div style={{ 
           background: 'white', 
-          padding: '25px', 
+          padding: '20px', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
-          marginBottom: '20px'
+          marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>🔥</span> Dates de Tests - Bornes Sèches
           </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '25px', fontSize: '14px' }}>
+          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
             Configurez les dates auxquelles les tests des bornes sèches doivent être effectués
           </p>
 
           {/* Formulaire d'ajout */}
           <div style={{ 
             background: '#f8f9fa', 
-            padding: '20px', 
+            padding: '15px', 
             borderRadius: '8px', 
-            marginBottom: '25px',
+            marginBottom: '15px',
             border: '1px solid #dee2e6'
           }}>
-            <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
-              Ajouter une nouvelle date de test
+            <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#34495e' }}>
+              Ajouter une nouvelle date
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '15px', alignItems: 'end' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr auto', gap: '10px', alignItems: 'end' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '600', color: '#555' }}>
                   Date *
                 </label>
                 <input
@@ -1578,15 +1578,15 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   onChange={(e) => setNouvelleDate(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '10px',
+                    padding: '8px',
                     borderRadius: '6px',
                     border: '1px solid #ced4da',
-                    fontSize: '14px'
+                    fontSize: '13px'
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '600', color: '#555' }}>
                   Description
                 </label>
                 <input
@@ -1596,10 +1596,10 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   placeholder="Ex: Test printemps, Test automne..."
                   style={{
                     width: '100%',
-                    padding: '10px',
+                    padding: '8px',
                     borderRadius: '6px',
                     border: '1px solid #ced4da',
-                    fontSize: '14px'
+                    fontSize: '13px'
                   }}
                 />
               </div>
@@ -1607,15 +1607,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                 onClick={ajouterDateTest}
                 disabled={loading || !nouvelleDate}
                 style={{
-                  padding: '10px 20px',
+                  padding: '8px 16px',
                   background: '#27ae60',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: loading || !nouvelleDate ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: '600',
-                  opacity: loading || !nouvelleDate ? 0.6 : 1
+                  opacity: loading || !nouvelleDate ? 0.6 : 1,
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {loading ? 'Ajout...' : '+ Ajouter'}
@@ -1625,8 +1626,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
           {/* Liste des dates configurées */}
           <div>
-            <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
-              Dates de tests planifiées
+            <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#34495e' }}>
+              Dates planifiées
             </h4>
             {!parametres.dates_tests_bornes_seches || parametres.dates_tests_bornes_seches.length === 0 ? (
               <div style={{ 
