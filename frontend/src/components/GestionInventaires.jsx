@@ -30,7 +30,7 @@ const InventairesTab = ({ tenantSlug }) => {
   const fetchModeles = async () => {
     setLoading(true);
     try {
-      const data = await apiGet(tenantSlug, '/inventaire/modeles');
+      const data = await apiGet(tenantSlug, '/actifs/inventaires/modeles');
       setModeles(data || []);
     } catch (error) {
       console.error('Erreur chargement modèles:', error);
