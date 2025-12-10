@@ -929,7 +929,6 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                 </label>
                 <input
                   type="number"
-                  required
                   value={formData.temperature_exterieure}
                   onChange={(e) => setFormData({ ...formData, temperature_exterieure: e.target.value })}
                   placeholder="Ex: -5, 20"
