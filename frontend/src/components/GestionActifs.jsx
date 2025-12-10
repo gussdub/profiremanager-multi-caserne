@@ -1490,201 +1490,315 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      {/* Section Configuration des emails (existante) */}
-      <div style={{ marginBottom: '40px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '20px', color: '#2c3e50' }}>
-          📧 Configuration des Emails
-        </h2>
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
+        ⚙️ Paramètres - Gestion des Actifs
+      </h1>
+      <p style={{ color: '#6B7280', marginBottom: '40px', fontSize: '15px' }}>
+        Configurez les paramètres et notifications pour chaque module
+      </p>
+
+      {/* ========== MODULE VÉHICULES ========== */}
+      <div style={{ 
+        background: '#f8f9fa', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        border: '2px solid #e0e0e0',
+        marginBottom: '30px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '32px' }}>🚗</span>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
+              Véhicules
+            </h2>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+              Configuration des notifications pour les rondes de sécurité
+            </p>
+          </div>
+        </div>
         <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
       </div>
 
-      {/* Section Dates de tests bornes sèches */}
+      {/* ========== MODULE APPROVISIONNEMENT EN EAU ========== */}
       <div style={{ 
-        background: 'white', 
+        background: '#f8f9fa', 
         padding: '30px', 
         borderRadius: '12px', 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        border: '1px solid #e0e0e0'
+        border: '2px solid #e0e0e0',
+        marginBottom: '30px'
       }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
-          🔥 Dates de Tests - Bornes Sèches
-        </h2>
-        <p style={{ color: '#7f8c8d', marginBottom: '30px', fontSize: '14px' }}>
-          Configurer les dates auxquelles les tests des bornes sèches doivent être effectués
-        </p>
-
-        {/* Formulaire d'ajout */}
-        <div style={{ 
-          background: '#f8f9fa', 
-          padding: '20px', 
-          borderRadius: '8px', 
-          marginBottom: '30px',
-          border: '1px solid #dee2e6'
-        }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
-            Ajouter une nouvelle date de test
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '15px', alignItems: 'end' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
-                Date *
-              </label>
-              <input
-                type="date"
-                value={nouvelleDate}
-                onChange={(e) => setNouvelleDate(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #ced4da',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
-                Description
-              </label>
-              <input
-                type="text"
-                value={nouvelleDescription}
-                onChange={(e) => setNouvelleDescription(e.target.value)}
-                placeholder="Ex: Test printemps, Test automne..."
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #ced4da',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <button
-              onClick={ajouterDateTest}
-              disabled={loading || !nouvelleDate}
-              style={{
-                padding: '10px 20px',
-                background: '#27ae60',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading || !nouvelleDate ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                opacity: loading || !nouvelleDate ? 0.6 : 1
-              }}
-            >
-              {loading ? 'Ajout...' : '+ Ajouter'}
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
+          <span style={{ fontSize: '32px' }}>💧</span>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
+              Approvisionnement en Eau
+            </h2>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+              Configuration des dates de tests et notifications pour les bornes sèches
+            </p>
           </div>
         </div>
 
-        {/* Liste des dates configurées */}
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
-            Dates de tests planifiées
+        {/* Sous-section: Dates de Tests */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginBottom: '20px'
+        }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🔥</span> Dates de Tests - Bornes Sèches
           </h3>
-          {!parametres.dates_tests_bornes_seches || parametres.dates_tests_bornes_seches.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '40px', 
-              background: '#f8f9fa', 
-              borderRadius: '8px',
-              color: '#7f8c8d'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📅</div>
-              <p>Aucune date de test configurée</p>
-              <p style={{ fontSize: '13px', marginTop: '5px' }}>Ajoutez une date ci-dessus pour commencer</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {parametres.dates_tests_bornes_seches
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map((dateTest, index) => {
-                  const dateObj = new Date(dateTest.date);
-                  const estPasse = dateObj < new Date();
-                  const estProche = !estPasse && (dateObj - new Date()) < (30 * 24 * 60 * 60 * 1000); // < 30 jours
+          <p style={{ color: '#7f8c8d', marginBottom: '25px', fontSize: '14px' }}>
+            Configurez les dates auxquelles les tests des bornes sèches doivent être effectués
+          </p>
 
-                  return (
-                    <div 
-                      key={index}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '15px 20px',
-                        background: estPasse ? '#fff3cd' : estProche ? '#d1ecf1' : 'white',
-                        border: `1px solid ${estPasse ? '#ffc107' : estProche ? '#0dcaf0' : '#dee2e6'}`,
-                        borderRadius: '8px'
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px', color: '#2c3e50' }}>
-                          📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#6c757d' }}>
-                          {dateTest.description}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        {estPasse && (
-                          <span style={{
-                            padding: '4px 12px',
-                            background: '#ffc107',
-                            color: '#000',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
-                            Passé
-                          </span>
-                        )}
-                        {estProche && !estPasse && (
-                          <span style={{
-                            padding: '4px 12px',
-                            background: '#0dcaf0',
-                            color: '#000',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
-                            Proche
-                          </span>
-                        )}
-                        <button
-                          onClick={() => supprimerDateTest(index)}
-                          disabled={loading}
-                          style={{
-                            padding: '8px 16px',
-                            background: '#e74c3c',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            opacity: loading ? 0.6 : 1
-                          }}
-                        >
-                          🗑️ Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* Formulaire d'ajout */}
+          <div style={{ 
+            background: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            marginBottom: '25px',
+            border: '1px solid #dee2e6'
+          }}>
+            <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
+              Ajouter une nouvelle date de test
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '15px', alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={nouvelleDate}
+                  onChange={(e) => setNouvelleDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: '1px solid #ced4da',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#555' }}>
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={nouvelleDescription}
+                  onChange={(e) => setNouvelleDescription(e.target.value)}
+                  placeholder="Ex: Test printemps, Test automne..."
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: '1px solid #ced4da',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+              <button
+                onClick={ajouterDateTest}
+                disabled={loading || !nouvelleDate}
+                style={{
+                  padding: '10px 20px',
+                  background: '#27ae60',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: loading || !nouvelleDate ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  opacity: loading || !nouvelleDate ? 0.6 : 1
+                }}
+              >
+                {loading ? 'Ajout...' : '+ Ajouter'}
+              </button>
             </div>
-          )}
+          </div>
+
+          {/* Liste des dates configurées */}
+          <div>
+            <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#34495e' }}>
+              Dates de tests planifiées
+            </h4>
+            {!parametres.dates_tests_bornes_seches || parametres.dates_tests_bornes_seches.length === 0 ? (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px', 
+                background: '#f8f9fa', 
+                borderRadius: '8px',
+                color: '#7f8c8d'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>📅</div>
+                <p>Aucune date de test configurée</p>
+                <p style={{ fontSize: '13px', marginTop: '5px' }}>Ajoutez une date ci-dessus pour commencer</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {parametres.dates_tests_bornes_seches
+                  .sort((a, b) => new Date(a.date) - new Date(b.date))
+                  .map((dateTest, index) => {
+                    const dateObj = new Date(dateTest.date);
+                    const estPasse = dateObj < new Date();
+                    const estProche = !estPasse && (dateObj - new Date()) < (30 * 24 * 60 * 60 * 1000);
+
+                    return (
+                      <div 
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '15px 20px',
+                          background: estPasse ? '#fff3cd' : estProche ? '#d1ecf1' : 'white',
+                          border: `1px solid ${estPasse ? '#ffc107' : estProche ? '#0dcaf0' : '#dee2e6'}`,
+                          borderRadius: '8px'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px', color: '#2c3e50' }}>
+                            📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                            {dateTest.description}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          {estPasse && (
+                            <span style={{
+                              padding: '4px 12px',
+                              background: '#ffc107',
+                              color: '#000',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              Passé
+                            </span>
+                          )}
+                          {estProche && !estPasse && (
+                            <span style={{
+                              padding: '4px 12px',
+                              background: '#0dcaf0',
+                              color: '#000',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              Proche
+                            </span>
+                          )}
+                          <button
+                            onClick={() => supprimerDateTest(index)}
+                            disabled={loading}
+                            style={{
+                              padding: '8px 16px',
+                              background: '#e74c3c',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: loading ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              opacity: loading ? 0.6 : 1
+                            }}
+                          >
+                            🗑️ Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sous-section: Notifications Défauts */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0'
+        }}>
+          <ConfigurationEmailsBornesSeches tenantSlug={tenantSlug} />
         </div>
       </div>
 
-      {/* Section Approvisionnement en Eau - Configuration des notifications */}
-      <div style={{ marginTop: '40px' }}>
-        <ConfigurationEmailsBornesSeches tenantSlug={tenantSlug} />
+      {/* ========== MODULE INVENTAIRES (À VENIR) ========== */}
+      <div style={{ 
+        background: '#f8f9fa', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        border: '2px solid #e0e0e0',
+        marginBottom: '30px',
+        opacity: 0.6
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+          <span style={{ fontSize: '32px' }}>📋</span>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
+              Inventaires
+            </h2>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+              Configuration des paramètres d&apos;inventaire
+            </p>
+          </div>
+        </div>
+        <div style={{ 
+          padding: '30px', 
+          backgroundColor: 'white', 
+          borderRadius: '10px',
+          textAlign: 'center',
+          border: '2px dashed #D1D5DB'
+        }}>
+          <p style={{ color: '#6B7280', fontSize: '15px', margin: 0 }}>
+            🚧 Configuration à venir
+          </p>
+        </div>
+      </div>
+
+      {/* ========== MODULE GESTION EPI (À VENIR) ========== */}
+      <div style={{ 
+        background: '#f8f9fa', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        border: '2px solid #e0e0e0',
+        opacity: 0.6
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+          <span style={{ fontSize: '32px' }}>🛡️</span>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
+              Gestion EPI
+            </h2>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+              Configuration des notifications pour les équipements de protection
+            </p>
+          </div>
+        </div>
+        <div style={{ 
+          padding: '30px', 
+          backgroundColor: 'white', 
+          borderRadius: '10px',
+          textAlign: 'center',
+          border: '2px dashed #D1D5DB'
+        }}>
+          <p style={{ color: '#6B7280', fontSize: '15px', margin: 0 }}>
+            🚧 Configuration à venir
+          </p>
+        </div>
       </div>
     </div>
   );
