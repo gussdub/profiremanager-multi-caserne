@@ -143,7 +143,9 @@ const InspectionsBornesSeches = ({ user }) => {
   const changeStatutBorne = async (borneId, nouveauStatut) => {
     try {
       const payload = {
-        statut_inspection: nouveauStatut
+        statut_inspection: nouveauStatut,
+        // Mettre à jour aussi l'état de la borne
+        etat: nouveauStatut === 'a_refaire' ? 'hors_service' : 'fonctionnelle'
       };
       
       await apiPut(tenantSlug, `/points-eau/${borneId}`, payload);
@@ -152,12 +154,12 @@ const InspectionsBornesSeches = ({ user }) => {
       fetchBornesSeches();
       
       const message = nouveauStatut === 'a_refaire' 
-        ? 'Borne marquée "À refaire"' 
-        : 'Statut réinitialisé';
+        ? '⚠️ Borne marquée "À refaire" et mise hors service' 
+        : '✅ Statut réinitialisé - Borne remise en service';
       alert(message);
     } catch (error) {
       console.error('Erreur changement statut:', error);
-      alert('Erreur lors du changement de statut');
+      alert('❌ Erreur lors du changement de statut');
     }
   };
 
