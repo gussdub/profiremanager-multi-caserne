@@ -6,10 +6,11 @@ const PointEauModal = ({
   onSave, 
   tenantSlug, 
   apiPost, 
-  apiPut 
+  apiPut,
+  forcedType 
 }) => {
   const [formData, setFormData] = useState({
-    type: 'borne_fontaine',
+    type: forcedType || 'borne_fontaine',
     numero_identification: '',
     latitude: '',
     longitude: '',
