@@ -108,7 +108,7 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
               Inspections Bornes Sèches
             </h3>
             <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
-              Notifications automatiques lorsqu'un défaut est détecté lors d'une inspection
+              Notifications automatiques lorsqu&apos;un défaut est détecté lors d&apos;une inspection
             </p>
           </div>
         </div>
