@@ -243,8 +243,9 @@ const InspectionsBornesSeches = ({ user }) => {
         </div>
       </div>
 
-      {/* Carte */}
-      <div style={{ height: 'calc(100vh - 400px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' }}>
+      {/* Contenu selon la vue */}
+      {currentView === 'carte' ? (
+        <div style={{ height: 'calc(100vh - 400px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' }}>
         {/* Toggle Plan/Satellite */}
         <div style={{
           position: 'absolute',
