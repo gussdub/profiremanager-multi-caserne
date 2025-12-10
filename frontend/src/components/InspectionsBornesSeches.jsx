@@ -933,13 +933,7 @@ const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
                   value={formData.temperature_exterieure}
                   onChange={(e) => setFormData({ ...formData, temperature_exterieure: e.target.value })}
                   placeholder="Ex: -5, 20"
-                  style={{
-                    width: '200px',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
+                  style={getFieldStyle('température')}
                 />
                 <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>°C</span>
               </div>
