@@ -179,6 +179,42 @@ const InspectionsBornesSeches = ({ user }) => {
         )}
       </div>
 
+      {/* Toggle Carte/Liste */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', background: 'white', borderRadius: '8px', padding: '0.25rem', width: 'fit-content', border: '1px solid #e5e7eb' }}>
+        <button
+          onClick={() => setCurrentView('carte')}
+          style={{
+            padding: '0.5rem 1rem',
+            background: currentView === 'carte' ? '#dc2626' : 'transparent',
+            color: currentView === 'carte' ? 'white' : '#6b7280',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            transition: 'all 0.2s'
+          }}
+        >
+          🗺️ Carte
+        </button>
+        <button
+          onClick={() => setCurrentView('liste')}
+          style={{
+            padding: '0.5rem 1rem',
+            background: currentView === 'liste' ? '#dc2626' : 'transparent',
+            color: currentView === 'liste' ? 'white' : '#6b7280',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            transition: 'all 0.2s'
+          }}
+        >
+          📋 Liste
+        </button>
+      </div>
+
       {/* Statistiques */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
