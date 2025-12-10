@@ -299,9 +299,7 @@ const InspectionsBornesSeches = ({ user }) => {
 };
 
 // Composant Modal d'inspection
-const InspectionModal = ({ borne, tenantSlug, onClose, onSave }) => {
-  const { user } = useTenant();
-  
+const InspectionModal = ({ borne, tenantSlug, user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     // Section 1: Conditions extérieures
     conditions_atmospheriques: '',
