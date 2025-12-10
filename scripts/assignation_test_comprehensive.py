@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://water-asset-tracker.preview.emergentagent.com/api"
+BACKEND_URL = "https://water-inspection.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
