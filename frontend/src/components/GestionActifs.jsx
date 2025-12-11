@@ -559,6 +559,30 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           }}
         />
       )}
+
+      {showInventaireModal && selectedVehiculeForInventaire && (
+        <InventaireVehiculeModal
+          vehicule={selectedVehiculeForInventaire}
+          user={user}
+          onClose={() => {
+            setShowInventaireModal(false);
+            setSelectedVehiculeForInventaire(null);
+          }}
+          onSuccess={() => {
+            fetchVehicules();
+          }}
+        />
+      )}
+
+      {showHistoriqueInventairesModal && selectedItem && (
+        <HistoriqueInventairesVehicule
+          vehicule={selectedItem}
+          onClose={() => {
+            setShowHistoriqueInventairesModal(false);
+            setSelectedItem(null);
+          }}
+        />
+      )}
     </div>
   );
 };
