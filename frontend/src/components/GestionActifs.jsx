@@ -367,6 +367,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               onViewFicheVie={handleViewFicheVie}
               onViewInspections={handleViewInspections}
               onCreateInspection={handleCreateInspection}
+              onCreateInventaire={handleCreateInventaire}
+              onViewHistoriqueInventaires={handleViewHistoriqueInventaires}
             />
           ) : activeTab === 'eau' ? (
             <div>
@@ -582,7 +584,7 @@ const TabButton = ({ label, active, onClick }) => (
   </button>
 );
 
-const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection }) => {
+const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires }) => {
   if (vehicules.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '60px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
@@ -605,6 +607,8 @@ const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVi
           onViewFicheVie={onViewFicheVie}
           onViewInspections={onViewInspections}
           onCreateInspection={onCreateInspection}
+          onCreateInventaire={onCreateInventaire}
+          onViewHistoriqueInventaires={onViewHistoriqueInventaires}
         />
       ))}
     </div>
