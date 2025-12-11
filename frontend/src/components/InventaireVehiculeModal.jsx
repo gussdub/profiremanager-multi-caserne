@@ -32,17 +32,21 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     // Initialiser les items avec le modèle
     const items = [];
     modele.sections.forEach(section => {
+      // Le type_champ est maintenant au niveau de la section, pas de l'item
+      const sectionTypeChamp = section.type_champ || 'checkbox';
+      const sectionOptions = section.options || [];
+      
       section.items.forEach(item => {
         let initialValue;
         
-        if (item.type_champ === 'checkbox') {
+        if (sectionTypeChamp === 'checkbox') {
           initialValue = []; // Array pour multiple sélection
-        } else if (item.type_champ === 'radio') {
-          initialValue = item.options?.length > 0 ? item.options[0].label : '';
-        } else if (item.type_champ === 'number') {
+        } else if (sectionTypeChamp === 'radio') {
+          initialValue = sectionOptions.length > 0 ? sectionOptions[0].label : '';
+        } else if (sectionTypeChamp === 'number') {
           initialValue = '0';
-        } else if (item.type_champ === 'select') {
-          initialValue = item.options?.length > 0 ? item.options[0].label : '';
+        } else if (sectionTypeChamp === 'select') {
+          initialValue = sectionOptions.length > 0 ? sectionOptions[0].label : '';
         } else {
           initialValue = '';
         }
@@ -50,11 +54,11 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         items.push({
           section: section.titre,
           section_photo_url: section.photo_url,
-          item_id: item.id,
+          section_type_champ: sectionTypeChamp, // Type de la section
+          item_id: item.id || `${section.titre}_${item.nom}`,
           nom: item.nom,
-          type_champ: item.type_champ || 'checkbox',
           photo_url: item.photo_url,
-          options: item.options || [],
+          options: sectionOptions, // Options de la section
           obligatoire: item.obligatoire,
           valeur: initialValue, // Valeur saisie
           notes: '',
@@ -93,23 +97,25 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       // Détecter les alertes
       const alertes = [];
       itemsInventaire.forEach(item => {
-        if (item.type_champ === 'checkbox' && Array.isArray(item.valeur)) {
+        if (item.section_type_champ === 'checkbox' && Array.isArray(item.valeur)) {
           // Pour checkbox, vérifier chaque option cochée
           item.valeur.forEach(valeurCochee => {
             const option = item.options.find(opt => opt.label === valeurCochee);
             if (option?.declencherAlerte) {
               alertes.push({
+                section: item.section,
                 item: item.nom,
                 valeur: valeurCochee,
                 notes: item.notes
               });
             }
           });
-        } else if (item.type_champ === 'radio') {
+        } else if (item.section_type_champ === 'radio') {
           // Pour radio, vérifier l'option sélectionnée
           const option = item.options.find(opt => opt.label === item.valeur);
           if (option?.declencherAlerte) {
             alertes.push({
+              section: item.section,
               item: item.nom,
               valeur: item.valeur,
               notes: item.notes
@@ -129,8 +135,9 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         effectue_par_id: user.id,
         items_coches: itemsInventaire.map(item => ({
           item_id: item.item_id,
+          section: item.section,
           nom: item.nom,
-          type_champ: item.type_champ,
+          type_champ: item.section_type_champ,
           valeur: item.valeur,
           notes: item.notes || '',
           photo_prise: item.photo_prise || ''
@@ -347,7 +354,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                     <div style={{ display: 'grid', gap: '12px' }}>
                       {items.map(item => {
                         const renderChamp = () => {
-                          switch(item.type_champ) {
+                          switch(item.section_type_champ) {
                             case 'checkbox':
                               return (
                                 <>
