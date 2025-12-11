@@ -102,53 +102,56 @@ class PDFReportsTester:
         """Récupérer les IDs nécessaires pour les tests PDF"""
         print("\n🔍 Récupération des IDs de test...")
         
-        # 1. Récupérer un bâtiment
+        # 1. Récupérer un bâtiment pour les tests prévention
         try:
             url = f"{self.base_url}/{self.tenant_slug}/prevention/batiments"
             response = requests.get(url, headers=self.headers)
+            print(f"🏢 Bâtiments - Status: {response.status_code}")
             if response.status_code == 200:
                 batiments = response.json()
                 if batiments and len(batiments) > 0:
                     self.test_ids["batiment_id"] = batiments[0].get('id')
                     print(f"✅ Bâtiment trouvé: {self.test_ids['batiment_id']}")
+                else:
+                    print("⚠️ Aucun bâtiment trouvé")
+            else:
+                print(f"⚠️ Erreur récupération bâtiments: {response.text[:200]}")
         except Exception as e:
-            print(f"⚠️ Erreur récupération bâtiment: {e}")
+            print(f"⚠️ Exception récupération bâtiment: {e}")
         
-        # 2. Récupérer une inspection
+        # 2. Récupérer une ronde de sécurité
         try:
-            url = f"{self.base_url}/{self.tenant_slug}/prevention/inspections"
+            url = f"{self.base_url}/{self.tenant_slug}/prevention/rondes"
             response = requests.get(url, headers=self.headers)
-            if response.status_code == 200:
-                inspections = response.json()
-                if inspections and len(inspections) > 0:
-                    self.test_ids["inspection_id"] = inspections[0].get('id')
-                    print(f"✅ Inspection trouvée: {self.test_ids['inspection_id']}")
-        except Exception as e:
-            print(f"⚠️ Erreur récupération inspection: {e}")
-        
-        # 3. Récupérer un plan d'intervention
-        try:
-            url = f"{self.base_url}/{self.tenant_slug}/prevention/plans-intervention"
-            response = requests.get(url, headers=self.headers)
-            if response.status_code == 200:
-                plans = response.json()
-                if plans and len(plans) > 0:
-                    self.test_ids["plan_id"] = plans[0].get('id')
-                    print(f"✅ Plan d'intervention trouvé: {self.test_ids['plan_id']}")
-        except Exception as e:
-            print(f"⚠️ Erreur récupération plan: {e}")
-        
-        # 4. Récupérer une ronde de sécurité
-        try:
-            url = f"{self.base_url}/{self.tenant_slug}/actifs/rondes-securite"
-            response = requests.get(url, headers=self.headers)
+            print(f"🔄 Rondes - Status: {response.status_code}")
             if response.status_code == 200:
                 rondes = response.json()
                 if rondes and len(rondes) > 0:
                     self.test_ids["ronde_id"] = rondes[0].get('id')
-                    print(f"✅ Ronde de sécurité trouvée: {self.test_ids['ronde_id']}")
+                    print(f"✅ Ronde trouvée: {self.test_ids['ronde_id']}")
+                else:
+                    print("⚠️ Aucune ronde trouvée")
+            else:
+                print(f"⚠️ Erreur récupération rondes: {response.text[:200]}")
         except Exception as e:
-            print(f"⚠️ Erreur récupération ronde: {e}")
+            print(f"⚠️ Exception récupération ronde: {e}")
+        
+        # 3. Récupérer une borne sèche
+        try:
+            url = f"{self.base_url}/{self.tenant_slug}/points-eau"
+            response = requests.get(url, headers=self.headers)
+            print(f"💧 Points d'eau - Status: {response.status_code}")
+            if response.status_code == 200:
+                bornes = response.json()
+                if bornes and len(bornes) > 0:
+                    self.test_ids["borne_id"] = bornes[0].get('id')
+                    print(f"✅ Borne trouvée: {self.test_ids['borne_id']}")
+                else:
+                    print("⚠️ Aucune borne trouvée")
+            else:
+                print(f"⚠️ Erreur récupération bornes: {response.text[:200]}")
+        except Exception as e:
+            print(f"⚠️ Exception récupération borne: {e}")
         
         print(f"📊 IDs récupérés: {self.test_ids}")
     
