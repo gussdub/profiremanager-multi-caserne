@@ -55,7 +55,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
 
   const handleSaveEmailsConfig = async (newEmails) => {
     try {
-      await apiPut(tenantSlug, '/parametres', {
+      await apiPut(tenantSlug, '/actifs/parametres', {
         emails_notifications_inventaires_vehicules: newEmails
       });
       setEmailsNotifications(newEmails);
