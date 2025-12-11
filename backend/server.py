@@ -8272,6 +8272,9 @@ async def export_rapport_competences(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    # Récupérer le tenant
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
     # Récupérer les données
     rapport_response = await rapport_par_competences(tenant_slug, annee, user_id, current_user)
     rapport_data = rapport_response["competences"]
@@ -8279,7 +8282,6 @@ async def export_rapport_competences(
     # Récupérer le nom de l'utilisateur si filtré
     user_nom = None
     if user_id:
-        tenant = await get_tenant_from_slug(tenant_slug)
         user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
         if user:
             user_nom = f"{user.get('prenom', '')} {user.get('nom', '')}"
