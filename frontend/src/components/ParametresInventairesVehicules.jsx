@@ -53,6 +53,18 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     }
   };
 
+  const handleSaveEmailsConfig = async (newEmails) => {
+    try {
+      await apiPut(tenantSlug, '/parametres', {
+        emails_notifications_inventaires_vehicules: newEmails
+      });
+      setEmailsNotifications(newEmails);
+    } catch (error) {
+      console.error('Erreur sauvegarde config emails:', error);
+      alert('❌ Erreur lors de la sauvegarde');
+    }
+  };
+
   const fetchVehicules = async () => {
     try {
       const data = await apiGet(tenantSlug, '/actifs/vehicules');
@@ -106,10 +118,24 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
       { 
         titre: `Section ${sections.length + 1}`, 
         photo_url: '',
+        type_champ: 'checkbox', // Type pour toute la section
+        options: [], // Options pour checkbox/radio/select
         items: [], 
         ordre: sections.length 
       }
     ]);
+  };
+
+  const dupliquerSection = (index) => {
+    const sectionADupliquer = sections[index];
+    const nouveleSection = {
+      ...sectionADupliquer,
+      titre: `${sectionADupliquer.titre} (Copie)`,
+      items: sectionADupliquer.items.map(item => ({ ...item })),
+      options: sectionADupliquer.options ? sectionADupliquer.options.map(opt => ({ ...opt })) : [],
+      ordre: sections.length
+    };
+    setSections([...sections, nouveleSection]);
   };
 
   const supprimerSection = (index) => {
@@ -120,11 +146,8 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     const newSections = [...sections];
     newSections[sectionIndex].items.push({
       nom: '',
-      type_champ: 'checkbox', // checkbox, radio, text, number, select, photo
       obligatoire: false,
-      photo_requise: false,
       photo_url: '',
-      options: [], // Options avec {label: string, declencherAlerte: boolean}
       ordre: newSections[sectionIndex].items.length
     });
     setSections(newSections);
@@ -493,8 +516,9 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
               </div>
 
               {sections.map((section, sIndex) => (
-                <div key={sIndex} style={{ marginBottom: '1.5rem', padding: '1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                <div key={sIndex} style={{ marginBottom: '1.5rem', padding: '1rem', border: '2px solid #8e44ad', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
+                  {/* En-tête section */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
                     <input
                       type="text"
                       value={section.titre}
@@ -503,11 +527,28 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                       style={{
                         flex: 1,
                         padding: '0.5rem',
-                        border: '1px solid #d1d5db',
+                        border: '2px solid #8e44ad',
                         borderRadius: '0.375rem',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        fontSize: '1rem'
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => dupliquerSection(sIndex)}
+                      style={{
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                      title="Dupliquer cette section"
+                    >
+                      📋
+                    </button>
                     <button
                       type="button"
                       onClick={() => supprimerSection(sIndex)}
@@ -524,8 +565,117 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                     </button>
                   </div>
 
+                  {/* Type de champ pour toute la section */}
+                  <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f3e8ff', borderRadius: '0.375rem', border: '1px solid #c084fc' }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b21a8' }}>
+                      Type de réponse pour cette section :
+                    </label>
+                    <select
+                      value={section.type_champ || 'checkbox'}
+                      onChange={(e) => updateSection(sIndex, 'type_champ', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #c084fc',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        backgroundColor: 'white',
+                        fontWeight: '600'
+                      }}
+                    >
+                      <option value="checkbox">☑️ Cases à cocher (multiple)</option>
+                      <option value="radio">🔘 Puce (une seule)</option>
+                      <option value="text">📝 Texte libre</option>
+                      <option value="number">🔢 Nombre</option>
+                      <option value="select">📋 Liste déroulante</option>
+                      <option value="photo">📸 Photo obligatoire</option>
+                    </select>
+
+                    {/* Options pour checkbox, radio, select */}
+                    {(section.type_champ === 'checkbox' || section.type_champ === 'radio' || section.type_champ === 'select') && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: '#6b21a8', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
+                          Options de réponse :
+                        </label>
+                        
+                        {(section.options || []).map((opt, optIndex) => (
+                          <div key={optIndex} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <input
+                              type="text"
+                              value={opt.label || ''}
+                              onChange={(e) => {
+                                const newOptions = [...(section.options || [])];
+                                newOptions[optIndex] = { ...newOptions[optIndex], label: e.target.value };
+                                updateSection(sIndex, 'options', newOptions);
+                              }}
+                              placeholder="Ex: Présent, Absent, Défectueux..."
+                              style={{
+                                flex: 1,
+                                padding: '0.375rem',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '0.25rem',
+                                fontSize: '0.75rem'
+                              }}
+                            />
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+                              <input
+                                type="checkbox"
+                                checked={opt.declencherAlerte || false}
+                                onChange={(e) => {
+                                  const newOptions = [...(section.options || [])];
+                                  newOptions[optIndex] = { ...newOptions[optIndex], declencherAlerte: e.target.checked };
+                                  updateSection(sIndex, 'options', newOptions);
+                                }}
+                              />
+                              ⚠️ Alerte
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newOptions = (section.options || []).filter((_, i) => i !== optIndex);
+                                updateSection(sIndex, 'options', newOptions);
+                              }}
+                              style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.25rem',
+                                padding: '0.25rem 0.5rem',
+                                cursor: 'pointer',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newOptions = [...(section.options || []), { label: '', declencherAlerte: false }];
+                            updateSection(sIndex, 'options', newOptions);
+                          }}
+                          style={{
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.25rem',
+                            padding: '0.375rem 0.75rem',
+                            cursor: 'pointer',
+                            fontSize: '0.7rem',
+                            marginTop: '0.25rem'
+                          }}
+                        >
+                          + Ajouter une option
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Upload photo de section */}
                   <div style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem', display: 'block' }}>Photo de référence de la section :</label>
                     <ImageUpload
                       value={section.photo_url || ''}
                       onChange={(url) => updateSection(sIndex, 'photo_url', url)}
