@@ -120,9 +120,11 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     const newSections = [...sections];
     newSections[sectionIndex].items.push({
       nom: '',
+      type_champ: 'checkbox', // checkbox, text, number, select, photo
       obligatoire: false,
       photo_requise: false,
       photo_url: '',
+      options_select: [], // Pour le type select
       ordre: newSections[sectionIndex].items.length
     });
     setSections(newSections);
@@ -541,7 +543,8 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                         borderRadius: '0.375rem',
                         border: '1px solid #e5e7eb'
                       }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        {/* Première ligne : Nom + Type */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                           <input
                             type="text"
                             value={item.nom}
@@ -555,22 +558,23 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                               fontSize: '0.875rem'
                             }}
                           />
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            <input
-                              type="checkbox"
-                              checked={item.obligatoire}
-                              onChange={(e) => updateItem(sIndex, iIndex, 'obligatoire', e.target.checked)}
-                            />
-                            Obligatoire
-                          </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            <input
-                              type="checkbox"
-                              checked={item.photo_requise}
-                              onChange={(e) => updateItem(sIndex, iIndex, 'photo_requise', e.target.checked)}
-                            />
-                            Photo
-                          </label>
+                          <select
+                            value={item.type_champ || 'checkbox'}
+                            onChange={(e) => updateItem(sIndex, iIndex, 'type_champ', e.target.value)}
+                            style={{
+                              padding: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              backgroundColor: 'white'
+                            }}
+                          >
+                            <option value="checkbox">☑️ Case à cocher</option>
+                            <option value="text">📝 Texte libre</option>
+                            <option value="number">🔢 Nombre</option>
+                            <option value="select">📋 Liste déroulante</option>
+                            <option value="photo">📸 Photo obligatoire</option>
+                          </select>
                           <button
                             type="button"
                             onClick={() => supprimerItem(sIndex, iIndex)}
@@ -588,8 +592,40 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                           </button>
                         </div>
 
-                        {/* Upload photo de l'item */}
-                        <div style={{ marginTop: '0.5rem' }}>
+                        {/* Options pour liste déroulante */}
+                        {item.type_champ === 'select' && (
+                          <div style={{ marginBottom: '0.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid #3b82f6' }}>
+                            <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '0.25rem' }}>
+                              Options (séparées par des virgules) :
+                            </label>
+                            <input
+                              type="text"
+                              value={item.options_select?.join(', ') || ''}
+                              onChange={(e) => updateItem(sIndex, iIndex, 'options_select', e.target.value.split(',').map(o => o.trim()).filter(Boolean))}
+                              placeholder="Ex: Bon état, Défectueux, Manquant"
+                              style={{
+                                width: '100%',
+                                padding: '0.375rem',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '0.25rem',
+                                fontSize: '0.75rem'
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Deuxième ligne : Options */}
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={item.obligatoire}
+                              onChange={(e) => updateItem(sIndex, iIndex, 'obligatoire', e.target.checked)}
+                            />
+                            Obligatoire
+                          </label>
+                          
+                          {/* Upload photo de référence */}
                           <ImageUpload
                             value={item.photo_url || ''}
                             onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
