@@ -363,35 +363,58 @@ class PDFReportsTester:
         
         return successful_tests, total_tests
     
-    def test_additional_pdf_endpoints(self):
-        """Tester des endpoints PDF supplémentaires découverts"""
+    def check_backend_logs_for_personnel_pdf(self):
+        """Vérifier les logs backend pour le PDF Personnel qui échoue"""
         print("\n" + "="*80)
-        print("🔍 RECHERCHE D'ENDPOINTS PDF SUPPLÉMENTAIRES")
+        print("🔍 ANALYSE LOGS BACKEND - PDF PERSONNEL")
         print("="*80)
         
-        # Tests supplémentaires basés sur les patterns trouvés dans le code
-        additional_tests = []
+        print("📋 Vérification des logs backend pour identifier l'erreur exacte du PDF Personnel...")
         
-        # Test avec différents paramètres pour voir les variations
-        variations = [
-            {
-                "name": "13. Planning Export PDF (Semaine)",
-                "url": f"{self.base_url}/{self.tenant_slug}/planning/export-pdf",
-                "params": {"periode": "2025-12-09", "type": "semaine"}
-            }
-        ]
-        
-        successful_additional = 0
-        for test in variations:
-            success = self.test_pdf_endpoint(
-                test["name"],
-                test["url"],
-                test.get("params")
+        # Tenter de lire les logs backend
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["tail", "-n", "100", "/var/log/supervisor/backend.err.log"],
+                capture_output=True,
+                text=True,
+                timeout=10
             )
-            if success:
-                successful_additional += 1
+            
+            if result.returncode == 0:
+                logs = result.stdout
+                personnel_logs = []
+                
+                # Chercher les logs liés au personnel/export
+                for line in logs.split('\n'):
+                    if 'personnel' in line.lower() and 'export' in line.lower():
+                        personnel_logs.append(line)
+                
+                if personnel_logs:
+                    print(f"📄 Logs trouvés liés au personnel export ({len(personnel_logs)} lignes):")
+                    for log in personnel_logs[-10:]:  # Dernières 10 lignes
+                        print(f"   {log}")
+                else:
+                    print("⚠️ Aucun log spécifique au personnel export trouvé")
+                    
+                # Chercher les erreurs récentes
+                error_logs = []
+                for line in logs.split('\n'):
+                    if any(keyword in line.lower() for keyword in ['error', 'exception', '401', '403', '500']):
+                        error_logs.append(line)
+                
+                if error_logs:
+                    print(f"\n🚨 Erreurs récentes trouvées ({len(error_logs)} lignes):")
+                    for log in error_logs[-5:]:  # Dernières 5 erreurs
+                        print(f"   {log}")
+                        
+            else:
+                print(f"⚠️ Impossible de lire les logs: {result.stderr}")
+                
+        except Exception as e:
+            print(f"⚠️ Erreur lors de la lecture des logs: {e}")
         
-        return successful_additional, len(variations)
+        return 0, 0  # Pas de tests supplémentaires, juste analyse
     
     def generate_test_report(self, successful_tests: int, total_tests: int, additional_successful: int = 0, additional_total: int = 0):
         """Générer le rapport final des tests"""
