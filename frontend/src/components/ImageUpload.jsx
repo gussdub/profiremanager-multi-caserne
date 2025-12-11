@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTenant } from '../contexts/TenantContext';
 
-const ImageUpload = ({ value, onChange, label = "Photo" }) => {
+const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
   const { tenantSlug } = useTenant();
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(value || '');
+  const [showFullUploader, setShowFullUploader] = useState(false);
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
@@ -142,6 +143,84 @@ const ImageUpload = ({ value, onChange, label = "Photo" }) => {
     }
   };
 
+  // Mode compact
+  if (compact) {
+    return (
+      <div style={{ display: 'inline-block', position: 'relative' }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
+        
+        {!previewUrl ? (
+          <button
+            type="button"
+            onClick={handleClick}
+            disabled={uploading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.375rem 0.75rem',
+              backgroundColor: uploading ? '#9ca3af' : '#6366f1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              fontSize: '0.8rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#4f46e5')}
+            onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#6366f1')}
+          >
+            {uploading ? '⏳' : '📷'} {uploading ? 'Upload...' : 'Ajouter photo'}
+          </button>
+        ) : (
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            padding: '0.25rem 0.5rem',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '0.375rem',
+            border: '1px solid #d1d5db'
+          }}>
+            <img
+              src={previewUrl}
+              alt="Aperçu"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '0.25rem',
+                objectFit: 'cover'
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              style={{
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.25rem',
+                padding: '0.25rem 0.5rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mode complet (original)
   return (
     <div style={{ marginBottom: '1rem' }}>
       <label style={{ 

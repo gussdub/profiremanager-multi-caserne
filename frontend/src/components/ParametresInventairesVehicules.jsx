@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import ImageUpload from './ImageUpload';
 
 const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const [modeles, setModeles] = useState([]);
@@ -490,13 +491,13 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
               </div>
 
               {sections.map((section, sIndex) => (
-                <div key={sIndex} style={{ marginBottom: '1.5rem', padding: '1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem' }}>
+                <div key={sIndex} style={{ marginBottom: '1.5rem', padding: '1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
                     <input
                       type="text"
                       value={section.titre}
                       onChange={(e) => updateSection(sIndex, 'titre', e.target.value)}
-                      placeholder="Titre de la section"
+                      placeholder="Titre de la section (ex: Coffre latéral gauche)"
                       style={{
                         flex: 1,
                         padding: '0.5rem',
@@ -506,6 +507,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                       }}
                     />
                     <button
+                      type="button"
                       onClick={() => supprimerSection(sIndex)}
                       style={{
                         backgroundColor: '#ef4444',
@@ -520,57 +522,81 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                     </button>
                   </div>
 
+                  {/* Upload photo de section */}
+                  <ImageUpload
+                    value={section.photo_url || ''}
+                    onChange={(url) => updateSection(sIndex, 'photo_url', url)}
+                    label="📷 Photo de la section (optionnel)"
+                  />
+
                   {/* Items de la section */}
                   <div style={{ marginLeft: '1rem' }}>
                     {section.items.map((item, iIndex) => (
-                      <div key={iIndex} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <input
-                          type="text"
-                          value={item.nom}
-                          onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
-                          placeholder="Nom de l'item"
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem'
-                          }}
+                      <div key={iIndex} style={{ 
+                        marginBottom: '1rem', 
+                        padding: '0.75rem', 
+                        backgroundColor: 'white', 
+                        borderRadius: '0.375rem',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <input
+                            type="text"
+                            value={item.nom}
+                            onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
+                            placeholder="Nom de l'item (ex: Extincteur 10lb)"
+                            style={{
+                              flex: 1,
+                              padding: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.875rem'
+                            }}
+                          />
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                            <input
+                              type="checkbox"
+                              checked={item.obligatoire}
+                              onChange={(e) => updateItem(sIndex, iIndex, 'obligatoire', e.target.checked)}
+                            />
+                            Obligatoire
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                            <input
+                              type="checkbox"
+                              checked={item.photo_requise}
+                              onChange={(e) => updateItem(sIndex, iIndex, 'photo_requise', e.target.checked)}
+                            />
+                            Photo
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => supprimerItem(sIndex, iIndex)}
+                            style={{
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              padding: '0.375rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Upload photo de l'item */}
+                        <ImageUpload
+                          value={item.photo_url || ''}
+                          onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
+                          label="📷 Photo de référence (optionnel)"
                         />
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                          <input
-                            type="checkbox"
-                            checked={item.obligatoire}
-                            onChange={(e) => updateItem(sIndex, iIndex, 'obligatoire', e.target.checked)}
-                          />
-                          Obligatoire
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                          <input
-                            type="checkbox"
-                            checked={item.photo_requise}
-                            onChange={(e) => updateItem(sIndex, iIndex, 'photo_requise', e.target.checked)}
-                          />
-                          Photo
-                        </label>
-                        <button
-                          onClick={() => supprimerItem(sIndex, iIndex)}
-                          style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            padding: '0.375rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          ✕
-                        </button>
                       </div>
                     ))}
 
                     <button
+                      type="button"
                       onClick={() => ajouterItem(sIndex)}
                       style={{
                         backgroundColor: '#10b981',
