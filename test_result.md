@@ -1736,7 +1736,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Module Inventaires Véhicules - Création de Modèles d'Inventaire et Configuration des Notifications"
+    - "Vue Préventionnistes - MapComponent mapRef Issue"
   stuck_tasks:
     - "Vue Préventionnistes - MapComponent mapRef Issue"
   test_all: false
