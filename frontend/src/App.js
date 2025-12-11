@@ -4290,11 +4290,20 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       const blob = await response.blob();
       
       if (exportType === 'pdf') {
-        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        // Pour les PDF, ouvrir directement le dialogue d'impression
         const pdfUrl = window.URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        // Nettoyer l'URL après un délai pour laisser le temps au navigateur de charger
-        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 100);
+        };
       } else {
         // Pour les Excel, télécharger directement
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -10782,10 +10791,20 @@ const Remplacements = () => {
                       const blob = await response.blob();
                       
                       if (exportType === 'pdf') {
-                        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+                        // Pour les PDF, ouvrir directement le dialogue d'impression
                         const pdfUrl = window.URL.createObjectURL(blob);
-                        window.open(pdfUrl, '_blank');
-                        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = pdfUrl;
+                        document.body.appendChild(iframe);
+                        
+                        iframe.onload = function() {
+                          iframe.contentWindow.print();
+                          setTimeout(() => {
+                            document.body.removeChild(iframe);
+                            window.URL.revokeObjectURL(pdfUrl);
+                          }, 100);
+                        };
                       } else {
                         // Pour les Excel, télécharger directement
                         const downloadUrl = window.URL.createObjectURL(blob);
@@ -11062,10 +11081,20 @@ const Formations = () => {
       const blob = await response.blob();
       
       if (format === 'pdf') {
-        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        // Pour les PDF, ouvrir directement le dialogue d'impression
         const pdfUrl = window.URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 100);
+        };
       } else {
         // Pour les Excel, télécharger directement
         const downloadUrl = window.URL.createObjectURL(blob);
