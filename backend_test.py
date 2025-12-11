@@ -1,41 +1,42 @@
 #!/usr/bin/env python3
 """
-TEST DES 13 RAPPORTS PDF REFACTORISÉS - ProFireManager
+TEST COMPLET - VÉRIFIER TOUS LES 12 RAPPORTS PDF
 
 CONTEXTE:
-D'après le handoff summary, 13 rapports PDF ont été refactorisés et doivent être testés 
-pour valider leur génération, formatage et données.
+L'utilisateur signale une erreur 401 sur l'export PDF Personnel. Je dois tester les 12 rapports pour identifier tous les problèmes.
 
-OBJECTIF:
-Tester la génération de chaque rapport PDF pour s'assurer qu'ils fonctionnent correctement.
+LISTE COMPLÈTE DES 12 RAPPORTS:
+1. Planning PDF
+2. Heures Travaillées PDF
+3. Remplacements PDF
+4. Inspections Bâtiment PDF
+5. Rondes Sécurité PDF
+6. Inspection Borne Sèche PDF
+7. Dashboard PDF
+8. Salaires PDF
+9. Personnel PDF (❌ Signalé comme problématique)
+10. Inventaire EPI PDF
+11. Plan Intervention PDF
+12. Rapport Général PDF
 
 APPLICATION:
 - URL Backend: https://defect-workflow.preview.emergentagent.com
-- Tenants: demo, shefford
+- Tenant: demo
 - Credentials: gussdub@gmail.com / 230685Juin+
 
-RAPPORTS À TESTER:
-1. Module Prévention: Rapport inspection bâtiment, Rapport visite prévention, Plan d'intervention (PI)
-2. Module Inspections Bornes Sèches: Rapport inspection borne sèche
-3. Module EPI: Rapport inventaire EPI, Rapport expirations EPI
-4. Module Véhicules/Flotte: Rapport inspection véhicule, Rapport maintenance véhicule
-5. Module Personnel: Rapport heures travaillées, Planning (horaire)
-6. Module Approvisionnement en Eau: Rapport carte points d'eau, Rapport liste points d'eau
-7. Autres: Rapport général / dashboard
-
-ENDPOINTS PDF IDENTIFIÉS:
-- /{tenant_slug}/planning/export-pdf
-- /{tenant_slug}/planning/rapport-heures/export-pdf
-- /{tenant_slug}/remplacements/export-pdf
-- /{tenant_slug}/rapports/export-dashboard-pdf
-- /{tenant_slug}/rapports/export-salaires-pdf
-- /{tenant_slug}/personnel/export-pdf
-- /{tenant_slug}/disponibilites/export-pdf
-- /{tenant_slug}/prevention/inspections/{inspection_id}/rapport-pdf
-- /{tenant_slug}/prevention/plans-intervention/{plan_id}/export-pdf
-- /{tenant_slug}/prevention/batiments/{batiment_id}/rapport-pdf
-- /{tenant_slug}/actifs/rondes-securite/{ronde_id}/export-pdf
-- /rapports/export-pdf (global)
+ENDPOINTS À TESTER (avec URLs complètes):
+- /api/demo/rapports/export-planning-pdf
+- /api/demo/rapports/export-heures-pdf?mois=2024-12
+- /api/demo/rapports/export-remplacements-pdf
+- /api/demo/prevention/batiments/export-inspection-pdf?batiment_id=[ID]
+- /api/demo/prevention/rondes/export-pdf?ronde_id=[ID]
+- /api/demo/points-eau/export-inspection-pdf?borne_id=[ID]
+- /api/demo/rapports/export-dashboard-pdf
+- /api/demo/rapports/export-salaires-pdf?date_debut=2024-01-01&date_fin=2024-12-31
+- /api/demo/personnel/export-pdf ⚠️ CELUI-CI ÉCHOUE
+- /api/demo/epi/export-inventaire-pdf
+- /api/demo/prevention/batiments/[ID]/export-pi-pdf
+- /api/demo/rapports/export-rapport-pdf
 """
 
 import requests
