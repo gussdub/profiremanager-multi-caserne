@@ -1733,7 +1733,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Système Automatisé de Remplacement"
+    - "Module Inventaires Véhicules - Création de Modèles d'Inventaire et Configuration des Notifications"
   stuck_tasks:
     - "Vue Préventionnistes - MapComponent mapRef Issue"
   test_all: false
