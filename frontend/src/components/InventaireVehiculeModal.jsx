@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
+import ImageUpload from './ImageUpload';
 
 const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const { tenantSlug } = useTenant();
@@ -463,12 +464,28 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                 />
               </div>
 
+              {/* Info inspecteur en bas */}
+              <div style={{
+                marginTop: '24px',
+                padding: '12px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6'
+              }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
+                  <strong>Réalisé par :</strong> {user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email}
+                </p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>
+                  Débuté le {heureDebut ? new Date(heureDebut).toLocaleString('fr-CA') : '-'}
+                </p>
+              </div>
+
               {/* Boutons */}
               <div style={{
                 display: 'flex',
                 gap: '12px',
                 justifyContent: 'flex-end',
-                marginTop: '24px',
+                marginTop: '20px',
                 paddingTop: '20px',
                 borderTop: '1px solid #dee2e6'
               }}>
