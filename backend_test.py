@@ -143,22 +143,37 @@ class PDFReportsTester:
                     # Vérifier la taille du PDF
                     pdf_size = len(response.content)
                     if pdf_size > 0:
-                        print(f"✅ PDF généré avec succès")
-                        print(f"   📏 Taille: {pdf_size} bytes")
-                        print(f"   📄 Content-Type: {content_type}")
-                        
-                        # Vérifier le filename dans les headers
-                        content_disposition = response.headers.get('Content-Disposition', '')
-                        if content_disposition:
-                            print(f"   📎 Disposition: {content_disposition}")
-                        
-                        self.test_results.append({
-                            "endpoint": endpoint_name,
-                            "status": "✅ SUCCÈS",
-                            "size": pdf_size,
-                            "content_type": content_type
-                        })
-                        return True
+                        # Vérifier que c'est un vrai PDF (commence par %PDF)
+                        pdf_header = response.content[:10]
+                        if pdf_header.startswith(b'%PDF'):
+                            print(f"✅ PDF généré avec succès")
+                            print(f"   📏 Taille: {pdf_size:,} bytes")
+                            print(f"   📄 Content-Type: {content_type}")
+                            print(f"   🔍 Header PDF valide: {pdf_header}")
+                            
+                            # Vérifier le filename dans les headers
+                            content_disposition = response.headers.get('Content-Disposition', '')
+                            if content_disposition:
+                                print(f"   📎 Disposition: {content_disposition}")
+                            
+                            self.test_results.append({
+                                "endpoint": endpoint_name,
+                                "status": "✅ SUCCÈS",
+                                "size": pdf_size,
+                                "content_type": content_type,
+                                "valid_pdf": True
+                            })
+                            return True
+                        else:
+                            print(f"❌ Fichier reçu n'est pas un PDF valide")
+                            print(f"   🔍 Header reçu: {pdf_header}")
+                            self.test_results.append({
+                                "endpoint": endpoint_name,
+                                "status": "❌ PDF INVALIDE",
+                                "size": pdf_size,
+                                "error": f"Header invalide: {pdf_header}"
+                            })
+                            return False
                     else:
                         print(f"❌ PDF vide (0 bytes)")
                         self.test_results.append({
@@ -180,11 +195,12 @@ class PDFReportsTester:
                     return False
             else:
                 print(f"❌ Erreur HTTP {response.status_code}")
-                print(f"   📄 Réponse: {response.text[:200]}...")
+                print(f"   📄 Réponse: {response.text[:300]}...")
                 self.test_results.append({
                     "endpoint": endpoint_name,
                     "status": f"❌ HTTP {response.status_code}",
-                    "error": response.text[:200]
+                    "error": response.text[:300],
+                    "status_code": response.status_code
                 })
                 return False
                 
