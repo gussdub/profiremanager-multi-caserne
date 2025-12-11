@@ -51,11 +51,13 @@ class PDFReportsTester:
         self.base_url = "https://report-fixer-2.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
-        self.tenant_slug = "demo"  # Tester demo comme spécifié
-        self.credentials = {
-            "email": "gussdub@gmail.com",
-            "mot_de_passe": "230685Juin+"
-        }
+        self.tenant_slug = "shefford"  # Tester shefford comme spécifié
+        self.credentials = [
+            # Essayer plusieurs credentials possibles
+            {"email": "admin@firemanager.ca", "mot_de_passe": "Admin123!"},
+            {"email": "admin@firemanager.ca", "mot_de_passe": "admin123"},
+            {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
+        ]
         
         # Résultats des tests
         self.test_results = []
