@@ -1,42 +1,41 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET - VÉRIFIER TOUS LES 12 RAPPORTS PDF
+TEST COMPLET DES EXPORTS PDF - TENANT SHEFFORD
 
 CONTEXTE:
-L'utilisateur signale une erreur 401 sur l'export PDF Personnel. Je dois tester les 12 rapports pour identifier tous les problèmes.
+L'utilisateur rapporte que plusieurs exports PDF sont cassés, notamment :
+- Export Personnel
+- Export Disponibilités  
+- Export Formations
+- Export Remplacements
 
-LISTE COMPLÈTE DES 12 RAPPORTS:
-1. Planning PDF
-2. Heures Travaillées PDF
-3. Remplacements PDF
-4. Inspections Bâtiment PDF
-5. Rondes Sécurité PDF
-6. Inspection Borne Sèche PDF
-7. Dashboard PDF
-8. Salaires PDF
-9. Personnel PDF (❌ Signalé comme problématique)
-10. Inventaire EPI PDF
-11. Plan Intervention PDF
-12. Rapport Général PDF
+ENDPOINTS À TESTER (tous avec tenant_slug = "shefford"):
+
+1. **Personnel PDF**: GET /api/shefford/personnel/export-pdf
+2. **Disponibilités PDF**: GET /api/shefford/disponibilites/export-pdf  
+3. **Remplacements PDF**: GET /api/shefford/remplacements/export-pdf
+4. **Formations - Présence**: GET /api/shefford/formations/rapports/export-presence?format=pdf&type_formation=tous&annee=2025
+5. **Formations - Compétences**: GET /api/shefford/formations/rapports/export-competences?format=pdf&annee=2025
+6. **Planning PDF**: GET /api/shefford/planning/export-pdf?periode=2025-12&type=mensuel
+7. **Rapport Heures PDF**: GET /api/shefford/planning/rapport-heures/export-pdf?date_debut=2025-12-01&date_fin=2025-12-31
+
+OBJECTIFS DU TEST:
+1. Authentifier avec un utilisateur admin ou supervisor valide
+2. Pour chaque endpoint PDF:
+   - Faire une requête GET avec le token d'auth
+   - Vérifier le status code (doit être 200)
+   - Vérifier que le Content-Type est "application/pdf"
+   - Vérifier que le fichier reçu est un PDF valide (commence par %PDF)
+   - Vérifier que la taille du fichier > 0
+3. Rapporter TOUS les endpoints qui échouent avec:
+   - Le status code reçu
+   - Le message d'erreur
+   - Le Content-Type reçu
 
 APPLICATION:
 - URL Backend: https://report-fixer-2.preview.emergentagent.com
-- Tenant: demo
-- Credentials: gussdub@gmail.com / 230685Juin+
-
-ENDPOINTS À TESTER (avec URLs complètes):
-- /api/demo/rapports/export-planning-pdf
-- /api/demo/rapports/export-heures-pdf?mois=2024-12
-- /api/demo/rapports/export-remplacements-pdf
-- /api/demo/prevention/batiments/export-inspection-pdf?batiment_id=[ID]
-- /api/demo/prevention/rondes/export-pdf?ronde_id=[ID]
-- /api/demo/points-eau/export-inspection-pdf?borne_id=[ID]
-- /api/demo/rapports/export-dashboard-pdf
-- /api/demo/rapports/export-salaires-pdf?date_debut=2024-01-01&date_fin=2024-12-31
-- /api/demo/personnel/export-pdf ⚠️ CELUI-CI ÉCHOUE
-- /api/demo/epi/export-inventaire-pdf
-- /api/demo/prevention/batiments/[ID]/export-pi-pdf
-- /api/demo/rapports/export-rapport-pdf
+- Tenant: shefford
+- Credentials: admin@firemanager.ca / Admin123! (ou autres credentials valides)
 """
 
 import requests
