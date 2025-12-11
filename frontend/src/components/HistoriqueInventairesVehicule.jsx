@@ -15,7 +15,7 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
   const fetchInventaires = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, `/actifs/inventaires-vehicules?vehicule_id=${vehicule.id}`);
+      const data = await apiGet(tenantSlug, `/vehicules/${vehicule.id}/inventaires`);
       setInventaires(data || []);
     } catch (error) {
       console.error('Erreur chargement inventaires:', error);
@@ -36,12 +36,12 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
     });
   };
 
-  const getStatutStyle = (itemsCount) => {
-    const itemsManquants = itemsCount.filter(item => !item.present).length;
-    if (itemsManquants === 0) {
-      return { bg: '#e8f5e9', color: '#27ae60', text: '✅ Complet' };
+  const getStatutStyle = (inv) => {
+    if (inv.statut_global === 'conforme') {
+      return { bg: '#e8f5e9', color: '#27ae60', text: '✅ Conforme' };
     } else {
-      return { bg: '#fff3cd', color: '#f39c12', text: `⚠️ ${itemsManquants} item(s) manquant(s)` };
+      const total = (inv.items_manquants || 0) + (inv.items_defectueux || 0);
+      return { bg: '#fff3cd', color: '#f39c12', text: `⚠️ ${total} problème(s)` };
     }
   };
 
@@ -113,7 +113,7 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
             // Liste des inventaires
             <div style={{ display: 'grid', gap: '16px' }}>
               {inventaires.map(inv => {
-                const statut = getStatutStyle(inv.items || []);
+                const statut = getStatutStyle(inv);
                 return (
                   <div
                     key={inv.id}
@@ -141,7 +141,7 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                           {inv.modele_nom || 'Inventaire'}
                         </h4>
                         <p style={{ margin: 0, color: '#6c757d', fontSize: '13px' }}>
-                          {formatDate(inv.date)}
+                          {formatDate(inv.date_inventaire || inv.created_at)}
                         </p>
                       </div>
                       <span style={{
@@ -158,11 +158,11 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                     
                     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e9ecef' }}>
                       <p style={{ margin: 0, color: '#6c757d', fontSize: '13px' }}>
-                        <strong>Réalisé par:</strong> {inv.realise_par || 'Inconnu'}
+                        <strong>Réalisé par:</strong> {inv.effectue_par || 'Inconnu'}
                       </p>
-                      {inv.commentaire_general && (
+                      {inv.notes_generales && (
                         <p style={{ margin: '8px 0 0 0', color: '#6c757d', fontSize: '13px', fontStyle: 'italic' }}>
-                          💬 {inv.commentaire_general}
+                          💬 {inv.notes_generales}
                         </p>
                       )}
                     </div>
@@ -210,31 +210,25 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                 </h3>
                 <div style={{ display: 'grid', gap: '8px', fontSize: '14px' }}>
                   <p style={{ margin: 0, color: '#2c3e50' }}>
-                    <strong>Date:</strong> {formatDate(selectedInventaire.date)}
+                    <strong>Date:</strong> {formatDate(selectedInventaire.date_inventaire || selectedInventaire.created_at)}
                   </p>
                   <p style={{ margin: 0, color: '#2c3e50' }}>
-                    <strong>Réalisé par:</strong> {selectedInventaire.realise_par || 'Inconnu'}
+                    <strong>Réalisé par:</strong> {selectedInventaire.effectue_par || 'Inconnu'}
                   </p>
-                  {selectedInventaire.commentaire_general && (
+                  {selectedInventaire.notes_generales && (
                     <p style={{ margin: '8px 0 0 0', color: '#2c3e50', fontStyle: 'italic' }}>
-                      <strong>Commentaire:</strong> {selectedInventaire.commentaire_general}
+                      <strong>Commentaire:</strong> {selectedInventaire.notes_generales}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Items par section */}
+              {/* Items cochés */}
               {(() => {
-                const itemsParSection = (selectedInventaire.items || []).reduce((acc, item) => {
-                  if (!acc[item.section]) {
-                    acc[item.section] = [];
-                  }
-                  acc[item.section].push(item);
-                  return acc;
-                }, {});
+                const itemsCoches = selectedInventaire.items_coches || [];
 
-                return Object.entries(itemsParSection).map(([sectionNom, items]) => (
-                  <div key={sectionNom} style={{ marginBottom: '24px' }}>
+                return (
+                  <div style={{ marginBottom: '24px' }}>
                     <h4 style={{
                       margin: '0 0 12px 0',
                       color: '#2c3e50',
@@ -243,47 +237,61 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                       paddingBottom: '8px',
                       borderBottom: '2px solid #8e44ad'
                     }}>
-                      {sectionNom}
+                      Items vérifiés
                     </h4>
                     <div style={{ display: 'grid', gap: '8px' }}>
-                      {items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            padding: '12px',
-                            border: `2px solid ${item.present ? '#27ae60' : '#e74c3c'}`,
-                            borderRadius: '8px',
-                            backgroundColor: item.present ? '#e8f5e9' : '#fdecea'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '16px' }}>
-                              {item.present ? '✅' : '❌'}
-                            </span>
-                            <span style={{
-                              flex: 1,
-                              fontSize: '14px',
-                              color: '#2c3e50',
-                              fontWeight: item.present ? 'normal' : 'bold'
-                            }}>
-                              {item.nom}
-                            </span>
+                      {itemsCoches.map((item, idx) => {
+                        const isPresent = item.statut === 'present';
+                        const isDefectueux = item.statut === 'defectueux';
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: '12px',
+                              border: `2px solid ${isPresent ? '#27ae60' : '#e74c3c'}`,
+                              borderRadius: '8px',
+                              backgroundColor: isPresent ? '#e8f5e9' : '#fdecea'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '16px' }}>
+                                {isPresent ? '✅' : isDefectueux ? '⚠️' : '❌'}
+                              </span>
+                              <span style={{
+                                flex: 1,
+                                fontSize: '14px',
+                                color: '#2c3e50',
+                                fontWeight: isPresent ? 'normal' : 'bold'
+                              }}>
+                                {item.nom}
+                              </span>
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                backgroundColor: isPresent ? '#27ae60' : isDefectueux ? '#f39c12' : '#e74c3c',
+                                color: 'white'
+                              }}>
+                                {isPresent ? 'Présent' : isDefectueux ? 'Défectueux' : 'Absent'}
+                              </span>
+                            </div>
+                            {item.notes && (
+                              <p style={{
+                                margin: '8px 0 0 24px',
+                                fontSize: '13px',
+                                color: '#6c757d',
+                                fontStyle: 'italic'
+                              }}>
+                                💬 {item.notes}
+                              </p>
+                            )}
                           </div>
-                          {item.commentaire && (
-                            <p style={{
-                              margin: '8px 0 0 24px',
-                              fontSize: '13px',
-                              color: '#6c757d',
-                              fontStyle: 'italic'
-                            }}>
-                              💬 {item.commentaire}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
-                ));
+                );
               })()}
             </div>
           )}
