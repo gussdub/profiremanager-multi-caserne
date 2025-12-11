@@ -70,14 +70,15 @@ class PDFReportsTester:
         }
         
     def authenticate(self):
-        """Authentification sur le tenant"""
+        """Authentification sur le tenant demo"""
         print(f"🔐 Authentification tenant {self.tenant_slug}...")
         
         auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
-        login_data = {
-            "email": self.credentials["email"],
-            "mot_de_passe": self.credentials["password"]
-        }
+        login_data = self.credentials
+        
+        print(f"📍 URL: {auth_url}")
+        print(f"📋 Données: {login_data}")
+        
         response = requests.post(auth_url, json=login_data)
         
         if response.status_code == 200:
@@ -88,11 +89,13 @@ class PDFReportsTester:
             print(f"✅ Authentification réussie - Token obtenu")
             print(f"🔍 User info: {user_info.get('email')} - Role: {user_info.get('role')}")
             print(f"🆔 User ID: {user_info.get('id')}")
+            print(f"🔑 Token: {self.token[:50]}...")
             
             self.test_ids["user_id"] = user_info.get('id')
             return True
         else:
-            print(f"❌ Échec authentification: {response.status_code} - {response.text}")
+            print(f"❌ Échec authentification: {response.status_code}")
+            print(f"📄 Réponse: {response.text}")
             return False
     
     def get_test_data_ids(self):
