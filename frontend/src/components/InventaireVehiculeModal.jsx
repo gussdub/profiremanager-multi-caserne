@@ -90,8 +90,37 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     try {
       const heureFin = new Date().toISOString();
       
+      // Détecter les alertes
+      const alertes = [];
+      itemsInventaire.forEach(item => {
+        if (item.type_champ === 'checkbox' && Array.isArray(item.valeur)) {
+          // Pour checkbox, vérifier chaque option cochée
+          item.valeur.forEach(valeurCochee => {
+            const option = item.options.find(opt => opt.label === valeurCochee);
+            if (option?.declencherAlerte) {
+              alertes.push({
+                item: item.nom,
+                valeur: valeurCochee,
+                notes: item.notes
+              });
+            }
+          });
+        } else if (item.type_champ === 'radio') {
+          // Pour radio, vérifier l'option sélectionnée
+          const option = item.options.find(opt => opt.label === item.valeur);
+          if (option?.declencherAlerte) {
+            alertes.push({
+              item: item.nom,
+              valeur: item.valeur,
+              notes: item.notes
+            });
+          }
+        }
+      });
+      
       const inventaireData = {
         vehicule_id: vehicule.id,
+        vehicule_nom: vehicule.nom,
         modele_id: modeleSelectionne.id,
         date_inventaire: heureDebut,
         heure_debut: heureDebut,
@@ -106,12 +135,18 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
           notes: item.notes || '',
           photo_prise: item.photo_prise || ''
         })),
-        notes_generales: commentaire
+        notes_generales: commentaire,
+        alertes: alertes // Envoyer les alertes au backend
       };
 
       await apiPost(tenantSlug, `/vehicules/${vehicule.id}/inventaire`, inventaireData);
       
-      alert('✅ Inventaire enregistré avec succès !');
+      if (alertes.length > 0) {
+        alert(`✅ Inventaire enregistré avec succès !\n⚠️ ${alertes.length} alerte(s) envoyée(s) aux superviseurs.`);
+      } else {
+        alert('✅ Inventaire enregistré avec succès !');
+      }
+      
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
