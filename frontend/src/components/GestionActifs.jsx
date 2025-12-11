@@ -9,6 +9,8 @@ import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
 import ConfigurationEmailsEPI from './ConfigurationEmailsEPI';
 import CarteApprovisionnementEau from './CarteApprovisionnementEau';
 import InspectionsBornesSeches from './InspectionsBornesSeches';
+import InventaireVehiculeModal from './InventaireVehiculeModal';
+import HistoriqueInventairesVehicule from './HistoriqueInventairesVehicule';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
