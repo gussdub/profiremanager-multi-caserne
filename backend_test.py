@@ -71,33 +71,38 @@ class PDFReportsTester:
         }
         
     def authenticate(self):
-        """Authentification sur le tenant demo"""
+        """Authentification sur le tenant shefford avec plusieurs credentials"""
         print(f"🔐 Authentification tenant {self.tenant_slug}...")
         
         auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
-        login_data = self.credentials
         
-        print(f"📍 URL: {auth_url}")
-        print(f"📋 Données: {login_data}")
-        
-        response = requests.post(auth_url, json=login_data)
-        
-        if response.status_code == 200:
-            data = response.json()
-            self.token = data.get('access_token')
-            self.headers = {'Authorization': f'Bearer {self.token}'}
-            user_info = data.get('user', {})
-            print(f"✅ Authentification réussie - Token obtenu")
-            print(f"🔍 User info: {user_info.get('email')} - Role: {user_info.get('role')}")
-            print(f"🆔 User ID: {user_info.get('id')}")
-            print(f"🔑 Token: {self.token[:50]}...")
+        # Essayer chaque credential jusqu'à ce qu'un fonctionne
+        for i, cred in enumerate(self.credentials, 1):
+            print(f"\n📍 Tentative {i}/{len(self.credentials)}")
+            print(f"📍 URL: {auth_url}")
+            print(f"📋 Email: {cred['email']}")
             
-            self.test_ids["user_id"] = user_info.get('id')
-            return True
-        else:
-            print(f"❌ Échec authentification: {response.status_code}")
-            print(f"📄 Réponse: {response.text}")
-            return False
+            response = requests.post(auth_url, json=cred)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.token = data.get('access_token')
+                self.headers = {'Authorization': f'Bearer {self.token}'}
+                user_info = data.get('user', {})
+                print(f"✅ Authentification réussie - Token obtenu")
+                print(f"🔍 User info: {user_info.get('email')} - Role: {user_info.get('role')}")
+                print(f"🆔 User ID: {user_info.get('id')}")
+                print(f"🔑 Token: {self.token[:50]}...")
+                
+                self.test_ids["user_id"] = user_info.get('id')
+                self.current_credentials = cred
+                return True
+            else:
+                print(f"❌ Échec authentification: {response.status_code}")
+                print(f"📄 Réponse: {response.text[:200]}")
+        
+        print(f"❌ ÉCHEC: Aucun credential ne fonctionne")
+        return False
     
     def get_test_data_ids(self):
         """Récupérer les IDs nécessaires pour les tests PDF"""
