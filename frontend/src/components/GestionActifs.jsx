@@ -284,6 +284,17 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     setShowRondeSecuriteModal(true);
   };
 
+  // Fonctions inventaire véhicules
+  const handleCreateInventaire = (vehicle) => {
+    setSelectedVehiculeForInventaire(vehicle);
+    setShowInventaireModal(true);
+  };
+
+  const handleViewHistoriqueInventaires = (vehicle) => {
+    setSelectedItem(vehicle);
+    setShowHistoriqueInventairesModal(true);
+  };
+
   return (
     <div className="gestion-actifs" style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
