@@ -7997,7 +7997,16 @@ async def export_rapport_presence(
                 if type_formation == "obligatoires" and not formation.get("obligatoire", False):
                     continue
                 
-                date_fin = datetime.fromisoformat(formation["date_fin"]).date()
+                # Vérifier que date_fin n'est pas vide
+                date_fin_str = formation.get("date_fin", "")
+                if not date_fin_str:
+                    continue
+                
+                try:
+                    date_fin = datetime.fromisoformat(date_fin_str).date()
+                except ValueError:
+                    # Ignorer les formations avec des dates invalides
+                    continue
                 
                 if date_fin < aujourd_hui:
                     formations_passees += 1
