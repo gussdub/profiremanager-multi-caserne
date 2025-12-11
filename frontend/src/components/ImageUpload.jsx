@@ -184,21 +184,36 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
             display: 'inline-flex', 
             alignItems: 'center', 
             gap: '0.5rem',
-            padding: '0.25rem 0.5rem',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '0.375rem',
-            border: '1px solid #d1d5db'
+            padding: '0.375rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '0.5rem',
+            border: '2px solid #10b981',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
           }}>
-            <img
-              src={previewUrl}
-              alt="Aperçu"
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '0.25rem',
-                objectFit: 'cover'
-              }}
-            />
+            <div style={{
+              position: 'relative',
+              width: '50px',
+              height: '50px',
+              overflow: 'hidden',
+              borderRadius: '0.375rem',
+              border: '1px solid #d1d5db',
+              backgroundColor: '#f9fafb'
+            }}>
+              <img
+                src={previewUrl}
+                alt="Aperçu"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 1.5rem;">📷</div>';
+                }}
+              />
+            </div>
             <button
               type="button"
               onClick={handleRemove}
@@ -206,11 +221,15 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
                 backgroundColor: '#ef4444',
                 color: 'white',
                 border: 'none',
-                borderRadius: '0.25rem',
-                padding: '0.25rem 0.5rem',
+                borderRadius: '0.375rem',
+                padding: '0.375rem 0.625rem',
                 cursor: 'pointer',
-                fontSize: '0.75rem'
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                transition: 'background-color 0.2s'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
             >
               ✕
             </button>

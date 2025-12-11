@@ -523,11 +523,13 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                   </div>
 
                   {/* Upload photo de section */}
-                  <ImageUpload
-                    value={section.photo_url || ''}
-                    onChange={(url) => updateSection(sIndex, 'photo_url', url)}
-                    label="📷 Photo de la section (optionnel)"
-                  />
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <ImageUpload
+                      value={section.photo_url || ''}
+                      onChange={(url) => updateSection(sIndex, 'photo_url', url)}
+                      compact={true}
+                    />
+                  </div>
 
                   {/* Items de la section */}
                   <div style={{ marginLeft: '1rem' }}>
@@ -587,11 +589,13 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                         </div>
 
                         {/* Upload photo de l'item */}
-                        <ImageUpload
-                          value={item.photo_url || ''}
-                          onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
-                          label="📷 Photo de référence (optionnel)"
-                        />
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <ImageUpload
+                            value={item.photo_url || ''}
+                            onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
+                            compact={true}
+                          />
+                        </div>
                       </div>
                     ))}
 
