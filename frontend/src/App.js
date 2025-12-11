@@ -10941,7 +10941,7 @@ const Formations = () => {
   const handleExportPresence = async (format) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       
       const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-presence?format=${format}&type_formation=${typeFormation}&annee=${anneeSelectionnee}`;
       
@@ -11018,7 +11018,7 @@ const Formations = () => {
   const handleExportCompetences = async (format) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       
       const userParam = filtrePersonne ? `&user_id=${filtrePersonne}` : '';
       const url = `${backendUrl}/api/${tenantSlug}/formations/rapports/export-competences?format=${format}&annee=${anneeSelectionnee}${userParam}`;
