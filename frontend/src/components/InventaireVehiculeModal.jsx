@@ -9,6 +9,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const [modeleSelectionne, setModeleSelectionne] = useState(null);
   const [itemsInventaire, setItemsInventaire] = useState([]);
   const [commentaire, setCommentaire] = useState('');
+  const [heureDebut, setHeureDebut] = useState(null);
 
   useEffect(() => {
     fetchModeles();
@@ -25,26 +26,37 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
 
   const handleSelectionModele = (modele) => {
     setModeleSelectionne(modele);
+    setHeureDebut(new Date().toISOString()); // Démarrer le tracking
+    
     // Initialiser les items avec le modèle
     const items = [];
     modele.sections.forEach(section => {
       section.items.forEach(item => {
+        const initialValue = item.type_champ === 'checkbox' ? 'present' : 
+                            item.type_champ === 'number' ? '0' :
+                            item.type_champ === 'select' && item.options_select?.length > 0 ? item.options_select[0] : '';
+        
         items.push({
           section: section.titre,
+          section_photo_url: section.photo_url,
           item_id: item.id,
           nom: item.nom,
-          statut: 'present',  // present, absent, defectueux
-          notes: ''
+          type_champ: item.type_champ || 'checkbox',
+          photo_url: item.photo_url,
+          options_select: item.options_select || [],
+          obligatoire: item.obligatoire,
+          valeur: initialValue, // Valeur saisie
+          notes: '',
+          photo_prise: '' // Photo prise pendant l'inventaire
         });
       });
     });
     setItemsInventaire(items);
   };
 
-  const toggleItem = (index) => {
+  const updateItemValeur = (index, valeur) => {
     const newItems = [...itemsInventaire];
-    // Toggle entre present et absent
-    newItems[index].statut = newItems[index].statut === 'present' ? 'absent' : 'present';
+    newItems[index].valeur = valeur;
     setItemsInventaire(newItems);
   };
 
@@ -54,20 +66,34 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     setItemsInventaire(newItems);
   };
 
+  const updateItemPhoto = (index, photoUrl) => {
+    const newItems = [...itemsInventaire];
+    newItems[index].photo_prise = photoUrl;
+    setItemsInventaire(newItems);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const heureFin = new Date().toISOString();
+      
       const inventaireData = {
         vehicule_id: vehicule.id,
         modele_id: modeleSelectionne.id,
-        date_inventaire: new Date().toISOString(),
+        date_inventaire: heureDebut,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        effectue_par: user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email,
+        effectue_par_id: user.id,
         items_coches: itemsInventaire.map(item => ({
           item_id: item.item_id,
           nom: item.nom,
-          statut: item.statut,
-          notes: item.notes || ''
+          type_champ: item.type_champ,
+          valeur: item.valeur,
+          notes: item.notes || '',
+          photo_prise: item.photo_prise || ''
         })),
         notes_generales: commentaire
       };
