@@ -8,26 +8,20 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const [modeleEnCours, setModeleEnCours] = useState(null);
   const [emailsNotifications, setEmailsNotifications] = useState([]);
   const [users, setUsers] = useState([]);
+  const [typesVehicules, setTypesVehicules] = useState([]);
+  const [vehicules, setVehicules] = useState([]);
 
   // Form state
   const [nom, setNom] = useState('');
-  const [typeVehicule, setTypeVehicule] = useState('autopompe');
+  const [typeVehicule, setTypeVehicule] = useState('');
   const [description, setDescription] = useState('');
   const [sections, setSections] = useState([]);
-
-  const typesVehicules = [
-    { value: 'autopompe', label: 'Autopompe' },
-    { value: 'echelle_aerienne', label: 'Échelle Aérienne' },
-    { value: 'camion_citerne', label: 'Camion Citerne' },
-    { value: 'vehicule_leger', label: 'Véhicule Léger' },
-    { value: 'fourgon_pompe', label: 'Fourgon Pompe' },
-    { value: 'camion_tonne_pompe', label: 'Camion Tonne Pompe' }
-  ];
 
   useEffect(() => {
     fetchModeles();
     fetchUsers();
     fetchEmailsConfig();
+    fetchVehicules();
   }, [tenantSlug]);
 
   const fetchModeles = async () => {
@@ -58,6 +52,29 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     }
   };
 
+  const fetchVehicules = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/actifs/vehicules');
+      setVehicules(data || []);
+      
+      // Extraire les types uniques de véhicules
+      const typesUniques = [...new Set(data.map(v => v.type_vehicule || v.type).filter(Boolean))];
+      const typesFormates = typesUniques.map(type => ({
+        value: type,
+        label: type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+      }));
+      
+      setTypesVehicules(typesFormates);
+      
+      // Définir le premier type comme défaut si disponible
+      if (typesFormates.length > 0 && !typeVehicule) {
+        setTypeVehicule(typesFormates[0].value);
+      }
+    } catch (error) {
+      console.error('Erreur chargement véhicules:', error);
+    }
+  };
+
   const ouvrirModal = (modele = null) => {
     if (modele) {
       setModeleEnCours(modele);
@@ -68,7 +85,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     } else {
       setModeleEnCours(null);
       setNom('');
-      setTypeVehicule('autopompe');
+      setTypeVehicule(typesVehicules.length > 0 ? typesVehicules[0].value : '');
       setDescription('');
       setSections([{ titre: 'Section 1', items: [], ordre: 0 }]);
     }
