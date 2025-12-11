@@ -507,31 +507,29 @@ class PDFReportsTester:
         return success_rate >= 50  # Critère de succès ajusté pour ce test spécifique
     
     def run_comprehensive_pdf_tests(self):
-        """Exécuter tous les tests PDF de manière complète"""
-        print("🚀 DÉBUT DES TESTS COMPLETS - 13 RAPPORTS PDF REFACTORISÉS")
+        """Exécuter tous les tests PDF selon la demande spécifique"""
+        print("🚀 DÉBUT DES TESTS COMPLETS - VÉRIFIER TOUS LES 12 RAPPORTS PDF")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
         print(f"👤 Credentials: {self.credentials['email']}")
+        print(f"🎯 Focus: Identifier tous les problèmes, notamment l'erreur 401 sur Personnel PDF")
         
         # 1. Authentification
         if not self.authenticate():
             print("❌ ÉCHEC CRITIQUE: Impossible de s'authentifier")
             return False
         
-        # 2. Récupérer les IDs de test
+        # 2. Récupérer les IDs de test nécessaires
         self.get_test_data_ids()
         
-        # 3. Tester tous les rapports PDF principaux
+        # 3. Tester tous les 12 rapports PDF
         successful_main, total_main = self.test_all_pdf_reports()
         
-        # 4. Tester les endpoints supplémentaires
-        successful_additional, total_additional = self.test_additional_pdf_endpoints()
+        # 4. Analyser les logs backend pour le PDF Personnel
+        self.check_backend_logs_for_personnel_pdf()
         
-        # 5. Générer le rapport final
-        overall_success = self.generate_test_report(
-            successful_main, total_main,
-            successful_additional, total_additional
-        )
+        # 5. Générer le rapport final dans le format demandé
+        overall_success = self.generate_test_report(successful_main, total_main)
         
         return overall_success
 
