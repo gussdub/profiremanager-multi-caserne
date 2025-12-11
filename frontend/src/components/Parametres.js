@@ -10,7 +10,6 @@ import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import Personnalisation from "./Personnalisation.jsx";
-import ParametresInventairesVehicules from "./ParametresInventairesVehicules.jsx";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
