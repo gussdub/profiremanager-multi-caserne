@@ -268,76 +268,172 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
               </div>
 
               {/* Liste des items par section */}
-              {Object.entries(itemsParSection).map(([sectionNom, items]) => (
-                <div key={sectionNom} style={{ marginBottom: '24px' }}>
-                  <h4 style={{
-                    margin: '0 0 12px 0',
-                    color: '#2c3e50',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    paddingBottom: '8px',
-                    borderBottom: '2px solid #8e44ad'
-                  }}>
-                    {sectionNom}
-                  </h4>
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    {items.map(item => (
-                      <div
-                        key={item.index}
-                        style={{
-                          padding: '12px',
-                          border: `2px solid ${item.statut === 'present' ? '#27ae60' : '#e9ecef'}`,
-                          borderRadius: '8px',
-                          backgroundColor: item.statut === 'present' ? '#e8f5e9' : 'white',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <input
-                            type="checkbox"
-                            checked={item.statut === 'present'}
-                            onChange={() => toggleItem(item.index)}
+              {Object.entries(itemsParSection).map(([sectionNom, items]) => {
+                const sectionPhotoUrl = items[0]?.section_photo_url;
+                
+                return (
+                  <div key={sectionNom} style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                      {sectionPhotoUrl && (
+                        <img 
+                          src={sectionPhotoUrl} 
+                          alt={sectionNom}
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '2px solid #8e44ad'
+                          }}
+                        />
+                      )}
+                      <h4 style={{
+                        margin: 0,
+                        color: '#2c3e50',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        flex: 1
+                      }}>
+                        {sectionNom}
+                      </h4>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      {items.map(item => {
+                        const renderChamp = () => {
+                          switch(item.type_champ) {
+                            case 'checkbox':
+                              return (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={item.valeur === 'present'}
+                                      onChange={(e) => updateItemValeur(item.index, e.target.checked ? 'present' : 'absent')}
+                                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                    />
+                                    <label style={{ flex: 1, fontSize: '14px', color: '#2c3e50', fontWeight: item.valeur === 'present' ? 'bold' : 'normal' }}>
+                                      {item.nom}
+                                    </label>
+                                  </div>
+                                  {item.valeur === 'absent' && (
+                                    <input
+                                      type="text"
+                                      placeholder="Raison de l'absence (optionnel)"
+                                      value={item.notes}
+                                      onChange={(e) => updateItemNotes(item.index, e.target.value)}
+                                      style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px', marginLeft: '32px' }}
+                                    />
+                                  )}
+                                </>
+                              );
+                            
+                            case 'text':
+                              return (
+                                <>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <textarea
+                                    value={item.valeur}
+                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
+                                    placeholder="Votre réponse..."
+                                    rows={2}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px' }}
+                                  />
+                                </>
+                              );
+                            
+                            case 'number':
+                              return (
+                                <>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={item.valeur}
+                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
+                                    placeholder="0"
+                                    style={{ width: '150px', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px' }}
+                                  />
+                                </>
+                              );
+                            
+                            case 'select':
+                              return (
+                                <>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <select
+                                    value={item.valeur}
+                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
+                                    style={{ padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', backgroundColor: 'white' }}
+                                  >
+                                    {item.options_select.map((opt, idx) => (
+                                      <option key={idx} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                </>
+                              );
+                            
+                            case 'photo':
+                              return (
+                                <>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <ImageUpload
+                                    value={item.photo_prise}
+                                    onChange={(url) => updateItemPhoto(item.index, url)}
+                                    compact={false}
+                                    label="Prenez une photo"
+                                  />
+                                </>
+                              );
+                            
+                            default:
+                              return null;
+                          }
+                        };
+                        
+                        return (
+                          <div
+                            key={item.index}
                             style={{
-                              width: '20px',
-                              height: '20px',
-                              cursor: 'pointer'
-                            }}
-                          />
-                          <label
-                            onClick={() => toggleItem(item.index)}
-                            style={{
-                              flex: 1,
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              color: '#2c3e50',
-                              fontWeight: item.statut === 'present' ? 'bold' : 'normal'
+                              padding: '12px',
+                              border: '2px solid #e9ecef',
+                              borderRadius: '8px',
+                              backgroundColor: 'white'
                             }}
                           >
-                            {item.nom}
-                          </label>
-                        </div>
-                        {item.statut === 'absent' && (
-                          <div style={{ marginTop: '8px', marginLeft: '32px' }}>
-                            <input
-                              type="text"
-                              placeholder="Notes (optionnel)"
-                              value={item.notes}
-                              onChange={(e) => updateItemNotes(item.index, e.target.value)}
-                              style={{
-                                width: '100%',
-                                padding: '8px',
-                                border: '1px solid #dee2e6',
-                                borderRadius: '4px',
-                                fontSize: '13px'
-                              }}
-                            />
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
+                              {item.photo_url && (
+                                <img 
+                                  src={item.photo_url} 
+                                  alt={item.nom}
+                                  style={{
+                                    width: '50px',
+                                    height: '50px',
+                                    objectFit: 'cover',
+                                    borderRadius: '4px',
+                                    border: '1px solid #d1d5db',
+                                    flexShrink: 0
+                                  }}
+                                />
+                              )}
+                              <div style={{ flex: 1 }}>
+                                {renderChamp()}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Commentaire général */}
               <div style={{ marginTop: '24px' }}>
