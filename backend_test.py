@@ -105,61 +105,25 @@ class PDFReportsTester:
         return False
     
     def get_test_data_ids(self):
-        """Récupérer les IDs nécessaires pour les tests PDF"""
-        print("\n🔍 Récupération des IDs de test...")
+        """Récupérer les IDs nécessaires pour les tests PDF (optionnel pour ces tests)"""
+        print("\n🔍 Récupération des IDs de test (optionnel)...")
         
-        # 1. Récupérer un bâtiment pour les tests prévention
+        # Pour les tests PDF spécifiés, nous n'avons pas besoin d'IDs spécifiques
+        # Mais on peut essayer de récupérer quelques données pour information
         try:
-            url = f"{self.base_url}/{self.tenant_slug}/prevention/batiments"
+            # Vérifier les utilisateurs disponibles
+            url = f"{self.base_url}/{self.tenant_slug}/users"
             response = requests.get(url, headers=self.headers)
-            print(f"🏢 Bâtiments - Status: {response.status_code}")
+            print(f"👥 Utilisateurs - Status: {response.status_code}")
             if response.status_code == 200:
-                batiments = response.json()
-                if batiments and len(batiments) > 0:
-                    self.test_ids["batiment_id"] = batiments[0].get('id')
-                    print(f"✅ Bâtiment trouvé: {self.test_ids['batiment_id']}")
-                else:
-                    print("⚠️ Aucun bâtiment trouvé")
+                users = response.json()
+                print(f"✅ {len(users)} utilisateurs trouvés")
             else:
-                print(f"⚠️ Erreur récupération bâtiments: {response.text[:200]}")
+                print(f"⚠️ Erreur récupération utilisateurs: {response.text[:200]}")
         except Exception as e:
-            print(f"⚠️ Exception récupération bâtiment: {e}")
+            print(f"⚠️ Exception récupération utilisateurs: {e}")
         
-        # 2. Récupérer une ronde de sécurité
-        try:
-            url = f"{self.base_url}/{self.tenant_slug}/prevention/rondes"
-            response = requests.get(url, headers=self.headers)
-            print(f"🔄 Rondes - Status: {response.status_code}")
-            if response.status_code == 200:
-                rondes = response.json()
-                if rondes and len(rondes) > 0:
-                    self.test_ids["ronde_id"] = rondes[0].get('id')
-                    print(f"✅ Ronde trouvée: {self.test_ids['ronde_id']}")
-                else:
-                    print("⚠️ Aucune ronde trouvée")
-            else:
-                print(f"⚠️ Erreur récupération rondes: {response.text[:200]}")
-        except Exception as e:
-            print(f"⚠️ Exception récupération ronde: {e}")
-        
-        # 3. Récupérer une borne sèche
-        try:
-            url = f"{self.base_url}/{self.tenant_slug}/points-eau"
-            response = requests.get(url, headers=self.headers)
-            print(f"💧 Points d'eau - Status: {response.status_code}")
-            if response.status_code == 200:
-                bornes = response.json()
-                if bornes and len(bornes) > 0:
-                    self.test_ids["borne_id"] = bornes[0].get('id')
-                    print(f"✅ Borne trouvée: {self.test_ids['borne_id']}")
-                else:
-                    print("⚠️ Aucune borne trouvée")
-            else:
-                print(f"⚠️ Erreur récupération bornes: {response.text[:200]}")
-        except Exception as e:
-            print(f"⚠️ Exception récupération borne: {e}")
-        
-        print(f"📊 IDs récupérés: {self.test_ids}")
+        print(f"📊 Tests PDF ne nécessitent pas d'IDs spécifiques")
     
     def test_pdf_endpoint(self, endpoint_name: str, url: str, params: dict = None, expected_filename: str = None):
         """Test générique d'un endpoint PDF"""
