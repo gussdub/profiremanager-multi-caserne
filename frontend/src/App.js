@@ -10758,7 +10758,7 @@ const Remplacements = () => {
                   onClick={async () => {
                     try {
                       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-                      const token = localStorage.getItem('token');
+                      const token = localStorage.getItem(`${tenantSlug}_token`);
                       
                       const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
                       const url = `${backendUrl}/api/${tenantSlug}/remplacements/${endpoint}`;
@@ -13237,7 +13237,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const handleExportDisponibilites = async (userId = null) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       
       const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
       const url = userId 
