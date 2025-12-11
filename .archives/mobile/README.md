@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://report-fixer-2.preview.emergentagent.com
+- **URL** : https://autoinspect-4.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://report-fixer-2.preview.emergentagent.com"
+  "apiUrl": "https://autoinspect-4.preview.emergentagent.com"
 }
 ```
 

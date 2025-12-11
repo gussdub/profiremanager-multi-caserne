@@ -695,153 +695,41 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                       }}>
                         {/* Première ligne : Nom + Type */}
                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <input
-                            type="text"
-                            value={item.nom}
-                            onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
-                            placeholder="Nom de l'item (ex: Extincteur 10lb)"
-                            style={{
-                              flex: 1,
-                              padding: '0.5rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.875rem'
-                            }}
-                          />
-                          <select
-                            value={item.type_champ || 'checkbox'}
-                            onChange={(e) => updateItem(sIndex, iIndex, 'type_champ', e.target.value)}
-                            style={{
-                              padding: '0.5rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.75rem',
-                              backgroundColor: 'white'
-                            }}
-                          >
-                            <option value="checkbox">☑️ Cases à cocher (multiple)</option>
-                            <option value="radio">🔘 Puce (une seule)</option>
-                            <option value="text">📝 Texte libre</option>
-                            <option value="number">🔢 Nombre</option>
-                            <option value="select">📋 Liste déroulante</option>
-                            <option value="photo">📸 Photo obligatoire</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => supprimerItem(sIndex, iIndex)}
-                            style={{
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              padding: '0.375rem 0.5rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
+                        <span style={{ fontSize: '0.875rem', color: '#6b7280', minWidth: '20px' }}>{iIndex + 1}.</span>
+                        <input
+                          type="text"
+                          value={item.nom}
+                          onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
+                          placeholder="Nom de l'item (ex: Extincteur 10lb)"
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem'
+                          }}
+                        />
+                        <ImageUpload
+                          value={item.photo_url || ''}
+                          onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
+                          compact={true}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => supprimerItem(sIndex, iIndex)}
+                          style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: '0.375rem 0.5rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          ✕
+                        </button>
 
-                        {/* Options configurables pour checkbox, radio, select */}
-                        {(item.type_champ === 'checkbox' || item.type_champ === 'radio' || item.type_champ === 'select') && (
-                          <div style={{ marginBottom: '0.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid #3b82f6', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.375rem' }}>
-                            <label style={{ fontSize: '0.75rem', color: '#374151', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
-                              Options :
-                            </label>
-                            
-                            {(item.options || []).map((opt, optIndex) => (
-                              <div key={optIndex} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                <input
-                                  type="text"
-                                  value={opt.label || ''}
-                                  onChange={(e) => {
-                                    const newOptions = [...(item.options || [])];
-                                    newOptions[optIndex] = { ...newOptions[optIndex], label: e.target.value };
-                                    updateItem(sIndex, iIndex, 'options', newOptions);
-                                  }}
-                                  placeholder="Ex: Présent, Absent, Défectueux..."
-                                  style={{
-                                    flex: 1,
-                                    padding: '0.375rem',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '0.25rem',
-                                    fontSize: '0.75rem'
-                                  }}
-                                />
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={opt.declencherAlerte || false}
-                                    onChange={(e) => {
-                                      const newOptions = [...(item.options || [])];
-                                      newOptions[optIndex] = { ...newOptions[optIndex], declencherAlerte: e.target.checked };
-                                      updateItem(sIndex, iIndex, 'options', newOptions);
-                                    }}
-                                  />
-                                  ⚠️ Alerte
-                                </label>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newOptions = (item.options || []).filter((_, i) => i !== optIndex);
-                                    updateItem(sIndex, iIndex, 'options', newOptions);
-                                  }}
-                                  style={{
-                                    backgroundColor: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '0.25rem',
-                                    padding: '0.25rem 0.5rem',
-                                    cursor: 'pointer',
-                                    fontSize: '0.7rem'
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                            
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newOptions = [...(item.options || []), { label: '', declencherAlerte: false }];
-                                updateItem(sIndex, iIndex, 'options', newOptions);
-                              }}
-                              style={{
-                                backgroundColor: '#10b981',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '0.25rem',
-                                padding: '0.375rem 0.75rem',
-                                cursor: 'pointer',
-                                fontSize: '0.7rem',
-                                marginTop: '0.25rem'
-                              }}
-                            >
-                              + Ajouter une option
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Deuxième ligne : Options */}
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
-                            <input
-                              type="checkbox"
-                              checked={item.obligatoire}
-                              onChange={(e) => updateItem(sIndex, iIndex, 'obligatoire', e.target.checked)}
-                            />
-                            Obligatoire
-                          </label>
-                          
-                          {/* Upload photo de référence */}
-                          <ImageUpload
-                            value={item.photo_url || ''}
-                            onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
-                            compact={true}
-                          />
-                        </div>
                       </div>
                     ))}
 
