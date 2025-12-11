@@ -33,9 +33,19 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     const items = [];
     modele.sections.forEach(section => {
       section.items.forEach(item => {
-        const initialValue = item.type_champ === 'checkbox' ? 'present' : 
-                            item.type_champ === 'number' ? '0' :
-                            item.type_champ === 'select' && item.options_select?.length > 0 ? item.options_select[0] : '';
+        let initialValue;
+        
+        if (item.type_champ === 'checkbox') {
+          initialValue = []; // Array pour multiple sélection
+        } else if (item.type_champ === 'radio') {
+          initialValue = item.options?.length > 0 ? item.options[0].label : '';
+        } else if (item.type_champ === 'number') {
+          initialValue = '0';
+        } else if (item.type_champ === 'select') {
+          initialValue = item.options?.length > 0 ? item.options[0].label : '';
+        } else {
+          initialValue = '';
+        }
         
         items.push({
           section: section.titre,
@@ -44,7 +54,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
           nom: item.nom,
           type_champ: item.type_champ || 'checkbox',
           photo_url: item.photo_url,
-          options_select: item.options_select || [],
+          options: item.options || [],
           obligatoire: item.obligatoire,
           valeur: initialValue, // Valeur saisie
           notes: '',
@@ -306,26 +316,71 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                             case 'checkbox':
                               return (
                                 <>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={item.valeur === 'present'}
-                                      onChange={(e) => updateItemValeur(item.index, e.target.checked ? 'present' : 'absent')}
-                                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                                    />
-                                    <label style={{ flex: 1, fontSize: '14px', color: '#2c3e50', fontWeight: item.valeur === 'present' ? 'bold' : 'normal' }}>
-                                      {item.nom}
-                                    </label>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {item.options.map((opt, optIdx) => (
+                                      <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={Array.isArray(item.valeur) && item.valeur.includes(opt.label)}
+                                          onChange={(e) => {
+                                            const currentVal = Array.isArray(item.valeur) ? item.valeur : [];
+                                            const newVal = e.target.checked 
+                                              ? [...currentVal, opt.label]
+                                              : currentVal.filter(v => v !== opt.label);
+                                            updateItemValeur(item.index, newVal);
+                                          }}
+                                          style={{ width: '18px', height: '18px' }}
+                                        />
+                                        <span style={{ fontSize: '14px' }}>
+                                          {opt.label}
+                                          {opt.declencherAlerte && <span style={{ marginLeft: '4px', color: '#f59e0b' }}>⚠️</span>}
+                                        </span>
+                                      </label>
+                                    ))}
                                   </div>
-                                  {item.valeur === 'absent' && (
-                                    <input
-                                      type="text"
-                                      placeholder="Raison de l'absence (optionnel)"
-                                      value={item.notes}
-                                      onChange={(e) => updateItemNotes(item.index, e.target.value)}
-                                      style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px', marginLeft: '32px' }}
-                                    />
-                                  )}
+                                  <textarea
+                                    value={item.notes}
+                                    onChange={(e) => updateItemNotes(item.index, e.target.value)}
+                                    placeholder="Notes additionnelles (optionnel)"
+                                    rows={2}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px' }}
+                                  />
+                                </>
+                              );
+                            
+                            case 'radio':
+                              return (
+                                <>
+                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                                  </label>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {item.options.map((opt, optIdx) => (
+                                      <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <input
+                                          type="radio"
+                                          name={`radio_${item.index}`}
+                                          checked={item.valeur === opt.label}
+                                          onChange={() => updateItemValeur(item.index, opt.label)}
+                                          style={{ width: '18px', height: '18px' }}
+                                        />
+                                        <span style={{ fontSize: '14px' }}>
+                                          {opt.label}
+                                          {opt.declencherAlerte && <span style={{ marginLeft: '4px', color: '#f59e0b' }}>⚠️</span>}
+                                        </span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                  <textarea
+                                    value={item.notes}
+                                    onChange={(e) => updateItemNotes(item.index, e.target.value)}
+                                    placeholder="Notes additionnelles (optionnel)"
+                                    rows={2}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px' }}
+                                  />
                                 </>
                               );
                             
@@ -372,8 +427,8 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                                     onChange={(e) => updateItemValeur(item.index, e.target.value)}
                                     style={{ padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', backgroundColor: 'white' }}
                                   >
-                                    {item.options_select.map((opt, idx) => (
-                                      <option key={idx} value={opt}>{opt}</option>
+                                    {item.options.map((opt, idx) => (
+                                      <option key={idx} value={opt.label}>{opt.label}</option>
                                     ))}
                                   </select>
                                 </>
