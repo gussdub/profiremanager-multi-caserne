@@ -30,10 +30,11 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     modele.sections.forEach(section => {
       section.items.forEach(item => {
         items.push({
-          section: section.nom,
+          section: section.titre,
+          item_id: item.id,
           nom: item.nom,
-          present: false,
-          commentaire: ''
+          statut: 'present',  // present, absent, defectueux
+          notes: ''
         });
       });
     });
@@ -42,13 +43,14 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
 
   const toggleItem = (index) => {
     const newItems = [...itemsInventaire];
-    newItems[index].present = !newItems[index].present;
+    // Toggle entre present et absent
+    newItems[index].statut = newItems[index].statut === 'present' ? 'absent' : 'present';
     setItemsInventaire(newItems);
   };
 
-  const updateItemCommentaire = (index, commentaire) => {
+  const updateItemNotes = (index, notes) => {
     const newItems = [...itemsInventaire];
-    newItems[index].commentaire = commentaire;
+    newItems[index].notes = notes;
     setItemsInventaire(newItems);
   };
 
@@ -59,16 +61,18 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     try {
       const inventaireData = {
         vehicule_id: vehicule.id,
-        vehicule_nom: vehicule.nom,
         modele_id: modeleSelectionne.id,
-        modele_nom: modeleSelectionne.nom,
-        items: itemsInventaire,
-        commentaire_general: commentaire,
-        realise_par: user.nom_complet || user.email,
-        realise_par_id: user.id
+        date_inventaire: new Date().toISOString(),
+        items_coches: itemsInventaire.map(item => ({
+          item_id: item.item_id,
+          nom: item.nom,
+          statut: item.statut,
+          notes: item.notes || ''
+        })),
+        notes_generales: commentaire
       };
 
-      await apiPost(tenantSlug, '/actifs/inventaires-vehicules', inventaireData);
+      await apiPost(tenantSlug, `/vehicules/${vehicule.id}/inventaire`, inventaireData);
       
       alert('✅ Inventaire enregistré avec succès !');
       if (onSuccess) onSuccess();
@@ -256,16 +260,16 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                         key={item.index}
                         style={{
                           padding: '12px',
-                          border: `2px solid ${item.present ? '#27ae60' : '#e9ecef'}`,
+                          border: `2px solid ${item.statut === 'present' ? '#27ae60' : '#e9ecef'}`,
                           borderRadius: '8px',
-                          backgroundColor: item.present ? '#e8f5e9' : 'white',
+                          backgroundColor: item.statut === 'present' ? '#e8f5e9' : 'white',
                           transition: 'all 0.2s'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <input
                             type="checkbox"
-                            checked={item.present}
+                            checked={item.statut === 'present'}
                             onChange={() => toggleItem(item.index)}
                             style={{
                               width: '20px',
@@ -280,19 +284,19 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                               cursor: 'pointer',
                               fontSize: '14px',
                               color: '#2c3e50',
-                              fontWeight: item.present ? 'bold' : 'normal'
+                              fontWeight: item.statut === 'present' ? 'bold' : 'normal'
                             }}
                           >
                             {item.nom}
                           </label>
                         </div>
-                        {!item.present && (
+                        {item.statut === 'absent' && (
                           <div style={{ marginTop: '8px', marginLeft: '32px' }}>
                             <input
                               type="text"
-                              placeholder="Commentaire (optionnel)"
-                              value={item.commentaire}
-                              onChange={(e) => updateItemCommentaire(item.index, e.target.value)}
+                              placeholder="Notes (optionnel)"
+                              value={item.notes}
+                              onChange={(e) => updateItemNotes(item.index, e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '8px',
