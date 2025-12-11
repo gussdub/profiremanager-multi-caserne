@@ -57,18 +57,20 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
       const data = await apiGet(tenantSlug, '/actifs/vehicules');
       setVehicules(data || []);
       
-      // Extraire les types uniques de véhicules
-      const typesUniques = [...new Set(data.map(v => v.type_vehicule || v.type).filter(Boolean))];
-      const typesFormates = typesUniques.map(type => ({
-        value: type,
-        label: type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+      // Formater tous les véhicules pour le dropdown
+      const vehiculesFormates = data.map(v => ({
+        value: v.type_vehicule || v.type || 'inconnu',
+        label: `${v.nom} (${(v.type_vehicule || v.type || 'Type inconnu').charAt(0).toUpperCase() + (v.type_vehicule || v.type || '').slice(1).replace(/_/g, ' ')})`,
+        vehiculeId: v.id,
+        vehiculeNom: v.nom,
+        vehiculeType: v.type_vehicule || v.type
       }));
       
-      setTypesVehicules(typesFormates);
+      setTypesVehicules(vehiculesFormates);
       
-      // Définir le premier type comme défaut si disponible
-      if (typesFormates.length > 0 && !typeVehicule) {
-        setTypeVehicule(typesFormates[0].value);
+      // Définir le premier véhicule comme défaut si disponible
+      if (vehiculesFormates.length > 0 && !typeVehicule) {
+        setTypeVehicule(vehiculesFormates[0].value);
       }
     } catch (error) {
       console.error('Erreur chargement véhicules:', error);
@@ -100,7 +102,12 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const ajouterSection = () => {
     setSections([
       ...sections,
-      { titre: `Section ${sections.length + 1}`, items: [], ordre: sections.length }
+      { 
+        titre: `Section ${sections.length + 1}`, 
+        photo_url: '',
+        items: [], 
+        ordre: sections.length 
+      }
     ]);
   };
 
@@ -114,6 +121,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
       nom: '',
       obligatoire: false,
       photo_requise: false,
+      photo_url: '',
       ordre: newSections[sectionIndex].items.length
     });
     setSections(newSections);
