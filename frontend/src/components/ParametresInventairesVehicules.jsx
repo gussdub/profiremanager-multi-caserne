@@ -228,7 +228,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
 
   const sauvegarderEmailsConfig = async () => {
     try {
-      await apiPut(tenantSlug, '/tenant/parametres', {
+      await apiPut(tenantSlug, '/actifs/parametres', {
         emails_notifications_inventaires_vehicules: emailsNotifications
       });
       alert('✅ Configuration des emails enregistrée');
@@ -693,43 +693,43 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                         borderRadius: '0.375rem',
                         border: '1px solid #e5e7eb'
                       }}>
-                        {/* Première ligne : Nom + Type */}
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '0.875rem', color: '#6b7280', minWidth: '20px' }}>{iIndex + 1}.</span>
-                        <input
-                          type="text"
-                          value={item.nom}
-                          onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
-                          placeholder="Nom de l'item (ex: Extincteur 10lb)"
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem'
-                          }}
-                        />
-                        <ImageUpload
-                          value={item.photo_url || ''}
-                          onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
-                          compact={true}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => supprimerItem(sIndex, iIndex)}
-                          style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            padding: '0.375rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          ✕
-                        </button>
-
+                        {/* Première ligne : Nom + Image + Supprimer */}
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#6b7280', minWidth: '20px' }}>{iIndex + 1}.</span>
+                          <input
+                            type="text"
+                            value={item.nom}
+                            onChange={(e) => updateItem(sIndex, iIndex, 'nom', e.target.value)}
+                            placeholder="Nom de l'item (ex: Extincteur 10lb)"
+                            style={{
+                              flex: 1,
+                              padding: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.875rem'
+                            }}
+                          />
+                          <ImageUpload
+                            value={item.photo_url || ''}
+                            onChange={(url) => updateItem(sIndex, iIndex, 'photo_url', url)}
+                            compact={true}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => supprimerItem(sIndex, iIndex)}
+                            style={{
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              padding: '0.375rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     ))}
 
