@@ -7489,7 +7489,7 @@ const Planning = () => {
         `${BACKEND_URL}/api/${tenantSlug}/planning/rapport-audit?mois=${mois}&format=${format}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem(`${tenantSlug}_token`)}`
           }
         }
       );
@@ -15979,7 +15979,7 @@ const Rapports = () => {
   const handleExportPDF = async (typeRapport) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       
       let url = '';
       if (typeRapport === 'dashboard') {
@@ -16019,7 +16019,7 @@ const Rapports = () => {
   const handleExportExcel = async (typeRapport) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       
       let url = '';
       if (typeRapport === 'salaires') {
