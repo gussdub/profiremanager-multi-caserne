@@ -4288,22 +4288,31 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
       
-      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
-      if (userId) {
-        const selectedUser = users.find(u => u.id === userId);
-        link.download = `fiche_${selectedUser?.prenom}_${selectedUser?.nom}${extension}`;
+      if (exportType === 'pdf') {
+        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        const pdfUrl = window.URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        // Nettoyer l'URL après un délai pour laisser le temps au navigateur de charger
+        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
       } else {
-        link.download = `liste_personnel${extension}`;
+        // Pour les Excel, télécharger directement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        
+        if (userId) {
+          const selectedUser = users.find(u => u.id === userId);
+          link.download = `fiche_${selectedUser?.prenom}_${selectedUser?.nom}.xlsx`;
+        } else {
+          link.download = `liste_personnel.xlsx`;
+        }
+        
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
       }
-      
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
       
       toast({ 
         title: "Succès", 
@@ -10771,14 +10780,23 @@ const Remplacements = () => {
                       if (!response.ok) throw new Error('Erreur export');
                       
                       const blob = await response.blob();
-                      const downloadUrl = window.URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = downloadUrl;
-                      link.download = `remplacements_tous.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`;
-                      document.body.appendChild(link);
-                      link.click();
-                      link.remove();
-                      window.URL.revokeObjectURL(downloadUrl);
+                      
+                      if (exportType === 'pdf') {
+                        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+                        const pdfUrl = window.URL.createObjectURL(blob);
+                        window.open(pdfUrl, '_blank');
+                        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+                      } else {
+                        // Pour les Excel, télécharger directement
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = `remplacements_tous.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.URL.revokeObjectURL(downloadUrl);
+                      }
                       
                       toast({ title: "Succès", description: `Export ${exportType.toUpperCase()} téléchargé` });
                       setShowExportModal(false);
@@ -10955,14 +10973,23 @@ const Formations = () => {
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `rapport_presence_${typeFormation}_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      
+      if (format === 'pdf') {
+        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        const pdfUrl = window.URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+      } else {
+        // Pour les Excel, télécharger directement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `rapport_presence_${typeFormation}_${anneeSelectionnee}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+      }
       
       toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
     } catch (error) {
@@ -11033,14 +11060,23 @@ const Formations = () => {
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `rapport_competences_${anneeSelectionnee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      
+      if (format === 'pdf') {
+        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        const pdfUrl = window.URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+      } else {
+        // Pour les Excel, télécharger directement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `rapport_competences_${anneeSelectionnee}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+      }
       
       toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
     } catch (error) {
