@@ -10994,10 +10994,20 @@ const Formations = () => {
       const blob = await response.blob();
       
       if (format === 'pdf') {
-        // Pour les PDF, ouvrir dans un nouvel onglet pour permettre l'impression avec options
+        // Pour les PDF, ouvrir directement le dialogue d'impression
         const pdfUrl = window.URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 1000);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 100);
+        };
       } else {
         // Pour les Excel, télécharger directement
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -11010,7 +11020,7 @@ const Formations = () => {
         window.URL.revokeObjectURL(downloadUrl);
       }
       
-      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} téléchargé` });
+      toast({ title: "Succès", description: `Rapport ${format.toUpperCase()} ${format === 'pdf' ? 'prêt à imprimer' : 'téléchargé'}` });
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible de télécharger le rapport", variant: "destructive" });
     }
@@ -13319,23 +13329,39 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
       
-      const extension = exportType === 'pdf' ? '.pdf' : '.xlsx';
-      link.download = userId 
-        ? `disponibilites_${userId}${extension}` 
-        : `disponibilites_tous${extension}`;
-      
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      if (exportType === 'pdf') {
+        // Pour les PDF, ouvrir directement le dialogue d'impression
+        const pdfUrl = window.URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 100);
+        };
+      } else {
+        // Pour les Excel, télécharger directement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = userId 
+          ? `disponibilites_${userId}.xlsx` 
+          : `disponibilites_tous.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+      }
       
       toast({ 
         title: "Succès", 
-        description: `Export ${exportType.toUpperCase()} téléchargé`,
+        description: `Export ${exportType.toUpperCase()} ${exportType === 'pdf' ? 'prêt à imprimer' : 'téléchargé'}`,
         variant: "success"
       });
       
