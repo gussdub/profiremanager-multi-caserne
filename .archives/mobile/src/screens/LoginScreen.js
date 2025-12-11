@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
   const loadTenants = async () => {
     try {
-      const response = await fetch('https://defect-workflow.preview.emergentagent.com/api/tenants');
+      const response = await fetch('https://report-fixer-2.preview.emergentagent.com/api/tenants');
       const data = await response.json();
       setTenants(data);
     } catch (error) {

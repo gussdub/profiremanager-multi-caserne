@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://defect-workflow.preview.emergentagent.com/api"
+BACKEND_URL = "https://report-fixer-2.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {

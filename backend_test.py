@@ -20,7 +20,7 @@ LISTE COMPLÈTE DES 12 RAPPORTS:
 12. Rapport Général PDF
 
 APPLICATION:
-- URL Backend: https://defect-workflow.preview.emergentagent.com
+- URL Backend: https://report-fixer-2.preview.emergentagent.com
 - Tenant: demo
 - Credentials: gussdub@gmail.com / 230685Juin+
 
@@ -49,7 +49,7 @@ import os
 
 class PDFReportsTester:
     def __init__(self):
-        self.base_url = "https://defect-workflow.preview.emergentagent.com/api"
+        self.base_url = "https://report-fixer-2.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "demo"  # Tester demo comme spécifié
