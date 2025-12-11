@@ -293,58 +293,7 @@ class PDFReportsTester:
         
         return successful_tests, total_tests
     
-    def check_backend_logs_for_personnel_pdf(self):
-        """Vérifier les logs backend pour le PDF Personnel qui échoue"""
-        print("\n" + "="*80)
-        print("🔍 ANALYSE LOGS BACKEND - PDF PERSONNEL")
-        print("="*80)
-        
-        print("📋 Vérification des logs backend pour identifier l'erreur exacte du PDF Personnel...")
-        
-        # Tenter de lire les logs backend
-        try:
-            import subprocess
-            result = subprocess.run(
-                ["tail", "-n", "100", "/var/log/supervisor/backend.err.log"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            if result.returncode == 0:
-                logs = result.stdout
-                personnel_logs = []
-                
-                # Chercher les logs liés au personnel/export
-                for line in logs.split('\n'):
-                    if 'personnel' in line.lower() and 'export' in line.lower():
-                        personnel_logs.append(line)
-                
-                if personnel_logs:
-                    print(f"📄 Logs trouvés liés au personnel export ({len(personnel_logs)} lignes):")
-                    for log in personnel_logs[-10:]:  # Dernières 10 lignes
-                        print(f"   {log}")
-                else:
-                    print("⚠️ Aucun log spécifique au personnel export trouvé")
-                    
-                # Chercher les erreurs récentes
-                error_logs = []
-                for line in logs.split('\n'):
-                    if any(keyword in line.lower() for keyword in ['error', 'exception', '401', '403', '500']):
-                        error_logs.append(line)
-                
-                if error_logs:
-                    print(f"\n🚨 Erreurs récentes trouvées ({len(error_logs)} lignes):")
-                    for log in error_logs[-5:]:  # Dernières 5 erreurs
-                        print(f"   {log}")
-                        
-            else:
-                print(f"⚠️ Impossible de lire les logs: {result.stderr}")
-                
-        except Exception as e:
-            print(f"⚠️ Erreur lors de la lecture des logs: {e}")
-        
-        return 0, 0  # Pas de tests supplémentaires, juste analyse
+    # Method removed - not needed for Shefford PDF tests
     
     def generate_test_report(self, successful_tests: int, total_tests: int, additional_successful: int = 0, additional_total: int = 0):
         """Générer le rapport final des tests selon le format demandé"""
