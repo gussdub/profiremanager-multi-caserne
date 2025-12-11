@@ -463,27 +463,23 @@ class PDFReportsTester:
     
     def run_comprehensive_pdf_tests(self):
         """Exécuter tous les tests PDF selon la demande spécifique"""
-        print("🚀 DÉBUT DES TESTS COMPLETS - VÉRIFIER TOUS LES 12 RAPPORTS PDF")
+        print("🚀 DÉBUT DES TESTS COMPLETS - EXPORTS PDF TENANT SHEFFORD")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
-        print(f"👤 Credentials: {self.credentials['email']}")
-        print(f"🎯 Focus: Identifier tous les problèmes, notamment l'erreur 401 sur Personnel PDF")
+        print(f"🎯 Objectif: Tester tous les exports PDF signalés comme cassés")
         
         # 1. Authentification
         if not self.authenticate():
             print("❌ ÉCHEC CRITIQUE: Impossible de s'authentifier")
             return False
         
-        # 2. Récupérer les IDs de test nécessaires
+        # 2. Récupérer les IDs de test nécessaires (optionnel)
         self.get_test_data_ids()
         
-        # 3. Tester tous les 12 rapports PDF
+        # 3. Tester tous les exports PDF
         successful_main, total_main = self.test_all_pdf_reports()
         
-        # 4. Analyser les logs backend pour le PDF Personnel
-        self.check_backend_logs_for_personnel_pdf()
-        
-        # 5. Générer le rapport final dans le format demandé
+        # 4. Générer le rapport final dans le format demandé
         overall_success = self.generate_test_report(successful_main, total_main)
         
         return overall_success
