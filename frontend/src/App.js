@@ -20912,7 +20912,7 @@ const ListeInspections = ({ setCurrentView }) => {
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/inspections/${inspectionId}/rapport-pdf`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem(`${tenantSlug}_token`)}`
         }
       });
       
@@ -22052,7 +22052,7 @@ const ModuleRapports = ({ setCurrentView }) => {
         `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=${type}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem(`${tenantSlug}_token`)}`
           }
         }
       );
