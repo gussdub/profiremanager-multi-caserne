@@ -228,105 +228,132 @@ class PDFReportsTester:
             return False
     
     def test_all_pdf_reports(self):
-        """Tester tous les rapports PDF identifiés"""
+        """Tester tous les 12 rapports PDF spécifiés"""
         print("\n" + "="*80)
-        print("🧪 TESTS DES 13 RAPPORTS PDF REFACTORISÉS")
+        print("🧪 TESTS DES 12 RAPPORTS PDF - TENANT DEMO")
         print("="*80)
         
-        # Liste des endpoints PDF à tester
+        # Liste des 12 endpoints PDF à tester selon la spécification
         pdf_tests = [
-            # 1. Module Planning
+            # 1. Planning PDF
             {
-                "name": "1. Planning Export PDF (Mois)",
-                "url": f"{self.base_url}/{self.tenant_slug}/planning/export-pdf",
-                "params": {"periode": "2025-12", "type": "mois"}
-            },
-            {
-                "name": "2. Rapport Heures Travaillées PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/planning/rapport-heures/export-pdf",
-                "params": {"date_debut": "2025-12-01", "date_fin": "2025-12-31"}
+                "name": "1. Planning PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-planning-pdf",
+                "params": {}
             },
             
-            # 2. Module Remplacements
+            # 2. Heures Travaillées PDF
             {
-                "name": "3. Remplacements Export PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/remplacements/export-pdf",
-                "params": {"date_debut": "2025-12-01", "date_fin": "2025-12-31"}
+                "name": "2. Heures Travaillées PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-heures-pdf",
+                "params": {"mois": "2024-12"}
             },
             
-            # 3. Module Rapports/Dashboard
+            # 3. Remplacements PDF
             {
-                "name": "4. Dashboard Export PDF",
+                "name": "3. Remplacements PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-remplacements-pdf",
+                "params": {}
+            },
+            
+            # 4. Inspections Bâtiment PDF (nécessite batiment_id)
+            {
+                "name": "4. Inspections Bâtiment PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/prevention/batiments/export-inspection-pdf",
+                "params": {"batiment_id": self.test_ids.get("batiment_id", "test-id")},
+                "requires_id": "batiment_id"
+            },
+            
+            # 5. Rondes Sécurité PDF (nécessite ronde_id)
+            {
+                "name": "5. Rondes Sécurité PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/prevention/rondes/export-pdf",
+                "params": {"ronde_id": self.test_ids.get("ronde_id", "test-id")},
+                "requires_id": "ronde_id"
+            },
+            
+            # 6. Inspection Borne Sèche PDF (nécessite borne_id)
+            {
+                "name": "6. Inspection Borne Sèche PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/points-eau/export-inspection-pdf",
+                "params": {"borne_id": self.test_ids.get("borne_id", "test-id")},
+                "requires_id": "borne_id"
+            },
+            
+            # 7. Dashboard PDF
+            {
+                "name": "7. Dashboard PDF",
                 "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-dashboard-pdf",
-                "params": {"periode": "2025-12"}
+                "params": {}
             },
+            
+            # 8. Salaires PDF
             {
-                "name": "5. Rapport Salaires PDF",
+                "name": "8. Salaires PDF",
                 "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-salaires-pdf",
-                "params": {"date_debut": "2025-12-01", "date_fin": "2025-12-31"}
+                "params": {"date_debut": "2024-01-01", "date_fin": "2024-12-31"}
             },
             
-            # 4. Module Personnel
+            # 9. Personnel PDF (⚠️ CELUI-CI ÉCHOUE selon le rapport)
             {
-                "name": "6. Personnel Export PDF",
+                "name": "9. Personnel PDF (❌ Signalé problématique)",
                 "url": f"{self.base_url}/{self.tenant_slug}/personnel/export-pdf",
-                "params": {"format": "complet"}
+                "params": {},
+                "focus": True  # Marquer comme focus spécial
             },
             
-            # 5. Module Disponibilités
+            # 10. Inventaire EPI PDF
             {
-                "name": "7. Disponibilités Export PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/disponibilites/export-pdf",
-                "params": {"date_debut": "2025-12-01", "date_fin": "2025-12-31"}
+                "name": "10. Inventaire EPI PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/epi/export-inventaire-pdf",
+                "params": {}
             },
             
-            # 6. Rapport Global (sans tenant)
+            # 11. Plan Intervention PDF (nécessite batiment_id)
             {
-                "name": "8. Rapport Global PDF",
-                "url": f"{self.base_url}/rapports/export-pdf",
-                "params": {"type": "global", "periode": "2025-12"}
+                "name": "11. Plan Intervention PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/prevention/batiments/{self.test_ids.get('batiment_id', 'test-id')}/export-pi-pdf",
+                "params": {},
+                "requires_id": "batiment_id"
+            },
+            
+            # 12. Rapport Général PDF
+            {
+                "name": "12. Rapport Général PDF",
+                "url": f"{self.base_url}/{self.tenant_slug}/rapports/export-rapport-pdf",
+                "params": {}
             }
         ]
-        
-        # Tests avec IDs spécifiques (si disponibles)
-        if self.test_ids.get("inspection_id"):
-            pdf_tests.append({
-                "name": "9. Rapport Inspection Prévention PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/prevention/inspections/{self.test_ids['inspection_id']}/rapport-pdf",
-                "params": {}
-            })
-        
-        if self.test_ids.get("plan_id"):
-            pdf_tests.append({
-                "name": "10. Plan d'Intervention Export PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/prevention/plans-intervention/{self.test_ids['plan_id']}/export-pdf",
-                "params": {}
-            })
-        
-        if self.test_ids.get("batiment_id"):
-            pdf_tests.append({
-                "name": "11. Rapport Bâtiment PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/prevention/batiments/{self.test_ids['batiment_id']}/rapport-pdf",
-                "params": {}
-            })
-        
-        if self.test_ids.get("ronde_id"):
-            pdf_tests.append({
-                "name": "12. Ronde de Sécurité Export PDF",
-                "url": f"{self.base_url}/{self.tenant_slug}/actifs/rondes-securite/{self.test_ids['ronde_id']}/export-pdf",
-                "params": {}
-            })
         
         # Exécuter tous les tests
         successful_tests = 0
         total_tests = len(pdf_tests)
         
-        for test in pdf_tests:
+        for i, test in enumerate(pdf_tests, 1):
+            print(f"\n{'='*60}")
+            print(f"TEST {i}/12: {test['name']}")
+            print(f"{'='*60}")
+            
+            # Vérifier si l'ID requis est disponible
+            if test.get("requires_id"):
+                required_id = test["requires_id"]
+                if not self.test_ids.get(required_id):
+                    print(f"⚠️ SKIP: {required_id} non disponible pour ce test")
+                    self.test_results.append({
+                        "endpoint": test["name"],
+                        "status": "⚠️ SKIP - ID MANQUANT",
+                        "error": f"{required_id} non trouvé dans la base de données"
+                    })
+                    continue
+            
+            # Marquer le test Personnel comme focus spécial
+            if test.get("focus"):
+                print("🎯 FOCUS SPÉCIAL: Ce rapport est signalé comme problématique")
+            
             success = self.test_pdf_endpoint(
                 test["name"],
                 test["url"],
-                test.get("params"),
-                test.get("expected_filename")
+                test.get("params")
             )
             if success:
                 successful_tests += 1
