@@ -186,10 +186,12 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         sections: sections.map(section => ({
           titre: section.titre,
           ordre: section.ordre,
+          type_champ: section.type_champ || 'checkbox',
+          options: section.options || [],
+          photo_url: section.photo_url || '',
           items: section.items.map(item => ({
             nom: item.nom,
-            obligatoire: item.obligatoire,
-            photo_requise: item.photo_requise,
+            photo_url: item.photo_url || '',
             ordre: item.ordre
           }))
         }))
