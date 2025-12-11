@@ -504,6 +504,18 @@ backend:
         agent: "testing"
         comment: "🎉 CRITICAL BUG FIXED - ERREUR 500 RÉSOLUE! Test approfondi du flux complet 'Mot de passe oublié' terminé avec succès. PROBLÈME IDENTIFIÉ ET CORRIGÉ: L'erreur 500 était causée par une comparaison de datetime avec/sans timezone ('can't compare offset-naive and offset-aware datetimes') dans les endpoints verify-reset-token et reset-password. SOLUTION APPLIQUÉE: Ajout de gestion timezone dans server.py lignes 5226-5229 et 5268-5271 pour convertir les datetime sans timezone en UTC avant comparaison. TESTS COMPLETS RÉUSSIS: 1) ✅ Création token: POST /api/shefford/auth/forgot-password avec gussdub@gmail.com fonctionne (email_sent=false car SendGrid non configuré mais token créé en DB), 2) ✅ Vérification MongoDB: 3 tokens trouvés avec structure correcte (token UUID, expires_at datetime, used boolean, tenant_id, user_id, email), 3) ✅ Vérification token: GET /api/shefford/auth/verify-reset-token/{token} retourne 200 OK avec valid:true et email, 4) ✅ Reset password: POST /api/shefford/auth/reset-password fonctionne avec nouveau mot de passe TestReset2024!, 5) ✅ Connexion vérifiée: Login réussi avec nouveau mot de passe. TOKEN UTILISATEUR (57bb1438-90bb-4130-9347-fa455ceb704d): N'existe pas en base de données, d'où le 404 'Token invalide' - comportement normal pour token inexistant/expiré/utilisé. Le flux complet fonctionne parfaitement maintenant!"
 
+  - task: "Module Inventaires Véhicules - Création de Modèles d'Inventaire et Configuration des Notifications"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/ParametresInventairesVehicules.jsx"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "FEATURE COMPLETION - Module Inventaires Véhicules avec corrections de 3 bugs critiques. BUGS CORRIGÉS: 1) ✅ Endpoint de sauvegarde des emails changé de '/tenant/parametres' à '/actifs/parametres' (ligne 231), 2) ✅ JSX mal formé au niveau des items - div fermante supprimée (ligne 734), 3) ✅ Payload de sauvegarde du modèle maintenant inclut type_champ, options, et photo_url au niveau des sections. FONCTIONNALITÉS IMPLÉMENTÉES: Interface de création/modification de modèles d'inventaire véhicules, configuration des notifications email, gestion des sections avec types de réponse (cases à cocher, texte libre, etc.), ajout d'items avec photos, duplication de sections, sauvegarde avec structure corrigée. NEEDS COMPREHENSIVE TESTING du flux complet: 1) Navigation vers Gestion des Actifs > Paramètres > Véhicules (onglet Inventaires), 2) Création de modèle avec sections et items, 3) Configuration des notifications email, 4) Modification et suppression de modèles, 5) Vérification que les bugs sont corrigés (pas d'erreur 404, JSX valide, données complètes)."
+
   - task: "Système de Gestion des Préventionnistes - Nouveaux Endpoints"
     implemented: true
     working: true
