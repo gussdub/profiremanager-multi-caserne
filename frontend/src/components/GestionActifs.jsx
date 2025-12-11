@@ -43,6 +43,11 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [showInspectionBorneSecheModal, setShowInspectionBorneSecheModal] = useState(false);
   const [selectedBorneSeche, setSelectedBorneSeche] = useState(null);
   const [eauSubTab, setEauSubTab] = useState('carte');
+  
+  // États pour inventaire véhicules
+  const [showInventaireModal, setShowInventaireModal] = useState(false);
+  const [selectedVehiculeForInventaire, setSelectedVehiculeForInventaire] = useState(null);
+  const [showHistoriqueInventairesModal, setShowHistoriqueInventairesModal] = useState(false);
 
   const { tenantSlug } = useTenant();
 
@@ -719,6 +724,22 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
           label="✅ Nouvelle ronde de sécurité"
           color="#27ae60"
           onClick={() => onCreateInspection(vehicule)}
+          small
+        />
+      </div>
+
+      {/* Actions inventaire */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <ActionButton
+          label="📦 Inventaire"
+          color="#8e44ad"
+          onClick={() => onCreateInventaire(vehicule)}
+          small
+        />
+        <ActionButton
+          label="📋 Historique inventaires"
+          color="#9b59b6"
+          onClick={() => onViewHistoriqueInventaires(vehicule)}
           small
         />
       </div>
