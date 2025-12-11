@@ -22009,6 +22009,75 @@ async def upload_photo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
 
+@api_router.post("/{tenant_slug}/inventaires/upload-photo")
+async def upload_inventaire_photo(
+    tenant_slug: str,
+    photo_base64: str = Body(..., embed=True),
+    filename: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload une photo pour un inventaire véhicule et retourne l'URL"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Générer un ID unique pour la photo
+        photo_id = str(uuid.uuid4())
+        
+        # Stocker la photo dans la collection photos
+        photo_doc = {
+            "id": photo_id,
+            "tenant_id": tenant.id,
+            "filename": filename,
+            "data": photo_base64,
+            "uploaded_by": current_user.id,
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "type": "inventaire_vehicule"
+        }
+        
+        await db.photos_inventaires.insert_one(photo_doc)
+        
+        # Retourner l'URL de la photo
+        return {
+            "photo_id": photo_id,
+            "url": f"/api/{tenant_slug}/inventaires/photos/{photo_id}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
+
+@api_router.get("/{tenant_slug}/inventaires/photos/{photo_id}")
+async def get_inventaire_photo(
+    tenant_slug: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une photo d'inventaire par son ID"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    photo = await db.photos_inventaires.find_one({
+        "id": photo_id,
+        "tenant_id": tenant.id
+    }, {"_id": 0})
+    
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    # Retourner la photo en base64
+    from fastapi.responses import Response
+    import base64
+    
+    # Extraire les données de l'image
+    if photo['data'].startswith('data:'):
+        # Format: data:image/png;base64,xxxx
+        header, data = photo['data'].split(',', 1)
+        mime_type = header.split(':')[1].split(';')[0]
+    else:
+        data = photo['data']
+        mime_type = 'image/png'
+    
+    image_data = base64.b64decode(data)
+    
+    return Response(content=image_data, media_type=mime_type)
+
 @api_router.get("/{tenant_slug}/prevention/photos/{photo_id}")
 async def get_photo(
     tenant_slug: str,
