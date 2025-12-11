@@ -1080,7 +1080,6 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'remplacements', icon: '🔄', title: 'Remplacements', desc: 'Règles' },
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
-          { id: 'inventaires', icon: '📋', title: 'Inventaires', desc: 'Modèles véhicules' },
           { id: 'personnalisation', icon: '🎨', title: 'Personnalisation', desc: 'Logo et branding' },
           { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' }
         ].map(tab => (
@@ -2584,11 +2583,6 @@ const Parametres = ({ user, tenantSlug }) => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Onglet Inventaires Véhicules */}
-        {activeTab === 'inventaires' && (
-          <ParametresInventairesVehicules tenantSlug={tenantSlug} user={user} />
         )}
 
         {/* Onglet Personnalisation */}
