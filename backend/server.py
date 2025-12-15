@@ -9183,6 +9183,9 @@ class SectionInventaireVehicule(BaseModel):
     """Section dans un modèle d'inventaire véhicule"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     titre: str
+    type_champ: str = "checkbox"  # Type de réponse: checkbox, radio, text, number, select, photo
+    options: List[dict] = []  # Options pour checkbox/radio/select: [{label, declencherAlerte}]
+    photo_url: str = ""  # Photo de référence de la section
     items: List[ItemInventaireVehicule] = []
     ordre: int = 0
 
