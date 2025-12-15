@@ -9175,6 +9175,7 @@ class ItemInventaireVehicule(BaseModel):
     """Item individuel dans un modèle d'inventaire véhicule"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     nom: str
+    photo_url: str = ""  # Photo de référence de l'item
     obligatoire: bool = False
     photo_requise: bool = False
     ordre: int = 0
