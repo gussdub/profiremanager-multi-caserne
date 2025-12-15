@@ -485,7 +485,14 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
       setNom('');
       setTypeVehicule(typesVehicules.length > 0 ? typesVehicules[0].value : '');
       setDescription('');
-      setSections([{ titre: 'Section 1', items: [], ordre: 0 }]);
+      setSections([{ 
+        titre: 'Section 1', 
+        type_champ: 'checkbox',
+        options: [],
+        photo_url: '',
+        items: [], 
+        ordre: 0 
+      }]);
     }
     setShowModal(true);
   };
