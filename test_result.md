@@ -82,15 +82,18 @@ frontend:
 
   - task: "Vehicle Inventory Options Bug Fix - Complete Testing"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/components/ParametresInventairesVehicules.jsx, frontend/src/components/InventaireVehiculeModal.jsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "BUG FIX - Fixed backend bug for vehicle inventory options. Backend modifications: 1) ✅ Added type_champ, options, photo_url to SectionInventaireVehicule model, 2) ✅ Added photo_url to ItemInventaireVehicule model, 3) ✅ Updated POST creation code to extract these fields, 4) ✅ Updated PUT update code to extract these fields. The bug was that checkbox options were not being saved or displayed correctly in the inventory modal. NEEDS COMPREHENSIVE TESTING to verify: 1) Create new inventory model with checkbox options, 2) Verify options are saved and displayed when editing, 3) Test inventory modal functionality with checkbox options, 4) Verify checkbox interactions work correctly, 5) Test alert functionality for options marked with alerts."
+      - working: false
+        agent: "testing"
+        comment: "🔍 COMPREHENSIVE VEHICLE INVENTORY OPTIONS BUG FIX TESTING COMPLETED - MIXED RESULTS IDENTIFIED. BACKEND BUG FIX: ✅ WORKING CORRECTLY - API testing confirms backend properly saves type_champ='checkbox' and options array when data is sent correctly. Created test model via API successfully stored all 3 options (Présent API, Absent API, Défectueux API) with correct alert flags. FRONTEND BUG IDENTIFIED: ❌ CRITICAL ISSUE - Frontend UI not sending type_champ and options data when creating models through the interface. Existing 'Test Options Debug' model shows Type: N/A and Options: 0, indicating frontend form is not properly constructing the payload. INVENTORY MODAL TESTING: ❌ NO CHECKBOXES DISPLAYED - Inventory modal shows form but no checkbox inputs found, confirming that options are not being rendered because they're not saved from frontend. ROOT CAUSE: Backend fix is working, but frontend ParametresInventairesVehicules.jsx component is not properly sending the type_champ and options fields in the API request payload. RECOMMENDATION: Fix frontend form submission to include type_champ and options data in the sections array when creating/updating inventory models."
 
 backend:
   - task: "12 PDF Reports Comprehensive Testing"
