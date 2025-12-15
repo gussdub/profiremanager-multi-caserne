@@ -554,6 +554,53 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     setSections(newSections);
   };
 
+  // Gérer le drag and drop des items au sein d'une section
+  const handleDragEndItems = (event, sectionIndex) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const newSections = [...sections];
+      const items = newSections[sectionIndex].items;
+      
+      // Extraire les indices depuis les IDs
+      const oldIndex = parseInt(active.id.split('-')[2]);
+      const newIndex = parseInt(over.id.split('-')[2]);
+      
+      // Réorganiser les items
+      newSections[sectionIndex].items = arrayMove(items, oldIndex, newIndex);
+      
+      // Mettre à jour les ordres
+      newSections[sectionIndex].items = newSections[sectionIndex].items.map((item, idx) => ({
+        ...item,
+        ordre: idx
+      }));
+      
+      setSections(newSections);
+    }
+  };
+
+  // Gérer le drag and drop des sections
+  const handleDragEndSections = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      // Extraire les indices depuis les IDs
+      const oldIndex = parseInt(active.id.split('-')[1]);
+      const newIndex = parseInt(over.id.split('-')[1]);
+      
+      // Réorganiser les sections
+      const newSections = arrayMove(sections, oldIndex, newIndex);
+      
+      // Mettre à jour les ordres
+      const updatedSections = newSections.map((section, idx) => ({
+        ...section,
+        ordre: idx
+      }));
+      
+      setSections(updatedSections);
+    }
+  };
+
   const sauvegarderModele = async () => {
     if (!nom || sections.length === 0) {
       alert('Veuillez remplir tous les champs obligatoires');
