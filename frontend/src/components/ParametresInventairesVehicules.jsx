@@ -393,6 +393,14 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const [description, setDescription] = useState('');
   const [sections, setSections] = useState([]);
 
+  // Configuration des sensors pour le drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     fetchModeles();
     fetchUsers();
