@@ -88,8 +88,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     setItemsInventaire(newItems);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
