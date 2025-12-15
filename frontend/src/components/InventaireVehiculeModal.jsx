@@ -21,6 +21,11 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     try {
       const data = await apiGet(tenantSlug, '/parametres/modeles-inventaires-vehicules');
       setModeles(data || []);
+      
+      // Si un seul modèle existe, le sélectionner automatiquement
+      if (data && data.length === 1) {
+        handleSelectionModele(data[0]);
+      }
     } catch (error) {
       console.error('Erreur chargement modèles:', error);
     }
