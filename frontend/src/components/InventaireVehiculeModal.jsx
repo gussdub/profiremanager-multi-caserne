@@ -323,7 +323,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
             </div>
           ) : (
             // Formulaire d'inventaire avec navigation par section
-            <form onSubmit={handleSubmit}>
+            <div>
               {/* Indicateur de progression */}
               <div style={{
                 marginBottom: '1.5rem',
