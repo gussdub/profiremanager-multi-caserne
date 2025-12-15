@@ -20338,8 +20338,8 @@ async def create_inventaire_vehicule(
     
     await db.inventaires_vehicules.insert_one(inventaire_obj.dict())
     
-    # Si non-conforme, envoyer email de notification
-    if statut_global == "non_conforme":
+    # Si des alertes existent, envoyer email de notification
+    if inventaire.alertes and len(inventaire.alertes) > 0:
         # Récupérer les paramètres d'email
         parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
         user_ids_ou_emails = parametres.get('emails_notifications_inventaires_vehicules', [])
@@ -20362,21 +20362,16 @@ async def create_inventaire_vehicule(
                         print(f"❌ DEBUG: Erreur récupération user {item}: {e}")
             
             if emails_notifications:
-                from utils.emails import send_inventaire_vehicule_defaut_email
+                from utils.emails import send_inventaire_vehicule_alertes_email
                 try:
-                    items_problemes = [
-                        item for item in inventaire_obj.items_coches
-                        if item['statut'] in ['absent', 'defectueux']
-                    ]
-                    
-                    await send_inventaire_vehicule_defaut_email(
+                    await send_inventaire_vehicule_alertes_email(
                         tenant_slug=tenant_slug,
                         vehicule=vehicule,
-                        inventaire=inventaire_obj.dict(),
-                        items_problemes=items_problemes,
+                        inventaire=inventaire.dict(),
+                        alertes=inventaire.alertes,
                         emails=emails_notifications
                     )
-                    print(f"✅ DEBUG: Email de notification inventaire envoyé pour véhicule {vehicule_id}")
+                    print(f"✅ DEBUG: Email d'alertes inventaire envoyé pour véhicule {vehicule_id} ({len(inventaire.alertes)} alertes)")
                 except Exception as e:
                     print(f"❌ DEBUG: Erreur envoi email inventaire véhicule: {e}")
     
