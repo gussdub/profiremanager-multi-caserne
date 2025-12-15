@@ -927,10 +927,15 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
               />
             </div>
 
-            {/* Sections */}
+            {/* Sections avec drag and drop */}
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>Sections et Items</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+                  Sections et Items
+                  <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                    (Glissez ⋮⋮ pour réorganiser)
+                  </span>
+                </h3>
                 <button
                   onClick={ajouterSection}
                   style={{
@@ -947,7 +952,76 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                 </button>
               </div>
 
-              {sections.map((section, sIndex) => (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEndSections}
+              >
+                <SortableContext
+                  items={sections.map((_, idx) => `section-${idx}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {sections.map((section, sIndex) => (
+                    <SortableSection
+                      key={`section-${sIndex}`}
+                      id={`section-${sIndex}`}
+                      section={section}
+                      sectionIndex={sIndex}
+                      updateSection={updateSection}
+                      updateItem={updateItem}
+                      ajouterItem={ajouterItem}
+                      supprimerItem={supprimerItem}
+                      dupliquerSection={dupliquerSection}
+                      supprimerSection={supprimerSection}
+                      handleDragEndItems={handleDragEndItems}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+
+            {/* Boutons Annuler/Enregistrer */}
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={fermerModal}
+                disabled={loading}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '1rem'
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={sauvegarderModele}
+                disabled={loading}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '600'
+                }}
+              >
+                {loading ? 'Enregistrement...' : '💾 Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ParametresInventairesVehicules;
                 <div key={sIndex} style={{ marginBottom: '1.5rem', padding: '1rem', border: '2px solid #8e44ad', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
                   {/* En-tête section */}
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
