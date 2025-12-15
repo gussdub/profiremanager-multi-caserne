@@ -589,7 +589,8 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
 
                 {estDerniereSection ? (
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleSubmit}
                     disabled={loading}
                     style={{
                       flex: 1,
@@ -625,7 +626,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                   </button>
                 )}
               </div>
-            </form>
+            </div>
           )}
         </div>
       </div>
