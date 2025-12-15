@@ -371,3 +371,220 @@ async def send_inventaire_vehicule_defaut_email(
             "error": str(e)
         }
 
+
+
+async def send_inventaire_vehicule_alertes_email(
+    tenant_slug: str,
+    vehicule: Dict,
+    inventaire: Dict,
+    alertes: List[Dict],
+    emails: List[str]
+) -> Dict:
+    """
+    Envoyer un email groupé avec toutes les alertes d'inventaire véhicule (avec photos)
+    
+    Args:
+        tenant_slug: Identifiant du tenant
+        vehicule: Informations sur le véhicule
+        inventaire: Données de l'inventaire
+        alertes: Liste des alertes [{section, item, valeur, notes, photo}]
+        emails: Liste des emails destinataires
+    
+    Returns:
+        Dict avec success (bool) et email_id ou error
+    """
+    if not RESEND_API_KEY:
+        logger.error("Impossible d'envoyer l'email : RESEND_API_KEY non configurée")
+        return {"success": False, "error": "API key not configured"}
+    
+    if not emails or len(emails) == 0:
+        logger.warning("Aucun email destinataire configuré pour les notifications inventaires véhicules")
+        return {"success": False, "error": "No recipient emails configured"}
+    
+    if not alertes or len(alertes) == 0:
+        logger.info("Aucune alerte à envoyer pour cet inventaire")
+        return {"success": True, "skipped": "No alerts"}
+    
+    try:
+        # Récupérer les informations pertinentes
+        vehicule_nom = vehicule.get('nom', 'N/A')
+        vehicule_immatriculation = vehicule.get('immatriculation', 'N/A')
+        vehicule_type = vehicule.get('type', 'N/A')
+        date_inventaire = inventaire.get('date_inventaire', 'N/A')
+        effectue_par = inventaire.get('effectue_par', 'N/A')
+        notes_generales = inventaire.get('notes_generales', '')
+        
+        # Construire l'URL vers le véhicule
+        vehicule_url = f"{FRONTEND_URL}/{tenant_slug}/gestion-actifs/vehicules/{vehicule.get('id')}"
+        
+        # Créer la liste HTML des alertes groupées par section
+        alertes_par_section = {}
+        for alerte in alertes:
+            section = alerte.get('section', 'Autre')
+            if section not in alertes_par_section:
+                alertes_par_section[section] = []
+            alertes_par_section[section].append(alerte)
+        
+        alertes_html = ""
+        for section, items in alertes_par_section.items():
+            alertes_html += f'''
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #8e44ad; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #8e44ad; padding-bottom: 8px;">
+                    📋 {section}
+                </h3>
+            '''
+            
+            for alerte in items:
+                item_nom = alerte.get('item', 'N/A')
+                valeur = alerte.get('valeur', 'N/A')
+                notes = alerte.get('notes', '')
+                photo_url = alerte.get('photo', '')
+                
+                # Couleur selon la valeur
+                if 'absent' in valeur.lower() or 'manquant' in valeur.lower():
+                    statut_color = "#dc2626"
+                    statut_icon = "❌"
+                elif 'défectueux' in valeur.lower() or 'defectueux' in valeur.lower():
+                    statut_color = "#f59e0b"
+                    statut_icon = "⚠️"
+                else:
+                    statut_color = "#ef4444"
+                    statut_icon = "⚠️"
+                
+                alertes_html += f'''
+                <div style="padding: 15px; margin: 10px 0; background-color: #fef2f2; border-left: 4px solid {statut_color}; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #1f2937; font-size: 15px;">{item_nom}</span>
+                        <span style="color: {statut_color}; font-weight: bold; font-size: 13px;">{statut_icon} {valeur.upper()}</span>
+                    </div>
+                '''
+                
+                # Ajouter les notes si présentes
+                if notes:
+                    alertes_html += f'''
+                    <div style="color: #6b7280; font-size: 14px; margin-top: 8px; padding: 8px; background-color: #ffffff; border-radius: 4px;">
+                        <strong>Notes :</strong> {notes}
+                    </div>
+                    '''
+                
+                # Ajouter la photo si présente
+                if photo_url:
+                    alertes_html += f'''
+                    <div style="margin-top: 10px;">
+                        <img src="{photo_url}" alt="Photo de {item_nom}" style="max-width: 100%; height: auto; border-radius: 6px; border: 2px solid {statut_color};" />
+                    </div>
+                    '''
+                
+                alertes_html += '</div>'
+            
+            alertes_html += '</div>'
+        
+        # Créer le corps HTML de l'email
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+            <div style="background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                
+                <!-- En-tête avec gradient -->
+                <div style="background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: #ffffff; padding: 25px; text-align: center; border-radius: 10px 10px 0 0; margin: -30px -30px 25px -30px;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 700;">🚨 Alerte Inventaire Véhicule</h1>
+                    <p style="margin: 12px 0 0 0; font-size: 15px; opacity: 0.95;">{len(alertes)} item(s) nécessitent votre attention</p>
+                </div>
+                
+                <!-- Bannière d'alerte -->
+                <div style="background-color: #fef2f2; border-left: 5px solid #dc2626; padding: 18px; margin-bottom: 25px; border-radius: 6px;">
+                    <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 15px;">
+                        ⚠️ Des items manquants ou défectueux ont été signalés lors de l'inventaire. Veuillez prendre les mesures nécessaires.
+                    </p>
+                </div>
+                
+                <!-- Informations du véhicule -->
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                    <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;">🚒 Informations du Véhicule</h2>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Véhicule :</strong></td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">{vehicule_nom}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Type :</strong></td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_type}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Immatriculation :</strong></td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_immatriculation}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Date :</strong></td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{date_inventaire[:10] if date_inventaire != 'N/A' else 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Effectué par :</strong></td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{effectue_par}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Alertes groupées par section -->
+                <div style="margin-bottom: 25px;">
+                    <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🔍 Détails des Alertes</h2>
+                    {alertes_html}
+                </div>
+                
+                <!-- Notes générales -->
+                {f'''
+                <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 25px; border-radius: 6px;">
+                    <h3 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px; font-weight: 600;">📝 Notes Générales</h3>
+                    <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">{notes_generales}</p>
+                </div>
+                ''' if notes_generales else ''}
+                
+                <!-- Bouton d'action -->
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{vehicule_url}" 
+                       style="display: inline-block; background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: #ffffff; 
+                              padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; 
+                              box-shadow: 0 4px 6px rgba(142, 68, 173, 0.3);">
+                        🔗 Voir le Véhicule et l'Inventaire Complet
+                    </a>
+                </div>
+                
+                <!-- Pied de page -->
+                <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+                    <p style="color: #6b7280; font-size: 13px; margin: 8px 0;">
+                        📬 Ceci est une notification automatique du système ProFireManager.
+                    </p>
+                    <p style="color: #9ca3af; font-size: 12px; margin: 8px 0;">
+                        Ne pas répondre à cet email. Pour toute assistance, contactez votre administrateur système.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+        
+        # Préparer les paramètres de l'email
+        email_params = {
+            "from": SENDER_EMAIL,
+            "to": emails,
+            "subject": f"🚨 Inventaire Véhicule - {len(alertes)} Alerte(s) - {vehicule_nom}",
+            "html": html_body
+        }
+        
+        # Envoyer l'email via Resend
+        logger.info(f"Envoi d'email d'alertes inventaire véhicule pour {vehicule_nom} à {len(emails)} destinataire(s) ({len(alertes)} alertes)")
+        response = resend.Emails.send(email_params)
+        
+        logger.info(f"Email d'alertes inventaire véhicule envoyé avec succès. ID: {response.get('id')}")
+        return {
+            "success": True,
+            "email_id": response.get("id"),
+            "recipients": emails,
+            "alertes_count": len(alertes)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'envoi de l'email d'alertes inventaire véhicule: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
