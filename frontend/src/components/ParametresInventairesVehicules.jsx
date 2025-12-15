@@ -420,7 +420,11 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const fetchUsers = async () => {
     try {
       const data = await apiGet(tenantSlug, '/users');
-      setUsers(data);
+      // Filtrer uniquement les administrateurs et superviseurs
+      const adminsEtSuperviseurs = data.filter(u => 
+        u.role === 'admin' || u.role === 'superviseur'
+      );
+      setUsers(adminsEtSuperviseurs);
     } catch (error) {
       console.error('Erreur chargement users:', error);
     }
