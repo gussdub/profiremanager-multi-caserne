@@ -28,12 +28,12 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
 
   const handleSelectionModele = (modele) => {
     setModeleSelectionne(modele);
-    setHeureDebut(new Date().toISOString()); // Démarrer le tracking
+    setHeureDebut(new Date().toISOString());
+    setSectionActuelle(0); // Commencer à la première section
     
     // Initialiser les items avec le modèle
     const items = [];
     modele.sections.forEach(section => {
-      // Le type_champ est maintenant au niveau de la section, pas de l'item
       const sectionTypeChamp = section.type_champ || 'checkbox';
       const sectionOptions = section.options || [];
       
@@ -41,7 +41,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         let initialValue;
         
         if (sectionTypeChamp === 'checkbox') {
-          initialValue = []; // Array pour multiple sélection
+          initialValue = [];
         } else if (sectionTypeChamp === 'radio') {
           initialValue = sectionOptions.length > 0 ? sectionOptions[0].label : '';
         } else if (sectionTypeChamp === 'number') {
@@ -55,13 +55,13 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         items.push({
           section: section.titre,
           section_photo_url: section.photo_url,
-          section_type_champ: sectionTypeChamp, // Type de la section
+          section_type_champ: sectionTypeChamp,
           item_id: item.id || `${section.titre}_${item.nom}`,
           nom: item.nom,
           photo_url: item.photo_url,
-          options: sectionOptions, // Options de la section
+          options: sectionOptions,
           obligatoire: item.obligatoire,
-          valeur: initialValue, // Valeur saisie
+          valeur: initialValue,
           notes: '',
           photo_prise: '' // Photo prise pendant l'inventaire
         });
@@ -99,7 +99,6 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       const alertes = [];
       itemsInventaire.forEach(item => {
         if (item.section_type_champ === 'checkbox' && Array.isArray(item.valeur)) {
-          // Pour checkbox, vérifier chaque option cochée
           item.valeur.forEach(valeurCochee => {
             const option = item.options.find(opt => opt.label === valeurCochee);
             if (option?.declencherAlerte) {
@@ -107,19 +106,20 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                 section: item.section,
                 item: item.nom,
                 valeur: valeurCochee,
-                notes: item.notes
+                notes: item.notes,
+                photo: item.photo_prise
               });
             }
           });
         } else if (item.section_type_champ === 'radio') {
-          // Pour radio, vérifier l'option sélectionnée
           const option = item.options.find(opt => opt.label === item.valeur);
           if (option?.declencherAlerte) {
             alertes.push({
               section: item.section,
               item: item.nom,
               valeur: item.valeur,
-              notes: item.notes
+              notes: item.notes,
+              photo: item.photo_prise
             });
           }
         }
@@ -144,7 +144,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
           photo_prise: item.photo_prise || ''
         })),
         notes_generales: commentaire,
-        alertes: alertes // Envoyer les alertes au backend
+        alertes: alertes
       };
 
       await apiPost(tenantSlug, `/vehicules/${vehicule.id}/inventaire`, inventaireData);
@@ -174,6 +174,27 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     return acc;
   }, {});
 
+  const sections = Object.keys(itemsParSection);
+  const totalSections = sections.length;
+  const sectionNom = sections[sectionActuelle];
+  const itemsSection = itemsParSection[sectionNom] || [];
+
+  // Navigation
+  const allerSectionPrecedente = () => {
+    if (sectionActuelle > 0) {
+      setSectionActuelle(sectionActuelle - 1);
+    }
+  };
+
+  const allerSectionSuivante = () => {
+    if (sectionActuelle < totalSections - 1) {
+      setSectionActuelle(sectionActuelle + 1);
+    }
+  };
+
+  const estDerniereSection = sectionActuelle === totalSections - 1;
+  const estPremiereSection = sectionActuelle === 0;
+
   return (
     <div style={{
       position: 'fixed',
@@ -186,13 +207,13 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000,
-      padding: '20px'
+      padding: '1rem'
     }}>
       <div style={{
         backgroundColor: 'white',
         borderRadius: '12px',
         width: '100%',
-        maxWidth: '900px',
+        maxWidth: modeleSelectionne ? '600px' : '800px',
         maxHeight: '90vh',
         overflow: 'hidden',
         display: 'flex',
@@ -201,77 +222,98 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       }}>
         {/* Header */}
         <div style={{
-          padding: '24px',
-          borderBottom: '2px solid #e9ecef',
-          backgroundColor: '#8e44ad'
+          padding: '1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: '#8e44ad',
+          color: 'white'
         }}>
-          <h2 style={{ margin: 0, color: 'white', fontSize: '24px', fontWeight: 'bold' }}>
-            📦 Inventaire - {vehicule.nom}
-          </h2>
-          <p style={{ margin: '8px 0 0 0', color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
-            Vérifiez les équipements présents dans le véhicule
-          </p>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              📋 Inventaire - {vehicule.nom}
+            </h2>
+            {modeleSelectionne && (
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', opacity: 0.9 }}>
+                {modeleSelectionne.nom}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              padding: '0.25rem 0.5rem'
+            }}
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Body */}
+        {/* Content */}
         <div style={{
           flex: 1,
-          overflowY: 'auto',
-          padding: '24px'
+          overflow: 'auto',
+          padding: '1.5rem'
         }}>
           {!modeleSelectionne ? (
             // Sélection du modèle
             <div>
-              <h3 style={{ marginBottom: '16px', color: '#2c3e50' }}>
-                Sélectionnez un modèle d'inventaire :
+              <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#1f2937' }}>
+                Choisissez un modèle d'inventaire
               </h3>
               {modeles.length === 0 ? (
                 <div style={{
-                  padding: '40px',
+                  padding: '2rem',
                   textAlign: 'center',
                   backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  color: '#6c757d'
+                  borderRadius: '0.5rem',
+                  color: '#6b7280'
                 }}>
-                  <p style={{ marginBottom: '16px', fontSize: '16px' }}>
+                  <p style={{ marginBottom: '1rem' }}>
                     Aucun modèle d'inventaire n'est configuré
                   </p>
-                  <p style={{ fontSize: '14px' }}>
+                  <p style={{ fontSize: '0.875rem' }}>
                     Allez dans <strong>Paramètres &gt; Inventaires</strong> pour créer un modèle
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: '12px' }}>
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {modeles.map(modele => (
                     <div
                       key={modele.id}
                       onClick={() => handleSelectionModele(modele)}
                       style={{
-                        padding: '16px',
-                        border: '2px solid #e9ecef',
-                        borderRadius: '8px',
+                        padding: '1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.5rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         backgroundColor: 'white'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = '#8e44ad';
-                        e.currentTarget.style.backgroundColor = '#f8f4fc';
+                        e.currentTarget.style.backgroundColor = '#f3e8ff';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e9ecef';
+                        e.currentTarget.style.borderColor = '#e5e7eb';
                         e.currentTarget.style.backgroundColor = 'white';
                       }}
                     >
-                      <h4 style={{ margin: 0, color: '#2c3e50', marginBottom: '8px' }}>
+                      <h4 style={{ margin: 0, color: '#1f2937', marginBottom: '0.5rem' }}>
                         {modele.nom}
                       </h4>
                       {modele.description && (
-                        <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', marginBottom: '8px' }}>
+                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
                           {modele.description}
                         </p>
                       )}
-                      <p style={{ margin: 0, color: '#8e44ad', fontSize: '13px' }}>
+                      <p style={{ margin: 0, color: '#8e44ad', fontSize: '0.875rem' }}>
                         {modele.sections?.length || 0} section(s) • {modele.sections?.reduce((acc, s) => acc + (s.items?.length || 0), 0) || 0} item(s)
                       </p>
                     </div>
@@ -280,347 +322,308 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
               )}
             </div>
           ) : (
-            // Formulaire d'inventaire
+            // Formulaire d'inventaire avec navigation par section
             <form onSubmit={handleSubmit}>
+              {/* Indicateur de progression */}
               <div style={{
-                marginBottom: '24px',
-                padding: '16px',
-                backgroundColor: '#f8f4fc',
-                borderRadius: '8px',
-                border: '1px solid #e1d5f0'
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                backgroundColor: '#f3e8ff',
+                borderRadius: '0.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h4 style={{ margin: 0, color: '#8e44ad', marginBottom: '4px' }}>
-                      {modeleSelectionne.nom}
-                    </h4>
-                    {modeleSelectionne.description && (
-                      <p style={{ margin: 0, color: '#6c757d', fontSize: '13px' }}>
-                        {modeleSelectionne.description}
-                      </p>
-                    )}
+                <div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b21a8', fontWeight: '600' }}>
+                    Section {sectionActuelle + 1} sur {totalSections}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModeleSelectionne(null);
-                      setItemsInventaire([]);
-                    }}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    Changer de modèle
-                  </button>
+                  <div style={{ fontSize: '0.75rem', color: '#9333ea', marginTop: '0.25rem' }}>
+                    {sectionNom}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModeleSelectionne(null);
+                    setItemsInventaire([]);
+                    setSectionActuelle(0);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  Changer de modèle
+                </button>
               </div>
 
-              {/* Liste des items par section */}
-              {Object.entries(itemsParSection).map(([sectionNom, items]) => {
-                const sectionPhotoUrl = items[0]?.section_photo_url;
-                
-                return (
-                  <div key={sectionNom} style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                      {sectionPhotoUrl && (
+              {/* Barre de progression visuelle */}
+              <div style={{
+                height: '4px',
+                backgroundColor: '#e5e7eb',
+                borderRadius: '2px',
+                marginBottom: '1.5rem',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  backgroundColor: '#8e44ad',
+                  width: `${((sectionActuelle + 1) / totalSections) * 100}%`,
+                  transition: 'width 0.3s'
+                }}></div>
+              </div>
+
+              {/* Photo de référence de la section */}
+              {itemsSection[0]?.section_photo_url && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <img 
+                    src={itemsSection[0].section_photo_url} 
+                    alt={sectionNom}
+                    style={{
+                      width: '100%',
+                      maxHeight: '150px',
+                      objectFit: 'cover',
+                      borderRadius: '0.5rem',
+                      border: '2px solid #8e44ad'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Items de la section actuelle */}
+              <div style={{ marginBottom: '2rem' }}>
+                {itemsSection.map(item => (
+                  <div key={item.index} style={{
+                    padding: '1rem',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    {/* Photo de référence de l'item */}
+                    {item.photo_url && (
+                      <div style={{ marginBottom: '0.75rem' }}>
                         <img 
-                          src={sectionPhotoUrl} 
-                          alt={sectionNom}
+                          src={item.photo_url} 
+                          alt={item.nom}
                           style={{
-                            width: '60px',
-                            height: '60px',
+                            width: '100px',
+                            height: '100px',
                             objectFit: 'cover',
-                            borderRadius: '8px',
-                            border: '2px solid #8e44ad'
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db'
                           }}
                         />
-                      )}
-                      <h4 style={{
-                        margin: 0,
-                        color: '#2c3e50',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        flex: 1
-                      }}>
-                        {sectionNom}
-                      </h4>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gap: '12px' }}>
-                      {items.map(item => {
-                        const renderChamp = () => {
-                          switch(item.section_type_champ) {
-                            case 'checkbox':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {item.options.map((opt, optIdx) => (
-                                      <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={Array.isArray(item.valeur) && item.valeur.includes(opt.label)}
-                                          onChange={(e) => {
-                                            const currentVal = Array.isArray(item.valeur) ? item.valeur : [];
-                                            const newVal = e.target.checked 
-                                              ? [...currentVal, opt.label]
-                                              : currentVal.filter(v => v !== opt.label);
-                                            updateItemValeur(item.index, newVal);
-                                          }}
-                                          style={{ width: '18px', height: '18px' }}
-                                        />
-                                        <span style={{ fontSize: '14px' }}>
-                                          {opt.label}
-                                          {opt.declencherAlerte && <span style={{ marginLeft: '4px', color: '#f59e0b' }}>⚠️</span>}
-                                        </span>
-                                      </label>
-                                    ))}
-                                  </div>
-                                  <textarea
-                                    value={item.notes}
-                                    onChange={(e) => updateItemNotes(item.index, e.target.value)}
-                                    placeholder="Notes additionnelles (optionnel)"
-                                    rows={2}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px' }}
-                                  />
-                                </>
-                              );
-                            
-                            case 'radio':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {item.options.map((opt, optIdx) => (
-                                      <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                        <input
-                                          type="radio"
-                                          name={`radio_${item.index}`}
-                                          checked={item.valeur === opt.label}
-                                          onChange={() => updateItemValeur(item.index, opt.label)}
-                                          style={{ width: '18px', height: '18px' }}
-                                        />
-                                        <span style={{ fontSize: '14px' }}>
-                                          {opt.label}
-                                          {opt.declencherAlerte && <span style={{ marginLeft: '4px', color: '#f59e0b' }}>⚠️</span>}
-                                        </span>
-                                      </label>
-                                    ))}
-                                  </div>
-                                  <textarea
-                                    value={item.notes}
-                                    onChange={(e) => updateItemNotes(item.index, e.target.value)}
-                                    placeholder="Notes additionnelles (optionnel)"
-                                    rows={2}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', marginTop: '8px' }}
-                                  />
-                                </>
-                              );
-                            
-                            case 'text':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <textarea
-                                    value={item.valeur}
-                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
-                                    placeholder="Votre réponse..."
-                                    rows={2}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px' }}
-                                  />
-                                </>
-                              );
-                            
-                            case 'number':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={item.valeur}
-                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
-                                    placeholder="0"
-                                    style={{ width: '150px', padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px' }}
-                                  />
-                                </>
-                              );
-                            
-                            case 'select':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <select
-                                    value={item.valeur}
-                                    onChange={(e) => updateItemValeur(item.index, e.target.value)}
-                                    style={{ padding: '8px', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '13px', backgroundColor: 'white' }}
-                                  >
-                                    {item.options.map((opt, idx) => (
-                                      <option key={idx} value={opt.label}>{opt.label}</option>
-                                    ))}
-                                  </select>
-                                </>
-                              );
-                            
-                            case 'photo':
-                              return (
-                                <>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                                    {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
-                                  </label>
-                                  <ImageUpload
-                                    value={item.photo_prise}
-                                    onChange={(url) => updateItemPhoto(item.index, url)}
-                                    compact={false}
-                                    label="Prenez une photo"
-                                  />
-                                </>
-                              );
-                            
-                            default:
-                              return null;
-                          }
-                        };
-                        
-                        return (
-                          <div
-                            key={item.index}
-                            style={{
-                              padding: '12px',
-                              border: '2px solid #e9ecef',
-                              borderRadius: '8px',
-                              backgroundColor: 'white'
-                            }}
-                          >
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                              {item.photo_url && (
-                                <img 
-                                  src={item.photo_url} 
-                                  alt={item.nom}
-                                  style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    objectFit: 'cover',
-                                    borderRadius: '4px',
-                                    border: '1px solid #d1d5db',
-                                    flexShrink: 0
-                                  }}
-                                />
-                              )}
-                              <div style={{ flex: 1 }}>
-                                {renderChamp()}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      </div>
+                    )}
+
+                    <label style={{ display: 'block', fontSize: '1rem', fontWeight: '600', marginBottom: '0.75rem', color: '#1f2937' }}>
+                      {item.nom} {item.obligatoire && <span style={{color: '#ef4444'}}>*</span>}
+                    </label>
+
+                    {/* Rendu selon le type de champ */}
+                    {item.section_type_champ === 'checkbox' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        {item.options.map((opt, optIdx) => (
+                          <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', backgroundColor: 'white', borderRadius: '0.375rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={Array.isArray(item.valeur) && item.valeur.includes(opt.label)}
+                              onChange={(e) => {
+                                const currentVal = Array.isArray(item.valeur) ? item.valeur : [];
+                                const newVal = e.target.checked 
+                                  ? [...currentVal, opt.label]
+                                  : currentVal.filter(v => v !== opt.label);
+                                updateItemValeur(item.index, newVal);
+                              }}
+                              style={{ width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontSize: '1rem' }}>
+                              {opt.label}
+                              {opt.declencherAlerte && <span style={{ marginLeft: '0.5rem', fontSize: '1.2rem' }}>⚠️</span>}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {item.section_type_champ === 'radio' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        {item.options.map((opt, optIdx) => (
+                          <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', backgroundColor: 'white', borderRadius: '0.375rem' }}>
+                            <input
+                              type="radio"
+                              name={`item-${item.index}`}
+                              checked={item.valeur === opt.label}
+                              onChange={() => updateItemValeur(item.index, opt.label)}
+                              style={{ width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontSize: '1rem' }}>
+                              {opt.label}
+                              {opt.declencherAlerte && <span style={{ marginLeft: '0.5rem', fontSize: '1.2rem' }}>⚠️</span>}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {item.section_type_champ === 'text' && (
+                      <input
+                        type="text"
+                        value={item.valeur}
+                        onChange={(e) => updateItemValeur(item.index, e.target.value)}
+                        placeholder="Saisir la valeur"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem',
+                          fontSize: '1rem',
+                          marginBottom: '0.75rem'
+                        }}
+                      />
+                    )}
+
+                    {item.section_type_champ === 'number' && (
+                      <input
+                        type="number"
+                        value={item.valeur}
+                        onChange={(e) => updateItemValeur(item.index, e.target.value)}
+                        placeholder="Saisir un nombre"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem',
+                          fontSize: '1rem',
+                          marginBottom: '0.75rem'
+                        }}
+                      />
+                    )}
+
+                    {/* Notes additionnelles */}
+                    <textarea
+                      value={item.notes}
+                      onChange={(e) => updateItemNotes(item.index, e.target.value)}
+                      placeholder="Notes additionnelles (optionnel)"
+                      rows={2}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        marginBottom: '0.75rem',
+                        resize: 'vertical'
+                      }}
+                    />
+
+                    {/* Upload photo - TOUJOURS VISIBLE */}
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b7280' }}>
+                        📷 Photo (optionnel)
+                      </label>
+                      <ImageUpload
+                        value={item.photo_prise || ''}
+                        onChange={(url) => updateItemPhoto(item.index, url)}
+                        compact={true}
+                      />
                     </div>
                   </div>
-                );
-              })}
-
-              {/* Commentaire général */}
-              <div style={{ marginTop: '24px' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  color: '#2c3e50',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}>
-                  Commentaire général (optionnel)
-                </label>
-                <textarea
-                  value={commentaire}
-                  onChange={(e) => setCommentaire(e.target.value)}
-                  rows={3}
-                  placeholder="Ajoutez un commentaire sur l'inventaire..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
-                />
+                ))}
               </div>
 
-              {/* Info inspecteur en bas */}
-              <div style={{
-                marginTop: '24px',
-                padding: '12px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                border: '1px solid #dee2e6'
-              }}>
-                <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
-                  <strong>Réalisé par :</strong> {user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email}
-                </p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>
-                  Débuté le {heureDebut ? new Date(heureDebut).toLocaleString('fr-CA') : '-'}
-                </p>
-              </div>
+              {/* Notes générales - seulement sur la dernière section */}
+              {estDerniereSection && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: '#1f2937' }}>
+                    Notes générales (optionnel)
+                  </label>
+                  <textarea
+                    value={commentaire}
+                    onChange={(e) => setCommentaire(e.target.value)}
+                    placeholder="Commentaires sur l'inventaire complet..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+              )}
 
-              {/* Boutons */}
+              {/* Boutons de navigation */}
               <div style={{
                 display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-                marginTop: '20px',
-                paddingTop: '20px',
-                borderTop: '1px solid #dee2e6'
+                gap: '1rem',
+                justifyContent: 'space-between'
               }}>
                 <button
                   type="button"
-                  onClick={onClose}
-                  disabled={loading}
+                  onClick={allerSectionPrecedente}
+                  disabled={estPremiereSection}
                   style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#6c757d',
+                    flex: 1,
+                    padding: '1rem',
+                    backgroundColor: estPremiereSection ? '#e5e7eb' : '#6b7280',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '8px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
+                    borderRadius: '0.5rem',
+                    cursor: estPremiereSection ? 'not-allowed' : 'pointer',
+                    fontSize: '1rem',
                     fontWeight: '600'
                   }}
                 >
-                  Annuler
+                  ← Précédent
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#8e44ad',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    opacity: loading ? 0.6 : 1
-                  }}
-                >
-                  {loading ? 'Enregistrement...' : 'Enregistrer l\'inventaire'}
-                </button>
+
+                {estDerniereSection ? (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      backgroundColor: loading ? '#9ca3af' : '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {loading ? 'Enregistrement...' : '🏁 Terminer l\'inventaire'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={allerSectionSuivante}
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      backgroundColor: '#8e44ad',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Suivant →
+                  </button>
+                )}
               </div>
             </form>
           )}
