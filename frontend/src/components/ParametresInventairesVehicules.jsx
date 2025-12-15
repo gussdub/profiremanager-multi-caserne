@@ -18,6 +18,365 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// Composant pour un item draggable
+const SortableItem = ({ id, item, index, sectionIndex, updateItem, supprimerItem }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        marginBottom: '1rem',
+        padding: '0.75rem',
+        backgroundColor: 'white',
+        borderRadius: '0.375rem',
+        border: '1px solid #e5e7eb'
+      }}
+    >
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        {/* Poignée de drag */}
+        <div
+          {...attributes}
+          {...listeners}
+          style={{
+            cursor: 'grab',
+            padding: '0.25rem',
+            color: '#9ca3af',
+            fontSize: '1.2rem',
+            lineHeight: '1',
+            userSelect: 'none'
+          }}
+          title="Glisser pour réorganiser"
+        >
+          ⋮⋮
+        </div>
+        <span style={{ fontSize: '0.875rem', color: '#6b7280', minWidth: '20px' }}>{index + 1}.</span>
+        <input
+          type="text"
+          value={item.nom}
+          onChange={(e) => updateItem(sectionIndex, index, 'nom', e.target.value)}
+          placeholder="Nom de l'item (ex: Extincteur 10lb)"
+          style={{
+            flex: 1,
+            padding: '0.5rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem'
+          }}
+        />
+        <ImageUpload
+          value={item.photo_url || ''}
+          onChange={(url) => updateItem(sectionIndex, index, 'photo_url', url)}
+          compact={true}
+        />
+        <button
+          type="button"
+          onClick={() => supprimerItem(sectionIndex, index)}
+          style={{
+            backgroundColor: '#ef4444',
+            color: 'white',
+            padding: '0.375rem 0.5rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.75rem'
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Composant pour une section draggable
+const SortableSection = ({ 
+  id, 
+  section, 
+  sectionIndex, 
+  updateSection, 
+  updateItem, 
+  ajouterItem, 
+  supprimerItem, 
+  dupliquerSection, 
+  supprimerSection,
+  handleDragEndItems
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        marginBottom: '1.5rem',
+        padding: '1rem',
+        border: '2px solid #8e44ad',
+        borderRadius: '0.5rem',
+        backgroundColor: '#fafafa'
+      }}
+    >
+      {/* En-tête section */}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+        {/* Poignée de drag pour la section */}
+        <div
+          {...attributes}
+          {...listeners}
+          style={{
+            cursor: 'grab',
+            padding: '0.5rem',
+            color: '#8e44ad',
+            fontSize: '1.5rem',
+            lineHeight: '1',
+            userSelect: 'none',
+            fontWeight: 'bold'
+          }}
+          title="Glisser pour réorganiser la section"
+        >
+          ⋮⋮
+        </div>
+        <input
+          type="text"
+          value={section.titre}
+          onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
+          placeholder="Titre de la section (ex: Coffre latéral gauche)"
+          style={{
+            flex: 1,
+            padding: '0.5rem',
+            border: '2px solid #8e44ad',
+            borderRadius: '0.375rem',
+            fontWeight: '600',
+            fontSize: '1rem'
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => dupliquerSection(sectionIndex)}
+          style={{
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.875rem'
+          }}
+          title="Dupliquer cette section"
+        >
+          📋
+        </button>
+        <button
+          type="button"
+          onClick={() => supprimerSection(sectionIndex)}
+          style={{
+            backgroundColor: '#ef4444',
+            color: 'white',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          🗑️
+        </button>
+      </div>
+
+      {/* Type de champ pour toute la section */}
+      <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f3e8ff', borderRadius: '0.375rem', border: '1px solid #c084fc' }}>
+        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b21a8' }}>
+          Type de réponse pour cette section :
+        </label>
+        <select
+          value={section.type_champ || 'checkbox'}
+          onChange={(e) => updateSection(sectionIndex, 'type_champ', e.target.value)}
+          style={{
+            width: '100%',
+            padding: '0.5rem',
+            border: '1px solid #c084fc',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            backgroundColor: 'white',
+            fontWeight: '600'
+          }}
+        >
+          <option value="checkbox">☑️ Cases à cocher (multiple)</option>
+          <option value="radio">🔘 Puce (une seule)</option>
+          <option value="text">📝 Texte libre</option>
+          <option value="number">🔢 Nombre</option>
+          <option value="select">📋 Liste déroulante</option>
+          <option value="photo">📸 Photo obligatoire</option>
+        </select>
+
+        {/* Options pour checkbox, radio, select */}
+        {(section.type_champ === 'checkbox' || section.type_champ === 'radio' || section.type_champ === 'select') && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <label style={{ fontSize: '0.75rem', color: '#6b21a8', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
+              Options de réponse :
+            </label>
+            
+            {(section.options || []).map((opt, optIndex) => (
+              <div key={optIndex} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <input
+                  type="text"
+                  value={opt.label || ''}
+                  onChange={(e) => {
+                    const newOptions = [...(section.options || [])];
+                    newOptions[optIndex] = { ...newOptions[optIndex], label: e.target.value };
+                    updateSection(sectionIndex, 'options', newOptions);
+                  }}
+                  placeholder="Ex: Présent, Absent, Défectueux..."
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem',
+                    fontSize: '0.75rem'
+                  }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+                  <input
+                    type="checkbox"
+                    checked={opt.declencherAlerte || false}
+                    onChange={(e) => {
+                      const newOptions = [...(section.options || [])];
+                      newOptions[optIndex] = { ...newOptions[optIndex], declencherAlerte: e.target.checked };
+                      updateSection(sectionIndex, 'options', newOptions);
+                    }}
+                  />
+                  ⚠️ Alerte
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newOptions = (section.options || []).filter((_, i) => i !== optIndex);
+                    updateSection(sectionIndex, 'options', newOptions);
+                  }}
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.25rem',
+                    padding: '0.25rem 0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              onClick={() => {
+                const newOptions = [...(section.options || []), { label: '', declencherAlerte: false }];
+                updateSection(sectionIndex, 'options', newOptions);
+              }}
+              style={{
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.25rem',
+                padding: '0.375rem 0.75rem',
+                cursor: 'pointer',
+                fontSize: '0.7rem',
+                marginTop: '0.25rem'
+              }}
+            >
+              + Ajouter une option
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Upload photo de section */}
+      <div style={{ marginBottom: '0.75rem' }}>
+        <label style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem', display: 'block' }}>Photo de référence de la section :</label>
+        <ImageUpload
+          value={section.photo_url || ''}
+          onChange={(url) => updateSection(sectionIndex, 'photo_url', url)}
+          compact={true}
+        />
+      </div>
+
+      {/* Items de la section avec drag and drop */}
+      <div style={{ marginLeft: '1rem' }}>
+        <DndContext
+          sensors={useSensors(
+            useSensor(PointerSensor),
+            useSensor(KeyboardSensor, {
+              coordinateGetter: sortableKeyboardCoordinates,
+            })
+          )}
+          collisionDetection={closestCenter}
+          onDragEnd={(event) => handleDragEndItems(event, sectionIndex)}
+        >
+          <SortableContext
+            items={section.items.map((_, idx) => `item-${sectionIndex}-${idx}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {section.items.map((item, iIndex) => (
+              <SortableItem
+                key={`item-${sectionIndex}-${iIndex}`}
+                id={`item-${sectionIndex}-${iIndex}`}
+                item={item}
+                index={iIndex}
+                sectionIndex={sectionIndex}
+                updateItem={updateItem}
+                supprimerItem={supprimerItem}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+
+        <button
+          type="button"
+          onClick={() => ajouterItem(sectionIndex)}
+          style={{
+            backgroundColor: '#10b981',
+            color: 'white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            marginTop: '0.5rem'
+          }}
+        >
+          + Ajouter un Item
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const [modeles, setModeles] = useState([]);
   const [loading, setLoading] = useState(false);
