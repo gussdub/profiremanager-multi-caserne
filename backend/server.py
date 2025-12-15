@@ -20130,6 +20130,9 @@ async def create_modele_inventaire_vehicule(
         
         sections_obj.append(SectionInventaireVehicule(
             titre=section['titre'],
+            type_champ=section.get('type_champ', 'checkbox'),
+            options=section.get('options', []),
+            photo_url=section.get('photo_url', ''),
             items=items_obj,
             ordre=section.get('ordre', 0)
         ))
