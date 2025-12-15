@@ -11,6 +11,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const [itemsInventaire, setItemsInventaire] = useState([]);
   const [commentaire, setCommentaire] = useState('');
   const [heureDebut, setHeureDebut] = useState(null);
+  const [sectionActuelle, setSectionActuelle] = useState(0); // Navigation par section
 
   useEffect(() => {
     fetchModeles();
