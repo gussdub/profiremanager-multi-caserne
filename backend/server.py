@@ -9242,10 +9242,16 @@ class InventaireVehicule(BaseModel):
 
 class InventaireVehiculeCreate(BaseModel):
     vehicule_id: str
+    vehicule_nom: str = ""
     modele_id: str
     date_inventaire: str
-    items_coches: List[dict]  # [{item_id, nom, statut, photo, notes}]
+    heure_debut: str = ""
+    heure_fin: str = ""
+    effectue_par: str = ""
+    effectue_par_id: str = ""
+    items_coches: List[dict]  # [{item_id, section, nom, type_champ, valeur, notes, photo_prise}]
     notes_generales: str = ""
+    alertes: List[dict] = []  # [{section, item, valeur, notes, photo}]
 
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
