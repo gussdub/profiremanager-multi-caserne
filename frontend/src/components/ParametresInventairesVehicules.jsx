@@ -792,7 +792,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         ))}
       </div>
 
-      {/* Configuration Emails - Style Rondes de Sécurité */}
+      {/* Configuration Emails - Style cohérent avec le reste de l'app */}
       <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: '#1f2937' }}>
           Notifications - Inventaires Véhicules
@@ -835,7 +835,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
           </button>
         </div>
 
-        {/* Cartes utilisateurs */}
+        {/* Cartes utilisateurs - Style simple avec cercle de sélection */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           {users.map(u => {
             const isSelected = emailsNotifications.includes(u.id);
@@ -849,52 +849,55 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                   borderRadius: '0.5rem',
                   cursor: 'pointer',
                   backgroundColor: isSelected ? '#fef2f2' : 'white',
-                  position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   transition: 'all 0.2s'
                 }}
               >
-                {/* Indicateur de sélection */}
-                {isSelected && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '0.5rem',
-                    right: '0.5rem',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: '#ef4444',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold'
-                  }}>
-                    ✓
+                <div style={{ flex: 1 }}>
+                  {/* Nom */}
+                  <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.25rem' }}>
+                    {u.prenom} {u.nom}
                   </div>
-                )}
 
-                {/* Nom */}
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
-                  {u.prenom} {u.nom}
+                  {/* Email */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>✉️</span>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>{u.email}</span>
+                  </div>
+
+                  {/* Rôle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      {u.role === 'admin' ? '👑' : '🛡️'}
+                    </span>
+                    <span style={{ 
+                      fontSize: '0.875rem', 
+                      color: u.role === 'admin' ? '#dc2626' : '#3b82f6',
+                      fontWeight: '500'
+                    }}>
+                      {u.role === 'admin' ? 'Administrateur' : 'Superviseur'}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Email */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>📧</span>
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>{u.email}</span>
-                </div>
-
-                {/* Rôle */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>👤</span>
-                  <span style={{ 
-                    fontSize: '0.875rem', 
-                    color: '#6b7280',
-                    textTransform: 'capitalize'
-                  }}>
-                    {u.role === 'admin' ? 'Administrateur' : u.role === 'superviseur' ? 'Superviseur' : 'Employé'}
-                  </span>
+                {/* Cercle de sélection à droite */}
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  border: isSelected ? 'none' : '2px solid #d1d5db',
+                  backgroundColor: isSelected ? '#ef4444' : 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '1rem',
+                  flexShrink: 0
+                }}>
+                  {isSelected && (
+                    <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: 'bold' }}>✓</span>
+                  )}
                 </div>
               </div>
             );
@@ -905,24 +908,31 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         {emailsNotifications.length > 0 && (
           <div style={{ 
             padding: '1rem', 
-            backgroundColor: '#f3f4f6', 
+            backgroundColor: '#d1fae5', 
             borderRadius: '0.5rem', 
             marginBottom: '1rem',
             fontSize: '0.875rem',
-            color: '#374151'
+            color: '#065f46',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
           }}>
-            <strong>Destinataires configurés :</strong>{' '}
-            {users
-              .filter(u => emailsNotifications.includes(u.id))
-              .map(u => `${u.prenom} ${u.nom} (${u.email})`)
-              .join(', ')}
+            <span style={{ fontSize: '1.25rem' }}>✅</span>
+            <div>
+              <strong>Destinataires configurés :</strong>
+              <br />
+              {users
+                .filter(u => emailsNotifications.includes(u.id))
+                .map(u => `${u.prenom} ${u.nom} (${u.email})`)
+                .join(', ')}
+            </div>
           </div>
         )}
 
         <button
           onClick={sauvegarderEmailsConfig}
           style={{
-            backgroundColor: '#10b981',
+            backgroundColor: '#ef4444',
             color: 'white',
             padding: '0.75rem 1.5rem',
             borderRadius: '0.5rem',
@@ -932,7 +942,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
             fontWeight: '600'
           }}
         >
-          💾 Enregistrer la Configuration
+          💾 Enregistrer la configuration
         </button>
       </div>
 
