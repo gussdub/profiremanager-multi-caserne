@@ -20124,6 +20124,7 @@ async def create_modele_inventaire_vehicule(
         for item in section.get('items', []):
             items_obj.append(ItemInventaireVehicule(
                 nom=item['nom'],
+                photo_url=item.get('photo_url', ''),
                 obligatoire=item.get('obligatoire', False),
                 photo_requise=item.get('photo_requise', False),
                 ordre=item.get('ordre', 0)
