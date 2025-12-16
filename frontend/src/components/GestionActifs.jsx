@@ -1719,8 +1719,61 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           >
             ← Retour aux modules
           </button>
+          
+          {/* Afficher le contenu du module sélectionné */}
+          {selectedModule === 'vehicules' && (
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '32px' }}>🚗</span>
+                Véhicules
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
+                Configuration des rondes de sécurité et inventaires
+              </p>
+            </div>
+          )}
+          
+          {selectedModule === 'eau' && (
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '32px' }}>💧</span>
+                Approvisionnement en Eau
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
+                Configuration des dates de tests et notifications pour les bornes sèches
+              </p>
+            </div>
+          )}
+          
+          {selectedModule === 'equipements' && (
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '32px' }}>🔧</span>
+                Matériel & Équipements
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
+                Configuration des alertes et notifications pour les équipements
+              </p>
+            </div>
+          )}
+          
+          {selectedModule === 'epi' && (
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '32px' }}>🛡️</span>
+                Gestion EPI
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
+                Configuration des alertes et notifications pour les équipements de protection
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
-      {/* ========== MODULE VÉHICULES ========== */}
+      {/* Contenu des modules (affiché seulement si un module est sélectionné) */}
+      {selectedModule === 'vehicules' && (
+      <div>
       <div style={{ 
         background: '#f8f9fa', 
         padding: '30px', 
