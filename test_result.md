@@ -1887,6 +1887,10 @@ test_plan:
   test_all: false
   test_priority: "critical_first"
 
+agent_communication:
+  - agent: "testing"
+    message: "🎉 EQUIPMENT EXPORT BUG SUCCESSFULLY FIXED - The reported equipment export functionality issue has been completely resolved. The problem was NOT a frontend token authentication issue as initially described, but a FastAPI route conflict in the backend. The export routes (export-csv, export-pdf) were being matched by the parameterized route /{tenant_slug}/equipements/{equipement_id} because they were defined after it. Solution: Moved export routes before the parameterized route in backend/server.py. Both CSV and PDF exports now work perfectly (HTTP 200, valid files generated). Testing completed with 100% success rate on pompiers-test tenant."
+
   - task: "Module Matériel & Équipements (Phase 1 Frontend)"
     implemented: true
     working: true
