@@ -144,7 +144,7 @@ class VehicleInventoryEmailTester:
         """Récupérer un modèle d'inventaire"""
         print(f"\n📋 Récupération modèle d'inventaire...")
         
-        url = f"{self.base_url}/{self.tenant_slug}/modeles-inventaires-vehicules"
+        url = f"{self.base_url}/{self.tenant_slug}/parametres/modeles-inventaires-vehicules"
         print(f"📍 URL: {url}")
         
         response = requests.get(url, headers=self.headers)
