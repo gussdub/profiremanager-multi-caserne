@@ -26086,7 +26086,20 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
         resend.api_key = resend_api_key
         
         nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom
-        date_ronde_str = ronde["date"]
+        
+        # Formater la date en heure locale (Canada EST = UTC-5)
+        date_ronde_raw = ronde["date"]
+        try:
+            from datetime import datetime, timedelta
+            # Parser la date ISO et convertir en heure locale Canada (UTC-5)
+            dt = datetime.fromisoformat(date_ronde_raw.replace('Z', '+00:00'))
+            # Convertir en heure locale du Canada (EST = UTC-5)
+            dt_local = dt - timedelta(hours=5)
+            date_ronde_str = dt_local.strftime('%Y-%m-%d')
+        except Exception as e:
+            # En cas d'erreur, utiliser la date brute
+            date_ronde_str = date_ronde_raw[:10] if len(date_ronde_raw) >= 10 else date_ronde_raw
+        
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         
         subject = f"🔧 Nouvelle Ronde de Sécurité - {vehicle.get('nom', 'Véhicule')} - {date_ronde_str}"
