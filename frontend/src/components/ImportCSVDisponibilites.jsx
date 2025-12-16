@@ -294,11 +294,12 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
   };
 
   const downloadTemplate = () => {
-    // Créer un CSV template
+    // Créer un CSV template avec exemples
     const headers = 'Employé,Quart,Caserne,Début,Fin,Sélection\n';
-    const example = 'Dupont Jean (101),jour 12h,Caserne Shefford,2025-12-01 06:00,2025-12-01 18:00,Disponible\n';
-    const example2 = 'Tremblay Marie (102),matin,Caserne Shefford,2025-12-02 06:00,2025-12-02 18:00,Aucune\n';
-    const csv = headers + example + example2;
+    const example1 = 'Dupont Jean (101),jour 12h,Caserne Shefford,2026-01-01 06:00,2026-01-01 18:00,Disponible\n';
+    const example2 = 'Tremblay Marie (102),matin,Caserne Shefford,2026-01-02 06:00,2026-01-02 18:00,Disponible\n';
+    const example3 = 'Robert Girard, Guy Bachand, Marie Dubois,apres midi,,2026-01-03 12:00,2026-01-03 18:00,Disponible\n';
+    const csv = headers + example1 + example2 + example3;
     
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
