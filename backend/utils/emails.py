@@ -429,8 +429,8 @@ async def send_inventaire_vehicule_alertes_email(
         effectue_par = inventaire.get('effectue_par', 'N/A')
         notes_generales = inventaire.get('notes_generales', '')
         
-        # Construire l'URL vers la page de gestion des actifs (onglet véhicules)
-        vehicule_url = f"{FRONTEND_URL}/{tenant_slug}/gestion-actifs"
+        # Construire l'URL vers la page de gestion des actifs avec paramètre de page
+        vehicule_url = f"{FRONTEND_URL}/{tenant_slug}?page=actifs&vehicule_id={vehicule.get('id')}"
         
         # Créer la liste HTML des alertes groupées par section
         alertes_par_section = {}
