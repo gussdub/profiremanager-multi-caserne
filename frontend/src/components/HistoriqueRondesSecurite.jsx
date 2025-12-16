@@ -67,6 +67,16 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
     try {
       const data = await apiGet(tenantSlug, `/actifs/rondes-securite?vehicule_id=${vehicule.id}`);
       setRondes(data);
+      
+      // Charger les adresses pour les rondes avec position GPS
+      const newAddresses = {};
+      for (const ronde of data) {
+        if (ronde.position_gps && ronde.position_gps.length === 2) {
+          const [lat, lon] = ronde.position_gps;
+          newAddresses[ronde.id] = await getAddressFromCoordinates(lat, lon);
+        }
+      }
+      setAddresses(newAddresses);
     } catch (error) {
       console.error('Erreur lors du chargement des rondes:', error);
       alert('❌ Erreur lors du chargement des rondes');
