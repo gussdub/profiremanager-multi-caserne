@@ -338,9 +338,67 @@ const EquipementsTab = ({
       {/* Barre d'actions et filtres */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
         {(user?.role === 'admin' || user?.role === 'superviseur') && (
-          <Button onClick={onCreateEquipement} style={{ background: '#22c55e' }}>
-            ➕ Ajouter un équipement
-          </Button>
+          <>
+            <Button onClick={onCreateEquipement} style={{ background: '#22c55e' }}>
+              ➕ Ajouter un équipement
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                const API_URL = process.env.REACT_APP_BACKEND_URL;
+                const token = localStorage.getItem(`token_${window.location.pathname.split('/')[1]}`);
+                const params = new URLSearchParams();
+                if (filtreCategorie) params.append('categorie_id', filtreCategorie);
+                if (filtreEtat) params.append('etat', filtreEtat);
+                const url = `${API_URL}/api/${window.location.pathname.split('/')[1]}/equipements/export-csv?${params.toString()}`;
+                
+                fetch(url, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.blob())
+                .then(blob => {
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `equipements_${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                })
+                .catch(err => alert('Erreur export CSV: ' + err.message));
+              }}
+              variant="outline"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              📊 Export CSV
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                const API_URL = process.env.REACT_APP_BACKEND_URL;
+                const token = localStorage.getItem(`token_${window.location.pathname.split('/')[1]}`);
+                const params = new URLSearchParams();
+                if (filtreCategorie) params.append('categorie_id', filtreCategorie);
+                if (filtreEtat) params.append('etat', filtreEtat);
+                const url = `${API_URL}/api/${window.location.pathname.split('/')[1]}/equipements/export-pdf?${params.toString()}`;
+                
+                fetch(url, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.blob())
+                .then(blob => {
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `equipements_${new Date().toISOString().split('T')[0]}.pdf`;
+                  a.click();
+                })
+                .catch(err => alert('Erreur export PDF: ' + err.message));
+              }}
+              variant="outline"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#DC2626', color: 'white', border: 'none' }}
+            >
+              📄 Export PDF
+            </Button>
+          </>
         )}
         
         <Input
