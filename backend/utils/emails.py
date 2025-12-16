@@ -410,12 +410,25 @@ async def send_inventaire_vehicule_alertes_email(
         vehicule_nom = vehicule.get('nom', 'N/A')
         vehicule_immatriculation = vehicule.get('immatriculation', 'N/A')
         vehicule_type = vehicule.get('type', 'N/A')
-        date_inventaire = inventaire.get('date_inventaire', 'N/A')
+        
+        # Formater la date en heure locale (Canada EST/EDT)
+        date_inventaire_raw = inventaire.get('date_inventaire', 'N/A')
+        if date_inventaire_raw != 'N/A':
+            try:
+                from datetime import datetime
+                # Parser la date ISO et la formater en date locale seulement (pas d'heure)
+                dt = datetime.fromisoformat(date_inventaire_raw.replace('Z', '+00:00'))
+                date_inventaire = dt.strftime('%Y-%m-%d')
+            except Exception as e:
+                date_inventaire = date_inventaire_raw[:10] if len(date_inventaire_raw) >= 10 else date_inventaire_raw
+        else:
+            date_inventaire = 'N/A'
+        
         effectue_par = inventaire.get('effectue_par', 'N/A')
         notes_generales = inventaire.get('notes_generales', '')
         
-        # Construire l'URL vers le véhicule
-        vehicule_url = f"{FRONTEND_URL}/{tenant_slug}/gestion-actifs/vehicules/{vehicule.get('id')}"
+        # Construire l'URL vers la page de gestion des actifs (onglet véhicules)
+        vehicule_url = f"{FRONTEND_URL}/{tenant_slug}/gestion-actifs"
         
         # Créer la liste HTML des alertes groupées par section
         alertes_par_section = {}
