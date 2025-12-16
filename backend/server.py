@@ -21550,6 +21550,358 @@ async def initialiser_categories_equipement(
     }
 
 
+# ===== IMPORT/EXPORT ÉQUIPEMENTS =====
+
+@api_router.post("/{tenant_slug}/equipements/import-csv")
+async def import_equipements_csv(
+    tenant_slug: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Import en masse d'équipements depuis CSV/Excel
+    Format attendu: nom, code_unique, categorie_nom, etat, emplacement, date_acquisition, vehicule, employe, champs_personnalises (JSON)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    equipements_data = data.get("equipements", [])
+    
+    if not equipements_data:
+        raise HTTPException(status_code=400, detail="Aucun équipement fourni")
+    
+    results = {
+        "created": 0,
+        "updated": 0,
+        "errors": [],
+        "skipped": 0
+    }
+    
+    # Charger toutes les catégories du tenant
+    categories = await db.categories_equipement.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    categories_by_nom = {normalize_string_for_matching(cat["nom"]): cat for cat in categories}
+    
+    # Charger tous les véhicules et utilisateurs pour les assignations
+    vehicules = await db.vehicules.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    vehicules_by_nom = {normalize_string_for_matching(v["nom"]): v for v in vehicules}
+    
+    users = await db.users.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
+    users_by_name = create_user_matching_index(users)
+    
+    for index, eq_data in enumerate(equipements_data):
+        try:
+            # 1. Trouver la catégorie
+            categorie_nom = eq_data.get("categorie_nom", eq_data.get("categorie", "")).strip()
+            if not categorie_nom:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": "Catégorie manquante"
+                })
+                continue
+            
+            categorie_normalized = normalize_string_for_matching(categorie_nom)
+            categorie = categories_by_nom.get(categorie_normalized)
+            
+            if not categorie:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": f"Catégorie non trouvée: {categorie_nom}"
+                })
+                continue
+            
+            # 2. Données de base
+            nom = eq_data.get("nom", "").strip()
+            code_unique = eq_data.get("code_unique", "").strip()
+            
+            if not nom:
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": "Nom manquant"
+                })
+                continue
+            
+            # Générer code unique si absent
+            if not code_unique:
+                code_unique = f"{categorie['nom'][:3].upper()}-{str(uuid4())[:8]}"
+            
+            # Vérifier si l'équipement existe déjà (par code unique)
+            existing_equipement = await db.equipements.find_one({
+                "tenant_id": tenant.id,
+                "code_unique": code_unique
+            })
+            
+            # 3. Assignations (optionnel)
+            vehicule_id = None
+            employe_id = None
+            
+            vehicule_str = eq_data.get("vehicule", "").strip()
+            if vehicule_str:
+                vehicule_normalized = normalize_string_for_matching(vehicule_str)
+                vehicule = vehicules_by_nom.get(vehicule_normalized)
+                if vehicule:
+                    vehicule_id = vehicule["id"]
+            
+            employe_str = eq_data.get("employe", "").strip()
+            if employe_str and categorie.get("permet_assignation_employe"):
+                user_obj = find_user_intelligent(
+                    search_string=employe_str,
+                    users_by_name=users_by_name,
+                    users_by_num={},
+                    numero_field="numero_employe"
+                )
+                if user_obj:
+                    employe_id = user_obj["id"]
+            
+            # 4. Champs personnalisés (JSON ou vide)
+            champs_personnalises = {}
+            champs_json_str = eq_data.get("champs_personnalises", "")
+            if champs_json_str:
+                try:
+                    import json as json_lib
+                    champs_personnalises = json_lib.loads(champs_json_str) if isinstance(champs_json_str, str) else champs_json_str
+                except:
+                    pass
+            
+            # 5. Créer ou mettre à jour l'équipement
+            equipement_obj = {
+                "id": existing_equipement["id"] if existing_equipement else str(uuid4()),
+                "tenant_id": tenant.id,
+                "nom": nom,
+                "code_unique": code_unique,
+                "categorie_id": categorie["id"],
+                "categorie_nom": categorie["nom"],
+                "etat": eq_data.get("etat", "bon").lower(),
+                "emplacement": eq_data.get("emplacement", ""),
+                "quantite": int(eq_data.get("quantite", 1)),
+                "quantite_minimum": int(eq_data.get("quantite_minimum", 0)),
+                "vehicule_id": vehicule_id or "",
+                "employe_id": employe_id or "",
+                "date_acquisition": eq_data.get("date_acquisition", datetime.now(timezone.utc).date().isoformat()),
+                "date_fin_vie": eq_data.get("date_fin_vie", ""),
+                "date_prochaine_maintenance": eq_data.get("date_prochaine_maintenance", ""),
+                "valeur_achat": float(eq_data.get("valeur_achat", 0)) if eq_data.get("valeur_achat") else 0,
+                "notes": eq_data.get("notes", ""),
+                "champs_personnalises": champs_personnalises,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            if existing_equipement:
+                # Mise à jour
+                await db.equipements.update_one(
+                    {"id": equipement_obj["id"], "tenant_id": tenant.id},
+                    {"$set": equipement_obj}
+                )
+                results["updated"] += 1
+            else:
+                # Création
+                equipement_obj["created_at"] = datetime.now(timezone.utc).isoformat()
+                await db.equipements.insert_one(equipement_obj)
+                results["created"] += 1
+        
+        except Exception as e:
+            results["errors"].append({
+                "ligne": index + 2,
+                "erreur": str(e)
+            })
+            logging.error(f"Erreur import équipement ligne {index + 2}: {str(e)}", exc_info=True)
+    
+    return results
+
+
+@api_router.get("/{tenant_slug}/equipements/export-csv")
+async def export_equipements_csv(
+    tenant_slug: str,
+    categorie_id: str = None,
+    etat: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export CSV de tous les équipements avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Construire les filtres
+    filters = {"tenant_id": tenant.id}
+    if categorie_id:
+        filters["categorie_id"] = categorie_id
+    if etat:
+        filters["etat"] = etat
+    
+    # Récupérer les équipements
+    equipements = await db.equipements.find(filters, {"_id": 0}).to_list(10000)
+    
+    if not equipements:
+        raise HTTPException(status_code=404, detail="Aucun équipement trouvé")
+    
+    # Générer le CSV
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    
+    # En-têtes
+    fieldnames = [
+        "nom", "code_unique", "categorie_nom", "etat", "emplacement", 
+        "quantite", "quantite_minimum", "vehicule_id", "employe_id",
+        "date_acquisition", "date_fin_vie", "date_prochaine_maintenance",
+        "valeur_achat", "notes", "champs_personnalises", "created_at"
+    ]
+    
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    
+    for eq in equipements:
+        import json as json_lib
+        row = {
+            "nom": eq.get("nom", ""),
+            "code_unique": eq.get("code_unique", ""),
+            "categorie_nom": eq.get("categorie_nom", ""),
+            "etat": eq.get("etat", ""),
+            "emplacement": eq.get("emplacement", ""),
+            "quantite": eq.get("quantite", 1),
+            "quantite_minimum": eq.get("quantite_minimum", 0),
+            "vehicule_id": eq.get("vehicule_id", ""),
+            "employe_id": eq.get("employe_id", ""),
+            "date_acquisition": eq.get("date_acquisition", ""),
+            "date_fin_vie": eq.get("date_fin_vie", ""),
+            "date_prochaine_maintenance": eq.get("date_prochaine_maintenance", ""),
+            "valeur_achat": eq.get("valeur_achat", 0),
+            "notes": eq.get("notes", ""),
+            "champs_personnalises": json_lib.dumps(eq.get("champs_personnalises", {})),
+            "created_at": eq.get("created_at", "")
+        }
+        writer.writerow(row)
+    
+    csv_content = output.getvalue()
+    
+    from fastapi.responses import Response
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=equipements_{tenant_slug}_{datetime.now().strftime('%Y%m%d')}.csv"
+        }
+    )
+
+
+@api_router.get("/{tenant_slug}/equipements/export-pdf")
+async def export_equipements_pdf(
+    tenant_slug: str,
+    categorie_id: str = None,
+    etat: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export PDF de tous les équipements avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Construire les filtres
+    filters = {"tenant_id": tenant.id}
+    if categorie_id:
+        filters["categorie_id"] = categorie_id
+    if etat:
+        filters["etat"] = etat
+    
+    # Récupérer les équipements
+    equipements = await db.equipements.find(filters, {"_id": 0}).to_list(10000)
+    
+    if not equipements:
+        raise HTTPException(status_code=404, detail="Aucun équipement trouvé")
+    
+    # Générer le PDF
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from io import BytesIO
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    title = Paragraph(f"Inventaire des Équipements - {tenant.nom}", title_style)
+    elements.append(title)
+    
+    # Sous-titre avec filtres
+    subtitle_text = f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
+    if categorie_id or etat:
+        filters_text = []
+        if categorie_id:
+            filters_text.append(f"Catégorie filtrée")
+        if etat:
+            filters_text.append(f"État: {etat}")
+        subtitle_text += f" | Filtres: {', '.join(filters_text)}"
+    
+    subtitle = Paragraph(subtitle_text, styles['Normal'])
+    elements.append(subtitle)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Tableau des équipements
+    data = [['Code', 'Nom', 'Catégorie', 'État', 'Emplacement', 'Qté']]
+    
+    for eq in equipements:
+        data.append([
+            eq.get("code_unique", "")[:15],
+            eq.get("nom", "")[:30],
+            eq.get("categorie_nom", "")[:20],
+            eq.get("etat", "").capitalize(),
+            eq.get("emplacement", "")[:20],
+            str(eq.get("quantite", 1))
+        ])
+    
+    table = Table(data, colWidths=[1.2*inch, 2.2*inch, 1.5*inch, 1*inch, 1.5*inch, 0.6*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (-1, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F3F4F6')]),
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Résumé
+    summary_text = f"<b>Total: {len(equipements)} équipement(s)</b>"
+    summary = Paragraph(summary_text, styles['Normal'])
+    elements.append(summary)
+    
+    # Construire le PDF
+    doc.build(elements)
+    
+    pdf_content = buffer.getvalue()
+    buffer.close()
+    
+    from fastapi.responses import Response
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=equipements_{tenant_slug}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        }
+    )
+
+
+
 # ==================== INVENTAIRES VÉHICULES ENDPOINTS ====================
 
 @api_router.get("/{tenant_slug}/parametres/modeles-inventaires-vehicules")
