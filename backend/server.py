@@ -854,19 +854,34 @@ def normalize_string_for_matching(s: str) -> str:
     - Enlève les accents (é → e, à → a, etc.)
     - Convertit en minuscules
     - Strip les espaces
+    - Remplace les tirets par des espaces (Jean-Pierre → Jean Pierre)
+    - Normalise les espaces multiples en un seul espace
     
     Utilisé pour matcher des noms/prénoms de façon flexible dans les imports CSV.
     
     Exemple:
         "Sébastien BERNARD" → "sebastien bernard"
-        "Dupont Jean-Pierre" → "dupont jean-pierre"
+        "Dupont Jean-Pierre" → "dupont jean pierre"
+        "Jean  François" → "jean francois"
     """
     import unicodedata
+    import re
+    
     # Enlever les accents (NFD = décompose, puis filtre les marques diacritiques)
     s = ''.join(c for c in unicodedata.normalize('NFD', s) 
                 if unicodedata.category(c) != 'Mn')
-    # Minuscules et strip
-    return s.lower().strip()
+    
+    # Minuscules
+    s = s.lower()
+    
+    # Remplacer les tirets par des espaces pour le matching flexible
+    s = s.replace('-', ' ')
+    
+    # Normaliser les espaces multiples en un seul espace
+    s = re.sub(r'\s+', ' ', s)
+    
+    # Strip
+    return s.strip()
 
 
 def create_user_matching_index(users_list: list) -> dict:
