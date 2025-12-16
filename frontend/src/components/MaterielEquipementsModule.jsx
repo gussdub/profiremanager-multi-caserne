@@ -348,7 +348,7 @@ const EquipementsTab = ({
                 try {
                   const API_URL = process.env.REACT_APP_BACKEND_URL;
                   const tenantSlug = window.location.pathname.split('/')[1];
-                  const token = localStorage.getItem(`token_${tenantSlug}`);
+                  const token = getTenantToken();
                   
                   if (!token) {
                     alert('Erreur: Vous devez être connecté');
@@ -397,7 +397,7 @@ const EquipementsTab = ({
                 try {
                   const API_URL = process.env.REACT_APP_BACKEND_URL;
                   const tenantSlug = window.location.pathname.split('/')[1];
-                  const token = localStorage.getItem(`token_${tenantSlug}`);
+                  const token = getTenantToken();
                   
                   if (!token) {
                     alert('Erreur: Vous devez être connecté');
