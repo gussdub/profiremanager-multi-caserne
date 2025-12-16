@@ -20336,6 +20336,752 @@ async def get_statistiques_materiel(
     }
 
 
+# ==================== ÉQUIPEMENTS (NFPA) - MODULE MATÉRIEL & ÉQUIPEMENTS ====================
+
+# ===== CATÉGORIES D'ÉQUIPEMENTS =====
+
+@api_router.get("/{tenant_slug}/equipements/categories")
+async def get_categories_equipement(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les catégories d'équipements"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    categories = await db.categories_equipement.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("nom", 1).to_list(1000)
+    
+    return categories
+
+
+@api_router.post("/{tenant_slug}/equipements/categories")
+async def create_categorie_equipement(
+    tenant_slug: str,
+    categorie: CategorieEquipementCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle catégorie d'équipement (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Vérifier si une catégorie avec ce nom existe déjà
+    existing = await db.categories_equipement.find_one({
+        "tenant_id": tenant.id,
+        "nom": categorie.nom
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Une catégorie '{categorie.nom}' existe déjà")
+    
+    categorie_obj = CategorieEquipement(
+        tenant_id=tenant.id,
+        **categorie.dict()
+    )
+    
+    await db.categories_equipement.insert_one(categorie_obj.dict())
+    
+    return {"message": "Catégorie créée avec succès", "id": categorie_obj.id, "categorie": categorie_obj.dict()}
+
+
+@api_router.put("/{tenant_slug}/equipements/categories/{categorie_id}")
+async def update_categorie_equipement(
+    tenant_slug: str,
+    categorie_id: str,
+    categorie: CategorieEquipementUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifier une catégorie d'équipement (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Vérifier que la catégorie existe
+    existing = await db.categories_equipement.find_one({
+        "id": categorie_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    # Vérifier si c'est une catégorie prédéfinie
+    if existing.get('est_predefinit', False):
+        raise HTTPException(status_code=403, detail="Impossible de modifier une catégorie prédéfinie")
+    
+    update_data = {k: v for k, v in categorie.dict().items() if v is not None}
+    if not update_data:
+        return {"message": "Aucune modification"}
+    
+    update_data['updated_at'] = datetime.now(timezone.utc)
+    
+    result = await db.categories_equipement.update_one(
+        {"id": categorie_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    return {"message": "Catégorie mise à jour avec succès"}
+
+
+@api_router.delete("/{tenant_slug}/equipements/categories/{categorie_id}")
+async def delete_categorie_equipement(
+    tenant_slug: str,
+    categorie_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une catégorie d'équipement (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Vérifier que la catégorie existe
+    existing = await db.categories_equipement.find_one({
+        "id": categorie_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    # Vérifier si c'est une catégorie prédéfinie
+    if existing.get('est_predefinit', False):
+        raise HTTPException(status_code=403, detail="Impossible de supprimer une catégorie prédéfinie")
+    
+    # Vérifier si des équipements utilisent cette catégorie
+    count = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "categorie_id": categorie_id
+    })
+    
+    if count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossible de supprimer: {count} équipement(s) utilisent cette catégorie"
+        )
+    
+    result = await db.categories_equipement.delete_one({
+        "id": categorie_id,
+        "tenant_id": tenant.id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    return {"message": "Catégorie supprimée avec succès"}
+
+
+# ===== ÉQUIPEMENTS =====
+
+@api_router.get("/{tenant_slug}/equipements")
+async def get_equipements(
+    tenant_slug: str,
+    categorie_id: Optional[str] = None,
+    etat: Optional[str] = None,
+    vehicule_id: Optional[str] = None,
+    employe_id: Optional[str] = None,
+    emplacement_type: Optional[str] = None,
+    alerte: Optional[bool] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les équipements avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {"tenant_id": tenant.id}
+    
+    if categorie_id:
+        query["categorie_id"] = categorie_id
+    if etat:
+        query["etat"] = etat
+    if vehicule_id:
+        query["vehicule_id"] = vehicule_id
+    if employe_id:
+        query["employe_id"] = employe_id
+    if emplacement_type:
+        query["emplacement_type"] = emplacement_type
+    if alerte:
+        query["$or"] = [
+            {"alerte_maintenance": True},
+            {"alerte_stock_bas": True},
+            {"alerte_reparation": True},
+            {"alerte_fin_vie": True},
+            {"alerte_expiration": True}
+        ]
+    
+    equipements = await db.equipements.find(
+        query,
+        {"_id": 0}
+    ).sort("nom", 1).to_list(10000)
+    
+    return equipements
+
+
+@api_router.get("/{tenant_slug}/equipements/{equipement_id}")
+async def get_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un équipement par son ID"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    equipement = await db.equipements.find_one(
+        {"id": equipement_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not equipement:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    return equipement
+
+
+@api_router.post("/{tenant_slug}/equipements")
+async def create_equipement(
+    tenant_slug: str,
+    equipement: EquipementCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouvel équipement (admin/superviseur)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    # Vérifier si le code unique existe déjà
+    existing = await db.equipements.find_one({
+        "tenant_id": tenant.id,
+        "code_unique": equipement.code_unique
+    })
+    
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Un équipement avec le code '{equipement.code_unique}' existe déjà"
+        )
+    
+    # Récupérer le nom de la catégorie si categorie_id fourni
+    categorie_nom = equipement.categorie_nom
+    if equipement.categorie_id and not categorie_nom:
+        categorie = await db.categories_equipement.find_one({
+            "id": equipement.categorie_id,
+            "tenant_id": tenant.id
+        })
+        if categorie:
+            categorie_nom = categorie.get('nom', '')
+    
+    # Récupérer le nom du véhicule si vehicule_id fourni
+    vehicule_nom = equipement.vehicule_nom
+    if equipement.vehicule_id and not vehicule_nom:
+        vehicule = await db.vehicules.find_one({
+            "id": equipement.vehicule_id,
+            "tenant_id": tenant.id
+        })
+        if vehicule:
+            vehicule_nom = vehicule.get('nom', '') or vehicule.get('numero', '')
+    
+    # Récupérer le nom de l'employé si employe_id fourni
+    employe_nom = equipement.employe_nom
+    if equipement.employe_id and not employe_nom:
+        employe = await db.users.find_one({
+            "id": equipement.employe_id,
+            "tenant_id": tenant.id
+        })
+        if employe:
+            employe_nom = f"{employe.get('prenom', '')} {employe.get('nom', '')}".strip()
+    
+    equipement_data = equipement.dict()
+    equipement_data['categorie_nom'] = categorie_nom
+    equipement_data['vehicule_nom'] = vehicule_nom
+    equipement_data['employe_nom'] = employe_nom
+    
+    equipement_obj = Equipement(
+        tenant_id=tenant.id,
+        created_by=current_user.id,
+        **equipement_data
+    )
+    
+    await db.equipements.insert_one(equipement_obj.dict())
+    
+    return {"message": "Équipement créé avec succès", "id": equipement_obj.id, "equipement": equipement_obj.dict()}
+
+
+@api_router.put("/{tenant_slug}/equipements/{equipement_id}")
+async def update_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    equipement: EquipementUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifier un équipement (admin/superviseur)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    # Vérifier que l'équipement existe
+    existing = await db.equipements.find_one({
+        "id": equipement_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    update_data = {k: v for k, v in equipement.dict().items() if v is not None}
+    if not update_data:
+        return {"message": "Aucune modification"}
+    
+    # Mettre à jour categorie_nom si categorie_id change
+    if 'categorie_id' in update_data and not update_data.get('categorie_nom'):
+        categorie = await db.categories_equipement.find_one({
+            "id": update_data['categorie_id'],
+            "tenant_id": tenant.id
+        })
+        if categorie:
+            update_data['categorie_nom'] = categorie.get('nom', '')
+    
+    # Mettre à jour vehicule_nom si vehicule_id change
+    if 'vehicule_id' in update_data:
+        if update_data['vehicule_id']:
+            vehicule = await db.vehicules.find_one({
+                "id": update_data['vehicule_id'],
+                "tenant_id": tenant.id
+            })
+            if vehicule:
+                update_data['vehicule_nom'] = vehicule.get('nom', '') or vehicule.get('numero', '')
+        else:
+            update_data['vehicule_nom'] = ''
+    
+    # Mettre à jour employe_nom si employe_id change
+    if 'employe_id' in update_data:
+        if update_data['employe_id']:
+            employe = await db.users.find_one({
+                "id": update_data['employe_id'],
+                "tenant_id": tenant.id
+            })
+            if employe:
+                update_data['employe_nom'] = f"{employe.get('prenom', '')} {employe.get('nom', '')}".strip()
+        else:
+            update_data['employe_nom'] = ''
+    
+    update_data['updated_at'] = datetime.now(timezone.utc)
+    
+    result = await db.equipements.update_one(
+        {"id": equipement_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    # Récupérer l'équipement mis à jour
+    updated = await db.equipements.find_one(
+        {"id": equipement_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    return {"message": "Équipement mis à jour avec succès", "equipement": updated}
+
+
+@api_router.delete("/{tenant_slug}/equipements/{equipement_id}")
+async def delete_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un équipement (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    result = await db.equipements.delete_one({
+        "id": equipement_id,
+        "tenant_id": tenant.id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    # Supprimer aussi l'historique de maintenance associé
+    await db.historique_maintenance_equipement.delete_many({
+        "equipement_id": equipement_id
+    })
+    
+    return {"message": "Équipement supprimé avec succès"}
+
+
+# ===== HISTORIQUE MAINTENANCE ÉQUIPEMENTS =====
+
+@api_router.get("/{tenant_slug}/equipements/{equipement_id}/maintenances")
+async def get_maintenances_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique de maintenance d'un équipement"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'équipement existe
+    equipement = await db.equipements.find_one({
+        "id": equipement_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not equipement:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    maintenances = await db.historique_maintenance_equipement.find(
+        {"equipement_id": equipement_id},
+        {"_id": 0}
+    ).sort("date_intervention", -1).to_list(1000)
+    
+    return maintenances
+
+
+@api_router.post("/{tenant_slug}/equipements/{equipement_id}/maintenances")
+async def create_maintenance_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    maintenance: HistoriqueMaintenanceCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajouter une entrée de maintenance pour un équipement"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    
+    # Vérifier que l'équipement existe
+    equipement = await db.equipements.find_one({
+        "id": equipement_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not equipement:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    
+    maintenance_data = maintenance.dict()
+    maintenance_data['equipement_id'] = equipement_id
+    maintenance_data['effectue_par'] = f"{current_user.prenom} {current_user.nom}"
+    maintenance_data['effectue_par_id'] = current_user.id
+    
+    maintenance_obj = HistoriqueMaintenance(**maintenance_data)
+    
+    await db.historique_maintenance_equipement.insert_one(maintenance_obj.dict())
+    
+    # Mettre à jour la date de dernière maintenance sur l'équipement
+    update_equip = {
+        "date_derniere_maintenance": maintenance.date_intervention,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if maintenance.prochaine_intervention:
+        update_equip["date_prochaine_maintenance"] = maintenance.prochaine_intervention
+        update_equip["alerte_maintenance"] = False
+    
+    await db.equipements.update_one(
+        {"id": equipement_id, "tenant_id": tenant.id},
+        {"$set": update_equip}
+    )
+    
+    return {"message": "Maintenance enregistrée avec succès", "id": maintenance_obj.id}
+
+
+# ===== STATISTIQUES ÉQUIPEMENTS =====
+
+@api_router.get("/{tenant_slug}/equipements/stats/resume")
+async def get_statistiques_equipements(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les statistiques des équipements"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Total équipements
+    total = await db.equipements.count_documents({"tenant_id": tenant.id})
+    
+    # Par état
+    bon = await db.equipements.count_documents({"tenant_id": tenant.id, "etat": "bon"})
+    neuf = await db.equipements.count_documents({"tenant_id": tenant.id, "etat": "neuf"})
+    a_reparer = await db.equipements.count_documents({"tenant_id": tenant.id, "etat": "a_reparer"})
+    en_reparation = await db.equipements.count_documents({"tenant_id": tenant.id, "etat": "en_reparation"})
+    hors_service = await db.equipements.count_documents({"tenant_id": tenant.id, "etat": "hors_service"})
+    
+    # Alertes
+    alertes_maintenance = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_maintenance": True
+    })
+    alertes_expiration = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_expiration": True
+    })
+    alertes_fin_vie = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_fin_vie": True
+    })
+    alertes_reparation = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_reparation": True
+    })
+    
+    # Par catégorie
+    pipeline_categories = [
+        {"$match": {"tenant_id": tenant.id}},
+        {"$group": {"_id": "$categorie_nom", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    par_categorie = await db.equipements.aggregate(pipeline_categories).to_list(100)
+    
+    # Valeur totale
+    pipeline_valeur = [
+        {"$match": {"tenant_id": tenant.id}},
+        {"$group": {"_id": None, "valeur_totale": {"$sum": {"$multiply": ["$prix_achat", "$quantite"]}}}}
+    ]
+    result_valeur = await db.equipements.aggregate(pipeline_valeur).to_list(1)
+    valeur_totale = result_valeur[0]['valeur_totale'] if result_valeur else 0
+    
+    return {
+        "total": total,
+        "par_etat": {
+            "neuf": neuf,
+            "bon": bon,
+            "a_reparer": a_reparer,
+            "en_reparation": en_reparation,
+            "hors_service": hors_service
+        },
+        "alertes": {
+            "maintenance": alertes_maintenance,
+            "expiration": alertes_expiration,
+            "fin_vie": alertes_fin_vie,
+            "reparation": alertes_reparation,
+            "total": alertes_maintenance + alertes_expiration + alertes_fin_vie + alertes_reparation
+        },
+        "par_categorie": [{"nom": c["_id"] or "Sans catégorie", "count": c["count"]} for c in par_categorie],
+        "valeur_totale": round(valeur_totale, 2)
+    }
+
+
+# ===== INITIALISATION CATÉGORIES PAR DÉFAUT =====
+
+@api_router.post("/{tenant_slug}/equipements/categories/initialiser")
+async def initialiser_categories_equipement(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Initialiser les catégories d'équipements par défaut (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Catégories par défaut avec champs personnalisés
+    categories_defaut = [
+        {
+            "nom": "Tuyaux",
+            "description": "Tuyaux d'incendie - NFPA 1962",
+            "norme_reference": "NFPA 1962",
+            "frequence_inspection": "1 an",
+            "couleur": "#EF4444",
+            "icone": "🔴",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Diamètre", "type": "select", "options": ["1.5\"", "1.75\"", "2.5\"", "3\"", "4\"", "5\""], "obligatoire": True},
+                {"nom": "Longueur (pieds)", "type": "number", "obligatoire": True},
+                {"nom": "Date dernier test pression", "type": "date", "obligatoire": False},
+                {"nom": "Résultat test pression", "type": "select", "options": ["Conforme", "Non conforme", "À retester"], "obligatoire": False},
+                {"nom": "Pression testée (PSI)", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Lances",
+            "description": "Lances et embouts",
+            "norme_reference": "",
+            "frequence_inspection": "1 an",
+            "couleur": "#F97316",
+            "icone": "💧",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Type", "type": "select", "options": ["Automatique", "Fixe", "Brouillard", "Mousse"], "obligatoire": True},
+                {"nom": "Débit (GPM)", "type": "number", "obligatoire": False},
+                {"nom": "Date inspection", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Équipement médical",
+            "description": "DEA, oxygène, trousses médicales",
+            "norme_reference": "",
+            "frequence_inspection": "6 mois",
+            "couleur": "#22C55E",
+            "icone": "🏥",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Type équipement", "type": "select", "options": ["DEA", "Bouteille O2", "Trousse premiers soins", "Civière", "Autre"], "obligatoire": True},
+                {"nom": "Date expiration pads/batterie", "type": "date", "obligatoire": False},
+                {"nom": "Date test hydrostatique (O2)", "type": "date", "obligatoire": False},
+                {"nom": "Capacité (L)", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Échelles portatives",
+            "description": "Échelles - NFPA 1932",
+            "norme_reference": "NFPA 1932",
+            "frequence_inspection": "1 an",
+            "couleur": "#A855F7",
+            "icone": "🪜",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Type", "type": "select", "options": ["Coulissante", "À crochets", "Combinée", "De toit"], "obligatoire": True},
+                {"nom": "Longueur (pieds)", "type": "number", "obligatoire": True},
+                {"nom": "Capacité (lbs)", "type": "number", "obligatoire": False},
+                {"nom": "Date inspection", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "APRIA",
+            "description": "Appareils de protection respiratoire - NFPA 1852",
+            "norme_reference": "NFPA 1852",
+            "frequence_inspection": "1 an",
+            "couleur": "#3B82F6",
+            "icone": "🫁",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Marque/Modèle", "type": "text", "obligatoire": True},
+                {"nom": "Date test débit", "type": "date", "obligatoire": False},
+                {"nom": "Résultat test débit", "type": "select", "options": ["Conforme", "Non conforme"], "obligatoire": False},
+                {"nom": "Date remplacement batterie", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Bouteilles APRIA",
+            "description": "Bouteilles d'air comprimé pour APRIA",
+            "norme_reference": "DOT/TC",
+            "frequence_inspection": "5 ans",
+            "couleur": "#06B6D4",
+            "icone": "🔵",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Capacité (minutes)", "type": "select", "options": ["30 min", "45 min", "60 min"], "obligatoire": True},
+                {"nom": "Date test hydrostatique", "type": "date", "obligatoire": True},
+                {"nom": "Date prochain test", "type": "date", "obligatoire": False},
+                {"nom": "Pression max (PSI)", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Parties faciales",
+            "description": "Masques APRIA assignés aux pompiers",
+            "norme_reference": "NFPA 1852",
+            "frequence_inspection": "1 an",
+            "couleur": "#EC4899",
+            "icone": "😷",
+            "permet_assignation_employe": True,
+            "champs_supplementaires": [
+                {"nom": "Taille", "type": "select", "options": ["S", "M", "L", "XL"], "obligatoire": True},
+                {"nom": "Marque/Modèle", "type": "text", "obligatoire": False},
+                {"nom": "Date inspection", "type": "date", "obligatoire": False},
+                {"nom": "Résultat test étanchéité", "type": "select", "options": ["Conforme", "Non conforme"], "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Détecteurs 4 gaz",
+            "description": "Détecteurs multigaz",
+            "norme_reference": "",
+            "frequence_inspection": "6 mois",
+            "couleur": "#FBBF24",
+            "icone": "⚠️",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Marque/Modèle", "type": "text", "obligatoire": True},
+                {"nom": "Date calibration", "type": "date", "obligatoire": True},
+                {"nom": "Date prochain calibration", "type": "date", "obligatoire": False},
+                {"nom": "Date expiration capteurs", "type": "date", "obligatoire": False},
+                {"nom": "Gaz détectés", "type": "text", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Détecteurs CO",
+            "description": "Détecteurs de monoxyde de carbone",
+            "norme_reference": "",
+            "frequence_inspection": "6 mois",
+            "couleur": "#F59E0B",
+            "icone": "🟡",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Marque/Modèle", "type": "text", "obligatoire": False},
+                {"nom": "Date calibration", "type": "date", "obligatoire": True},
+                {"nom": "Date prochain calibration", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Extincteurs",
+            "description": "Extincteurs portatifs - NFPA 10",
+            "norme_reference": "NFPA 10",
+            "frequence_inspection": "1 an",
+            "couleur": "#DC2626",
+            "icone": "🧯",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "Type", "type": "select", "options": ["ABC", "BC", "CO2", "Eau", "Mousse", "Classe K"], "obligatoire": True},
+                {"nom": "Capacité (lbs)", "type": "number", "obligatoire": True},
+                {"nom": "Date inspection", "type": "date", "obligatoire": False},
+                {"nom": "Date test hydrostatique", "type": "date", "obligatoire": False},
+                {"nom": "Pression (PSI)", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Radios portatives",
+            "description": "Radios de communication",
+            "norme_reference": "",
+            "frequence_inspection": "1 an",
+            "couleur": "#6366F1",
+            "icone": "📻",
+            "permet_assignation_employe": True,
+            "champs_supplementaires": [
+                {"nom": "Marque/Modèle", "type": "text", "obligatoire": False},
+                {"nom": "Canal/Fréquence", "type": "text", "obligatoire": False},
+                {"nom": "Date inspection", "type": "date", "obligatoire": False},
+                {"nom": "État batterie", "type": "select", "options": ["Neuve", "Bonne", "À remplacer"], "obligatoire": False}
+            ]
+        }
+    ]
+    
+    created_count = 0
+    skipped_count = 0
+    
+    for cat_data in categories_defaut:
+        # Vérifier si la catégorie existe déjà
+        existing = await db.categories_equipement.find_one({
+            "tenant_id": tenant.id,
+            "nom": cat_data["nom"]
+        })
+        
+        if existing:
+            skipped_count += 1
+            continue
+        
+        categorie_obj = CategorieEquipement(
+            tenant_id=tenant.id,
+            est_predefinit=True,
+            **cat_data
+        )
+        
+        await db.categories_equipement.insert_one(categorie_obj.dict())
+        created_count += 1
+    
+    return {
+        "message": f"{created_count} catégories créées, {skipped_count} déjà existantes",
+        "created": created_count,
+        "skipped": skipped_count
+    }
 
 
 # ==================== INVENTAIRES VÉHICULES ENDPOINTS ====================
