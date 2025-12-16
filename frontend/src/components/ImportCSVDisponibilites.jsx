@@ -159,13 +159,27 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
           
           setCsvData(parsedData);
           
-          // Auto-mapping si les colonnes correspondent
+          // Auto-mapping intelligent avec synonymes
           const autoMapping = {};
+          const fieldSynonyms = {
+            'employe': ['employé', 'employe', 'employés', 'employes', 'employés disponibles', 'employes disponibles', 'nom', 'personne'],
+            'quart': ['quart', 'type garde', 'type de garde', 'garde', 'shift'],
+            'caserne': ['caserne', 'station', 'lieu'],
+            'debut': ['début', 'debut', 'date début', 'date debut', 'heure début', 'heure debut', 'start'],
+            'fin': ['fin', 'date fin', 'heure fin', 'end'],
+            'selection': ['sélection', 'selection', 'statut', 'status', 'disponibilité', 'disponibilite']
+          };
+          
           availableFields.forEach(field => {
-            const matchingHeader = headers.find(h => 
-              h.toLowerCase() === field.key.toLowerCase() ||
-              h.toLowerCase().includes(field.key.toLowerCase())
-            );
+            const synonyms = fieldSynonyms[field.key] || [field.key];
+            const matchingHeader = headers.find(h => {
+              const hLower = h.toLowerCase().trim();
+              return synonyms.some(syn => 
+                hLower === syn.toLowerCase() || 
+                hLower.includes(syn.toLowerCase()) ||
+                syn.toLowerCase().includes(hLower)
+              );
+            });
             if (matchingHeader) {
               autoMapping[field.key] = matchingHeader;
             }
