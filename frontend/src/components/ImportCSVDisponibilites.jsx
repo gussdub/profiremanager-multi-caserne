@@ -211,15 +211,42 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
     setImporting(true);
     
     try {
-      // Mapper toutes les données
-      const disponibilites = csvData.map(row => {
+      // Mapper toutes les données et exploser les lignes avec plusieurs employés
+      const disponibilitesExploded = [];
+      
+      csvData.forEach(row => {
         const mapped = {};
         availableFields.forEach(field => {
           const csvColumn = columnMapping[field.key];
           mapped[field.key] = csvColumn ? row[csvColumn] : '';
         });
-        return mapped;
+        
+        // Détecter si la colonne employé contient plusieurs noms séparés par des virgules
+        const employeValue = mapped.employe || '';
+        
+        if (employeValue.includes(',')) {
+          // Exploser la ligne : créer une disponibilité pour chaque employé
+          const employes = employeValue.split(',').map(nom => nom.trim()).filter(nom => nom);
+          
+          employes.forEach(nom => {
+            disponibilitesExploded.push({
+              ...mapped,
+              employe: nom,
+              // Mettre "Disponible" par défaut si le champ sélection est vide
+              selection: mapped.selection || 'Disponible'
+            });
+          });
+        } else {
+          // Un seul employé, ajouter tel quel
+          disponibilitesExploded.push({
+            ...mapped,
+            // Mettre "Disponible" par défaut si le champ sélection est vide
+            selection: mapped.selection || 'Disponible'
+          });
+        }
       });
+      
+      console.log(`📊 Import : ${csvData.length} lignes → ${disponibilitesExploded.length} disponibilités (après explosion)`);
       
       // Envoyer au backend
       const token = getTenantToken();
@@ -233,7 +260,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ disponibilites })
+        body: JSON.stringify({ disponibilites: disponibilitesExploded })
       });
       
       if (!response.ok) {
