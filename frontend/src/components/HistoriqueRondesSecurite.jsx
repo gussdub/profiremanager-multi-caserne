@@ -3,11 +3,53 @@ import { Button } from './ui/button';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
 
-// Fonction utilitaire pour parser une date en timezone local
+// Fonction utilitaire pour parser une date ISO en timezone locale Canada (EST = UTC-5)
 const parseDateLocal = (dateStr) => {
   if (!dateStr) return null;
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  try {
+    // Parser la date ISO et convertir en heure locale Canada (UTC-5)
+    const dt = new Date(dateStr);
+    // Ajuster pour le fuseau horaire du Canada (EST = UTC-5)
+    const offset = dt.getTimezoneOffset(); // Offset en minutes
+    const localTime = new Date(dt.getTime() - (5 * 60 * 60 * 1000)); // Soustraire 5 heures
+    return localTime;
+  } catch (e) {
+    // Fallback: parser YYYY-MM-DD
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+};
+
+// Fonction pour récupérer l'adresse à partir des coordonnées GPS (reverse geocoding)
+const getAddressFromCoordinates = async (latitude, longitude) => {
+  try {
+    // Utiliser Nominatim (OpenStreetMap) pour le reverse geocoding (gratuit)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'ProFireManager-App'
+        }
+      }
+    );
+    const data = await response.json();
+    
+    if (data && data.address) {
+      const addr = data.address;
+      // Construire une adresse lisible
+      const parts = [];
+      if (addr.house_number) parts.push(addr.house_number);
+      if (addr.road) parts.push(addr.road);
+      if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
+      if (addr.state) parts.push(addr.state);
+      
+      return parts.join(', ') || data.display_name;
+    }
+    return `GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  } catch (error) {
+    console.error('Erreur récupération adresse:', error);
+    return `GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  }
 };
 
 const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) => {
