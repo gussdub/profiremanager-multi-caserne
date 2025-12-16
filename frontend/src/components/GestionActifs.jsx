@@ -2057,8 +2057,10 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Configuration des alertes */}
         <ParametresAlertesEquipements tenantSlug={tenantSlug} user={user} />
       </div>
+      )}
 
       {/* ========== MODULE GESTION EPI ========== */}
+      {selectedModule === 'epi' && (
       <div style={{ 
         background: '#f8f9fa', 
         padding: '30px', 
@@ -2066,17 +2068,6 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         border: '2px solid #e0e0e0',
         marginBottom: '30px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
-          <span style={{ fontSize: '32px' }}>🛡️</span>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
-              Gestion EPI
-            </h2>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
-              Configuration des alertes et notifications pour les équipements de protection
-            </p>
-          </div>
-        </div>
 
         {/* Sous-section: Configuration des Alertes */}
         <div style={{ 
