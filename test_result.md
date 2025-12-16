@@ -1843,3 +1843,33 @@ agent_communication:
     message: "🎯 E2E TESTING COMPLETE - MODULE INSPECTIONS BORNES SÈCHES 100% SUCCESS! Comprehensive end-to-end testing completed as requested in French review. ALL OBJECTIVES ACHIEVED: ✅ Navigation working perfectly (Gestion des Actifs → Approvisionnement en Eau → Inspections Bornes Sèches), ✅ Map displays correctly with Leaflet integration and hydrant markers, ✅ Statistics dashboard functional (0 Inspectées, 0 À refaire, 1 Non/Expirées, 1 Total bornes), ✅ Created test dry hydrant appears on map and is interactive, ✅ Inspection workflow accessible via popup with 'Effectuer une inspection' button, ✅ Admin buttons 'À refaire' and 'Réinitialiser' visible and functional for admin users, ✅ Role-based permissions working (Guillaume Dubeau admin sees all buttons), ✅ Both Carte and Liste views operational, ✅ Backend integration working (API calls successful), ✅ No critical errors detected. SYSTEM IS PRODUCTION-READY! The complete dry hydrant inspection workflow is fully functional and meets all requirements specified in the French review request. Ready for production deployment."
   - agent: "testing"
     message: "📊 COMPREHENSIVE PDF TESTING COMPLETED - 12 Reports Status: ✅ 3 Working (Dashboard, Salaires, Personnel), ❌ 8 Failing (404 errors), ⚠️ 1 Skipped. CRITICAL FINDINGS: 1) Personnel PDF works now (user reported 401 but it generates successfully), however backend logs show ReportLab library error 'BrandedDocTemplate.afterPage() missing 2 required positional arguments' causing intermittent failures, 2) 8 endpoints return 404 Not Found - likely missing implementations or incorrect URLs, 3) Most endpoints need data (batiment_id, ronde_id, etc.) but return 404 even with valid IDs. PRIORITY FIXES NEEDED: Fix ReportLab afterPage() method signature in Personnel PDF, implement missing PDF endpoints, verify endpoint URLs match backend routes."
+
+## Module Matériel & Équipements - Phase 1 Backend
+
+### Testing Protocol
+- Test des endpoints CRUD pour CategorieEquipement
+- Test des endpoints CRUD pour Equipement  
+- Test de l'assignation employé
+- Test de l'historique de maintenance
+- Test des statistiques
+
+### Endpoints à tester
+1. GET /api/{tenant}/equipements/categories
+2. POST /api/{tenant}/equipements/categories
+3. PUT /api/{tenant}/equipements/categories/{id}
+4. DELETE /api/{tenant}/equipements/categories/{id}
+5. POST /api/{tenant}/equipements/categories/initialiser
+6. GET /api/{tenant}/equipements
+7. GET /api/{tenant}/equipements/{id}
+8. POST /api/{tenant}/equipements
+9. PUT /api/{tenant}/equipements/{id}
+10. DELETE /api/{tenant}/equipements/{id}
+11. GET /api/{tenant}/equipements/{id}/maintenances
+12. POST /api/{tenant}/equipements/{id}/maintenances
+13. GET /api/{tenant}/equipements/stats/resume
+
+### Credentials
+- Tenant: shefford
+- Email: gussdub@gmail.com
+- Password: 230685Juin+
+
