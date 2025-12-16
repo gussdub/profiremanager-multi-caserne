@@ -1904,7 +1904,7 @@ agent_communication:
 - GET /api/pompiers-test/equipements/stats/resume - ✅ FONCTIONNE
 
 ### Prochaines étapes
-1. Tester l'interface frontend des paramètres d'alertes
+1. ✅ Interface frontend des paramètres d'alertes testée avec succès
 2. Implémenter le scheduler backend pour vérification périodique
 3. Tester l'envoi de notifications email
 
@@ -1912,4 +1912,12 @@ agent_communication:
 - Tenant: pompiers-test (créé pour tests)
 - Email: admin@test.com
 - Password: Admin123!
+
+agent_communication:
+  - agent: "main"
+    message: "CRITICAL ISSUE - Vue Préventionnistes MapComponent mapRef Error: TypeError: Cannot read properties of undefined (reading 'current') at line 21659 in App.js. The mapRef.current is undefined when trying to access map methods. This is blocking the Préventionnistes view functionality. NEEDS IMMEDIATE ATTENTION - This error prevents the map from functioning properly in the Préventionnistes view."
+  - agent: "testing"
+    message: "CRITICAL MAPREF ISSUE CONFIRMED - Vue Préventionnistes completely broken due to mapRef.current being undefined. Error occurs at App.js line 21659 when trying to access map methods. The map component fails to initialize properly, causing the entire Préventionnistes view to be non-functional. This is a blocking issue that needs immediate resolution. The mapRef is not being properly initialized or the component lifecycle is causing the ref to be undefined when accessed."
+  - agent: "testing"
+    message: "✅ EQUIPMENT ALERT SETTINGS INTERFACE TESTING COMPLETED - Comprehensive testing of the Matériel & Équipements alert configuration interface has been successfully completed. ENVIRONMENT: URL: https://fleet-equipment.preview.emergentagent.com/pompiers-test, Login: admin@test.com / Admin123!, Navigation: Gestion des Actifs → 🔧 Matériel & Équipements → ⚙️ Paramètres. BACKEND VERIFICATION: All three backend endpoints are working correctly: ✅ GET /api/pompiers-test/equipements/parametres (returns default values: maintenance=30, expiration=30, end_of_life=90 days), ✅ GET /api/pompiers-test/equipements/alertes (returns alert data with totaux), ✅ POST /api/pompiers-test/equipements/alertes/recalculer (successfully recalculates alerts). FRONTEND INTERFACE VERIFICATION: ✅ Navigation successful to Equipment Settings section, ✅ Found 5 number input fields (including the 3 required alert day fields), ✅ Maintenance alert field: 30 days (default), ✅ Expiration alert field: 30 days (default), ✅ End of life alert field: 90 days (default), ✅ Found 3 checkbox fields for email/dashboard alerts, ✅ Email alerts: Currently disabled, ✅ Dashboard alerts: Currently enabled, ✅ Save button (💾 Enregistrer) present and functional, ✅ Recalculate button (🔄 Recalculer) present and functional. FUNCTIONALITY TESTING: ✅ Successfully modified maintenance alert from 30 to 25 days, ✅ Save button clicked successfully, ✅ Recalculate button clicked successfully, ✅ All 4 'Configuration des Alertes' sections found (including equipment-specific section), ✅ Email notifications section present with recipient configuration. CONCLUSION: The Equipment Alert Settings interface is fully functional and accessible. All required configuration fields are present with correct default values. The backend integration is working properly with all endpoints responding correctly. Users can successfully modify alert thresholds, save configurations, and recalculate alerts."
 
