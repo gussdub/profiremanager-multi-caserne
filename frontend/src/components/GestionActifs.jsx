@@ -1607,6 +1607,35 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     }
   };
 
+  const [selectedModule, setSelectedModule] = useState(null);
+
+  const modules = [
+    {
+      id: 'vehicules',
+      icon: '🚗',
+      title: 'Véhicules',
+      description: 'Rondes de sécurité et inventaires'
+    },
+    {
+      id: 'eau',
+      icon: '💧',
+      title: 'Approvisionnement en Eau',
+      description: 'Bornes sèches et tests'
+    },
+    {
+      id: 'equipements',
+      icon: '🔧',
+      title: 'Matériel & Équipements',
+      description: 'Alertes et notifications'
+    },
+    {
+      id: 'epi',
+      icon: '🛡️',
+      title: 'Gestion EPI',
+      description: 'Équipements de protection'
+    }
+  ];
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
@@ -1615,6 +1644,81 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       <p style={{ color: '#6B7280', marginBottom: '40px', fontSize: '15px' }}>
         Configurez les paramètres et notifications pour chaque module
       </p>
+      
+      {!selectedModule ? (
+        // Vue en cartes
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+          gap: '20px',
+          marginBottom: '30px'
+        }}>
+          {modules.map(module => (
+            <div
+              key={module.id}
+              onClick={() => setSelectedModule(module.id)}
+              style={{
+                background: 'white',
+                padding: '30px',
+                borderRadius: '12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                border: '1px solid #e0e0e0',
+                textAlign: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+              }}
+            >
+              <div style={{ fontSize: '48px', marginBottom: '15px' }}>
+                {module.icon}
+              </div>
+              <h3 style={{ 
+                fontSize: '20px', 
+                fontWeight: '700', 
+                marginBottom: '8px', 
+                color: '#2c3e50' 
+              }}>
+                {module.title}
+              </h3>
+              <p style={{ 
+                fontSize: '14px', 
+                color: '#6B7280', 
+                margin: 0 
+              }}>
+                {module.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Vue détaillée du module sélectionné
+        <>
+          <button
+            onClick={() => setSelectedModule(null)}
+            style={{
+              marginBottom: '20px',
+              padding: '10px 20px',
+              background: 'white',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#6B7280',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            ← Retour aux modules
+          </button>
 
       {/* ========== MODULE VÉHICULES ========== */}
       <div style={{ 
