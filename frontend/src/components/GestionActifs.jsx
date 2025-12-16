@@ -2180,6 +2180,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           <ConfigurationEmailsEPI tenantSlug={tenantSlug} />
         </div>
       </div>
+      )}
     </div>
   );
 };
