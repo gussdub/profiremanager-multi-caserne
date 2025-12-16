@@ -1704,7 +1704,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       </div>
 
       
-      {/* ========== MODULE VÉHICULES ========== */}
+      {/* Contenu du module sélectionné */}
       {selectedModule === 'vehicules' && (
       <div style={{ 
         background: '#f8f9fa', 
@@ -1713,6 +1713,15 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         border: '2px solid #e0e0e0',
         marginBottom: '30px'
       }}>
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '32px' }}>🚗</span>
+            Véhicules
+          </h2>
+          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+            Configuration des rondes de sécurité et inventaires
+          </p>
+        </div>
 
         {/* Sous-section: Notifications Rondes */}
         <div style={{ 
