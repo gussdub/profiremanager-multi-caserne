@@ -17239,7 +17239,7 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.3s ease-out;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .parametres-harmonized .tab-header {
