@@ -507,6 +507,217 @@ async def job_verifier_notifications_planning():
     except Exception as e:
         logging.error(f"❌ Erreur dans job_verifier_notifications_planning: {str(e)}", exc_info=True)
 
+
+async def job_verifier_alertes_equipements():
+    """
+    Job qui vérifie les alertes d'équipements et envoie des notifications par email
+    S'exécute tous les jours à 8h00 du matin
+    """
+    try:
+        logging.info("🔍 Vérification des alertes d'équipements pour tous les tenants")
+        
+        # Récupérer tous les tenants
+        tenants = await db.tenants.find({"actif": True}).to_list(None)
+        
+        for tenant in tenants:
+            try:
+                tenant_id = tenant.get("id")
+                tenant_nom = tenant.get("nom", "Unknown")
+                
+                # Récupérer les paramètres d'alertes pour ce tenant
+                parametres = await db.parametres_equipements.find_one(
+                    {"tenant_id": tenant_id},
+                    {"_id": 0}
+                )
+                
+                # Si pas de paramètres ou alertes email désactivées, passer au suivant
+                if not parametres or not parametres.get("activer_alertes_email", True):
+                    logging.info(f"⏭️ Alertes email désactivées pour {tenant_nom}")
+                    continue
+                
+                # Récupérer la liste des emails destinataires
+                emails_destinataires = parametres.get("emails_notifications_equipements", [])
+                if not emails_destinataires:
+                    logging.info(f"⏭️ Aucun destinataire configuré pour {tenant_nom}")
+                    continue
+                
+                # Récupérer les seuils d'alertes
+                jours_maintenance = parametres.get("jours_alerte_maintenance", 30)
+                jours_expiration = parametres.get("jours_alerte_expiration", 30)
+                jours_fin_vie = parametres.get("jours_alerte_fin_vie", 90)
+                
+                today = datetime.now(timezone.utc).date()
+                date_limite_maintenance = (today + timedelta(days=jours_maintenance)).isoformat()
+                date_limite_expiration = (today + timedelta(days=jours_expiration)).isoformat()
+                date_limite_fin_vie = (today + timedelta(days=jours_fin_vie)).isoformat()
+                
+                # Compter les alertes
+                alertes_count = {
+                    "maintenance": 0,
+                    "expiration": 0,
+                    "fin_vie": 0,
+                    "reparation": 0
+                }
+                
+                # Alertes maintenance
+                equipements_maintenance = await db.equipements.find({
+                    "tenant_id": tenant_id,
+                    "date_prochaine_maintenance": {"$lte": date_limite_maintenance, "$ne": ""}
+                }).to_list(1000)
+                alertes_count["maintenance"] = len(equipements_maintenance)
+                
+                # Alertes fin de vie
+                equipements_fin_vie = await db.equipements.find({
+                    "tenant_id": tenant_id,
+                    "date_fin_vie": {"$lte": date_limite_fin_vie, "$ne": ""}
+                }).to_list(1000)
+                alertes_count["fin_vie"] = len(equipements_fin_vie)
+                
+                # Alertes réparation
+                equipements_reparation = await db.equipements.find({
+                    "tenant_id": tenant_id,
+                    "etat": {"$in": ["a_reparer", "en_reparation"]}
+                }).to_list(1000)
+                alertes_count["reparation"] = len(equipements_reparation)
+                
+                # Alertes expiration (champs personnalisés)
+                all_equipements = await db.equipements.find(
+                    {"tenant_id": tenant_id}
+                ).to_list(10000)
+                
+                expiration_count = 0
+                for eq in all_equipements:
+                    champs = eq.get("champs_personnalises", {})
+                    for key, value in champs.items():
+                        if value and ("expiration" in key.lower() or "expir" in key.lower()):
+                            try:
+                                date_exp = datetime.fromisoformat(str(value)).date()
+                                if date_exp <= (today + timedelta(days=jours_expiration)):
+                                    expiration_count += 1
+                                    break  # Compter chaque équipement une seule fois
+                            except:
+                                pass
+                
+                alertes_count["expiration"] = expiration_count
+                
+                # Calculer le total des alertes
+                total_alertes = sum(alertes_count.values())
+                
+                # Si aucune alerte, ne pas envoyer d'email
+                if total_alertes == 0:
+                    logging.info(f"✅ Aucune alerte pour {tenant_nom}")
+                    continue
+                
+                logging.info(f"📊 {tenant_nom}: {total_alertes} alertes trouvées - Maintenance: {alertes_count['maintenance']}, Expiration: {alertes_count['expiration']}, Fin de vie: {alertes_count['fin_vie']}, Réparation: {alertes_count['reparation']}")
+                
+                # Préparer le contenu de l'email
+                subject = f"⚠️ Alertes Équipements - {tenant_nom}"
+                
+                html_content = f"""
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .header {{ background-color: #EF4444; color: white; padding: 20px; text-align: center; }}
+                        .content {{ padding: 20px; }}
+                        .alert-box {{ 
+                            border-left: 4px solid #EF4444;
+                            background-color: #FEE2E2;
+                            padding: 15px;
+                            margin: 15px 0;
+                        }}
+                        .alert-title {{ font-weight: bold; color: #DC2626; margin-bottom: 10px; }}
+                        .alert-count {{ font-size: 24px; font-weight: bold; color: #991B1B; }}
+                        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>⚠️ Rapport d'Alertes Équipements</h1>
+                        <p>{tenant_nom}</p>
+                        <p>{today.strftime("%d/%m/%Y")}</p>
+                    </div>
+                    <div class="content">
+                        <p>Bonjour,</p>
+                        <p>Voici le rapport quotidien des alertes pour vos équipements :</p>
+                        
+                        {f'''
+                        <div class="alert-box">
+                            <div class="alert-title">🔧 Maintenance à venir</div>
+                            <div class="alert-count">{alertes_count["maintenance"]} équipement(s)</div>
+                            <p>Maintenance requise dans les {jours_maintenance} prochains jours</p>
+                        </div>
+                        ''' if alertes_count["maintenance"] > 0 else ''}
+                        
+                        {f'''
+                        <div class="alert-box">
+                            <div class="alert-title">⏰ Expirations à venir</div>
+                            <div class="alert-count">{alertes_count["expiration"]} équipement(s)</div>
+                            <p>Expiration dans les {jours_expiration} prochains jours</p>
+                        </div>
+                        ''' if alertes_count["expiration"] > 0 else ''}
+                        
+                        {f'''
+                        <div class="alert-box">
+                            <div class="alert-title">🚨 Fin de vie approche</div>
+                            <div class="alert-count">{alertes_count["fin_vie"]} équipement(s)</div>
+                            <p>Fin de vie dans les {jours_fin_vie} prochains jours</p>
+                        </div>
+                        ''' if alertes_count["fin_vie"] > 0 else ''}
+                        
+                        {f'''
+                        <div class="alert-box">
+                            <div class="alert-title">🔨 Réparations nécessaires</div>
+                            <div class="alert-count">{alertes_count["reparation"]} équipement(s)</div>
+                            <p>Équipements en attente de réparation</p>
+                        </div>
+                        ''' if alertes_count["reparation"] > 0 else ''}
+                        
+                        <p style="margin-top: 30px;">
+                            <strong>Total des alertes : {total_alertes}</strong>
+                        </p>
+                        
+                        <p style="margin-top: 20px;">
+                            Connectez-vous à votre tableau de bord pour plus de détails et pour gérer ces équipements.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>Cet email a été envoyé automatiquement par le système ProFireManager.</p>
+                        <p>Pour modifier vos préférences de notifications, accédez aux paramètres du module Matériel & Équipements.</p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Envoyer l'email à tous les destinataires
+                resend.api_key = os.environ.get("RESEND_API_KEY")
+                sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
+                
+                for email in emails_destinataires:
+                    try:
+                        params = {
+                            "from": sender_email,
+                            "to": [email],
+                            "subject": subject,
+                            "html": html_content
+                        }
+                        
+                        email_response = resend.Emails.send(params)
+                        logging.info(f"📧 Email envoyé à {email} pour {tenant_nom} - ID: {email_response.get('id', 'N/A')}")
+                    
+                    except Exception as e:
+                        logging.error(f"❌ Erreur envoi email à {email} pour {tenant_nom}: {str(e)}")
+                
+                logging.info(f"✅ Notifications d'alertes envoyées pour {tenant_nom}")
+                
+            except Exception as e:
+                logging.error(f"❌ Erreur traitement alertes pour {tenant.get('nom', 'Unknown')}: {str(e)}", exc_info=True)
+        
+        logging.info("✅ Vérification des alertes d'équipements terminée")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_verifier_alertes_equipements: {str(e)}", exc_info=True)
+
 async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut: str, periode_fin: str):
     """Envoie les notifications de planning (version automatique sans auth)"""
     try:
