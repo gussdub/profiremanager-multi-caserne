@@ -1873,7 +1873,7 @@ agent_communication:
   - agent: "testing"
     message: "📊 COMPREHENSIVE PDF TESTING COMPLETED - 12 Reports Status: ✅ 3 Working (Dashboard, Salaires, Personnel), ❌ 8 Failing (404 errors), ⚠️ 1 Skipped. CRITICAL FINDINGS: 1) Personnel PDF works now (user reported 401 but it generates successfully), however backend logs show ReportLab library error 'BrandedDocTemplate.afterPage() missing 2 required positional arguments' causing intermittent failures, 2) 8 endpoints return 404 Not Found - likely missing implementations or incorrect URLs, 3) Most endpoints need data (batiment_id, ronde_id, etc.) but return 404 even with valid IDs. PRIORITY FIXES NEEDED: Fix ReportLab afterPage() method signature in Personnel PDF, implement missing PDF endpoints, verify endpoint URLs match backend routes."
 
-## Module Matériel & Équipements - Phase 1 Backend
+## Module Matériel & Équipements - Phase 1 Backend ✅ COMPLETED
 
 ### Testing Protocol
 - Test des endpoints CRUD pour CategorieEquipement
@@ -1882,23 +1882,34 @@ agent_communication:
 - Test de l'historique de maintenance
 - Test des statistiques
 
-### Endpoints à tester
-1. GET /api/{tenant}/equipements/categories
-2. POST /api/{tenant}/equipements/categories
-3. PUT /api/{tenant}/equipements/categories/{id}
-4. DELETE /api/{tenant}/equipements/categories/{id}
-5. POST /api/{tenant}/equipements/categories/initialiser
-6. GET /api/{tenant}/equipements
-7. GET /api/{tenant}/equipements/{id}
-8. POST /api/{tenant}/equipements
-9. PUT /api/{tenant}/equipements/{id}
-10. DELETE /api/{tenant}/equipements/{id}
-11. GET /api/{tenant}/equipements/{id}/maintenances
-12. POST /api/{tenant}/equipements/{id}/maintenances
-13. GET /api/{tenant}/equipements/stats/resume
+### Status: PHASE 1 TERMINÉE - Tests réussis (backend 95.7%, frontend 100%)
+
+---
+
+## Module Matériel & Équipements - Phase 2 (Alertes & Notifications)
+
+### Bug Fix Completed
+✅ **Bug de routage critique corrigé** : Les routes spécifiques `/equipements/parametres`, `/equipements/alertes`, `/equipements/stats/resume` étaient inaccessibles car définies APRÈS la route dynamique `/{equipement_id}`. Solution: Suppression du bloc de routes dupliquées (lignes 21258-21522 dans server.py).
+
+### Testing Protocol - Phase 2
+1. Test de l'interface de configuration des alertes dans le frontend
+2. Test des endpoints de configuration (/equipements/parametres)
+3. Test des endpoints d'alertes (/equipements/alertes, /equipements/alertes/recalculer)
+4. Test de l'envoi des emails via Resend
+5. Implémentation et test du système de tâche planifiée (scheduler)
+
+### Endpoints testés via curl ✅
+- GET /api/pompiers-test/equipements/parametres - ✅ FONCTIONNE
+- GET /api/pompiers-test/equipements/alertes - ✅ FONCTIONNE
+- GET /api/pompiers-test/equipements/stats/resume - ✅ FONCTIONNE
+
+### Prochaines étapes
+1. Tester l'interface frontend des paramètres d'alertes
+2. Implémenter le scheduler backend pour vérification périodique
+3. Tester l'envoi de notifications email
 
 ### Credentials
-- Tenant: shefford
-- Email: gussdub@gmail.com
-- Password: 230685Juin+
+- Tenant: pompiers-test (créé pour tests)
+- Email: admin@test.com
+- Password: Admin123!
 
