@@ -20344,6 +20344,8 @@ async def create_inventaire_vehicule(
         actifs_params = parametres.get('actifs', {})
         user_ids_ou_emails = actifs_params.get('emails_notifications_inventaires_vehicules', [])
         
+        print(f"🔍 DEBUG: Alertes détectées ({len(inventaire.alertes)}), user_ids_ou_emails récupérés: {user_ids_ou_emails}")
+        
         if user_ids_ou_emails:
             # Convertir user IDs en emails
             emails_notifications = []
