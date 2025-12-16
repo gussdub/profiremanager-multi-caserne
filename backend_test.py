@@ -987,19 +987,23 @@ class EquipmentModuleTester:
             # 2. Tests des catégories
             self.test_categories_list()
             self.test_create_custom_category()
-            self.test_category_modification_restrictions()
             
             # 3. Tests des équipements
             self.test_equipements_list()
             self.test_equipements_filtering()
+            self.test_individual_equipment_retrieval()
             self.test_create_equipment()
             self.test_duplicate_code_validation()
+            self.test_employee_assignment_with_radio_category()
             
             # 4. Tests de maintenance
             self.test_equipment_maintenance()
             
             # 5. Tests des statistiques
             self.test_equipment_statistics()
+            
+            # 6. Tests des restrictions
+            self.test_category_modification_restrictions()
             
             # 6. Nettoyage
             self.cleanup_test_data()
