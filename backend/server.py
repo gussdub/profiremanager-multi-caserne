@@ -21070,7 +21070,7 @@ async def export_equipements_pdf(
     etat: str = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Export PDF de tous les équipements avec filtres optionnels"""
+    """Export PDF de tous les équipements avec filtres optionnels - Design unifié avec logo"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Construire les filtres
@@ -21086,86 +21086,129 @@ async def export_equipements_pdf(
     if not equipements:
         raise HTTPException(status_code=404, detail="Aucun équipement trouvé")
     
-    # Générer le PDF
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
-    from io import BytesIO
+    # Générer le PDF avec le design unifié (logo, header, styles modernes)
+    buffer = io.BytesIO()
+    doc = BrandedDocTemplate(buffer, tenant=tenant, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    # Définir le page template avec frame
+    frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+    template = PageTemplate(id='branded', frames=frame)
+    doc.addPageTemplates([template])
     
-    elements = []
+    story = []
     styles = getSampleStyleSheet()
+    modern_styles = get_modern_pdf_styles(styles)
+    
+    # Header personnalisé (logo + nom service)
+    header_elements = create_pdf_header_elements(tenant, styles)
+    story.extend(header_elements)
     
     # Titre
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#DC2626'),
-        spaceAfter=12,
-        alignment=TA_CENTER
-    )
-    
-    title = Paragraph(f"Inventaire des Équipements - {tenant.nom}", title_style)
-    elements.append(title)
+    story.append(Paragraph("Inventaire des Équipements", modern_styles['title']))
     
     # Sous-titre avec filtres
     subtitle_text = f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
     if categorie_id or etat:
         filters_text = []
         if categorie_id:
-            filters_text.append(f"Catégorie filtrée")
+            # Récupérer le nom de la catégorie
+            cat = await db.equipement_categories.find_one({"id": categorie_id}, {"_id": 0})
+            if cat:
+                filters_text.append(f"Catégorie: {cat.get('nom', 'Inconnue')}")
+            else:
+                filters_text.append("Catégorie filtrée")
         if etat:
-            filters_text.append(f"État: {etat}")
+            etat_labels = {
+                'neuf': 'Neuf', 'bon': 'Bon', 'a_reparer': 'À réparer',
+                'en_reparation': 'En réparation', 'hors_service': 'Hors service'
+            }
+            filters_text.append(f"État: {etat_labels.get(etat, etat)}")
         subtitle_text += f" | Filtres: {', '.join(filters_text)}"
     
-    subtitle = Paragraph(subtitle_text, styles['Normal'])
-    elements.append(subtitle)
-    elements.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(subtitle_text, modern_styles['subheading']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Statistiques par état
+    stats_by_etat = {}
+    for eq in equipements:
+        e = eq.get("etat", "inconnu")
+        stats_by_etat[e] = stats_by_etat.get(e, 0) + 1
+    
+    etat_labels = {
+        'neuf': 'Neuf', 'bon': 'Bon', 'a_reparer': 'À réparer',
+        'en_reparation': 'En réparation', 'hors_service': 'Hors service'
+    }
+    
+    stats_data = [["Statistiques", ""]]
+    stats_data.append(["Total équipements", str(len(equipements))])
+    for etat_key, count in stats_by_etat.items():
+        stats_data.append([etat_labels.get(etat_key, etat_key), str(count)])
+    
+    stats_table = Table(stats_data, colWidths=[2.5*inch, 2*inch])
+    stats_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), modern_styles['primary_color']),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, modern_styles['grid']),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, modern_styles['bg_light']])
+    ]))
+    
+    story.append(stats_table)
+    story.append(Spacer(1, 0.3*inch))
     
     # Tableau des équipements
-    data = [['Code', 'Nom', 'Catégorie', 'État', 'Emplacement', 'Qté']]
+    table_data = [['Code', 'Nom', 'Catégorie', 'État', 'Emplacement', 'Qté']]
     
     for eq in equipements:
-        data.append([
+        etat_val = eq.get("etat", "")
+        table_data.append([
             eq.get("code_unique", "")[:15],
             eq.get("nom", "")[:30],
             eq.get("categorie_nom", "")[:20],
-            eq.get("etat", "").capitalize(),
+            etat_labels.get(etat_val, etat_val.capitalize()),
             eq.get("emplacement", "")[:20],
             str(eq.get("quantite", 1))
         ])
     
-    table = Table(data, colWidths=[1.2*inch, 2.2*inch, 1.5*inch, 1*inch, 1.5*inch, 0.6*inch])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+    detail_table = Table(table_data, colWidths=[1.2*inch, 2.2*inch, 1.5*inch, 1*inch, 1.5*inch, 0.6*inch])
+    detail_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), modern_styles['primary_color']),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (-1, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, modern_styles['grid']),
         ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F3F4F6')]),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, modern_styles['bg_light']])
     ]))
     
-    elements.append(table)
-    elements.append(Spacer(1, 0.3*inch))
+    story.append(detail_table)
+    story.append(Spacer(1, 0.3*inch))
     
-    # Résumé
-    summary_text = f"<b>Total: {len(equipements)} équipement(s)</b>"
-    summary = Paragraph(summary_text, styles['Normal'])
-    elements.append(summary)
+    # Footer avec ProFireManager
+    footer_text = create_pdf_footer_text(tenant)
+    if footer_text:
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER,
+            spaceBefore=20
+        )
+        story.append(Paragraph(footer_text, footer_style))
     
     # Construire le PDF
-    doc.build(elements)
+    doc.build(story)
     
     pdf_content = buffer.getvalue()
     buffer.close()
