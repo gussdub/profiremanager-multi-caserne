@@ -241,8 +241,12 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                     </h4>
                     <div style={{ display: 'grid', gap: '8px' }}>
                       {itemsCoches.map((item, idx) => {
-                        const isPresent = item.statut === 'present';
-                        const isDefectueux = item.statut === 'defectueux';
+                        // Le statut est dans item.valeur, pas item.statut
+                        const valeur = (item.valeur || '').toString().toLowerCase();
+                        const isPresent = valeur.includes('présent') || valeur.includes('present') || valeur.includes('ok') || valeur === 'oui';
+                        const isAbsent = valeur.includes('absent') || valeur.includes('manquant');
+                        const isDefectueux = valeur.includes('défectueux') || valeur.includes('defectueux') || valeur.includes('non fonctionnel');
+                        
                         return (
                           <div
                             key={idx}
