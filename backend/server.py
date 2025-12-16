@@ -26100,6 +26100,36 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
             # En cas d'erreur, utiliser la date brute
             date_ronde_str = date_ronde_raw[:10] if len(date_ronde_raw) >= 10 else date_ronde_raw
         
+        # Si la ronde a une position GPS, récupérer l'adresse via reverse geocoding
+        lieu_display = ronde.get('lieu', 'N/A')
+        if ronde.get('position_gps') and len(ronde.get('position_gps', [])) == 2:
+            try:
+                import httpx
+                latitude, longitude = ronde['position_gps']
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}&zoom=18&addressdetails=1",
+                        headers={'User-Agent': 'ProFireManager-App'},
+                        timeout=5.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data and 'address' in data:
+                            addr = data['address']
+                            parts = []
+                            if addr.get('house_number'): parts.append(addr['house_number'])
+                            if addr.get('road'): parts.append(addr['road'])
+                            if addr.get('city') or addr.get('town') or addr.get('village'):
+                                parts.append(addr.get('city') or addr.get('town') or addr.get('village'))
+                            if addr.get('state'): parts.append(addr['state'])
+                            if parts:
+                                lieu_display = ', '.join(parts)
+                            else:
+                                lieu_display = data.get('display_name', lieu_display)
+            except Exception as e:
+                print(f"⚠️ Erreur récupération adresse GPS: {e}")
+                # En cas d'erreur, garder "Position GPS détectée"
+        
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         
         subject = f"🔧 Nouvelle Ronde de Sécurité - {vehicle.get('nom', 'Véhicule')} - {date_ronde_str}"
