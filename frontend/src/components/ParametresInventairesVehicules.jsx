@@ -801,19 +801,19 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
           Notifications automatiques lorsque des items sont manquants ou défectueux lors des inventaires
         </p>
 
-        {/* Boutons de sélection rapide */}
+        {/* Boutons de sélection rapide - Style Rondes de Sécurité */}
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
           <button
             onClick={() => setEmailsNotifications(users.map(u => u.id))}
             style={{
               padding: '0.5rem 1rem',
-              border: '1px solid #d1d5db',
+              border: '2px solid #ef4444',
               borderRadius: '0.375rem',
               backgroundColor: 'white',
-              color: '#374151',
+              color: '#ef4444',
               cursor: 'pointer',
               fontSize: '0.875rem',
-              fontWeight: '500'
+              fontWeight: '600'
             }}
           >
             Tout sélectionner
@@ -822,13 +822,13 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
             onClick={() => setEmailsNotifications([])}
             style={{
               padding: '0.5rem 1rem',
-              border: '1px solid #d1d5db',
+              border: '2px solid #9ca3af',
               borderRadius: '0.375rem',
               backgroundColor: 'white',
-              color: '#374151',
+              color: '#9ca3af',
               cursor: 'pointer',
               fontSize: '0.875rem',
-              fontWeight: '500'
+              fontWeight: '600'
             }}
           >
             Tout désélectionner
