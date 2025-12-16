@@ -534,9 +534,9 @@ class EquipmentModuleTester:
         
         # Test 7b: Ajouter une nouvelle maintenance
         new_maintenance = {
-            "type_maintenance": "preventive",
+            "type_intervention": "maintenance",
             "description": "Maintenance test API",
-            "date_maintenance": datetime.now().strftime("%Y-%m-%d"),
+            "date_intervention": datetime.now().strftime("%Y-%m-%d"),
             "cout": 150.00,
             "technicien": "Test Technicien"
         }
