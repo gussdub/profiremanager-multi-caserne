@@ -432,8 +432,8 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
 
   const fetchEmailsConfig = async () => {
     try {
-      const tenant = await apiGet(tenantSlug, '/tenant');
-      const emails = tenant?.parametres?.emails_notifications_inventaires_vehicules || [];
+      const parametres = await apiGet(tenantSlug, '/actifs/parametres');
+      const emails = parametres?.emails_notifications_inventaires_vehicules || [];
       setEmailsNotifications(emails);
     } catch (error) {
       console.error('Erreur chargement config emails:', error);
