@@ -194,15 +194,18 @@ class EquipmentModuleTester:
         try:
             response = requests.post(url, headers=self.headers, json=new_category)
             
-            if response.status_code == 201:
-                created_category = response.json()
-                self.test_data["custom_category_id"] = created_category.get('id')
-                self.created_items.append(('category', created_category.get('id')))
+            if response.status_code == 200:  # API returns 200, not 201
+                response_data = response.json()
+                created_category = response_data.get('categorie', response_data)
+                category_id = response_data.get('id') or created_category.get('id')
+                
+                self.test_data["custom_category_id"] = category_id
+                self.created_items.append(('category', category_id))
                 
                 self.log_test_result(
                     "Create Custom Category", 
                     True, 
-                    f"Catégorie créée avec ID: {created_category.get('id')}"
+                    f"Catégorie créée avec ID: {category_id}"
                 )
                 
                 # Vérifier que les données sont correctement sauvegardées
