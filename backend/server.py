@@ -9217,10 +9217,12 @@ class ModeleInventaireVehiculeUpdate(BaseModel):
 class ItemInventaireVehiculeRempli(BaseModel):
     """Item rempli lors d'un inventaire"""
     item_id: str
+    section: str
     nom: str
-    statut: str  # present, absent, defectueux
-    photo: Optional[str] = None
+    type_champ: str  # checkbox, radio, text, number, select, photo
+    valeur: Any  # Peut être str, list, number selon type_champ
     notes: str = ""
+    photo_prise: str = ""  # Photo prise pendant l'inventaire
 
 class InventaireVehicule(BaseModel):
     """Inventaire hebdomadaire effectué sur un véhicule"""
