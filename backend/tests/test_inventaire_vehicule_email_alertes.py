@@ -215,7 +215,7 @@ class VehicleInventoryEmailTester:
                     "type_champ": "select",
                     "valeur": "Absent",
                     "notes": "Item manquant - test alerte email",
-                    "photo_prise": False
+                    "photo_prise": "non"
                 },
                 {
                     "item_id": "item_2",
@@ -224,7 +224,7 @@ class VehicleInventoryEmailTester:
                     "type_champ": "select",
                     "valeur": "Défectueux",
                     "notes": "Item défectueux - test alerte email",
-                    "photo_prise": False
+                    "photo_prise": "non"
                 }
             ],
             "notes_generales": "Test d'inventaire avec alertes pour vérifier le système d'email",
