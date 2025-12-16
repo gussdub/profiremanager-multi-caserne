@@ -1641,135 +1641,67 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
         ⚙️ Paramètres - Gestion des Actifs
       </h1>
-      <p style={{ color: '#6B7280', marginBottom: '40px', fontSize: '15px' }}>
+      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '15px' }}>
         Configurez les paramètres et notifications pour chaque module
       </p>
       
-      {!selectedModule ? (
-        // Vue en cartes
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-          gap: '20px',
-          marginBottom: '30px'
-        }}>
-          {modules.map(module => (
+      {/* Cartes fixes toujours visibles */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(4, 1fr)', 
+        gap: '12px',
+        marginBottom: '30px'
+      }}>
+        {modules.map(module => {
+          const isActive = selectedModule === module.id;
+          return (
             <div
               key={module.id}
               onClick={() => setSelectedModule(module.id)}
               style={{
-                background: 'white',
-                padding: '30px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                background: isActive ? '#DC2626' : 'white',
+                padding: '16px',
+                borderRadius: '10px',
+                boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : '0 2px 6px rgba(0,0,0,0.08)',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                border: '1px solid #e0e0e0',
-                textAlign: 'center'
+                border: isActive ? '2px solid #DC2626' : '1px solid #e0e0e0',
+                textAlign: 'center',
+                transform: isActive ? 'scale(1.02)' : 'scale(1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                if (!isActive) {
+                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.12)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                if (!isActive) {
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+                }
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '15px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>
                 {module.icon}
               </div>
               <h3 style={{ 
-                fontSize: '20px', 
-                fontWeight: '700', 
-                marginBottom: '8px', 
-                color: '#2c3e50' 
+                fontSize: '15px', 
+                fontWeight: '600', 
+                marginBottom: '4px', 
+                color: isActive ? 'white' : '#2c3e50' 
               }}>
                 {module.title}
               </h3>
               <p style={{ 
-                fontSize: '14px', 
-                color: '#6B7280', 
+                fontSize: '12px', 
+                color: isActive ? 'rgba(255,255,255,0.9)' : '#6B7280', 
                 margin: 0 
               }}>
                 {module.description}
               </p>
             </div>
-          ))}
-        </div>
-      ) : (
-        // Vue détaillée du module sélectionné
-        <>
-          <button
-            onClick={() => setSelectedModule(null)}
-            style={{
-              marginBottom: '20px',
-              padding: '10px 20px',
-              background: 'white',
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#6B7280',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            ← Retour aux modules
-          </button>
-          
-          {/* Afficher le contenu du module sélectionné */}
-          {selectedModule === 'vehicules' && (
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '32px' }}>🚗</span>
-                Véhicules
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
-                Configuration des rondes de sécurité et inventaires
-              </p>
-            </div>
-          )}
-          
-          {selectedModule === 'eau' && (
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '32px' }}>💧</span>
-                Approvisionnement en Eau
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
-                Configuration des dates de tests et notifications pour les bornes sèches
-              </p>
-            </div>
-          )}
-          
-          {selectedModule === 'equipements' && (
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '32px' }}>🔧</span>
-                Matériel & Équipements
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
-                Configuration des alertes et notifications pour les équipements
-              </p>
-            </div>
-          )}
-          
-          {selectedModule === 'epi' && (
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '32px' }}>🛡️</span>
-                Gestion EPI
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '25px' }}>
-                Configuration des alertes et notifications pour les équipements de protection
-              </p>
-            </div>
-          )}
-        </>
-      )}
+          );
+        })}
+      </div>
 
       
       {/* ========== MODULE VÉHICULES ========== */}
