@@ -17240,6 +17240,18 @@ body {
   animation: fadeIn 0.3s ease-out;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
+  min-width: 0;
+}
+
+.parametres-harmonized .tab-content .import-section {
+  overflow: visible;
+  min-width: 0;
+}
+
+.parametres-harmonized .tab-content .import-section > div {
+  overflow: visible;
+  min-width: 0;
 }
 
 .parametres-harmonized .tab-header {
