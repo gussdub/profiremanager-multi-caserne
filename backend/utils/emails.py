@@ -557,8 +557,16 @@ async def send_inventaire_vehicule_alertes_email(
                        style="display: inline-block; background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: #ffffff; 
                               padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; 
                               box-shadow: 0 4px 6px rgba(142, 68, 173, 0.3);">
-                        🔗 Voir le Véhicule et l'Inventaire Complet
+                        🔗 Accéder à la Gestion des Actifs
                     </a>
+                </div>
+                
+                <!-- Instructions pour voir l'historique -->
+                <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; color: #555; font-size: 14px;">
+                        💡 <strong>Pour consulter l'historique complet des inventaires :</strong><br/>
+                        Cliquez sur le bouton ci-dessus, puis sélectionnez le véhicule <strong>{vehicule_nom}</strong> et cliquez sur <strong>"📋 Historique inventaires"</strong>
+                    </p>
                 </div>
                 
                 <!-- Pied de page -->
