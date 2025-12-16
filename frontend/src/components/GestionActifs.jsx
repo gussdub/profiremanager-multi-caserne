@@ -1896,7 +1896,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         border: '2px solid #e0e0e0',
         marginBottom: '30px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
           <span style={{ fontSize: '32px' }}>🔧</span>
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#2c3e50' }}>
@@ -1908,7 +1908,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           </div>
         </div>
         
-        {/* Info sur le module */}
+        {/* Sous-section: Notifications */}
         <div style={{ 
           background: 'white', 
           padding: '20px', 
@@ -1917,57 +1917,17 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           border: '1px solid #e0e0e0',
           marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📋</span> Catégories d'équipements
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>📧</span> Notifications - Alertes Équipements
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
-            Gérez les catégories de vos équipements (tuyaux, APRIA, radios, etc.) dans l'onglet Matériel & Équipements.
+            Configurez les destinataires des alertes de maintenance et d'expiration
           </p>
-          <div style={{ 
-            background: '#e8f4fc', 
-            padding: '12px', 
-            borderRadius: '8px',
-            border: '1px solid #bee5eb',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <span style={{ fontSize: '20px' }}>ℹ️</span>
-            <p style={{ color: '#0c5460', fontSize: '13px', margin: 0 }}>
-              Pour créer et gérer vos catégories d'équipements, accédez à l'onglet <strong>Matériel & Équipements</strong> puis sélectionnez <strong>Catégories</strong>.
-            </p>
-          </div>
+          <ConfigurationEmailsEquipements tenantSlug={tenantSlug} />
         </div>
 
-        {/* Configuration alertes - à venir */}
-        <div style={{ 
-          background: 'white', 
-          padding: '20px', 
-          borderRadius: '10px', 
-          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-          border: '1px solid #e0e0e0'
-        }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🔔</span> Notifications & Alertes
-          </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
-            Configuration des alertes automatiques pour la maintenance des équipements
-          </p>
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: '#f8f9fa', 
-            borderRadius: '8px',
-            textAlign: 'center',
-            border: '2px dashed #D1D5DB'
-          }}>
-            <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
-              🚧 Configuration des notifications à venir (Phase 2)
-            </p>
-            <p style={{ color: '#9CA3AF', fontSize: '12px', margin: '8px 0 0 0' }}>
-              Alertes de maintenance, expiration, et rappels automatiques
-            </p>
-          </div>
-        </div>
+        {/* Sous-section: Configuration des alertes */}
+        <ParametresAlertesEquipements tenantSlug={tenantSlug} user={user} />
       </div>
 
       {/* ========== MODULE GESTION EPI ========== */}
