@@ -1,3 +1,24 @@
+## Module Matériel & Équipements - Phase 3 Export Fix
+
+### Bug Fix Applied
+**Issue**: Les boutons "Export CSV" et "Export PDF" échouaient avec "Erreur: Vous devez être connecté"
+**Root Cause**: Le code utilisait `localStorage.getItem(`token_${tenantSlug}`)` au lieu de la fonction `getTenantToken()` qui utilise le bon format `${tenantSlug}_token`
+**Solution**: Import de `getTenantToken` depuis `utils/api.js` et utilisation dans les fonctions d'export
+
+### Testing Protocol - Export Fix
+1. Se connecter sur pompiers-test avec admin@test.com / Admin123!
+2. Naviguer vers Gestion des Actifs → Matériel & Équipements
+3. Cliquer sur "Export CSV" et vérifier le téléchargement
+4. Cliquer sur "Export PDF" et vérifier le téléchargement
+
+### Credentials
+- Tenant: pompiers-test
+- Email: admin@test.com
+- Password: Admin123!
+
+---
+
+
 # ProFireManager Testing Results
 
 frontend:
