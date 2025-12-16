@@ -24731,6 +24731,24 @@ const AppLayout = () => {
     }
   }, [user]);
 
+  // Détecter si l'utilisateur vient d'un lien email et rediriger vers la bonne page
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    const vehiculeIdParam = urlParams.get('vehicule_id');
+    
+    console.log('🔍 AppLayout - Vérification paramètres URL:', { page: pageParam, vehicule_id: vehiculeIdParam });
+    
+    if (pageParam && user) {
+      console.log('✅ AppLayout - Navigation vers:', pageParam);
+      setCurrentPage(pageParam);
+      
+      // Nettoyer l'URL pour éviter les rechargements avec les paramètres
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [user]);
+
   // Enregistrer le Service Worker PWA et le manifest dynamique
   useEffect(() => {
     if ('serviceWorker' in navigator && tenantSlug) {
