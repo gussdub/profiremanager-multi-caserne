@@ -117,8 +117,16 @@ const VehiculeQRAction = () => {
       setShowLogin(true);
       return;
     }
-    // Pour l'instant, afficher un message (fonctionnalité à venir)
-    alert('📦 Module Inventaire à venir prochainement!');
+    
+    // Sauvegarder les infos de l'action dans le localStorage pour les récupérer après connexion
+    localStorage.setItem('qr_action', JSON.stringify({
+      action: 'inventaire_vehicule',
+      vehiculeId: vehiculeId,
+      vehicule: vehicule
+    }));
+    
+    // Rediriger vers la page principale de l'application
+    window.location.href = `/${tenantSlug}`;
   };
 
   if (loading) {
