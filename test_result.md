@@ -1,15 +1,20 @@
-## Module Matériel & Équipements - Phase 3 Export Fix
+## Module Matériel & Équipements - Phase 3 Export Fix ✅ RÉSOLU
 
 ### Bug Fix Applied
 **Issue**: Les boutons "Export CSV" et "Export PDF" échouaient avec "Erreur: Vous devez être connecté"
-**Root Cause**: Le code utilisait `localStorage.getItem(`token_${tenantSlug}`)` au lieu de la fonction `getTenantToken()` qui utilise le bon format `${tenantSlug}_token`
-**Solution**: Import de `getTenantToken` depuis `utils/api.js` et utilisation dans les fonctions d'export
 
-### Testing Protocol - Export Fix
-1. Se connecter sur pompiers-test avec admin@test.com / Admin123!
-2. Naviguer vers Gestion des Actifs → Matériel & Équipements
-3. Cliquer sur "Export CSV" et vérifier le téléchargement
-4. Cliquer sur "Export PDF" et vérifier le téléchargement
+**Root Cause (Double problème):**
+1. **Frontend**: Le code utilisait `localStorage.getItem(`token_${tenantSlug}`)` au lieu de `getTenantToken()` qui utilise le bon format `${tenantSlug}_token`
+2. **Backend (Principal)**: Conflit de routes FastAPI - La route `/{tenant_slug}/equipements/{equipement_id}` était définie AVANT les routes d'export, causant FastAPI à interpréter "export-csv" et "export-pdf" comme des IDs d'équipement
+
+**Solution appliquée:**
+1. Frontend: Import de `getTenantToken` depuis `utils/api.js` et utilisation dans les fonctions d'export
+2. Backend: Réorganisation des routes - les exports sont maintenant définis AVANT la route paramétrique `/{equipement_id}`
+
+### Résultats des tests ✅
+- ✅ Export CSV : HTTP 200, 318 bytes, fichier CSV valide
+- ✅ Export PDF : HTTP 200, 2116 bytes, format PDF valide (%PDF-1.4)
+- ✅ Authentification JWT fonctionne correctement
 
 ### Credentials
 - Tenant: pompiers-test
