@@ -792,165 +792,171 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         ))}
       </div>
 
-      {/* Configuration Emails - Style cohérent avec le reste de l'app */}
-      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem', color: '#1f2937' }}>
-          Notifications - Inventaires Véhicules
-        </h2>
-        <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9375rem' }}>
-          Notifications automatiques lorsque des items sont manquants ou défectueux lors des inventaires
-        </p>
-
-        {/* En-tête avec compteur et boutons - Style Rondes de Sécurité */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            👥 Destinataires ({emailsNotifications.length})
-          </h3>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              onClick={() => setEmailsNotifications(users.map(u => u.id))}
-              style={{
-                padding: '0.5rem 1rem',
-                border: '2px solid #ef4444',
-                borderRadius: '0.375rem',
-                backgroundColor: 'white',
-                color: '#ef4444',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '600'
-              }}
-            >
-              Tout sélectionner
-            </button>
-            <button
-              onClick={() => setEmailsNotifications([])}
-              style={{
-                padding: '0.5rem 1rem',
-                border: '2px solid #9ca3af',
-                borderRadius: '0.375rem',
-                backgroundColor: 'white',
-                color: '#9ca3af',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '600'
-              }}
-            >
-              Tout désélectionner
-            </button>
+      {/* Configuration Emails - Copie exacte du style Rondes de Sécurité */}
+      <div style={{ 
+        backgroundColor: 'white', 
+        padding: '25px', 
+        borderRadius: '10px', 
+        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+        border: '1px solid #e0e0e0'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <span style={{ fontSize: '2rem' }}>📧</span>
+          <div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+              Notifications - Inventaires Véhicules
+            </h3>
+            <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
+              Notifications automatiques lorsque des items sont manquants ou défectueux lors des inventaires
+            </p>
           </div>
         </div>
 
-        {/* Cartes utilisateurs - Style simple avec cercle de sélection */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          {users.map(u => {
-            const isSelected = emailsNotifications.includes(u.id);
-            return (
-              <div
-                key={u.id}
-                onClick={() => toggleUserEmail(u.id)}
+        <div style={{ 
+          backgroundColor: '#F9FAFB', 
+          padding: '1.25rem', 
+          borderRadius: '8px',
+          marginBottom: '1.25rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+              👥 Destinataires ({emailsNotifications.length})
+            </h4>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setEmailsNotifications(users.map(u => u.id))}
                 style={{
-                  padding: '1rem',
-                  border: isSelected ? '2px solid #ef4444' : '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: 'white',
+                  color: '#DC2626',
+                  border: '1px solid #DC2626',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  backgroundColor: isSelected ? '#fef2f2' : 'white',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.2s'
+                  fontSize: '13px',
+                  fontWeight: '500'
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  {/* Nom */}
-                  <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
-                    {u.prenom} {u.nom}
-                  </div>
+                Tout sélectionner
+              </button>
+              <button
+                onClick={() => setEmailsNotifications([])}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: 'white',
+                  color: '#6B7280',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
+              >
+                Tout désélectionner
+              </button>
+            </div>
+          </div>
 
-                  {/* Email */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.9375rem', color: '#6b7280' }}>✉️</span>
-                    <span style={{ fontSize: '0.9375rem', color: '#6b7280' }}>{u.email}</span>
+          {/* Liste des utilisateurs sélectionnables */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            {users.map(user => {
+              const isSelected = emailsNotifications.includes(user.id);
+              return (
+                <div
+                  key={user.id}
+                  onClick={() => toggleUserEmail(user.id)}
+                  style={{
+                    padding: '0.875rem',
+                    backgroundColor: isSelected ? '#FEE2E2' : 'white',
+                    border: isSelected ? '2px solid #DC2626' : '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '0.25rem' }}>
+                      {user.prenom} {user.nom}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '0.15rem' }}>
+                      ✉️ {user.email}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '500' }}>
+                      {user.role === 'admin' ? '👑 Administrateur' : '👔 Superviseur'}
+                    </div>
                   </div>
-
-                  {/* Rôle */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1rem' }}>
-                      {u.role === 'admin' ? '👑' : '🛡️'}
-                    </span>
-                    <span style={{ 
-                      fontSize: '0.9375rem', 
-                      color: u.role === 'admin' ? '#dc2626' : '#3b82f6',
-                      fontWeight: '500'
-                    }}>
-                      {u.role === 'admin' ? 'Administrateur' : 'Superviseur'}
-                    </span>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: isSelected ? '#DC2626' : 'white',
+                    border: isSelected ? 'none' : '2px solid #D1D5DB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    {isSelected && '✓'}
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Cercle de sélection à droite */}
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  border: isSelected ? 'none' : '2px solid #d1d5db',
-                  backgroundColor: isSelected ? '#ef4444' : 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '1rem',
-                  flexShrink: 0
-                }}>
-                  {isSelected && (
-                    <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: 'bold' }}>✓</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {users.length === 0 && (
+            <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
+              Aucun administrateur ou superviseur trouvé
+            </p>
+          )}
         </div>
 
-        {/* Récapitulatif des destinataires */}
+        {/* Résumé des destinataires sélectionnés */}
         {emailsNotifications.length > 0 && (
           <div style={{ 
+            backgroundColor: '#ECFDF5', 
             padding: '1rem', 
-            backgroundColor: '#d1fae5', 
-            borderRadius: '0.5rem', 
-            marginBottom: '1.5rem',
-            fontSize: '0.9375rem',
-            color: '#065f46',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
+            borderRadius: '6px',
+            border: '1px solid #A7F3D0',
+            marginBottom: '1rem'
           }}>
-            <span style={{ fontSize: '1.25rem' }}>✅</span>
-            <div>
-              <strong style={{ fontSize: '0.9375rem' }}>Destinataires configurés :</strong>
-              <br />
-              <span style={{ fontSize: '0.9375rem' }}>
-                {users
-                  .filter(u => emailsNotifications.includes(u.id))
-                  .map(u => `${u.prenom} ${u.nom} (${u.email})`)
-                  .join(', ')}
-              </span>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
+              ✅ Destinataires configurés:
+            </div>
+            <div style={{ fontSize: '13px', color: '#047857' }}>
+              {users
+                .filter(u => emailsNotifications.includes(u.id))
+                .map((u, i) => (
+                  <span key={u.id}>
+                    {u.prenom} {u.nom} ({u.email})
+                    {i < emailsNotifications.length - 1 && ' • '}
+                  </span>
+                ))}
             </div>
           </div>
         )}
 
-        <button
-          onClick={sauvegarderEmailsConfig}
-          style={{
-            backgroundColor: '#ef4444',
-            color: 'white',
-            padding: '0.875rem 1.75rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '1.0625rem',
-            fontWeight: '600'
-          }}
-        >
-          💾 Enregistrer la configuration
-        </button>
+        {/* Bouton de sauvegarde - aligné à droite */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={sauvegarderEmailsConfig}
+            style={{
+              backgroundColor: '#DC2626',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600'
+            }}
+          >
+            💾 Enregistrer la configuration
+          </button>
+        </div>
       </div>
 
       {/* Modal création/édition */}
