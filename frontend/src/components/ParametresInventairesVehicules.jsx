@@ -794,45 +794,50 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
 
       {/* Configuration Emails - Style cohérent avec le reste de l'app */}
       <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: '#1f2937' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem', color: '#1f2937' }}>
           Notifications - Inventaires Véhicules
         </h2>
-        <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+        <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9375rem' }}>
           Notifications automatiques lorsque des items sont manquants ou défectueux lors des inventaires
         </p>
 
-        {/* Boutons de sélection rapide - Style Rondes de Sécurité */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-          <button
-            onClick={() => setEmailsNotifications(users.map(u => u.id))}
-            style={{
-              padding: '0.5rem 1rem',
-              border: '2px solid #ef4444',
-              borderRadius: '0.375rem',
-              backgroundColor: 'white',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '600'
-            }}
-          >
-            Tout sélectionner
-          </button>
-          <button
-            onClick={() => setEmailsNotifications([])}
-            style={{
-              padding: '0.5rem 1rem',
-              border: '2px solid #9ca3af',
-              borderRadius: '0.375rem',
-              backgroundColor: 'white',
-              color: '#9ca3af',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '600'
-            }}
-          >
-            Tout désélectionner
-          </button>
+        {/* En-tête avec compteur et boutons - Style Rondes de Sécurité */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            👥 Destinataires ({emailsNotifications.length})
+          </h3>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={() => setEmailsNotifications(users.map(u => u.id))}
+              style={{
+                padding: '0.5rem 1rem',
+                border: '2px solid #ef4444',
+                borderRadius: '0.375rem',
+                backgroundColor: 'white',
+                color: '#ef4444',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '600'
+              }}
+            >
+              Tout sélectionner
+            </button>
+            <button
+              onClick={() => setEmailsNotifications([])}
+              style={{
+                padding: '0.5rem 1rem',
+                border: '2px solid #9ca3af',
+                borderRadius: '0.375rem',
+                backgroundColor: 'white',
+                color: '#9ca3af',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '600'
+              }}
+            >
+              Tout désélectionner
+            </button>
+          </div>
         </div>
 
         {/* Cartes utilisateurs - Style simple avec cercle de sélection */}
