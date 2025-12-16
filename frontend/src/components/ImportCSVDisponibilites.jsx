@@ -444,7 +444,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
                             fontSize: '14px',
                             color: '#111827',
                             whiteSpace: 'nowrap',
-                            minWidth: '200px',
+                            minWidth: '150px',
                             borderBottom: '1px solid #f3f4f6'
                           }}
                         >
