@@ -390,7 +390,7 @@ async def cleanup_expired_tasks():
 # ==================== SCHEDULER NOTIFICATIONS AUTOMATIQUES ====================
 
 async def start_notification_scheduler():
-    """Démarre le scheduler pour les notifications automatiques de planning"""
+    """Démarre le scheduler pour les notifications automatiques de planning et équipements"""
     scheduler = AsyncIOScheduler()
     
     # Créer un job qui vérifie toutes les heures si une notification doit être envoyée
@@ -402,8 +402,16 @@ async def start_notification_scheduler():
         replace_existing=True
     )
     
+    # Job pour vérifier les alertes d'équipements (une fois par jour à 8h00 du matin)
+    scheduler.add_job(
+        job_verifier_alertes_equipements,
+        CronTrigger(hour=8, minute=0),  # Tous les jours à 8h00
+        id='check_equipment_alerts',
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logging.info("✅ Scheduler de notifications automatiques démarré")
+    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements)")
 
 async def job_verifier_notifications_planning():
     """
