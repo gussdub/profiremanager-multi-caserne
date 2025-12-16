@@ -344,26 +344,48 @@ const EquipementsTab = ({
             </Button>
             
             <Button 
-              onClick={() => {
-                const API_URL = process.env.REACT_APP_BACKEND_URL;
-                const token = localStorage.getItem(`token_${window.location.pathname.split('/')[1]}`);
-                const params = new URLSearchParams();
-                if (filtreCategorie) params.append('categorie_id', filtreCategorie);
-                if (filtreEtat) params.append('etat', filtreEtat);
-                const url = `${API_URL}/api/${window.location.pathname.split('/')[1]}/equipements/export-csv?${params.toString()}`;
-                
-                fetch(url, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(res => res.blob())
-                .then(blob => {
-                  const url = window.URL.createObjectURL(blob);
+              onClick={async () => {
+                try {
+                  const API_URL = process.env.REACT_APP_BACKEND_URL;
+                  const tenantSlug = window.location.pathname.split('/')[1];
+                  const token = localStorage.getItem(`token_${tenantSlug}`);
+                  
+                  if (!token) {
+                    alert('Erreur: Vous devez être connecté');
+                    return;
+                  }
+                  
+                  const params = new URLSearchParams();
+                  if (filtreCategorie) params.append('categorie_id', filtreCategorie);
+                  if (filtreEtat) params.append('etat', filtreEtat);
+                  
+                  const url = `${API_URL}/api/${tenantSlug}/equipements/export-csv?${params.toString()}`;
+                  
+                  const response = await fetch(url, {
+                    headers: { 
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
+                    throw new Error(errorData.detail || 'Erreur lors de l\'export');
+                  }
+                  
+                  const blob = await response.blob();
+                  const downloadUrl = window.URL.createObjectURL(blob);
                   const a = document.createElement('a');
-                  a.href = url;
+                  a.href = downloadUrl;
                   a.download = `equipements_${new Date().toISOString().split('T')[0]}.csv`;
+                  document.body.appendChild(a);
                   a.click();
-                })
-                .catch(err => alert('Erreur export CSV: ' + err.message));
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(downloadUrl);
+                } catch (err) {
+                  console.error('Erreur export CSV:', err);
+                  alert('Erreur export CSV: ' + err.message);
+                }
               }}
               variant="outline"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -372,26 +394,48 @@ const EquipementsTab = ({
             </Button>
             
             <Button 
-              onClick={() => {
-                const API_URL = process.env.REACT_APP_BACKEND_URL;
-                const token = localStorage.getItem(`token_${window.location.pathname.split('/')[1]}`);
-                const params = new URLSearchParams();
-                if (filtreCategorie) params.append('categorie_id', filtreCategorie);
-                if (filtreEtat) params.append('etat', filtreEtat);
-                const url = `${API_URL}/api/${window.location.pathname.split('/')[1]}/equipements/export-pdf?${params.toString()}`;
-                
-                fetch(url, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(res => res.blob())
-                .then(blob => {
-                  const url = window.URL.createObjectURL(blob);
+              onClick={async () => {
+                try {
+                  const API_URL = process.env.REACT_APP_BACKEND_URL;
+                  const tenantSlug = window.location.pathname.split('/')[1];
+                  const token = localStorage.getItem(`token_${tenantSlug}`);
+                  
+                  if (!token) {
+                    alert('Erreur: Vous devez être connecté');
+                    return;
+                  }
+                  
+                  const params = new URLSearchParams();
+                  if (filtreCategorie) params.append('categorie_id', filtreCategorie);
+                  if (filtreEtat) params.append('etat', filtreEtat);
+                  
+                  const url = `${API_URL}/api/${tenantSlug}/equipements/export-pdf?${params.toString()}`;
+                  
+                  const response = await fetch(url, {
+                    headers: { 
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
+                    throw new Error(errorData.detail || 'Erreur lors de l\'export');
+                  }
+                  
+                  const blob = await response.blob();
+                  const downloadUrl = window.URL.createObjectURL(blob);
                   const a = document.createElement('a');
-                  a.href = url;
+                  a.href = downloadUrl;
                   a.download = `equipements_${new Date().toISOString().split('T')[0]}.pdf`;
+                  document.body.appendChild(a);
                   a.click();
-                })
-                .catch(err => alert('Erreur export PDF: ' + err.message));
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(downloadUrl);
+                } catch (err) {
+                  console.error('Erreur export PDF:', err);
+                  alert('Erreur export PDF: ' + err.message);
+                }
               }}
               variant="outline"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#DC2626', color: 'white', border: 'none' }}
