@@ -20339,9 +20339,10 @@ async def create_inventaire_vehicule(
     
     # Si des alertes existent, envoyer email de notification
     if inventaire.alertes and len(inventaire.alertes) > 0:
-        # Récupérer les paramètres d'email
+        # Récupérer les paramètres d'email depuis parametres.actifs
         parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
-        user_ids_ou_emails = parametres.get('emails_notifications_inventaires_vehicules', [])
+        actifs_params = parametres.get('actifs', {})
+        user_ids_ou_emails = actifs_params.get('emails_notifications_inventaires_vehicules', [])
         
         if user_ids_ou_emails:
             # Convertir user IDs en emails
