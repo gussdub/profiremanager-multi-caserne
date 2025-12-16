@@ -9392,10 +9392,18 @@ class Equipement(BaseModel):
     prix_achat: float = 0.0
     garantie_fin: str = ""
     
-    # Emplacement
-    emplacement_type: str = ""  # "vehicule", "caserne", "entrepot", "autre"
+    # Emplacement - peut être assigné à véhicule ET/OU emplacement ET/OU employé
+    emplacement_type: str = ""  # "vehicule", "caserne", "entrepot", "stock", "autre"
     emplacement_id: str = ""  # ID du véhicule si applicable
     emplacement_nom: str = ""  # Nom lisible
+    
+    # Assignation à un véhicule (optionnel)
+    vehicule_id: str = ""
+    vehicule_nom: str = ""
+    
+    # Assignation à un employé (pour parties faciales, radios, etc.)
+    employe_id: str = ""
+    employe_nom: str = ""
     
     # Maintenance et conformité
     norme_reference: str = ""  # NFPA 1962, NFPA 1852, etc.
@@ -9409,6 +9417,7 @@ class Equipement(BaseModel):
     alerte_stock_bas: bool = False
     alerte_reparation: bool = False
     alerte_fin_vie: bool = False
+    alerte_expiration: bool = False
     
     # Documents et photos
     photos: List[str] = []  # URLs
