@@ -411,14 +411,16 @@ async def send_inventaire_vehicule_alertes_email(
         vehicule_immatriculation = vehicule.get('immatriculation', 'N/A')
         vehicule_type = vehicule.get('type', 'N/A')
         
-        # Formater la date en heure locale (Canada EST/EDT)
+        # Formater la date en heure locale (Canada EST/EDT = UTC-5)
         date_inventaire_raw = inventaire.get('date_inventaire', 'N/A')
         if date_inventaire_raw != 'N/A':
             try:
-                from datetime import datetime
-                # Parser la date ISO et la formater en date locale seulement (pas d'heure)
+                from datetime import datetime, timedelta
+                # Parser la date ISO et convertir en heure locale Canada (UTC-5)
                 dt = datetime.fromisoformat(date_inventaire_raw.replace('Z', '+00:00'))
-                date_inventaire = dt.strftime('%Y-%m-%d')
+                # Convertir en heure locale du Canada (EST = UTC-5)
+                dt_local = dt - timedelta(hours=5)
+                date_inventaire = dt_local.strftime('%Y-%m-%d')
             except Exception as e:
                 date_inventaire = date_inventaire_raw[:10] if len(date_inventaire_raw) >= 10 else date_inventaire_raw
         else:
