@@ -13,6 +13,7 @@ import InventaireVehiculeModal from './InventaireVehiculeModal';
 import HistoriqueInventairesVehicule from './HistoriqueInventairesVehicule';
 import ParametresInventairesVehicules from './ParametresInventairesVehicules';
 import MaterielEquipementsModule from './MaterielEquipementsModule';
+import ConfigurationEmailsEquipements from './ConfigurationEmailsEquipements';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
