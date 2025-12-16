@@ -21084,6 +21084,272 @@ async def initialiser_categories_equipement(
     }
 
 
+# ===== PARAMÈTRES ET ALERTES ÉQUIPEMENTS =====
+
+@api_router.get("/{tenant_slug}/equipements/parametres")
+async def get_parametres_equipements(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les paramètres du module équipements"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    parametres = await db.parametres_equipements.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not parametres:
+        # Retourner les valeurs par défaut
+        return {
+            "tenant_id": tenant.id,
+            "jours_alerte_maintenance": 30,
+            "jours_alerte_expiration": 30,
+            "jours_alerte_fin_vie": 90,
+            "emails_notifications_equipements": [],
+            "activer_alertes_email": True,
+            "activer_alertes_dashboard": True
+        }
+    
+    return parametres
+
+
+@api_router.put("/{tenant_slug}/equipements/parametres")
+async def update_parametres_equipements(
+    tenant_slug: str,
+    parametres_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les paramètres du module équipements (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Récupérer les paramètres actuels ou créer par défaut
+    current_params = await db.parametres_equipements.find_one({"tenant_id": tenant.id})
+    
+    if not current_params:
+        current_params = {
+            "tenant_id": tenant.id,
+            "jours_alerte_maintenance": 30,
+            "jours_alerte_expiration": 30,
+            "jours_alerte_fin_vie": 90,
+            "emails_notifications_equipements": [],
+            "activer_alertes_email": True,
+            "activer_alertes_dashboard": True
+        }
+    
+    # Mettre à jour les champs fournis
+    allowed_fields = [
+        'jours_alerte_maintenance',
+        'jours_alerte_expiration', 
+        'jours_alerte_fin_vie',
+        'emails_notifications_equipements',
+        'activer_alertes_email',
+        'activer_alertes_dashboard'
+    ]
+    
+    for field in allowed_fields:
+        if field in parametres_data:
+            current_params[field] = parametres_data[field]
+    
+    current_params['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Upsert
+    await db.parametres_equipements.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": current_params},
+        upsert=True
+    )
+    
+    return {"message": "Paramètres mis à jour avec succès", "parametres": current_params}
+
+
+@api_router.get("/{tenant_slug}/equipements/alertes")
+async def get_alertes_equipements(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les alertes actives pour les équipements"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les paramètres d'alertes
+    parametres = await db.parametres_equipements.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    jours_maintenance = parametres.get('jours_alerte_maintenance', 30) if parametres else 30
+    jours_expiration = parametres.get('jours_alerte_expiration', 30) if parametres else 30
+    jours_fin_vie = parametres.get('jours_alerte_fin_vie', 90) if parametres else 90
+    
+    today = datetime.now(timezone.utc).date()
+    date_limite_maintenance = (today + timedelta(days=jours_maintenance)).isoformat()
+    date_limite_expiration = (today + timedelta(days=jours_expiration)).isoformat()
+    date_limite_fin_vie = (today + timedelta(days=jours_fin_vie)).isoformat()
+    
+    alertes = {
+        "maintenance": [],
+        "expiration": [],
+        "fin_vie": [],
+        "reparation": [],
+        "stock_bas": []
+    }
+    
+    # Alertes maintenance à venir
+    equipements_maintenance = await db.equipements.find({
+        "tenant_id": tenant.id,
+        "date_prochaine_maintenance": {"$lte": date_limite_maintenance, "$ne": ""}
+    }, {"_id": 0}).to_list(1000)
+    
+    for eq in equipements_maintenance:
+        alertes["maintenance"].append({
+            "equipement_id": eq["id"],
+            "code_unique": eq["code_unique"],
+            "nom": eq["nom"],
+            "categorie": eq.get("categorie_nom", ""),
+            "date_prochaine": eq["date_prochaine_maintenance"],
+            "jours_restants": (datetime.fromisoformat(eq["date_prochaine_maintenance"]).date() - today).days
+        })
+    
+    # Alertes expiration (équipements avec champs personnalisés de date expiration)
+    all_equipements = await db.equipements.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    for eq in all_equipements:
+        champs = eq.get("champs_personnalises", {})
+        # Chercher les champs de date qui contiennent "expiration" ou "expir"
+        for key, value in champs.items():
+            if value and ("expiration" in key.lower() or "expir" in key.lower()):
+                try:
+                    date_exp = datetime.fromisoformat(str(value)).date()
+                    if date_exp <= (today + timedelta(days=jours_expiration)):
+                        alertes["expiration"].append({
+                            "equipement_id": eq["id"],
+                            "code_unique": eq["code_unique"],
+                            "nom": eq["nom"],
+                            "categorie": eq.get("categorie_nom", ""),
+                            "champ": key,
+                            "date_expiration": str(value),
+                            "jours_restants": (date_exp - today).days
+                        })
+                except:
+                    pass
+    
+    # Alertes fin de vie
+    equipements_fin_vie = await db.equipements.find({
+        "tenant_id": tenant.id,
+        "date_fin_vie": {"$lte": date_limite_fin_vie, "$ne": ""}
+    }, {"_id": 0}).to_list(1000)
+    
+    for eq in equipements_fin_vie:
+        alertes["fin_vie"].append({
+            "equipement_id": eq["id"],
+            "code_unique": eq["code_unique"],
+            "nom": eq["nom"],
+            "categorie": eq.get("categorie_nom", ""),
+            "date_fin_vie": eq["date_fin_vie"],
+            "jours_restants": (datetime.fromisoformat(eq["date_fin_vie"]).date() - today).days
+        })
+    
+    # Alertes réparation (équipements à réparer)
+    equipements_reparation = await db.equipements.find({
+        "tenant_id": tenant.id,
+        "etat": {"$in": ["a_reparer", "en_reparation"]}
+    }, {"_id": 0}).to_list(1000)
+    
+    for eq in equipements_reparation:
+        alertes["reparation"].append({
+            "equipement_id": eq["id"],
+            "code_unique": eq["code_unique"],
+            "nom": eq["nom"],
+            "categorie": eq.get("categorie_nom", ""),
+            "etat": eq["etat"]
+        })
+    
+    # Alertes stock bas
+    equipements_stock = await db.equipements.find({
+        "tenant_id": tenant.id,
+        "$expr": {"$lte": ["$quantite", "$quantite_minimum"]}
+    }, {"_id": 0}).to_list(1000)
+    
+    for eq in equipements_stock:
+        if eq.get("quantite", 1) <= eq.get("quantite_minimum", 0):
+            alertes["stock_bas"].append({
+                "equipement_id": eq["id"],
+                "code_unique": eq["code_unique"],
+                "nom": eq["nom"],
+                "categorie": eq.get("categorie_nom", ""),
+                "quantite": eq.get("quantite", 0),
+                "quantite_minimum": eq.get("quantite_minimum", 0)
+            })
+    
+    # Mise à jour des flags d'alerte sur les équipements
+    for eq in equipements_maintenance:
+        await db.equipements.update_one(
+            {"id": eq["id"], "tenant_id": tenant.id},
+            {"$set": {"alerte_maintenance": True}}
+        )
+    
+    for eq in equipements_reparation:
+        await db.equipements.update_one(
+            {"id": eq["id"], "tenant_id": tenant.id},
+            {"$set": {"alerte_reparation": True}}
+        )
+    
+    return {
+        "alertes": alertes,
+        "totaux": {
+            "maintenance": len(alertes["maintenance"]),
+            "expiration": len(alertes["expiration"]),
+            "fin_vie": len(alertes["fin_vie"]),
+            "reparation": len(alertes["reparation"]),
+            "stock_bas": len(alertes["stock_bas"]),
+            "total": sum(len(v) for v in alertes.values())
+        },
+        "parametres": {
+            "jours_alerte_maintenance": jours_maintenance,
+            "jours_alerte_expiration": jours_expiration,
+            "jours_alerte_fin_vie": jours_fin_vie
+        }
+    }
+
+
+@api_router.post("/{tenant_slug}/equipements/alertes/recalculer")
+async def recalculer_alertes_equipements(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Recalculer toutes les alertes d'équipements (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    
+    # Réinitialiser tous les flags d'alerte
+    await db.equipements.update_many(
+        {"tenant_id": tenant.id},
+        {"$set": {
+            "alerte_maintenance": False,
+            "alerte_expiration": False,
+            "alerte_fin_vie": False,
+            "alerte_reparation": False,
+            "alerte_stock_bas": False
+        }}
+    )
+    
+    # Récupérer les alertes (ce qui va mettre à jour les flags)
+    alertes = await get_alertes_equipements(tenant_slug, current_user)
+    
+    return {
+        "message": "Alertes recalculées avec succès",
+        "totaux": alertes["totaux"]
+    }
+
+
 # ==================== INVENTAIRES VÉHICULES ENDPOINTS ====================
 
 @api_router.get("/{tenant_slug}/parametres/modeles-inventaires-vehicules")
