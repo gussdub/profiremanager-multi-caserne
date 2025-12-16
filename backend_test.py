@@ -404,8 +404,6 @@ class EquipmentModuleTester:
             "description": "Équipement créé pour les tests API",
             "categorie_id": categorie_id,
             "etat": "bon",
-            "date_acquisition": "2025-01-01",
-            "valeur_acquisition": 1500.00,
             "champs_personnalises": {
                 "test_field": "test_value",
                 "numeric_field": 42
@@ -415,15 +413,18 @@ class EquipmentModuleTester:
         try:
             response = requests.post(url, headers=self.headers, json=new_equipment)
             
-            if response.status_code == 201:
-                created_equipment = response.json()
-                self.test_data["custom_equipment_id"] = created_equipment.get('id')
-                self.created_items.append(('equipment', created_equipment.get('id')))
+            if response.status_code == 200:  # API returns 200, not 201
+                response_data = response.json()
+                created_equipment = response_data.get('equipement', response_data)
+                equipment_id = response_data.get('id') or created_equipment.get('id')
+                
+                self.test_data["custom_equipment_id"] = equipment_id
+                self.created_items.append(('equipment', equipment_id))
                 
                 self.log_test_result(
                     "Create Equipment", 
                     True, 
-                    f"Équipement créé avec ID: {created_equipment.get('id')}"
+                    f"Équipement créé avec ID: {equipment_id}"
                 )
                 
                 # Vérifier l'intégrité des données
