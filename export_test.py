@@ -264,6 +264,7 @@ class ExportFunctionalityTester:
                     print(f"📋 Premiers équipements:")
                     for i, eq in enumerate(equipements[:3]):
                         print(f"   {i+1}. {eq.get('code_unique', 'N/A')} - {eq.get('nom', 'N/A')} (État: {eq.get('etat', 'N/A')})")
+                        print(f"       ID: {eq.get('id', 'N/A')}, Tenant ID: {eq.get('tenant_id', 'N/A')}")
                     
                     self.log_test_result(
                         "Equipements List Context", 
