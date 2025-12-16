@@ -199,34 +199,49 @@ class VehicleInventoryEmailTester:
         
         # Construire le payload avec des alertes
         payload = {
+            "vehicule_id": self.test_data["vehicule_id"],
+            "vehicule_nom": "Test Vehicle",
             "modele_id": self.test_data["modele_id"],
             "date_inventaire": date.today().isoformat(),
+            "heure_debut": "08:00",
+            "heure_fin": "09:00",
+            "effectue_par": "Guillaume Dubeau",
+            "effectue_par_id": self.guillaume_user_id,
             "items_coches": [
                 {
-                    "section_id": "section_1",
-                    "item_id": "item_1", 
-                    "option_selectionnee": "Absent",  # Option qui déclenche une alerte
-                    "notes": "Item manquant - test alerte email"
+                    "item_id": "item_1",
+                    "section": "section_1",
+                    "nom": "Test Item 1",
+                    "type_champ": "select",
+                    "valeur": "Absent",
+                    "notes": "Item manquant - test alerte email",
+                    "photo_prise": False
                 },
                 {
-                    "section_id": "section_1",
                     "item_id": "item_2",
-                    "option_selectionnee": "Défectueux",  # Autre option qui déclenche une alerte
-                    "notes": "Item défectueux - test alerte email"
+                    "section": "section_1", 
+                    "nom": "Test Item 2",
+                    "type_champ": "select",
+                    "valeur": "Défectueux",
+                    "notes": "Item défectueux - test alerte email",
+                    "photo_prise": False
                 }
             ],
+            "notes_generales": "Test d'inventaire avec alertes pour vérifier le système d'email",
             "alertes": [
                 {
-                    "section_id": "section_1",
-                    "item_id": "item_1",
-                    "type": "Absent",
-                    "description": "Item manquant - test alerte email"
+                    "section": "section_1",
+                    "item": "item_1",
+                    "valeur": "Absent",
+                    "notes": "Item manquant - test alerte email",
+                    "photo": None
                 },
                 {
-                    "section_id": "section_1", 
-                    "item_id": "item_2",
-                    "type": "Défectueux",
-                    "description": "Item défectueux - test alerte email"
+                    "section": "section_1",
+                    "item": "item_2", 
+                    "valeur": "Défectueux",
+                    "notes": "Item défectueux - test alerte email",
+                    "photo": None
                 }
             ]
         }
