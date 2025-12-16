@@ -194,7 +194,7 @@ class VehicleInventoryEmailTester:
             print(f"❌ Données manquantes: vehicule_id={self.test_data['vehicule_id']}, modele_id={self.test_data['modele_id']}")
             return False
         
-        url = f"{self.base_url}/{self.tenant_slug}/vehicules/{self.test_data['vehicule_id']}/inventaires"
+        url = f"{self.base_url}/{self.tenant_slug}/vehicules/{self.test_data['vehicule_id']}/inventaire"
         print(f"📍 URL: {url}")
         
         # Construire le payload avec des alertes
