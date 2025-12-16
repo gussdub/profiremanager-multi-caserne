@@ -9310,7 +9310,8 @@ class CategorieEquipement(BaseModel):
     couleur: str = "#6366F1"  # Couleur pour l'interface
     icone: str = "📦"  # Emoji ou icône
     est_predefinit: bool = False  # True pour catégories système
-    champs_supplementaires: List[dict] = []  # Champs spécifiques à la catégorie
+    permet_assignation_employe: bool = False  # Si True, équipements peuvent être assignés à des employés
+    champs_supplementaires: List[dict] = []  # Champs spécifiques à la catégorie [{nom, type, options, obligatoire}]
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -9321,6 +9322,7 @@ class CategorieEquipementCreate(BaseModel):
     frequence_inspection: str = ""
     couleur: str = "#6366F1"
     icone: str = "📦"
+    permet_assignation_employe: bool = False
     champs_supplementaires: List[dict] = []
 
 class CategorieEquipementUpdate(BaseModel):
@@ -9330,6 +9332,7 @@ class CategorieEquipementUpdate(BaseModel):
     frequence_inspection: Optional[str] = None
     couleur: Optional[str] = None
     icone: Optional[str] = None
+    permet_assignation_employe: Optional[bool] = None
     champs_supplementaires: Optional[List[dict]] = None
 
 class HistoriqueMaintenance(BaseModel):
