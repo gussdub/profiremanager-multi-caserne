@@ -18,12 +18,12 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
   const [importResults, setImportResults] = useState(null);
   
   const availableFields = [
-    { key: 'Employé', label: 'Employé (nom avec numéro)', required: true },
-    { key: 'Quart', label: 'Quart/Type de garde', required: false },
-    { key: 'Caserne', label: 'Caserne', required: false },
-    { key: 'Début', label: 'Date/Heure début (YYYY-MM-DD HH:MM)', required: true },
-    { key: 'Fin', label: 'Date/Heure fin (YYYY-MM-DD HH:MM)', required: true },
-    { key: 'Sélection', label: 'Sélection (Disponible/Aucune)', required: true }
+    { key: 'employe', label: 'Employé (nom ou liste de noms séparés par virgules)', required: true },
+    { key: 'quart', label: 'Quart/Type de garde', required: false },
+    { key: 'caserne', label: 'Caserne (optionnel)', required: false },
+    { key: 'debut', label: 'Date/Heure début (YYYY-MM-DD HH:MM)', required: true },
+    { key: 'fin', label: 'Date/Heure fin (YYYY-MM-DD HH:MM)', required: true },
+    { key: 'selection', label: 'Sélection (Disponible par défaut)', required: false }
   ];
 
   const handleFileUpload = (event) => {
