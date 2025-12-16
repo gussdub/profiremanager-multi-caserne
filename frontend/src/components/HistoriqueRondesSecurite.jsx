@@ -315,7 +315,10 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
-                              a.download = `ronde_securite_${vehicule.nom}_${ronde.date}.pdf`;
+                              // Utiliser la date locale au lieu de la date UTC
+                              const dateLocal = parseDateLocal(ronde.date);
+                              const dateFormatted = dateLocal.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                              a.download = `ronde_securite_${vehicule.nom}_${dateFormatted}.pdf`;
                               document.body.appendChild(a);
                               a.click();
                               window.URL.revokeObjectURL(url);
