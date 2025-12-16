@@ -2016,6 +2016,23 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
         {/* Sous-section: Configuration des alertes */}
         <ParametresAlertesEquipements tenantSlug={tenantSlug} user={user} />
+
+        {/* Sous-section: Import CSV */}
+        <div style={{ 
+          background: 'white', 
+          padding: '20px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginTop: '15px'
+        }}>
+          <ImportCSVEquipements 
+            tenantSlug={tenantSlug} 
+            onImportComplete={(results) => {
+              console.log('Import terminé:', results);
+            }}
+          />
+        </div>
       </div>
       )}
 
