@@ -281,14 +281,14 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
   };
 
   return (
-    <Card className="w-full" style={{ overflow: 'visible' }}>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Import Disponibilités</CardTitle>
         <CardDescription>
           Importez en masse les disponibilités de votre personnel
         </CardDescription>
       </CardHeader>
-      <CardContent style={{ overflow: 'visible' }}>
+      <CardContent>
         {/* Étape 1: Upload fichier */}
         {step === 1 && (
           <div className="space-y-4">
