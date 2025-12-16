@@ -353,11 +353,21 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">📋 Format attendu:</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• <strong>Employé</strong>: Nom avec numéro (ex: "Dupont Jean (101)")</li>
+                <li>• <strong>Employé</strong>: Nom(s) avec ou sans numéro (ex: "Dupont Jean (101)" ou "Robert Girard, Marie Dubois")</li>
                 <li>• <strong>Quart</strong>: Type de garde (ex: "jour 12h", "matin", "apres midi")</li>
-                <li>• <strong>Début</strong>: Date et heure (ex: "2025-12-01 06:00")</li>
-                <li>• <strong>Fin</strong>: Date et heure (ex: "2025-12-01 18:00")</li>
-                <li>• <strong>Sélection</strong>: "Disponible" ou "Aucune"</li>
+                <li>• <strong>Début</strong>: Date et heure (ex: "2026-01-01 06:00")</li>
+                <li>• <strong>Fin</strong>: Date et heure (ex: "2026-01-01 18:00")</li>
+                <li>• <strong>Sélection</strong>: "Disponible" par défaut (ou "Aucune" pour ignorer)</li>
+              </ul>
+            </div>
+            
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-green-900 mb-2">✨ Nouvelles fonctionnalités:</h4>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>✅ <strong>Plusieurs employés par ligne</strong>: Séparez les noms par des virgules</li>
+                <li>✅ <strong>Recherche intelligente</strong>: Le système trouve automatiquement les employés même avec des différences d'espaces ou d'accents</li>
+                <li>✅ <strong>Caserne optionnelle</strong>: Plus besoin de remplir cette colonne</li>
+                <li>✅ <strong>"Disponible" par défaut</strong>: Si la colonne Sélection est vide, "Disponible" est utilisé automatiquement</li>
               </ul>
             </div>
           </div>
