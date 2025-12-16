@@ -67,19 +67,22 @@ const VehiculeQRAction = () => {
       localStorage.setItem(`${tenantSlug}_token`, response.data.access_token);
       localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
       
-      // Sauvegarder l'info de l'action QR pour redirection
-      const qrActionData = {
-        action: 'ronde_securite',
-        vehiculeId: vehiculeId,
-        vehicule: vehicule
-      };
-      
-      console.log('💾 Sauvegarde qr_action:', qrActionData);
-      localStorage.setItem('qr_action', JSON.stringify(qrActionData));
-      
-      // Vérifier que c'est bien sauvegardé
-      const saved = localStorage.getItem('qr_action');
-      console.log('✅ Vérifié dans localStorage:', saved);
+      // Récupérer l'action en attente (soit ronde_securite soit inventaire_vehicule)
+      // Note: l'action est déjà sauvegardée dans localStorage par handleRondeSecurite ou handleInventaire
+      // On vérifie juste qu'elle existe
+      let qrAction = localStorage.getItem('qr_action');
+      if (!qrAction) {
+        // Fallback: sauvegarder l'action ronde_securite par défaut
+        const qrActionData = {
+          action: 'ronde_securite',
+          vehiculeId: vehiculeId,
+          vehicule: vehicule
+        };
+        console.log('💾 Sauvegarde qr_action (fallback):', qrActionData);
+        localStorage.setItem('qr_action', JSON.stringify(qrActionData));
+      } else {
+        console.log('✅ qr_action déjà en localStorage:', qrAction);
+      }
       
       setIsAuthenticated(true);
       
