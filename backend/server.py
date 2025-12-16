@@ -922,6 +922,37 @@ def create_user_matching_index(users_list: list) -> dict:
     return index
 
 
+def calculate_name_similarity(str1: str, str2: str) -> float:
+    """
+    Calcule un score de similarité entre deux chaînes normalisées.
+    Retourne un score entre 0 (pas de correspondance) et 1 (match parfait).
+    
+    Prend en compte :
+    - Mots en commun
+    - Ordre des mots
+    - Longueur relative
+    """
+    words1 = set(str1.split())
+    words2 = set(str2.split())
+    
+    if not words1 or not words2:
+        return 0.0
+    
+    # Intersection : mots en commun
+    common_words = words1.intersection(words2)
+    
+    # Score basé sur le ratio de mots en commun
+    score = len(common_words) / max(len(words1), len(words2))
+    
+    # Bonus si tous les mots de la recherche sont dans le nom DB
+    if words1.issubset(words2):
+        score += 0.3
+    elif words2.issubset(words1):
+        score += 0.2
+    
+    return min(score, 1.0)
+
+
 def find_user_intelligent(
     search_string: str, 
     users_by_name: dict, 
@@ -929,12 +960,13 @@ def find_user_intelligent(
     numero_field: str = "numero_employe"
 ) -> dict:
     """
-    Recherche intelligente d'un utilisateur avec matching flexible.
+    Recherche intelligente d'un utilisateur avec matching flexible et "best fit".
     
     Stratégie de recherche (par ordre de priorité) :
     1. Par numéro d'employé (si présent entre parenthèses et fiable)
-    2. Par nom normalisé (ordre normal ou inversé)
+    2. Par nom normalisé exact (ordre normal ou inversé)
     3. Par parsing approfondi (noms composés)
+    4. Par similarité (best fit) si aucun match exact
     
     Args:
         search_string: Chaîne de recherche (ex: "Bernard Sébastien (981)")
@@ -949,6 +981,7 @@ def find_user_intelligent(
         find_user_intelligent("Bernard Sébastien (981)", index)
         find_user_intelligent("BERNARD Sebastien", index)
         find_user_intelligent("Jean-Pierre Dubois", index)
+        find_user_intelligent("William Falardeau Roy", index) → trouve "William Falardeau-Roy"
     """
     if not search_string:
         return None
@@ -965,17 +998,17 @@ def find_user_intelligent(
         except:
             pass
     
-    # Tentative 2: Matching flexible par nom normalisé
+    # Tentative 2: Matching flexible par nom normalisé EXACT
     if nom_complet:
         normalized = normalize_string_for_matching(nom_complet)
         if normalized in users_by_name:
             return users_by_name[normalized]
     
-    # Tentative 3: Parsing approfondi pour noms composés
+    # Tentative 3: Parsing approfondi pour noms composés (essayer toutes les combinaisons)
     if nom_complet:
         parts = nom_complet.split()
         if len(parts) >= 2:
-            # Essayer toutes les combinaisons
+            # Essayer toutes les combinaisons de découpage
             for i in range(len(parts)):
                 possible_prenom = " ".join(parts[:i+1])
                 possible_nom = " ".join(parts[i+1:])
@@ -990,6 +1023,25 @@ def find_user_intelligent(
                     test_key2 = normalize_string_for_matching(f"{possible_nom} {possible_prenom}")
                     if test_key2 in users_by_name:
                         return users_by_name[test_key2]
+    
+    # Tentative 4: BEST FIT - Recherche par similarité si aucun match exact
+    # Calculer la similarité avec tous les utilisateurs et prendre le meilleur
+    normalized = normalize_string_for_matching(nom_complet)
+    
+    best_match = None
+    best_score = 0.6  # Seuil minimum de similarité (60%)
+    
+    for db_name_normalized, user in users_by_name.items():
+        similarity = calculate_name_similarity(normalized, db_name_normalized)
+        
+        if similarity > best_score:
+            best_score = similarity
+            best_match = user
+    
+    if best_match:
+        # Log pour debugging
+        logging.info(f"✨ Best fit trouvé pour '{nom_complet}': {best_match.get('prenom')} {best_match.get('nom')} (score: {best_score:.2f})")
+        return best_match
     
     return None
 
