@@ -1607,7 +1607,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     }
   };
 
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedModule, setSelectedModule] = useState('vehicules'); // Par défaut, sélectionner Véhicules
 
   const modules = [
     {
