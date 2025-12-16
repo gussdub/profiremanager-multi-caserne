@@ -107,10 +107,37 @@ class VehicleInventoryEmailTester:
                     print(f"   - User ID: {user_id}")
                 return True
             else:
-                print(f"⚠️ Configuration emails vide ou manquante")
-                return False
+                print(f"⚠️ Configuration emails vide ou manquante - Configuration automatique...")
+                return self.configure_email_notifications()
         else:
             print(f"❌ Erreur récupération paramètres: {response.status_code}")
+            print(f"📄 Réponse: {response.text}")
+            return False
+    
+    def configure_email_notifications(self):
+        """Configurer les notifications email pour les inventaires véhicules"""
+        print(f"\n⚙️ Configuration des notifications email...")
+        
+        url = f"{self.base_url}/{self.tenant_slug}/actifs/parametres"
+        
+        # Configurer les paramètres avec Guillaume Dubeau comme destinataire
+        payload = {
+            "actifs": {
+                "emails_notifications_inventaires_vehicules": [self.guillaume_user_id]
+            }
+        }
+        
+        print(f"📍 URL: {url}")
+        print(f"📋 Configuration: {payload}")
+        
+        response = requests.put(url, json=payload, headers=self.headers)
+        
+        if response.status_code == 200:
+            print(f"✅ Configuration email mise à jour avec succès")
+            print(f"📧 Guillaume Dubeau ({self.guillaume_user_id}) configuré comme destinataire")
+            return True
+        else:
+            print(f"❌ Erreur configuration email: {response.status_code}")
             print(f"📄 Réponse: {response.text}")
             return False
     
