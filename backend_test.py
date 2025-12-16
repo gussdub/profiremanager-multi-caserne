@@ -544,12 +544,13 @@ class EquipmentModuleTester:
         try:
             response = requests.post(maintenance_url, headers=self.headers, json=new_maintenance)
             
-            if response.status_code == 201:
+            if response.status_code == 200:  # API returns 200, not 201
                 created_maintenance = response.json()
+                maintenance_id = created_maintenance.get('id')
                 self.log_test_result(
                     "Equipment Maintenance - Add New", 
                     True, 
-                    f"Maintenance ajoutée avec ID: {created_maintenance.get('id')}"
+                    f"Maintenance ajoutée avec ID: {maintenance_id}"
                 )
                 
                 # Vérifier que les dates de maintenance de l'équipement sont mises à jour
