@@ -9256,6 +9256,228 @@ class InventaireVehiculeCreate(BaseModel):
     alertes: List[dict] = []  # [{section, item, valeur, notes, photo}]
 
 
+# ==================== MATÉRIEL & ÉQUIPEMENTS ====================
+
+class Fournisseur(BaseModel):
+    """Fournisseur d'équipements"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    contact_nom: str = ""
+    telephone: str = ""
+    email: str = ""
+    adresse: str = ""
+    ville: str = ""
+    province: str = ""
+    code_postal: str = ""
+    site_web: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FournisseurCreate(BaseModel):
+    nom: str
+    contact_nom: str = ""
+    telephone: str = ""
+    email: str = ""
+    adresse: str = ""
+    ville: str = ""
+    province: str = ""
+    code_postal: str = ""
+    site_web: str = ""
+    notes: str = ""
+
+class FournisseurUpdate(BaseModel):
+    nom: Optional[str] = None
+    contact_nom: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    province: Optional[str] = None
+    code_postal: Optional[str] = None
+    site_web: Optional[str] = None
+    notes: Optional[str] = None
+
+class CategorieEquipement(BaseModel):
+    """Catégorie d'équipement (prédéfinie ou personnalisée)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    description: str = ""
+    norme_reference: str = ""  # NFPA 1962, NFPA 1852, etc.
+    frequence_inspection: str = ""  # "1 an", "6 mois", etc.
+    couleur: str = "#6366F1"  # Couleur pour l'interface
+    icone: str = "📦"  # Emoji ou icône
+    est_predefinit: bool = False  # True pour catégories système
+    champs_supplementaires: List[dict] = []  # Champs spécifiques à la catégorie
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CategorieEquipementCreate(BaseModel):
+    nom: str
+    description: str = ""
+    norme_reference: str = ""
+    frequence_inspection: str = ""
+    couleur: str = "#6366F1"
+    icone: str = "📦"
+    champs_supplementaires: List[dict] = []
+
+class CategorieEquipementUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    norme_reference: Optional[str] = None
+    frequence_inspection: Optional[str] = None
+    couleur: Optional[str] = None
+    icone: Optional[str] = None
+    champs_supplementaires: Optional[List[dict]] = None
+
+class HistoriqueMaintenance(BaseModel):
+    """Historique de maintenance/réparation d'un équipement"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    equipement_id: str
+    type_intervention: str  # "maintenance", "reparation", "test", "inspection"
+    date_intervention: str
+    description: str
+    cout: float = 0.0
+    effectue_par: str = ""
+    effectue_par_id: str = ""
+    pieces_remplacees: List[str] = []
+    resultats: str = ""  # Résultats de tests (ex: pression testée)
+    prochaine_intervention: str = ""  # Date suggérée
+    documents: List[str] = []  # URLs de documents/photos
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class HistoriqueMaintenanceCreate(BaseModel):
+    equipement_id: str
+    type_intervention: str
+    date_intervention: str
+    description: str
+    cout: float = 0.0
+    effectue_par: str = ""
+    effectue_par_id: str = ""
+    pieces_remplacees: List[str] = []
+    resultats: str = ""
+    prochaine_intervention: str = ""
+    documents: List[str] = []
+    notes: str = ""
+
+class Equipement(BaseModel):
+    """Équipement de pompiers"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    
+    # Informations de base
+    nom: str
+    code_unique: str  # Numéro de série, code interne
+    categorie_id: str = ""  # Référence à CategorieEquipement
+    categorie_nom: str = ""  # Pour affichage rapide
+    description: str = ""
+    
+    # État et quantité
+    etat: str = "bon"  # neuf, bon, a_reparer, en_reparation, hors_service
+    quantite: int = 1
+    quantite_minimum: int = 1  # Seuil d'alerte stock bas
+    
+    # Informations fournisseur
+    fournisseur_id: str = ""
+    fournisseur_nom: str = ""
+    
+    # Informations financières
+    date_achat: str = ""
+    prix_achat: float = 0.0
+    garantie_fin: str = ""
+    
+    # Emplacement
+    emplacement_type: str = ""  # "vehicule", "caserne", "entrepot", "autre"
+    emplacement_id: str = ""  # ID du véhicule si applicable
+    emplacement_nom: str = ""  # Nom lisible
+    
+    # Maintenance et conformité
+    norme_reference: str = ""  # NFPA 1962, NFPA 1852, etc.
+    frequence_maintenance: str = ""  # "1 an", "6 mois", etc.
+    date_derniere_maintenance: str = ""
+    date_prochaine_maintenance: str = ""
+    date_fin_vie: str = ""  # Date de mise au rancart prévue
+    
+    # Alertes actives
+    alerte_maintenance: bool = False
+    alerte_stock_bas: bool = False
+    alerte_reparation: bool = False
+    alerte_fin_vie: bool = False
+    
+    # Documents et photos
+    photos: List[str] = []  # URLs
+    documents: List[str] = []  # URLs
+    
+    # Champs personnalisés (flexibilité maximale)
+    champs_personnalises: Dict[str, Any] = {}  # {nom_champ: valeur}
+    
+    # Métadonnées
+    notes: str = ""
+    tags: List[str] = []
+    created_by: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EquipementCreate(BaseModel):
+    nom: str
+    code_unique: str
+    categorie_id: str = ""
+    categorie_nom: str = ""
+    description: str = ""
+    etat: str = "bon"
+    quantite: int = 1
+    quantite_minimum: int = 1
+    fournisseur_id: str = ""
+    fournisseur_nom: str = ""
+    date_achat: str = ""
+    prix_achat: float = 0.0
+    garantie_fin: str = ""
+    emplacement_type: str = ""
+    emplacement_id: str = ""
+    emplacement_nom: str = ""
+    norme_reference: str = ""
+    frequence_maintenance: str = ""
+    date_derniere_maintenance: str = ""
+    date_prochaine_maintenance: str = ""
+    date_fin_vie: str = ""
+    photos: List[str] = []
+    documents: List[str] = []
+    champs_personnalises: Dict[str, Any] = {}
+    notes: str = ""
+    tags: List[str] = []
+
+class EquipementUpdate(BaseModel):
+    nom: Optional[str] = None
+    code_unique: Optional[str] = None
+    categorie_id: Optional[str] = None
+    categorie_nom: Optional[str] = None
+    description: Optional[str] = None
+    etat: Optional[str] = None
+    quantite: Optional[int] = None
+    quantite_minimum: Optional[int] = None
+    fournisseur_id: Optional[str] = None
+    fournisseur_nom: Optional[str] = None
+    date_achat: Optional[str] = None
+    prix_achat: Optional[float] = None
+    garantie_fin: Optional[str] = None
+    emplacement_type: Optional[str] = None
+    emplacement_id: Optional[str] = None
+    emplacement_nom: Optional[str] = None
+    norme_reference: Optional[str] = None
+    frequence_maintenance: Optional[str] = None
+    date_derniere_maintenance: Optional[str] = None
+    date_prochaine_maintenance: Optional[str] = None
+    date_fin_vie: Optional[str] = None
+    photos: Optional[List[str]] = None
+    documents: Optional[List[str]] = None
+    champs_personnalises: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+
 # ==================== MULTI-TENANT DEPENDENCIES ====================
 
 # Cache simple pour les tenants (60 secondes)
