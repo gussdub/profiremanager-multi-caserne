@@ -408,7 +408,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
               <Button variant="outline" onClick={resetImport}>Annuler</Button>
               <Button 
                 onClick={generatePreview}
-                disabled={!columnMapping['Employé'] || !columnMapping['Début'] || !columnMapping['Fin']}
+                disabled={!columnMapping['employe'] || !columnMapping['debut'] || !columnMapping['fin']}
                 className="flex-1"
               >
                 Suivant: Aperçu
