@@ -26142,13 +26142,9 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
             <p><strong>Véhicule:</strong> {vehicle.get('type_vehicule', 'N/A')} - {vehicle.get('nom', 'N/A')}</p>
             <p><strong>Date:</strong> {date_ronde_str}</p>
             <p><strong>Heure:</strong> {ronde.get('heure', 'N/A')}</p>
-            <p><strong>Lieu:</strong> {ronde.get('lieu', 'N/A')}</p>
+            <p><strong>Lieu:</strong> {lieu_display}</p>
             <p><strong>Kilométrage:</strong> {ronde.get('km', 'N/A')} km</p>
             <p><strong>Personne mandatée:</strong> {ronde.get('personne_mandatee', 'N/A')}</p>
-            
-            <p style="margin-top: 15px; color: #6c757d; font-size: 13px;">
-                <em>💡 Note: Pour voir l'adresse exacte correspondant à la position GPS, consultez l'historique des rondes dans l'application.</em>
-            </p>
             
             <p style="margin-top: 20px;">
                 Une nouvelle ronde de sécurité a été complétée. Vous pouvez consulter les détails dans l'application.
