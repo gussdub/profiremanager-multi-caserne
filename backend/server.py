@@ -9450,6 +9450,10 @@ class EquipementCreate(BaseModel):
     emplacement_type: str = ""
     emplacement_id: str = ""
     emplacement_nom: str = ""
+    vehicule_id: str = ""
+    vehicule_nom: str = ""
+    employe_id: str = ""
+    employe_nom: str = ""
     norme_reference: str = ""
     frequence_maintenance: str = ""
     date_derniere_maintenance: str = ""
@@ -9478,6 +9482,10 @@ class EquipementUpdate(BaseModel):
     emplacement_type: Optional[str] = None
     emplacement_id: Optional[str] = None
     emplacement_nom: Optional[str] = None
+    vehicule_id: Optional[str] = None
+    vehicule_nom: Optional[str] = None
+    employe_id: Optional[str] = None
+    employe_nom: Optional[str] = None
     norme_reference: Optional[str] = None
     frequence_maintenance: Optional[str] = None
     date_derniere_maintenance: Optional[str] = None
@@ -9488,6 +9496,11 @@ class EquipementUpdate(BaseModel):
     champs_personnalises: Optional[Dict[str, Any]] = None
     notes: Optional[str] = None
     tags: Optional[List[str]] = None
+    alerte_maintenance: Optional[bool] = None
+    alerte_stock_bas: Optional[bool] = None
+    alerte_reparation: Optional[bool] = None
+    alerte_fin_vie: Optional[bool] = None
+    alerte_expiration: Optional[bool] = None
 
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
