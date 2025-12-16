@@ -20301,25 +20301,22 @@ async def create_inventaire_vehicule(
     
     # Convertir items cochés en objets
     items_coches_obj = []
-    items_manquants = 0
-    items_defectueux = 0
     
     for item in inventaire.items_coches:
         items_coches_obj.append(ItemInventaireVehiculeRempli(
             item_id=item['item_id'],
+            section=item.get('section', ''),
             nom=item['nom'],
-            statut=item['statut'],
-            photo=item.get('photo'),
-            notes=item.get('notes', '')
+            type_champ=item.get('type_champ', 'text'),
+            valeur=item.get('valeur', ''),
+            notes=item.get('notes', ''),
+            photo_prise=item.get('photo_prise', '')
         ))
-        
-        if item['statut'] == 'absent':
-            items_manquants += 1
-        elif item['statut'] == 'defectueux':
-            items_defectueux += 1
     
-    # Déterminer statut global
-    statut_global = "conforme" if (items_manquants == 0 and items_defectueux == 0) else "non_conforme"
+    # Déterminer statut global basé sur les alertes
+    statut_global = "non_conforme" if (inventaire.alertes and len(inventaire.alertes) > 0) else "conforme"
+    items_manquants = len([a for a in inventaire.alertes if 'absent' in str(a.get('valeur', '')).lower()]) if inventaire.alertes else 0
+    items_defectueux = len([a for a in inventaire.alertes if 'défectueux' in str(a.get('valeur', '')).lower() or 'defectueux' in str(a.get('valeur', '')).lower()]) if inventaire.alertes else 0
     
     # Créer l'inventaire
     inventaire_obj = InventaireVehicule(
