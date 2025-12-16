@@ -17163,7 +17163,7 @@ body {
   padding: 2rem;
   animation: fadeIn 0.3s ease-out;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 /* Header harmonisé pour Paramètres */
