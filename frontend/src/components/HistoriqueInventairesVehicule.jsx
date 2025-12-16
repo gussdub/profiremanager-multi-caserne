@@ -252,14 +252,14 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                             key={idx}
                             style={{
                               padding: '12px',
-                              border: `2px solid ${isPresent ? '#27ae60' : '#e74c3c'}`,
+                              border: `2px solid ${isPresent ? '#27ae60' : isAbsent ? '#e74c3c' : '#f39c12'}`,
                               borderRadius: '8px',
-                              backgroundColor: isPresent ? '#e8f5e9' : '#fdecea'
+                              backgroundColor: isPresent ? '#e8f5e9' : isAbsent ? '#fdecea' : '#fff3cd'
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '16px' }}>
-                                {isPresent ? '✅' : isDefectueux ? '⚠️' : '❌'}
+                                {isPresent ? '✅' : isAbsent ? '❌' : isDefectueux ? '⚠️' : '❓'}
                               </span>
                               <span style={{
                                 flex: 1,
@@ -274,10 +274,10 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                                 borderRadius: '12px',
                                 fontSize: '11px',
                                 fontWeight: 'bold',
-                                backgroundColor: isPresent ? '#27ae60' : isDefectueux ? '#f39c12' : '#e74c3c',
+                                backgroundColor: isPresent ? '#27ae60' : isAbsent ? '#e74c3c' : isDefectueux ? '#f39c12' : '#6c757d',
                                 color: 'white'
                               }}>
-                                {isPresent ? 'Présent' : isDefectueux ? 'Défectueux' : 'Absent'}
+                                {item.valeur || 'N/A'}
                               </span>
                             </div>
                             {item.notes && (
