@@ -390,19 +390,14 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
             </div>
             
             <div 
-              className="preview-table-container"
               style={{ 
-                width: 'calc(100vw - 100px)',
-                maxWidth: '1400px',
-                overflowX: 'auto',
+                width: '100%',
+                overflowX: 'scroll',
                 overflowY: 'auto',
                 maxHeight: '400px',
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                WebkitOverflowScrolling: 'touch',
-                display: 'block',
-                position: 'relative',
-                margin: '0 auto'
+                WebkitOverflowScrolling: 'touch'
               }}
             >
               <table 
