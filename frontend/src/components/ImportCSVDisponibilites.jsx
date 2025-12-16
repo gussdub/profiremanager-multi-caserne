@@ -381,7 +381,7 @@ const ImportCSVDisponibilites = ({ tenantSlug, onImportComplete }) => {
 
         {/* Étape 3: Aperçu */}
         {step === 3 && (
-          <div className="space-y-4" style={{ width: '100%', minWidth: 0 }}>
+          <div className="space-y-4" style={{ width: '100%', minWidth: 0, padding: '24px' }}>
             <div>
               <h3 className="font-semibold mb-2">Étape 3: Aperçu des données</h3>
               <p className="text-sm text-gray-600 mb-4">
