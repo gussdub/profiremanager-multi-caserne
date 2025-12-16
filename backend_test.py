@@ -33,7 +33,7 @@ OBJECTIFS DU TEST:
    - Le Content-Type reçu
 
 APPLICATION:
-- URL Backend: https://vehicle-report-5.preview.emergentagent.com
+- URL Backend: https://firefighter-equip.preview.emergentagent.com
 - Tenant: shefford
 - Credentials: admin@firemanager.ca / Admin123! (ou autres credentials valides)
 """
@@ -48,7 +48,7 @@ import os
 
 class PDFReportsTester:
     def __init__(self):
-        self.base_url = "https://vehicle-report-5.preview.emergentagent.com/api"
+        self.base_url = "https://firefighter-equip.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"  # Tester shefford comme spécifié
