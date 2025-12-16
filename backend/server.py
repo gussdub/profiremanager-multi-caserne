@@ -13737,8 +13737,9 @@ async def import_disponibilites_csv(
     
     for index, dispo_data in enumerate(disponibilites):
         try:
-            # 1. Trouver l'utilisateur avec matching intelligent
-            employe_str = dispo_data.get("Employé", "").strip()
+            # 1. Trouver l'utilisateur avec matching intelligent (fuzzy)
+            # Supporter les anciennes clés (Employé) et nouvelles clés (employe) pour compatibilité
+            employe_str = dispo_data.get("employe", dispo_data.get("Employé", "")).strip()
             if not employe_str:
                 results["errors"].append({
                     "ligne": index + 2,
@@ -13746,7 +13747,8 @@ async def import_disponibilites_csv(
                 })
                 continue
             
-            # Utiliser la fonction de matching intelligent
+            # Utiliser la fonction de matching intelligent (recherche fuzzy)
+            # Gère les espaces doubles, accents, ordre des noms, etc.
             user_obj = find_user_intelligent(
                 search_string=employe_str,
                 users_by_name=users_by_name,
@@ -13757,13 +13759,13 @@ async def import_disponibilites_csv(
             if not user_obj:
                 results["errors"].append({
                     "ligne": index + 2,
-                    "erreur": f"Employé non trouvé: {employe_str}"
+                    "erreur": f"Employé non trouvé avec recherche fuzzy: {employe_str}"
                 })
                 continue
             
             # 2. Parser les dates/heures
-            debut_str = str(dispo_data.get("Début", "")).strip()
-            fin_str = str(dispo_data.get("Fin", "")).strip()
+            debut_str = str(dispo_data.get("debut", dispo_data.get("Début", ""))).strip()
+            fin_str = str(dispo_data.get("fin", dispo_data.get("Fin", ""))).strip()
             
             if not debut_str or not fin_str:
                 results["errors"].append({
@@ -13773,10 +13775,17 @@ async def import_disponibilites_csv(
                 continue
             
             try:
-                # Parser les dates/heures (format: "2025-12-01 06:00")
+                # Parser les dates/heures - supporter plusieurs formats
                 from datetime import datetime as dt
-                debut_dt = dt.strptime(debut_str, "%Y-%m-%d %H:%M")
-                fin_dt = dt.strptime(fin_str, "%Y-%m-%d %H:%M")
+                
+                # Essayer format standard: "2025-12-01 06:00"
+                try:
+                    debut_dt = dt.strptime(debut_str, "%Y-%m-%d %H:%M")
+                    fin_dt = dt.strptime(fin_str, "%Y-%m-%d %H:%M")
+                except ValueError:
+                    # Essayer format avec secondes: "2025-12-01 06:00:00"
+                    debut_dt = dt.strptime(debut_str, "%Y-%m-%d %H:%M:%S")
+                    fin_dt = dt.strptime(fin_str, "%Y-%m-%d %H:%M:%S")
                 
                 date_str = debut_dt.strftime("%Y-%m-%d")
                 heure_debut = debut_dt.strftime("%H:%M")
@@ -13789,27 +13798,27 @@ async def import_disponibilites_csv(
                 })
                 continue
             
-            # 3. Mapper la sélection au statut
-            selection = dispo_data.get("Sélection", "").strip().lower()
+            # 3. Mapper la sélection au statut (avec valeur par défaut "Disponible")
+            selection = dispo_data.get("selection", dispo_data.get("Sélection", "Disponible")).strip().lower()
             
             # Si "Aucune", ignorer cette ligne (ne pas créer de disponibilité)
-            if selection == "aucune" or not selection:
+            if selection == "aucune":
                 results["skipped"] += 1
                 continue
             
-            # Seulement créer une disponibilité si "Disponible"
-            if selection != "disponible":
+            # Mapper les valeurs à "disponible"
+            if selection in ["disponible", "disponibilité", ""]:
+                statut = "disponible"
+            else:
                 results["errors"].append({
                     "ligne": index + 2,
                     "erreur": f"Sélection invalide: '{selection}'. Attendu: 'Disponible' ou 'Aucune'"
                 })
                 continue
             
-            statut = "disponible"
-            
             # 4. Trouver le type de garde (optionnel)
             type_garde_id = None
-            quart_str = dispo_data.get("Quart", "").strip().lower()
+            quart_str = dispo_data.get("quart", dispo_data.get("Quart", "")).strip().lower()
             if quart_str:
                 type_garde_obj = types_garde_by_name.get(quart_str)
                 if type_garde_obj:
