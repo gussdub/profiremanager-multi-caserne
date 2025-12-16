@@ -9353,7 +9353,7 @@ class HistoriqueMaintenance(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class HistoriqueMaintenanceCreate(BaseModel):
-    equipement_id: str
+    equipement_id: str = ""  # Optionnel car fourni via URL
     type_intervention: str
     date_intervention: str
     description: str
