@@ -363,8 +363,7 @@ const EquipementsTab = ({
                   
                   const response = await fetch(url, {
                     headers: { 
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
+                      'Authorization': `Bearer ${token}`
                     }
                   });
                   
@@ -413,8 +412,7 @@ const EquipementsTab = ({
                   
                   const response = await fetch(url, {
                     headers: { 
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
+                      'Authorization': `Bearer ${token}`
                     }
                   });
                   
