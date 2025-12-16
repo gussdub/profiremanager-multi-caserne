@@ -73,7 +73,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           console.log('✅ QR Action trouvée:', qrAction);
           
           if (qrAction.action === 'ronde_securite' && qrAction.vehicule) {
-            console.log('🚀 Ouverture du modal avec véhicule:', qrAction.vehicule);
+            console.log('🚀 Ouverture du modal Ronde de Sécurité avec véhicule:', qrAction.vehicule);
             
             // S'assurer que l'onglet véhicules est actif
             setActiveTab('vehicules');
@@ -81,6 +81,18 @@ const GestionActifs = ({ user, ModuleEPI }) => {
             // Ouvrir automatiquement la ronde de sécurité avec le véhicule
             setSelectedVehiculeForRonde(qrAction.vehicule);
             setShowRondeSecuriteModal(true);
+            
+            // Supprimer l'action du localStorage
+            localStorage.removeItem('qr_action');
+          } else if (qrAction.action === 'inventaire_vehicule' && qrAction.vehicule) {
+            console.log('📦 Ouverture du modal Inventaire Véhicule avec véhicule:', qrAction.vehicule);
+            
+            // S'assurer que l'onglet véhicules est actif
+            setActiveTab('vehicules');
+            
+            // Ouvrir automatiquement le modal d'inventaire avec le véhicule
+            setSelectedVehiculeForInventaire(qrAction.vehicule);
+            setShowInventaireModal(true);
             
             // Supprimer l'action du localStorage
             localStorage.removeItem('qr_action');
