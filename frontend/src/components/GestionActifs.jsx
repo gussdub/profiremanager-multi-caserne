@@ -1769,6 +1769,15 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         border: '2px solid #e0e0e0',
         marginBottom: '30px'
       }}>
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '32px' }}>💧</span>
+            Approvisionnement en Eau
+          </h2>
+          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+            Configuration des dates de tests et notifications pour les bornes sèches
+          </p>
+        </div>
 
         {/* Sous-section: Dates de Tests */}
         <div style={{ 
