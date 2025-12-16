@@ -528,7 +528,7 @@ async def send_inventaire_vehicule_alertes_email(
                         </tr>
                         <tr style="border-bottom: 1px solid #e5e7eb;">
                             <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Date :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{date_inventaire[:10] if date_inventaire != 'N/A' else 'N/A'}</td>
+                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{date_inventaire}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Effectué par :</strong></td>
