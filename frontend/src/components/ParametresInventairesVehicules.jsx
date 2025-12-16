@@ -862,23 +862,23 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
               >
                 <div style={{ flex: 1 }}>
                   {/* Nom */}
-                  <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.25rem' }}>
+                  <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
                     {u.prenom} {u.nom}
                   </div>
 
                   {/* Email */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>✉️</span>
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>{u.email}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.9375rem', color: '#6b7280' }}>✉️</span>
+                    <span style={{ fontSize: '0.9375rem', color: '#6b7280' }}>{u.email}</span>
                   </div>
 
                   {/* Rôle */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    <span style={{ fontSize: '1rem' }}>
                       {u.role === 'admin' ? '👑' : '🛡️'}
                     </span>
                     <span style={{ 
-                      fontSize: '0.875rem', 
+                      fontSize: '0.9375rem', 
                       color: u.role === 'admin' ? '#dc2626' : '#3b82f6',
                       fontWeight: '500'
                     }}>
