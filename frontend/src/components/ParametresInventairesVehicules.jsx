@@ -915,8 +915,8 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
             padding: '1rem', 
             backgroundColor: '#d1fae5', 
             borderRadius: '0.5rem', 
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
+            marginBottom: '1.5rem',
+            fontSize: '0.9375rem',
             color: '#065f46',
             display: 'flex',
             alignItems: 'center',
@@ -924,12 +924,14 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
           }}>
             <span style={{ fontSize: '1.25rem' }}>✅</span>
             <div>
-              <strong>Destinataires configurés :</strong>
+              <strong style={{ fontSize: '0.9375rem' }}>Destinataires configurés :</strong>
               <br />
-              {users
-                .filter(u => emailsNotifications.includes(u.id))
-                .map(u => `${u.prenom} ${u.nom} (${u.email})`)
-                .join(', ')}
+              <span style={{ fontSize: '0.9375rem' }}>
+                {users
+                  .filter(u => emailsNotifications.includes(u.id))
+                  .map(u => `${u.prenom} ${u.nom} (${u.email})`)
+                  .join(', ')}
+              </span>
             </div>
           </div>
         )}
@@ -939,11 +941,11 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
           style={{
             backgroundColor: '#ef4444',
             color: 'white',
-            padding: '0.75rem 1.5rem',
+            padding: '0.875rem 1.75rem',
             borderRadius: '0.5rem',
             border: 'none',
             cursor: 'pointer',
-            fontSize: '1rem',
+            fontSize: '1.0625rem',
             fontWeight: '600'
           }}
         >
