@@ -304,6 +304,7 @@ class ExportFunctionalityTester:
             if response.status_code == 200:
                 user_data = response.json()
                 print(f"👤 Utilisateur authentifié: {user_data.get('email')} - {user_data.get('role')}")
+                print(f"🏢 Tenant ID: {user_data.get('tenant_id', 'N/A')}")
                 
                 self.log_test_result(
                     "Token Validity", 
