@@ -1771,9 +1771,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         </>
       )}
 
-      {/* Contenu des modules (affiché seulement si un module est sélectionné) */}
+      
+      {/* ========== MODULE VÉHICULES ========== */}
       {selectedModule === 'vehicules' && (
-      <div>
+      <div style={{ 
+        background: '#f8f9fa', 
+        padding: '30px', 
+        borderRadius: '12px', 
+        border: '2px solid #e0e0e0',
+        marginBottom: '30px'
+      }}>
       <div style={{ 
         background: '#f8f9fa', 
         padding: '30px', 
