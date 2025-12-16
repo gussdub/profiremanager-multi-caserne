@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://fleet-equipment.preview.emergentagent.com
+- **URL** : https://equipmate.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://fleet-equipment.preview.emergentagent.com"
+  "apiUrl": "https://equipmate.preview.emergentagent.com"
 }
 ```
 
