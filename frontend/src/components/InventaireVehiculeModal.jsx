@@ -346,25 +346,28 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                     {sectionNom}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModeleSelectionne(null);
-                    setItemsInventaire([]);
-                    setSectionActuelle(0);
-                  }}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#6b7280',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.375rem',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  Changer de modèle
-                </button>
+                {/* Afficher le bouton "Changer de modèle" uniquement s'il y a plusieurs modèles */}
+                {modeles.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModeleSelectionne(null);
+                      setItemsInventaire([]);
+                      setSectionActuelle(0);
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#6b7280',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Changer de modèle
+                  </button>
+                )}
               </div>
 
               {/* Barre de progression visuelle */}
