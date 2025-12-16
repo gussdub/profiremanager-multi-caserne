@@ -185,7 +185,7 @@ class EquipmentModuleTester:
         url = f"{self.base_url}/{self.tenant_slug}/equipements/categories"
         
         new_category = {
-            "nom": "Test Catégorie API",
+            "nom": f"Test Catégorie API {int(time.time())}",
             "description": "Catégorie créée pour les tests API",
             "couleur": "#FF5733",
             "icone": "test-icon"
