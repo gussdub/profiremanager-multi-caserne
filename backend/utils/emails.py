@@ -53,7 +53,22 @@ async def send_defaut_borne_email(
         borne_id = borne.get('numero_borne', borne.get('id', 'N/A'))
         borne_adresse = borne.get('adresse', 'Adresse non spécifiée')
         borne_ville = borne.get('ville', '')
-        date_inspection = inspection.get('date_inspection', 'N/A')
+        
+        # Formater la date en heure locale (Canada EST = UTC-5)
+        date_inspection_raw = inspection.get('date_inspection', 'N/A')
+        if date_inspection_raw != 'N/A':
+            try:
+                from datetime import datetime, timedelta
+                # Parser la date ISO et convertir en heure locale Canada (UTC-5)
+                dt = datetime.fromisoformat(date_inspection_raw.replace('Z', '+00:00'))
+                # Convertir en heure locale du Canada (EST = UTC-5)
+                dt_local = dt - timedelta(hours=5)
+                date_inspection = dt_local.strftime('%Y-%m-%d')
+            except Exception as e:
+                date_inspection = date_inspection_raw[:10] if len(date_inspection_raw) >= 10 else date_inspection_raw
+        else:
+            date_inspection = 'N/A'
+        
         notes = inspection.get('notes', 'Aucune note')
         statut = inspection.get('statut_inspection', 'à refaire')
         
