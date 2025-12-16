@@ -401,11 +401,11 @@ const VehiculeQRAction = () => {
           <button
             onClick={handleInventaire}
             style={{
-              backgroundColor: '#F3F4F6',
-              color: '#6B7280',
+              backgroundColor: '#8B5CF6',
+              color: 'white',
               padding: '20px',
               borderRadius: '12px',
-              border: '2px dashed #D1D5DB',
+              border: 'none',
               cursor: 'pointer',
               fontSize: '1.125rem',
               fontWeight: '600',
@@ -413,29 +413,22 @@ const VehiculeQRAction = () => {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '12px',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              boxShadow: '0 4px 6px rgba(139, 92, 246, 0.2)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#E5E7EB';
-              e.currentTarget.style.borderColor = '#9CA3AF';
+              e.currentTarget.style.backgroundColor = '#7C3AED';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 12px rgba(139, 92, 246, 0.3)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#F3F4F6';
-              e.currentTarget.style.borderColor = '#D1D5DB';
+              e.currentTarget.style.backgroundColor = '#8B5CF6';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.2)';
             }}
           >
             <span style={{ fontSize: '24px' }}>📦</span>
-            <span>Inventaire</span>
-            <span style={{
-              fontSize: '0.75rem',
-              backgroundColor: '#FEF3C7',
-              color: '#92400E',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              fontWeight: '700'
-            }}>
-              Bientôt
-            </span>
+            <span>Démarrer un Inventaire</span>
           </button>
           </div>
         )}
