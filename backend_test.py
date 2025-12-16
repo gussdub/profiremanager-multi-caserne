@@ -650,9 +650,176 @@ class EquipmentModuleTester:
             self.log_test_result("Equipment Statistics", False, f"Exception: {str(e)}")
             return False
     
+    def test_individual_equipment_retrieval(self):
+        """Test 9: GET /api/shefford/equipements/{id} - Récupérer un équipement individuel"""
+        print(f"\n🧪 Test 9: Récupération d'un équipement individuel")
+        
+        if not self.test_data["equipements"]:
+            self.log_test_result("Individual Equipment Retrieval", False, "Aucun équipement disponible")
+            return False
+        
+        # Utiliser le premier équipement disponible
+        equipment = self.test_data["equipements"][0]
+        equipment_id = equipment.get('id')
+        
+        url = f"{self.base_url}/{self.tenant_slug}/equipements/{equipment_id}"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                equipment_data = response.json()
+                
+                # Vérifier que les données correspondent
+                if equipment_data.get('id') == equipment_id:
+                    self.log_test_result(
+                        "Individual Equipment Retrieval", 
+                        True, 
+                        f"Équipement {equipment_data.get('code_unique', 'N/A')} récupéré"
+                    )
+                    
+                    # Vérifier la structure complète
+                    required_fields = ['id', 'code_unique', 'nom', 'etat', 'categorie_id']
+                    missing_fields = [field for field in required_fields if field not in equipment_data]
+                    
+                    if not missing_fields:
+                        self.log_test_result(
+                            "Individual Equipment Retrieval - Structure", 
+                            True, 
+                            "Structure complète de l'équipement"
+                        )
+                    else:
+                        self.log_test_result(
+                            "Individual Equipment Retrieval - Structure", 
+                            False, 
+                            f"Champs manquants: {missing_fields}"
+                        )
+                    
+                    return True
+                else:
+                    self.log_test_result(
+                        "Individual Equipment Retrieval", 
+                        False, 
+                        f"ID incorrect: attendu {equipment_id}, reçu {equipment_data.get('id')}"
+                    )
+                    return False
+            else:
+                self.log_test_result(
+                    "Individual Equipment Retrieval", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Individual Equipment Retrieval", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_employee_assignment_with_radio_category(self):
+        """Test 10: Créer un équipement dans la catégorie 'Radios portatives' avec assignation employé"""
+        print(f"\n🧪 Test 10: Assignation employé avec catégorie Radios portatives")
+        
+        # Chercher la catégorie "Radios portatives"
+        radio_category = None
+        for cat in self.test_data["categories"]:
+            if "radio" in cat.get('nom', '').lower() or "portative" in cat.get('nom', '').lower():
+                radio_category = cat
+                break
+        
+        if not radio_category:
+            self.log_test_result(
+                "Employee Assignment - Radio Category", 
+                False, 
+                "Catégorie 'Radios portatives' non trouvée"
+            )
+            return False
+        
+        # Récupérer la liste des employés pour obtenir un ID valide
+        try:
+            users_url = f"{self.base_url}/{self.tenant_slug}/users"
+            users_response = requests.get(users_url, headers=self.headers)
+            
+            if users_response.status_code == 200:
+                users = users_response.json()
+                if users:
+                    # Utiliser Guillaume Dubeau si disponible, sinon le premier utilisateur
+                    target_user = None
+                    for user in users:
+                        if user.get('nom') == 'Dubeau' and user.get('prenom') == 'Guillaume':
+                            target_user = user
+                            break
+                    
+                    if not target_user:
+                        target_user = users[0]
+                    
+                    # Créer un équipement avec assignation employé
+                    url = f"{self.base_url}/{self.tenant_slug}/equipements"
+                    
+                    new_radio = {
+                        "code_unique": f"RADIO-{int(time.time())}",
+                        "nom": "Radio Test API",
+                        "description": "Radio créée pour test assignation",
+                        "categorie_id": radio_category.get('id'),
+                        "etat": "bon",
+                        "employe_id": target_user.get('id')
+                    }
+                    
+                    response = requests.post(url, headers=self.headers, json=new_radio)
+                    
+                    if response.status_code == 200:
+                        response_data = response.json()
+                        created_equipment = response_data.get('equipement', response_data)
+                        equipment_id = response_data.get('id') or created_equipment.get('id')
+                        
+                        self.created_items.append(('equipment', equipment_id))
+                        
+                        # Vérifier que employe_nom est bien rempli
+                        employe_nom = created_equipment.get('employe_nom', '')
+                        expected_name = f"{target_user.get('prenom', '')} {target_user.get('nom', '')}".strip()
+                        
+                        if employe_nom == expected_name:
+                            self.log_test_result(
+                                "Employee Assignment - Radio Category", 
+                                True, 
+                                f"Radio assignée à {employe_nom} dans catégorie {radio_category.get('nom')}"
+                            )
+                            return True
+                        else:
+                            self.log_test_result(
+                                "Employee Assignment - Radio Category", 
+                                False, 
+                                f"Nom employé incorrect: attendu '{expected_name}', reçu '{employe_nom}'"
+                            )
+                            return False
+                    else:
+                        self.log_test_result(
+                            "Employee Assignment - Radio Category", 
+                            False, 
+                            f"Création échouée: HTTP {response.status_code}"
+                        )
+                        return False
+                else:
+                    self.log_test_result(
+                        "Employee Assignment - Radio Category", 
+                        False, 
+                        "Aucun utilisateur disponible pour assignation"
+                    )
+                    return False
+            else:
+                self.log_test_result(
+                    "Employee Assignment - Radio Category", 
+                    False, 
+                    f"Impossible de récupérer les utilisateurs: HTTP {users_response.status_code}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Employee Assignment - Radio Category", False, f"Exception: {str(e)}")
+            return False
+    
     def test_category_modification_restrictions(self):
-        """Test 9: Restrictions sur la modification des catégories prédéfinies"""
-        print(f"\n🧪 Test 9: Restrictions modification catégories prédéfinies")
+        """Test 11: Restrictions sur la modification des catégories prédéfinies"""
+        print(f"\n🧪 Test 11: Restrictions modification catégories prédéfinies")
         
         if not self.test_data["categories"]:
             self.log_test_result("Category Modification Restrictions", False, "Aucune catégorie disponible")
