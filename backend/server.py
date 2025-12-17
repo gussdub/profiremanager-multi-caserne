@@ -16315,6 +16315,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # CORRECTION: Réinitialiser available_users pour inclure tous les candidats
                         # IMPORTANT: Le tri par niveaux N2-N5 sera fait APRÈS cette étape
                         available_users = []
+                        # CORRECTION CRITIQUE: Inclure nouvelles_assignations pour la vérification de déduplication
+                        toutes_assignations_dedup = existing_assignations + nouvelles_assignations
                         for user in users:
                             # Réappliquer filtres de base seulement
                             if user.get("statut") != "Actif":
@@ -16324,8 +16326,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             if user["id"] in indispos_lookup and date_str in indispos_lookup[user["id"]]:
                                 continue
                             
-                            # Check déjà assigné
-                            already_assigned = next((a for a in existing_assignations 
+                            # Check déjà assigné - UTILISER toutes_assignations_dedup
+                            already_assigned = next((a for a in toutes_assignations_dedup 
                                                    if a["date"] == date_str 
                                                    and a["user_id"] == user["id"]
                                                    and a["type_garde_id"] == type_garde["id"]), None)
