@@ -16170,6 +16170,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 if heures_semaine_actuelle + type_garde.get("duree_heures", 8) > heures_max_user:
                                     if user.get("email") == "sebas.charest18@hotmail.com":
                                         logging.info(f"❌ [HEURES] Sébastien Charest EXCLU pour dépassement limite heures!")
+                                    if is_jf_tardif:
+                                        logging.info(f"    ❌ [JF TARDIF] EXCLU: Dépassement heures max ({heures_semaine_actuelle + type_garde.get('duree_heures', 8)} > {heures_max_user})")
                                     continue  # Skip si dépasse la limite hebdo
                     
                     # ÉTAPE 2: Check if user has availability 
