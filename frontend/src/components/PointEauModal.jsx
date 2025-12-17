@@ -1,4 +1,134 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Composant pour gérer les clics sur la carte
+const MapClickHandler = ({ onMapClick }) => {
+  useMapEvents({
+    click: (e) => {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+};
+
+// Composant pour centrer la carte sur une position
+const MapCenterUpdater = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.setView(center, 15);
+    }
+  }, [center, map]);
+  return null;
+};
+
+// Composant pour la recherche d'adresse avec geocoding
+const AddressSearch = ({ onLocationFound }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+
+  const searchAddress = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSearching(true);
+    try {
+      // Utiliser Nominatim pour le géocodage
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=ca`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setSuggestions(data);
+      } else {
+        setSuggestions([]);
+        alert('Aucune adresse trouvée');
+      }
+    } catch (error) {
+      console.error('Erreur geocoding:', error);
+      alert('Erreur lors de la recherche d\'adresse');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const selectSuggestion = (suggestion) => {
+    onLocationFound(parseFloat(suggestion.lat), parseFloat(suggestion.lon), suggestion.display_name);
+    setSuggestions([]);
+    setSearchQuery('');
+  };
+
+  return (
+    <div style={{ marginBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
+          placeholder="Rechercher une adresse..."
+          style={{
+            flex: 1,
+            padding: '0.5rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            fontSize: '0.875rem'
+          }}
+        />
+        <button
+          type="button"
+          onClick={searchAddress}
+          disabled={searching}
+          style={{
+            padding: '0.5rem 1rem',
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem'
+          }}
+        >
+          {searching ? '...' : '🔍'}
+        </button>
+      </div>
+      {suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          zIndex: 1000,
+          background: 'white',
+          border: '1px solid #d1d5db',
+          borderRadius: '6px',
+          marginTop: '0.25rem',
+          maxHeight: '200px',
+          overflowY: 'auto',
+          width: 'calc(100% - 2rem)',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          {suggestions.map((s, idx) => (
+            <div
+              key={idx}
+              onClick={() => selectSuggestion(s)}
+              style={{
+                padding: '0.5rem',
+                cursor: 'pointer',
+                borderBottom: idx < suggestions.length - 1 ? '1px solid #e5e7eb' : 'none',
+                fontSize: '0.8rem'
+              }}
+              onMouseOver={(e) => e.target.style.background = '#f3f4f6'}
+              onMouseOut={(e) => e.target.style.background = 'white'}
+            >
+              {s.display_name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PointEauModal = ({ 
   point, 
