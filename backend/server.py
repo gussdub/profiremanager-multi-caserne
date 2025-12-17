@@ -16551,8 +16551,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if users_with_min_hours:
                     logging.info(f"    premier min_hours_user: {users_with_min_hours[0].get('prenom')} {users_with_min_hours[0].get('nom')}")
                 
-                # Conserver la liste complète de TOUS les candidats pour pouvoir les réintégrer après assignation d'un officier
-                all_candidates_backup = liste_niveaux.copy() if type_garde.get("officier_obligatoire", False) else []
+                # Conserver la liste complète de TOUS les candidats (incluant pompiers) pour réintégrer après assignation d'un officier
+                # CORRECTION: Utiliser tous_candidats_avant_filtrage (sauvegardé AVANT le filtrage officier)
+                # au lieu de liste_niveaux (qui ne contient que les officiers si filtrage appliqué)
+                all_candidates_backup = tous_candidats_avant_filtrage.copy() if type_garde.get("officier_obligatoire", False) else []
                 
                 for iteration_idx in range(places_restantes):
                     if not users_with_min_hours:
