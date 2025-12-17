@@ -15997,6 +15997,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 date_str = current_date.strftime("%Y-%m-%d")
                 day_name_en = current_date.strftime("%A").lower()  # english: monday, tuesday...
                 
+                # LOG DEBUG: Afficher CHAQUE jour itéré pour cette garde
+                logging.info(f"📅 [ITERATION] {type_garde['nom']} - Jour {day_offset}: {date_str} ({day_name_en})")
+                
                 # Mapping anglais → français pour compatibilité avec les deux formats
                 day_name_mapping = {
                     'monday': 'lundi', 'tuesday': 'mardi', 'wednesday': 'mercredi',
