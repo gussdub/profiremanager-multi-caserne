@@ -12,6 +12,7 @@ import InspectionsBornesSeches from './InspectionsBornesSeches';
 import InventaireVehiculeModal from './InventaireVehiculeModal';
 import HistoriqueInventairesVehicule from './HistoriqueInventairesVehicule';
 import ParametresInventairesVehicules from './ParametresInventairesVehicules';
+import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSeches';
 import MaterielEquipementsModule from './MaterielEquipementsModule';
 import ConfigurationEmailsEquipements from './ConfigurationEmailsEquipements';
 import ImportCSVEquipements from './ImportCSVEquipements';
