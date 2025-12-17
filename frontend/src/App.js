@@ -8275,14 +8275,15 @@ const Planning = () => {
                         <div style={{
                           marginTop: '0.5rem',
                           padding: '0.25rem 0.5rem',
-                          background: '#FEF3C7',
-                          color: '#92400E',
+                          background: hasOfficerAssigned ? '#D1FAE5' : '#FEE2E2',
+                          color: hasOfficerAssigned ? '#065F46' : '#991B1B',
                           borderRadius: '4px',
                           fontSize: '0.75rem',
                           fontWeight: 'bold',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          border: hasOfficerAssigned ? '1px solid #10B981' : '1px solid #EF4444'
                         }}>
-                          🎖️ Officier requis
+                          {hasOfficerAssigned ? '✅ Officier présent' : '⚠️ Officier manquant'}
                         </div>
                       )}
                     </div>
