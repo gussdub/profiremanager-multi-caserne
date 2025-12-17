@@ -1971,9 +1971,27 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           padding: '25px', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-          border: '1px solid #e0e0e0'
+          border: '1px solid #e0e0e0',
+          marginBottom: '15px'
         }}>
           <ConfigurationEmailsBornesSeches tenantSlug={tenantSlug} />
+        </div>
+
+        {/* Sous-section: Formulaires d'Inspection Personnalisables */}
+        <div style={{ 
+          background: 'white', 
+          padding: '25px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0'
+        }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>📋</span> Formulaires d'Inspection
+          </h3>
+          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+            Créez et personnalisez les formulaires d'inspection pour les bornes sèches
+          </p>
+          <ParametresInspectionsBornesSeches tenantSlug={tenantSlug} />
         </div>
       </div>
       )}
