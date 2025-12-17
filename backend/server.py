@@ -16233,13 +16233,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     grade_minimum_requis = type_garde.get("grade_minimum_requis", None)
                     
                     # Vérifier s'il y a déjà un officier assigné à cette garde
+                    # CORRECTION CRITIQUE: Inclure TOUTES les assignations (existantes + nouvelles de cette itération)
+                    # pour éviter d'assigner uniquement des officiers quand 1 est déjà assigné dans la même boucle
                     officier_deja_assigne = False
-                    for assignation in existing_for_garde:
+                    toutes_assignations_garde = [a for a in existing_assignations 
+                                                  if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
+                    for assignation in toutes_assignations_garde:
                         assigned_user = next((u for u in users if u["id"] == assignation["user_id"]), None)
                         if assigned_user:
                             grade_obj = grades_map.get(assigned_user.get("grade"))
                             if (grade_obj and grade_obj.get("est_officier", False)) or assigned_user.get("fonction_superieur", False):
                                 officier_deja_assigne = True
+                                logging.info(f"✅ [OFFICIER TROUVÉ] {assigned_user.get('prenom')} {assigned_user.get('nom')} ({assigned_user.get('grade')}) déjà assigné - contrainte satisfaite")
                                 break
                     
                     # Si aucun officier n'est encore assigné, appliquer la contrainte
