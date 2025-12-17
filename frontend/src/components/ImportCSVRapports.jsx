@@ -118,11 +118,12 @@ const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
       return mapped;
     });
     try {
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       const response = await fetch(`/api/${tenantSlug}/rapports/budgets/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           data: mappedData,
