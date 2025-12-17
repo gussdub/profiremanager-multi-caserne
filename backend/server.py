@@ -16232,15 +16232,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 tous_candidats_avant_filtrage = available_users.copy()
                 
                 # ÉTAPE 3: Apply grade requirements (1 officier obligatoire si configuré)
-                # Logique améliorée avec support fonction_superieur pour officiers
-                # Un Lieutenant en fonction supérieure peut couvrir un poste de Capitaine (N+1)
+                # Logique simplifiée: si officier_obligatoire, chercher un officier ou pompier avec fonction_superieur
                 if type_garde.get("officier_obligatoire", False):
-                    # Récupérer le grade minimum requis pour cette garde (si spécifié)
-                    grade_minimum_requis = type_garde.get("grade_minimum_requis", None)
-                    
                     # Vérifier s'il y a déjà un officier assigné à cette garde
-                    # CORRECTION CRITIQUE: Inclure TOUTES les assignations (existantes + nouvelles de cette itération)
-                    # pour éviter d'assigner uniquement des officiers quand 1 est déjà assigné dans la même boucle
+                    # Inclure TOUTES les assignations (existantes + nouvelles de cette itération)
                     officier_deja_assigne = False
                     toutes_assignations_pour_officier = existing_assignations + nouvelles_assignations
                     toutes_assignations_garde = [a for a in toutes_assignations_pour_officier 
@@ -16258,42 +16253,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     if not officier_deja_assigne:
                         logging.info(f"🎖️ [OFFICIER] {type_garde['nom']} - {date_str}: Aucun officier assigné, application de la contrainte")
                         
-                        # Séparer en 3 catégories avec priorisation
-                        officers_grade_exact = []      # Grade exact demandé
-                        officers_fonction_sup = []     # Officiers N-1 avec fonction supérieure
-                        pompiers_fonction_sup = []     # Pompiers (non-officiers) avec fonction supérieure
+                        # Séparer en 2 catégories: officiers et pompiers avec fonction_superieur
+                        officiers_disponibles = []       # Officiers (grade avec est_officier=true)
+                        pompiers_fonction_sup = []       # Pompiers avec fonction_superieur=true
                         
                         for u in available_users:
                             grade_obj = grades_map.get(u.get("grade"))
                             
                             if grade_obj and grade_obj.get("est_officier", False):
-                                # C'est un officier
-                                if grade_minimum_requis:
-                                    grade_requis_obj = grades_map.get(grade_minimum_requis)
-                                    
-                                    if u.get("grade") == grade_minimum_requis:
-                                        # Grade exact - Priorité 1
-                                        officers_grade_exact.append(u)
-                                    elif u.get("fonction_superieur", False) and grade_requis_obj:
-                                        # Officier avec fonction supérieure - vérifier si niveau N-1
-                                        niveau_user = grade_obj.get("niveau_hierarchique", 0)
-                                        niveau_requis = grade_requis_obj.get("niveau_hierarchique", 0)
-                                        
-                                        if niveau_user == niveau_requis - 1:
-                                            # Exactement 1 niveau en dessous - Priorité 2
-                                            officers_fonction_sup.append(u)
-                                            logging.info(f"✅ [FONCTION_SUP] {u['prenom']} {u['nom']} ({u['grade']}) peut couvrir {grade_minimum_requis}")
-                                        else:
-                                            # Trop d'écart de niveau - ne pas considérer
-                                            pass
-                                    else:
-                                        # Officier mais grade insuffisant et pas fonction_superieur
-                                        pass
-                                else:
-                                    # Aucun grade spécifique requis, tous les officiers sont OK
-                                    officers_grade_exact.append(u)
+                                # C'est un officier - tous les officiers sont éligibles
+                                officiers_disponibles.append(u)
                             elif u.get("fonction_superieur", False):
-                                # Non-officier avec fonction supérieure (pompier)
+                                # Pompier avec fonction supérieure
                                 pompiers_fonction_sup.append(u)
                         
                         # Application de la priorité
