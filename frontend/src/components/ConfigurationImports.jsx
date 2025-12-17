@@ -55,20 +55,11 @@ const ConfigurationImports = ({ tenantSlug }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          epi_fields: epiFields,
-          personnel_fields: personnelFields,
-          rapports_fields: rapportsFields
-        })
+      await apiPut(tenantSlug, '/config/import-settings', {
+        epi_fields: epiFields,
+        personnel_fields: personnelFields,
+        rapports_fields: rapportsFields
       });
-
-      if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
 
       alert('Configuration sauvegardée avec succès !');
     } catch (error) {
