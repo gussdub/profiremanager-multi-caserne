@@ -155,11 +155,12 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     });
 
     try {
+      const token = localStorage.getItem(`${tenantSlug}_token`);
       const response = await fetch(`/api/${tenantSlug}/epi/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           data: mappedData,
