@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Save, RefreshCw } from 'lucide-react';
+import { apiGet, apiPut } from '../utils/api';
 
 const ConfigurationImports = ({ tenantSlug }) => {
   const [loading, setLoading] = useState(true);
@@ -20,13 +21,8 @@ const ConfigurationImports = ({ tenantSlug }) => {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Erreur lors du chargement');
+      const data = await apiGet(tenantSlug, '/config/import-settings');
+      if (!data) throw new Error('Erreur lors du chargement');
 
       const data = await response.json();
       setSettings(data);
