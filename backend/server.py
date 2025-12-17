@@ -16094,6 +16094,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     break
                     
                     if user_a_conflit_horaire:
+                        if is_jf_tardif:
+                            logging.info(f"    ❌ [JF TARDIF] EXCLU: Conflit d'horaires")
                         continue  # Skip cet utilisateur pour éviter le conflit
                     
                     # VÉRIFICATION GLOBALE: Gestion de la limite heures_max_semaine
