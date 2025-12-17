@@ -6621,6 +6621,7 @@ const Planning = () => {
   const [typesGarde, setTypesGarde] = useState([]);
   const [assignations, setAssignations] = useState([]);
   const [users, setUsers] = useState([]);
+  const [grades, setGrades] = useState([]);  // Pour vérifier si un utilisateur est officier
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showGardeDetailsModal, setShowGardeDetailsModal] = useState(false);
