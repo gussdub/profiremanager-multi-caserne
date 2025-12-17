@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { apiGet } from '../utils/api';
 
 const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [step, setStep] = useState(1);
