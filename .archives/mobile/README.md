@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://inspect-designer.preview.emergentagent.com
+- **URL** : https://equiptrack-35.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://inspect-designer.preview.emergentagent.com"
+  "apiUrl": "https://equiptrack-35.preview.emergentagent.com"
 }
 ```
 
