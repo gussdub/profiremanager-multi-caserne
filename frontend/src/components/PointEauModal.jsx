@@ -484,19 +484,21 @@ const PointEauModal = ({
             />
           </div>
 
-          {/* Coordonnées GPS avec bouton */}
+          {/* Coordonnées GPS avec mini-carte intégrée */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
               Coordonnées GPS <span style={{ color: 'red' }}>*</span>
             </label>
+            
+            {/* Bouton pour afficher/masquer la carte */}
             <div style={{ marginBottom: '0.75rem' }}>
               <button
                 type="button"
-                onClick={handleSelectOnMap}
+                onClick={() => setShowMiniMap(!showMiniMap)}
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  background: '#10b981',
+                  background: showMiniMap ? '#6b7280' : '#10b981',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -509,9 +511,77 @@ const PointEauModal = ({
                   gap: '0.5rem'
                 }}
               >
-                📍 Sélectionner sur la carte
+                {showMiniMap ? '🗺️ Masquer la carte' : '📍 Sélectionner sur la carte'}
               </button>
             </div>
+
+            {/* Mini-carte intégrée */}
+            {showMiniMap && (
+              <div style={{ 
+                marginBottom: '0.75rem',
+                border: '2px solid #10b981',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                {/* Barre de recherche d'adresse */}
+                <div style={{ padding: '0.5rem', background: '#f3f4f6', position: 'relative' }}>
+                  <AddressSearch 
+                    onLocationFound={(lat, lng, address) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        latitude: lat.toFixed(6),
+                        longitude: lng.toFixed(6),
+                        adresse: address.split(',')[0] || prev.adresse
+                      }));
+                      setMapCenter([lat, lng]);
+                    }}
+                  />
+                </div>
+                
+                <div style={{ height: '250px' }}>
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={14}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={true}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; OpenStreetMap'
+                    />
+                    <MapClickHandler 
+                      onMapClick={(lat, lng) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          latitude: lat.toFixed(6),
+                          longitude: lng.toFixed(6)
+                        }));
+                        setMapCenter([lat, lng]);
+                      }}
+                    />
+                    <MapCenterUpdater center={mapCenter} />
+                    {formData.latitude && formData.longitude && (
+                      <Marker 
+                        position={[parseFloat(formData.latitude), parseFloat(formData.longitude)]}
+                        icon={selectedIcon}
+                      />
+                    )}
+                  </MapContainer>
+                </div>
+                <div style={{ 
+                  padding: '0.5rem', 
+                  background: '#ecfdf5', 
+                  fontSize: '0.75rem',
+                  color: '#047857',
+                  textAlign: 'center'
+                }}>
+                  👆 Cliquez sur la carte pour définir l'emplacement ou recherchez une adresse
+                </div>
+              </div>
+            )}
+
+            {/* Champs latitude/longitude */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
@@ -521,7 +591,12 @@ const PointEauModal = ({
                   type="text"
                   required
                   value={formData.latitude}
-                  onChange={(e) => handleCoordChange('latitude', e.target.value)}
+                  onChange={(e) => {
+                    handleCoordChange('latitude', e.target.value);
+                    if (e.target.value && formData.longitude) {
+                      setMapCenter([parseFloat(e.target.value), parseFloat(formData.longitude)]);
+                    }
+                  }}
                   placeholder="45.3778 ou collez Google Maps"
                   style={{
                     width: '100%',
@@ -540,7 +615,12 @@ const PointEauModal = ({
                   type="text"
                   required
                   value={formData.longitude}
-                  onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, longitude: e.target.value });
+                    if (formData.latitude && e.target.value) {
+                      setMapCenter([parseFloat(formData.latitude), parseFloat(e.target.value)]);
+                    }
+                  }}
                   placeholder="-72.6839"
                   style={{
                     width: '100%',
