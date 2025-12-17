@@ -16184,6 +16184,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             # Log spécifique pour debug
                             if user.get("email") == "sebas.charest18@hotmail.com":
                                 logging.info(f"❌ [GARDE_EXTERNE] Sébastien Charest EXCLU: accepte_gardes_externes=False")
+                            if is_jf_tardif:
+                                logging.info(f"    ❌ [JF TARDIF] EXCLU: N'accepte pas les gardes externes")
                             continue  # Skip si n'accepte pas les gardes externes
                     
                     if user.get("type_emploi", "temps_plein") == "temps_partiel":
