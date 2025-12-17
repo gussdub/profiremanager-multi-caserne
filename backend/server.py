@@ -16196,6 +16196,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         )
                         
                         if has_indispo:
+                            if is_jf_tardif:
+                                logging.info(f"    ❌ [JF TARDIF] EXCLU: A déclaré une indisponibilité")
                             continue  # Skip temps partiel si INDISPONIBLE
                         
                         # Note: Les temps partiel sans dispo (stand-by) sont maintenant inclus
