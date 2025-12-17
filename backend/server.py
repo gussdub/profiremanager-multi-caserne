@@ -16034,10 +16034,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 
                 # Calculer combien de pompiers il faut encore assigner
                 places_restantes = personnel_requis - personnel_assigne
+                logging.info(f"📝 [DEBUG-PLACES] {type_garde['nom']} - {date_str}: {places_restantes} places restantes, {len(users)} users à analyser")
                 
                 # Find available users for this slot
                 available_users = []
-                for user in users:
+                try:
+                    for user in users:
                     # LOG SPÉCIAL pour Jean-François Tardif (AVANT toute vérification)
                     is_jf_tardif = "jean" in user.get("prenom", "").lower() and "tardif" in user.get("nom", "").lower()
                     if is_jf_tardif:
