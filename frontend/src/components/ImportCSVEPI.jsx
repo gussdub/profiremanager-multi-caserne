@@ -40,17 +40,9 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
 
   const loadFieldsConfiguration = async () => {
     try {
-      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.epi_fields && data.epi_fields.length > 0) {
-          setAvailableFields(data.epi_fields);
-        }
+      const data = await apiGet(tenantSlug, '/config/import-settings');
+      if (data.epi_fields && data.epi_fields.length > 0) {
+        setAvailableFields(data.epi_fields);
       }
     } catch (error) {
       console.error('Erreur lors du chargement de la configuration:', error);
