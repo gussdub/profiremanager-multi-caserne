@@ -16237,6 +16237,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             # Un Premier Répondant ne peut PAS faire une garde de Pompier
                             # Un Pompier Auxiliaire ne peut PAS faire une garde nécessitant Pompier 1
                             logging.info(f"❌ [COMPETENCE] {user['prenom']} {user['nom']} (Grade: {user.get('grade')}) EXCLU - compétences manquantes")
+                            if is_jf_tardif:
+                                logging.info(f"    ❌ [JF TARDIF] EXCLU: Compétences manquantes pour cette garde")
                             continue  # Skip si compétences manquantes - AUCUNE EXCEPTION
                         else:
                             logging.info(f"✅ [COMPETENCE] {user['prenom']} {user['nom']} ELIGIBLE - a toutes les compétences")
