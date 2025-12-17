@@ -16309,11 +16309,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         elif pompiers_fonction_sup:
                             available_users = pompiers_fonction_sup
                             logging.info(f"✅ [OFFICIER] {len(pompiers_fonction_sup)} pompiers fonction supérieur trouvés (fallback)")
-                        # Priorité 4: Aucun candidat qualifié
+                        # Priorité 4: Aucun officier qualifié disponible
                         else:
-                            logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible")
-                            # Si aucun officier trouvé mais contrainte active, skip cette garde
-                            available_users = []
+                            logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible - place officier laissée vacante")
+                            # CORRECTION: Ne PAS bloquer toute la garde!
+                            # Laisser la place d'officier vacante, mais assigner les pompiers pour les autres postes
+                            # Réduire places_restantes de 1 (la place officier reste vide)
+                            places_restantes = max(0, places_restantes - 1)
+                            logging.info(f"📋 [OFFICIER VACANT] {places_restantes} postes pompiers restants à assigner")
+                            # Utiliser tous les candidats (pompiers inclus) pour les postes restants
+                            available_users = tous_candidats_avant_filtrage.copy()
                     else:
                         logging.info(f"✅ [OFFICIER] {type_garde['nom']} - {date_str}: Officier déjà assigné, contrainte respectée - tous les candidats éligibles")
                         # CORRECTION: Réinitialiser available_users pour inclure tous les candidats
