@@ -16272,6 +16272,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         available_users.append(user)
                         if is_jf_tardif:
                             logging.info(f"    ✅ [JF TARDIF] AJOUTÉ à available_users!")
+                except Exception as user_loop_error:
+                    logging.error(f"❌ [ERROR-USER-LOOP] {type_garde['nom']} - {date_str}: Erreur dans boucle users: {str(user_loop_error)}")
+                    import traceback
+                    logging.error(f"❌ [TRACEBACK] {traceback.format_exc()}")
+                
+                logging.info(f"📝 [DEBUG-AVAILABLE] {type_garde['nom']} - {date_str}: {len(available_users)} utilisateurs disponibles")
                 
                 if not available_users:
                     continue
