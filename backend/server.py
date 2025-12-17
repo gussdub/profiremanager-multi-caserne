@@ -16284,12 +16284,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Cette liste sera utilisée pour les postes suivants après qu'un officier soit assigné
                 tous_candidats_avant_filtrage = available_users.copy()
                 
-                # ÉTAPE 3: Apply grade requirements (1 officier obligatoire si configuré)
-                # Logique simplifiée: si officier_obligatoire, chercher un officier ou pompier avec fonction_superieur
-                if type_garde.get("officier_obligatoire", False):
-                    # Vérifier s'il y a déjà un officier assigné à cette garde
-                    # Inclure TOUTES les assignations (existantes + nouvelles de cette itération)
-                    officier_deja_assigne = False
+                # ÉTAPE 3: Vérifier si un officier est déjà assigné (pour info seulement)
+                # La logique de sélection d'officier sera appliquée APRÈS le filtrage N2-N5
+                officier_deja_assigne = False
+                besoin_officier = type_garde.get("officier_obligatoire", False)
+                
+                if besoin_officier:
                     toutes_assignations_pour_officier = existing_assignations + nouvelles_assignations
                     toutes_assignations_garde = [a for a in toutes_assignations_pour_officier 
                                                   if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
@@ -16302,73 +16302,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 logging.info(f"✅ [OFFICIER TROUVÉ] {assigned_user.get('prenom')} {assigned_user.get('nom')} ({assigned_user.get('grade')}) déjà assigné - contrainte satisfaite")
                                 break
                     
-                    # Si aucun officier n'est encore assigné, appliquer la contrainte
                     if not officier_deja_assigne:
-                        logging.info(f"🎖️ [OFFICIER] {type_garde['nom']} - {date_str}: Aucun officier assigné, application de la contrainte")
-                        
-                        # Séparer en 2 catégories: officiers et pompiers avec fonction_superieur
-                        officiers_disponibles = []       # Officiers (grade avec est_officier=true)
-                        pompiers_fonction_sup = []       # Pompiers avec fonction_superieur=true
-                        
-                        for u in available_users:
-                            grade_obj = grades_map.get(u.get("grade"))
-                            
-                            if grade_obj and grade_obj.get("est_officier", False):
-                                # C'est un officier - tous les officiers sont éligibles
-                                officiers_disponibles.append(u)
-                            elif u.get("fonction_superieur", False):
-                                # Pompier avec fonction supérieure
-                                pompiers_fonction_sup.append(u)
-                        
-                        # Application de la priorité simplifiée
-                        # Priorité 1: Officiers disponibles
-                        if officiers_disponibles:
-                            available_users = officiers_disponibles
-                            logging.info(f"✅ [OFFICIER] {len(officiers_disponibles)} officiers disponibles")
-                        # Priorité 2 (Fallback): Pompiers avec fonction_superieur si aucun officier
-                        elif pompiers_fonction_sup:
-                            available_users = pompiers_fonction_sup
-                            logging.info(f"✅ [OFFICIER] {len(pompiers_fonction_sup)} pompiers fonction supérieur trouvés (fallback)")
-                        # Aucun officier qualifié disponible
-                        else:
-                            logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible - place officier laissée vacante")
-                            # Laisser la place d'officier vacante, mais assigner les pompiers pour les autres postes
-                            places_restantes = max(0, places_restantes - 1)
-                            logging.info(f"📋 [OFFICIER VACANT] {places_restantes} postes pompiers restants à assigner")
-                            # Utiliser tous les candidats (pompiers inclus) pour les postes restants
-                            available_users = tous_candidats_avant_filtrage.copy()
-                    else:
-                        logging.info(f"✅ [OFFICIER] {type_garde['nom']} - {date_str}: Officier déjà assigné, contrainte respectée - tous les candidats éligibles")
-                        # CORRECTION: Réinitialiser available_users pour inclure tous les candidats
-                        # IMPORTANT: Le tri par niveaux N2-N5 sera fait APRÈS cette étape
-                        available_users = []
-                        # CORRECTION CRITIQUE: Inclure nouvelles_assignations pour la vérification de déduplication
-                        toutes_assignations_dedup = existing_assignations + nouvelles_assignations
-                        for user in users:
-                            # Réappliquer filtres de base seulement
-                            if user.get("statut") != "Actif":
-                                continue
-                            
-                            # Check indisponibilité
-                            if user["id"] in indispos_lookup and date_str in indispos_lookup[user["id"]]:
-                                continue
-                            
-                            # Check déjà assigné - UTILISER toutes_assignations_dedup
-                            already_assigned = next((a for a in toutes_assignations_dedup 
-                                                   if a["date"] == date_str 
-                                                   and a["user_id"] == user["id"]
-                                                   and a["type_garde_id"] == type_garde["id"]), None)
-                            if already_assigned:
-                                continue
-                            
-                            # Check compétences
-                            competences_requises = type_garde.get("competences_requises", [])
-                            if competences_requises:
-                                user_competences = user.get("competences", [])
-                                if not all(comp_id in user_competences for comp_id in competences_requises):
-                                    continue
-                            
-                            available_users.append(user)
+                        logging.info(f"🎖️ [OFFICIER] {type_garde['nom']} - {date_str}: Aucun officier assigné, recherche après filtrage N2-N5")
                 
                 # ÉTAPE 4: TRI PAR NIVEAUX DE PRIORITÉ (N2, N3, N4, N5)
                 # IMPORTANT: Ce tri doit se faire ICI, après l'étape officier
