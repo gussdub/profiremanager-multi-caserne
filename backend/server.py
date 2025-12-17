@@ -76,6 +76,13 @@ db = client[db_name]
 # Create the main app without a prefix
 app = FastAPI(title="ProFireManager API", version="2.0")
 
+# Health check endpoint pour Render (root path)
+@app.get("/")
+@app.head("/")
+async def root_health_check():
+    """Health check endpoint pour les services de monitoring (Render, etc.)"""
+    return {"status": "healthy", "service": "ProFireManager API", "version": "2.0"}
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
