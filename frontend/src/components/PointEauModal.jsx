@@ -165,6 +165,23 @@ const PointEauModal = ({
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectingOnMap, setSelectingOnMap] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+  const [mapCenter, setMapCenter] = useState([45.37, -72.57]); // Shefford par défaut
+
+  // Icône pour le marqueur sélectionné
+  const selectedIcon = L.divIcon({
+    html: `<div style="
+      width: 30px;
+      height: 30px;
+      background: #ef4444;
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    "></div>`,
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
 
   // URLs des icônes
   const iconUrls = {
