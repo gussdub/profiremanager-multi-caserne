@@ -97,10 +97,19 @@ else:
 
 async def create_database_indexes():
     """Créer les index MongoDB pour optimiser les performances"""
+    async def safe_create_index(collection, keys, **kwargs):
+        """Créer un index en ignorant les erreurs si l'index existe déjà"""
+        try:
+            await collection.create_index(keys, background=True, **kwargs)
+        except Exception as e:
+            # Ignorer l'erreur si l'index existe déjà (code 85 ou 86)
+            if "IndexKeySpecsConflict" not in str(e) and "index already exists" not in str(e).lower():
+                print(f"⚠️ Index creation warning: {e}")
+    
     try:
         # Index pour les tenants (CRITIQUE - appelé à chaque requête)
-        await db.tenants.create_index([("slug", 1)])
-        await db.tenants.create_index([("slug", 1), ("actif", 1)])
+        await safe_create_index(db.tenants, [("slug", 1)])
+        await safe_create_index(db.tenants, [("slug", 1), ("actif", 1)])
         
         # Index pour les notifications (CRITIQUE pour la performance)
         await db.notifications.create_index([
