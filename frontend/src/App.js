@@ -8627,7 +8627,7 @@ const Planning = () => {
                     <span>👥 {selectedGardeDetails.typeGarde.personnel_requis} personnel requis</span>
                     {selectedGardeDetails.typeGarde.officier_obligatoire && (() => {
                       const hasOfficer = selectedGardeDetails.personnelAssigne.some(u => {
-                        const gradeInfo = grades.find(g => g.nom === u.grade);
+                        const gradeInfo = grades && grades.find(g => g.nom === u.grade);
                         return (gradeInfo && gradeInfo.est_officier) || u.fonction_superieur;
                       });
                       return (
