@@ -196,11 +196,28 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       
       if (activeTab === 'vehicules') {
         // Convertir les champs numériques pour véhicules
-        if (preparedData.annee) {
-          preparedData.annee = parseInt(preparedData.annee, 10);
+        // Si annee est vide ou invalide, le supprimer pour éviter l'erreur de validation
+        if (preparedData.annee && preparedData.annee !== '') {
+          const parsedAnnee = parseInt(preparedData.annee, 10);
+          if (!isNaN(parsedAnnee)) {
+            preparedData.annee = parsedAnnee;
+          } else {
+            delete preparedData.annee;
+          }
+        } else {
+          delete preparedData.annee;
         }
-        if (preparedData.kilometrage) {
-          preparedData.kilometrage = parseFloat(preparedData.kilometrage);
+        
+        // Même logique pour kilometrage
+        if (preparedData.kilometrage && preparedData.kilometrage !== '') {
+          const parsedKm = parseFloat(preparedData.kilometrage);
+          if (!isNaN(parsedKm)) {
+            preparedData.kilometrage = parsedKm;
+          } else {
+            delete preparedData.kilometrage;
+          }
+        } else {
+          delete preparedData.kilometrage;
         }
       }
       
