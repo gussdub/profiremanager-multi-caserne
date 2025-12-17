@@ -509,19 +509,16 @@ const InspectionsBornesSeches = ({ user }) => {
         </div>
       )}
 
-      {/* Modal d'inspection */}
-      {showInspectionModal && (
-        <InspectionModal
+      {/* Modal d'inspection personnalisable */}
+      {showInspectionModal && selectedBorne && (
+        <InspectionBorneSecheModal
           borne={selectedBorne}
           tenantSlug={tenantSlug}
-          user={user}
           onClose={() => {
             setShowInspectionModal(false);
             setSelectedBorne(null);
           }}
-          onSave={() => {
-            setShowInspectionModal(false);
-            setSelectedBorne(null);
+          onSuccess={() => {
             fetchBornesSeches();
           }}
         />
