@@ -15721,7 +15721,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
         
         # Get existing assignations for the week
-        semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+        # NOTE: Ne PAS écraser semaine_fin car il est passé correctement depuis la boucle appelante
+        # (Bug précédent: la ligne suivante écrasait semaine_fin et limitait à 7 jours)
+        if not semaine_fin:
+            semaine_fin = (datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
         existing_assignations = await db.assignations.find({
             "date": {
                 "$gte": semaine_debut,
