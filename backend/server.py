@@ -16040,17 +16040,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 available_users = []
                 try:
                     for user in users:
-                    # LOG SPÉCIAL pour Jean-François Tardif (AVANT toute vérification)
-                    is_jf_tardif = "jean" in user.get("prenom", "").lower() and "tardif" in user.get("nom", "").lower()
-                    if is_jf_tardif:
-                        logging.info(f"🔍 [JF TARDIF] ===== Analyse pour {type_garde['nom']} - {date_str} =====")
-                        logging.info(f"    prenom: {user.get('prenom')}")
-                        logging.info(f"    nom: {user.get('nom')}")
-                        logging.info(f"    statut: {user.get('statut')}")
-                        logging.info(f"    type_emploi: {user.get('type_emploi')}")
-                        logging.info(f"    fonction_superieur: {user.get('fonction_superieur')}")
-                        logging.info(f"    grade: {user.get('grade')}")
-                        logging.info(f"    competences: {user.get('competences', [])}")
+                        # LOG SPÉCIAL pour Jean-François Tardif (AVANT toute vérification)
+                        is_jf_tardif = "jean" in user.get("prenom", "").lower() and "tardif" in user.get("nom", "").lower()
+                        if is_jf_tardif:
+                            logging.info(f"🔍 [JF TARDIF] ===== Analyse pour {type_garde['nom']} - {date_str} =====")
+                            logging.info(f"    prenom: {user.get('prenom')}")
+                            logging.info(f"    nom: {user.get('nom')}")
+                            logging.info(f"    statut: {user.get('statut')}")
+                            logging.info(f"    type_emploi: {user.get('type_emploi')}")
+                            logging.info(f"    fonction_superieur: {user.get('fonction_superieur')}")
+                            logging.info(f"    grade: {user.get('grade')}")
+                            logging.info(f"    competences: {user.get('competences', [])}")
                     
                     # VÉRIFICATION STATUT ACTIF (doit être en premier)
                     if user.get("statut") != "Actif":
