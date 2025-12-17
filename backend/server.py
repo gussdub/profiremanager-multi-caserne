@@ -16542,9 +16542,35 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if users_with_min_hours:
                     logging.info(f"    premier min_hours_user: {users_with_min_hours[0].get('prenom')} {users_with_min_hours[0].get('nom')}")
                 
-                for _ in range(places_restantes):
+                # Conserver la liste complète de TOUS les candidats pour pouvoir les réintégrer après assignation d'un officier
+                all_candidates_backup = liste_niveaux.copy() if type_garde.get("officier_obligatoire", False) else []
+                
+                for iteration_idx in range(places_restantes):
                     if not users_with_min_hours:
-                        break  # Plus de pompiers disponibles
+                        # CORRECTION CRITIQUE: Si la liste est vide mais qu'on a un officier assigné,
+                        # réintégrer TOUS les candidats (pompiers inclus) pour les postes restants
+                        if type_garde.get("officier_obligatoire", False) and all_candidates_backup:
+                            # Vérifier si un officier est maintenant assigné
+                            toutes_assign_garde = [a for a in existing_assignations 
+                                                   if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
+                            officier_maintenant_assigne = False
+                            for a in toutes_assign_garde:
+                                a_user = next((u for u in users if u["id"] == a["user_id"]), None)
+                                if a_user:
+                                    grade_obj = grades_map.get(a_user.get("grade"))
+                                    if (grade_obj and grade_obj.get("est_officier", False)) or a_user.get("fonction_superieur", False):
+                                        officier_maintenant_assigne = True
+                                        break
+                            
+                            if officier_maintenant_assigne:
+                                # Réintégrer tous les candidats sauf ceux déjà assignés
+                                users_deja_assignes = [a["user_id"] for a in toutes_assign_garde]
+                                users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                                logging.info(f"🔄 [RÉINTÉGRATION] Officier assigné - {len(users_with_min_hours)} candidats (pompiers inclus) réintégrés")
+                                all_candidates_backup = []  # Vider pour ne pas reboucler
+                        
+                        if not users_with_min_hours:
+                            break  # Plus de pompiers disponibles
                     
                     # Select the best candidate
                     selected_user = users_with_min_hours[0]
@@ -16595,6 +16621,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     # Retirer ce pompier de la liste des disponibles pour cette garde
                     users_with_min_hours.pop(0)
+                    
+                    # CORRECTION CRITIQUE: Après assignation d'un officier, vérifier si on peut ouvrir aux pompiers
+                    if type_garde.get("officier_obligatoire", False) and all_candidates_backup and not users_with_min_hours:
+                        # Vérifier si l'utilisateur assigné est un officier
+                        grade_obj_selected = grades_map.get(selected_user.get("grade"))
+                        is_officer = (grade_obj_selected and grade_obj_selected.get("est_officier", False)) or selected_user.get("fonction_superieur", False)
+                        
+                        if is_officer:
+                            # Réintégrer tous les candidats sauf celui qu'on vient d'assigner
+                            users_deja_assignes = [selected_user["id"]]
+                            users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                            logging.info(f"🔄 [OUVERTURE POMPIERS] {selected_user['prenom']} (officier) assigné - {len(users_with_min_hours)} pompiers maintenant éligibles")
+                            all_candidates_backup = []  # Vider pour ne pas reboucler
         
         # Logs de performance
         perf_end = time.time()
