@@ -9476,6 +9476,86 @@ class ItemInventaireVehicule(BaseModel):
     photo_requise: bool = False
     ordre: int = 0
 
+# ==================== MODÈLES INSPECTION BORNES SÈCHES PERSONNALISABLES ====================
+
+class ItemInspectionBorneSeche(BaseModel):
+    """Item individuel dans une section d'inspection de borne sèche"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nom: str
+    description: str = ""
+    photo_url: str = ""  # Photo de référence de l'item
+    obligatoire: bool = False
+    photo_requise: bool = False
+    ordre: int = 0
+
+class SectionInspectionBorneSeche(BaseModel):
+    """Section dans un modèle d'inspection de borne sèche"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    titre: str
+    description: str = ""
+    type_champ: str = "checkbox"  # Types: checkbox, radio, text, number, select, photo, timer, geolocation, signature, rating, toggle, date, multiselect, sketch
+    options: List[dict] = []  # Options pour checkbox/radio/select: [{label, declencherAlerte, couleur}]
+    photo_url: str = ""  # Photo de référence de la section
+    items: List[ItemInspectionBorneSeche] = []
+    ordre: int = 0
+    # Paramètres spécifiques selon le type
+    unite: str = ""  # Unité pour number (ex: "L/min", "PSI", "secondes")
+    min_value: Optional[float] = None  # Valeur minimale pour number
+    max_value: Optional[float] = None  # Valeur maximale pour number
+    seuil_alerte: Optional[float] = None  # Seuil déclenchant une alerte pour number
+
+class ModeleInspectionBorneSeche(BaseModel):
+    """Modèle d'inspection personnalisable pour les bornes sèches"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Inspection standard", "Inspection complète"
+    description: str = ""
+    est_actif: bool = True  # Si ce modèle est le modèle actif
+    sections: List[SectionInspectionBorneSeche] = []
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ModeleInspectionBorneSecheCreate(BaseModel):
+    nom: str
+    description: str = ""
+    sections: List[dict] = []  # [{titre, type_champ, options, items}]
+
+class ModeleInspectionBorneSecheUpdate(BaseModel):
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    est_actif: Optional[bool] = None
+    sections: Optional[List[dict]] = None
+
+class InspectionBorneSecheRemplie(BaseModel):
+    """Inspection effectuée sur une borne sèche avec formulaire personnalisable"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    borne_seche_id: str
+    borne_nom: str
+    modele_id: str
+    modele_nom: str
+    inspecteur_id: str
+    inspecteur_nom: str
+    date_inspection: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Réponses aux sections du formulaire
+    reponses: List[dict] = []  # [{section_id, section_titre, type_champ, valeur, notes, photos, alertes}]
+    # Géolocalisation
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    # Alertes générées
+    alertes: List[dict] = []  # [{section_titre, item_nom, message, severite}]
+    has_anomalie: bool = False  # Si une anomalie a été signalée
+    commentaire_anomalie: str = ""
+    photos_anomalie: List[str] = []
+    # Signature
+    signature_inspecteur: str = ""  # Base64 de la signature
+    # Statut
+    statut: str = "complete"  # complete, en_cours, anomalie
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== FIN MODÈLES INSPECTION BORNES SÈCHES ====================
+
 class SectionInventaireVehicule(BaseModel):
     """Section dans un modèle d'inventaire véhicule"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
