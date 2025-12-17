@@ -16743,13 +16743,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             
                             logging.info(f"🔄 [OUVERTURE POMPIERS] {selected_user['prenom']} (officier) assigné - {len(users_with_min_hours)} pompiers maintenant éligibles (exclus: {len(users_deja_assignes)})")
                             all_candidates_backup = []  # Vider pour ne pas reboucler
-                    
-                    logging.info(f"✅ [FIN-JOUR] {type_garde['nom']} - {date_str}: Jour traité avec succès")
-                except Exception as day_error:
-                    logging.error(f"❌ [ERROR-JOUR] {type_garde['nom']} - Jour {day_offset}: Erreur: {str(day_error)}")
-                    import traceback
-                    logging.error(f"❌ [TRACEBACK] {traceback.format_exc()}")
-                    continue  # Continuer avec le jour suivant malgré l'erreur
+                
+                logging.info(f"✅ [FIN-JOUR] {type_garde['nom']} - {date_str}: Jour traité avec succès")
         
         # Logs de performance
         perf_end = time.time()
