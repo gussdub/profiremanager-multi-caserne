@@ -28930,6 +28930,402 @@ async def get_inspection_borne_seche(
     return inspection
 
 
+# ==================== ENDPOINTS MODÈLES INSPECTION BORNES SÈCHES PERSONNALISABLES ====================
+
+@api_router.get("/{tenant_slug}/bornes-seches/modeles-inspection")
+async def get_modeles_inspection_bornes_seches(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les modèles d'inspection personnalisables pour les bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modeles = await db.modeles_inspection_bornes_seches.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return modeles
+
+@api_router.get("/{tenant_slug}/bornes-seches/modeles-inspection/actif")
+async def get_modele_inspection_actif(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer le modèle d'inspection actif pour les bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modele = await db.modeles_inspection_bornes_seches.find_one(
+        {"tenant_id": tenant.id, "est_actif": True},
+        {"_id": 0}
+    )
+    
+    if not modele:
+        # Créer un modèle par défaut si aucun n'existe
+        modele_defaut = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": "Inspection standard",
+            "description": "Modèle d'inspection par défaut pour les bornes sèches",
+            "est_actif": True,
+            "sections": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Conditions d'inspection",
+                    "type_champ": "select",
+                    "options": [
+                        {"label": "Dégagé", "declencherAlerte": False},
+                        {"label": "Nuageux", "declencherAlerte": False},
+                        {"label": "Pluvieux", "declencherAlerte": False},
+                        {"label": "Neigeux", "declencherAlerte": False}
+                    ],
+                    "items": [],
+                    "ordre": 0
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Température extérieure",
+                    "type_champ": "number",
+                    "unite": "°C",
+                    "items": [],
+                    "ordre": 1
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Inspection visuelle",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non conforme", "declencherAlerte": True},
+                        {"label": "N/A", "declencherAlerte": False}
+                    ],
+                    "items": [
+                        {"id": str(uuid.uuid4()), "nom": "Joint présent", "ordre": 0},
+                        {"id": str(uuid.uuid4()), "nom": "Joint en bon état", "ordre": 1},
+                        {"id": str(uuid.uuid4()), "nom": "Site accessible", "ordre": 2},
+                        {"id": str(uuid.uuid4()), "nom": "Site bien déneigé", "ordre": 3},
+                        {"id": str(uuid.uuid4()), "nom": "Vanne sortie Storz 4\"", "ordre": 4},
+                        {"id": str(uuid.uuid4()), "nom": "Vanne sortie 6\" filetée", "ordre": 5},
+                        {"id": str(uuid.uuid4()), "nom": "Vanne sortie 4\" filetée", "ordre": 6},
+                        {"id": str(uuid.uuid4()), "nom": "Niveau plan d'eau", "ordre": 7}
+                    ],
+                    "ordre": 2
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Essai de pompage",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non conforme", "declencherAlerte": True}
+                    ],
+                    "items": [
+                        {"id": str(uuid.uuid4()), "nom": "Pompage continu 5 min", "ordre": 0}
+                    ],
+                    "ordre": 3
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Temps d'amorçage",
+                    "type_champ": "timer",
+                    "unite": "secondes",
+                    "seuil_alerte": 60,
+                    "items": [],
+                    "ordre": 4
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Géolocalisation",
+                    "type_champ": "geolocation",
+                    "items": [],
+                    "ordre": 5
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Photos",
+                    "type_champ": "photo",
+                    "items": [],
+                    "ordre": 6
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Commentaires",
+                    "type_champ": "text",
+                    "items": [],
+                    "ordre": 7
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Signature inspecteur",
+                    "type_champ": "signature",
+                    "items": [],
+                    "ordre": 8
+                }
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.modeles_inspection_bornes_seches.insert_one(modele_defaut)
+        return modele_defaut
+    
+    return modele
+
+@api_router.get("/{tenant_slug}/bornes-seches/modeles-inspection/{modele_id}")
+async def get_modele_inspection_borne_seche(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un modèle d'inspection spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modele = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inspection non trouvé")
+    
+    return modele
+
+@api_router.post("/{tenant_slug}/bornes-seches/modeles-inspection")
+async def create_modele_inspection_borne_seche(
+    tenant_slug: str,
+    modele_data: ModeleInspectionBorneSecheCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau modèle d'inspection pour les bornes sèches"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Créer le modèle
+    modele_obj = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": modele_data.nom,
+        "description": modele_data.description,
+        "est_actif": False,
+        "sections": modele_data.sections,
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.modeles_inspection_bornes_seches.insert_one(modele_obj)
+    
+    return {"message": "Modèle créé avec succès", "id": modele_obj["id"]}
+
+@api_router.put("/{tenant_slug}/bornes-seches/modeles-inspection/{modele_id}")
+async def update_modele_inspection_borne_seche(
+    tenant_slug: str,
+    modele_id: str,
+    modele_data: ModeleInspectionBorneSecheUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un modèle d'inspection"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le modèle existe
+    existing = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    # Construire les updates
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if modele_data.nom is not None:
+        update_data["nom"] = modele_data.nom
+    if modele_data.description is not None:
+        update_data["description"] = modele_data.description
+    if modele_data.sections is not None:
+        update_data["sections"] = modele_data.sections
+    if modele_data.est_actif is not None:
+        # Si on active ce modèle, désactiver les autres
+        if modele_data.est_actif:
+            await db.modeles_inspection_bornes_seches.update_many(
+                {"tenant_id": tenant.id, "id": {"$ne": modele_id}},
+                {"$set": {"est_actif": False}}
+            )
+        update_data["est_actif"] = modele_data.est_actif
+    
+    await db.modeles_inspection_bornes_seches.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Modèle mis à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/bornes-seches/modeles-inspection/{modele_id}")
+async def delete_modele_inspection_borne_seche(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un modèle d'inspection"""
+    if current_user.role not in ["admin", "superadmin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le modèle n'est pas actif
+    modele = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    if modele.get("est_actif"):
+        raise HTTPException(status_code=400, detail="Impossible de supprimer le modèle actif")
+    
+    await db.modeles_inspection_bornes_seches.delete_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    
+    return {"message": "Modèle supprimé avec succès"}
+
+@api_router.post("/{tenant_slug}/bornes-seches/modeles-inspection/{modele_id}/activer")
+async def activer_modele_inspection(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Activer un modèle d'inspection (désactive les autres)"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le modèle existe
+    modele = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    # Désactiver tous les autres modèles
+    await db.modeles_inspection_bornes_seches.update_many(
+        {"tenant_id": tenant.id},
+        {"$set": {"est_actif": False}}
+    )
+    
+    # Activer ce modèle
+    await db.modeles_inspection_bornes_seches.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": {"est_actif": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Modèle activé avec succès"}
+
+@api_router.post("/{tenant_slug}/bornes-seches/inspections-personnalisees")
+async def create_inspection_personnalisee_borne_seche(
+    tenant_slug: str,
+    inspection_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistrer une inspection de borne sèche avec formulaire personnalisable"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer la borne
+    borne = await db.points_eau.find_one(
+        {"id": inspection_data.get("borne_seche_id"), "tenant_id": tenant.id}
+    )
+    if not borne:
+        raise HTTPException(status_code=404, detail="Borne sèche non trouvée")
+    
+    # Récupérer le modèle
+    modele = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": inspection_data.get("modele_id"), "tenant_id": tenant.id}
+    )
+    if not modele:
+        raise HTTPException(status_code=404, detail="Modèle d'inspection non trouvé")
+    
+    # Créer l'inspection
+    inspection = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "borne_seche_id": borne["id"],
+        "borne_nom": borne.get("nom") or borne.get("numero_identification"),
+        "modele_id": modele["id"],
+        "modele_nom": modele["nom"],
+        "inspecteur_id": current_user.id,
+        "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
+        "date_inspection": datetime.now(timezone.utc).isoformat(),
+        "reponses": inspection_data.get("reponses", []),
+        "latitude": inspection_data.get("latitude"),
+        "longitude": inspection_data.get("longitude"),
+        "alertes": inspection_data.get("alertes", []),
+        "has_anomalie": inspection_data.get("has_anomalie", False),
+        "commentaire_anomalie": inspection_data.get("commentaire_anomalie", ""),
+        "photos_anomalie": inspection_data.get("photos_anomalie", []),
+        "signature_inspecteur": inspection_data.get("signature_inspecteur", ""),
+        "statut": "anomalie" if inspection_data.get("has_anomalie") else "complete",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections_bornes_seches_personnalisees.insert_one(inspection)
+    
+    # Mettre à jour la borne sèche avec la dernière inspection
+    update_borne = {
+        "derniere_inspection_date": inspection["date_inspection"],
+        "derniere_inspection_id": inspection["id"],
+        "nombre_inspections": (borne.get("nombre_inspections") or 0) + 1
+    }
+    
+    # Si anomalie, mettre la borne en statut "en_inspection"
+    if inspection_data.get("has_anomalie"):
+        update_borne["etat"] = "en_inspection"
+        update_borne["statut_inspection"] = "anomalie"
+        
+        # Envoyer une alerte par email si configuré
+        try:
+            emails_config = await db.parametres.find_one(
+                {"tenant_id": tenant.id, "cle": "emails_alertes_bornes_seches"}
+            )
+            if emails_config and emails_config.get("emails"):
+                # TODO: Envoyer email d'alerte
+                pass
+        except:
+            pass
+    else:
+        update_borne["etat"] = "fonctionnelle"
+        update_borne["statut_inspection"] = "ok"
+    
+    await db.points_eau.update_one(
+        {"id": borne["id"], "tenant_id": tenant.id},
+        {"$set": update_borne}
+    )
+    
+    return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
+
+@api_router.get("/{tenant_slug}/bornes-seches/inspections-personnalisees")
+async def get_inspections_personnalisees_bornes_seches(
+    tenant_slug: str,
+    borne_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les inspections personnalisées des bornes sèches"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    filters = {"tenant_id": tenant.id}
+    if borne_id:
+        filters["borne_seche_id"] = borne_id
+    
+    inspections = await db.inspections_bornes_seches_personnalisees.find(
+        filters,
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=100)
+    
+    return inspections
+
+# ==================== FIN ENDPOINTS MODÈLES INSPECTION BORNES SÈCHES ====================
+
 
 # ==================== MODULE APPROVISIONNEMENT EN EAU - POINTS D'EAU ====================
 
