@@ -16683,11 +16683,44 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         if is_officer:
                             # Réintégrer tous les candidats sauf TOUS ceux déjà assignés à cette garde
-                            # CORRECTION: Récupérer TOUS les utilisateurs déjà assignés (pas seulement le dernier)
                             toutes_assign_actuelle = existing_assignations + nouvelles_assignations
                             users_deja_assignes = [a["user_id"] for a in toutes_assign_actuelle 
                                                    if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
-                            users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                            candidats_filtres_2 = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                            
+                            # CORRECTION: Trier les candidats réintégrés par niveaux (N2, N3, N4, N5)
+                            tp_dispo_2 = []
+                            tp_standby_2 = []
+                            tf_incomp_2 = []
+                            tf_comp_2 = []
+                            
+                            for u_r2 in candidats_filtres_2:
+                                if u_r2.get("type_emploi", "temps_plein") == "temps_partiel":
+                                    has_dispo = (u_r2["id"] in dispos_lookup and date_str in dispos_lookup[u_r2["id"]])
+                                    has_indispo = (u_r2["id"] in indispos_lookup and date_str in indispos_lookup[u_r2["id"]])
+                                    if has_dispo:
+                                        tp_dispo_2.append(u_r2)
+                                    elif not has_indispo:
+                                        tp_standby_2.append(u_r2)
+                                else:
+                                    heures_u2 = user_monthly_hours_internes.get(u_r2["id"], 0)
+                                    heures_max_u2 = u_r2.get("heures_max_semaine", 40)
+                                    if heures_u2 < heures_max_u2:
+                                        tf_incomp_2.append(u_r2)
+                                    else:
+                                        tf_comp_2.append(u_r2)
+                            
+                            # Reconstruire la liste triée par niveaux
+                            users_with_min_hours = []
+                            if niveaux_actifs["niveau_2"]:
+                                users_with_min_hours.extend(tp_dispo_2)
+                            if niveaux_actifs["niveau_3"]:
+                                users_with_min_hours.extend(tp_standby_2)
+                            if niveaux_actifs["niveau_4"]:
+                                users_with_min_hours.extend(tf_incomp_2)
+                            if niveaux_actifs["niveau_5"] and activer_heures_sup:
+                                users_with_min_hours.extend(tf_comp_2)
+                            
                             logging.info(f"🔄 [OUVERTURE POMPIERS] {selected_user['prenom']} (officier) assigné - {len(users_with_min_hours)} pompiers maintenant éligibles (exclus: {len(users_deja_assignes)})")
                             all_candidates_backup = []  # Vider pour ne pas reboucler
         
