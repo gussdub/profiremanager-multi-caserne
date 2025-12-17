@@ -16492,6 +16492,42 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 logging.info(f"    T.Plein Complets: {len(tf_complets)} {'✅' if niveaux_actifs['niveau_5'] and activer_heures_sup else '❌ EXCLUS'}")
                 logging.info(f"    Total candidats après filtrage: {len(available_users)}")
                 
+                # ÉTAPE 4b: SÉLECTION D'OFFICIER APRÈS FILTRAGE N2-N5
+                # Si officier obligatoire ET pas encore assigné, chercher parmi les candidats FILTRÉS
+                officier_a_mettre_en_premier = None
+                if besoin_officier and not officier_deja_assigne:
+                    logging.info(f"🎖️ [OFFICIER APRÈS N2-N5] {type_garde['nom']} - {date_str}: Recherche d'officier parmi {len(available_users)} candidats filtrés")
+                    
+                    # Priorité 1: Chercher un officier (grade avec est_officier=true) parmi les candidats filtrés
+                    officier_trouve = None
+                    for u in available_users:
+                        grade_obj = grades_map.get(u.get("grade"))
+                        if grade_obj and grade_obj.get("est_officier", False):
+                            officier_trouve = u
+                            logging.info(f"✅ [OFFICIER TROUVÉ] {u.get('prenom')} {u.get('nom')} ({u.get('grade')}) - grade officier")
+                            break
+                    
+                    # Priorité 2: Sinon, chercher un pompier avec fonction_superieur parmi les candidats filtrés
+                    if not officier_trouve:
+                        for u in available_users:
+                            if u.get("fonction_superieur", False):
+                                officier_trouve = u
+                                logging.info(f"✅ [OFFICIER FALLBACK] {u.get('prenom')} {u.get('nom')} - fonction_superieur=True")
+                                break
+                    
+                    if officier_trouve:
+                        # Mettre l'officier en PREMIER dans la liste pour qu'il soit assigné en premier
+                        officier_a_mettre_en_premier = officier_trouve
+                        available_users = [u for u in available_users if u["id"] != officier_trouve["id"]]
+                        available_users.insert(0, officier_trouve)
+                        logging.info(f"🎖️ [OFFICIER EN PREMIER] {officier_trouve.get('prenom')} {officier_trouve.get('nom')} sera assigné en premier")
+                    else:
+                        # Aucun officier disponible après filtrage N2-N5
+                        logging.warning(f"⚠️ [OFFICIER MANQUANT] Aucun officier/fonction_superieur trouvé après filtrage N2-N5 - place laissée vacante")
+                        # Réduire places_restantes car pas d'officier
+                        places_restantes = max(0, places_restantes - 1)
+                        logging.info(f"📋 [OFFICIER VACANT] {places_restantes} postes pompiers restants à assigner")
+                
                 # ÉTAPE 5: Les candidats sont déjà triés par priorité, équité et ancienneté
                 # Utiliser directement available_users
                 users_with_min_hours = available_users  # Déjà triés correctement
