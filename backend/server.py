@@ -16038,7 +16038,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 
                 # Find available users for this slot
                 available_users = []
+                logging.info(f"🔄 [DEBUT-USERS] {type_garde['nom']} - {date_str}: Début analyse des {len(users)} utilisateurs")
+                user_count = 0
                 for user in users:
+                    user_count += 1
                     # LOG SPÉCIAL pour Jean-François Tardif (AVANT toute vérification)
                     is_jf_tardif = "jean" in user.get("prenom", "").lower() and "tardif" in user.get("nom", "").lower()
                     if is_jf_tardif:
