@@ -8402,13 +8402,13 @@ async def generer_pdf_presence(rapport_data, annee, type_formation, total_pompie
     
     for p in rapport_data:
         table_data.append([
-            p["nom"],
-            p["grade"],
-            str(p["formations_passees"]),
-            str(p["presences"]),
-            str(p["absences"]),
-            f"{p['taux_presence']}%",
-            "✓" if p["conforme"] else "✗"
+            p.get("nom", ""),
+            p.get("grade", "N/A"),
+            str(p.get("formations_passees", 0)),
+            str(p.get("presences", 0)),
+            str(p.get("absences", 0)),
+            f"{p.get('taux_presence', 0)}%",
+            "✓" if p.get("conforme", False) else "✗"
         ])
     
     detail_table = Table(table_data, colWidths=[1.5*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.7*inch, 0.7*inch])
@@ -8474,13 +8474,13 @@ async def generer_excel_presence(rapport_data, annee, type_formation, total_pomp
     # Données
     for p in rapport_data:
         row += 1
-        ws.cell(row=row, column=1, value=p["nom"])
-        ws.cell(row=row, column=2, value=p["grade"])
-        ws.cell(row=row, column=3, value=p["formations_passees"])
-        ws.cell(row=row, column=4, value=p["presences"])
-        ws.cell(row=row, column=5, value=p["absences"])
-        ws.cell(row=row, column=6, value=p["taux_presence"])
-        ws.cell(row=row, column=7, value="Oui" if p["conforme"] else "Non")
+        ws.cell(row=row, column=1, value=p.get("nom", ""))
+        ws.cell(row=row, column=2, value=p.get("grade", "N/A"))
+        ws.cell(row=row, column=3, value=p.get("formations_passees", 0))
+        ws.cell(row=row, column=4, value=p.get("presences", 0))
+        ws.cell(row=row, column=5, value=p.get("absences", 0))
+        ws.cell(row=row, column=6, value=p.get("taux_presence", 0))
+        ws.cell(row=row, column=7, value="Oui" if p.get("conforme", False) else "Non")
     
     # Ajuster les largeurs de colonnes
     for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
@@ -10375,8 +10375,8 @@ async def recherche_remplacants_automatique(demande_id: str, current_user: User 
             
             remplacants_potentiels.append({
                 "user_id": user["id"],
-                "nom": f"{user['prenom']} {user['nom']}",
-                "grade": user["grade"],
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "grade": user.get("grade", "N/A"),
                 "score_compatibilite": 85  # Algorithme de scoring à développer
             })
         
@@ -15237,7 +15237,7 @@ async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, cur
                     # MODE DÉMO : ASSOUPLIR CONTRAINTE OFFICIER
                     if type_garde.get("officier_obligatoire", False):
                         # Chercher officiers d'abord
-                        officers = [u for u in available_users if u["grade"] in ["Capitaine", "Lieutenant", "Directeur"]]
+                        officers = [u for u in available_users if u.get("grade", "") in ["Capitaine", "Lieutenant", "Directeur"]]
                         # Sinon pompiers avec fonction supérieur
                         if not officers:
                             officers = [u for u in available_users if u.get("fonction_superieur", False)]
@@ -17647,7 +17647,7 @@ async def init_disponibilites_demo_complete(current_user: User = Depends(get_cur
                     
                     # CRÉER DISPONIBILITÉ POUR TOUS (temps plein et temps partiel)
                     # Exception : respecter les heures max pour temps partiel
-                    if user["type_emploi"] == "temps_partiel":
+                    if user.get("type_emploi", "temps_plein") == "temps_partiel":
                         # Temps partiel : disponible seulement 3 jours par semaine
                         user_number = int(user["numero_employe"][-1]) if user["numero_employe"][-1].isdigit() else 0
                         
