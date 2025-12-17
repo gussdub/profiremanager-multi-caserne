@@ -16021,6 +16021,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Find available users for this slot
                 available_users = []
                 for user in users:
+                    # VÉRIFICATION STATUT ACTIF (doit être en premier)
+                    if user.get("statut") != "Actif":
+                        continue
+                    
+                    # LOG SPÉCIAL pour Jean-François Tardif
+                    is_jf_tardif = "jean" in user.get("prenom", "").lower() and "tardif" in user.get("nom", "").lower()
+                    if is_jf_tardif:
+                        logging.info(f"🔍 [JF TARDIF] Analyse pour {type_garde['nom']} - {date_str}")
+                        logging.info(f"    statut: {user.get('statut')}")
+                        logging.info(f"    type_emploi: {user.get('type_emploi')}")
+                        logging.info(f"    fonction_superieur: {user.get('fonction_superieur')}")
+                        logging.info(f"    grade: {user.get('grade')}")
+                    
                     # VÉRIFICATION CRITIQUE: Éviter les conflits d'horaires
                     # Un utilisateur ne peut pas être sur 2 gardes qui se chevauchent
                     user_a_conflit_horaire = False
