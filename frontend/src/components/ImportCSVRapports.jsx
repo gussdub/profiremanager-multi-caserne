@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle } from 'lucide-react';
+import { apiGet } from '../utils/api';
 
 const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
   const [step, setStep] = useState(1);
@@ -30,14 +31,9 @@ const ImportCSVRapports = ({ tenantSlug, onImportComplete }) => {
 
   const loadFieldsConfiguration = async () => {
     try {
-      const response = await fetch(`/api/${tenantSlug}/config/import-settings`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.rapports_fields && data.rapports_fields.length > 0) {
-          setAvailableFields(data.rapports_fields);
-        }
+      const data = await apiGet(tenantSlug, '/config/import-settings');
+      if (data.rapports_fields && data.rapports_fields.length > 0) {
+        setAvailableFields(data.rapports_fields);
       }
     } catch (error) {
       console.error('Erreur chargement config:', error);
