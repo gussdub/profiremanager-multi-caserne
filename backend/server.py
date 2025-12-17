@@ -16554,7 +16554,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # réintégrer TOUS les candidats (pompiers inclus) pour les postes restants
                         if type_garde.get("officier_obligatoire", False) and all_candidates_backup:
                             # Vérifier si un officier est maintenant assigné
-                            toutes_assign_garde = [a for a in existing_assignations 
+                            # CORRECTION: Inclure existing_assignations + nouvelles_assignations
+                            toutes_assign_pour_check = existing_assignations + nouvelles_assignations
+                            toutes_assign_garde = [a for a in toutes_assign_pour_check 
                                                    if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
                             officier_maintenant_assigne = False
                             for a in toutes_assign_garde:
@@ -16567,6 +16569,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             
                             if officier_maintenant_assigne:
                                 # Réintégrer tous les candidats sauf ceux déjà assignés
+                                # CORRECTION: Utiliser toutes_assign_garde qui inclut les nouvelles assignations
                                 users_deja_assignes = [a["user_id"] for a in toutes_assign_garde]
                                 users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
                                 logging.info(f"🔄 [RÉINTÉGRATION] Officier assigné - {len(users_with_min_hours)} candidats (pompiers inclus) réintégrés")
