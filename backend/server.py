@@ -16620,6 +16620,55 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # au lieu de liste_niveaux (qui ne contient que les officiers si filtrage appliqué)
                 all_candidates_backup = tous_candidats_avant_filtrage.copy() if type_garde.get("officier_obligatoire", False) else []
                 
+                # CORRECTION CRITIQUE: Assigner l'officier EN PREMIER (avant la boucle normale)
+                # Ceci évite que l'officier soit exclu par le filtrage N2-N5
+                if assigner_officier_en_premier and officier_a_assigner:
+                    # Générer la justification pour l'officier
+                    justification_officier = await generer_justification_attribution(
+                        selected_user=officier_a_assigner,
+                        all_candidates=available_users,
+                        type_garde=type_garde,
+                        date_str=date_str,
+                        user_monthly_hours_internes=user_monthly_hours_internes,
+                        user_monthly_hours_externes=user_monthly_hours_externes,
+                        activer_heures_sup=activer_heures_sup,
+                        existing_assignations=existing_assignations,
+                        disponibilites_evaluees=None,
+                        dispos_lookup=dispos_lookup
+                    )
+                    
+                    # Créer l'assignation de l'officier
+                    assignation_officier = Assignation(
+                        user_id=officier_a_assigner["id"],
+                        type_garde_id=type_garde["id"],
+                        date=date_str,
+                        assignation_type="auto",
+                        tenant_id=tenant.id,
+                        justification=justification_officier,
+                        notes_admin="Officier assigné en priorité",
+                        justification_historique=[]
+                    )
+                    
+                    await db.assignations.insert_one(assignation_officier.dict())
+                    nouvelles_assignations.append(assignation_officier.dict())
+                    existing_assignations.append(assignation_officier.dict())
+                    
+                    # Mettre à jour les heures mensuelles
+                    duree_officier = type_garde.get("duree_heures", 8)
+                    type_garde_str = "EXTERNE" if type_garde.get("est_garde_externe", False) else "INTERNE"
+                    logging.info(f"🎖️ [ASSIGNATION OFFICIER] {officier_a_assigner['prenom']} {officier_a_assigner['nom']} ({officier_a_assigner.get('grade')}) assigné à {type_garde['nom']} ({type_garde_str}, {duree_officier}h) le {date_str}")
+                    
+                    if type_garde.get("est_garde_externe", False):
+                        user_monthly_hours_externes[officier_a_assigner["id"]] = user_monthly_hours_externes.get(officier_a_assigner["id"], 0) + duree_officier
+                    else:
+                        user_monthly_hours_internes[officier_a_assigner["id"]] = user_monthly_hours_internes.get(officier_a_assigner["id"], 0) + duree_officier
+                    
+                    # Réduire places_restantes car officier assigné
+                    places_restantes = max(0, places_restantes - 1)
+                    
+                    # Marquer que l'officier a été assigné
+                    assigner_officier_en_premier = False
+                
                 for iteration_idx in range(places_restantes):
                     if not users_with_min_hours:
                         # CORRECTION CRITIQUE: Si la liste est vide mais qu'on a un officier assigné,
