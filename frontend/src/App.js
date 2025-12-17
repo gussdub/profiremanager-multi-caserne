@@ -8120,6 +8120,12 @@ const Planning = () => {
                   const requiredCount = typeGarde.personnel_requis;
                   const coverage = getGardeCoverage(date, typeGarde);
                   
+                  // Vérifier si un officier est assigné à cette garde
+                  const hasOfficerAssigned = assignedUsers.some(u => {
+                    const gradeInfo = grades.find(g => g.nom === u.grade);
+                    return (gradeInfo && gradeInfo.est_officier) || u.fonction_superieur;
+                  });
+                  
                   // Vérifier si c'est un quart de l'utilisateur actuel
                   const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
                   
