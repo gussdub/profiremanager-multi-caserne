@@ -15993,12 +15993,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         for type_garde in types_garde_sorted:  # Utiliser la liste triée au lieu de types_garde
             # Check each day for this type de garde
             for day_offset in range(7):
-                current_date = datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=day_offset)
-                date_str = current_date.strftime("%Y-%m-%d")
-                day_name_en = current_date.strftime("%A").lower()  # english: monday, tuesday...
-                
-                # LOG DEBUG: Afficher CHAQUE jour itéré pour cette garde
-                logging.info(f"📅 [ITERATION] {type_garde['nom']} - Jour {day_offset}: {date_str} ({day_name_en})")
+                try:
+                    current_date = datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=day_offset)
+                    date_str = current_date.strftime("%Y-%m-%d")
+                    day_name_en = current_date.strftime("%A").lower()  # english: monday, tuesday...
+                    
+                    # LOG DEBUG: Afficher CHAQUE jour itéré pour cette garde
+                    logging.info(f"📅 [ITERATION] {type_garde['nom']} - Jour {day_offset}: {date_str} ({day_name_en})")
                 
                 # Mapping anglais → français pour compatibilité avec les deux formats
                 day_name_mapping = {
