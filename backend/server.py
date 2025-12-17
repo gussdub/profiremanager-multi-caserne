@@ -16579,7 +16579,46 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 # Réintégrer tous les candidats sauf ceux déjà assignés
                                 # CORRECTION: Utiliser toutes_assign_garde qui inclut les nouvelles assignations
                                 users_deja_assignes = [a["user_id"] for a in toutes_assign_garde]
-                                users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                                candidats_filtres = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
+                                
+                                # CORRECTION: Trier les candidats réintégrés par niveaux (N2, N3, N4, N5)
+                                # comme dans l'étape 4 originale
+                                tp_dispo_reint = []
+                                tp_standby_reint = []
+                                tf_incomp_reint = []
+                                tf_comp_reint = []
+                                
+                                for u_reint in candidats_filtres:
+                                    if u_reint.get("type_emploi", "temps_plein") == "temps_partiel":
+                                        # Vérifier dispo
+                                        has_dispo = (u_reint["id"] in dispos_lookup and 
+                                                    date_str in dispos_lookup[u_reint["id"]])
+                                        has_indispo = (u_reint["id"] in indispos_lookup and 
+                                                      date_str in indispos_lookup[u_reint["id"]])
+                                        if has_dispo:
+                                            tp_dispo_reint.append(u_reint)
+                                        elif not has_indispo:
+                                            tp_standby_reint.append(u_reint)
+                                    else:
+                                        # Temps plein - calculer heures
+                                        heures_u = user_monthly_hours_internes.get(u_reint["id"], 0)
+                                        heures_max_u = u_reint.get("heures_max_semaine", 40)
+                                        if heures_u < heures_max_u:
+                                            tf_incomp_reint.append(u_reint)
+                                        else:
+                                            tf_comp_reint.append(u_reint)
+                                
+                                # Reconstruire la liste triée par niveaux
+                                users_with_min_hours = []
+                                if niveaux_actifs["niveau_2"]:
+                                    users_with_min_hours.extend(tp_dispo_reint)
+                                if niveaux_actifs["niveau_3"]:
+                                    users_with_min_hours.extend(tp_standby_reint)
+                                if niveaux_actifs["niveau_4"]:
+                                    users_with_min_hours.extend(tf_incomp_reint)
+                                if niveaux_actifs["niveau_5"] and activer_heures_sup:
+                                    users_with_min_hours.extend(tf_comp_reint)
+                                
                                 logging.info(f"🔄 [RÉINTÉGRATION] Officier assigné - {len(users_with_min_hours)} candidats (pompiers inclus) réintégrés")
                                 all_candidates_backup = []  # Vider pour ne pas reboucler
                         
