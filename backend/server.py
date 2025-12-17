@@ -16188,7 +16188,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     # VÉRIFICATION : Check if user already assigned to THIS TYPE DE GARDE on this date
                     # Important : On permet plusieurs gardes différentes le même jour (ex: matin + après-midi)
-                    already_assigned = next((a for a in existing_assignations 
+                    # CORRECTION CRITIQUE: Vérifier dans existing_assignations ET nouvelles_assignations
+                    toutes_assignations_check = existing_assignations + nouvelles_assignations
+                    already_assigned = next((a for a in toutes_assignations_check 
                                            if a["date"] == date_str 
                                            and a["user_id"] == user["id"]
                                            and a["type_garde_id"] == type_garde["id"]), None)
@@ -16236,7 +16238,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # CORRECTION CRITIQUE: Inclure TOUTES les assignations (existantes + nouvelles de cette itération)
                     # pour éviter d'assigner uniquement des officiers quand 1 est déjà assigné dans la même boucle
                     officier_deja_assigne = False
-                    toutes_assignations_garde = [a for a in existing_assignations 
+                    toutes_assignations_pour_officier = existing_assignations + nouvelles_assignations
+                    toutes_assignations_garde = [a for a in toutes_assignations_pour_officier 
                                                   if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
                     for assignation in toutes_assignations_garde:
                         assigned_user = next((u for u in users if u["id"] == assignation["user_id"]), None)
