@@ -16267,25 +16267,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 # Pompier avec fonction supérieure
                                 pompiers_fonction_sup.append(u)
                         
-                        # Application de la priorité
-                        # Priorité 1: Officiers avec grade exact
-                        if officers_grade_exact:
-                            available_users = officers_grade_exact
-                            logging.info(f"✅ [OFFICIER] {len(officers_grade_exact)} officiers grade exact trouvés")
-                        # Priorité 2: Officiers N-1 avec fonction supérieure
-                        elif officers_fonction_sup:
-                            available_users = officers_fonction_sup
-                            logging.info(f"✅ [OFFICIER] {len(officers_fonction_sup)} officiers fonction supérieure (N-1) trouvés")
-                        # Priorité 3 (Fallback): Pompiers fonction_superieur si aucun officier
+                        # Application de la priorité simplifiée
+                        # Priorité 1: Officiers disponibles
+                        if officiers_disponibles:
+                            available_users = officiers_disponibles
+                            logging.info(f"✅ [OFFICIER] {len(officiers_disponibles)} officiers disponibles")
+                        # Priorité 2 (Fallback): Pompiers avec fonction_superieur si aucun officier
                         elif pompiers_fonction_sup:
                             available_users = pompiers_fonction_sup
                             logging.info(f"✅ [OFFICIER] {len(pompiers_fonction_sup)} pompiers fonction supérieur trouvés (fallback)")
-                        # Priorité 4: Aucun officier qualifié disponible
+                        # Aucun officier qualifié disponible
                         else:
                             logging.warning(f"⚠️ [OFFICIER] Aucun officier ou fonction supérieur disponible - place officier laissée vacante")
-                            # CORRECTION: Ne PAS bloquer toute la garde!
                             # Laisser la place d'officier vacante, mais assigner les pompiers pour les autres postes
-                            # Réduire places_restantes de 1 (la place officier reste vide)
                             places_restantes = max(0, places_restantes - 1)
                             logging.info(f"📋 [OFFICIER VACANT] {places_restantes} postes pompiers restants à assigner")
                             # Utiliser tous les candidats (pompiers inclus) pour les postes restants
