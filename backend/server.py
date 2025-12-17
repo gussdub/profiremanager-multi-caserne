@@ -16227,6 +16227,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if not available_users:
                     continue
                 
+                # SAUVEGARDE: Conserver TOUS les candidats AVANT le filtrage officier
+                # Cette liste sera utilisée pour les postes suivants après qu'un officier soit assigné
+                tous_candidats_avant_filtrage = available_users.copy()
+                
                 # ÉTAPE 3: Apply grade requirements (1 officier obligatoire si configuré)
                 # Logique améliorée avec support fonction_superieur pour officiers
                 # Un Lieutenant en fonction supérieure peut couvrir un poste de Capitaine (N+1)
