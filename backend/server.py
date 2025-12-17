@@ -5917,11 +5917,11 @@ async def export_rapport_heures_pdf(
     ]
     
     for emp in rapport_response["employes"]:
-        type_emploi_abbr = "TP" if emp["type_emploi"] == "temps_partiel" else "TF"
+        type_emploi_abbr = "TP" if emp.get("type_emploi", "temps_plein") == "temps_partiel" else "TF"
         table_data.append([
             emp["nom_complet"],
             type_emploi_abbr,
-            emp["grade"],
+            emp.get("grade", "N/A"),
             f"{emp['heures_internes']}h",
             f"{emp['heures_externes']}h",
             f"{emp['total_heures']}h"
@@ -6041,10 +6041,10 @@ async def export_rapport_heures_excel(
     # Données
     row = 5
     for emp in rapport_response["employes"]:
-        type_emploi_abbr = "TP" if emp["type_emploi"] == "temps_partiel" else "TF"
+        type_emploi_abbr = "TP" if emp.get("type_emploi", "temps_plein") == "temps_partiel" else "TF"
         ws.cell(row=row, column=1, value=emp["nom_complet"])
         ws.cell(row=row, column=2, value=type_emploi_abbr)
-        ws.cell(row=row, column=3, value=emp["grade"])
+        ws.cell(row=row, column=3, value=emp.get("grade", "N/A"))
         ws.cell(row=row, column=4, value=emp["heures_internes"])
         ws.cell(row=row, column=5, value=emp["heures_externes"])
         ws.cell(row=row, column=6, value=emp["total_heures"])
@@ -10353,7 +10353,7 @@ async def recherche_remplacants_automatique(demande_id: str, current_user: User 
                 continue  # Skip demandeur
                 
             # Étape 1: Vérifier disponibilités (si temps partiel)
-            if user["type_emploi"] == "temps_partiel":
+            if user.get("type_emploi", "temps_plein") == "temps_partiel":
                 # Get user disponibilités pour cette date exacte
                 user_dispos = await db.disponibilites.find({
                     "user_id": user["id"],
@@ -10672,11 +10672,11 @@ async def export_pdf_report(type_rapport: str = "general", user_id: str = None, 
                 
                 data = [
                     ['Information', 'Détail'],
-                    ['Nom complet', f"{user_data['prenom']} {user_data['nom']}"],
-                    ['Grade', user_data['grade']],
-                    ['Type emploi', user_data['type_emploi']],
+                    ['Nom complet', f"{user_data.get('prenom', '')} {user_data.get('nom', '')}"],
+                    ['Grade', user_data.get('grade', 'N/A')],
+                    ['Type emploi', user_data.get('type_emploi', 'N/A')],
                     ['Gardes assignées', str(len(user_assignations))],
-                    ['Statut', user_data['statut']]
+                    ['Statut', user_data.get('statut', 'N/A')]
                 ]
                 
                 table = Table(data)
@@ -10810,10 +10810,10 @@ async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depen
             
             stats_par_employe.append({
                 "id": user["id"],
-                "nom": f"{user['prenom']} {user['nom']}",
-                "grade": user["grade"],
-                "role": user["role"],
-                "type_emploi": user["type_emploi"],
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "grade": user.get("grade", "N/A"),
+                "role": user.get("role", "pompier"),
+                "type_emploi": user.get("type_emploi", "temps_plein"),
                 "assignations_count": len(user_assignations),
                 "disponibilites_count": len(user_disponibilites),
                 "formations_count": len(user.get("formations", [])),
@@ -12552,12 +12552,12 @@ async def export_salaires_pdf(
     table_data = [["Nom", "Matricule", "Type", "Heures", "Taux/h", "Coût"]]
     for emp in rapport:
         table_data.append([
-            emp["nom"],
-            emp["matricule"],
-            "TP" if emp["type_emploi"] == "temps_plein" else "TPa",
-            f"{emp['heures_travaillees']}h",
-            f"${emp['taux_horaire']}",
-            f"${emp['cout_total']:,.2f}"
+            emp.get("nom", ""),
+            emp.get("matricule", ""),
+            "TP" if emp.get("type_emploi", "temps_plein") == "temps_plein" else "TPa",
+            f"{emp.get('heures_travaillees', 0)}h",
+            f"${emp.get('taux_horaire', 0)}",
+            f"${emp.get('cout_total', 0):,.2f}"
         ])
     
     detail_table = Table(table_data, colWidths=[1.8*inch, 1*inch, 0.7*inch, 0.8*inch, 0.8*inch, 1.2*inch])
@@ -12664,12 +12664,12 @@ async def export_salaires_excel(
     
     for emp in rapport:
         row += 1
-        ws.cell(row=row, column=1, value=emp["nom"])
-        ws.cell(row=row, column=2, value=emp["matricule"])
-        ws.cell(row=row, column=3, value=emp["type_emploi"])
-        ws.cell(row=row, column=4, value=emp["heures_travaillees"])
-        ws.cell(row=row, column=5, value=emp["taux_horaire"])
-        ws.cell(row=row, column=6, value=emp["cout_total"])
+        ws.cell(row=row, column=1, value=emp.get("nom", ""))
+        ws.cell(row=row, column=2, value=emp.get("matricule", ""))
+        ws.cell(row=row, column=3, value=emp.get("type_emploi", "temps_plein"))
+        ws.cell(row=row, column=4, value=emp.get("heures_travaillees", 0))
+        ws.cell(row=row, column=5, value=emp.get("taux_horaire", 0))
+        ws.cell(row=row, column=6, value=emp.get("cout_total", 0))
     
     # Ajuster largeurs
     for col in ['A', 'B', 'C', 'D', 'E', 'F']:
@@ -16169,11 +16169,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 logging.info(f"❌ [GARDE_EXTERNE] Sébastien Charest EXCLU: accepte_gardes_externes=False")
                             continue  # Skip si n'accepte pas les gardes externes
                     
-                    if user["type_emploi"] == "temps_partiel":
+                    if user.get("type_emploi", "temps_plein") == "temps_partiel":
                         # Vérifier si a déclaré une INDISPONIBILITÉ (exclusion totale)
                         has_indispo = (
-                            user["id"] in indispos_lookup and
-                            date_str in indispos_lookup[user["id"]]
+                            user.get("id") in indispos_lookup and
+                            date_str in indispos_lookup[user.get("id")]
                         )
                         
                         if has_indispo:
@@ -16350,10 +16350,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # Log spécifique pour Guillaume Dubeau
                     if "guillaume" in u.get("prenom", "").lower() and "dubeau" in u.get("nom", "").lower():
                         logging.info(f"🔍 [GUILLAUME] Traitement pour {type_garde['nom']} - {date_str}")
-                        logging.info(f"    Type emploi: {u['type_emploi']}")
+                        logging.info(f"    Type emploi: {u.get('type_emploi', 'temps_plein')}")
                         logging.info(f"    Statut: {u.get('statut', 'N/A')}")
                     
-                    if u["type_emploi"] == "temps_partiel":
+                    if u.get("type_emploi", "temps_plein") == "temps_partiel":
                         # CORRECTION CRITIQUE: Vérifier si a déclaré une disponibilité QUI COUVRE l'horaire de la garde
                         has_dispo_covering = False
                         
