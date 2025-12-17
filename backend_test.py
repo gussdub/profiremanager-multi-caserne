@@ -53,7 +53,7 @@ import os
 
 class EquipmentModuleTester:
     def __init__(self):
-        self.base_url = "https://equipmate.preview.emergentagent.com/api"
+        self.base_url = "https://inspect-designer.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
