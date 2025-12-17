@@ -8625,9 +8625,23 @@ const Planning = () => {
                   <div className="garde-details-meta">
                     <span>⏰ {selectedGardeDetails.typeGarde.heure_debut} - {selectedGardeDetails.typeGarde.heure_fin}</span>
                     <span>👥 {selectedGardeDetails.typeGarde.personnel_requis} personnel requis</span>
-                    {selectedGardeDetails.typeGarde.officier_obligatoire && (
-                      <span>🎖️ Officier obligatoire</span>
-                    )}
+                    {selectedGardeDetails.typeGarde.officier_obligatoire && (() => {
+                      const hasOfficer = selectedGardeDetails.personnelAssigne.some(u => {
+                        const gradeInfo = grades.find(g => g.nom === u.grade);
+                        return (gradeInfo && gradeInfo.est_officier) || u.fonction_superieur;
+                      });
+                      return (
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          background: hasOfficer ? '#D1FAE5' : '#FEE2E2',
+                          color: hasOfficer ? '#065F46' : '#991B1B',
+                          fontWeight: 'bold'
+                        }}>
+                          {hasOfficer ? '✅ Officier présent' : '⚠️ Officier manquant'}
+                        </span>
+                      );
+                    })()}
                     {selectedGardeDetails.typeGarde.est_garde_externe && (
                       <span className="badge-externe">🏠 Garde Externe</span>
                     )}
