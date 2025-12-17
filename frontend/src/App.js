@@ -20948,6 +20948,7 @@ const ListeInspections = ({ setCurrentView }) => {
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, conforme, non_conforme
 
