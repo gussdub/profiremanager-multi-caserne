@@ -16246,6 +16246,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     # DÉDUPLICATION CRITIQUE : Comparer par ID car dict comparison ne fonctionne pas
                     if user["id"] not in [u["id"] for u in available_users]:
                         available_users.append(user)
+                        if is_jf_tardif:
+                            logging.info(f"    ✅ [JF TARDIF] AJOUTÉ à available_users!")
                 
                 if not available_users:
                     continue
