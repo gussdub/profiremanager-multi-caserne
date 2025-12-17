@@ -6838,15 +6838,17 @@ const Planning = () => {
         `${currentMonth}-01` : // Premier jour du mois
         currentWeek;
         
-      const [typesData, assignationsData, usersData] = await Promise.all([
+      const [typesData, assignationsData, usersData, gradesData] = await Promise.all([
         apiGet(tenantSlug, '/types-garde'),
         apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
-        apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+        apiGet(tenantSlug, '/users'), // Tous les rôles peuvent voir les users (lecture seule)
+        apiGet(tenantSlug, '/grades') // Pour vérifier si un utilisateur est officier
       ]);
       
       setTypesGarde(typesData);
       setAssignations(assignationsData);
       setUsers(usersData);
+      setGrades(gradesData || []);
     } catch (error) {
       console.error('Erreur lors du chargement du planning:', error);
       toast({
