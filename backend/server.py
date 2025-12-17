@@ -15995,13 +15995,24 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             for day_offset in range(7):
                 current_date = datetime.strptime(semaine_debut, "%Y-%m-%d") + timedelta(days=day_offset)
                 date_str = current_date.strftime("%Y-%m-%d")
-                day_name = current_date.strftime("%A").lower()
+                day_name_en = current_date.strftime("%A").lower()  # english: monday, tuesday...
+                
+                # Mapping anglais → français pour compatibilité avec les deux formats
+                day_name_mapping = {
+                    'monday': 'lundi', 'tuesday': 'mardi', 'wednesday': 'mercredi',
+                    'thursday': 'jeudi', 'friday': 'vendredi', 'saturday': 'samedi', 'sunday': 'dimanche'
+                }
+                day_name_fr = day_name_mapping.get(day_name_en, day_name_en)
                 
                 # CORRECTION CRITIQUE: Skip if type garde doesn't apply to this day
+                # Supporte les deux formats: anglais (monday) et français (lundi)
                 jours_app = type_garde.get("jours_application", [])
-                if jours_app and len(jours_app) > 0 and day_name not in jours_app:
-                    logging.info(f"⏭️ [SKIP DAY] {type_garde['nom']} - {date_str} ({day_name}): Jour non applicable (limité à {jours_app})")
-                    continue
+                if jours_app and len(jours_app) > 0:
+                    # Vérifier si le jour est dans la liste (anglais OU français)
+                    jour_applicable = day_name_en in jours_app or day_name_fr in jours_app
+                    if not jour_applicable:
+                        logging.info(f"⏭️ [SKIP DAY] {type_garde['nom']} - {date_str} ({day_name_en}/{day_name_fr}): Jour non applicable (limité à {jours_app})")
+                        continue
                 
                 # ÉTAPE 1: Vérifier si la garde est déjà complète
                 existing_for_garde = [a for a in existing_assignations 
