@@ -16635,10 +16635,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         is_officer = (grade_obj_selected and grade_obj_selected.get("est_officier", False)) or selected_user.get("fonction_superieur", False)
                         
                         if is_officer:
-                            # Réintégrer tous les candidats sauf celui qu'on vient d'assigner
-                            users_deja_assignes = [selected_user["id"]]
+                            # Réintégrer tous les candidats sauf TOUS ceux déjà assignés à cette garde
+                            # CORRECTION: Récupérer TOUS les utilisateurs déjà assignés (pas seulement le dernier)
+                            toutes_assign_actuelle = existing_assignations + nouvelles_assignations
+                            users_deja_assignes = [a["user_id"] for a in toutes_assign_actuelle 
+                                                   if a["date"] == date_str and a["type_garde_id"] == type_garde["id"]]
                             users_with_min_hours = [u for u in all_candidates_backup if u["id"] not in users_deja_assignes]
-                            logging.info(f"🔄 [OUVERTURE POMPIERS] {selected_user['prenom']} (officier) assigné - {len(users_with_min_hours)} pompiers maintenant éligibles")
+                            logging.info(f"🔄 [OUVERTURE POMPIERS] {selected_user['prenom']} (officier) assigné - {len(users_with_min_hours)} pompiers maintenant éligibles (exclus: {len(users_deja_assignes)})")
                             all_candidates_backup = []  # Vider pour ne pas reboucler
         
         # Logs de performance
