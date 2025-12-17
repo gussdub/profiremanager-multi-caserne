@@ -112,51 +112,51 @@ async def create_database_indexes():
         await safe_create_index(db.tenants, [("slug", 1), ("actif", 1)])
         
         # Index pour les notifications (CRITIQUE pour la performance)
-        await db.notifications.create_index([
+        await safe_create_index(db.notifications, [
             ("tenant_id", 1),
             ("destinataire_id", 1),
             ("statut", 1)
         ])
-        await db.notifications.create_index([("date_creation", -1)])
+        await safe_create_index(db.notifications, [("date_creation", -1)])
         
         # Index pour les utilisateurs (CRITIQUE - chargement dashboard)
-        await db.users.create_index([("tenant_id", 1)])
-        await db.users.create_index([("tenant_id", 1), ("email", 1)])
-        await db.users.create_index([("tenant_id", 1), ("statut", 1)])
+        await safe_create_index(db.users, [("tenant_id", 1)])
+        await safe_create_index(db.users, [("tenant_id", 1), ("email", 1)])
+        await safe_create_index(db.users, [("tenant_id", 1), ("statut", 1)])
         
         # Index pour les types de garde (chargement dashboard)
-        await db.types_garde.create_index([("tenant_id", 1)])
+        await safe_create_index(db.types_garde, [("tenant_id", 1)])
         
         # Index pour les assignations (planning)
-        await db.assignations.create_index([("tenant_id", 1), ("user_id", 1)])
-        await db.assignations.create_index([("tenant_id", 1), ("semaine_debut", 1)])
-        await db.assignations.create_index([("semaine_debut", 1)])
+        await safe_create_index(db.assignations, [("tenant_id", 1), ("user_id", 1)])
+        await safe_create_index(db.assignations, [("tenant_id", 1), ("semaine_debut", 1)])
+        await safe_create_index(db.assignations, [("semaine_debut", 1)])
         
         # Index pour le planning
-        await db.planning.create_index([("tenant_id", 1), ("semaine_debut", 1)])
+        await safe_create_index(db.planning, [("tenant_id", 1), ("semaine_debut", 1)])
         
         # Index pour les disponibilités
-        await db.disponibilites.create_index([("tenant_id", 1), ("user_id", 1)])
-        await db.disponibilites.create_index([("tenant_id", 1), ("date", 1)])
+        await safe_create_index(db.disponibilites, [("tenant_id", 1), ("user_id", 1)])
+        await safe_create_index(db.disponibilites, [("tenant_id", 1), ("date", 1)])
         
         # Index pour les bâtiments (prévention)
-        await db.batiments.create_index([("tenant_id", 1)])
-        await db.batiments.create_index([("tenant_id", 1), ("niveau_risque", 1)])
+        await safe_create_index(db.batiments, [("tenant_id", 1)])
+        await safe_create_index(db.batiments, [("tenant_id", 1), ("niveau_risque", 1)])
         
         # Index pour les formations
-        await db.formations.create_index([("tenant_id", 1)])
+        await safe_create_index(db.formations, [("tenant_id", 1)])
         
         # Index pour prévention - préventionnistes
-        await db.batiments.create_index([("tenant_id", 1), ("preventionniste_assigne_id", 1)])
-        await db.secteurs_geographiques.create_index([("tenant_id", 1), ("preventionniste_assigne_id", 1)])
-        await db.inspections.create_index([("tenant_id", 1), ("preventionniste_id", 1)])
-        await db.inspections.create_index([("tenant_id", 1), ("date_inspection", 1)])
-        await db.plans_intervention.create_index([("tenant_id", 1), ("created_by", 1)])
+        await safe_create_index(db.batiments, [("tenant_id", 1), ("preventionniste_assigne_id", 1)])
+        await safe_create_index(db.secteurs_geographiques, [("tenant_id", 1), ("preventionniste_assigne_id", 1)])
+        await safe_create_index(db.inspections, [("tenant_id", 1), ("preventionniste_id", 1)])
+        await safe_create_index(db.inspections, [("tenant_id", 1), ("date_inspection", 1)])
+        await safe_create_index(db.plans_intervention, [("tenant_id", 1), ("created_by", 1)])
         
         # Index pour rapports externes - budgets
-        await db.budgets.create_index([("tenant_id", 1), ("annee", 1)])
-        await db.immobilisations.create_index([("tenant_id", 1)])
-        await db.immobilisations.create_index([("tenant_id", 1), ("type", 1)])
+        await safe_create_index(db.budgets, [("tenant_id", 1), ("annee", 1)])
+        await safe_create_index(db.immobilisations, [("tenant_id", 1)])
+        await safe_create_index(db.immobilisations, [("tenant_id", 1), ("type", 1)])
         
         # Index pour dashboard - CRITIQUE pour performance
         await db.assignations.create_index([("tenant_id", 1), ("user_id", 1), ("date", 1)])
