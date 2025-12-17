@@ -24679,7 +24679,11 @@ const Prevention = () => {
 
 // Main Application Layout
 const AppLayout = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  // Persister la page active dans localStorage pour conserver après refresh
+  const [currentPage, setCurrentPage] = useState(() => {
+    const savedPage = localStorage.getItem('currentPage');
+    return savedPage || 'dashboard';
+  });
   const [managingUserDisponibilites, setManagingUserDisponibilites] = useState(null);
   const [personnalisation, setPersonnalisation] = useState({
     logo_url: '',
@@ -24688,6 +24692,13 @@ const AppLayout = () => {
   });
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
+
+  // Sauvegarder la page active dans localStorage à chaque changement
+  useEffect(() => {
+    if (currentPage) {
+      localStorage.setItem('currentPage', currentPage);
+    }
+  }, [currentPage]);
 
   // Charger la personnalisation
   useEffect(() => {
