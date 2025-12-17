@@ -2118,11 +2118,11 @@ class User(BaseModel):
     telephone: str = ""
     adresse: str = ""  # Adresse du pompier
     contact_urgence: str = ""
-    grade: str  # Capitaine, Directeur, Pompier, Lieutenant
+    grade: str = "Pompier"  # Capitaine, Directeur, Pompier, Lieutenant (default pour anciens users)
     fonction_superieur: bool = False  # Pour pompiers pouvant agir comme lieutenant
-    type_emploi: str  # temps_plein, temps_partiel
+    type_emploi: str = "temps_plein"  # temps_plein, temps_partiel (default pour anciens users)
     heures_max_semaine: int = 40  # Heures max par semaine (pour temps partiel)
-    role: str  # admin, superviseur, employe
+    role: str = "employe"  # admin, superviseur, employe (default pour anciens users)
     statut: str = "Actif"  # Actif, Inactif
     numero_employe: str = ""
     date_embauche: str = ""
