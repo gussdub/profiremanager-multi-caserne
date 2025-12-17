@@ -1699,10 +1699,20 @@ def create_pdf_header_elements(tenant, styles):
                 pil_image = PILImage.open(logo_buffer)
                 img_width, img_height = pil_image.size
                 
-                # Calculer la hauteur proportionnelle pour une largeur de 1.5 inch
-                target_width = 1.5 * inch
+                # Calculer les dimensions avec limites max pour éviter le dépassement
+                max_width = 1.2 * inch
+                max_height = 1.0 * inch  # Limite maximale de hauteur
+                
                 aspect_ratio = img_height / img_width
+                
+                # Calculer en fonction de la largeur
+                target_width = max_width
                 target_height = target_width * aspect_ratio
+                
+                # Si la hauteur dépasse la limite, recalculer en fonction de la hauteur
+                if target_height > max_height:
+                    target_height = max_height
+                    target_width = target_height / aspect_ratio
                 
                 # Réinitialiser le buffer pour ReportLab
                 logo_buffer.seek(0)
