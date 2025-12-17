@@ -24,7 +24,6 @@ const ConfigurationImports = ({ tenantSlug }) => {
       const data = await apiGet(tenantSlug, '/config/import-settings');
       if (!data) throw new Error('Erreur lors du chargement');
 
-      const data = await response.json();
       setSettings(data);
       setEpiFields(data.epi_fields || []);
       setPersonnelFields(data.personnel_fields || []);
