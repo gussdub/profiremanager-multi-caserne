@@ -98,7 +98,7 @@ if firebase_cred_path.exists():
     except Exception as e:
         print(f"⚠️ Firebase initialization error: {e}")
 else:
-    print("⚠️ Firebase credentials file not found - Push notifications will not work")
+    print("ℹ️ Firebase credentials not configured - Push notifications disabled (optional feature)")
 
 # ==================== INITIALIZATION ====================
 
