@@ -16374,44 +16374,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # IMPORTANT: Ce tri doit se faire ICI, après l'étape officier
                 # Pour garantir que les niveaux sont appliqués sur la liste finale de candidats
                 
-                # CORRECTION CRITIQUE: Flag pour indiquer si on doit assigner un officier EN PREMIER
-                # Avant le filtrage N2-N5 (car les officiers temps_plein pourraient être exclus par N4/N5 désactivé)
-                assigner_officier_en_premier = False
-                officier_a_assigner = None
-                
-                if type_garde.get("officier_obligatoire", False):
-                    # Vérifier si un officier est déjà assigné
-                    toutes_assign_officier_check = existing_assignations + nouvelles_assignations
-                    officier_deja_assigne_check = False
-                    for assignation in toutes_assign_officier_check:
-                        if assignation["date"] == date_str and assignation["type_garde_id"] == type_garde["id"]:
-                            assigned_user = next((u for u in users if u["id"] == assignation["user_id"]), None)
-                            if assigned_user:
-                                grade_obj = grades_map.get(assigned_user.get("grade"))
-                                if (grade_obj and grade_obj.get("est_officier", False)) or assigned_user.get("fonction_superieur", False):
-                                    officier_deja_assigne_check = True
-                                    break
-                    
-                    if not officier_deja_assigne_check:
-                        # Chercher un officier dans available_users (avant filtrage N2-N5)
-                        for u in available_users:
-                            grade_obj = grades_map.get(u.get("grade"))
-                            if grade_obj and grade_obj.get("est_officier", False):
-                                officier_a_assigner = u
-                                assigner_officier_en_premier = True
-                                logging.info(f"🎖️ [OFFICIER TROUVÉ POUR ASSIGNATION] {u['prenom']} {u['nom']} ({u.get('grade')}) sera assigné en premier")
-                                break
-                            elif u.get("fonction_superieur", False):
-                                officier_a_assigner = u
-                                assigner_officier_en_premier = True
-                                logging.info(f"🎖️ [OFFICIER FALLBACK] {u['prenom']} {u['nom']} (fonction_superieur) sera assigné en premier")
-                                break
-                        
-                        if not assigner_officier_en_premier:
-                            logging.warning(f"⚠️ [OFFICIER MANQUANT] Aucun officier disponible pour {type_garde['nom']} - {date_str}, place laissée vacante")
-                            # Réduire places_restantes car pas d'officier
-                            places_restantes = max(0, places_restantes - 1)
-                
                 # Catégorie 1: Temps partiel DISPONIBLES (ont déclaré une disponibilité)
                 tp_disponibles = []
                 # Catégorie 2: Temps partiel STAND-BY (rien déclaré, ni dispo ni indispo)
@@ -16422,9 +16384,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 tf_complets = []
                 
                 for u in available_users:
-                    # SKIP si c'est l'officier qu'on va assigner en premier
-                    if assigner_officier_en_premier and officier_a_assigner and u["id"] == officier_a_assigner["id"]:
-                        continue
                     # Log spécifique pour Guillaume Dubeau
                     if "guillaume" in u.get("prenom", "").lower() and "dubeau" in u.get("nom", "").lower():
                         logging.info(f"🔍 [GUILLAUME] Traitement pour {type_garde['nom']} - {date_str}")
