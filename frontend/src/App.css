@@ -355,9 +355,13 @@ body {
 /* Sidebar User */
 .sidebar-user {
   padding: 1rem 1.5rem 1.5rem 1.5rem;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); /* Safe area pour iOS */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: auto;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background-color: #dc2626;
 }
 
 .user-info {
