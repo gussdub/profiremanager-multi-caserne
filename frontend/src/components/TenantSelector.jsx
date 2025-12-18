@@ -154,7 +154,7 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
               onKeyDown={(e) => e.key === 'Enter' && handleAddTenant()}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Demandez ce code à l'administrateur de votre caserne
+              Demandez ce code à l&apos;administrateur de votre caserne
             </p>
           </div>
           
@@ -266,7 +266,7 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
                   autoFocus={savedTenants.length === 0}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Demandez ce code à l'administrateur de votre caserne
+                  Demandez ce code à l&apos;administrateur de votre caserne
                 </p>
               </div>
               
@@ -315,7 +315,7 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
             <p className="text-blue-700 text-xs">
               💡 <strong>Conseil:</strong> Vos casernes sont mémorisées. 
-              Vous n'aurez plus à entrer le code lors de vos prochaines connexions.
+              Vous n&apos;aurez plus à entrer le code lors de vos prochaines connexions.
             </p>
           </div>
         </CardContent>
