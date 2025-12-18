@@ -317,6 +317,9 @@ body {
 .sidebar-nav {
   flex: 1;
   padding: 1rem 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0; /* Permet au flex de réduire */
 }
 
 .nav-item {
