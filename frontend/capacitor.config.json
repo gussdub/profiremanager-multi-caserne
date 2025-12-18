@@ -5,7 +5,8 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "https",
-    "hostname": "www.profiremanager.ca"
+    "hostname": "app.profiremanager.local",
+    "allowNavigation": ["https://www.profiremanager.ca/*", "https://*.profiremanager.ca/*"]
   },
   "plugins": {
     "PushNotifications": {
@@ -19,6 +20,9 @@
     "StatusBar": {
       "backgroundColor": "#DC2626",
       "style": "LIGHT"
+    },
+    "CapacitorHttp": {
+      "enabled": true
     }
   },
   "ios": {
