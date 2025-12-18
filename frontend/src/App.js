@@ -1525,17 +1525,44 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
               <p className="user-grade">{user?.grade}</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            onClick={() => {
-              logout();
-              setIsMobileMenuOpen(false);
-            }}
-            className="logout-btn"
-            data-testid="logout-btn"
-          >
-            🚪 Déconnexion
-          </Button>
+          <div className="sidebar-user-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                // Importer switchTenant depuis le contexte
+                const { switchTenant } = useTenantContext();
+                if (switchTenant) {
+                  switchTenant();
+                } else {
+                  // Fallback: rediriger vers la page de sélection
+                  localStorage.removeItem('profiremanager_last_tenant');
+                  window.location.href = '/';
+                }
+                setIsMobileMenuOpen(false);
+              }}
+              className="switch-tenant-btn"
+              style={{ 
+                fontSize: '0.85rem', 
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: 'white'
+              }}
+            >
+              🏢 Changer de caserne
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                logout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="logout-btn"
+              data-testid="logout-btn"
+            >
+              🚪 Déconnexion
+            </Button>
+          </div>
         </div>
       </div>
     </>
