@@ -171,6 +171,8 @@ const PointEauModal = ({
   const [selectingOnMap, setSelectingOnMap] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [mapCenter, setMapCenter] = useState([45.37, -72.57]); // Shefford par défaut
+  const [mapZoom, setMapZoom] = useState(14); // Zoom par défaut
+  const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
 
   // Icône pour le marqueur sélectionné
   const selectedIcon = L.divIcon({
