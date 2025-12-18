@@ -3,24 +3,28 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Composant pour gérer les clics sur la carte
+// Composant pour gérer les clics sur la carte (sans changer le zoom)
 const MapClickHandler = ({ onMapClick }) => {
+  const map = useMap();
   useMapEvents({
     click: (e) => {
-      onMapClick(e.latlng.lat, e.latlng.lng);
+      // Appeler le callback avec les coordonnées, SANS changer le zoom
+      onMapClick(e.latlng.lat, e.latlng.lng, map.getZoom());
     }
   });
   return null;
 };
 
-// Composant pour centrer la carte sur une position
-const MapCenterUpdater = ({ center }) => {
+// Composant pour centrer la carte sur une position (avec zoom optionnel)
+const MapCenterUpdater = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     if (center && center[0] && center[1]) {
-      map.setView(center, 15);
+      // Si un zoom est spécifié, l'utiliser, sinon garder le zoom actuel
+      const targetZoom = zoom || map.getZoom();
+      map.setView(center, targetZoom);
     }
-  }, [center, map]);
+  }, [center, zoom, map]);
   return null;
 };
 
