@@ -1999,13 +1999,16 @@ agent_communication:
 
   - task: "Tenant Selector for Native App - Multi-Caserne Support"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/components/TenantSelector.jsx, frontend/src/contexts/TenantContext.js, frontend/src/App.js"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "NEW FEATURE - Écran de sélection de caserne pour l'application native et web. Fonctionnalités implémentées: 1) ✅ TenantSelector.jsx créé: Interface complète pour ajouter/sélectionner une caserne, validation du code via API /public/branding, sauvegarde dans localStorage (profiremanager_saved_tenants), gestion des erreurs avec messages explicites, 2) ✅ TenantContext.js modifié: Détection app native vs web (isNativeApp), gestion des casernes sauvegardées (getSavedTenants), fonction switchTenant() pour changer de caserne, fonction resetTenantSelection() pour réinitialiser, auto-sélection si une seule caserne, 3) ✅ App.js modifié: Bouton 'Changer de caserne' ajouté dans la sidebar, intégration avec switchTenant du contexte, 4) ✅ Icône iOS mise à jour: Logo 1024x1024 généré à partir de logo512.png. WORKFLOW: Premier lancement → saisie code caserne → validation API → sauvegarde → redirection login. Changement: Bouton sidebar → sélecteur → choix ou ajout nouvelle caserne. CROSS-PLATFORM: Fonctionne sur iOS, Android ET Web de manière identique. NEEDS TESTING: Vérifier le flux complet sur web (page sélection, ajout caserne, connexion, bouton changer)."
+      - working: false
+        agent: "testing"
+        comment: "🔍 TENANT SELECTOR FEATURE TESTING COMPLETED - Mixed results identified with critical loading issue. TESTING ENVIRONMENT: URL: http://localhost:3000/, Credentials: admin@firemanager.ca / admin123. DETAILED RESULTS: ❌ CRITICAL ISSUE - ROOT URL LOADING PROBLEM: When accessing http://localhost:3000/ with cleared localStorage, the app gets stuck on 'Chargement...' (Loading...) screen and never displays the tenant selector interface. Console logs show 'Aucun tenant détecté, affichage de la page de sélection' but the TenantSelector component fails to render. ✅ DIRECT TENANT ACCESS WORKING: Accessing http://localhost:3000/shefford directly works perfectly - shows 'Service Incendie de Shefford' branding with proper login form, login functionality works with admin@firemanager.ca / admin123. ✅ TENANT SELECTOR COMPONENT IMPLEMENTED: Code analysis confirms TenantSelector.jsx is properly implemented with all required features: fire truck icon (🚒), ProFireManager title, 'Sélectionnez votre caserne' subtitle, input field with placeholder 'ex: shefford, bromont...', '✓ Valider' button (disabled until text entered), blue info box, error handling for invalid tenant codes, API validation via /api/{slug}/public/branding endpoint. ✅ TENANT CONTEXT INTEGRATION: TenantContext.js properly integrates with lazy-loaded TenantSelector component, handles localStorage management (profiremanager_last_tenant, profiremanager_saved_tenants), implements switchTenant() function for 'Changer de caserne' button. ROOT CAUSE: The issue appears to be in the TenantProvider's loading state management or lazy loading of the TenantSelector component. The app detects no tenant correctly but fails to render the selector interface. IMPACT: Users cannot access the tenant selection screen from the root URL, preventing new users from adding their tenant. Existing users with saved tenants can still access via direct URLs like /shefford."
 
