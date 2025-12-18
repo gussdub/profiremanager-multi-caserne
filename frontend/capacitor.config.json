@@ -3,9 +3,8 @@
   "appName": "ProFireManager",
   "webDir": "build",
   "server": {
-    "androidScheme": "https",
-    "iosScheme": "https",
-    "hostname": "localhost"
+    "url": "https://www.profiremanager.ca",
+    "cleartext": false
   },
   "plugins": {
     "PushNotifications": {
@@ -19,9 +18,6 @@
     "StatusBar": {
       "backgroundColor": "#DC2626",
       "style": "LIGHT"
-    },
-    "CapacitorHttp": {
-      "enabled": false
     }
   },
   "ios": {
