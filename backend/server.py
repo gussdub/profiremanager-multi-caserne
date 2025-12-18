@@ -14592,6 +14592,195 @@ async def send_push_notification(
         print(f"Erreur lors de l'envoi de la notification: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
+
+# ==================== WEB PUSH NOTIFICATIONS (VAPID) ====================
+# Ces endpoints permettent les notifications push sur les PWA (iOS 16.4+ et tous navigateurs)
+
+from pywebpush import webpush, WebPushException
+from py_vapid import Vapid
+
+# Générer les clés VAPID une seule fois au démarrage (ou les charger depuis .env)
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY')
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
+VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_EMAIL', 'admin@profiremanager.ca')
+
+# Si les clés n'existent pas, les générer et les afficher (une seule fois)
+if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+    logging.warning("⚠️ Clés VAPID non configurées. Génération de nouvelles clés...")
+    vapid = Vapid()
+    vapid.generate_keys()
+    VAPID_PRIVATE_KEY = vapid.private_pem().decode('utf-8')
+    VAPID_PUBLIC_KEY = vapid.public_key_urlsafe_base64()
+    logging.info(f"🔑 VAPID_PUBLIC_KEY={VAPID_PUBLIC_KEY}")
+    logging.info("⚠️ Ajoutez ces clés à votre .env pour les persister!")
+
+
+class WebPushSubscription(BaseModel):
+    user_id: str
+    subscription: dict  # {endpoint, keys: {p256dh, auth}}
+    platform: str = "web"
+    user_agent: Optional[str] = None
+
+
+@api_router.get("/{tenant_slug}/notifications/vapid-key")
+async def get_vapid_public_key(tenant_slug: str):
+    """
+    Retourne la clé publique VAPID pour l'inscription aux notifications push Web
+    """
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+
+@api_router.post("/{tenant_slug}/notifications/subscribe")
+async def subscribe_web_push(
+    tenant_slug: str,
+    subscription_data: WebPushSubscription,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Enregistre un abonnement Web Push pour un utilisateur
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Vérifier si un abonnement existe déjà pour cet endpoint
+        existing = await db.web_push_subscriptions.find_one({
+            "subscription.endpoint": subscription_data.subscription.get("endpoint")
+        })
+        
+        if existing:
+            # Mettre à jour l'abonnement existant
+            await db.web_push_subscriptions.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {
+                    "user_id": subscription_data.user_id,
+                    "subscription": subscription_data.subscription,
+                    "user_agent": subscription_data.user_agent,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            return {"message": "Abonnement mis à jour", "status": "updated"}
+        else:
+            # Créer un nouvel abonnement
+            new_sub = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": subscription_data.user_id,
+                "subscription": subscription_data.subscription,
+                "platform": subscription_data.platform,
+                "user_agent": subscription_data.user_agent,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.web_push_subscriptions.insert_one(new_sub)
+            return {"message": "Abonnement créé", "status": "created"}
+    
+    except Exception as e:
+        logging.error(f"Erreur inscription Web Push: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/{tenant_slug}/notifications/unsubscribe")
+async def unsubscribe_web_push(
+    tenant_slug: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime un abonnement Web Push
+    """
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+    
+    result = await db.web_push_subscriptions.delete_many({"user_id": user_id})
+    return {"message": f"{result.deleted_count} abonnement(s) supprimé(s)"}
+
+
+async def send_web_push_to_users(tenant_id: str, user_ids: List[str], title: str, body: str, data: Optional[dict] = None):
+    """
+    Envoie une notification Web Push à plusieurs utilisateurs
+    Retourne le nombre de succès et d'échecs
+    """
+    if not VAPID_PRIVATE_KEY:
+        logging.warning("Web Push: Clés VAPID non configurées")
+        return {"success": 0, "failed": 0}
+    
+    # Récupérer les abonnements pour ces utilisateurs
+    subscriptions = await db.web_push_subscriptions.find({
+        "tenant_id": tenant_id,
+        "user_id": {"$in": user_ids}
+    }).to_list(length=None)
+    
+    if not subscriptions:
+        logging.info(f"Web Push: Aucun abonnement trouvé pour {len(user_ids)} utilisateurs")
+        return {"success": 0, "failed": 0}
+    
+    success_count = 0
+    failed_count = 0
+    
+    # Payload de la notification
+    payload = json.dumps({
+        "title": title,
+        "body": body,
+        "icon": "/logo192.png",
+        "badge": "/logo192.png",
+        "tag": f"profiremanager-{int(time.time())}",
+        "data": data or {}
+    })
+    
+    # Envoyer à chaque abonnement
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub["subscription"],
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": f"mailto:{VAPID_CLAIMS_EMAIL}"}
+            )
+            success_count += 1
+        except WebPushException as e:
+            logging.error(f"Web Push échec: {e}")
+            # Si l'abonnement est expiré/invalide, le supprimer
+            if e.response and e.response.status_code in [404, 410]:
+                await db.web_push_subscriptions.delete_one({"_id": sub["_id"]})
+            failed_count += 1
+        except Exception as e:
+            logging.error(f"Web Push erreur: {e}")
+            failed_count += 1
+    
+    logging.info(f"Web Push: {success_count} succès, {failed_count} échecs")
+    return {"success": success_count, "failed": failed_count}
+
+
+@api_router.post("/{tenant_slug}/notifications/send-web-push")
+async def send_web_push_notification(
+    tenant_slug: str,
+    notification_data: PushNotificationSend,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Envoie une notification Web Push à des utilisateurs spécifiques (Admin/Superviseur)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    result = await send_web_push_to_users(
+        tenant_id=tenant.id,
+        user_ids=notification_data.user_ids,
+        title=notification_data.title,
+        body=notification_data.body,
+        data=notification_data.data
+    )
+    
+    return {
+        "message": "Notifications envoyées",
+        "success_count": result["success"],
+        "failure_count": result["failed"]
+    }
+
+
 # ==================== FONCTIONS HELPER POUR GÉNÉRATION D'INDISPONIBILITÉS ====================
 
 def generer_indisponibilites_montreal(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
