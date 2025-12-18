@@ -530,43 +530,97 @@ const PointEauModal = ({
                 overflow: 'hidden',
                 position: 'relative'
               }}>
-                {/* Barre de recherche d'adresse */}
+                {/* Barre de recherche d'adresse + Toggle vue */}
                 <div style={{ padding: '0.5rem', background: '#f3f4f6', position: 'relative' }}>
-                  <AddressSearch 
-                    onLocationFound={(lat, lng, address) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        latitude: lat.toFixed(6),
-                        longitude: lng.toFixed(6),
-                        adresse: address.split(',')[0] || prev.adresse
-                      }));
-                      setMapCenter([lat, lng]);
-                    }}
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <AddressSearch 
+                        onLocationFound={(lat, lng, address) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            latitude: lat.toFixed(6),
+                            longitude: lng.toFixed(6),
+                            adresse: address.split(',')[0] || prev.adresse
+                          }));
+                          setMapCenter([lat, lng]);
+                          setMapZoom(16); // Zoom plus proche pour une adresse
+                        }}
+                      />
+                    </div>
+                    {/* Toggle Plan/Satellite */}
+                    <div style={{ 
+                      display: 'flex', 
+                      borderRadius: '6px', 
+                      overflow: 'hidden',
+                      border: '1px solid #d1d5db'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => setMapLayer('plan')}
+                        style={{
+                          padding: '0.4rem 0.6rem',
+                          background: mapLayer === 'plan' ? '#3b82f6' : 'white',
+                          color: mapLayer === 'plan' ? 'white' : '#374151',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}
+                      >
+                        🗺️ Plan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMapLayer('satellite')}
+                        style={{
+                          padding: '0.4rem 0.6rem',
+                          background: mapLayer === 'satellite' ? '#3b82f6' : 'white',
+                          color: mapLayer === 'satellite' ? 'white' : '#374151',
+                          border: 'none',
+                          borderLeft: '1px solid #d1d5db',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}
+                      >
+                        🛰️ Satellite
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 
-                <div style={{ height: '250px' }}>
+                <div style={{ height: '280px' }}>
                   <MapContainer
                     center={mapCenter}
-                    zoom={14}
+                    zoom={mapZoom}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom={true}
                   >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; OpenStreetMap'
-                    />
+                    {/* Layer conditionnel: Plan ou Satellite */}
+                    {mapLayer === 'plan' ? (
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; OpenStreetMap'
+                      />
+                    ) : (
+                      <TileLayer
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        attribution='&copy; Esri'
+                      />
+                    )}
                     <MapClickHandler 
-                      onMapClick={(lat, lng) => {
+                      onMapClick={(lat, lng, currentZoom) => {
                         setFormData(prev => ({
                           ...prev,
                           latitude: lat.toFixed(6),
                           longitude: lng.toFixed(6)
                         }));
+                        // Garder le zoom actuel, ne pas le changer
                         setMapCenter([lat, lng]);
+                        setMapZoom(currentZoom);
                       }}
                     />
-                    <MapCenterUpdater center={mapCenter} />
+                    <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
                     {formData.latitude && formData.longitude && (
                       <Marker 
                         position={[parseFloat(formData.latitude), parseFloat(formData.longitude)]}
