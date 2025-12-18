@@ -1251,9 +1251,25 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           )}
         </button>
 
+        {/* Overlay pour fermer les notifications en cliquant dehors */}
+        {showNotifications && (
+          <div 
+            className="notifications-overlay"
+            onClick={() => setShowNotifications(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 998
+            }}
+          />
+        )}
+
         {/* Dropdown des notifications */}
         {showNotifications && (
-          <div className="notifications-dropdown">
+          <div className="notifications-dropdown" style={{ zIndex: 999 }}>
             <div className="notifications-header">
               <h3>Notifications</h3>
               <div style={{display: 'flex', gap: '0.5rem'}}>
