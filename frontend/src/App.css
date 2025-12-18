@@ -1753,20 +1753,20 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
   .notification-bell-container {
-    right: 3.5rem;
+    right: 1rem;
     top: 0.75rem;
   }
 
   .notification-bell {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
   }
 
   .notification-badge {
-    width: 18px;
-    height: 18px;
-    font-size: 0.65rem;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
   }
 
   .notifications-dropdown {
