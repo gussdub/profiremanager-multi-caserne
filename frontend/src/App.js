@@ -1559,8 +1559,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             </div>
           </div>
           <div className="sidebar-user-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-            {/* Bouton Changer de caserne - visible sur app native ou PWA standalone */}
-            {isInAppOrStandalone && (
+            {/* Bouton Changer de caserne - visible sur mobile */}
+            {isMobileDevice && (
               <Button 
                 variant="outline" 
                 onClick={() => {
