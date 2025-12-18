@@ -1529,8 +1529,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             <Button 
               variant="outline" 
               onClick={() => {
-                // Importer switchTenant depuis le contexte
-                const { switchTenant } = useTenantContext();
                 if (switchTenant) {
                   switchTenant();
                 } else {
