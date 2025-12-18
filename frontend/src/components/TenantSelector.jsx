@@ -91,9 +91,16 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
     setError('');
     
     try {
-      // Vérifier que le tenant existe via l'API publique de branding
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
-      const response = await fetch(`${backendUrl}/api/${slug}/public/branding`);
+      // URL du backend - utiliser la variable d'environnement ou l'URL de production
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://www.profiremanager.ca';
+      console.log('[TenantSelector] Validation du tenant:', slug, 'via:', backendUrl);
+      
+      const response = await fetch(`${backendUrl}/api/${slug}/public/branding`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Caserne non trouvée');
