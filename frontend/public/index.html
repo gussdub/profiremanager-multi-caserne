@@ -17,7 +17,7 @@
         
         <title>ProFireManager v2.0 - Gestion Services Incendie</title>
         
-        <!-- Script pour générer un manifest dynamique avec le tenant actuel -->
+        <!-- Script pour utiliser le manifest dynamique du backend -->
         <script>
             (function() {
                 // Extraire le tenant du path (ex: /shefford/dashboard -> shefford)
@@ -25,49 +25,17 @@
                 var tenant = pathParts[0];
                 
                 // Liste des routes connues qui ne sont pas des tenants
-                var nonTenantRoutes = ['qr', 'reset-password', 'login', 'register'];
+                var nonTenantRoutes = ['qr', 'reset-password', 'login', 'register', 'api'];
                 
                 if (tenant && !nonTenantRoutes.includes(tenant)) {
-                    // Créer un manifest dynamique avec le bon start_url
-                    var dynamicManifest = {
-                        "short_name": "ProFireManager",
-                        "name": "ProFireManager - " + tenant.charAt(0).toUpperCase() + tenant.slice(1),
-                        "description": "Application de gestion pour " + tenant,
-                        "icons": [
-                            {
-                                "src": "/logo192.png",
-                                "sizes": "192x192",
-                                "type": "image/png",
-                                "purpose": "any maskable"
-                            },
-                            {
-                                "src": "/logo512.png",
-                                "sizes": "512x512",
-                                "type": "image/png",
-                                "purpose": "any maskable"
-                            }
-                        ],
-                        "start_url": "/" + tenant + "/dashboard",
-                        "scope": "/" + tenant + "/",
-                        "display": "standalone",
-                        "theme_color": "#D9072B",
-                        "background_color": "#ffffff",
-                        "orientation": "portrait-primary",
-                        "lang": "fr-CA",
-                        "id": "profiremanager-" + tenant
-                    };
-                    
-                    // Créer un blob URL pour le manifest dynamique
-                    var manifestBlob = new Blob([JSON.stringify(dynamicManifest)], {type: 'application/json'});
-                    var manifestURL = URL.createObjectURL(manifestBlob);
-                    
-                    // Mettre à jour le lien du manifest
+                    // Utiliser le manifest dynamique servi par le backend
                     var manifestLink = document.getElementById('manifest-link');
                     if (manifestLink) {
-                        manifestLink.href = manifestURL;
+                        // Pointer vers l'endpoint backend qui génère le manifest dynamique
+                        manifestLink.href = '/api/' + tenant + '/manifest.json';
                     }
                     
-                    // Mettre à jour le titre Apple
+                    // Mettre à jour le titre Apple pour le raccourci
                     var appleTitle = document.getElementById('apple-title');
                     if (appleTitle) {
                         appleTitle.content = tenant.charAt(0).toUpperCase() + tenant.slice(1);
