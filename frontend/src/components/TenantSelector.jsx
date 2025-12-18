@@ -187,7 +187,16 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
     }}>
       <Card style={{ maxWidth: '400px', width: '100%' }}>
         <CardHeader className="text-center pb-2">
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🚒</div>
+          <img 
+            src="/logo192.png" 
+            alt="ProFireManager" 
+            style={{ 
+              width: '80px', 
+              height: '80px', 
+              margin: '0 auto 0.5rem',
+              display: 'block'
+            }} 
+          />
           <CardTitle style={{ color: '#DC2626', fontSize: '1.5rem' }}>
             ProFireManager
           </CardTitle>
