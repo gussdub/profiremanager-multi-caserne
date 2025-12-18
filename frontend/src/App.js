@@ -994,7 +994,14 @@ const Login = () => {
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
 
-  const { tenantSlug, switchTenant, isNativeApp } = useTenant();
+  const { tenantSlug, switchTenant } = useTenant();
+  
+  // Détecter si on est dans une app native (Capacitor) ou mode standalone (PWA)
+  const isInAppOrStandalone = window.navigator.standalone === true || 
+    window.matchMedia('(display-mode: standalone)').matches ||
+    document.referrer.includes('android-app://') ||
+    window.location.href.includes('capacitor://');
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
