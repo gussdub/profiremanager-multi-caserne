@@ -121,6 +121,30 @@ const TenantSelector = ({ onSelect, showAddOnly = false }) => {
       }
       
     } catch (err) {
+      console.error('[TenantSelector] Erreur validation:', err);
+      
+      // Sur app native, permettre d'ajouter quand même avec un avertissement
+      // car la validation peut échouer à cause de problèmes réseau/CORS
+      if (isNativeApp()) {
+        const confirmAdd = window.confirm(
+          `Impossible de vérifier la caserne "${slug}" (problème de connexion).\n\n` +
+          `Voulez-vous l'ajouter quand même ?\n\n` +
+          `Assurez-vous que le code est correct.`
+        );
+        if (confirmAdd) {
+          const tenantName = slug.charAt(0).toUpperCase() + slug.slice(1);
+          const updated = saveTenant(slug, tenantName);
+          setSavedTenants(updated);
+          setNewTenantSlug('');
+          setIsAdding(false);
+          if (updated.length === 1 || showAddOnly) {
+            onSelect(slug);
+          }
+          setValidating(false);
+          return;
+        }
+      }
+      
       setError('Code de caserne invalide ou caserne introuvable. Vérifiez le code auprès de votre administrateur.');
     } finally {
       setValidating(false);
