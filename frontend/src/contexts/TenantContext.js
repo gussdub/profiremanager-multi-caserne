@@ -223,6 +223,29 @@ export const TenantProvider = ({ children }) => {
     );
   }
 
+  // Afficher le sélecteur de tenant si nécessaire (surtout sur app native)
+  if (showTenantSelector && !tenantSlug) {
+    return (
+      <TenantContext.Provider value={value}>
+        <Suspense fallback={
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '100vh',
+            background: 'linear-gradient(135deg, #DC2626 0%, #991b1b 100%)'
+          }}>
+            <div style={{ textAlign: 'center', color: 'white' }}>
+              <p>Chargement...</p>
+            </div>
+          </div>
+        }>
+          <TenantSelector onSelect={selectTenant} />
+        </Suspense>
+      </TenantContext.Provider>
+    );
+  }
+
   return (
     <TenantContext.Provider value={value}>
       {children}
