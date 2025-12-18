@@ -14597,22 +14597,19 @@ async def send_push_notification(
 # Ces endpoints permettent les notifications push sur les PWA (iOS 16.4+ et tous navigateurs)
 
 from pywebpush import webpush, WebPushException
-from py_vapid import Vapid
 
-# Générer les clés VAPID une seule fois au démarrage (ou les charger depuis .env)
-VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY')
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
+# Clés VAPID pré-générées (à configurer dans .env pour la production)
+# Ces clés sont utilisées pour authentifier le serveur auprès des services push
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 
+    'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgDXr3Kq0TKQrEV3Rk_FBiYGrPnvKQT3qrF_H3h0sK_0mhRANCAAT5YRwxiCKfb-5mvbU4bN5cVrC9YZh5TvBKQz4TnrpNYqv0s5L0vVsJXZvVQqS_x3N3rVpSqmkDnmr7R_JQKQQE')
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY',
+    'BPlhHDGIIp9v7ma9tThs3lxWsL1hmHlO8EpDPhOeuk1iq_SzkvS9WwldmVWpL_Hc3etWlKqaQOeavtH8lApBBAQ')
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_EMAIL', 'admin@profiremanager.ca')
 
-# Si les clés n'existent pas, les générer et les afficher (une seule fois)
-if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
-    logging.warning("⚠️ Clés VAPID non configurées. Génération de nouvelles clés...")
-    vapid = Vapid()
-    vapid.generate_keys()
-    VAPID_PRIVATE_KEY = vapid.private_pem().decode('utf-8')
-    VAPID_PUBLIC_KEY = vapid.public_key_urlsafe_base64()
-    logging.info(f"🔑 VAPID_PUBLIC_KEY={VAPID_PUBLIC_KEY}")
-    logging.info("⚠️ Ajoutez ces clés à votre .env pour les persister!")
+if VAPID_PUBLIC_KEY:
+    logging.info(f"✅ Web Push configuré avec clé VAPID: {VAPID_PUBLIC_KEY[:20]}...")
+else:
+    logging.warning("⚠️ Web Push désactivé: clés VAPID non configurées")
 
 
 class WebPushSubscription(BaseModel):
