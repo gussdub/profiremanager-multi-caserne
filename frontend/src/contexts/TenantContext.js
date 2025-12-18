@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 const TenantContext = createContext();
 
@@ -10,11 +11,39 @@ export const useTenant = () => {
   return context;
 };
 
+// Détecter si on est sur une app native (Capacitor)
+const isNativeApp = () => {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch (e) {
+    return false;
+  }
+};
+
 export const TenantProvider = ({ children }) => {
   const [tenant, setTenant] = useState(null);
   const [tenantSlug, setTenantSlug] = useState(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showTenantSelector, setShowTenantSelector] = useState(false);
+
+  // Fonction pour sélectionner un tenant (utilisée par le sélecteur)
+  const selectTenant = (slug) => {
+    if (slug && slug.match(/^[a-z0-9\-]+$/)) {
+      setTenantSlug(slug);
+      setTenant({
+        slug: slug,
+        nom: slug.charAt(0).toUpperCase() + slug.slice(1)
+      });
+      localStorage.setItem('profiremanager_last_tenant', slug);
+      setShowTenantSelector(false);
+      
+      // Sur le web, rediriger vers l'URL du tenant
+      if (!isNativeApp()) {
+        window.location.href = `/${slug}/dashboard`;
+      }
+    }
+  };
 
   useEffect(() => {
     // Extraire le tenant depuis l'URL
@@ -60,14 +89,27 @@ export const TenantProvider = ({ children }) => {
     const lastTenant = localStorage.getItem('profiremanager_last_tenant');
     
     if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
-      // Rediriger vers le dernier tenant utilisé (utile pour les raccourcis PWA iOS)
+      // Sur app native, utiliser directement le tenant sans redirection
+      if (isNativeApp()) {
+        console.log(`[Native] Utilisation du tenant: ${lastTenant}`);
+        setTenantSlug(lastTenant);
+        setTenant({
+          slug: lastTenant,
+          nom: lastTenant.charAt(0).toUpperCase() + lastTenant.slice(1)
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Sur le web, rediriger vers le dernier tenant utilisé
       console.log(`Redirection vers le dernier tenant utilisé: ${lastTenant}`);
       window.location.href = `/${lastTenant}/dashboard`;
       return;
     }
     
-    // Aucun tenant en mémoire - l'utilisateur doit choisir
+    // Aucun tenant en mémoire - afficher le sélecteur de tenant
     console.log('Aucun tenant détecté, affichage de la page de sélection');
+    setShowTenantSelector(true);
     setLoading(false);
   }, []);
 
