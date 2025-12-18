@@ -32,32 +32,42 @@ export const TenantProvider = ({ children }) => {
     // Format attendu : /shefford/... ou /bromont/...
     const pathParts = path.split('/').filter(Boolean);
     
-    if (pathParts.length > 0) {
+    // Routes spéciales qui ne sont pas des tenants
+    const specialRoutes = ['qr', 'reset-password', 'api'];
+    
+    if (pathParts.length > 0 && !specialRoutes.includes(pathParts[0])) {
       const slug = pathParts[0];
       
-      // Vérifier que le slug n'est pas une route React classique
-      const validSlugs = ['shefford', 'bromont', 'granby', 'magog', 'demo']; // Liste à étendre
-      
-      if (validSlugs.includes(slug) || slug.match(/^[a-z0-9\-]+$/)) {
+      // Vérifier que le slug est valide (format tenant)
+      if (slug.match(/^[a-z0-9\-]+$/) && slug !== 'null' && slug !== 'undefined') {
         setTenantSlug(slug);
+        
+        // IMPORTANT: Sauvegarder ce tenant comme "dernier utilisé" pour les raccourcis PWA
+        localStorage.setItem('profiremanager_last_tenant', slug);
         
         // On pourrait charger les infos du tenant depuis l'API si nécessaire
         setTenant({
           slug: slug,
           nom: slug.charAt(0).toUpperCase() + slug.slice(1)
         });
+        
+        setLoading(false);
+        return;
       }
-    } else {
-      // Pas de slug détecté - afficher page de choix entre Super Admin et Tenant
-      // Par défaut pour démo, rediriger vers /shefford
-      console.log('Aucun tenant détecté dans l\'URL, redirection vers /admin ou /shefford');
-      // Pour permettre la connexion Super Admin, on ne force plus la redirection
-      // L'utilisateur peut aller sur /admin pour se connecter en super-admin
-      // ou sur /shefford pour se connecter à un tenant
-      setLoading(false);
+    }
+    
+    // Pas de slug valide détecté - vérifier si on a un dernier tenant en mémoire
+    const lastTenant = localStorage.getItem('profiremanager_last_tenant');
+    
+    if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
+      // Rediriger vers le dernier tenant utilisé (utile pour les raccourcis PWA iOS)
+      console.log(`Redirection vers le dernier tenant utilisé: ${lastTenant}`);
+      window.location.href = `/${lastTenant}/dashboard`;
       return;
     }
     
+    // Aucun tenant en mémoire - l'utilisateur doit choisir
+    console.log('Aucun tenant détecté, affichage de la page de sélection');
     setLoading(false);
   }, []);
 
