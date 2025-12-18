@@ -3,11 +3,30 @@
   "appName": "ProFireManager",
   "webDir": "build",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "iosScheme": "https",
+    "hostname": "www.profiremanager.ca"
   },
   "plugins": {
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#DC2626",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "backgroundColor": "#DC2626",
+      "style": "LIGHT"
     }
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "allowsLinkPreview": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#DC2626"
   }
 }
