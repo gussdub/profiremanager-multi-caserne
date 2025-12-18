@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { Button } from "./components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
@@ -21,6 +21,69 @@ const Chart = lazy(() => import("react-apexcharts"));
 const RapportHeuresModal = lazy(() => import("./components/RapportHeuresModal"));
 const AuditModal = lazy(() => import("./components/AuditModal"));
 import "./App.css";
+
+// Composant de redirection PWA pour iOS
+// Permet de créer des raccourcis séparés pour chaque caserne
+const PWARedirect = () => {
+  const { tenantSlug } = useParams();
+  
+  useEffect(() => {
+    if (tenantSlug) {
+      // Sauvegarder ce tenant comme dernier utilisé
+      localStorage.setItem('profiremanager_last_tenant', tenantSlug);
+      // Rediriger vers le dashboard du tenant
+      window.location.href = `/${tenantSlug}/dashboard`;
+    }
+  }, [tenantSlug]);
+  
+  // Afficher une page d'installation pendant la redirection
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      background: 'linear-gradient(135deg, #DC2626 0%, #991b1b 100%)',
+      color: 'white',
+      textAlign: 'center',
+      padding: '2rem'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        padding: '2rem',
+        maxWidth: '400px',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚒</div>
+        <h1 style={{ color: '#DC2626', fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+          ProFireManager
+        </h1>
+        <h2 style={{ color: '#374151', fontSize: '1.25rem', marginBottom: '1rem' }}>
+          {tenantSlug ? tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1) : 'Chargement...'}
+        </h2>
+        <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+          Redirection en cours...
+        </p>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid #f3f4f6',
+          borderTopColor: '#DC2626',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto'
+        }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+};
 
 // Lazy loading pour optimiser les performances
 const Parametres = lazy(() => import("./components/Parametres"));
