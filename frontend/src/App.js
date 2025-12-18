@@ -25009,6 +25009,8 @@ const AppWithProviders = () => {
         <Route path="/qr/:tenantSlug/vehicule/:vehiculeId" element={
           <VehiculeQRAction />
         } />
+        {/* Route spéciale pour installation PWA sur iOS */}
+        <Route path="/pwa/:tenantSlug" element={<PWARedirect />} />
         <Route path="*" element={
           <AuthProvider>
             <App />
