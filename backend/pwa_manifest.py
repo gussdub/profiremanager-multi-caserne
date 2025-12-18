@@ -27,12 +27,14 @@ async def get_pwa_manifest(tenant_slug: str):
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     # Générer le manifest avec les infos du tenant
+    tenant_name = tenant.get('nom_service') or tenant.get('nom', 'ProFireManager')
     manifest = {
-        "name": tenant.get('nom_service') or tenant.get('nom', 'ProFireManager'),
-        "short_name": tenant.get('nom_service') or tenant.get('nom', 'ProFire'),
+        "name": f"{tenant_name} - ProFireManager",
+        "short_name": tenant_name[:12] if len(tenant_name) > 12 else tenant_name,
         "description": f"Application de gestion pour {tenant.get('nom', 'le service incendie')}",
-        "start_url": f"/{tenant_slug}",
-        "scope": "/",
+        "start_url": f"/{tenant_slug}/dashboard",
+        "scope": f"/{tenant_slug}/",
+        "id": f"profiremanager-{tenant_slug}",
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#DC2626",
