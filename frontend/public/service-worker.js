@@ -106,3 +106,97 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// ============================================
+// NOTIFICATIONS PUSH WEB
+// ============================================
+
+// Écouter les notifications push du serveur
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Push reçu:', event);
+  
+  let notificationData = {
+    title: 'ProFireManager',
+    body: 'Nouvelle notification',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    tag: 'profiremanager-notification',
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 200], // Vibration pattern
+    data: {}
+  };
+  
+  // Parser les données du push si présentes
+  if (event.data) {
+    try {
+      const pushData = event.data.json();
+      notificationData = {
+        ...notificationData,
+        title: pushData.title || notificationData.title,
+        body: pushData.body || pushData.message || notificationData.body,
+        icon: pushData.icon || notificationData.icon,
+        tag: pushData.tag || notificationData.tag,
+        data: pushData.data || {}
+      };
+    } catch (e) {
+      // Si ce n'est pas du JSON, utiliser le texte brut
+      notificationData.body = event.data.text();
+    }
+  }
+  
+  // Afficher la notification
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      vibrate: notificationData.vibrate,
+      data: notificationData.data,
+      actions: [
+        { action: 'open', title: 'Ouvrir' },
+        { action: 'close', title: 'Fermer' }
+      ]
+    })
+  );
+});
+
+// Gérer le clic sur une notification
+self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Notification cliquée:', event.notification.tag);
+  
+  event.notification.close();
+  
+  // Déterminer l'URL à ouvrir
+  let urlToOpen = '/';
+  const data = event.notification.data || {};
+  
+  if (data.url) {
+    urlToOpen = data.url;
+  } else if (data.tenant) {
+    urlToOpen = `/${data.tenant}/dashboard`;
+  }
+  
+  // Ouvrir ou focus la fenêtre
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Chercher une fenêtre déjà ouverte
+        for (const client of windowClients) {
+          if (client.url.includes(urlToOpen) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Sinon ouvrir une nouvelle fenêtre
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
+// Gérer la fermeture d'une notification
+self.addEventListener('notificationclose', (event) => {
+  console.log('[Service Worker] Notification fermée:', event.notification.tag);
+});
