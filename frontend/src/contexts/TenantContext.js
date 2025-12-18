@@ -173,12 +173,17 @@ export const TenantProvider = ({ children }) => {
     
     // Sur le web
     if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
-      console.log(`[Web] Redirection vers: ${lastTenant}`);
-      window.location.href = `/${lastTenant}/dashboard`;
-      return;
+      // Éviter la boucle de redirection - vérifier qu'on n'est pas déjà sur une page du tenant
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith(`/${lastTenant}`)) {
+        console.log(`[Web] Redirection vers: ${lastTenant}`);
+        window.location.href = `/${lastTenant}/dashboard`;
+        return;
+      }
     }
     
-    // Aucun tenant - afficher le sélecteur (ou page d'accueil web)
+    // Aucun tenant - afficher le sélecteur
+    // Sur le web, c'est utile pour les nouveaux utilisateurs
     console.log('Aucun tenant détecté, affichage de la page de sélection');
     setShowTenantSelector(true);
     setLoading(false);
