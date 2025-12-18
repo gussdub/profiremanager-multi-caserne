@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
+
+// Lazy load du TenantSelector pour éviter les dépendances circulaires
+const TenantSelector = lazy(() => import('../components/TenantSelector'));
 
 const TenantContext = createContext();
 
