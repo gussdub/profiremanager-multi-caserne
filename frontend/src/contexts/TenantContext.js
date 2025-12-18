@@ -62,13 +62,23 @@ export const TenantProvider = ({ children }) => {
     }
   };
 
-  // Fonction pour changer de caserne (afficher le sélecteur)
+  // Fonction pour changer de caserne
   const switchTenant = () => {
-    // Sur app native, afficher le sélecteur
-    if (isNativeApp()) {
+    // Effacer le tenant sauvegardé
+    localStorage.removeItem(LAST_TENANT_KEY);
+    
+    // Détecter si on est sur mobile/app native (standalone ou user agent mobile)
+    const isMobileOrStandalone = window.navigator.standalone === true || 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobileOrStandalone) {
+      // Sur mobile/app, réinitialiser et afficher le sélecteur
+      setTenantSlug(null);
+      setTenant(null);
       setShowTenantSelector(true);
     } else {
-      // Sur le web, rediriger vers la racine
+      // Sur le web desktop, rediriger vers la racine
       window.location.href = '/';
     }
   };
