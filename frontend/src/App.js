@@ -25132,7 +25132,7 @@ const App = () => {
   return (
     <div className="App">
       {user && <OfflineManager tenant={tenant} />}
-      {user && tenantSlug && <PWAInstallPrompt tenantSlug={tenantSlug} tenant={tenant} />}
+      {/* PWAInstallPrompt désactivé - app native disponible */}
       {user ? <AppLayout /> : <Login />}
       <Toaster />
     </div>
