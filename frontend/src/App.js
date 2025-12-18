@@ -994,7 +994,7 @@ const Login = () => {
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
 
-  const { tenantSlug } = useTenant();
+  const { tenantSlug, switchTenant, isNativeApp } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
