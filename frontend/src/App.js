@@ -996,11 +996,21 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 
   const { tenantSlug, switchTenant } = useTenant();
   
-  // Détecter si on est dans une app native (Capacitor) ou mode standalone (PWA)
-  const isInAppOrStandalone = window.navigator.standalone === true || 
-    window.matchMedia('(display-mode: standalone)').matches ||
-    document.referrer.includes('android-app://') ||
-    window.location.href.includes('capacitor://');
+  // Afficher le bouton "Changer de caserne" sur mobile (écran < 768px) ou app native/standalone
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobile = window.innerWidth < 768 || 
+        window.navigator.standalone === true || 
+        window.matchMedia('(display-mode: standalone)').matches ||
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      setIsMobileDevice(isMobile);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
