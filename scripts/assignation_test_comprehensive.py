@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://equiptrack-35.preview.emergentagent.com/api"
+BACKEND_URL = "https://native-tenant-app.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
