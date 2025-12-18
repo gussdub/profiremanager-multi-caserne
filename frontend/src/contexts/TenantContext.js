@@ -12,11 +12,25 @@ export const useTenant = () => {
 };
 
 // Détecter si on est sur une app native (Capacitor)
-const isNativeApp = () => {
+export const isNativeApp = () => {
   try {
     return Capacitor.isNativePlatform();
   } catch (e) {
     return false;
+  }
+};
+
+// Clés localStorage
+const SAVED_TENANTS_KEY = 'profiremanager_saved_tenants';
+const LAST_TENANT_KEY = 'profiremanager_last_tenant';
+
+// Récupérer les casernes sauvegardées
+export const getSavedTenants = () => {
+  try {
+    const saved = localStorage.getItem(SAVED_TENANTS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
   }
 };
 
@@ -35,7 +49,7 @@ export const TenantProvider = ({ children }) => {
         slug: slug,
         nom: slug.charAt(0).toUpperCase() + slug.slice(1)
       });
-      localStorage.setItem('profiremanager_last_tenant', slug);
+      localStorage.setItem(LAST_TENANT_KEY, slug);
       setShowTenantSelector(false);
       
       // Sur le web, rediriger vers l'URL du tenant
@@ -43,6 +57,25 @@ export const TenantProvider = ({ children }) => {
         window.location.href = `/${slug}/dashboard`;
       }
     }
+  };
+
+  // Fonction pour changer de caserne (afficher le sélecteur)
+  const switchTenant = () => {
+    // Sur app native, afficher le sélecteur
+    if (isNativeApp()) {
+      setShowTenantSelector(true);
+    } else {
+      // Sur le web, rediriger vers la racine
+      window.location.href = '/';
+    }
+  };
+
+  // Fonction pour réinitialiser et afficher le sélecteur
+  const resetTenantSelection = () => {
+    setTenantSlug(null);
+    setTenant(null);
+    localStorage.removeItem(LAST_TENANT_KEY);
+    setShowTenantSelector(true);
   };
 
   useEffect(() => {
@@ -62,7 +95,7 @@ export const TenantProvider = ({ children }) => {
     const pathParts = path.split('/').filter(Boolean);
     
     // Routes spéciales qui ne sont pas des tenants
-    const specialRoutes = ['qr', 'reset-password', 'api'];
+    const specialRoutes = ['qr', 'reset-password', 'api', 'pwa'];
     
     if (pathParts.length > 0 && !specialRoutes.includes(pathParts[0])) {
       const slug = pathParts[0];
@@ -71,10 +104,20 @@ export const TenantProvider = ({ children }) => {
       if (slug.match(/^[a-z0-9\-]+$/) && slug !== 'null' && slug !== 'undefined') {
         setTenantSlug(slug);
         
-        // IMPORTANT: Sauvegarder ce tenant comme "dernier utilisé" pour les raccourcis PWA
-        localStorage.setItem('profiremanager_last_tenant', slug);
+        // IMPORTANT: Sauvegarder ce tenant comme "dernier utilisé"
+        localStorage.setItem(LAST_TENANT_KEY, slug);
         
-        // On pourrait charger les infos du tenant depuis l'API si nécessaire
+        // Aussi l'ajouter aux casernes sauvegardées pour l'app native
+        const savedTenants = getSavedTenants();
+        if (!savedTenants.find(t => t.slug === slug)) {
+          savedTenants.push({
+            slug: slug,
+            name: slug.charAt(0).toUpperCase() + slug.slice(1),
+            addedAt: new Date().toISOString()
+          });
+          localStorage.setItem(SAVED_TENANTS_KEY, JSON.stringify(savedTenants));
+        }
+        
         setTenant({
           slug: slug,
           nom: slug.charAt(0).toUpperCase() + slug.slice(1)
@@ -85,13 +128,15 @@ export const TenantProvider = ({ children }) => {
       }
     }
     
-    // Pas de slug valide détecté - vérifier si on a un dernier tenant en mémoire
-    const lastTenant = localStorage.getItem('profiremanager_last_tenant');
+    // Pas de slug valide dans l'URL
+    const lastTenant = localStorage.getItem(LAST_TENANT_KEY);
+    const savedTenants = getSavedTenants();
     
-    if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
-      // Sur app native, utiliser directement le tenant sans redirection
-      if (isNativeApp()) {
-        console.log(`[Native] Utilisation du tenant: ${lastTenant}`);
+    // Sur app native
+    if (isNativeApp()) {
+      // Si on a un dernier tenant, l'utiliser
+      if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
+        console.log(`[Native] Utilisation du dernier tenant: ${lastTenant}`);
         setTenantSlug(lastTenant);
         setTenant({
           slug: lastTenant,
@@ -101,13 +146,36 @@ export const TenantProvider = ({ children }) => {
         return;
       }
       
-      // Sur le web, rediriger vers le dernier tenant utilisé
-      console.log(`Redirection vers le dernier tenant utilisé: ${lastTenant}`);
+      // Si on a des casernes sauvegardées mais pas de dernier tenant
+      if (savedTenants.length === 1) {
+        // Une seule caserne: l'utiliser automatiquement
+        const onlyTenant = savedTenants[0];
+        console.log(`[Native] Une seule caserne sauvegardée: ${onlyTenant.slug}`);
+        localStorage.setItem(LAST_TENANT_KEY, onlyTenant.slug);
+        setTenantSlug(onlyTenant.slug);
+        setTenant({
+          slug: onlyTenant.slug,
+          nom: onlyTenant.name
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Pas de tenant ou plusieurs: afficher le sélecteur
+      console.log('[Native] Affichage du sélecteur de caserne');
+      setShowTenantSelector(true);
+      setLoading(false);
+      return;
+    }
+    
+    // Sur le web
+    if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
+      console.log(`[Web] Redirection vers: ${lastTenant}`);
       window.location.href = `/${lastTenant}/dashboard`;
       return;
     }
     
-    // Aucun tenant en mémoire - afficher le sélecteur de tenant
+    // Aucun tenant - afficher le sélecteur (ou page d'accueil web)
     console.log('Aucun tenant détecté, affichage de la page de sélection');
     setShowTenantSelector(true);
     setLoading(false);
@@ -118,8 +186,13 @@ export const TenantProvider = ({ children }) => {
     tenantSlug,
     isSuperAdmin,
     loading,
+    showTenantSelector,
     setTenant,
-    setTenantSlug
+    setTenantSlug,
+    selectTenant,
+    switchTenant,
+    resetTenantSelection,
+    isNativeApp: isNativeApp()
   };
 
   if (loading) {
