@@ -29539,45 +29539,66 @@ async def get_points_eau_statistiques(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer les statistiques des points d'eau (bornes sèches)"""
+    """Récupérer les statistiques des points d'eau (tous types)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Compter toutes les bornes sèches
-    total = await db.points_eau.count_documents({
+    from datetime import datetime, timedelta
+    
+    # Compter par type
+    bornes_fontaines = await db.points_eau.count_documents({
+        "tenant_id": tenant.id,
+        "type": "borne_fontaine"
+    })
+    
+    bornes_seches = await db.points_eau.count_documents({
         "tenant_id": tenant.id,
         "type": "borne_seche"
     })
     
-    # Compter les bornes inspectées (avec statut conforme)
-    inspectees = await db.points_eau.count_documents({
+    points_statiques = await db.points_eau.count_documents({
         "tenant_id": tenant.id,
-        "type": "borne_seche",
-        "statut_inspection": "conforme"
+        "type": "point_eau_statique"
     })
     
-    # Compter les bornes à refaire (non conformes)
-    a_refaire = await db.points_eau.count_documents({
+    # Total
+    total = bornes_fontaines + bornes_seches + points_statiques
+    
+    # Compter par état
+    fonctionnels = await db.points_eau.count_documents({
         "tenant_id": tenant.id,
-        "type": "borne_seche",
-        "statut_inspection": "a_refaire"
+        "etat": "fonctionnelle"
     })
     
-    # Compter les bornes non inspectées ou expirées
-    # (celles qui n'ont pas de dernière inspection ou dont l'inspection est trop ancienne)
-    non_expirees = await db.points_eau.count_documents({
+    attention = await db.points_eau.count_documents({
         "tenant_id": tenant.id,
-        "type": "borne_seche",
-        "$or": [
-            {"derniere_inspection_date": {"$exists": False}},
-            {"derniere_inspection_date": None}
-        ]
+        "etat": "attention"
+    })
+    
+    hors_service = await db.points_eau.count_documents({
+        "tenant_id": tenant.id,
+        "etat": "hors_service"
+    })
+    
+    # Inspections dans les 30 derniers jours
+    date_30_jours = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    inspections_30_jours = await db.inspections_points_eau.count_documents({
+        "tenant_id": tenant.id,
+        "date_inspection": {"$gte": date_30_jours}
     })
     
     return {
         "total": total,
-        "inspectees": inspectees,
-        "a_refaire": a_refaire,
-        "non_expirees": non_expirees
+        "par_type": {
+            "bornes_fontaines": bornes_fontaines,
+            "bornes_seches": bornes_seches,
+            "points_statiques": points_statiques
+        },
+        "par_etat": {
+            "fonctionnels": fonctionnels,
+            "attention": attention,
+            "hors_service": hors_service
+        },
+        "inspections_30_jours": inspections_30_jours
     }
 
 @api_router.get("/{tenant_slug}/points-eau/{point_id}")
