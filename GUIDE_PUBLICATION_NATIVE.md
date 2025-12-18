@@ -4,46 +4,63 @@ Ce guide vous accompagne étape par étape pour publier ProFireManager sur l'App
 
 ---
 
+## 🆕 Nouvelles Fonctionnalités de l'App Native
+
+### Sélection de Caserne
+L'application native inclut maintenant un **écran de sélection de caserne** :
+
+1. **Premier lancement** : L'utilisateur entre le code de sa caserne (ex: "shefford")
+2. **Code mémorisé** : Une fois entré, le code est sauvegardé et l'utilisateur n'a plus besoin de le ressaisir
+3. **Multi-casernes** : Les utilisateurs travaillant pour plusieurs casernes peuvent ajouter plusieurs codes
+4. **Changement facile** : Un bouton "🏢 Changer de caserne" est disponible dans le menu latéral
+
+### Icône de l'Application
+L'icône iOS a été mise à jour avec le logo officiel de ProFireManager (🚒).
+
+---
+
 ## 📋 Prérequis
 
 - [x] Compte Apple Developer ($99/an) - https://developer.apple.com
 - [x] Compte Google Play Developer ($25 one-time) - https://play.google.com/console
 - [x] MacBook Pro avec Xcode installé
-- [x] Node.js installé
+- [x] Node.js v18+ installé (via nvm recommandé)
+- [x] Yarn installé (`npm install -g yarn`)
 - [ ] Android Studio installé (pour Android)
 
 ---
 
 ## 🔧 Étape 1: Préparation du Projet
 
-### 1.1 Cloner le projet sur votre Mac
+### 1.1 Cloner/Mettre à jour le projet sur votre Mac
 
 ```bash
-# Sur votre MacBook, clonez le repo
+# Si nouveau projet
 git clone https://github.com/VOTRE_REPO/profiremanager.git
 cd profiremanager/frontend
+
+# Si mise à jour
+cd ~/Documents/profiremanager-multi-caserne/frontend
+git pull origin main
 ```
 
 ### 1.2 Installer les dépendances
 
 ```bash
-npm install
-# ou
+# IMPORTANT: Utiliser yarn, pas npm
 yarn install
 ```
 
 ### 1.3 Compiler le build web
 
 ```bash
-npm run build
-# ou
 yarn build
 ```
 
 ### 1.4 Synchroniser avec Capacitor
 
 ```bash
-npx cap sync
+npx cap sync ios
 ```
 
 ---
