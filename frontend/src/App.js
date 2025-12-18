@@ -22,65 +22,118 @@ const RapportHeuresModal = lazy(() => import("./components/RapportHeuresModal"))
 const AuditModal = lazy(() => import("./components/AuditModal"));
 import "./App.css";
 
-// Composant de redirection PWA pour iOS
-// Permet de créer des raccourcis séparés pour chaque caserne
+// Composant d'installation PWA pour iOS
+// Affiche une page d'installation SANS redirection automatique
+// L'utilisateur doit d'abord ajouter le raccourci, puis cliquer pour continuer
 const PWARedirect = () => {
   const { tenantSlug } = useParams();
+  const [isInstalled, setIsInstalled] = useState(false);
   
+  // Vérifier si l'app est lancée depuis un raccourci (mode standalone)
   useEffect(() => {
-    if (tenantSlug) {
-      // Sauvegarder ce tenant comme dernier utilisé
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || window.navigator.standalone === true;
+    
+    if (isStandalone && tenantSlug) {
+      // L'app est ouverte depuis un raccourci - rediriger vers le dashboard
       localStorage.setItem('profiremanager_last_tenant', tenantSlug);
-      // Rediriger vers le dashboard du tenant
       window.location.href = `/${tenantSlug}/dashboard`;
     }
   }, [tenantSlug]);
   
-  // Afficher une page d'installation pendant la redirection
+  const handleContinue = () => {
+    if (tenantSlug) {
+      localStorage.setItem('profiremanager_last_tenant', tenantSlug);
+      window.location.href = `/${tenantSlug}/dashboard`;
+    }
+  };
+  
+  const tenantName = tenantSlug ? tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1) : '';
+  
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      height: '100vh',
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #DC2626 0%, #991b1b 100%)',
       color: 'white',
       textAlign: 'center',
-      padding: '2rem'
+      padding: '1rem'
     }}>
       <div style={{
         background: 'white',
         borderRadius: '20px',
-        padding: '2rem',
-        maxWidth: '400px',
+        padding: '1.5rem',
+        maxWidth: '380px',
+        width: '100%',
         boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
       }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚒</div>
-        <h1 style={{ color: '#DC2626', fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🚒</div>
+        <h1 style={{ color: '#DC2626', fontSize: '1.3rem', marginBottom: '0.25rem' }}>
           ProFireManager
         </h1>
-        <h2 style={{ color: '#374151', fontSize: '1.25rem', marginBottom: '1rem' }}>
-          {tenantSlug ? tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1) : 'Chargement...'}
+        <h2 style={{ color: '#374151', fontSize: '1.1rem', marginBottom: '1rem', fontWeight: '600' }}>
+          {tenantName}
         </h2>
-        <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-          Redirection en cours...
-        </p>
+        
+        {/* Instructions d'installation */}
         <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid #f3f4f6',
-          borderTopColor: '#DC2626',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto'
-        }} />
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+          background: '#fef3c7',
+          border: '1px solid #f59e0b',
+          borderRadius: '12px',
+          padding: '1rem',
+          marginBottom: '1rem',
+          textAlign: 'left'
+        }}>
+          <p style={{ color: '#92400e', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+            📱 Pour créer un raccourci :
+          </p>
+          <ol style={{ color: '#78350f', fontSize: '0.8rem', margin: 0, paddingLeft: '1.2rem', lineHeight: '1.6' }}>
+            <li>Cliquez sur <strong>Partager</strong> (⬆️) en bas de Safari</li>
+            <li>Sélectionnez <strong>"Sur l'écran d'accueil"</strong></li>
+            <li>Nommez-le <strong>"{tenantName}"</strong></li>
+            <li>Cliquez <strong>Ajouter</strong></li>
+          </ol>
+        </div>
+        
+        {/* Bouton pour continuer */}
+        <button
+          onClick={handleContinue}
+          style={{
+            width: '100%',
+            padding: '0.9rem',
+            background: '#DC2626',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginBottom: '0.75rem'
+          }}
+        >
+          Continuer vers {tenantName} →
+        </button>
+        
+        <p style={{ color: '#9ca3af', fontSize: '0.75rem', margin: 0 }}>
+          Créez d'abord le raccourci, puis cliquez sur "Continuer"
+        </p>
       </div>
+      
+      {/* Note pour plusieurs casernes */}
+      <p style={{ 
+        color: 'rgba(255,255,255,0.8)', 
+        fontSize: '0.75rem', 
+        marginTop: '1rem',
+        maxWidth: '320px'
+      }}>
+        💡 Pour ajouter une autre caserne, utilisez l'URL :<br/>
+        <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>
+          /pwa/nom-caserne
+        </code>
+      </p>
     </div>
   );
 };
