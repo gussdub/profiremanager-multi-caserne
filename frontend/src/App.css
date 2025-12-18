@@ -278,10 +278,14 @@ body {
   left: 0;
   top: 0;
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height pour iOS */
   max-height: 100vh;
+  max-height: 100dvh;
   z-index: 100;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* Scroll fluide sur iOS */
+  overscroll-behavior: contain; /* Empêche le rebond */
 }
 
 .sidebar-header {
