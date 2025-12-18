@@ -28,12 +28,13 @@ async def get_pwa_manifest(tenant_slug: str):
     
     # Générer le manifest avec les infos du tenant
     tenant_name = tenant.get('nom_service') or tenant.get('nom', 'ProFireManager')
+    # Utiliser l'URL courte /pwa/tenant pour une meilleure compatibilité iOS
     manifest = {
         "name": f"{tenant_name} - ProFireManager",
         "short_name": tenant_name[:12] if len(tenant_name) > 12 else tenant_name,
         "description": f"Application de gestion pour {tenant.get('nom', 'le service incendie')}",
-        "start_url": f"/{tenant_slug}/dashboard",
-        "scope": f"/{tenant_slug}/",
+        "start_url": f"/pwa/{tenant_slug}",
+        "scope": "/",
         "id": f"profiremanager-{tenant_slug}",
         "display": "standalone",
         "background_color": "#ffffff",
