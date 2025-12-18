@@ -5,8 +5,7 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "https",
-    "hostname": "app.profiremanager.local",
-    "allowNavigation": ["https://www.profiremanager.ca/*", "https://*.profiremanager.ca/*"]
+    "hostname": "localhost"
   },
   "plugins": {
     "PushNotifications": {
@@ -22,7 +21,7 @@
       "style": "LIGHT"
     },
     "CapacitorHttp": {
-      "enabled": true
+      "enabled": false
     }
   },
   "ios": {
