@@ -1138,7 +1138,7 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
                 </div>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')}/{tenant_slug}" 
+                    <a href="https://www.profiremanager.ca/{tenant_slug}" 
                        style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                         🚒 Accéder à ProFireManager
                     </a>
