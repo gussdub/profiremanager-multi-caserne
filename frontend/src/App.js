@@ -992,6 +992,23 @@ const Login = () => {
                   </button>
                 </div>
               </div>
+              {/* Option "Se souvenir de moi" sur mobile */}
+              {(window.navigator.standalone === true || 
+                window.matchMedia('(display-mode: standalone)').matches ||
+                /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="rememberMe" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
+                    Se souvenir de moi sur cet appareil
+                  </label>
+                </div>
+              )}
               <Button 
                 type="submit" 
                 className="w-full" 
