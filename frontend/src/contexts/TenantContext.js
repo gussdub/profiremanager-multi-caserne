@@ -52,13 +52,25 @@ export const TenantProvider = ({ children }) => {
         slug: slug,
         nom: slug.charAt(0).toUpperCase() + slug.slice(1)
       });
+      
+      // Sauvegarder dans les deux clés
       localStorage.setItem(LAST_TENANT_KEY, slug);
+      
+      // Aussi sauvegarder dans la liste des casernes
+      const savedTenants = getSavedTenants();
+      if (!savedTenants.find(t => t.slug === slug)) {
+        savedTenants.push({
+          slug: slug,
+          name: slug.charAt(0).toUpperCase() + slug.slice(1),
+          addedAt: new Date().toISOString()
+        });
+        localStorage.setItem(SAVED_TENANTS_KEY, JSON.stringify(savedTenants));
+      }
+      
       setShowTenantSelector(false);
       
-      // Sur le web, rediriger vers l'URL du tenant
-      if (!isNativeApp()) {
-        window.location.href = `/${slug}/dashboard`;
-      }
+      // Toujours rediriger vers l'URL du tenant (fonctionne sur web et app native chargeant le web)
+      window.location.href = `/${slug}/dashboard`;
     }
   };
 
