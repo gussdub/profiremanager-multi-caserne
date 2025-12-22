@@ -64,23 +64,12 @@ export const TenantProvider = ({ children }) => {
 
   // Fonction pour changer de caserne
   const switchTenant = () => {
-    // Effacer le tenant sauvegardé
+    // NE PAS effacer SAVED_TENANTS_KEY - seulement le dernier tenant utilisé
     localStorage.removeItem(LAST_TENANT_KEY);
     
-    // Détecter si on est sur mobile/app native (standalone ou user agent mobile)
-    const isMobileOrStandalone = window.navigator.standalone === true || 
-      window.matchMedia('(display-mode: standalone)').matches ||
-      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobileOrStandalone) {
-      // Sur mobile/app, réinitialiser et afficher le sélecteur
-      setTenantSlug(null);
-      setTenant(null);
-      setShowTenantSelector(true);
-    } else {
-      // Sur le web desktop, rediriger vers la racine
-      window.location.href = '/';
-    }
+    // Forcer le rechargement de la page vers la racine pour afficher le sélecteur
+    // Cela fonctionne sur toutes les plateformes (web, mobile, app native)
+    window.location.href = '/';
   };
 
   // Fonction pour réinitialiser et afficher le sélecteur
