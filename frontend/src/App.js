@@ -290,25 +290,6 @@ const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [tenantSlug, isSuperAdmin]);
-          removeItem('token');
-          removeItem('tenant');
-          removeItem('user');
-          delete axios.defaults.headers.common['Authorization'];
-          setUser(null);
-          setTenant(null);
-          
-          // Forcer le rechargement de la page pour retourner au login
-          setTimeout(() => {
-            window.location.reload();
-          }, 100);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, [tenantSlug, isSuperAdmin]);
 
   const login = async (email, mot_de_passe) => {
     try {
