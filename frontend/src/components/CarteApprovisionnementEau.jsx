@@ -748,18 +748,24 @@ const CarteApprovisionnementEau = ({ user }) => {
         />
       )}
 
-      {showInspectionModal && (
-        <InspectionModal
-          point={selectedPoint}
+      {showInspectionModal && selectedPoint?.type === 'borne_seche' && (
+        <InspectionBorneSecheModal
+          borne={selectedPoint}
+          tenantSlug={tenantSlug}
+          userRole={user?.role}
           onClose={() => {
             setShowInspectionModal(false);
             setSelectedPoint(null);
           }}
-          onSave={() => {
+          onSuccess={() => {
             fetchPointsEau();
             fetchStats();
             setShowInspectionModal(false);
             setSelectedPoint(null);
+            toast({
+              title: "Succès",
+              description: "Inspection enregistrée avec succès"
+            });
           }}
         />
       )}
