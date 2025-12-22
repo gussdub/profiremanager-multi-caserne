@@ -141,7 +141,9 @@ const PointEauModal = ({
   tenantSlug, 
   apiPost, 
   apiPut,
-  forcedType 
+  apiGet,
+  forcedType,
+  userRole
 }) => {
   const [formData, setFormData] = useState({
     type: forcedType || 'borne_fontaine',
@@ -159,6 +161,7 @@ const PointEauModal = ({
     date_dernier_test: '',
     // Bornes sèches
     debit_max_statique_gpm: '',
+    modele_inspection_assigne_id: '', // Formulaire d'inspection assigné
     // Points d'eau statiques
     capacite_litres: '',
     accessibilite: 'facile',
@@ -173,6 +176,24 @@ const PointEauModal = ({
   const [mapCenter, setMapCenter] = useState([45.37, -72.57]); // Shefford par défaut
   const [mapZoom, setMapZoom] = useState(14); // Zoom par défaut
   const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
+  const [modelesInspection, setModelesInspection] = useState([]); // Modèles d'inspection disponibles
+
+  // Vérifier si l'utilisateur peut assigner un formulaire
+  const canAssignModele = userRole === 'admin' || userRole === 'superviseur';
+
+  // Charger les modèles d'inspection disponibles pour les bornes sèches
+  useEffect(() => {
+    const fetchModeles = async () => {
+      if (!canAssignModele || !tenantSlug) return;
+      try {
+        const data = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection');
+        setModelesInspection(data || []);
+      } catch (error) {
+        console.error('Erreur chargement modèles inspection:', error);
+      }
+    };
+    fetchModeles();
+  }, [tenantSlug, canAssignModele, apiGet]);
 
   // Icône pour le marqueur sélectionné
   const selectedIcon = L.divIcon({
