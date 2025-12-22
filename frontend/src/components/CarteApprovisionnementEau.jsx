@@ -728,6 +728,8 @@ const CarteApprovisionnementEau = ({ user }) => {
           tenantSlug={tenantSlug}
           apiPost={apiPost}
           apiPut={apiPut}
+          apiGet={apiGet}
+          userRole={user?.role}
           onClose={() => {
             setShowPointModal(false);
             setSelectedPoint(null);
