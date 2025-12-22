@@ -224,8 +224,10 @@ const RatingField = ({ value, onChange }) => {
 };
 
 // Composant principal du modal d'inspection
-const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) => {
+const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, userRole }) => {
   const [modele, setModele] = useState(null);
+  const [modelesDisponibles, setModelesDisponibles] = useState([]);
+  const [selectedModeleId, setSelectedModeleId] = useState(null);
   const [reponses, setReponses] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -233,24 +235,42 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) =>
   const [anomalieData, setAnomalieData] = useState({ commentaire: '', photos: [] });
   const [alertes, setAlertes] = useState([]);
 
-  // Charger le modèle actif
+  // Vérifier si l'utilisateur peut choisir le formulaire
+  const canSelectModele = userRole === 'admin' || userRole === 'superviseur';
+
+  // Charger les modèles disponibles
   useEffect(() => {
-    const fetchModele = async () => {
+    const fetchModeles = async () => {
       try {
-        const data = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection/actif');
-        setModele(data);
-        // Initialiser les réponses
-        const initialReponses = {};
-        data.sections?.forEach(section => {
-          initialReponses[section.id] = {
-            section_id: section.id,
-            section_titre: section.titre,
-            type_champ: section.type_champ,
-            valeur: section.type_champ === 'checkbox' ? [] : (section.type_champ === 'toggle' ? false : ''),
-            items: {}
-          };
-        });
-        setReponses(initialReponses);
+        // Charger tous les modèles pour admin/superviseur
+        if (canSelectModele) {
+          const data = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection');
+          setModelesDisponibles(data);
+        }
+        
+        // Déterminer quel modèle utiliser
+        let modeleToUse = null;
+        
+        // Si la borne a un modèle assigné, l'utiliser
+        if (borne.modele_inspection_assigne_id) {
+          try {
+            modeleToUse = await apiGet(tenantSlug, `/bornes-seches/modeles-inspection/${borne.modele_inspection_assigne_id}`);
+            setSelectedModeleId(borne.modele_inspection_assigne_id);
+          } catch (e) {
+            console.log('Modèle assigné non trouvé, utilisation du modèle actif');
+          }
+        }
+        
+        // Sinon, utiliser le modèle actif par défaut
+        if (!modeleToUse) {
+          modeleToUse = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection/actif');
+          setSelectedModeleId(modeleToUse?.id);
+        }
+        
+        if (modeleToUse) {
+          setModele(modeleToUse);
+          initializeReponses(modeleToUse);
+        }
       } catch (error) {
         console.error('Erreur chargement modèle:', error);
         alert('Erreur lors du chargement du formulaire');
@@ -258,8 +278,50 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) =>
         setLoading(false);
       }
     };
-    fetchModele();
-  }, [tenantSlug]);
+    fetchModeles();
+  }, [tenantSlug, borne, canSelectModele]);
+
+  // Initialiser les réponses pour un modèle
+  const initializeReponses = (modeleData) => {
+    const initialReponses = {};
+    modeleData.sections?.forEach(section => {
+      initialReponses[section.id] = {
+        section_id: section.id,
+        section_titre: section.titre,
+        type_champ: section.type_champ,
+        valeur: section.type_champ === 'checkbox' ? [] : (section.type_champ === 'toggle' ? false : ''),
+        items: {}
+      };
+    });
+    setReponses(initialReponses);
+  };
+
+  // Changer de modèle (admin/superviseur seulement)
+  const handleModeleChange = async (modeleId) => {
+    if (!canSelectModele) return;
+    
+    setLoading(true);
+    try {
+      const selectedModele = modelesDisponibles.find(m => m.id === modeleId);
+      if (selectedModele) {
+        // Si le modèle n'a pas les sections chargées, les récupérer
+        if (!selectedModele.sections) {
+          const fullModele = await apiGet(tenantSlug, `/bornes-seches/modeles-inspection/${modeleId}`);
+          setModele(fullModele);
+          initializeReponses(fullModele);
+        } else {
+          setModele(selectedModele);
+          initializeReponses(selectedModele);
+        }
+        setSelectedModeleId(modeleId);
+        setAlertes([]);
+      }
+    } catch (error) {
+      console.error('Erreur changement modèle:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mettre à jour une réponse
   const updateReponse = (sectionId, value, itemId = null) => {
