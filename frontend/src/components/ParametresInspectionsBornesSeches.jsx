@@ -936,6 +936,21 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
                   >
                     ✏️ Modifier
                   </button>
+                  <button
+                    onClick={() => dupliquerModele(modele)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      backgroundColor: '#8b5cf6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem'
+                    }}
+                    title="Créer une copie de ce modèle"
+                  >
+                    📋 Copier
+                  </button>
                   {!modele.est_actif && (
                     <button
                       onClick={() => supprimerModele(modele.id)}
