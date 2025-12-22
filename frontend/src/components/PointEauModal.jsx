@@ -234,6 +234,7 @@ const PointEauModal = ({
         etat: point.etat || 'fonctionnelle',
         date_dernier_test: point.date_dernier_test || '',
         debit_max_statique_gpm: point.debit_max_statique_gpm || '',
+        modele_inspection_assigne_id: point.modele_inspection_assigne_id || '',
         capacite_litres: point.capacite_litres || '',
         accessibilite: point.accessibilite || 'facile',
         photos: point.photos || []
