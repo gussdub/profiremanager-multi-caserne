@@ -30090,6 +30090,7 @@ class BorneSeche(PointEauBase):
     date_derniere_inspection: Optional[str] = None
     frequence_inspection_mois: int = 6  # Inspection bi-annuelle par défaut
     prochaine_date_test: Optional[str] = None  # Paramétré par superviseur
+    modele_inspection_assigne_id: Optional[str] = None  # ID du formulaire d'inspection assigné
 
 class PointEauStatique(PointEauBase):
     type: str = "point_eau_statique"
