@@ -244,13 +244,13 @@ const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const token = getItem('token');
-    
-    // Ne pas vérifier le token si pas de tenantSlug
+    // Ne pas vérifier le token si pas de tenantSlug (en attente du slug)
     if (!tenantSlug) {
       setLoading(false);
       return;
     }
+    
+    const token = getItem('token');
     
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -264,6 +264,7 @@ const AuthProvider = ({ children }) => {
       axios.get(meUrl)
         .then(async response => {
           setUser(response.data);
+          setLoading(false);
           
           // Récupérer les informations du tenant si ce n'est pas un super admin
           if (!isSuperAdmin && tenantSlug) {
@@ -276,8 +277,19 @@ const AuthProvider = ({ children }) => {
           }
         })
         .catch((error) => {
-          console.log('Token invalide ou expiré, nettoyage et redirection...');
+          console.log('Token invalide ou expiré, nettoyage...');
           // Nettoyer uniquement ce tenant
+          removeItem('token');
+          removeItem('user');
+          removeItem('tenant');
+          delete axios.defaults.headers.common['Authorization'];
+          setUser(null);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [tenantSlug, isSuperAdmin]);
           removeItem('token');
           removeItem('tenant');
           removeItem('user');
