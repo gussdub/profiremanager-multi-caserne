@@ -30123,6 +30123,7 @@ class PointEauCreate(BaseModel):
     etat_eau: Optional[str] = "propre"
     type_source: Optional[str] = "etang"
     frequence_inspection_mois: Optional[int] = None
+    modele_inspection_assigne_id: Optional[str] = None  # ID du formulaire d'inspection assigné
 
 class PointEauUpdate(BaseModel):
     numero_identification: Optional[str] = None
@@ -30143,6 +30144,7 @@ class PointEauUpdate(BaseModel):
     etat_eau: Optional[str] = None
     type_source: Optional[str] = None
     frequence_inspection_mois: Optional[int] = None
+    modele_inspection_assigne_id: Optional[str] = None  # ID du formulaire d'inspection assigné
     prochaine_date_test: Optional[str] = None
 
 class InspectionPointEauCreate(BaseModel):
