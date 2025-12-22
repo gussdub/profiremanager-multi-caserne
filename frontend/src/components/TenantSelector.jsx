@@ -7,14 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 // Clés localStorage pour les casernes sauvegardées
 const SAVED_TENANTS_KEY = 'profiremanager_saved_tenants';
 const LAST_TENANT_KEY = 'profiremanager_last_tenant';
+const SAVED_CREDENTIALS_KEY = 'profiremanager_saved_credentials';
 
-// Vérifier si on est sur une app native
+// Vérifier si on est sur mobile/app native/standalone
 const isNativeApp = () => {
   try {
-    return Capacitor.isNativePlatform();
-  } catch (e) {
-    return false;
-  }
+    // Vérifier Capacitor d'abord
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+      return true;
+    }
+  } catch (e) {}
+  
+  // Vérifier mode standalone ou mobile
+  return window.navigator.standalone === true || 
+    window.matchMedia('(display-mode: standalone)').matches ||
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 };
 
 // Récupérer les casernes sauvegardées
