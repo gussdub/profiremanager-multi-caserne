@@ -643,6 +643,27 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
     }
   };
 
+  // Dupliquer un modèle existant
+  const dupliquerModele = async (modele) => {
+    const nouveauNom = window.prompt(
+      'Nom du nouveau formulaire:',
+      `${modele.nom} (copie)`
+    );
+    
+    if (!nouveauNom) return;
+    
+    try {
+      const response = await apiPost(tenantSlug, `/bornes-seches/modeles-inspection/${modele.id}/dupliquer`, {
+        nouveau_nom: nouveauNom
+      });
+      fetchModeles();
+      alert(`✅ Formulaire "${nouveauNom}" créé avec succès!`);
+    } catch (error) {
+      console.error('Erreur duplication:', error);
+      alert('Erreur: ' + (error.message || 'Impossible de dupliquer'));
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
