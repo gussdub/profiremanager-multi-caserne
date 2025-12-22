@@ -782,9 +782,64 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [personnalisation, setPersonnalisation] = useState(null);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
+
+  // Clé pour les identifiants sauvegardés
+  const SAVED_CREDENTIALS_KEY = 'profiremanager_saved_credentials';
+  
+  // Détecter si on est sur mobile
+  const isMobile = () => {
+    return window.navigator.standalone === true || 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
+
+  // Charger les identifiants sauvegardés pour ce tenant
+  useEffect(() => {
+    if (!tenantSlug || autoLoginAttempted) return;
+    
+    const loadSavedCredentials = async () => {
+      try {
+        const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+        if (savedCreds) {
+          const allCreds = JSON.parse(savedCreds);
+          const tenantCreds = allCreds[tenantSlug];
+          
+          if (tenantCreds && isMobile()) {
+            setEmail(tenantCreds.email);
+            setMotDePasse(tenantCreds.password);
+            
+            // Auto-login sur mobile si identifiants sauvegardés
+            setAutoLoginAttempted(true);
+            setLoading(true);
+            
+            const result = await login(tenantCreds.email, tenantCreds.password);
+            
+            if (!result.success) {
+              // Si auto-login échoue, effacer les identifiants invalides
+              delete allCreds[tenantSlug];
+              localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
+              setMotDePasse('');
+              toast({
+                title: "Session expirée",
+                description: "Veuillez vous reconnecter",
+                variant: "destructive"
+              });
+            }
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur chargement identifiants:', error);
+      }
+    };
+    
+    loadSavedCredentials();
+  }, [tenantSlug, login, autoLoginAttempted, toast]);
 
   // Charger la personnalisation du tenant (sans authentification)
   useEffect(() => {
@@ -819,7 +874,23 @@ const Login = () => {
     
     const result = await login(email, motDePasse);
     
-    if (!result.success) {
+    if (result.success) {
+      // Sauvegarder les identifiants sur mobile si "Se souvenir" est coché
+      if (isMobile() && rememberMe) {
+        try {
+          const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+          const allCreds = savedCreds ? JSON.parse(savedCreds) : {};
+          allCreds[tenantSlug] = {
+            email: email,
+            password: motDePasse,
+            savedAt: new Date().toISOString()
+          };
+          localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
+        } catch (error) {
+          console.error('Erreur sauvegarde identifiants:', error);
+        }
+      }
+    } else {
       toast({
         title: "Erreur de connexion",
         description: result.error,
