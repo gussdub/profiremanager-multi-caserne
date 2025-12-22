@@ -29554,6 +29554,49 @@ async def activer_modele_inspection(
     
     return {"message": "Modèle activé avec succès"}
 
+@api_router.post("/{tenant_slug}/bornes-seches/modeles-inspection/{modele_id}/dupliquer")
+async def duplicate_modele_inspection_borne_seche(
+    tenant_slug: str,
+    modele_id: str,
+    nouveau_nom: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Dupliquer un modèle d'inspection existant"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer le modèle original
+    modele_original = await db.modeles_inspection_bornes_seches.find_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    if not modele_original:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    # Créer le nouveau modèle (copie)
+    nouveau_modele = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": nouveau_nom or f"{modele_original['nom']} (copie)",
+        "description": modele_original.get("description", ""),
+        "est_actif": False,  # La copie n'est pas active par défaut
+        "sections": modele_original.get("sections", []),
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "copie_de": modele_id  # Référence au modèle original
+    }
+    
+    await db.modeles_inspection_bornes_seches.insert_one(nouveau_modele)
+    
+    return {
+        "message": "Modèle dupliqué avec succès", 
+        "id": nouveau_modele["id"],
+        "nom": nouveau_modele["nom"]
+    }
+
 @api_router.post("/{tenant_slug}/bornes-seches/inspections-personnalisees")
 async def create_inspection_personnalisee_borne_seche(
     tenant_slug: str,
