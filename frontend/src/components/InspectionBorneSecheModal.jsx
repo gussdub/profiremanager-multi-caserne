@@ -636,6 +636,34 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
             </div>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
           </div>
+          
+          {/* Sélecteur de formulaire pour admin/superviseur */}
+          {canSelectModele && modelesDisponibles.length > 1 && (
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                📋 Formulaire d'inspection:
+              </label>
+              <select
+                value={selectedModeleId || ''}
+                onChange={(e) => handleModeleChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  cursor: 'pointer'
+                }}
+              >
+                {modelesDisponibles.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.nom} {m.est_actif ? '(actif)' : ''} {borne.modele_inspection_assigne_id === m.id ? '★ assigné' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Alertes en cours */}
