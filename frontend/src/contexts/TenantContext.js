@@ -146,46 +146,36 @@ export const TenantProvider = ({ children }) => {
     const lastTenant = localStorage.getItem(LAST_TENANT_KEY);
     const savedTenants = getSavedTenants();
     
-    // Sur app native
-    if (isNativeApp()) {
-      // Si on a un dernier tenant, l'utiliser
-      if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
-        console.log(`[Native] Utilisation du dernier tenant: ${lastTenant}`);
-        setTenantSlug(lastTenant);
-        setTenant({
-          slug: lastTenant,
-          nom: lastTenant.charAt(0).toUpperCase() + lastTenant.slice(1)
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Si on a des casernes sauvegardées mais pas de dernier tenant
-      if (savedTenants.length === 1) {
-        // Une seule caserne: l'utiliser automatiquement
-        const onlyTenant = savedTenants[0];
-        console.log(`[Native] Une seule caserne sauvegardée: ${onlyTenant.slug}`);
-        localStorage.setItem(LAST_TENANT_KEY, onlyTenant.slug);
-        setTenantSlug(onlyTenant.slug);
-        setTenant({
-          slug: onlyTenant.slug,
-          nom: onlyTenant.name
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Pas de tenant ou plusieurs: afficher le sélecteur
-      console.log('[Native] Affichage du sélecteur de caserne');
-      setShowTenantSelector(true);
-      setLoading(false);
-      return;
-    }
+    // Détecter si on est sur mobile/tablette/app native (incluant web mobile)
+    const isMobileOrApp = () => {
+      try {
+        if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+          return true;
+        }
+      } catch (e) {}
+      return window.navigator.standalone === true || 
+        window.matchMedia('(display-mode: standalone)').matches ||
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    };
     
-    // Sur le web
+    const isMobile = isMobileOrApp();
+    
+    // Si on a un dernier tenant ET qu'on n'est PAS sur la racine (/)
+    // OU si on est sur desktop web avec un dernier tenant
     if (lastTenant && lastTenant !== 'null' && lastTenant !== 'undefined') {
-      // Éviter la boucle de redirection - vérifier qu'on n'est pas déjà sur une page du tenant
       const currentPath = window.location.pathname;
+      
+      // Sur mobile/app, si on est à la racine, NE PAS auto-rediriger
+      // (permet d'afficher le sélecteur quand on clique "changer de caserne")
+      if (isMobile && (currentPath === '/' || currentPath === '')) {
+        // Afficher le sélecteur avec les casernes sauvegardées
+        console.log('[Mobile] Affichage du sélecteur de caserne (plusieurs casernes disponibles)');
+        setShowTenantSelector(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Sur desktop web, rediriger vers le dernier tenant
       if (!currentPath.startsWith(`/${lastTenant}`)) {
         console.log(`[Web] Redirection vers: ${lastTenant}`);
         window.location.href = `/${lastTenant}/dashboard`;
@@ -193,9 +183,17 @@ export const TenantProvider = ({ children }) => {
       }
     }
     
-    // Aucun tenant - afficher le sélecteur
-    // Sur le web, c'est utile pour les nouveaux utilisateurs
-    console.log('Aucun tenant détecté, affichage de la page de sélection');
+    // Si on a une seule caserne sauvegardée et pas de lastTenant
+    if (!lastTenant && savedTenants.length === 1) {
+      const onlyTenant = savedTenants[0];
+      console.log(`Unique caserne sauvegardée: ${onlyTenant.slug}`);
+      localStorage.setItem(LAST_TENANT_KEY, onlyTenant.slug);
+      window.location.href = `/${onlyTenant.slug}/dashboard`;
+      return;
+    }
+    
+    // Aucun tenant ou plusieurs sans sélection - afficher le sélecteur
+    console.log('Affichage de la page de sélection de caserne');
     setShowTenantSelector(true);
     setLoading(false);
   }, []);
