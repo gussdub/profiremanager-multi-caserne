@@ -791,48 +791,69 @@ const Login = () => {
       /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   };
 
-  // Charger les identifiants sauvegardés pour ce tenant
+  // Charger les identifiants sauvegardés et auto-login pour ce tenant
   useEffect(() => {
-    if (!tenantSlug || autoLoginAttempted) return;
+    if (!tenantSlug) return;
     
-    const loadSavedCredentials = async () => {
+    const attemptAutoLogin = async () => {
       try {
         const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-        if (savedCreds) {
-          const allCreds = JSON.parse(savedCreds);
-          const tenantCreds = allCreds[tenantSlug];
+        if (!savedCreds) return;
+        
+        const allCreds = JSON.parse(savedCreds);
+        const tenantCreds = allCreds[tenantSlug];
+        
+        if (tenantCreds && isMobile()) {
+          console.log(`[AutoLogin] Tentative d'auto-connexion pour ${tenantSlug}`);
           
-          if (tenantCreds && isMobile()) {
-            setEmail(tenantCreds.email);
-            setMotDePasse(tenantCreds.password);
-            
-            // Auto-login sur mobile si identifiants sauvegardés
+          // Pré-remplir les champs
+          setEmail(tenantCreds.email);
+          setMotDePasse(tenantCreds.password);
+          
+          // Si pas encore tenté pour ce tenant
+          if (!autoLoginAttempted) {
             setAutoLoginAttempted(true);
             setLoading(true);
             
-            const result = await login(tenantCreds.email, tenantCreds.password);
-            
-            if (!result.success) {
+            try {
+              // Appel direct à l'API de login
+              const response = await axios.post(`${API}/${tenantSlug}/auth/login`, {
+                email: tenantCreds.email,
+                mot_de_passe: tenantCreds.password
+              });
+              
+              if (response.data.token) {
+                console.log('[AutoLogin] Succès!');
+                // Stocker le token et recharger la page
+                localStorage.setItem(`${tenantSlug}_token`, response.data.token);
+                localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
+                window.location.reload();
+                return;
+              }
+            } catch (loginError) {
+              console.log('[AutoLogin] Échec, effacement des identifiants');
               // Si auto-login échoue, effacer les identifiants invalides
               delete allCreds[tenantSlug];
               localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
               setMotDePasse('');
-              toast({
-                title: "Session expirée",
-                description: "Veuillez vous reconnecter",
-                variant: "destructive"
-              });
             }
+            
             setLoading(false);
           }
         }
       } catch (error) {
-        console.error('Erreur chargement identifiants:', error);
+        console.error('Erreur auto-login:', error);
+        setLoading(false);
       }
     };
     
-    loadSavedCredentials();
-  }, [tenantSlug, login, autoLoginAttempted, toast]);
+    attemptAutoLogin();
+  }, [tenantSlug]); // Seulement dépendant du tenantSlug
+
+  // Réinitialiser autoLoginAttempted quand le tenant change
+  useEffect(() => {
+    setAutoLoginAttempted(false);
+  }, [tenantSlug]);
 
   // Charger la personnalisation du tenant (sans authentification)
   useEffect(() => {
