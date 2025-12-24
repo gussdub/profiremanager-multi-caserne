@@ -793,36 +793,46 @@ const Login = () => {
     const attemptAutoLogin = async () => {
       try {
         const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-        console.log('[Login] Vérification identifiants sauvegardés pour:', tenantSlug);
+        
+        // DEBUG: Afficher dans la console ET dans une alerte
+        const debugInfo = {
+          tenantSlug,
+          hasSavedCreds: !!savedCreds,
+          allCreds: savedCreds ? JSON.parse(savedCreds) : null
+        };
+        console.log('[Login DEBUG]', JSON.stringify(debugInfo, null, 2));
         
         if (savedCreds) {
           const allCreds = JSON.parse(savedCreds);
           const tenantCreds = allCreds[tenantSlug];
-          
-          console.log('[Login] Identifiants trouvés:', tenantCreds ? 'Oui' : 'Non');
           
           if (tenantCreds && tenantCreds.email && tenantCreds.password) {
             // Pré-remplir les champs
             setEmail(tenantCreds.email);
             setMotDePasse(tenantCreds.password);
             
-            console.log('[Login] Tentative auto-connexion...');
+            console.log('[Login] Tentative auto-connexion pour:', tenantSlug);
             
             // Tenter l'auto-login
             const result = await login(tenantCreds.email, tenantCreds.password);
             
+            console.log('[Login] Résultat auto-login:', result);
+            
             if (result.success) {
               console.log('[Login] Auto-connexion réussie!');
-              // La redirection sera gérée par le contexte Auth
-              return;
+              return; // La redirection sera gérée par le contexte Auth
             } else {
-              console.log('[Login] Auto-connexion échouée, effacement identifiants');
+              console.log('[Login] Auto-connexion échouée:', result.error);
               // Effacer les identifiants invalides
               delete allCreds[tenantSlug];
               localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
               setMotDePasse('');
             }
+          } else {
+            console.log('[Login] Pas d\'identifiants pour ce tenant');
           }
+        } else {
+          console.log('[Login] Aucun identifiant sauvegardé');
         }
       } catch (error) {
         console.error('[Login] Erreur auto-login:', error);
