@@ -1774,7 +1774,7 @@ body {
 @media (max-width: 768px) {
   .notification-bell-container {
     right: 1rem;
-    top: 0.75rem;
+    top: calc(1rem + var(--safe-area-top, 0px) + 35px);
   }
 
   .notification-bell {
