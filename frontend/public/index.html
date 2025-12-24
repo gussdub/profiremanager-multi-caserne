@@ -15,7 +15,7 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" id="apple-title" content="ProFireManager">
         
-        <title>ProFireManager v2.0 - Gestion Services Incendie</title>
+        <title>ProFireManager</title>
         
         <!-- Script pour utiliser le manifest dynamique du backend -->
         <script>
@@ -35,14 +35,8 @@
                         manifestLink.href = '/api/' + tenant + '/manifest.json';
                     }
                     
-                    // Mettre à jour le titre Apple pour le raccourci
-                    var appleTitle = document.getElementById('apple-title');
-                    if (appleTitle) {
-                        appleTitle.content = tenant.charAt(0).toUpperCase() + tenant.slice(1);
-                    }
-                    
-                    // Mettre à jour le titre de la page
-                    document.title = tenant.charAt(0).toUpperCase() + tenant.slice(1) + ' - ProFireManager';
+                    // Garder le titre Apple comme "ProFireManager" seulement
+                    // Ne pas changer le titre de la page
                 }
             })();
         </script>
