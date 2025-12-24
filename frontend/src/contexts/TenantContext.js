@@ -76,12 +76,12 @@ export const TenantProvider = ({ children }) => {
 
   // Fonction pour changer de caserne
   const switchTenant = () => {
-    // NE PAS effacer SAVED_TENANTS_KEY - seulement le dernier tenant utilisé
+    // Effacer le dernier tenant utilisé
     localStorage.removeItem(LAST_TENANT_KEY);
     
-    // Forcer le rechargement de la page vers la racine pour afficher le sélecteur
-    // Cela fonctionne sur toutes les plateformes (web, mobile, app native)
-    window.location.href = '/';
+    // Forcer un rechargement complet vers la racine
+    // Cela force le navigateur à recharger l'app et afficher le sélecteur
+    window.location.replace('/');
   };
 
   // Fonction pour réinitialiser et afficher le sélecteur
