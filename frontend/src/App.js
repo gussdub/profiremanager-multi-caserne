@@ -832,7 +832,7 @@ const Login = () => {
     };
     
     attemptAutoLogin();
-  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tenantSlug, login]); // Dépendances: tenantSlug et login
 
   // Charger la personnalisation du tenant (sans authentification)
   useEffect(() => {
