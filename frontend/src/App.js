@@ -1143,7 +1143,25 @@ const Login = () => {
             </span>
           </div>
         )}
+        
+        {/* Lien debug discret - visible seulement en tapant plusieurs fois */}
+        <div 
+          onClick={showStorageDebug}
+          style={{ 
+            marginTop: '1rem', 
+            textAlign: 'center',
+            opacity: 0.3,
+            fontSize: '0.65rem',
+            color: 'rgba(255,255,255,0.5)',
+            cursor: 'pointer'
+          }}
+        >
+          🔧
+        </div>
       </div>
+      
+      {/* Panneau de debug */}
+      {showDebugPanel && <DebugPanel />}
     </div>
   );
 };
