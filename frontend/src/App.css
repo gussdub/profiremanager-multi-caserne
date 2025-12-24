@@ -1562,7 +1562,7 @@ body {
 
 .notification-bell-container {
   position: fixed;
-  top: 1rem;
+  top: calc(1rem + env(safe-area-inset-top, 0px));
   right: 5rem;
   z-index: 999;
 }
