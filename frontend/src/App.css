@@ -1562,8 +1562,8 @@ body {
 
 .notification-bell-container {
   position: fixed;
-  top: calc(1rem + env(safe-area-inset-top, 0px));
-  right: 5rem;
+  top: calc(3.5rem + env(safe-area-inset-top, 20px));
+  right: 1rem;
   z-index: 999;
 }
 
