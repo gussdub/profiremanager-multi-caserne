@@ -864,7 +864,7 @@ const Login = () => {
     };
     
     attemptAutoLogin();
-  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tenantSlug, login]);
   
   // Fonction de debug pour afficher l'état du stockage
   const showStorageDebug = async () => {
