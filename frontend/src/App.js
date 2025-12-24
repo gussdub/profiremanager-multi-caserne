@@ -772,10 +772,11 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(true); // Commence à true pour l'auto-login
+  const [loading, setLoading] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [personnalisation, setPersonnalisation] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
+  const [autoLoginDone, setAutoLoginDone] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
@@ -783,75 +784,109 @@ const Login = () => {
   // Clé pour les identifiants sauvegardés
   const SAVED_CREDENTIALS_KEY = 'profiremanager_saved_credentials';
 
-  // Charger les identifiants sauvegardés et tenter l'auto-login au chargement
+  // Fonction pour sauvegarder les identifiants de façon robuste
+  const saveCredentials = (tenant, userEmail, userPassword) => {
+    try {
+      const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+      const allCreds = savedCreds ? JSON.parse(savedCreds) : {};
+      allCreds[tenant] = {
+        email: userEmail,
+        password: userPassword,
+        savedAt: new Date().toISOString()
+      };
+      const credString = JSON.stringify(allCreds);
+      localStorage.setItem(SAVED_CREDENTIALS_KEY, credString);
+      
+      // Vérification immédiate
+      const verification = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+      if (verification === credString) {
+        console.log('[Login] ✅ Identifiants sauvegardés et vérifiés pour:', tenant);
+        return true;
+      } else {
+        console.log('[Login] ⚠️ Vérification échouée, essai sessionStorage');
+        sessionStorage.setItem(SAVED_CREDENTIALS_KEY, credString);
+        return true;
+      }
+    } catch (error) {
+      console.error('[Login] ❌ Erreur sauvegarde:', error);
+      return false;
+    }
+  };
+
+  // Fonction pour récupérer les identifiants
+  const getCredentials = (tenant) => {
+    try {
+      // Essayer localStorage d'abord, puis sessionStorage
+      let savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+      if (!savedCreds) {
+        savedCreds = sessionStorage.getItem(SAVED_CREDENTIALS_KEY);
+      }
+      if (!savedCreds) return null;
+      
+      const allCreds = JSON.parse(savedCreds);
+      return allCreds[tenant] || null;
+    } catch (error) {
+      console.error('[Login] Erreur lecture identifiants:', error);
+      return null;
+    }
+  };
+
+  // Auto-login au chargement
   useEffect(() => {
-    if (!tenantSlug) {
-      setLoading(false);
+    if (!tenantSlug || autoLoginDone) {
+      if (!tenantSlug) setLoading(false);
       return;
     }
     
     const attemptAutoLogin = async () => {
-      try {
-        const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+      setAutoLoginDone(true);
+      
+      const tenantCreds = getCredentials(tenantSlug);
+      console.log('[Login] Vérification identifiants pour:', tenantSlug, '- Trouvé:', !!tenantCreds);
+      
+      if (tenantCreds && tenantCreds.email && tenantCreds.password) {
+        setEmail(tenantCreds.email);
+        setMotDePasse(tenantCreds.password);
         
-        // DEBUG: Afficher dans la console ET dans une alerte
-        const debugInfo = {
-          tenantSlug,
-          hasSavedCreds: !!savedCreds,
-          allCreds: savedCreds ? JSON.parse(savedCreds) : null
-        };
-        console.log('[Login DEBUG]', JSON.stringify(debugInfo, null, 2));
+        console.log('[Login] Tentative auto-connexion...');
         
-        if (savedCreds) {
-          const allCreds = JSON.parse(savedCreds);
-          const tenantCreds = allCreds[tenantSlug];
+        try {
+          const result = await login(tenantCreds.email, tenantCreds.password);
           
-          if (tenantCreds && tenantCreds.email && tenantCreds.password) {
-            // Pré-remplir les champs
-            setEmail(tenantCreds.email);
-            setMotDePasse(tenantCreds.password);
-            
-            console.log('[Login] Tentative auto-connexion pour:', tenantSlug);
-            
-            // Tenter l'auto-login
-            const result = await login(tenantCreds.email, tenantCreds.password);
-            
-            console.log('[Login] Résultat auto-login:', result);
-            
-            if (result.success) {
-              console.log('[Login] Auto-connexion réussie!');
-              return; // La redirection sera gérée par le contexte Auth
-            } else {
-              console.log('[Login] Auto-connexion échouée:', result.error);
-              // Effacer les identifiants invalides
-              delete allCreds[tenantSlug];
-              localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
-              setMotDePasse('');
-            }
+          if (result.success) {
+            console.log('[Login] ✅ Auto-connexion réussie!');
+            return; // Ne pas setLoading(false), la redirection va se faire
           } else {
-            console.log('[Login] Pas d\'identifiants pour ce tenant');
+            console.log('[Login] ❌ Auto-connexion échouée:', result.error);
+            // Effacer les identifiants invalides
+            try {
+              const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+              if (savedCreds) {
+                const allCreds = JSON.parse(savedCreds);
+                delete allCreds[tenantSlug];
+                localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
+              }
+            } catch (e) {}
+            setMotDePasse('');
           }
-        } else {
-          console.log('[Login] Aucun identifiant sauvegardé');
+        } catch (error) {
+          console.error('[Login] Erreur auto-login:', error);
         }
-      } catch (error) {
-        console.error('[Login] Erreur auto-login:', error);
       }
       
       setLoading(false);
     };
     
     attemptAutoLogin();
-  }, [tenantSlug, login]); // Dépendances: tenantSlug et login
+  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Charger la personnalisation du tenant (sans authentification)
+  // Charger la personnalisation du tenant
   useEffect(() => {
     const loadPersonnalisation = async () => {
       try {
         const response = await axios.get(`${API}/${tenantSlug}/public/branding`);
         setPersonnalisation(response.data);
       } catch (error) {
-        console.error('Erreur chargement branding:', error);
         setPersonnalisation({
           logo_url: '',
           nom_service: '',
@@ -876,24 +911,9 @@ const Login = () => {
     const result = await login(email, motDePasse);
     
     if (result.success) {
-      // Toujours sauvegarder les identifiants si "Se souvenir" est coché
+      // Sauvegarder les identifiants si "Se souvenir" est coché
       if (rememberMe) {
-        try {
-          const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-          const allCreds = savedCreds ? JSON.parse(savedCreds) : {};
-          allCreds[tenantSlug] = {
-            email: email,
-            password: motDePasse,
-            savedAt: new Date().toISOString()
-          };
-          localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
-          console.log('[Login] ✅ Identifiants sauvegardés pour:', tenantSlug);
-          console.log('[Login] Contenu localStorage:', JSON.stringify(allCreds, null, 2));
-        } catch (error) {
-          console.error('[Login] ❌ Erreur sauvegarde identifiants:', error);
-        }
-      } else {
-        console.log('[Login] "Se souvenir de moi" non coché, identifiants non sauvegardés');
+        saveCredentials(tenantSlug, email, motDePasse);
       }
     } else {
       toast({
@@ -901,9 +921,8 @@ const Login = () => {
         description: result.error,
         variant: "destructive"
       });
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   // Afficher un loader pendant la tentative d'auto-login
