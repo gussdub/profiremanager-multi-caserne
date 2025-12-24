@@ -79,8 +79,10 @@ export const TenantProvider = ({ children }) => {
     // Effacer le dernier tenant utilisé
     localStorage.removeItem(LAST_TENANT_KEY);
     
+    // Marquer qu'on veut afficher le sélecteur (pas auto-redirect)
+    sessionStorage.setItem('profiremanager_show_selector', 'true');
+    
     // Forcer un rechargement complet vers la racine
-    // Cela force le navigateur à recharger l'app et afficher le sélecteur
     window.location.replace('/');
   };
 
