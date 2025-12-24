@@ -95,6 +95,16 @@ export const TenantProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Vérifier si on a demandé d'afficher le sélecteur (après "Changer de caserne")
+    const showSelector = sessionStorage.getItem('profiremanager_show_selector');
+    if (showSelector === 'true') {
+      sessionStorage.removeItem('profiremanager_show_selector');
+      console.log('[TenantContext] Affichage forcé du sélecteur de caserne');
+      setShowTenantSelector(true);
+      setLoading(false);
+      return;
+    }
+    
     // Extraire le tenant depuis l'URL
     const path = window.location.pathname;
     
