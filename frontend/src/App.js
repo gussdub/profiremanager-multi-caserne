@@ -772,99 +772,76 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Commence à true pour l'auto-login
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [personnalisation, setPersonnalisation] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
-  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
 
   // Clé pour les identifiants sauvegardés
   const SAVED_CREDENTIALS_KEY = 'profiremanager_saved_credentials';
-  
-  // Détecter si on est sur mobile
-  const isMobile = () => {
-    return window.navigator.standalone === true || 
-      window.matchMedia('(display-mode: standalone)').matches ||
-      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  };
 
-  // Charger les identifiants sauvegardés et auto-login pour ce tenant
+  // Charger les identifiants sauvegardés et tenter l'auto-login au chargement
   useEffect(() => {
-    if (!tenantSlug) return;
+    if (!tenantSlug) {
+      setLoading(false);
+      return;
+    }
     
     const attemptAutoLogin = async () => {
       try {
         const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-        if (!savedCreds) return;
+        console.log('[Login] Vérification identifiants sauvegardés pour:', tenantSlug);
         
-        const allCreds = JSON.parse(savedCreds);
-        const tenantCreds = allCreds[tenantSlug];
-        
-        if (tenantCreds && isMobile()) {
-          console.log(`[AutoLogin] Tentative d'auto-connexion pour ${tenantSlug}`);
+        if (savedCreds) {
+          const allCreds = JSON.parse(savedCreds);
+          const tenantCreds = allCreds[tenantSlug];
           
-          // Pré-remplir les champs
-          setEmail(tenantCreds.email);
-          setMotDePasse(tenantCreds.password);
+          console.log('[Login] Identifiants trouvés:', tenantCreds ? 'Oui' : 'Non');
           
-          // Si pas encore tenté pour ce tenant
-          if (!autoLoginAttempted) {
-            setAutoLoginAttempted(true);
-            setLoading(true);
+          if (tenantCreds && tenantCreds.email && tenantCreds.password) {
+            // Pré-remplir les champs
+            setEmail(tenantCreds.email);
+            setMotDePasse(tenantCreds.password);
             
-            try {
-              // Appel direct à l'API de login
-              const response = await axios.post(`${API}/${tenantSlug}/auth/login`, {
-                email: tenantCreds.email,
-                mot_de_passe: tenantCreds.password
-              });
-              
-              if (response.data.token) {
-                console.log('[AutoLogin] Succès!');
-                // Stocker le token et recharger la page
-                localStorage.setItem(`${tenantSlug}_token`, response.data.token);
-                localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
-                window.location.reload();
-                return;
-              }
-            } catch (loginError) {
-              console.log('[AutoLogin] Échec, effacement des identifiants');
-              // Si auto-login échoue, effacer les identifiants invalides
+            console.log('[Login] Tentative auto-connexion...');
+            
+            // Tenter l'auto-login
+            const result = await login(tenantCreds.email, tenantCreds.password);
+            
+            if (result.success) {
+              console.log('[Login] Auto-connexion réussie!');
+              // La redirection sera gérée par le contexte Auth
+              return;
+            } else {
+              console.log('[Login] Auto-connexion échouée, effacement identifiants');
+              // Effacer les identifiants invalides
               delete allCreds[tenantSlug];
               localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
               setMotDePasse('');
             }
-            
-            setLoading(false);
           }
         }
       } catch (error) {
-        console.error('Erreur auto-login:', error);
-        setLoading(false);
+        console.error('[Login] Erreur auto-login:', error);
       }
+      
+      setLoading(false);
     };
     
     attemptAutoLogin();
-  }, [tenantSlug]); // Seulement dépendant du tenantSlug
-
-  // Réinitialiser autoLoginAttempted quand le tenant change
-  useEffect(() => {
-    setAutoLoginAttempted(false);
-  }, [tenantSlug]);
+  }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Charger la personnalisation du tenant (sans authentification)
   useEffect(() => {
     const loadPersonnalisation = async () => {
       try {
-        // Récupérer les infos publiques du tenant
         const response = await axios.get(`${API}/${tenantSlug}/public/branding`);
         setPersonnalisation(response.data);
       } catch (error) {
         console.error('Erreur chargement branding:', error);
-        // En cas d'erreur, utiliser les valeurs par défaut
         setPersonnalisation({
           logo_url: '',
           nom_service: '',
@@ -889,8 +866,8 @@ const Login = () => {
     const result = await login(email, motDePasse);
     
     if (result.success) {
-      // Sauvegarder les identifiants sur mobile si "Se souvenir" est coché
-      if (isMobile() && rememberMe) {
+      // Toujours sauvegarder les identifiants si "Se souvenir" est coché
+      if (rememberMe) {
         try {
           const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
           const allCreds = savedCreds ? JSON.parse(savedCreds) : {};
@@ -900,6 +877,7 @@ const Login = () => {
             savedAt: new Date().toISOString()
           };
           localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
+          console.log('[Login] Identifiants sauvegardés pour:', tenantSlug);
         } catch (error) {
           console.error('Erreur sauvegarde identifiants:', error);
         }
@@ -914,6 +892,18 @@ const Login = () => {
     
     setLoading(false);
   };
+
+  // Afficher un loader pendant la tentative d'auto-login
+  if (loading && !email) {
+    return (
+      <div className="login-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔄</div>
+          <p>Connexion en cours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">
