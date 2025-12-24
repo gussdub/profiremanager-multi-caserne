@@ -907,8 +907,12 @@ const Login = () => {
     
     if (result.success) {
       // Sauvegarder les identifiants si "Se souvenir" est coché
-      if (rememberMe) {
-        saveCredentials(tenantSlug, email, motDePasse);
+      if (rememberMe && storageModule.current) {
+        await storageModule.current.saveCredentials(tenantSlug, email, motDePasse);
+        toast({
+          title: "✅ Identifiants sauvegardés",
+          description: "Vous serez connecté automatiquement la prochaine fois"
+        });
       }
     } else {
       toast({
@@ -927,10 +931,48 @@ const Login = () => {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔄</div>
           <p>Connexion en cours...</p>
+          {/* Bouton debug caché - triple tap pour activer */}
+          <div 
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+            style={{ marginTop: '2rem', opacity: 0.3, fontSize: '0.75rem' }}
+          >
+            🔧 Debug
+          </div>
         </div>
       </div>
     );
   }
+
+  // Panneau de debug pour iOS
+  const DebugPanel = () => (
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      background: '#1a1a2e',
+      color: '#00ff00',
+      padding: '1rem',
+      maxHeight: '50vh',
+      overflow: 'auto',
+      fontSize: '0.75rem',
+      fontFamily: 'monospace',
+      zIndex: 9999
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <strong>🔧 Debug Storage</strong>
+        <button onClick={() => setShowDebugPanel(false)} style={{ background: 'red', color: 'white', border: 'none', padding: '2px 8px' }}>X</button>
+      </div>
+      <button onClick={showStorageDebug} style={{ background: '#333', color: 'white', padding: '4px 8px', marginBottom: '0.5rem' }}>
+        Refresh Debug Info
+      </button>
+      {debugInfo && (
+        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+          {JSON.stringify(debugInfo, null, 2)}
+        </pre>
+      )}
+    </div>
+  )
 
   return (
     <div className="login-container">
