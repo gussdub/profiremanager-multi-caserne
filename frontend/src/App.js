@@ -25285,6 +25285,7 @@ const AppLayout = () => {
       <main className="main-content">
         <div className="main-header" style={{
           padding: '1rem 2rem',
+          paddingTop: 'calc(1rem + var(--safe-area-top, 0px) + 40px)',
           backgroundColor: 'white',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
