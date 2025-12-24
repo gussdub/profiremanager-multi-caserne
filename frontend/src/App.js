@@ -887,10 +887,13 @@ const Login = () => {
             savedAt: new Date().toISOString()
           };
           localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
-          console.log('[Login] Identifiants sauvegardés pour:', tenantSlug);
+          console.log('[Login] ✅ Identifiants sauvegardés pour:', tenantSlug);
+          console.log('[Login] Contenu localStorage:', JSON.stringify(allCreds, null, 2));
         } catch (error) {
-          console.error('Erreur sauvegarde identifiants:', error);
+          console.error('[Login] ❌ Erreur sauvegarde identifiants:', error);
         }
+      } else {
+        console.log('[Login] "Se souvenir de moi" non coché, identifiants non sauvegardés');
       }
     } else {
       toast({
