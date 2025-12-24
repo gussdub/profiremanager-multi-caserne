@@ -777,61 +777,24 @@ const Login = () => {
   const [personnalisation, setPersonnalisation] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
   const [autoLoginDone, setAutoLoginDone] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
   const { login } = useAuth();
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
 
-  // Clé pour les identifiants sauvegardés
-  const SAVED_CREDENTIALS_KEY = 'profiremanager_saved_credentials';
+  // Import des fonctions de stockage robuste (async)
+  const storageModule = React.useRef(null);
+  
+  // Charger le module de stockage au montage
+  useEffect(() => {
+    import('./utils/storage').then(module => {
+      storageModule.current = module;
+      console.log('[Login] ✅ Module de stockage chargé');
+    });
+  }, []);
 
-  // Fonction pour sauvegarder les identifiants de façon robuste
-  const saveCredentials = (tenant, userEmail, userPassword) => {
-    try {
-      const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-      const allCreds = savedCreds ? JSON.parse(savedCreds) : {};
-      allCreds[tenant] = {
-        email: userEmail,
-        password: userPassword,
-        savedAt: new Date().toISOString()
-      };
-      const credString = JSON.stringify(allCreds);
-      localStorage.setItem(SAVED_CREDENTIALS_KEY, credString);
-      
-      // Vérification immédiate
-      const verification = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-      if (verification === credString) {
-        console.log('[Login] ✅ Identifiants sauvegardés et vérifiés pour:', tenant);
-        return true;
-      } else {
-        console.log('[Login] ⚠️ Vérification échouée, essai sessionStorage');
-        sessionStorage.setItem(SAVED_CREDENTIALS_KEY, credString);
-        return true;
-      }
-    } catch (error) {
-      console.error('[Login] ❌ Erreur sauvegarde:', error);
-      return false;
-    }
-  };
-
-  // Fonction pour récupérer les identifiants
-  const getCredentials = (tenant) => {
-    try {
-      // Essayer localStorage d'abord, puis sessionStorage
-      let savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-      if (!savedCreds) {
-        savedCreds = sessionStorage.getItem(SAVED_CREDENTIALS_KEY);
-      }
-      if (!savedCreds) return null;
-      
-      const allCreds = JSON.parse(savedCreds);
-      return allCreds[tenant] || null;
-    } catch (error) {
-      console.error('[Login] Erreur lecture identifiants:', error);
-      return null;
-    }
-  };
-
-  // Auto-login au chargement
+  // Auto-login au chargement (version async avec stockage robuste)
   useEffect(() => {
     if (!tenantSlug || autoLoginDone) {
       if (!tenantSlug) setLoading(false);
@@ -841,7 +804,38 @@ const Login = () => {
     const attemptAutoLogin = async () => {
       setAutoLoginDone(true);
       
-      const tenantCreds = getCredentials(tenantSlug);
+      // Attendre que le module de stockage soit chargé
+      let attempts = 0;
+      while (!storageModule.current && attempts < 20) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      
+      if (!storageModule.current) {
+        console.log('[Login] ⚠️ Module de stockage non disponible, utilisation localStorage');
+        // Fallback localStorage
+        try {
+          const savedCreds = localStorage.getItem('profiremanager_saved_credentials');
+          if (savedCreds) {
+            const allCreds = JSON.parse(savedCreds);
+            const tenantCreds = allCreds[tenantSlug];
+            if (tenantCreds?.email && tenantCreds?.password) {
+              setEmail(tenantCreds.email);
+              setMotDePasse(tenantCreds.password);
+              const result = await login(tenantCreds.email, tenantCreds.password);
+              if (result.success) {
+                console.log('[Login] ✅ Auto-connexion réussie (localStorage)!');
+                return;
+              }
+            }
+          }
+        } catch (e) {}
+        setLoading(false);
+        return;
+      }
+      
+      // Utiliser le stockage robuste
+      const tenantCreds = await storageModule.current.getCredentials(tenantSlug);
       console.log('[Login] Vérification identifiants pour:', tenantSlug, '- Trouvé:', !!tenantCreds);
       
       if (tenantCreds && tenantCreds.email && tenantCreds.password) {
@@ -855,18 +849,10 @@ const Login = () => {
           
           if (result.success) {
             console.log('[Login] ✅ Auto-connexion réussie!');
-            return; // Ne pas setLoading(false), la redirection va se faire
+            return;
           } else {
             console.log('[Login] ❌ Auto-connexion échouée:', result.error);
-            // Effacer les identifiants invalides
-            try {
-              const savedCreds = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-              if (savedCreds) {
-                const allCreds = JSON.parse(savedCreds);
-                delete allCreds[tenantSlug];
-                localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify(allCreds));
-              }
-            } catch (e) {}
+            await storageModule.current.clearCredentials(tenantSlug);
             setMotDePasse('');
           }
         } catch (error) {
@@ -879,6 +865,15 @@ const Login = () => {
     
     attemptAutoLogin();
   }, [tenantSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Fonction de debug pour afficher l'état du stockage
+  const showStorageDebug = async () => {
+    if (storageModule.current) {
+      const info = await storageModule.current.getStorageDebugInfo();
+      setDebugInfo(info);
+      setShowDebugPanel(true);
+    }
+  }
 
   // Charger la personnalisation du tenant
   useEffect(() => {
