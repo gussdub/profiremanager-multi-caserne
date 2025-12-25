@@ -264,6 +264,11 @@ body {
     width: 100%;
   }
   
+  /* Header avec safe area pour iOS */
+  .mobile-safe-header {
+    padding-top: calc(1rem + var(--safe-area-top, 0px) + 50px) !important;
+  }
+  
   .stats-grid {
     grid-template-columns: 1fr;
   }
