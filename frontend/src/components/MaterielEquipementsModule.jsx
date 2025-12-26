@@ -6,6 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import InspectionAPRIAModal from './InspectionAPRIAModal';
+import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
 
 // ===== Composant principal =====
 const MaterielEquipementsModule = ({ user }) => {
@@ -21,14 +23,26 @@ const MaterielEquipementsModule = ({ user }) => {
   const [showCategorieModal, setShowCategorieModal] = useState(false);
   const [showEquipementModal, setShowEquipementModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showInspectionAPRIAModal, setShowInspectionAPRIAModal] = useState(false);
+  const [showHistoriqueAPRIAModal, setShowHistoriqueAPRIAModal] = useState(false);
   const [selectedCategorie, setSelectedCategorie] = useState(null);
   const [selectedEquipement, setSelectedEquipement] = useState(null);
+  const [selectedEquipementAPRIA, setSelectedEquipementAPRIA] = useState(null);
   const [modalMode, setModalMode] = useState('create');
   
   // Filtres
   const [filtreCategorie, setFiltreCategorie] = useState('');
   const [filtreEtat, setFiltreEtat] = useState('');
   const [filtreRecherche, setFiltreRecherche] = useState('');
+
+  // Vérifier si un équipement est un APRIA
+  const isAPRIA = (equipement) => {
+    const categorieAPRIA = categories.find(c => c.nom?.toUpperCase().includes('APRIA'));
+    if (categorieAPRIA && equipement.categorie_id === categorieAPRIA.id) return true;
+    if (equipement.nom?.toUpperCase().includes('APRIA')) return true;
+    if (equipement.description?.toUpperCase().includes('APRIA')) return true;
+    return false;
+  };
 
   // Charger les données
   const fetchData = useCallback(async () => {
