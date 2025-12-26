@@ -530,7 +530,7 @@ const EquipementsTab = ({
 };
 
 // ===== Carte Équipement =====
-const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, canEdit, canDelete }) => {
+const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, isAPRIA, canEdit, canDelete }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
@@ -538,7 +538,8 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, canEdit, 
       background: 'white',
       borderRadius: '0.5rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      border: isAPRIA ? '2px solid #f97316' : 'none'
     }}>
       {/* En-tête */}
       <div 
@@ -556,6 +557,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, canEdit, 
             <span style={{ fontWeight: 'bold', color: '#1f2937' }}>{equipement.code_unique}</span>
             <EtatBadge etat={equipement.etat} />
             {equipement.alerte_maintenance && <span title="Maintenance requise">⚠️</span>}
+            {isAPRIA && <span title="Équipement APRIA" style={{ backgroundColor: '#fed7aa', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: '600', color: '#9a3412' }}>APRIA</span>}
           </div>
           <div style={{ fontSize: '1rem', color: '#374151' }}>{equipement.nom}</div>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
@@ -564,9 +566,35 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, canEdit, 
             {equipement.vehicule_nom && <span style={{ marginRight: '1rem' }}>🚒 {equipement.vehicule_nom}</span>}
             {equipement.employe_nom && <span>👤 {equipement.employe_nom}</span>}
           </div>
+          {/* Info dernière inspection APRIA */}
+          {isAPRIA && equipement.derniere_inspection && (
+            <div style={{ fontSize: '0.7rem', color: equipement.derniere_inspection.conforme ? '#16a34a' : '#dc2626', marginTop: '0.25rem' }}>
+              Dernière inspection: {new Date(equipement.derniere_inspection.date_inspection).toLocaleDateString('fr-CA')} 
+              {equipement.derniere_inspection.conforme ? ' ✅' : ' ❌'}
+            </div>
+          )}
         </div>
         
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Boutons APRIA */}
+          {isAPRIA && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA(); }}
+                style={{ padding: '0.5rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                title="Inspecter APRIA"
+              >
+                🫁
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
+                style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                title="Historique inspections"
+              >
+                📋
+              </button>
+            </>
+          )}
           {canEdit && (
             <>
               <button
