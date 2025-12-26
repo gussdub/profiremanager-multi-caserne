@@ -2163,17 +2163,17 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       {selectedModule === 'equipements' && (
       <div style={{ 
         background: '#f8f9fa', 
-        padding: '30px', 
+        padding: 'clamp(16px, 4vw, 30px)', 
         borderRadius: '12px', 
         border: '2px solid #e0e0e0',
-        marginBottom: '30px'
+        marginBottom: '24px'
       }}>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '32px' }}>🔧</span>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>🔧</span>
             Matériel & Équipements
           </h2>
-          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
             Configuration des alertes et notifications pour les équipements
           </p>
         </div>
@@ -2181,16 +2181,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Notifications */}
         <div style={{ 
           background: 'white', 
-          padding: '20px', 
+          padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
           marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📧</span> Notifications - Alertes Équipements
           </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
             Configurez les destinataires des alertes de maintenance et d'expiration
           </p>
           <ConfigurationEmailsEquipements tenantSlug={tenantSlug} />
@@ -2202,16 +2202,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Gestion APRIA */}
         <div style={{ 
           background: 'white', 
-          padding: '20px', 
+          padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
           marginTop: '15px'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📝</span> Gestion APRIA
           </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
             Configurez les formulaires d'inspection et les personnes à contacter pour les APRIA
           </p>
           <ParametresInspectionsAPRIA tenantSlug={tenantSlug} />
@@ -2220,7 +2220,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Import CSV */}
         <div style={{ 
           background: 'white', 
-          padding: '20px', 
+          padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
@@ -2240,17 +2240,17 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       {selectedModule === 'epi' && (
       <div style={{ 
         background: '#f8f9fa', 
-        padding: '30px', 
+        padding: 'clamp(16px, 4vw, 30px)', 
         borderRadius: '12px', 
         border: '2px solid #e0e0e0',
-        marginBottom: '30px'
+        marginBottom: '24px'
       }}>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '32px' }}>🛡️</span>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>🛡️</span>
             Gestion EPI
           </h2>
-          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
             Configuration des alertes et notifications pour les équipements de protection
           </p>
         </div>
@@ -2258,23 +2258,23 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Configuration des Alertes */}
         <div style={{ 
           background: 'white', 
-          padding: '20px', 
+          padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
           marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>🔔</span> Configuration des Alertes EPI
           </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
             Définir les délais pour les alertes automatiques
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {/* Alerte expiration pour admins/superviseurs */}
             <div style={{ 
-              padding: '15px',
+              padding: 'clamp(10px, 2vw, 15px)',
               background: '#fff3cd',
               borderRadius: '8px',
               border: '1px solid #ffc107'
