@@ -934,21 +934,21 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         {emailsNotifications.length > 0 && (
           <div style={{ 
             backgroundColor: '#ECFDF5', 
-            padding: '1rem', 
+            padding: '0.75rem', 
             borderRadius: '6px',
             border: '1px solid #A7F3D0',
             marginBottom: '1rem'
           }}>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
-              ✅ Destinataires configurés:
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#065F46', marginBottom: '0.25rem' }}>
+              ✅ Destinataires ({emailsNotifications.length}):
             </div>
-            <div style={{ fontSize: '13px', color: '#047857' }}>
+            <div style={{ fontSize: '11px', color: '#047857' }}>
               {users
                 .filter(u => emailsNotifications.includes(u.id))
                 .map((u, i) => (
                   <span key={u.id}>
-                    {u.prenom} {u.nom} ({u.email})
-                    {i < emailsNotifications.length - 1 && ' • '}
+                    {u.prenom} {u.nom}
+                    {i < emailsNotifications.length - 1 && ', '}
                   </span>
                 ))}
             </div>
@@ -962,15 +962,15 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
             style={{
               backgroundColor: '#DC2626',
               color: 'white',
-              padding: '0.75rem 1.5rem',
+              padding: '0.6rem 1rem',
               borderRadius: '8px',
               border: 'none',
               cursor: 'pointer',
-              fontSize: '15px',
+              fontSize: '13px',
               fontWeight: '600'
             }}
           >
-            💾 Enregistrer la configuration
+            💾 Enregistrer
           </button>
         </div>
       </div>
