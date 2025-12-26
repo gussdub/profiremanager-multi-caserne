@@ -24,6 +24,7 @@ import { Input } from './ui/input';
 
 const GestionActifs = ({ user, ModuleEPI }) => {
   const [activeTab, setActiveTab] = useState('vehicules');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [vehicules, setVehicules] = useState([]);
   const [bornes, setBornes] = useState([]);
   const [loading, setLoading] = useState(false);
