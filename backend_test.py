@@ -60,10 +60,10 @@ class MesEPIModuleTester:
         # IDs récupérés pendant les tests
         self.test_data = {
             "user_id": None,
-            "modeles_inspection": [],
-            "equipements_apria": [],
+            "masque_apria_id": None,
+            "epis_reguliers": [],
             "inspections_creees": [],
-            "modele_actif": None
+            "equipement_cree": None
         }
         
     def authenticate(self):
