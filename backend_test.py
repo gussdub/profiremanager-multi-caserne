@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET DU MODULE APRIA INSPECTION
+TEST COMPLET DU MODULE "MES EPI" AVEC INTÉGRATION MASQUE APRIA
 
 CONTEXTE:
-Test complet des endpoints du module APRIA Inspection nouvellement implémenté.
+Test du module "Mes EPI" (My PPE - Personal Protective Equipment) qui affiche:
+1. Les EPI réguliers assignés à l'utilisateur (collection db.epis)
+2. Les masques APRIA assignés à l'utilisateur (collection db.equipements avec employe_id)
 
 TENANT: shefford
 CREDENTIALS: email: test@shefford.ca, mot_de_passe: Test123!
@@ -13,24 +15,26 @@ ENDPOINTS À TESTER:
 1. **Authentification:**
    - POST /api/shefford/auth/login - Obtenir le token d'authentification
 
-2. **Modèles d'inspection APRIA:**
-   - GET /api/shefford/apria/modeles-inspection - Liste des modèles (devrait être vide ou créer par défaut)
-   - GET /api/shefford/apria/modeles-inspection/actif - Modèle actif (devrait créer un modèle par défaut avec 13 éléments)
+2. **Module Mes EPI:**
+   - GET /api/shefford/mes-epi/masque-apria - Retourne le masque APRIA assigné à l'utilisateur
+   - GET /api/shefford/mes-epi - Retourne les EPI réguliers assignés
 
-3. **Équipements APRIA:**
-   - GET /api/shefford/apria/equipements - Liste des équipements APRIA
+3. **Inspections APRIA:**
+   - POST /api/shefford/apria/inspections - Créer une inspection APRIA
+   - GET /api/shefford/apria/equipements/{equipement_id}/historique - Historique des inspections
 
-4. **Inspections APRIA:**
-   - POST /api/shefford/apria/inspections - Créer une nouvelle inspection
-   - GET /api/shefford/apria/inspections - Récupérer les inspections créées
-
-5. **Paramètres APRIA:**
-   - GET /api/shefford/apria/parametres - Récupérer les paramètres (contacts_alertes)
+SCÉNARIO DE TEST:
+1. Login en tant qu'admin (test@shefford.ca / Test123!) sur tenant "shefford"
+2. Test GET /api/shefford/mes-epi/masque-apria - devrait retourner 404 (pas de masque assigné)
+3. Créer un équipement de test (masque APRIA) assigné à l'utilisateur admin
+4. Test GET /api/shefford/mes-epi/masque-apria - devrait retourner le masque
+5. Créer une inspection APRIA pour ce masque
+6. Vérifier que l'inspection apparaît dans l'historique
 
 RÉSULTATS ATTENDUS:
-- Tous les endpoints doivent retourner 200
-- Le modèle par défaut doit avoir 13 éléments d'inspection
-- Les inspections doivent être correctement stockées et récupérées
+- Tous les endpoints doivent fonctionner correctement
+- Le masque APRIA doit être correctement assigné et récupéré
+- Les inspections doivent être créées et apparaître dans l'historique
 """
 
 import requests
