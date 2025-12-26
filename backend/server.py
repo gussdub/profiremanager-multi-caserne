@@ -20203,6 +20203,51 @@ async def get_rapport_tco_alias(tenant_slug: str, current_user: User = Depends(g
 
 # ==================== MES EPI (Module Employé) ====================
 
+@api_router.get("/{tenant_slug}/mes-epi/masque-apria")
+async def get_masque_apria_assigne(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère le masque APRIA assigné à l'utilisateur connecté"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Chercher la catégorie APRIA ou Masques APRIA
+    categorie_masques = await db.categories_equipements.find_one(
+        {"tenant_id": tenant.id, "nom": {"$regex": "(masque|facial|APRIA)", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    # Construire la requête pour trouver le masque assigné à cet utilisateur
+    query = {
+        "tenant_id": tenant.id,
+        "employe_id": current_user.id,
+        "$or": [
+            {"nom": {"$regex": "(masque|facial|pièce faciale)", "$options": "i"}},
+            {"description": {"$regex": "(masque|facial|pièce faciale)", "$options": "i"}},
+            {"categorie_nom": {"$regex": "(masque|facial|APRIA)", "$options": "i"}}
+        ]
+    }
+    
+    # Si une catégorie est trouvée, ajouter cette condition
+    if categorie_masques:
+        query["$or"].append({"categorie_id": categorie_masques.get("id")})
+    
+    # Chercher dans la collection équipements
+    masque = await db.equipements.find_one(query, {"_id": 0})
+    
+    if not masque:
+        raise HTTPException(status_code=404, detail="Aucun masque APRIA assigné")
+    
+    # Récupérer la dernière inspection APRIA pour ce masque
+    derniere_inspection = await db.inspections_apria.find_one(
+        {"equipement_id": masque["id"], "tenant_id": tenant.id},
+        sort=[("date_inspection", -1)],
+        projection={"_id": 0}
+    )
+    
+    result = clean_mongo_doc(masque)
+    result["derniere_inspection_apria"] = clean_mongo_doc(derniere_inspection) if derniere_inspection else None
+    
+    return result
+
+
 @api_router.get("/{tenant_slug}/mes-epi")
 async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère les EPI de l'utilisateur connecté"""
