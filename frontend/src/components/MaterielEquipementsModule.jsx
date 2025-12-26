@@ -240,6 +240,7 @@ const MaterielEquipementsModule = ({ user }) => {
             setShowHistoriqueAPRIAModal(true);
           }}
           isAPRIA={isAPRIA}
+          isPompier={isPompier}
           user={user}
         />
       ) : (
