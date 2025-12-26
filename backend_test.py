@@ -636,7 +636,7 @@ class MesEPIModuleTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = APRIAModuleTester()
+    tester = MesEPIModuleTester()
     success = tester.run_comprehensive_tests()
     
     # Code de sortie
