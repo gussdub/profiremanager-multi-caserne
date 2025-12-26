@@ -2172,7 +2172,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           </p>
         </div>
         
-        {/* Sous-section: Notifications */}
+        {/* Sous-section: Notifications - Sans titre dupliqué */}
         <div style={{ 
           background: 'white', 
           padding: 'clamp(12px, 3vw, 20px)', 
@@ -2181,12 +2181,6 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           border: '1px solid #e0e0e0',
           marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📧</span> Notifications - Alertes Équipements
-          </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Configurez les destinataires des alertes de maintenance et d'expiration
-          </p>
           <ConfigurationEmailsEquipements tenantSlug={tenantSlug} />
         </div>
 
