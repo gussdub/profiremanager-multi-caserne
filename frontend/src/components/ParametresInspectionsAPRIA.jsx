@@ -1044,100 +1044,113 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
             <div
               key={modele.id}
               style={{
-                padding: '1.25rem',
+                padding: '1rem',
                 backgroundColor: 'white',
                 borderRadius: '0.75rem',
                 border: modele.est_actif ? '2px solid #f97316' : '1px solid #e5e7eb',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>{modele.nom}</h3>
-                    {modele.est_actif && (
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        backgroundColor: '#fed7aa',
-                        color: '#9a3412',
-                        borderRadius: '9999px',
-                        fontSize: '0.75rem',
-                        fontWeight: '600'
-                      }}>
-                        ✓ Actif
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
-                    {modele.description || 'Aucune description'}
-                  </p>
-                  <p style={{ margin: '0.5rem 0 0', color: '#9ca3af', fontSize: '0.75rem' }}>
-                    {modele.sections?.length || 0} section(s)
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {!modele.est_actif && (
-                    <button
-                      onClick={() => activerModele(modele.id)}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem'
-                      }}
-                    >
-                      Activer
-                    </button>
+              {/* Header avec titre et statut */}
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{modele.nom}</h3>
+                  {modele.est_actif && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem',
+                      backgroundColor: '#fed7aa',
+                      color: '#9a3412',
+                      borderRadius: '9999px',
+                      fontSize: '0.7rem',
+                      fontWeight: '600'
+                    }}>
+                      ✓ Actif
+                    </span>
                   )}
+                </div>
+                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.8rem' }}>
+                  {modele.description || 'Aucune description'}
+                </p>
+                <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.7rem' }}>
+                  {modele.sections?.length || 0} section(s)
+                </p>
+              </div>
+              
+              {/* Boutons d'action - flex wrap pour mobile */}
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {!modele.est_actif && (
                   <button
-                    onClick={() => editerModele(modele)}
+                    onClick={() => activerModele(modele.id)}
                     style={{
-                      padding: '0.5rem 0.75rem',
-                      backgroundColor: '#3b82f6',
+                      padding: '0.4rem 0.6rem',
+                      backgroundColor: '#10b981',
                       color: 'white',
                       border: 'none',
                       borderRadius: '0.375rem',
                       cursor: 'pointer',
-                      fontSize: '0.75rem'
+                      fontSize: '0.7rem',
+                      fontWeight: '500'
                     }}
                   >
-                    ✏️ Modifier
+                    Activer
                   </button>
-                  <button
-                    onClick={() => dupliquerModele(modele)}
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      backgroundColor: '#8b5cf6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem'
-                    }}
-                    title="Créer une copie de ce modèle"
-                  >
-                    📋 Copier
-                  </button>
-                  {!modele.est_actif && (
-                    <button
-                      onClick={() => supprimerModele(modele.id)}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem'
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  )}
-                </div>
+                )}
+                <button
+                  onClick={() => editerModele(modele)}
+                  style={{
+                    padding: '0.4rem 0.6rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  ✏️ Modifier
+                </button>
+                <button
+                  onClick={() => dupliquerModele(modele)}
+                  style={{
+                    padding: '0.4rem 0.6rem',
+                    backgroundColor: '#8b5cf6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: '500'
+                  }}
+                  title="Créer une copie de ce modèle"
+                >
+                  📋 Copier
+                </button>
+                <button
+                  onClick={() => {
+                    if (modele.est_actif) {
+                      alert('Impossible de supprimer le modèle actif. Activez un autre modèle d\'abord.');
+                      return;
+                    }
+                    if (window.confirm(`Êtes-vous sûr de vouloir supprimer "${modele.nom}" ?`)) {
+                      supprimerModele(modele.id);
+                    }
+                  }}
+                  style={{
+                    padding: '0.4rem 0.6rem',
+                    backgroundColor: modele.est_actif ? '#9ca3af' : '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: modele.est_actif ? 'not-allowed' : 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: '500',
+                    opacity: modele.est_actif ? 0.6 : 1
+                  }}
+                  title={modele.est_actif ? 'Impossible de supprimer le modèle actif' : 'Supprimer ce modèle'}
+                >
+                  🗑️ Suppr.
+                </button>
               </div>
             </div>
           ))}
