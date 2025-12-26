@@ -934,6 +934,32 @@ const MesEPI = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Inspection APRIA */}
+      {showInspectionAPRIAModal && masqueAPRIA && (
+        <InspectionAPRIAModal
+          isOpen={showInspectionAPRIAModal}
+          onClose={() => setShowInspectionAPRIAModal(false)}
+          tenantSlug={tenantSlug}
+          user={user}
+          equipementPreselectionne={masqueAPRIA}
+          onInspectionCreated={() => {
+            setShowInspectionAPRIAModal(false);
+            loadMasqueAPRIA(); // Recharger pour voir la dernière inspection
+          }}
+        />
+      )}
+
+      {/* Modal Historique APRIA */}
+      {showHistoriqueAPRIAModal && masqueAPRIA && (
+        <HistoriqueInspectionsAPRIA
+          isOpen={showHistoriqueAPRIAModal}
+          onClose={() => setShowHistoriqueAPRIAModal(false)}
+          tenantSlug={tenantSlug}
+          equipementId={masqueAPRIA.id}
+          equipementNom={masqueAPRIA.nom || 'Pièce faciale APRIA'}
+        />
+      )}
     </div>
   );
 };
