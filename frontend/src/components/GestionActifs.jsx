@@ -1891,12 +1891,6 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           border: '1px solid #e0e0e0',
           marginBottom: '16px'
         }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📧</span> Notifications - Rondes de Sécurité
-          </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Configurez les destinataires des notifications pour les rondes de sécurité
-          </p>
           <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
         </div>
 
