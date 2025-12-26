@@ -792,72 +792,79 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
         ))}
       </div>
 
-      {/* Configuration Emails - Copie exacte du style Rondes de Sécurité */}
+      {/* Configuration Emails - Style responsive comme Rondes de Sécurité */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: '25px', 
+        padding: 'clamp(12px, 3vw, 25px)', 
         borderRadius: '10px', 
         boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
         border: '1px solid #e0e0e0'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '2rem' }}>📧</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>📧</span>
           <div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
               Notifications - Inventaires Véhicules
             </h3>
-            <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
-              Notifications automatiques lorsque des items sont manquants ou défectueux lors des inventaires
+            <p style={{ fontSize: '12px', color: '#7f8c8d', margin: 0 }}>
+              Alertes items manquants/défectueux
             </p>
           </div>
         </div>
 
         <div style={{ 
           backgroundColor: '#F9FAFB', 
-          padding: '1.25rem', 
+          padding: 'clamp(0.75rem, 2vw, 1.25rem)', 
           borderRadius: '8px',
-          marginBottom: '1.25rem'
+          marginBottom: '1rem'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: '0.75rem',
+            marginBottom: '1rem'
+          }}>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#34495e' }}>
               👥 Destinataires ({emailsNotifications.length})
             </h4>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setEmailsNotifications(users.map(u => u.id))}
                 style={{
-                  padding: '0.4rem 0.75rem',
+                  padding: '0.4rem 0.6rem',
                   backgroundColor: 'white',
                   color: '#DC2626',
                   border: '1px solid #DC2626',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500'
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                Tout sélectionner
+                ✓ Tout
               </button>
               <button
                 onClick={() => setEmailsNotifications([])}
                 style={{
-                  padding: '0.4rem 0.75rem',
+                  padding: '0.4rem 0.6rem',
                   backgroundColor: 'white',
                   color: '#6B7280',
                   border: '1px solid #D1D5DB',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500'
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                Tout désélectionner
+                ✗ Aucun
               </button>
             </div>
           </div>
 
           {/* Liste des utilisateurs sélectionnables */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {users.map(user => {
               const isSelected = emailsNotifications.includes(user.id);
               return (
@@ -865,7 +872,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                   key={user.id}
                   onClick={() => toggleUserEmail(user.id)}
                   style={{
-                    padding: '0.875rem',
+                    padding: '0.75rem',
                     backgroundColor: isSelected ? '#FEE2E2' : 'white',
                     border: isSelected ? '2px solid #DC2626' : '1px solid #E5E7EB',
                     borderRadius: '8px',
@@ -876,20 +883,27 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                     alignItems: 'center'
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '0.25rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: '600', fontSize: '13px', color: '#111827', marginBottom: '0.15rem' }}>
                       {user.prenom} {user.nom}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '0.15rem' }}>
+                    <div style={{ 
+                      fontSize: '11px', 
+                      color: '#6B7280', 
+                      marginBottom: '0.1rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
                       ✉️ {user.email}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '500' }}>
-                      {user.role === 'admin' ? '👑 Administrateur' : '👔 Superviseur'}
+                    <div style={{ fontSize: '11px', color: '#DC2626', fontWeight: '500' }}>
+                      {user.role === 'admin' ? '👑 Admin' : '👔 Superviseur'}
                     </div>
                   </div>
                   <div style={{
-                    width: '24px',
-                    height: '24px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     backgroundColor: isSelected ? '#DC2626' : 'white',
                     border: isSelected ? 'none' : '2px solid #D1D5DB',
@@ -897,8 +911,10 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '12px',
-                    fontWeight: '700'
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    flexShrink: 0,
+                    marginLeft: '0.5rem'
                   }}>
                     {isSelected && '✓'}
                   </div>
@@ -908,7 +924,7 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
           </div>
 
           {users.length === 0 && (
-            <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
+            <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '1rem', fontSize: '13px' }}>
               Aucun administrateur ou superviseur trouvé
             </p>
           )}
