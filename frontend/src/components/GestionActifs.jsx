@@ -2039,8 +2039,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                 borderRadius: '6px',
                 color: '#7f8c8d'
               }}>
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>📅</div>
-                <p style={{ margin: 0, fontSize: '13px' }}>Aucune date configurée</p>
+                <div style={{ fontSize: '28px', marginBottom: '8px' }}>📅</div>
+                <p style={{ margin: 0, fontSize: '12px' }}>Aucune date configurée</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2056,34 +2056,36 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                         key={index}
                         style={{
                           display: 'flex',
+                          flexWrap: 'wrap',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          padding: '10px 15px',
+                          padding: '10px 12px',
+                          gap: '8px',
                           background: estPasse ? '#fff3cd' : estProche ? '#d1ecf1' : 'white',
                           border: `1px solid ${estPasse ? '#ffc107' : estProche ? '#0dcaf0' : '#dee2e6'}`,
                           borderRadius: '6px'
                         }}
                       >
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '3px', color: '#2c3e50' }}>
+                        <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
+                          <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px', color: '#2c3e50' }}>
                             📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
                               year: 'numeric', 
-                              month: 'long', 
+                              month: 'short', 
                               day: 'numeric' 
                             })}
                           </div>
-                          <div style={{ fontSize: '13px', color: '#6c757d' }}>
+                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
                             {dateTest.description}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                           {estPasse && (
                             <span style={{
-                              padding: '3px 10px',
+                              padding: '2px 8px',
                               background: '#ffc107',
                               color: '#000',
                               borderRadius: '10px',
-                              fontSize: '11px',
+                              fontSize: '10px',
                               fontWeight: '600'
                             }}>
                               Passé
@@ -2091,11 +2093,11 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           )}
                           {estProche && !estPasse && (
                             <span style={{
-                              padding: '3px 10px',
+                              padding: '2px 8px',
                               background: '#0dcaf0',
                               color: '#000',
                               borderRadius: '10px',
-                              fontSize: '11px',
+                              fontSize: '10px',
                               fontWeight: '600'
                             }}>
                               Proche
@@ -2105,13 +2107,13 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             onClick={() => supprimerDateTest(index)}
                             disabled={loading}
                             style={{
-                              padding: '6px 12px',
+                              padding: '6px 10px',
                               background: '#e74c3c',
                               color: 'white',
                               border: 'none',
                               borderRadius: '6px',
                               cursor: loading ? 'not-allowed' : 'pointer',
-                              fontSize: '13px',
+                              fontSize: '12px',
                               opacity: loading ? 0.6 : 1
                             }}
                           >
@@ -2129,7 +2131,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Notifications Défauts */}
         <div style={{ 
           background: 'white', 
-          padding: '25px', 
+          padding: 'clamp(12px, 3vw, 25px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
@@ -2141,12 +2143,12 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Formulaires d'Inspection Personnalisables */}
         <div style={{ 
           background: 'white', 
-          padding: '25px', 
+          padding: 'clamp(12px, 3vw, 25px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📋</span> Formulaires d'Inspection
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
