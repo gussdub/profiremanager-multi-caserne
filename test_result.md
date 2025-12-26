@@ -136,10 +136,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Section Mon Masque APRIA"
-    - "Bouton Inspecter modal InspectionAPRIA"
-    - "Bouton Historique modal HistoriqueInspectionsAPRIA"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
