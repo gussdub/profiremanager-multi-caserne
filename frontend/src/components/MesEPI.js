@@ -4,14 +4,19 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { apiGet, apiPost } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
+import InspectionAPRIAModal from './InspectionAPRIAModal';
+import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
 
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
+  const [masqueAPRIA, setMasqueAPRIA] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedEPI, setSelectedEPI] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [showHistoriqueModal, setShowHistoriqueModal] = useState(false);
   const [showRemplacementModal, setShowRemplacementModal] = useState(false);
+  const [showInspectionAPRIAModal, setShowInspectionAPRIAModal] = useState(false);
+  const [showHistoriqueAPRIAModal, setShowHistoriqueAPRIAModal] = useState(false);
   const [historique, setHistorique] = useState([]);
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
