@@ -490,7 +490,15 @@ class MesEPIModuleTester:
         
         for item_type, item_id in reversed(self.created_items):
             try:
-                if item_type == 'inspection':
+                if item_type == 'equipement':
+                    # Supprimer l'équipement de test
+                    url = f"{self.base_url}/{self.tenant_slug}/equipements/{item_id}"
+                    response = requests.delete(url, headers=self.headers)
+                    if response.status_code == 200:
+                        print(f"   ✅ Équipement {item_id} supprimé")
+                    else:
+                        print(f"   ⚠️ Impossible de supprimer l'équipement {item_id}: {response.status_code}")
+                elif item_type == 'inspection':
                     # Note: Il n'y a pas d'endpoint DELETE pour les inspections dans l'implémentation actuelle
                     # On laisse les inspections de test en place
                     print(f"   ℹ️ Inspection {item_id} laissée en place (pas d'endpoint DELETE)")
@@ -502,7 +510,7 @@ class MesEPIModuleTester:
     def generate_test_report(self):
         """Générer le rapport final des tests"""
         print("\n" + "="*80)
-        print("📊 RAPPORT FINAL - MODULE APRIA INSPECTION")
+        print("📊 RAPPORT FINAL - MODULE MES EPI AVEC MASQUE APRIA")
         print("="*80)
         
         print(f"🏢 Tenant testé: {self.tenant_slug}")
@@ -523,24 +531,24 @@ class MesEPIModuleTester:
         # Grouper par catégorie
         categories = {
             "Authentification": [],
-            "Modèles d'inspection": [],
-            "Équipements APRIA": [],
-            "Inspections": [],
-            "Paramètres": []
+            "Mes EPI - Masque APRIA": [],
+            "Mes EPI - EPI Réguliers": [],
+            "Inspections APRIA": [],
+            "Historique": []
         }
         
         for result in self.test_results:
             test_name = result['test']
             if 'auth' in test_name.lower() or 'login' in test_name.lower():
                 categories["Authentification"].append(result)
-            elif 'modele' in test_name.lower():
-                categories["Modèles d'inspection"].append(result)
-            elif 'equipement' in test_name.lower():
-                categories["Équipements APRIA"].append(result)
+            elif 'masque' in test_name.lower() and 'apria' in test_name.lower():
+                categories["Mes EPI - Masque APRIA"].append(result)
+            elif 'epi' in test_name.lower() and 'regulier' in test_name.lower():
+                categories["Mes EPI - EPI Réguliers"].append(result)
             elif 'inspection' in test_name.lower():
-                categories["Inspections"].append(result)
-            elif 'parametre' in test_name.lower():
-                categories["Paramètres"].append(result)
+                categories["Inspections APRIA"].append(result)
+            elif 'history' in test_name.lower() or 'historique' in test_name.lower():
+                categories["Historique"].append(result)
         
         for category, tests in categories.items():
             if tests:
@@ -554,12 +562,13 @@ class MesEPIModuleTester:
         
         critical_tests = [
             ("Authentification", any("auth" in r['test'].lower() for r in self.test_results if r['success'])),
-            ("Modèles d'inspection (récupération)", any("Get Modeles" in r['test'] and r['success'] for r in self.test_results)),
-            ("Modèle actif avec 13 éléments", any("Elements Count" in r['test'] and r['success'] for r in self.test_results)),
-            ("Équipements APRIA", any("Get Equipements APRIA" in r['test'] and r['success'] for r in self.test_results)),
-            ("Création d'inspection", any("Create Inspection" in r['test'] and "Data Integrity" not in r['test'] and r['success'] for r in self.test_results)),
-            ("Récupération des inspections", any("Get Inspections APRIA" in r['test'] and "Created Found" not in r['test'] and r['success'] for r in self.test_results)),
-            ("Paramètres APRIA", any("Get Parametres" in r['test'] and r['success'] for r in self.test_results))
+            ("Masque APRIA - 404 sans assignation", any("No Mask" in r['test'] and r['success'] for r in self.test_results)),
+            ("Création masque APRIA test", any("Create Test APRIA Mask" in r['test'] and r['success'] for r in self.test_results)),
+            ("Masque APRIA - récupération avec assignation", any("With Mask" in r['test'] and "Inspection" not in r['test'] and r['success'] for r in self.test_results)),
+            ("EPI réguliers", any("EPI Réguliers" in r['test'] and r['success'] for r in self.test_results)),
+            ("Création inspection APRIA", any("Create APRIA Inspection" in r['test'] and r['success'] for r in self.test_results)),
+            ("Historique inspections", any("History" in r['test'] and r['success'] for r in self.test_results)),
+            ("Masque avec dernière inspection", any("With Inspection" in r['test'] and r['success'] for r in self.test_results))
         ]
         
         for feature, status in critical_tests:
@@ -569,7 +578,7 @@ class MesEPIModuleTester:
         # Recommandations
         print(f"\n💡 RECOMMANDATIONS:")
         if success_rate >= 90:
-            print("   🎉 Excellent! Le module APRIA Inspection fonctionne parfaitement.")
+            print("   🎉 Excellent! Le module Mes EPI avec intégration APRIA fonctionne parfaitement.")
         elif success_rate >= 75:
             print("   ✅ Très bon résultat. Quelques ajustements mineurs nécessaires.")
         elif success_rate >= 50:
@@ -580,11 +589,11 @@ class MesEPIModuleTester:
         return success_rate >= 75  # Critère de succès
     
     def run_comprehensive_tests(self):
-        """Exécuter tous les tests du module APRIA Inspection"""
-        print("🚀 DÉBUT DES TESTS COMPLETS - MODULE APRIA INSPECTION")
+        """Exécuter tous les tests du module Mes EPI avec APRIA"""
+        print("🚀 DÉBUT DES TESTS COMPLETS - MODULE MES EPI AVEC MASQUE APRIA")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
-        print(f"🎯 Objectif: Tester tous les endpoints du module APRIA")
+        print(f"🎯 Objectif: Tester le module Mes EPI avec intégration masque APRIA")
         
         # 1. Authentification
         if not self.authenticate():
@@ -592,24 +601,31 @@ class MesEPIModuleTester:
             return False
         
         try:
-            # 2. Tests des modèles d'inspection
-            self.test_get_modeles_inspection()
-            self.test_get_modele_actif()
+            # 2. Test masque APRIA sans assignation (404 attendu)
+            self.test_mes_epi_masque_apria_no_mask()
             
-            # 3. Tests des équipements APRIA
-            self.test_get_equipements_apria()
+            # 3. Créer un masque APRIA de test
+            self.test_create_test_apria_mask()
             
-            # 4. Tests des inspections
-            self.test_create_inspection_apria()
-            self.test_get_inspections_apria()
+            # 4. Test masque APRIA avec assignation
+            self.test_mes_epi_masque_apria_with_mask()
             
-            # 5. Tests des paramètres
-            self.test_get_parametres_apria()
+            # 5. Test EPI réguliers
+            self.test_mes_epi_reguliers()
             
-            # 6. Nettoyage
+            # 6. Créer une inspection APRIA
+            self.test_create_apria_inspection()
+            
+            # 7. Test historique des inspections
+            self.test_apria_inspection_history()
+            
+            # 8. Test masque APRIA avec dernière inspection
+            self.test_mes_epi_masque_apria_with_inspection()
+            
+            # 9. Nettoyage
             self.cleanup_test_data()
             
-            # 7. Rapport final
+            # 10. Rapport final
             overall_success = self.generate_test_report()
             
             return overall_success
