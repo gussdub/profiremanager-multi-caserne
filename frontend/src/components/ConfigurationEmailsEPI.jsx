@@ -169,20 +169,27 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
                   alignItems: 'center'
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '0.25rem' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: '600', fontSize: '13px', color: '#111827', marginBottom: '0.15rem' }}>
                     {user.prenom} {user.nom}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '0.15rem' }}>
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#6B7280', 
+                    marginBottom: '0.1rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
                     ✉️ {user.email}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '500' }}>
-                    {user.role === 'admin' ? '👑 Administrateur' : '👔 Superviseur'}
+                  <div style={{ fontSize: '11px', color: '#DC2626', fontWeight: '500' }}>
+                    {user.role === 'admin' ? '👑 Admin' : '👔 Superviseur'}
                   </div>
                 </div>
                 <div style={{
-                  width: '24px',
-                  height: '24px',
+                  width: '22px',
+                  height: '22px',
                   borderRadius: '50%',
                   backgroundColor: isSelected ? '#DC2626' : 'white',
                   border: isSelected ? 'none' : '2px solid #D1D5DB',
@@ -190,8 +197,10 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '12px',
-                  fontWeight: '700'
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  marginLeft: '0.5rem'
                 }}>
                   {isSelected && '✓'}
                 </div>
@@ -201,7 +210,7 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
         </div>
 
         {allUsers.length === 0 && (
-          <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
+          <p style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '1rem', fontSize: '13px' }}>
             Aucun administrateur ou superviseur trouvé
           </p>
         )}
@@ -211,19 +220,19 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
       {selectedUsersDetails.length > 0 && (
         <div style={{ 
           backgroundColor: '#ECFDF5', 
-          padding: '1rem', 
+          padding: '0.75rem', 
           borderRadius: '6px',
           border: '1px solid #A7F3D0',
           marginBottom: '1rem'
         }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#065F46', marginBottom: '0.5rem' }}>
-            ✅ Destinataires configurés:
+          <div style={{ fontSize: '12px', fontWeight: '600', color: '#065F46', marginBottom: '0.25rem' }}>
+            ✅ Destinataires ({selectedUsersDetails.length}):
           </div>
-          <div style={{ fontSize: '13px', color: '#047857' }}>
+          <div style={{ fontSize: '11px', color: '#047857' }}>
             {selectedUsersDetails.map((u, i) => (
               <span key={u.id}>
-                {u.prenom} {u.nom} ({u.email})
-                {i < selectedUsersDetails.length - 1 && ' • '}
+                {u.prenom} {u.nom}
+                {i < selectedUsersDetails.length - 1 && ', '}
               </span>
             ))}
           </div>
@@ -238,16 +247,16 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
           style={{
             backgroundColor: '#DC2626',
             color: 'white',
-            padding: '0.75rem 1.5rem',
+            padding: '0.6rem 1rem',
             borderRadius: '8px',
             border: 'none',
             cursor: saving ? 'not-allowed' : 'pointer',
-            fontSize: '15px',
+            fontSize: '13px',
             fontWeight: '600',
             opacity: saving ? 0.5 : 1
           }}
         >
-          {saving ? 'Enregistrement...' : '💾 Enregistrer la configuration'}
+          {saving ? '⏳...' : '💾 Enregistrer'}
         </Button>
       </div>
     </div>
