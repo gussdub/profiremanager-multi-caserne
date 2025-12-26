@@ -85,7 +85,14 @@ const MaterielEquipementsModule = ({ user }) => {
   };
 
   // Filtrer les équipements
+  // Pour les pompiers : uniquement les APRIA
+  // Pour admin/superviseur : tout l'inventaire
+  const isPompier = user?.role === 'pompier';
+  
   const equipementsFiltres = equipements.filter(e => {
+    // Si c'est un pompier, ne montrer que les APRIA
+    if (isPompier && !isAPRIA(e)) return false;
+    
     if (filtreCategorie && e.categorie_id !== filtreCategorie) return false;
     if (filtreEtat && e.etat !== filtreEtat) return false;
     if (filtreRecherche) {
