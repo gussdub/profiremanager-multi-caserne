@@ -727,15 +727,38 @@ const TabButton = ({ label, active, onClick }) => (
   <button
     onClick={onClick}
     style={{
-      padding: '12px 20px',
+      padding: '10px 14px',
       backgroundColor: active ? '#e74c3c' : 'transparent',
       color: active ? 'white' : '#333',
       border: 'none',
       borderBottom: active ? '3px solid #e74c3c' : 'none',
       cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: active ? 'bold' : 'normal',
+      transition: 'all 0.3s',
+      whiteSpace: 'nowrap',
+      flexShrink: 0
+    }}
+  >
+    {label}
+  </button>
+);
+
+const MobileTabButton = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    style={{
+      width: '100%',
+      padding: '14px 16px',
+      backgroundColor: active ? '#fee2e2' : 'white',
+      color: active ? '#e74c3c' : '#333',
+      border: 'none',
+      borderBottom: '1px solid #eee',
+      cursor: 'pointer',
       fontSize: '15px',
       fontWeight: active ? 'bold' : 'normal',
-      transition: 'all 0.3s'
+      textAlign: 'left',
+      transition: 'all 0.2s'
     }}
   >
     {label}
