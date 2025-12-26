@@ -16,7 +16,11 @@ const VehiculeQRAction = () => {
   const [loginError, setLoginError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
+  // Debug log
+  console.log('🎯 VehiculeQRAction monté - tenantSlug:', tenantSlug, 'vehiculeId:', vehiculeId);
+
   useEffect(() => {
+    console.log('🔄 VehiculeQRAction useEffect - chargement véhicule');
     checkAuthentication();
     loadVehicule();
   }, [vehiculeId, tenantSlug]);
