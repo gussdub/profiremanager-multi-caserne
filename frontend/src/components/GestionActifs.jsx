@@ -335,22 +335,23 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   return (
     <div className="gestion-actifs" style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>🚒 Gestion des Actifs</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>🚒 Gestion des Actifs</h1>
         
         {/* Bouton Ajouter à droite */}
         {activeTab === 'vehicules' && (
           <button 
             onClick={openCreateModal}
             style={{
-              padding: '12px 24px',
+              padding: '10px 16px',
               backgroundColor: '#e74c3c',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold'
+              fontSize: '14px',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap'
             }}
           >
             + Ajouter un véhicule
@@ -358,8 +359,89 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         )}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #ddd' }}>
+      {/* Mobile Menu Toggle */}
+      <div className="mobile-tab-toggle" style={{ display: 'none' }}>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            backgroundColor: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <span>
+            {activeTab === 'vehicules' && '🚗 Véhicules'}
+            {activeTab === 'eau' && '💧 Approvisionnement en Eau'}
+            {activeTab === 'materiel' && '🔧 Matériel & Équipements'}
+            {activeTab === 'epi' && '🛡️ Gestion EPI'}
+            {activeTab === 'parametres' && '⚙️ Paramètres'}
+          </span>
+          <span style={{ transform: mobileMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+        </button>
+        
+        {/* Dropdown Menu for Mobile */}
+        {mobileMenuOpen && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 100,
+            marginTop: '4px',
+            overflow: 'hidden'
+          }}>
+            <MobileTabButton
+              label="🚗 Véhicules"
+              active={activeTab === 'vehicules'}
+              onClick={() => { setActiveTab('vehicules'); setMobileMenuOpen(false); }}
+            />
+            <MobileTabButton
+              label="💧 Approvisionnement en Eau"
+              active={activeTab === 'eau'}
+              onClick={() => { setActiveTab('eau'); setMobileMenuOpen(false); }}
+            />
+            <MobileTabButton
+              label="🔧 Matériel & Équipements"
+              active={activeTab === 'materiel'}
+              onClick={() => { setActiveTab('materiel'); setMobileMenuOpen(false); }}
+            />
+            <MobileTabButton
+              label="🛡️ Gestion EPI"
+              active={activeTab === 'epi'}
+              onClick={() => { setActiveTab('epi'); setMobileMenuOpen(false); }}
+            />
+            <MobileTabButton
+              label="⚙️ Paramètres"
+              active={activeTab === 'parametres'}
+              onClick={() => { setActiveTab('parametres'); setMobileMenuOpen(false); }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Tabs - Horizontal scrollable on tablet */}
+      <div className="desktop-tabs" style={{ 
+        display: 'flex', 
+        gap: '4px', 
+        marginBottom: '20px', 
+        borderBottom: '2px solid #ddd',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
+      }}>
         <TabButton
           label="🚗 Véhicules"
           active={activeTab === 'vehicules'}
@@ -386,6 +468,26 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           onClick={() => setActiveTab('parametres')}
         />
       </div>
+
+      {/* Responsive CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-tab-toggle {
+            display: block !important;
+            position: relative;
+            margin-bottom: 16px;
+          }
+          .desktop-tabs {
+            display: none !important;
+          }
+          .gestion-actifs {
+            padding: 12px !important;
+          }
+        }
+        .desktop-tabs::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
 
       {/* Content */}
       {loading ? (
