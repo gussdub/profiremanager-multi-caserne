@@ -1811,14 +1811,15 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
               onClick={() => setSelectedModule(module.id)}
               style={{
                 background: isActive ? '#DC2626' : 'white',
-                padding: '16px',
+                padding: '12px',
                 borderRadius: '10px',
                 boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : '0 2px 6px rgba(0,0,0,0.08)',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 border: isActive ? '2px solid #DC2626' : '1px solid #e0e0e0',
                 textAlign: 'center',
-                transform: isActive ? 'scale(1.02)' : 'scale(1)'
+                transform: isActive ? 'scale(1.02)' : 'scale(1)',
+                minWidth: '0'
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
@@ -1831,21 +1832,28 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                 }
               }}
             >
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '6px' }}>
                 {module.icon}
               </div>
               <h3 style={{ 
-                fontSize: '15px', 
+                fontSize: '13px', 
                 fontWeight: '600', 
-                marginBottom: '4px', 
-                color: isActive ? 'white' : '#2c3e50' 
+                marginBottom: '2px', 
+                color: isActive ? 'white' : '#2c3e50',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}>
                 {module.title}
               </h3>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: '11px', 
                 color: isActive ? 'rgba(255,255,255,0.9)' : '#6B7280', 
-                margin: 0 
+                margin: 0,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
               }}>
                 {module.description}
               </p>
