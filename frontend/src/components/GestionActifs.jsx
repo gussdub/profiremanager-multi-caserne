@@ -2313,22 +2313,22 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
             {/* Alerte inspection mensuelle pour tous les utilisateurs */}
             <div style={{ 
-              padding: '15px',
+              padding: 'clamp(10px, 2vw, 15px)',
               background: '#d1ecf1',
               borderRadius: '8px',
               border: '1px solid #0dcaf0'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '18px' }}>👥</span>
-                <Label style={{ fontSize: '15px', fontWeight: '600', color: '#055160', margin: 0 }}>
-                  Alerte inspection de routine mensuelle (Tous les utilisateurs)
+                <Label style={{ fontSize: '14px', fontWeight: '600', color: '#055160', margin: 0 }}>
+                  Alerte inspection mensuelle (Tous)
                 </Label>
               </div>
-              <p style={{ fontSize: '12px', color: '#055160', marginBottom: '10px' }}>
+              <p style={{ fontSize: '11px', color: '#055160', marginBottom: '10px' }}>
                 Tous les utilisateurs seront notifiés le X du mois s&apos;ils n&apos;ont pas effectué leur inspection mensuelle
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#055160' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
                   Le
                 </span>
                 <Input
@@ -2338,18 +2338,18 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   value={epiSettings.epi_jour_alerte_inspection_mensuelle}
                   onChange={(e) => handleEpiSettingChange('epi_jour_alerte_inspection_mensuelle', parseInt(e.target.value))}
                   style={{ 
-                    width: '80px',
+                    width: '70px',
                     padding: '8px',
                     fontSize: '14px',
                     fontWeight: '600'
                   }}
                 />
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#055160' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
                   de chaque mois
                 </span>
               </div>
-              <small style={{ fontSize: '11px', color: '#055160', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
-                💡 Exemple : Avec le 20e jour, si un utilisateur n&apos;a pas fait son inspection mensuelle avant le 20, il recevra une notification ce jour-là
+              <small style={{ fontSize: '10px', color: '#055160', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
+                💡 Si non fait avant ce jour, notification envoyée
               </small>
             </div>
           </div>
@@ -2358,7 +2358,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Notifications Destinataires */}
         <div style={{ 
           background: 'white', 
-          padding: '25px', 
+          padding: 'clamp(12px, 3vw, 25px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0'
