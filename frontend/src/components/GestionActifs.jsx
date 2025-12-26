@@ -3309,51 +3309,78 @@ const ParametresAlertesEquipements = ({ tenantSlug, user }) => {
         </div>
       )}
 
-      {/* Paramètres des délais */}
-      <div style={{ display: 'grid', gap: '15px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <Label style={{ minWidth: '200px', fontSize: '14px' }}>
-            Alerte maintenance (jours avant)
+      {/* Paramètres des délais - Responsive */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '6px',
+          padding: '10px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <Label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+            🔧 Alerte maintenance
           </Label>
-          <Input
-            type="number"
-            min="1"
-            max="365"
-            value={parametres.jours_alerte_maintenance}
-            onChange={(e) => setParametres({...parametres, jours_alerte_maintenance: parseInt(e.target.value) || 30})}
-            style={{ width: '100px' }}
-          />
-          <span style={{ fontSize: '13px', color: '#6b7280' }}>jours</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Input
+              type="number"
+              min="1"
+              max="365"
+              value={parametres.jours_alerte_maintenance}
+              onChange={(e) => setParametres({...parametres, jours_alerte_maintenance: parseInt(e.target.value) || 30})}
+              style={{ width: '70px', padding: '6px 8px', fontSize: '14px' }}
+            />
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>jours avant</span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <Label style={{ minWidth: '200px', fontSize: '14px' }}>
-            Alerte expiration (jours avant)
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '6px',
+          padding: '10px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <Label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+            📅 Alerte expiration
           </Label>
-          <Input
-            type="number"
-            min="1"
-            max="365"
-            value={parametres.jours_alerte_expiration}
-            onChange={(e) => setParametres({...parametres, jours_alerte_expiration: parseInt(e.target.value) || 30})}
-            style={{ width: '100px' }}
-          />
-          <span style={{ fontSize: '13px', color: '#6b7280' }}>jours</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Input
+              type="number"
+              min="1"
+              max="365"
+              value={parametres.jours_alerte_expiration}
+              onChange={(e) => setParametres({...parametres, jours_alerte_expiration: parseInt(e.target.value) || 30})}
+              style={{ width: '70px', padding: '6px 8px', fontSize: '14px' }}
+            />
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>jours avant</span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <Label style={{ minWidth: '200px', fontSize: '14px' }}>
-            Alerte fin de vie (jours avant)
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '6px',
+          padding: '10px',
+          background: '#f9fafb',
+          borderRadius: '8px'
+        }}>
+          <Label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+            ⏰ Alerte fin de vie
           </Label>
-          <Input
-            type="number"
-            min="1"
-            max="365"
-            value={parametres.jours_alerte_fin_vie}
-            onChange={(e) => setParametres({...parametres, jours_alerte_fin_vie: parseInt(e.target.value) || 90})}
-            style={{ width: '100px' }}
-          />
-          <span style={{ fontSize: '13px', color: '#6b7280' }}>jours</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Input
+              type="number"
+              min="1"
+              max="365"
+              value={parametres.jours_alerte_fin_vie}
+              onChange={(e) => setParametres({...parametres, jours_alerte_fin_vie: parseInt(e.target.value) || 90})}
+              style={{ width: '70px', padding: '6px 8px', fontSize: '14px' }}
+            />
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>jours avant</span>
+          </div>
         </div>
       </div>
 
