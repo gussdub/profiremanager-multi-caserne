@@ -30949,6 +30949,20 @@ async def get_historique_inspections_apria(
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
 
 
+# Include routers in the main app
+app.include_router(api_router)
+app.include_router(pwa_router, prefix="/api")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
