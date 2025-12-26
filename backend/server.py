@@ -9907,10 +9907,12 @@ async def get_tenant_from_slug(slug: str) -> Tenant:
     cache_key = f"tenant_{slug}"
     now = time.time()
     if cache_key in _tenant_cache and (now - _tenant_cache_time.get(cache_key, 0)) < 60:
+        print(f"🔄 DEBUG: Using cached tenant for {slug}")
         return _tenant_cache[cache_key]
     
     # Requête simplifiée avec index
     tenant_data = await db.tenants.find_one({"slug": slug}, {"_id": 0})
+    print(f"🗄️ DEBUG: Raw tenant_data from DB: {tenant_data}")
     
     # Fallback pour ancienne structure
     if not tenant_data:
