@@ -25353,17 +25353,18 @@ const AppWithProviders = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Routes spécifiques QR - DOIT être avant les routes avec paramètres */}
+        <Route path="/qr/:tenantSlug/vehicule/:vehiculeId" element={
+          <VehiculeQRAction />
+        } />
+        {/* Route spéciale pour installation PWA sur iOS */}
+        <Route path="/pwa/:tenantSlug" element={<PWARedirect />} />
         <Route path="/:tenant/reset-password" element={
           <AuthProvider>
             <ResetPassword />
             <Toaster />
           </AuthProvider>
         } />
-        <Route path="/qr/:tenantSlug/vehicule/:vehiculeId" element={
-          <VehiculeQRAction />
-        } />
-        {/* Route spéciale pour installation PWA sur iOS */}
-        <Route path="/pwa/:tenantSlug" element={<PWARedirect />} />
         <Route path="*" element={
           <AuthProvider>
             <App />
