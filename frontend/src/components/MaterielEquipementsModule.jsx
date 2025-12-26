@@ -524,22 +524,6 @@ const EquipementsTab = ({
           style={{ width: '200px' }}
         />
         
-        <select
-          value={filtreCategorie}
-          onChange={(e) => setFiltreCategorie(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            borderRadius: '0.375rem',
-            border: '1px solid #d1d5db',
-            background: 'white'
-          }}
-        >
-          <option value="">Toutes catégories</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.icone} {cat.nom}</option>
-          ))}
-        </select>
-        
         {/* Filtres par catégorie et état - masqués pour les pompiers */}
         {!isPompier && (
           <>
