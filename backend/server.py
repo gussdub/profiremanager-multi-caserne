@@ -30490,6 +30490,477 @@ async def programmer_test_borne_seche(
     
     return {"message": "Date de test programmée avec succès"}
 
+
+# ==================== MODULE INSPECTIONS APRIA ====================
+
+# Modèle pour les inspections APRIA
+class InspectionAPRIACreate(BaseModel):
+    equipement_id: str  # ID de l'équipement APRIA inspecté
+    type_inspection: str = "mensuelle"  # "mensuelle" ou "apres_usage"
+    inspecteur_id: str
+    date_inspection: str
+    # Éléments d'inspection (les 13 points)
+    elements: dict = {}  # {"element_id": "conforme/non_conforme/na", ...}
+    # Pression du cylindre
+    pression_cylindre: Optional[int] = None
+    # Résultat global
+    conforme: bool = True
+    # Remarques
+    remarques: Optional[str] = None
+    # Photos
+    photos: Optional[List[str]] = []
+
+# Modèle pour les paramètres APRIA
+class ParametresAPRIA(BaseModel):
+    contacts_alertes: List[str] = []  # Liste d'IDs d'utilisateurs à alerter
+    pression_minimum: int = 4050  # Pression minimum PSI
+
+# Endpoint pour récupérer les modèles d'inspection APRIA
+@api_router.get("/{tenant_slug}/apria/modeles-inspection")
+async def get_modeles_inspection_apria(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les modèles d'inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modeles = await db.modeles_inspection_apria.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return modeles
+
+@api_router.get("/{tenant_slug}/apria/modeles-inspection/actif")
+async def get_modele_inspection_apria_actif(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer le modèle d'inspection actif pour les APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modele = await db.modeles_inspection_apria.find_one(
+        {"tenant_id": tenant.id, "est_actif": True},
+        {"_id": 0}
+    )
+    
+    if not modele:
+        # Créer un modèle par défaut basé sur la photo fournie
+        modele_defaut = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": "Inspection APRIA Standard",
+            "description": "Modèle d'inspection par défaut pour les APRIA",
+            "est_actif": True,
+            "sections": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Vérifications visuelles",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non conforme", "declencherAlerte": True}
+                    ],
+                    "items": [
+                        {"id": "item_1", "nom": "1. Sangle dorsale et boucles intactes", "ordre": 0},
+                        {"id": "item_2", "nom": "2. Plastron et brides intacts", "ordre": 1},
+                        {"id": "item_3", "nom": "3. Cylindre et robinet intacts", "ordre": 2},
+                        {"id": "item_4", "nom": "4. Avertisseur de fin de service et purge", "ordre": 3},
+                        {"id": "item_5", "nom": "5. Manomètre intact et lisible", "ordre": 4},
+                        {"id": "item_6", "nom": "6. Détendeur moyenne pression et Tuyau MP", "ordre": 5},
+                        {"id": "item_7", "nom": "7. Raccord rapide du masque et joint torique", "ordre": 6},
+                        {"id": "item_8", "nom": "8. Ceinture (Sangle ventrale) et boucle", "ordre": 7},
+                        {"id": "item_9", "nom": "9. Lunette intacte et propre (libre de dépôts)", "ordre": 8},
+                        {"id": "item_10", "nom": "10. Serre-tête élastique en bonne condition", "ordre": 9},
+                        {"id": "item_11", "nom": "11. Membrane vocale intacte", "ordre": 10},
+                        {"id": "item_12", "nom": "12. Bord interne du masque intact (joint facial)", "ordre": 11},
+                        {"id": "item_13", "nom": "13. Membrane d'inhalation et exhalation intactes", "ordre": 12}
+                    ],
+                    "ordre": 0
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Pression du cylindre",
+                    "type_champ": "number",
+                    "unite": "PSI",
+                    "seuil_alerte": 4050,
+                    "seuil_minimum": 4050,
+                    "items": [],
+                    "ordre": 1
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Résultat global",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non Conforme", "declencherAlerte": True}
+                    ],
+                    "items": [],
+                    "ordre": 2
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Remarques",
+                    "type_champ": "text",
+                    "items": [],
+                    "ordre": 3
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Photos",
+                    "type_champ": "photo",
+                    "items": [],
+                    "ordre": 4
+                }
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.modeles_inspection_apria.insert_one(modele_defaut)
+        return modele_defaut
+    
+    return modele
+
+@api_router.post("/{tenant_slug}/apria/modeles-inspection")
+async def create_modele_inspection_apria(
+    tenant_slug: str,
+    modele_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau modèle d'inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    modele = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": modele_data.get("nom", "Nouveau modèle"),
+        "description": modele_data.get("description", ""),
+        "sections": modele_data.get("sections", []),
+        "est_actif": modele_data.get("est_actif", False),
+        "created_by_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.modeles_inspection_apria.insert_one(modele)
+    
+    return {"message": "Modèle créé avec succès", "id": modele["id"]}
+
+@api_router.put("/{tenant_slug}/apria/modeles-inspection/{modele_id}")
+async def update_modele_inspection_apria(
+    tenant_slug: str,
+    modele_id: str,
+    modele_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un modèle d'inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    update_data = {k: v for k, v in modele_data.items() if k != 'id' and k != 'tenant_id'}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.modeles_inspection_apria.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return {"message": "Modèle mis à jour avec succès"}
+
+@api_router.delete("/{tenant_slug}/apria/modeles-inspection/{modele_id}")
+async def delete_modele_inspection_apria(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un modèle d'inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Vérifier si le modèle est actif
+    modele = await db.modeles_inspection_apria.find_one({"id": modele_id, "tenant_id": tenant.id})
+    if modele and modele.get("est_actif"):
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un modèle actif")
+    
+    result = await db.modeles_inspection_apria.delete_one({"id": modele_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return {"message": "Modèle supprimé avec succès"}
+
+@api_router.post("/{tenant_slug}/apria/modeles-inspection/{modele_id}/activer")
+async def activer_modele_inspection_apria(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Activer un modèle d'inspection APRIA (désactive les autres)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Désactiver tous les modèles
+    await db.modeles_inspection_apria.update_many(
+        {"tenant_id": tenant.id},
+        {"$set": {"est_actif": False}}
+    )
+    
+    # Activer le modèle sélectionné
+    result = await db.modeles_inspection_apria.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": {"est_actif": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return {"message": "Modèle activé avec succès"}
+
+@api_router.post("/{tenant_slug}/apria/modeles-inspection/{modele_id}/dupliquer")
+async def dupliquer_modele_inspection_apria(
+    tenant_slug: str,
+    modele_id: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Dupliquer un modèle d'inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Récupérer le modèle source
+    modele_source = await db.modeles_inspection_apria.find_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not modele_source:
+        raise HTTPException(status_code=404, detail="Modèle source non trouvé")
+    
+    # Créer une copie
+    nouveau_modele = {
+        **modele_source,
+        "id": str(uuid.uuid4()),
+        "nom": data.get("nouveau_nom", f"{modele_source['nom']} (copie)"),
+        "est_actif": False,
+        "created_by_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.modeles_inspection_apria.insert_one(nouveau_modele)
+    
+    return {"message": "Modèle dupliqué avec succès", "id": nouveau_modele["id"]}
+
+# Endpoint pour récupérer les équipements APRIA
+@api_router.get("/{tenant_slug}/apria/equipements")
+async def get_equipements_apria(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les équipements APRIA de l'inventaire"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Chercher la catégorie APRIA
+    categorie_apria = await db.categories_equipements.find_one(
+        {"tenant_id": tenant.id, "nom": {"$regex": "APRIA", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    query = {"tenant_id": tenant.id}
+    
+    if categorie_apria:
+        query["categorie_id"] = categorie_apria.get("id")
+    else:
+        # Chercher par nom contenant APRIA
+        query["$or"] = [
+            {"nom": {"$regex": "APRIA", "$options": "i"}},
+            {"description": {"$regex": "APRIA", "$options": "i"}}
+        ]
+    
+    equipements = await db.equipements.find(query, {"_id": 0}).to_list(length=None)
+    
+    # Enrichir avec les infos de dernière inspection
+    for eq in equipements:
+        derniere_inspection = await db.inspections_apria.find_one(
+            {"equipement_id": eq["id"], "tenant_id": tenant.id},
+            {"_id": 0},
+            sort=[("date_inspection", -1)]
+        )
+        eq["derniere_inspection"] = derniere_inspection
+    
+    return equipements
+
+# Endpoint pour créer une inspection APRIA
+@api_router.post("/{tenant_slug}/apria/inspections")
+async def create_inspection_apria(
+    tenant_slug: str,
+    inspection_data: InspectionAPRIACreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspection = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "equipement_id": inspection_data.equipement_id,
+        "type_inspection": inspection_data.type_inspection,
+        "inspecteur_id": inspection_data.inspecteur_id or current_user.id,
+        "inspecteur_nom": current_user.prenom + " " + current_user.nom,
+        "date_inspection": inspection_data.date_inspection,
+        "elements": inspection_data.elements,
+        "pression_cylindre": inspection_data.pression_cylindre,
+        "conforme": inspection_data.conforme,
+        "remarques": inspection_data.remarques,
+        "photos": inspection_data.photos or [],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections_apria.insert_one(inspection)
+    
+    # Si non conforme, marquer l'équipement comme hors service et envoyer alerte
+    if not inspection_data.conforme:
+        # Marquer l'équipement hors service
+        await db.equipements.update_one(
+            {"id": inspection_data.equipement_id, "tenant_id": tenant.id},
+            {"$set": {"statut": "hors_service", "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # TODO: Envoyer notification aux contacts configurés
+    
+    return {"message": "Inspection enregistrée avec succès", "id": inspection["id"]}
+
+# Endpoint pour récupérer les inspections APRIA
+@api_router.get("/{tenant_slug}/apria/inspections")
+async def get_inspections_apria(
+    tenant_slug: str,
+    equipement_id: Optional[str] = None,
+    inspecteur_id: Optional[str] = None,
+    type_inspection: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les inspections APRIA avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {"tenant_id": tenant.id}
+    if equipement_id:
+        query["equipement_id"] = equipement_id
+    if inspecteur_id:
+        query["inspecteur_id"] = inspecteur_id
+    if type_inspection:
+        query["type_inspection"] = type_inspection
+    
+    inspections = await db.inspections_apria.find(
+        query, {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=None)
+    
+    return inspections
+
+# Endpoint pour récupérer une inspection APRIA spécifique
+@api_router.get("/{tenant_slug}/apria/inspections/{inspection_id}")
+async def get_inspection_apria(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer une inspection APRIA spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspection = await db.inspections_apria.find_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    return inspection
+
+# Endpoint pour les paramètres APRIA
+@api_router.get("/{tenant_slug}/apria/parametres")
+async def get_parametres_apria(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les paramètres du module APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    parametres = await db.parametres_apria.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not parametres:
+        # Créer des paramètres par défaut
+        parametres = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "contacts_alertes": [],
+            "pression_minimum": 4050,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.parametres_apria.insert_one(parametres)
+    
+    return parametres
+
+@api_router.put("/{tenant_slug}/apria/parametres")
+async def update_parametres_apria(
+    tenant_slug: str,
+    parametres_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour les paramètres du module APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    update_data = {k: v for k, v in parametres_data.items() if k not in ['id', 'tenant_id']}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.parametres_apria.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"message": "Paramètres mis à jour avec succès"}
+
+# Endpoint pour récupérer l'historique des inspections d'un équipement
+@api_router.get("/{tenant_slug}/apria/equipements/{equipement_id}/historique")
+async def get_historique_inspections_apria(
+    tenant_slug: str,
+    equipement_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections d'un équipement APRIA"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspections = await db.inspections_apria.find(
+        {"equipement_id": equipement_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=None)
+    
+    return inspections
+
+# ==================== FIN MODULE INSPECTIONS APRIA ====================
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
