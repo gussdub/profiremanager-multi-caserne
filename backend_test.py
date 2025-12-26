@@ -1,46 +1,36 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET DU MODULE MATÉRIEL & ÉQUIPEMENTS (PHASE 1 BACKEND)
+TEST COMPLET DU MODULE APRIA INSPECTION
 
 CONTEXTE:
-Test complet des endpoints du module Matériel & Équipements (Phase 1 Backend).
+Test complet des endpoints du module APRIA Inspection nouvellement implémenté.
 
 TENANT: shefford
-CREDENTIALS: email: gussdub@gmail.com, mot_de_passe: 230685Juin+
+CREDENTIALS: email: test@shefford.ca, mot_de_passe: Test123!
 
 ENDPOINTS À TESTER:
 
-1. **Catégories d'équipements:**
-   - GET /api/shefford/equipements/categories - Liste des catégories (11 devraient exister)
-   - POST /api/shefford/equipements/categories - Créer une nouvelle catégorie personnalisée
-   - PUT /api/shefford/equipements/categories/{id} - Modifier une catégorie (tester qu'on ne peut pas modifier une catégorie prédéfinie)
-   - DELETE /api/shefford/equipements/categories/{id} - Supprimer une catégorie (tester qu'on ne peut pas supprimer une catégorie prédéfinie ou utilisée)
+1. **Authentification:**
+   - POST /api/shefford/auth/login - Obtenir le token d'authentification
 
-2. **Équipements:**
-   - GET /api/shefford/equipements - Liste des équipements (2 devraient exister: TUY-001 et MASK-001)
-   - GET /api/shefford/equipements?categorie_id={id} - Filtrer par catégorie
-   - GET /api/shefford/equipements?etat=bon - Filtrer par état
-   - GET /api/shefford/equipements/{id} - Récupérer un équipement
-   - POST /api/shefford/equipements - Créer un nouvel équipement (vérifier code_unique unique)
-   - PUT /api/shefford/equipements/{id} - Modifier un équipement
-   - DELETE /api/shefford/equipements/{id} - Supprimer un équipement
+2. **Modèles d'inspection APRIA:**
+   - GET /api/shefford/apria/modeles-inspection - Liste des modèles (devrait être vide ou créer par défaut)
+   - GET /api/shefford/apria/modeles-inspection/actif - Modèle actif (devrait créer un modèle par défaut avec 13 éléments)
 
-3. **Maintenance:**
-   - GET /api/shefford/equipements/{id}/maintenances - Historique de maintenance
-   - POST /api/shefford/equipements/{id}/maintenances - Ajouter une maintenance (vérifier que date_derniere_maintenance et date_prochaine_maintenance sont mises à jour sur l'équipement)
+3. **Équipements APRIA:**
+   - GET /api/shefford/apria/equipements - Liste des équipements APRIA
 
-4. **Statistiques:**
-   - GET /api/shefford/equipements/stats/resume - Vérifier total, par_etat, alertes, par_categorie, valeur_totale
+4. **Inspections APRIA:**
+   - POST /api/shefford/apria/inspections - Créer une nouvelle inspection
+   - GET /api/shefford/apria/inspections - Récupérer les inspections créées
 
-5. **Assignation employé:**
-   - Vérifier que l'équipement MASK-001 a employe_nom = "Guillaume Dubeau"
-   - Créer un nouvel équipement dans la catégorie "Radios portatives" avec un employe_id et vérifier que employe_nom est bien rempli
+5. **Paramètres APRIA:**
+   - GET /api/shefford/apria/parametres - Récupérer les paramètres (contacts_alertes)
 
-6. **Validation des erreurs:**
-   - Tester la création d'un équipement avec un code_unique déjà existant (doit retourner 400)
-   - Tester la suppression d'une catégorie utilisée par des équipements (doit retourner 400)
-   
-Valider que tous les champs personnalisés (champs_personnalises) sont bien stockés et récupérés.
+RÉSULTATS ATTENDUS:
+- Tous les endpoints doivent retourner 200
+- Le modèle par défaut doit avoir 13 éléments d'inspection
+- Les inspections doivent être correctement stockées et récupérées
 """
 
 import requests
