@@ -513,42 +513,47 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               {/* Sous-onglets pour Approvisionnement en Eau */}
               <div style={{ 
                 display: 'flex', 
-                gap: '10px', 
-                marginBottom: '20px',
+                gap: '8px', 
+                marginBottom: '16px',
                 borderBottom: '2px solid #e0e0e0',
-                paddingBottom: '10px'
+                paddingBottom: '10px',
+                flexWrap: 'wrap'
               }}>
                 <button
                   onClick={() => setEauSubTab('carte')}
                   style={{
-                    padding: '10px 20px',
+                    padding: '8px 14px',
                     background: eauSubTab === 'carte' ? '#3498db' : 'transparent',
                     color: eauSubTab === 'carte' ? 'white' : '#555',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: '600',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    flex: '1 1 auto',
+                    minWidth: '140px'
                   }}
                 >
-                  🗺️ Carte des Points d'Eau
+                  🗺️ Carte Points d'Eau
                 </button>
                 <button
                   onClick={() => setEauSubTab('inspections')}
                   style={{
-                    padding: '10px 20px',
+                    padding: '8px 14px',
                     background: eauSubTab === 'inspections' ? '#e74c3c' : 'transparent',
                     color: eauSubTab === 'inspections' ? 'white' : '#555',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: '600',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    flex: '1 1 auto',
+                    minWidth: '140px'
                   }}
                 >
-                  🔥 Inspections Bornes Sèches
+                  🔥 Bornes Sèches
                 </button>
               </div>
 
