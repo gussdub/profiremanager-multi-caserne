@@ -1923,17 +1923,17 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       {selectedModule === 'eau' && (
       <div style={{ 
         background: '#f8f9fa', 
-        padding: '30px', 
+        padding: 'clamp(16px, 4vw, 30px)', 
         borderRadius: '12px', 
         border: '2px solid #e0e0e0',
-        marginBottom: '30px'
+        marginBottom: '24px'
       }}>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '32px' }}>💧</span>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>💧</span>
             Approvisionnement en Eau
           </h2>
-          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
             Configuration des dates de tests et notifications pour les bornes sèches
           </p>
         </div>
@@ -1941,71 +1941,75 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Dates de Tests */}
         <div style={{ 
           background: 'white', 
-          padding: '20px', 
+          padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0',
           marginBottom: '15px'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>🔥</span> Dates de Tests - Bornes Sèches
           </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
             Configurez les dates auxquelles les tests des bornes sèches doivent être effectués
           </p>
 
-          {/* Formulaire d'ajout */}
+          {/* Formulaire d'ajout - RESPONSIVE */}
           <div style={{ 
             background: '#f8f9fa', 
-            padding: '15px', 
+            padding: '12px', 
             borderRadius: '8px', 
             marginBottom: '15px',
             border: '1px solid #dee2e6'
           }}>
-            <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#34495e' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#34495e' }}>
               Ajouter une nouvelle date
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr auto', gap: '10px', alignItems: 'end' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  value={nouvelleDate}
-                  onChange={(e) => setNouvelleDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid #ced4da',
-                    fontSize: '13px'
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={nouvelleDescription}
-                  onChange={(e) => setNouvelleDescription(e.target.value)}
-                  placeholder="Ex: Test printemps, Test automne..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid #ced4da',
-                    fontSize: '13px'
-                  }}
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '600', color: '#555' }}>
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={nouvelleDate}
+                    onChange={(e) => setNouvelleDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #ced4da',
+                      fontSize: '13px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ flex: '2 1 180px', minWidth: '150px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '600', color: '#555' }}>
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={nouvelleDescription}
+                    onChange={(e) => setNouvelleDescription(e.target.value)}
+                    placeholder="Ex: Test printemps..."
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #ced4da',
+                      fontSize: '13px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
               <button
                 onClick={ajouterDateTest}
                 disabled={loading || !nouvelleDate}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 16px',
                   background: '#27ae60',
                   color: 'white',
                   border: 'none',
@@ -2014,10 +2018,10 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   fontSize: '13px',
                   fontWeight: '600',
                   opacity: loading || !nouvelleDate ? 0.6 : 1,
-                  whiteSpace: 'nowrap'
+                  width: '100%'
                 }}
               >
-                {loading ? 'Ajout...' : '+ Ajouter'}
+                {loading ? 'Ajout...' : '+ Ajouter la date'}
               </button>
             </div>
           </div>
