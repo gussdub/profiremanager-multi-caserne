@@ -9952,17 +9952,19 @@ async def get_current_tenant(tenant_slug: str) -> Tenant:
 async def tenant_login(tenant_slug: str, user_login: UserLogin):
     """Login pour un tenant spécifique avec migration automatique SHA256 -> bcrypt"""
     try:
-        logging.info(f"🔑 Tentative de connexion pour {user_login.email} sur tenant {tenant_slug}")
+        print(f"🔑 DEBUG: Tentative de connexion pour {user_login.email} sur tenant {tenant_slug}")
         
         # Vérifier que le tenant existe et est actif
         tenant = await get_tenant_from_slug(tenant_slug)
-        logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
+        print(f"✅ DEBUG: Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         
         # Chercher l'utilisateur dans ce tenant
+        print(f"🔍 DEBUG: Recherche utilisateur avec email={user_login.email}, tenant_id={tenant.id}")
         user_data = await db.users.find_one({
             "email": user_login.email,
             "tenant_id": tenant.id
         })
+        print(f"📋 DEBUG: User data found: {user_data is not None}")
         
         if not user_data:
             logging.warning(f"❌ Utilisateur non trouvé: {user_login.email} dans tenant {tenant_slug}")
