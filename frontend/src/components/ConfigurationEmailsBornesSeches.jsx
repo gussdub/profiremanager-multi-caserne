@@ -86,64 +86,71 @@ const ConfigurationEmailsBornesSeches = ({ tenantSlug }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '2rem' }}>📧</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '1.5rem' }}>📧</span>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
             Notifications - Défauts Bornes Sèches
           </h3>
-          <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
-            Notifications automatiques lorsqu&apos;un défaut est détecté lors d&apos;une inspection
+          <p style={{ fontSize: '12px', color: '#7f8c8d', margin: 0 }}>
+            Alertes automatiques lors des inspections
           </p>
         </div>
       </div>
 
       <div style={{ 
         backgroundColor: '#F9FAFB', 
-        padding: '1.25rem', 
+        padding: 'clamp(0.75rem, 2vw, 1.25rem)', 
         borderRadius: '8px',
-        marginBottom: '1.25rem'
+        marginBottom: '1rem'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: '0.75rem',
+          marginBottom: '1rem'
+        }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#34495e' }}>
             👥 Destinataires ({selectedUsersDetails.length})
           </h4>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <button
               onClick={handleSelectAll}
               style={{
-                padding: '0.4rem 0.75rem',
+                padding: '0.4rem 0.6rem',
                 backgroundColor: 'white',
                 color: '#DC2626',
                 border: '1px solid #DC2626',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500'
+                fontSize: '12px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap'
               }}
             >
-              Tout sélectionner
+              ✓ Tout
             </button>
             <button
               onClick={handleDeselectAll}
               style={{
-                padding: '0.4rem 0.75rem',
+                padding: '0.4rem 0.6rem',
                 backgroundColor: 'white',
                 color: '#6B7280',
                 border: '1px solid #D1D5DB',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500'
+                fontSize: '12px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap'
               }}
             >
-              Tout désélectionner
+              ✗ Aucun
             </button>
           </div>
         </div>
 
         {/* Liste des utilisateurs sélectionnables */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {allUsers.map(user => {
             const isSelected = selectedUsers.includes(user.id);
             return (
