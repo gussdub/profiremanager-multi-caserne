@@ -276,6 +276,36 @@ const MaterielEquipementsModule = ({ user }) => {
           }}
         />
       )}
+
+      {/* Modal Inspection APRIA */}
+      {showInspectionAPRIAModal && (
+        <InspectionAPRIAModal
+          isOpen={showInspectionAPRIAModal}
+          onClose={() => {
+            setShowInspectionAPRIAModal(false);
+            setSelectedEquipementAPRIA(null);
+          }}
+          tenantSlug={tenantSlug}
+          user={user}
+          equipementPreselectionne={selectedEquipementAPRIA}
+          onInspectionCreated={() => {
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Modal Historique APRIA */}
+      {showHistoriqueAPRIAModal && (
+        <HistoriqueInspectionsAPRIA
+          isOpen={showHistoriqueAPRIAModal}
+          onClose={() => {
+            setShowHistoriqueAPRIAModal(false);
+            setSelectedEquipementAPRIA(null);
+          }}
+          tenantSlug={tenantSlug}
+          equipementId={selectedEquipementAPRIA?.id}
+        />
+      )}
     </div>
   );
 };
