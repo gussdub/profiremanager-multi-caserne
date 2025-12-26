@@ -2279,16 +2279,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
               borderRadius: '8px',
               border: '1px solid #ffc107'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '18px' }}>👑</span>
-                <Label style={{ fontSize: '15px', fontWeight: '600', color: '#856404', margin: 0 }}>
-                  Alerte expiration EPI (Admins/Superviseurs)
+                <Label style={{ fontSize: '14px', fontWeight: '600', color: '#856404', margin: 0 }}>
+                  Alerte expiration EPI (Admins)
                 </Label>
               </div>
-              <p style={{ fontSize: '12px', color: '#856404', marginBottom: '10px' }}>
-                Les administrateurs et superviseurs seront notifiés X jours avant l&apos;expiration d&apos;un EPI
+              <p style={{ fontSize: '11px', color: '#856404', marginBottom: '10px' }}>
+                Notification X jours avant l&apos;expiration d&apos;un EPI
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <Input
                   type="number"
                   min="1"
@@ -2296,18 +2296,18 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   value={epiSettings.epi_jours_avance_expiration}
                   onChange={(e) => handleEpiSettingChange('epi_jours_avance_expiration', parseInt(e.target.value))}
                   style={{ 
-                    width: '100px',
+                    width: '80px',
                     padding: '8px',
                     fontSize: '14px',
                     fontWeight: '600'
                   }}
                 />
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#856404' }}>
-                  jours avant l&apos;échéance
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#856404' }}>
+                  jours avant échéance
                 </span>
               </div>
-              <small style={{ fontSize: '11px', color: '#856404', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
-                💡 Exemple : Avec 30 jours, une notification sera envoyée le 1er mars pour un EPI expirant le 31 mars
+              <small style={{ fontSize: '10px', color: '#856404', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
+                💡 Ex: 30 jours = notif le 1er mars pour expiration le 31 mars
               </small>
             </div>
 
