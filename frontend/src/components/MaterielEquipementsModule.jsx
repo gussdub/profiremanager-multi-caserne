@@ -172,7 +172,7 @@ const MaterielEquipementsModule = ({ user }) => {
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {isPompier ? '📝 Inspections APRIA' : '🔧 Matériel & Équipements'}
+            {isEmploye ? '📝 Inspections APRIA' : '🔧 Matériel & Équipements'}
           </h2>
           {user?.role === 'admin' && categories.length === 0 && (
             <Button onClick={handleInitialiserCategories} disabled={loading}>
@@ -182,7 +182,7 @@ const MaterielEquipementsModule = ({ user }) => {
         </div>
 
         {/* Stats Cards - Masqués pour les pompiers */}
-        {stats && !isPompier && (
+        {stats && !isEmploye && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
             <StatCard label="Total" value={stats.total} icon="📊" color="#3b82f6" />
             <StatCard label="En bon état" value={stats.par_etat?.bon || 0} icon="✅" color="#22c55e" />
@@ -193,7 +193,7 @@ const MaterielEquipementsModule = ({ user }) => {
         )}
         
         {/* Message pour les pompiers */}
-        {isPompier && (
+        {isEmploye && (
           <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
             Sélectionnez un équipement APRIA ci-dessous pour effectuer une inspection ou consulter l'historique.
           </p>
@@ -201,7 +201,7 @@ const MaterielEquipementsModule = ({ user }) => {
       </div>
 
       {/* Sous-onglets - Masqués pour les pompiers */}
-      {!isPompier && (
+      {!isEmploye && (
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
           <SubTabButton 
             label="📋 Équipements" 
@@ -217,7 +217,7 @@ const MaterielEquipementsModule = ({ user }) => {
       )}
 
       {/* Contenu selon sous-onglet */}
-      {(activeSubTab === 'equipements' || isPompier) ? (
+      {(activeSubTab === 'equipements' || isEmploye) ? (
         <EquipementsTab
           equipements={equipementsFiltres}
           categories={categories}
@@ -240,7 +240,7 @@ const MaterielEquipementsModule = ({ user }) => {
             setShowHistoriqueAPRIAModal(true);
           }}
           isAPRIA={isAPRIA}
-          isPompier={isPompier}
+          isEmploye={isEmploye}
           user={user}
         />
       ) : (
@@ -404,14 +404,14 @@ const EquipementsTab = ({
   onInspectionAPRIA,
   onHistoriqueAPRIA,
   isAPRIA,
-  isPompier,
+  isEmploye,
   user
 }) => {
   return (
     <div>
       {/* Barre d'actions et filtres */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-        {!isPompier && (user?.role === 'admin' || user?.role === 'superviseur') && (
+        {!isEmploye && (user?.role === 'admin' || user?.role === 'superviseur') && (
           <>
             <Button onClick={onCreateEquipement} style={{ background: '#22c55e' }}>
               ➕ Ajouter un équipement
@@ -525,7 +525,7 @@ const EquipementsTab = ({
         />
         
         {/* Filtres par catégorie et état - masqués pour les pompiers */}
-        {!isPompier && (
+        {!isEmploye && (
           <>
             <select
               value={filtreCategorie}
