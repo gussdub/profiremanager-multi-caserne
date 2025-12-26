@@ -123,6 +123,13 @@ export const TenantProvider = ({ children }) => {
     // Routes spéciales qui ne sont pas des tenants
     const specialRoutes = ['qr', 'reset-password', 'api', 'pwa'];
     
+    // Si c'est une route spéciale QR, ne pas interférer - laisser React Router gérer
+    if (pathParts[0] === 'qr') {
+      console.log('[TenantContext] Route QR détectée, bypass du sélecteur de caserne');
+      setLoading(false);
+      return;
+    }
+    
     if (pathParts.length > 0 && !specialRoutes.includes(pathParts[0])) {
       const slug = pathParts[0];
       
