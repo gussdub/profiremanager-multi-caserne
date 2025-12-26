@@ -2054,6 +2054,24 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Configuration des alertes */}
         <ParametresAlertesEquipements tenantSlug={tenantSlug} user={user} />
 
+        {/* Sous-section: Gestion APRIA */}
+        <div style={{ 
+          background: 'white', 
+          padding: '20px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginTop: '15px'
+        }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🫁</span> Gestion APRIA
+          </h3>
+          <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
+            Configurez les formulaires d'inspection et les personnes à contacter pour les APRIA
+          </p>
+          <ParametresInspectionsAPRIA tenantSlug={tenantSlug} />
+        </div>
+
         {/* Sous-section: Import CSV */}
         <div style={{ 
           background: 'white', 
