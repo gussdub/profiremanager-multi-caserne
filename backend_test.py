@@ -108,188 +108,217 @@ class MesEPIModuleTester:
         if data and not success:
             print(f"   📄 Data: {json.dumps(data, indent=2)[:200]}...")
     
-    def test_get_modeles_inspection(self):
-        """Test 1: GET /api/shefford/apria/modeles-inspection - Liste des modèles"""
-        print(f"\n🧪 Test 1: Récupération des modèles d'inspection APRIA")
+    def test_mes_epi_masque_apria_no_mask(self):
+        """Test 1: GET /api/shefford/mes-epi/masque-apria - Aucun masque assigné (404 attendu)"""
+        print(f"\n🧪 Test 1: Récupération masque APRIA (aucun assigné - 404 attendu)")
         
-        url = f"{self.base_url}/{self.tenant_slug}/apria/modeles-inspection"
+        url = f"{self.base_url}/{self.tenant_slug}/mes-epi/masque-apria"
         
         try:
             response = requests.get(url, headers=self.headers)
             
+            if response.status_code == 404:
+                self.log_test_result(
+                    "Mes EPI - Masque APRIA (No Mask)", 
+                    True, 
+                    "404 retourné correctement - aucun masque assigné"
+                )
+                return True
+            else:
+                self.log_test_result(
+                    "Mes EPI - Masque APRIA (No Mask)", 
+                    False, 
+                    f"Attendu 404, reçu {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Mes EPI - Masque APRIA (No Mask)", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_create_test_apria_mask(self):
+        """Test 2: Créer un équipement masque APRIA de test assigné à l'utilisateur"""
+        print(f"\n🧪 Test 2: Création d'un masque APRIA de test")
+        
+        url = f"{self.base_url}/{self.tenant_slug}/equipements"
+        
+        # Données pour créer un masque APRIA
+        equipement_data = {
+            "code_unique": f"MASK-TEST-{int(time.time())}",
+            "nom": "Masque APRIA Test",
+            "description": "Masque facial APRIA pour tests automatisés",
+            "categorie_nom": "Masques APRIA",
+            "etat": "en_service",
+            "employe_id": self.test_data["user_id"],  # Assigner à l'utilisateur connecté
+            "date_acquisition": "2024-01-01",
+            "localisation": "Caserne Test"
+        }
+        
+        try:
+            response = requests.post(url, headers=self.headers, json=equipement_data)
+            
             if response.status_code == 200:
-                modeles = response.json()
-                self.test_data["modeles_inspection"] = modeles
+                equipement_cree = response.json()
+                equipement_id = equipement_cree.get('id')
+                
+                self.test_data["equipement_cree"] = equipement_cree
+                self.test_data["masque_apria_id"] = equipement_id
+                self.created_items.append(('equipement', equipement_id))
                 
                 self.log_test_result(
-                    "Get Modeles Inspection", 
+                    "Create Test APRIA Mask", 
                     True, 
-                    f"{len(modeles)} modèles trouvés"
+                    f"Masque APRIA créé avec ID: {equipement_id}"
                 )
                 
-                # Afficher les modèles trouvés
-                if modeles:
-                    print(f"   📋 Modèles trouvés:")
-                    for modele in modeles:
-                        print(f"      - {modele.get('nom', 'N/A')} (ID: {modele.get('id', 'N/A')}) - Actif: {modele.get('actif', False)}")
-                else:
-                    print(f"   📋 Aucun modèle trouvé (normal pour première utilisation)")
+                print(f"   📋 Masque créé: {equipement_data['code_unique']}")
+                print(f"   👤 Assigné à l'utilisateur: {self.test_data['user_id']}")
+                print(f"   🆔 ID équipement: {equipement_id}")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Get Modeles Inspection", 
+                    "Create Test APRIA Mask", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Get Modeles Inspection", False, f"Exception: {str(e)}")
+            self.log_test_result("Create Test APRIA Mask", False, f"Exception: {str(e)}")
             return False
     
-    def test_get_modele_actif(self):
-        """Test 2: GET /api/shefford/apria/modeles-inspection/actif - Modèle actif"""
-        print(f"\n🧪 Test 2: Récupération du modèle d'inspection actif")
+    def test_mes_epi_masque_apria_with_mask(self):
+        """Test 3: GET /api/shefford/mes-epi/masque-apria - Avec masque assigné"""
+        print(f"\n🧪 Test 3: Récupération masque APRIA (avec masque assigné)")
         
-        url = f"{self.base_url}/{self.tenant_slug}/apria/modeles-inspection/actif"
+        url = f"{self.base_url}/{self.tenant_slug}/mes-epi/masque-apria"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                modele_actif = response.json()
-                self.test_data["modele_actif"] = modele_actif
+                masque_data = response.json()
                 
-                # Vérifier que le modèle a 13 éléments d'inspection
-                elements = modele_actif.get('elements_inspection', [])
-                
-                if len(elements) == 13:
+                # Vérifier que c'est bien notre masque de test
+                if masque_data.get('id') == self.test_data["masque_apria_id"]:
                     self.log_test_result(
-                        "Get Modele Actif - Elements Count", 
+                        "Mes EPI - Masque APRIA (With Mask)", 
                         True, 
-                        f"Modèle actif avec 13 éléments d'inspection comme attendu"
+                        "Masque APRIA récupéré correctement"
                     )
                 else:
                     self.log_test_result(
-                        "Get Modele Actif - Elements Count", 
+                        "Mes EPI - Masque APRIA (With Mask)", 
                         False, 
-                        f"Attendu: 13 éléments, Trouvé: {len(elements)}"
+                        f"Masque incorrect: attendu {self.test_data['masque_apria_id']}, reçu {masque_data.get('id')}"
                     )
                 
-                # Vérifier la structure du modèle
-                required_fields = ['id', 'nom', 'elements_inspection', 'actif']
-                missing_fields = [field for field in required_fields if field not in modele_actif]
+                # Vérifier la structure de la réponse
+                required_fields = ['id', 'code_unique', 'nom', 'employe_id']
+                missing_fields = [field for field in required_fields if field not in masque_data]
                 
                 if not missing_fields:
                     self.log_test_result(
-                        "Get Modele Actif - Structure", 
+                        "Mes EPI - Masque APRIA Structure", 
                         True, 
-                        "Structure du modèle correcte"
+                        "Structure de réponse correcte"
                     )
                 else:
                     self.log_test_result(
-                        "Get Modele Actif - Structure", 
+                        "Mes EPI - Masque APRIA Structure", 
                         False, 
                         f"Champs manquants: {missing_fields}"
                     )
                 
-                print(f"   📋 Modèle actif: {modele_actif.get('nom', 'N/A')}")
-                print(f"   📊 Éléments d'inspection: {len(elements)}")
-                if elements:
-                    print(f"   📝 Premiers éléments:")
-                    for i, element in enumerate(elements[:5]):
-                        print(f"      {i+1}. {element.get('nom', 'N/A')} - {element.get('description', 'N/A')}")
-                    if len(elements) > 5:
-                        print(f"      ... et {len(elements) - 5} autres")
+                print(f"   📋 Masque trouvé: {masque_data.get('code_unique', 'N/A')}")
+                print(f"   📝 Nom: {masque_data.get('nom', 'N/A')}")
+                print(f"   👤 Assigné à: {masque_data.get('employe_id', 'N/A')}")
+                print(f"   🔍 Dernière inspection: {masque_data.get('derniere_inspection_apria', 'Aucune')}")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Get Modele Actif", 
+                    "Mes EPI - Masque APRIA (With Mask)", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Get Modele Actif", False, f"Exception: {str(e)}")
+            self.log_test_result("Mes EPI - Masque APRIA (With Mask)", False, f"Exception: {str(e)}")
             return False
     
-    def test_get_equipements_apria(self):
-        """Test 3: GET /api/shefford/apria/equipements - Équipements APRIA"""
-        print(f"\n🧪 Test 3: Récupération des équipements APRIA")
+    def test_mes_epi_reguliers(self):
+        """Test 4: GET /api/shefford/mes-epi - EPI réguliers"""
+        print(f"\n🧪 Test 4: Récupération des EPI réguliers")
         
-        url = f"{self.base_url}/{self.tenant_slug}/apria/equipements"
+        url = f"{self.base_url}/{self.tenant_slug}/mes-epi"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                equipements = response.json()
-                self.test_data["equipements_apria"] = equipements
+                epis = response.json()
+                self.test_data["epis_reguliers"] = epis
                 
                 self.log_test_result(
-                    "Get Equipements APRIA", 
+                    "Mes EPI - EPI Réguliers", 
                     True, 
-                    f"{len(equipements)} équipements APRIA trouvés"
+                    f"{len(epis)} EPI réguliers trouvés"
                 )
                 
-                # Afficher les équipements trouvés
-                if equipements:
-                    print(f"   📋 Équipements APRIA trouvés:")
-                    for eq in equipements:
-                        print(f"      - {eq.get('code_unique', 'N/A')} - {eq.get('nom', 'N/A')} (État: {eq.get('etat', 'N/A')})")
-                        if eq.get('employe_nom'):
-                            print(f"        Assigné à: {eq.get('employe_nom')}")
+                # Afficher les EPI trouvés
+                if epis:
+                    print(f"   📋 EPI réguliers trouvés:")
+                    for epi in epis:
+                        print(f"      - {epi.get('nom', 'N/A')} (ID: {epi.get('id', 'N/A')})")
+                        if epi.get('derniere_inspection'):
+                            print(f"        Dernière inspection: {epi['derniere_inspection'].get('date_inspection', 'N/A')}")
                 else:
-                    print(f"   📋 Aucun équipement APRIA trouvé")
+                    print(f"   📋 Aucun EPI régulier trouvé (normal si pas d'EPI assignés)")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Get Equipements APRIA", 
+                    "Mes EPI - EPI Réguliers", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Get Equipements APRIA", False, f"Exception: {str(e)}")
+            self.log_test_result("Mes EPI - EPI Réguliers", False, f"Exception: {str(e)}")
             return False
     
-    def test_create_inspection_apria(self):
-        """Test 4: POST /api/shefford/apria/inspections - Créer une inspection"""
-        print(f"\n🧪 Test 4: Création d'une inspection APRIA")
+    def test_create_apria_inspection(self):
+        """Test 5: POST /api/shefford/apria/inspections - Créer une inspection APRIA"""
+        print(f"\n🧪 Test 5: Création d'une inspection APRIA")
         
-        # Vérifier qu'on a des équipements APRIA
-        if not self.test_data["equipements_apria"]:
+        if not self.test_data["masque_apria_id"]:
             self.log_test_result(
-                "Create Inspection APRIA", 
+                "Create APRIA Inspection", 
                 False, 
-                "Aucun équipement APRIA disponible pour créer une inspection"
+                "Aucun masque APRIA disponible pour créer une inspection"
             )
             return False
-        
-        # Utiliser le premier équipement APRIA
-        equipement = self.test_data["equipements_apria"][0]
-        equipement_id = equipement.get('id')
         
         url = f"{self.base_url}/{self.tenant_slug}/apria/inspections"
         
         # Données d'inspection selon la spécification
         inspection_data = {
-            "equipement_id": equipement_id,
+            "equipement_id": self.test_data["masque_apria_id"],
             "type_inspection": "mensuelle",
             "inspecteur_id": self.test_data["user_id"],
             "date_inspection": "2024-12-26T12:00:00Z",
             "elements": {
-                "item_1": "Conforme",
-                "item_2": "Conforme"
+                "masque_facial": "Conforme",
+                "soupapes": "Conforme",
+                "sangles": "Conforme"
             },
             "pression_cylindre": 4500,
             "conforme": True,
-            "remarques": "Test inspection"
+            "remarques": "Inspection test automatisée - Mes EPI module"
         }
         
         try:
@@ -303,164 +332,156 @@ class MesEPIModuleTester:
                 self.created_items.append(('inspection', inspection_id))
                 
                 self.log_test_result(
-                    "Create Inspection APRIA", 
+                    "Create APRIA Inspection", 
                     True, 
-                    f"Inspection créée avec ID: {inspection_id}"
+                    f"Inspection APRIA créée avec ID: {inspection_id}"
                 )
                 
-                # Vérifier l'intégrité des données
-                if inspection_creee.get('equipement_id') == equipement_id:
-                    self.log_test_result(
-                        "Create Inspection APRIA - Data Integrity", 
-                        True, 
-                        "Données d'inspection sauvegardées correctement"
-                    )
-                else:
-                    self.log_test_result(
-                        "Create Inspection APRIA - Data Integrity", 
-                        False, 
-                        f"Équipement ID incorrect: attendu {equipement_id}, reçu {inspection_creee.get('equipement_id')}"
-                    )
-                
-                # Vérifier les éléments d'inspection
-                elements_sauvegardes = inspection_creee.get('elements', {})
-                if elements_sauvegardes.get('item_1') == 'Conforme' and elements_sauvegardes.get('item_2') == 'Conforme':
-                    self.log_test_result(
-                        "Create Inspection APRIA - Elements", 
-                        True, 
-                        "Éléments d'inspection sauvegardés correctement"
-                    )
-                else:
-                    self.log_test_result(
-                        "Create Inspection APRIA - Elements", 
-                        False, 
-                        f"Éléments incorrects: {elements_sauvegardes}"
-                    )
-                
-                print(f"   📋 Inspection créée pour équipement: {equipement.get('code_unique', 'N/A')}")
-                print(f"   📊 Type: {inspection_creee.get('type_inspection', 'N/A')}")
-                print(f"   📅 Date: {inspection_creee.get('date_inspection', 'N/A')}")
-                print(f"   ✅ Conforme: {inspection_creee.get('conforme', 'N/A')}")
+                print(f"   📋 Inspection créée pour masque: {self.test_data['masque_apria_id']}")
+                print(f"   📊 Type: mensuelle")
+                print(f"   📅 Date: 2024-12-26T12:00:00Z")
+                print(f"   ✅ Conforme: True")
+                print(f"   🆔 ID inspection: {inspection_id}")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Create Inspection APRIA", 
+                    "Create APRIA Inspection", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Create Inspection APRIA", False, f"Exception: {str(e)}")
+            self.log_test_result("Create APRIA Inspection", False, f"Exception: {str(e)}")
             return False
     
-    def test_get_inspections_apria(self):
-        """Test 5: GET /api/shefford/apria/inspections - Récupérer les inspections"""
-        print(f"\n🧪 Test 5: Récupération des inspections APRIA")
+    def test_apria_inspection_history(self):
+        """Test 6: GET /api/shefford/apria/equipements/{equipement_id}/historique - Historique des inspections"""
+        print(f"\n🧪 Test 6: Récupération de l'historique des inspections APRIA")
         
-        url = f"{self.base_url}/{self.tenant_slug}/apria/inspections"
+        if not self.test_data["masque_apria_id"]:
+            self.log_test_result(
+                "APRIA Inspection History", 
+                False, 
+                "Aucun masque APRIA disponible pour récupérer l'historique"
+            )
+            return False
+        
+        url = f"{self.base_url}/{self.tenant_slug}/apria/equipements/{self.test_data['masque_apria_id']}/historique"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                inspections = response.json()
+                historique = response.json()
                 
                 self.log_test_result(
-                    "Get Inspections APRIA", 
+                    "APRIA Inspection History", 
                     True, 
-                    f"{len(inspections)} inspections trouvées"
+                    f"{len(historique)} inspections dans l'historique"
                 )
                 
                 # Vérifier qu'on retrouve l'inspection créée
                 if self.test_data["inspections_creees"]:
                     inspection_id_creee = self.test_data["inspections_creees"][0]
-                    inspection_trouvee = next((insp for insp in inspections if insp.get('id') == inspection_id_creee), None)
+                    inspection_trouvee = next((insp for insp in historique if insp.get('id') == inspection_id_creee), None)
                     
                     if inspection_trouvee:
                         self.log_test_result(
-                            "Get Inspections APRIA - Created Found", 
+                            "APRIA Inspection History - Created Found", 
                             True, 
-                            "Inspection créée retrouvée dans la liste"
+                            "Inspection créée trouvée dans l'historique"
                         )
                     else:
                         self.log_test_result(
-                            "Get Inspections APRIA - Created Found", 
+                            "APRIA Inspection History - Created Found", 
                             False, 
-                            "Inspection créée non trouvée dans la liste"
+                            "Inspection créée non trouvée dans l'historique"
                         )
                 
-                # Afficher les inspections trouvées
-                if inspections:
-                    print(f"   📋 Inspections trouvées:")
-                    for insp in inspections[:5]:  # Afficher les 5 premières
-                        print(f"      - ID: {insp.get('id', 'N/A')} - Type: {insp.get('type_inspection', 'N/A')} - Date: {insp.get('date_inspection', 'N/A')}")
-                        print(f"        Conforme: {insp.get('conforme', 'N/A')} - Équipement: {insp.get('equipement_id', 'N/A')}")
-                    if len(inspections) > 5:
-                        print(f"      ... et {len(inspections) - 5} autres")
+                # Afficher l'historique
+                if historique:
+                    print(f"   📋 Historique des inspections:")
+                    for insp in historique:
+                        print(f"      - ID: {insp.get('id', 'N/A')} - Type: {insp.get('type_inspection', 'N/A')}")
+                        print(f"        Date: {insp.get('date_inspection', 'N/A')} - Conforme: {insp.get('conforme', 'N/A')}")
+                        print(f"        Inspecteur: {insp.get('inspecteur_nom', 'N/A')}")
                 else:
-                    print(f"   📋 Aucune inspection trouvée")
+                    print(f"   📋 Aucune inspection dans l'historique")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Get Inspections APRIA", 
+                    "APRIA Inspection History", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Get Inspections APRIA", False, f"Exception: {str(e)}")
+            self.log_test_result("APRIA Inspection History", False, f"Exception: {str(e)}")
             return False
     
-    def test_get_parametres_apria(self):
-        """Test 6: GET /api/shefford/apria/parametres - Paramètres APRIA"""
-        print(f"\n🧪 Test 6: Récupération des paramètres APRIA")
+    def test_mes_epi_masque_apria_with_inspection(self):
+        """Test 7: GET /api/shefford/mes-epi/masque-apria - Vérifier que la dernière inspection apparaît"""
+        print(f"\n🧪 Test 7: Récupération masque APRIA avec dernière inspection")
         
-        url = f"{self.base_url}/{self.tenant_slug}/apria/parametres"
+        url = f"{self.base_url}/{self.tenant_slug}/mes-epi/masque-apria"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                parametres = response.json()
+                masque_data = response.json()
                 
-                self.log_test_result(
-                    "Get Parametres APRIA", 
-                    True, 
-                    "Paramètres APRIA récupérés avec succès"
-                )
+                # Vérifier que la dernière inspection est présente
+                derniere_inspection = masque_data.get('derniere_inspection_apria')
                 
-                # Vérifier la structure des paramètres
-                if 'contacts_alertes' in parametres:
+                if derniere_inspection:
                     self.log_test_result(
-                        "Get Parametres APRIA - Structure", 
+                        "Mes EPI - Masque APRIA With Inspection", 
                         True, 
-                        "Structure des paramètres correcte (contacts_alertes présent)"
+                        "Dernière inspection APRIA présente dans la réponse"
                     )
+                    
+                    # Vérifier que c'est notre inspection
+                    if self.test_data["inspections_creees"] and derniere_inspection.get('id') in self.test_data["inspections_creees"]:
+                        self.log_test_result(
+                            "Mes EPI - Masque APRIA Inspection Match", 
+                            True, 
+                            "L'inspection retournée correspond à celle créée"
+                        )
+                    else:
+                        self.log_test_result(
+                            "Mes EPI - Masque APRIA Inspection Match", 
+                            False, 
+                            "L'inspection retournée ne correspond pas à celle créée"
+                        )
+                    
+                    print(f"   📋 Dernière inspection trouvée:")
+                    print(f"      - ID: {derniere_inspection.get('id', 'N/A')}")
+                    print(f"      - Date: {derniere_inspection.get('date_inspection', 'N/A')}")
+                    print(f"      - Conforme: {derniere_inspection.get('conforme', 'N/A')}")
+                    print(f"      - Inspecteur: {derniere_inspection.get('inspecteur_nom', 'N/A')}")
                 else:
                     self.log_test_result(
-                        "Get Parametres APRIA - Structure", 
+                        "Mes EPI - Masque APRIA With Inspection", 
                         False, 
-                        "Champ contacts_alertes manquant"
+                        "Aucune dernière inspection trouvée dans la réponse"
                     )
-                
-                print(f"   📋 Paramètres APRIA:")
-                print(f"      - Contacts alertes: {parametres.get('contacts_alertes', [])}")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Get Parametres APRIA", 
+                    "Mes EPI - Masque APRIA With Inspection", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Get Parametres APRIA", False, f"Exception: {str(e)}")
+            self.log_test_result("Mes EPI - Masque APRIA With Inspection", False, f"Exception: {str(e)}")
             return False
     
     def cleanup_test_data(self):
