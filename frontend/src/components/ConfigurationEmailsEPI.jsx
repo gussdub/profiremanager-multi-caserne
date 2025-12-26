@@ -86,64 +86,71 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '2rem' }}>📧</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '1.5rem' }}>📧</span>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
             Notifications - Remplacements EPI
           </h3>
-          <p style={{ fontSize: '14px', color: '#7f8c8d', margin: 0 }}>
-            Notifications automatiques pour les demandes de remplacement d&apos;équipements
+          <p style={{ fontSize: '12px', color: '#7f8c8d', margin: 0 }}>
+            Demandes de remplacement d&apos;équipements
           </p>
         </div>
       </div>
 
       <div style={{ 
         backgroundColor: '#F9FAFB', 
-        padding: '1.25rem', 
+        padding: 'clamp(0.75rem, 2vw, 1.25rem)', 
         borderRadius: '8px',
-        marginBottom: '1.25rem'
+        marginBottom: '1rem'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#34495e' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: '0.75rem',
+          marginBottom: '1rem'
+        }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#34495e' }}>
             👥 Destinataires ({selectedUsersDetails.length})
           </h4>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <button
               onClick={handleSelectAll}
               style={{
-                padding: '0.4rem 0.75rem',
+                padding: '0.4rem 0.6rem',
                 backgroundColor: 'white',
                 color: '#DC2626',
                 border: '1px solid #DC2626',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500'
+                fontSize: '12px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap'
               }}
             >
-              Tout sélectionner
+              ✓ Tout
             </button>
             <button
               onClick={handleDeselectAll}
               style={{
-                padding: '0.4rem 0.75rem',
+                padding: '0.4rem 0.6rem',
                 backgroundColor: 'white',
                 color: '#6B7280',
                 border: '1px solid #D1D5DB',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500'
+                fontSize: '12px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap'
               }}
             >
-              Tout désélectionner
+              ✗ Aucun
             </button>
           </div>
         </div>
 
         {/* Liste des utilisateurs sélectionnables */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {allUsers.map(user => {
             const isSelected = selectedUsers.includes(user.id);
             return (
@@ -151,7 +158,7 @@ const ConfigurationEmailsEPI = ({ tenantSlug }) => {
                 key={user.id}
                 onClick={() => handleToggleUser(user.id)}
                 style={{
-                  padding: '0.875rem',
+                  padding: '0.75rem',
                   backgroundColor: isSelected ? '#FEE2E2' : 'white',
                   border: isSelected ? '2px solid #DC2626' : '1px solid #E5E7EB',
                   borderRadius: '8px',
