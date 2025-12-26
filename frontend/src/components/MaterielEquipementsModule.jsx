@@ -404,6 +404,7 @@ const EquipementsTab = ({
   onInspectionAPRIA,
   onHistoriqueAPRIA,
   isAPRIA,
+  isPompier,
   user
 }) => {
   return (
