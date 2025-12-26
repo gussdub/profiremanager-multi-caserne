@@ -557,24 +557,25 @@ const CarteApprovisionnementEau = ({ user }) => {
         alignItems: 'center'
       }}>
         {/* Bouton Ajouter - Caché pour employés */}
-        {(user?.role === 'admin' || user?.role === 'superviseur') && (
+        {user?.role !== 'employe' && (
           <button
             onClick={() => openPointModal(null)}
             style={{
               background: '#3b82f6',
               color: 'white',
-              padding: '0.75rem 1.5rem',
+              padding: '0.6rem 1rem',
               borderRadius: '8px',
               border: 'none',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.95rem',
+              fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.4rem',
+              whiteSpace: 'nowrap'
             }}
           >
-            ➕ Ajouter un point d'eau
+            ➕ Ajouter
           </button>
         )}
 
@@ -583,14 +584,16 @@ const CarteApprovisionnementEau = ({ user }) => {
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           style={{
-            padding: '0.75rem',
+            padding: '0.6rem',
             borderRadius: '8px',
             border: '1px solid #d1d5db',
-            fontSize: '0.95rem',
-            minWidth: '180px'
+            fontSize: '0.85rem',
+            minWidth: '120px',
+            flex: '1 1 auto',
+            maxWidth: '160px'
           }}
         >
-          <option value="all">Tous les types</option>
+          <option value="all">Tous types</option>
           <option value="borne_fontaine">Bornes-fontaines</option>
           <option value="borne_seche">Bornes sèches</option>
           <option value="point_eau_statique">Points statiques</option>
@@ -601,14 +604,16 @@ const CarteApprovisionnementEau = ({ user }) => {
           value={statutFilter}
           onChange={(e) => setStatutFilter(e.target.value)}
           style={{
-            padding: '0.75rem',
+            padding: '0.6rem',
             borderRadius: '8px',
             border: '1px solid #d1d5db',
-            fontSize: '0.95rem',
-            minWidth: '180px'
+            fontSize: '0.85rem',
+            minWidth: '110px',
+            flex: '1 1 auto',
+            maxWidth: '140px'
           }}
         >
-          <option value="all">Tous les états</option>
+          <option value="all">Tous états</option>
           <option value="fonctionnel">Fonctionnel</option>
           <option value="defectueux">Défectueux</option>
           <option value="inaccessible">Inaccessible</option>
@@ -617,44 +622,41 @@ const CarteApprovisionnementEau = ({ user }) => {
         {/* Recherche */}
         <input
           type="text"
-          placeholder="Rechercher (n°, adresse, ville)..."
+          placeholder="🔍 Rechercher..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
-            flex: 1,
-            minWidth: '250px',
-            padding: '0.75rem',
+            flex: '1 1 150px',
+            minWidth: '120px',
+            padding: '0.6rem',
             borderRadius: '8px',
             border: '1px solid #d1d5db',
-            fontSize: '0.95rem'
+            fontSize: '0.85rem'
           }}
         />
 
-        {/* Spacer pour pousser le toggle à droite */}
-        <div style={{ flex: 1, minWidth: '50px' }}></div>
-
         {/* Toggle Vue */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             onClick={() => setCurrentView('carte')}
             style={{
-              padding: '0.75rem 1rem',
+              padding: '0.6rem 0.8rem',
               borderRadius: '8px',
               border: currentView === 'carte' ? '2px solid #3b82f6' : '1px solid #d1d5db',
               background: currentView === 'carte' ? '#eff6ff' : 'white',
               color: currentView === 'carte' ? '#3b82f6' : '#6b7280',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.95rem',
+              fontSize: '0.85rem',
               whiteSpace: 'nowrap'
             }}
           >
-            🗺️ Carte
+            🗺️
           </button>
           <button
             onClick={() => setCurrentView('liste')}
             style={{
-              padding: '0.75rem 1rem',
+              padding: '0.6rem 0.8rem',
               borderRadius: '8px',
               border: currentView === 'liste' ? '2px solid #3b82f6' : '1px solid #d1d5db',
               background: currentView === 'liste' ? '#eff6ff' : 'white',
