@@ -1789,19 +1789,19 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
+      <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: '700', marginBottom: '10px', color: '#2c3e50' }}>
         ⚙️ Paramètres - Gestion des Actifs
       </h1>
-      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '15px' }}>
+      <p style={{ color: '#6B7280', marginBottom: '20px', fontSize: '14px' }}>
         Configurez les paramètres et notifications pour chaque module
       </p>
       
-      {/* Cartes fixes toujours visibles */}
+      {/* Cartes fixes toujours visibles - RESPONSIVE */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(4, 1fr)', 
-        gap: '12px',
-        marginBottom: '30px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+        gap: '10px',
+        marginBottom: '24px'
       }}>
         {modules.map(module => {
           const isActive = selectedModule === module.id;
