@@ -43,25 +43,95 @@ const RondeSecurite = ({ vehicule, user, onClose, onSuccess }) => {
 
   const [saving, setSaving] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
 
-  // Détecter la position GPS automatiquement au chargement
+  // Fonction pour convertir les coordonnées GPS en adresse civique via OpenStreetMap Nominatim
+  const reverseGeocode = async (latitude, longitude) => {
+    try {
+      setAddressLoading(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+            'User-Agent': 'ProFireManager/1.0'
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur reverse geocoding');
+      
+      const data = await response.json();
+      
+      if (data && data.address) {
+        const addr = data.address;
+        // Construire une adresse lisible
+        let addressParts = [];
+        
+        // Numéro + rue
+        if (addr.house_number && addr.road) {
+          addressParts.push(`${addr.house_number} ${addr.road}`);
+        } else if (addr.road) {
+          addressParts.push(addr.road);
+        }
+        
+        // Ville
+        const city = addr.city || addr.town || addr.village || addr.municipality;
+        if (city) addressParts.push(city);
+        
+        // Province/État
+        if (addr.state) addressParts.push(addr.state);
+        
+        // Code postal
+        if (addr.postcode) addressParts.push(addr.postcode);
+        
+        return addressParts.join(', ') || data.display_name;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erreur reverse geocoding:', error);
+      return null;
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  // Détecter la position GPS automatiquement au chargement et convertir en adresse
   React.useEffect(() => {
     if ('geolocation' in navigator) {
       setGpsLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
+          
+          // Sauvegarder les coordonnées GPS
           setFormData(prev => ({ 
             ...prev, 
-            position_gps: [latitude, longitude],
-            lieu: prev.lieu || 'Position GPS détectée'
+            position_gps: [latitude, longitude]
           }));
+          
+          // Convertir en adresse civique
+          const address = await reverseGeocode(latitude, longitude);
+          if (address) {
+            setFormData(prev => ({ 
+              ...prev, 
+              lieu: address
+            }));
+          } else {
+            setFormData(prev => ({ 
+              ...prev, 
+              lieu: prev.lieu || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+            }));
+          }
+          
           setGpsLoading(false);
         },
         (error) => {
           console.log('GPS non disponible:', error);
           setGpsLoading(false);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     }
   }, []);
