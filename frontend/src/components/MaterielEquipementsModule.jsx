@@ -636,7 +636,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
                 style={{ padding: '0.5rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
                 title="Inspecter APRIA"
               >
-                🫁
+                📝
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
