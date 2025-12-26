@@ -149,7 +149,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
       <DialogContent style={{ maxWidth: '700px', maxHeight: '90vh', overflow: 'auto' }}>
         <DialogHeader>
           <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            🫁 Nouvelle Inspection APRIA
+            📝 Nouvelle Inspection APRIA
           </DialogTitle>
         </DialogHeader>
 

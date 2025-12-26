@@ -2064,7 +2064,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           marginTop: '15px'
         }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🫁</span> Gestion APRIA
+            <span>📝</span> Gestion APRIA
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '15px', fontSize: '13px' }}>
             Configurez les formulaires d'inspection et les personnes à contacter pour les APRIA

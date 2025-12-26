@@ -842,7 +842,7 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
           </DndContext>
         ) : (
           <div style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '2px dashed #d1d5db' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🫁</div>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
             <p>Aucune section. Cliquez sur "+ Ajouter une section" pour commencer.</p>
           </div>
         )}
@@ -969,7 +969,7 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
-            🫁 Gestion APRIA - Inspections
+            📝 Gestion APRIA - Inspections
           </h2>
           <p style={{ margin: '0.5rem 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
             Créez et personnalisez les formulaires d'inspection APRIA
@@ -1016,7 +1016,7 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
       {/* Liste des modèles */}
       {modeles.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '0.75rem', border: '2px dashed #d1d5db' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🫁</div>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📝</div>
           <h3 style={{ margin: '0 0 0.5rem', color: '#374151' }}>Aucun modèle d'inspection APRIA</h3>
           <p>Créez votre premier modèle pour personnaliser les inspections d'APRIA.</p>
           <button
