@@ -41,13 +41,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import os
 
-class EquipmentModuleTester:
+class APRIAModuleTester:
     def __init__(self):
         self.base_url = "https://firemanager-1.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
-        self.credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
+        self.credentials = {"email": "test@shefford.ca", "password": "Test123!"}
         
         # Résultats des tests
         self.test_results = []
@@ -55,15 +55,15 @@ class EquipmentModuleTester:
         
         # IDs récupérés pendant les tests
         self.test_data = {
-            "categories": [],
-            "equipements": [],
-            "employes": [],
-            "custom_category_id": None,
-            "custom_equipment_id": None
+            "user_id": None,
+            "modeles_inspection": [],
+            "equipements_apria": [],
+            "inspections_creees": [],
+            "modele_actif": None
         }
         
     def authenticate(self):
-        """Authentification sur le tenant shefford"""
+        """Authentification sur le tenant shefford avec les nouvelles credentials"""
         print(f"🔐 Authentification tenant {self.tenant_slug}...")
         
         auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
@@ -78,6 +78,7 @@ class EquipmentModuleTester:
             self.token = data.get('access_token')
             self.headers = {'Authorization': f'Bearer {self.token}'}
             user_info = data.get('user', {})
+            self.test_data["user_id"] = user_info.get('id')
             print(f"✅ Authentification réussie - Token obtenu")
             print(f"🔍 User info: {user_info.get('email')} - Role: {user_info.get('role')}")
             print(f"🆔 User ID: {user_info.get('id')}")
@@ -103,758 +104,359 @@ class EquipmentModuleTester:
         if data and not success:
             print(f"   📄 Data: {json.dumps(data, indent=2)[:200]}...")
     
-    def test_categories_list(self):
-        """Test 1: GET /api/shefford/equipements/categories - Liste des catégories"""
-        print(f"\n🧪 Test 1: Liste des catégories d'équipements")
+    def test_get_modeles_inspection(self):
+        """Test 1: GET /api/shefford/apria/modeles-inspection - Liste des modèles"""
+        print(f"\n🧪 Test 1: Récupération des modèles d'inspection APRIA")
         
-        url = f"{self.base_url}/{self.tenant_slug}/equipements/categories"
+        url = f"{self.base_url}/{self.tenant_slug}/apria/modeles-inspection"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                categories = response.json()
-                self.test_data["categories"] = categories
+                modeles = response.json()
+                self.test_data["modeles_inspection"] = modeles
                 
-                # Vérifier qu'il y a 11 catégories comme attendu
-                if len(categories) == 11:
-                    self.log_test_result(
-                        "Categories List - Count", 
-                        True, 
-                        f"11 catégories trouvées comme attendu"
-                    )
+                self.log_test_result(
+                    "Get Modeles Inspection", 
+                    True, 
+                    f"{len(modeles)} modèles trouvés"
+                )
+                
+                # Afficher les modèles trouvés
+                if modeles:
+                    print(f"   📋 Modèles trouvés:")
+                    for modele in modeles:
+                        print(f"      - {modele.get('nom', 'N/A')} (ID: {modele.get('id', 'N/A')}) - Actif: {modele.get('actif', False)}")
                 else:
-                    self.log_test_result(
-                        "Categories List - Count", 
-                        False, 
-                        f"Attendu: 11 catégories, Trouvé: {len(categories)}"
-                    )
-                
-                # Vérifier la structure des données
-                if categories and isinstance(categories[0], dict):
-                    required_fields = ['id', 'nom', 'description']
-                    first_cat = categories[0]
-                    missing_fields = [field for field in required_fields if field not in first_cat]
-                    
-                    if not missing_fields:
-                        self.log_test_result(
-                            "Categories List - Structure", 
-                            True, 
-                            "Structure des catégories correcte"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Categories List - Structure", 
-                            False, 
-                            f"Champs manquants: {missing_fields}"
-                        )
-                
-                print(f"   📋 Catégories trouvées:")
-                for cat in categories[:5]:  # Afficher les 5 premières
-                    print(f"      - {cat.get('nom', 'N/A')} (ID: {cat.get('id', 'N/A')})")
-                if len(categories) > 5:
-                    print(f"      ... et {len(categories) - 5} autres")
+                    print(f"   📋 Aucun modèle trouvé (normal pour première utilisation)")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Categories List", 
+                    "Get Modeles Inspection", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Categories List", False, f"Exception: {str(e)}")
+            self.log_test_result("Get Modeles Inspection", False, f"Exception: {str(e)}")
             return False
     
-    def test_create_custom_category(self):
-        """Test 2: POST /api/shefford/equipements/categories - Créer une catégorie personnalisée"""
-        print(f"\n🧪 Test 2: Création d'une catégorie personnalisée")
+    def test_get_modele_actif(self):
+        """Test 2: GET /api/shefford/apria/modeles-inspection/actif - Modèle actif"""
+        print(f"\n🧪 Test 2: Récupération du modèle d'inspection actif")
         
-        url = f"{self.base_url}/{self.tenant_slug}/equipements/categories"
-        
-        new_category = {
-            "nom": f"Test Catégorie API {int(time.time())}",
-            "description": "Catégorie créée pour les tests API",
-            "couleur": "#FF5733",
-            "icone": "test-icon"
-        }
+        url = f"{self.base_url}/{self.tenant_slug}/apria/modeles-inspection/actif"
         
         try:
-            response = requests.post(url, headers=self.headers, json=new_category)
+            response = requests.get(url, headers=self.headers)
             
-            if response.status_code == 200:  # API returns 200, not 201
-                response_data = response.json()
-                created_category = response_data.get('categorie', response_data)
-                category_id = response_data.get('id') or created_category.get('id')
+            if response.status_code == 200:
+                modele_actif = response.json()
+                self.test_data["modele_actif"] = modele_actif
                 
-                self.test_data["custom_category_id"] = category_id
-                self.created_items.append(('category', category_id))
+                # Vérifier que le modèle a 13 éléments d'inspection
+                elements = modele_actif.get('elements_inspection', [])
                 
-                self.log_test_result(
-                    "Create Custom Category", 
-                    True, 
-                    f"Catégorie créée avec ID: {category_id}"
-                )
-                
-                # Vérifier que les données sont correctement sauvegardées
-                if created_category.get('nom') == new_category['nom']:
+                if len(elements) == 13:
                     self.log_test_result(
-                        "Create Custom Category - Data Integrity", 
+                        "Get Modele Actif - Elements Count", 
                         True, 
-                        "Données sauvegardées correctement"
+                        f"Modèle actif avec 13 éléments d'inspection comme attendu"
                     )
                 else:
                     self.log_test_result(
-                        "Create Custom Category - Data Integrity", 
+                        "Get Modele Actif - Elements Count", 
                         False, 
-                        f"Nom attendu: {new_category['nom']}, reçu: {created_category.get('nom')}"
+                        f"Attendu: 13 éléments, Trouvé: {len(elements)}"
                     )
+                
+                # Vérifier la structure du modèle
+                required_fields = ['id', 'nom', 'elements_inspection', 'actif']
+                missing_fields = [field for field in required_fields if field not in modele_actif]
+                
+                if not missing_fields:
+                    self.log_test_result(
+                        "Get Modele Actif - Structure", 
+                        True, 
+                        "Structure du modèle correcte"
+                    )
+                else:
+                    self.log_test_result(
+                        "Get Modele Actif - Structure", 
+                        False, 
+                        f"Champs manquants: {missing_fields}"
+                    )
+                
+                print(f"   📋 Modèle actif: {modele_actif.get('nom', 'N/A')}")
+                print(f"   📊 Éléments d'inspection: {len(elements)}")
+                if elements:
+                    print(f"   📝 Premiers éléments:")
+                    for i, element in enumerate(elements[:5]):
+                        print(f"      {i+1}. {element.get('nom', 'N/A')} - {element.get('description', 'N/A')}")
+                    if len(elements) > 5:
+                        print(f"      ... et {len(elements) - 5} autres")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Create Custom Category", 
+                    "Get Modele Actif", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Create Custom Category", False, f"Exception: {str(e)}")
+            self.log_test_result("Get Modele Actif", False, f"Exception: {str(e)}")
             return False
     
-    def test_equipements_list(self):
-        """Test 3: GET /api/shefford/equipements - Liste des équipements"""
-        print(f"\n🧪 Test 3: Liste des équipements")
+    def test_get_equipements_apria(self):
+        """Test 3: GET /api/shefford/apria/equipements - Équipements APRIA"""
+        print(f"\n🧪 Test 3: Récupération des équipements APRIA")
         
-        url = f"{self.base_url}/{self.tenant_slug}/equipements"
+        url = f"{self.base_url}/{self.tenant_slug}/apria/equipements"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
                 equipements = response.json()
-                self.test_data["equipements"] = equipements
-                
-                # Vérifier qu'il y a au moins 2 équipements (TUY-001 et MASK-001)
-                if len(equipements) >= 2:
-                    self.log_test_result(
-                        "Equipements List - Count", 
-                        True, 
-                        f"{len(equipements)} équipements trouvés (≥2 attendu)"
-                    )
-                else:
-                    self.log_test_result(
-                        "Equipements List - Count", 
-                        False, 
-                        f"Attendu: ≥2 équipements, Trouvé: {len(equipements)}"
-                    )
-                
-                # Chercher les équipements spécifiques
-                codes_found = [eq.get('code_unique', '') for eq in equipements]
-                expected_codes = ['TUY-001', 'MASK-001']
-                
-                for code in expected_codes:
-                    if code in codes_found:
-                        self.log_test_result(
-                            f"Equipements List - {code}", 
-                            True, 
-                            f"Équipement {code} trouvé"
-                        )
-                    else:
-                        self.log_test_result(
-                            f"Equipements List - {code}", 
-                            False, 
-                            f"Équipement {code} non trouvé"
-                        )
-                
-                # Vérifier l'assignation employé pour MASK-001
-                mask_001 = next((eq for eq in equipements if eq.get('code_unique') == 'MASK-001'), None)
-                if mask_001:
-                    employe_nom = mask_001.get('employe_nom', '')
-                    if employe_nom == "Guillaume Dubeau":
-                        self.log_test_result(
-                            "Equipements List - MASK-001 Assignment", 
-                            True, 
-                            f"MASK-001 assigné à Guillaume Dubeau"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Equipements List - MASK-001 Assignment", 
-                            False, 
-                            f"MASK-001 assigné à '{employe_nom}', attendu: 'Guillaume Dubeau'"
-                        )
-                
-                print(f"   📋 Équipements trouvés:")
-                for eq in equipements[:5]:  # Afficher les 5 premiers
-                    print(f"      - {eq.get('code_unique', 'N/A')} - {eq.get('nom', 'N/A')} (État: {eq.get('etat', 'N/A')})")
-                if len(equipements) > 5:
-                    print(f"      ... et {len(equipements) - 5} autres")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "Equipements List", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Equipements List", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_equipements_filtering(self):
-        """Test 4: Filtrage des équipements par catégorie et état"""
-        print(f"\n🧪 Test 4: Filtrage des équipements")
-        
-        base_url = f"{self.base_url}/{self.tenant_slug}/equipements"
-        
-        # Test filtrage par état
-        try:
-            response = requests.get(f"{base_url}?etat=bon", headers=self.headers)
-            
-            if response.status_code == 200:
-                equipements_bon_etat = response.json()
-                
-                # Vérifier que tous les équipements retournés ont l'état "bon"
-                all_bon_etat = all(eq.get('etat') == 'bon' for eq in equipements_bon_etat)
-                
-                if all_bon_etat:
-                    self.log_test_result(
-                        "Equipements Filter - État Bon", 
-                        True, 
-                        f"{len(equipements_bon_etat)} équipements en bon état trouvés"
-                    )
-                else:
-                    wrong_states = [eq.get('etat') for eq in equipements_bon_etat if eq.get('etat') != 'bon']
-                    self.log_test_result(
-                        "Equipements Filter - État Bon", 
-                        False, 
-                        f"Certains équipements ont un mauvais état: {wrong_states}"
-                    )
-            else:
-                self.log_test_result(
-                    "Equipements Filter - État Bon", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-        except Exception as e:
-            self.log_test_result("Equipements Filter - État Bon", False, f"Exception: {str(e)}")
-        
-        # Test filtrage par catégorie (si on a des catégories)
-        if self.test_data["categories"]:
-            try:
-                first_category_id = self.test_data["categories"][0].get('id')
-                response = requests.get(f"{base_url}?categorie_id={first_category_id}", headers=self.headers)
-                
-                if response.status_code == 200:
-                    equipements_categorie = response.json()
-                    
-                    # Vérifier que tous les équipements appartiennent à la bonne catégorie
-                    all_correct_category = all(eq.get('categorie_id') == first_category_id for eq in equipements_categorie)
-                    
-                    if all_correct_category:
-                        self.log_test_result(
-                            "Equipements Filter - Catégorie", 
-                            True, 
-                            f"{len(equipements_categorie)} équipements de la catégorie trouvés"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Equipements Filter - Catégorie", 
-                            False, 
-                            "Certains équipements n'appartiennent pas à la bonne catégorie"
-                        )
-                else:
-                    self.log_test_result(
-                        "Equipements Filter - Catégorie", 
-                        False, 
-                        f"HTTP {response.status_code}: {response.text[:200]}"
-                    )
-            except Exception as e:
-                self.log_test_result("Equipements Filter - Catégorie", False, f"Exception: {str(e)}")
-    
-    def test_create_equipment(self):
-        """Test 5: POST /api/shefford/equipements - Créer un nouvel équipement"""
-        print(f"\n🧪 Test 5: Création d'un nouvel équipement")
-        
-        url = f"{self.base_url}/{self.tenant_slug}/equipements"
-        
-        # Utiliser la première catégorie disponible
-        categorie_id = None
-        if self.test_data["categories"]:
-            categorie_id = self.test_data["categories"][0].get('id')
-        
-        new_equipment = {
-            "code_unique": f"TEST-{int(time.time())}",
-            "nom": "Équipement Test API",
-            "description": "Équipement créé pour les tests API",
-            "categorie_id": categorie_id,
-            "etat": "bon",
-            "champs_personnalises": {
-                "test_field": "test_value",
-                "numeric_field": 42
-            }
-        }
-        
-        try:
-            response = requests.post(url, headers=self.headers, json=new_equipment)
-            
-            if response.status_code == 200:  # API returns 200, not 201
-                response_data = response.json()
-                created_equipment = response_data.get('equipement', response_data)
-                equipment_id = response_data.get('id') or created_equipment.get('id')
-                
-                self.test_data["custom_equipment_id"] = equipment_id
-                self.created_items.append(('equipment', equipment_id))
+                self.test_data["equipements_apria"] = equipements
                 
                 self.log_test_result(
-                    "Create Equipment", 
+                    "Get Equipements APRIA", 
                     True, 
-                    f"Équipement créé avec ID: {equipment_id}"
+                    f"{len(equipements)} équipements APRIA trouvés"
                 )
                 
-                # Vérifier l'intégrité des données
-                if created_equipment.get('code_unique') == new_equipment['code_unique']:
-                    self.log_test_result(
-                        "Create Equipment - Data Integrity", 
-                        True, 
-                        "Données de base sauvegardées correctement"
-                    )
-                
-                # Vérifier les champs personnalisés
-                champs_perso = created_equipment.get('champs_personnalises', {})
-                if champs_perso.get('test_field') == 'test_value' and champs_perso.get('numeric_field') == 42:
-                    self.log_test_result(
-                        "Create Equipment - Custom Fields", 
-                        True, 
-                        "Champs personnalisés sauvegardés correctement"
-                    )
+                # Afficher les équipements trouvés
+                if equipements:
+                    print(f"   📋 Équipements APRIA trouvés:")
+                    for eq in equipements:
+                        print(f"      - {eq.get('code_unique', 'N/A')} - {eq.get('nom', 'N/A')} (État: {eq.get('etat', 'N/A')})")
+                        if eq.get('employe_nom'):
+                            print(f"        Assigné à: {eq.get('employe_nom')}")
                 else:
-                    self.log_test_result(
-                        "Create Equipment - Custom Fields", 
-                        False, 
-                        f"Champs personnalisés incorrects: {champs_perso}"
-                    )
+                    print(f"   📋 Aucun équipement APRIA trouvé")
                 
                 return True
             else:
                 self.log_test_result(
-                    "Create Equipment", 
+                    "Get Equipements APRIA", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Create Equipment", False, f"Exception: {str(e)}")
+            self.log_test_result("Get Equipements APRIA", False, f"Exception: {str(e)}")
             return False
     
-    def test_duplicate_code_validation(self):
-        """Test 6: Validation du code unique - doit retourner 400 pour un doublon"""
-        print(f"\n🧪 Test 6: Validation du code unique (doublon)")
+    def test_create_inspection_apria(self):
+        """Test 4: POST /api/shefford/apria/inspections - Créer une inspection"""
+        print(f"\n🧪 Test 4: Création d'une inspection APRIA")
         
-        url = f"{self.base_url}/{self.tenant_slug}/equipements"
-        
-        # Utiliser un code qui existe déjà (TUY-001)
-        duplicate_equipment = {
-            "code_unique": "TUY-001",
-            "nom": "Équipement Doublon Test",
-            "description": "Test de validation du code unique",
-            "etat": "bon"
-        }
-        
-        try:
-            response = requests.post(url, headers=self.headers, json=duplicate_equipment)
-            
-            if response.status_code == 400:
-                self.log_test_result(
-                    "Duplicate Code Validation", 
-                    True, 
-                    "Erreur 400 retournée pour code unique dupliqué"
-                )
-                return True
-            else:
-                self.log_test_result(
-                    "Duplicate Code Validation", 
-                    False, 
-                    f"Attendu HTTP 400, reçu: {response.status_code}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Duplicate Code Validation", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_equipment_maintenance(self):
-        """Test 7: Gestion de la maintenance des équipements"""
-        print(f"\n🧪 Test 7: Gestion de la maintenance")
-        
-        # Utiliser le premier équipement disponible
-        if not self.test_data["equipements"]:
-            self.log_test_result("Equipment Maintenance", False, "Aucun équipement disponible pour test")
-            return False
-        
-        equipment_id = self.test_data["equipements"][0].get('id')
-        
-        # Test 7a: Récupérer l'historique de maintenance
-        maintenance_url = f"{self.base_url}/{self.tenant_slug}/equipements/{equipment_id}/maintenances"
-        
-        try:
-            response = requests.get(maintenance_url, headers=self.headers)
-            
-            if response.status_code == 200:
-                maintenances = response.json()
-                self.log_test_result(
-                    "Equipment Maintenance - Get History", 
-                    True, 
-                    f"{len(maintenances)} maintenances trouvées"
-                )
-            else:
-                self.log_test_result(
-                    "Equipment Maintenance - Get History", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-        except Exception as e:
-            self.log_test_result("Equipment Maintenance - Get History", False, f"Exception: {str(e)}")
-        
-        # Test 7b: Ajouter une nouvelle maintenance
-        new_maintenance = {
-            "type_intervention": "maintenance",
-            "description": "Maintenance test API",
-            "date_intervention": datetime.now().strftime("%Y-%m-%d"),
-            "cout": 150.00,
-            "technicien": "Test Technicien"
-        }
-        
-        try:
-            response = requests.post(maintenance_url, headers=self.headers, json=new_maintenance)
-            
-            if response.status_code == 200:  # API returns 200, not 201
-                created_maintenance = response.json()
-                maintenance_id = created_maintenance.get('id')
-                self.log_test_result(
-                    "Equipment Maintenance - Add New", 
-                    True, 
-                    f"Maintenance ajoutée avec ID: {maintenance_id}"
-                )
-                
-                # Vérifier que les dates de maintenance de l'équipement sont mises à jour
-                equipment_url = f"{self.base_url}/{self.tenant_slug}/equipements/{equipment_id}"
-                eq_response = requests.get(equipment_url, headers=self.headers)
-                
-                if eq_response.status_code == 200:
-                    updated_equipment = eq_response.json()
-                    if updated_equipment.get('date_derniere_maintenance'):
-                        self.log_test_result(
-                            "Equipment Maintenance - Date Update", 
-                            True, 
-                            "Date de dernière maintenance mise à jour"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Equipment Maintenance - Date Update", 
-                            False, 
-                            "Date de dernière maintenance non mise à jour"
-                        )
-                
-                return True
-            else:
-                self.log_test_result(
-                    "Equipment Maintenance - Add New", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Equipment Maintenance - Add New", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_equipment_statistics(self):
-        """Test 8: GET /api/shefford/equipements/stats/resume - Statistiques"""
-        print(f"\n🧪 Test 8: Statistiques des équipements")
-        
-        url = f"{self.base_url}/{self.tenant_slug}/equipements/stats/resume"
-        
-        try:
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                stats = response.json()
-                
-                # Vérifier la structure des statistiques
-                required_fields = ['total', 'par_etat', 'alertes', 'par_categorie', 'valeur_totale']
-                missing_fields = [field for field in required_fields if field not in stats]
-                
-                if not missing_fields:
-                    self.log_test_result(
-                        "Equipment Statistics - Structure", 
-                        True, 
-                        "Structure des statistiques correcte"
-                    )
-                    
-                    # Vérifier les valeurs
-                    total = stats.get('total', 0)
-                    valeur_totale = stats.get('valeur_totale', 0)
-                    
-                    print(f"   📊 Statistiques:")
-                    print(f"      - Total équipements: {total}")
-                    print(f"      - Valeur totale: {valeur_totale}€")
-                    print(f"      - Par état: {stats.get('par_etat', {})}")
-                    print(f"      - Alertes: {stats.get('alertes', 0)}")
-                    
-                    if total > 0:
-                        self.log_test_result(
-                            "Equipment Statistics - Data", 
-                            True, 
-                            f"Statistiques cohérentes: {total} équipements"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Equipment Statistics - Data", 
-                            False, 
-                            "Aucun équipement dans les statistiques"
-                        )
-                else:
-                    self.log_test_result(
-                        "Equipment Statistics - Structure", 
-                        False, 
-                        f"Champs manquants: {missing_fields}"
-                    )
-                
-                return True
-            else:
-                self.log_test_result(
-                    "Equipment Statistics", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Equipment Statistics", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_individual_equipment_retrieval(self):
-        """Test 9: GET /api/shefford/equipements/{id} - Récupérer un équipement individuel"""
-        print(f"\n🧪 Test 9: Récupération d'un équipement individuel")
-        
-        if not self.test_data["equipements"]:
-            self.log_test_result("Individual Equipment Retrieval", False, "Aucun équipement disponible")
-            return False
-        
-        # Utiliser le premier équipement disponible
-        equipment = self.test_data["equipements"][0]
-        equipment_id = equipment.get('id')
-        
-        url = f"{self.base_url}/{self.tenant_slug}/equipements/{equipment_id}"
-        
-        try:
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                equipment_data = response.json()
-                
-                # Vérifier que les données correspondent
-                if equipment_data.get('id') == equipment_id:
-                    self.log_test_result(
-                        "Individual Equipment Retrieval", 
-                        True, 
-                        f"Équipement {equipment_data.get('code_unique', 'N/A')} récupéré"
-                    )
-                    
-                    # Vérifier la structure complète
-                    required_fields = ['id', 'code_unique', 'nom', 'etat', 'categorie_id']
-                    missing_fields = [field for field in required_fields if field not in equipment_data]
-                    
-                    if not missing_fields:
-                        self.log_test_result(
-                            "Individual Equipment Retrieval - Structure", 
-                            True, 
-                            "Structure complète de l'équipement"
-                        )
-                    else:
-                        self.log_test_result(
-                            "Individual Equipment Retrieval - Structure", 
-                            False, 
-                            f"Champs manquants: {missing_fields}"
-                        )
-                    
-                    return True
-                else:
-                    self.log_test_result(
-                        "Individual Equipment Retrieval", 
-                        False, 
-                        f"ID incorrect: attendu {equipment_id}, reçu {equipment_data.get('id')}"
-                    )
-                    return False
-            else:
-                self.log_test_result(
-                    "Individual Equipment Retrieval", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Individual Equipment Retrieval", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_employee_assignment_with_radio_category(self):
-        """Test 10: Créer un équipement dans la catégorie 'Radios portatives' avec assignation employé"""
-        print(f"\n🧪 Test 10: Assignation employé avec catégorie Radios portatives")
-        
-        # Chercher la catégorie "Radios portatives"
-        radio_category = None
-        for cat in self.test_data["categories"]:
-            if "radio" in cat.get('nom', '').lower() or "portative" in cat.get('nom', '').lower():
-                radio_category = cat
-                break
-        
-        if not radio_category:
+        # Vérifier qu'on a des équipements APRIA
+        if not self.test_data["equipements_apria"]:
             self.log_test_result(
-                "Employee Assignment - Radio Category", 
+                "Create Inspection APRIA", 
                 False, 
-                "Catégorie 'Radios portatives' non trouvée"
+                "Aucun équipement APRIA disponible pour créer une inspection"
             )
             return False
         
-        # Récupérer la liste des employés pour obtenir un ID valide
-        try:
-            users_url = f"{self.base_url}/{self.tenant_slug}/users"
-            users_response = requests.get(users_url, headers=self.headers)
-            
-            if users_response.status_code == 200:
-                users = users_response.json()
-                if users:
-                    # Utiliser Guillaume Dubeau si disponible, sinon le premier utilisateur
-                    target_user = None
-                    for user in users:
-                        if user.get('nom') == 'Dubeau' and user.get('prenom') == 'Guillaume':
-                            target_user = user
-                            break
-                    
-                    if not target_user:
-                        target_user = users[0]
-                    
-                    # Créer un équipement avec assignation employé
-                    url = f"{self.base_url}/{self.tenant_slug}/equipements"
-                    
-                    new_radio = {
-                        "code_unique": f"RADIO-{int(time.time())}",
-                        "nom": "Radio Test API",
-                        "description": "Radio créée pour test assignation",
-                        "categorie_id": radio_category.get('id'),
-                        "etat": "bon",
-                        "employe_id": target_user.get('id')
-                    }
-                    
-                    response = requests.post(url, headers=self.headers, json=new_radio)
-                    
-                    if response.status_code == 200:
-                        response_data = response.json()
-                        created_equipment = response_data.get('equipement', response_data)
-                        equipment_id = response_data.get('id') or created_equipment.get('id')
-                        
-                        self.created_items.append(('equipment', equipment_id))
-                        
-                        # Vérifier que employe_nom est bien rempli
-                        employe_nom = created_equipment.get('employe_nom', '')
-                        expected_name = f"{target_user.get('prenom', '')} {target_user.get('nom', '')}".strip()
-                        
-                        if employe_nom == expected_name:
-                            self.log_test_result(
-                                "Employee Assignment - Radio Category", 
-                                True, 
-                                f"Radio assignée à {employe_nom} dans catégorie {radio_category.get('nom')}"
-                            )
-                            return True
-                        else:
-                            self.log_test_result(
-                                "Employee Assignment - Radio Category", 
-                                False, 
-                                f"Nom employé incorrect: attendu '{expected_name}', reçu '{employe_nom}'"
-                            )
-                            return False
-                    else:
-                        self.log_test_result(
-                            "Employee Assignment - Radio Category", 
-                            False, 
-                            f"Création échouée: HTTP {response.status_code}"
-                        )
-                        return False
-                else:
-                    self.log_test_result(
-                        "Employee Assignment - Radio Category", 
-                        False, 
-                        "Aucun utilisateur disponible pour assignation"
-                    )
-                    return False
-            else:
-                self.log_test_result(
-                    "Employee Assignment - Radio Category", 
-                    False, 
-                    f"Impossible de récupérer les utilisateurs: HTTP {users_response.status_code}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("Employee Assignment - Radio Category", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_category_modification_restrictions(self):
-        """Test 11: Restrictions sur la modification des catégories prédéfinies"""
-        print(f"\n🧪 Test 11: Restrictions modification catégories prédéfinies")
+        # Utiliser le premier équipement APRIA
+        equipement = self.test_data["equipements_apria"][0]
+        equipement_id = equipement.get('id')
         
-        if not self.test_data["categories"]:
-            self.log_test_result("Category Modification Restrictions", False, "Aucune catégorie disponible")
-            return False
+        url = f"{self.base_url}/{self.tenant_slug}/apria/inspections"
         
-        # Essayer de modifier une catégorie prédéfinie (première de la liste)
-        predefined_category = self.test_data["categories"][0]
-        category_id = predefined_category.get('id')
-        
-        url = f"{self.base_url}/{self.tenant_slug}/equipements/categories/{category_id}"
-        
-        modified_data = {
-            "nom": "Catégorie Modifiée Test",
-            "description": "Test de modification"
+        # Données d'inspection selon la spécification
+        inspection_data = {
+            "equipement_id": equipement_id,
+            "type_inspection": "mensuelle",
+            "inspecteur_id": self.test_data["user_id"],
+            "date_inspection": "2024-12-26T12:00:00Z",
+            "elements": {
+                "item_1": "Conforme",
+                "item_2": "Conforme"
+            },
+            "pression_cylindre": 4500,
+            "conforme": True,
+            "remarques": "Test inspection"
         }
         
         try:
-            response = requests.put(url, headers=self.headers, json=modified_data)
+            response = requests.post(url, headers=self.headers, json=inspection_data)
             
-            # Selon l'implémentation, cela pourrait retourner 403 (interdit) ou 400 (bad request)
-            if response.status_code in [400, 403]:
+            if response.status_code == 200:
+                inspection_creee = response.json()
+                inspection_id = inspection_creee.get('id')
+                
+                self.test_data["inspections_creees"].append(inspection_id)
+                self.created_items.append(('inspection', inspection_id))
+                
                 self.log_test_result(
-                    "Category Modification Restrictions", 
+                    "Create Inspection APRIA", 
                     True, 
-                    f"Modification interdite (HTTP {response.status_code})"
+                    f"Inspection créée avec ID: {inspection_id}"
                 )
+                
+                # Vérifier l'intégrité des données
+                if inspection_creee.get('equipement_id') == equipement_id:
+                    self.log_test_result(
+                        "Create Inspection APRIA - Data Integrity", 
+                        True, 
+                        "Données d'inspection sauvegardées correctement"
+                    )
+                else:
+                    self.log_test_result(
+                        "Create Inspection APRIA - Data Integrity", 
+                        False, 
+                        f"Équipement ID incorrect: attendu {equipement_id}, reçu {inspection_creee.get('equipement_id')}"
+                    )
+                
+                # Vérifier les éléments d'inspection
+                elements_sauvegardes = inspection_creee.get('elements', {})
+                if elements_sauvegardes.get('item_1') == 'Conforme' and elements_sauvegardes.get('item_2') == 'Conforme':
+                    self.log_test_result(
+                        "Create Inspection APRIA - Elements", 
+                        True, 
+                        "Éléments d'inspection sauvegardés correctement"
+                    )
+                else:
+                    self.log_test_result(
+                        "Create Inspection APRIA - Elements", 
+                        False, 
+                        f"Éléments incorrects: {elements_sauvegardes}"
+                    )
+                
+                print(f"   📋 Inspection créée pour équipement: {equipement.get('code_unique', 'N/A')}")
+                print(f"   📊 Type: {inspection_creee.get('type_inspection', 'N/A')}")
+                print(f"   📅 Date: {inspection_creee.get('date_inspection', 'N/A')}")
+                print(f"   ✅ Conforme: {inspection_creee.get('conforme', 'N/A')}")
+                
                 return True
-            elif response.status_code == 200:
-                # Si la modification est autorisée, vérifier si c'est une catégorie personnalisée
-                self.log_test_result(
-                    "Category Modification Restrictions", 
-                    False, 
-                    "Modification autorisée sur catégorie prédéfinie"
-                )
-                return False
             else:
                 self.log_test_result(
-                    "Category Modification Restrictions", 
+                    "Create Inspection APRIA", 
                     False, 
-                    f"Réponse inattendue: HTTP {response.status_code}"
+                    f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Category Modification Restrictions", False, f"Exception: {str(e)}")
+            self.log_test_result("Create Inspection APRIA", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_get_inspections_apria(self):
+        """Test 5: GET /api/shefford/apria/inspections - Récupérer les inspections"""
+        print(f"\n🧪 Test 5: Récupération des inspections APRIA")
+        
+        url = f"{self.base_url}/{self.tenant_slug}/apria/inspections"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                inspections = response.json()
+                
+                self.log_test_result(
+                    "Get Inspections APRIA", 
+                    True, 
+                    f"{len(inspections)} inspections trouvées"
+                )
+                
+                # Vérifier qu'on retrouve l'inspection créée
+                if self.test_data["inspections_creees"]:
+                    inspection_id_creee = self.test_data["inspections_creees"][0]
+                    inspection_trouvee = next((insp for insp in inspections if insp.get('id') == inspection_id_creee), None)
+                    
+                    if inspection_trouvee:
+                        self.log_test_result(
+                            "Get Inspections APRIA - Created Found", 
+                            True, 
+                            "Inspection créée retrouvée dans la liste"
+                        )
+                    else:
+                        self.log_test_result(
+                            "Get Inspections APRIA - Created Found", 
+                            False, 
+                            "Inspection créée non trouvée dans la liste"
+                        )
+                
+                # Afficher les inspections trouvées
+                if inspections:
+                    print(f"   📋 Inspections trouvées:")
+                    for insp in inspections[:5]:  # Afficher les 5 premières
+                        print(f"      - ID: {insp.get('id', 'N/A')} - Type: {insp.get('type_inspection', 'N/A')} - Date: {insp.get('date_inspection', 'N/A')}")
+                        print(f"        Conforme: {insp.get('conforme', 'N/A')} - Équipement: {insp.get('equipement_id', 'N/A')}")
+                    if len(inspections) > 5:
+                        print(f"      ... et {len(inspections) - 5} autres")
+                else:
+                    print(f"   📋 Aucune inspection trouvée")
+                
+                return True
+            else:
+                self.log_test_result(
+                    "Get Inspections APRIA", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Get Inspections APRIA", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_get_parametres_apria(self):
+        """Test 6: GET /api/shefford/apria/parametres - Paramètres APRIA"""
+        print(f"\n🧪 Test 6: Récupération des paramètres APRIA")
+        
+        url = f"{self.base_url}/{self.tenant_slug}/apria/parametres"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                parametres = response.json()
+                
+                self.log_test_result(
+                    "Get Parametres APRIA", 
+                    True, 
+                    "Paramètres APRIA récupérés avec succès"
+                )
+                
+                # Vérifier la structure des paramètres
+                if 'contacts_alertes' in parametres:
+                    self.log_test_result(
+                        "Get Parametres APRIA - Structure", 
+                        True, 
+                        "Structure des paramètres correcte (contacts_alertes présent)"
+                    )
+                else:
+                    self.log_test_result(
+                        "Get Parametres APRIA - Structure", 
+                        False, 
+                        "Champ contacts_alertes manquant"
+                    )
+                
+                print(f"   📋 Paramètres APRIA:")
+                print(f"      - Contacts alertes: {parametres.get('contacts_alertes', [])}")
+                
+                return True
+            else:
+                self.log_test_result(
+                    "Get Parametres APRIA", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Get Parametres APRIA", False, f"Exception: {str(e)}")
             return False
     
     def cleanup_test_data(self):
@@ -863,27 +465,19 @@ class EquipmentModuleTester:
         
         for item_type, item_id in reversed(self.created_items):
             try:
-                if item_type == 'equipment':
-                    url = f"{self.base_url}/{self.tenant_slug}/equipements/{item_id}"
-                elif item_type == 'category':
-                    url = f"{self.base_url}/{self.tenant_slug}/equipements/categories/{item_id}"
-                else:
+                if item_type == 'inspection':
+                    # Note: Il n'y a pas d'endpoint DELETE pour les inspections dans l'implémentation actuelle
+                    # On laisse les inspections de test en place
+                    print(f"   ℹ️ Inspection {item_id} laissée en place (pas d'endpoint DELETE)")
                     continue
                 
-                response = requests.delete(url, headers=self.headers)
-                
-                if response.status_code in [200, 204]:
-                    print(f"   ✅ {item_type} {item_id} supprimé")
-                else:
-                    print(f"   ⚠️ Échec suppression {item_type} {item_id}: HTTP {response.status_code}")
-                    
             except Exception as e:
                 print(f"   ❌ Erreur suppression {item_type} {item_id}: {str(e)}")
     
     def generate_test_report(self):
         """Générer le rapport final des tests"""
         print("\n" + "="*80)
-        print("📊 RAPPORT FINAL - MODULE MATÉRIEL & ÉQUIPEMENTS")
+        print("📊 RAPPORT FINAL - MODULE APRIA INSPECTION")
         print("="*80)
         
         print(f"🏢 Tenant testé: {self.tenant_slug}")
@@ -903,25 +497,25 @@ class EquipmentModuleTester:
         
         # Grouper par catégorie
         categories = {
-            "Catégories": [],
-            "Équipements": [],
-            "Maintenance": [],
-            "Statistiques": [],
-            "Validation": []
+            "Authentification": [],
+            "Modèles d'inspection": [],
+            "Équipements APRIA": [],
+            "Inspections": [],
+            "Paramètres": []
         }
         
         for result in self.test_results:
             test_name = result['test']
-            if 'Categories' in test_name or 'Category' in test_name:
-                categories["Catégories"].append(result)
-            elif 'Equipment' in test_name and 'Maintenance' not in test_name and 'Statistics' not in test_name:
-                categories["Équipements"].append(result)
-            elif 'Maintenance' in test_name:
-                categories["Maintenance"].append(result)
-            elif 'Statistics' in test_name:
-                categories["Statistiques"].append(result)
-            else:
-                categories["Validation"].append(result)
+            if 'auth' in test_name.lower() or 'login' in test_name.lower():
+                categories["Authentification"].append(result)
+            elif 'modele' in test_name.lower():
+                categories["Modèles d'inspection"].append(result)
+            elif 'equipement' in test_name.lower():
+                categories["Équipements APRIA"].append(result)
+            elif 'inspection' in test_name.lower():
+                categories["Inspections"].append(result)
+            elif 'parametre' in test_name.lower():
+                categories["Paramètres"].append(result)
         
         for category, tests in categories.items():
             if tests:
@@ -934,14 +528,13 @@ class EquipmentModuleTester:
         print(f"\n🎯 FONCTIONNALITÉS CRITIQUES:")
         
         critical_tests = [
-            ("Liste des catégories (11 attendues)", any("Categories List - Count" in r['test'] and r['success'] for r in self.test_results)),
-            ("Liste des équipements (TUY-001, MASK-001)", any("Equipements List" in r['test'] and r['success'] for r in self.test_results)),
-            ("Assignation employé MASK-001", any("MASK-001 Assignment" in r['test'] and r['success'] for r in self.test_results)),
-            ("Création d'équipement", any("Create Equipment" in r['test'] and "Data Integrity" not in r['test'] and r['success'] for r in self.test_results)),
-            ("Champs personnalisés", any("Custom Fields" in r['test'] and r['success'] for r in self.test_results)),
-            ("Validation code unique", any("Duplicate Code" in r['test'] and r['success'] for r in self.test_results)),
-            ("Maintenance des équipements", any("Maintenance" in r['test'] and r['success'] for r in self.test_results)),
-            ("Statistiques", any("Statistics" in r['test'] and r['success'] for r in self.test_results))
+            ("Authentification", any("auth" in r['test'].lower() for r in self.test_results if r['success'])),
+            ("Modèles d'inspection (récupération)", any("Get Modeles" in r['test'] and r['success'] for r in self.test_results)),
+            ("Modèle actif avec 13 éléments", any("Elements Count" in r['test'] and r['success'] for r in self.test_results)),
+            ("Équipements APRIA", any("Get Equipements APRIA" in r['test'] and r['success'] for r in self.test_results)),
+            ("Création d'inspection", any("Create Inspection" in r['test'] and "Data Integrity" not in r['test'] and r['success'] for r in self.test_results)),
+            ("Récupération des inspections", any("Get Inspections APRIA" in r['test'] and "Created Found" not in r['test'] and r['success'] for r in self.test_results)),
+            ("Paramètres APRIA", any("Get Parametres" in r['test'] and r['success'] for r in self.test_results))
         ]
         
         for feature, status in critical_tests:
@@ -951,7 +544,7 @@ class EquipmentModuleTester:
         # Recommandations
         print(f"\n💡 RECOMMANDATIONS:")
         if success_rate >= 90:
-            print("   🎉 Excellent! Le module Matériel & Équipements fonctionne parfaitement.")
+            print("   🎉 Excellent! Le module APRIA Inspection fonctionne parfaitement.")
         elif success_rate >= 75:
             print("   ✅ Très bon résultat. Quelques ajustements mineurs nécessaires.")
         elif success_rate >= 50:
@@ -962,11 +555,11 @@ class EquipmentModuleTester:
         return success_rate >= 75  # Critère de succès
     
     def run_comprehensive_tests(self):
-        """Exécuter tous les tests du module Matériel & Équipements"""
-        print("🚀 DÉBUT DES TESTS COMPLETS - MODULE MATÉRIEL & ÉQUIPEMENTS")
+        """Exécuter tous les tests du module APRIA Inspection"""
+        print("🚀 DÉBUT DES TESTS COMPLETS - MODULE APRIA INSPECTION")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
-        print(f"🎯 Objectif: Tester tous les endpoints du module équipements")
+        print(f"🎯 Objectif: Tester tous les endpoints du module APRIA")
         
         # 1. Authentification
         if not self.authenticate():
@@ -974,26 +567,19 @@ class EquipmentModuleTester:
             return False
         
         try:
-            # 2. Tests des catégories
-            self.test_categories_list()
-            self.test_create_custom_category()
+            # 2. Tests des modèles d'inspection
+            self.test_get_modeles_inspection()
+            self.test_get_modele_actif()
             
-            # 3. Tests des équipements
-            self.test_equipements_list()
-            self.test_equipements_filtering()
-            self.test_individual_equipment_retrieval()
-            self.test_create_equipment()
-            self.test_duplicate_code_validation()
-            self.test_employee_assignment_with_radio_category()
+            # 3. Tests des équipements APRIA
+            self.test_get_equipements_apria()
             
-            # 4. Tests de maintenance
-            self.test_equipment_maintenance()
+            # 4. Tests des inspections
+            self.test_create_inspection_apria()
+            self.test_get_inspections_apria()
             
-            # 5. Tests des statistiques
-            self.test_equipment_statistics()
-            
-            # 6. Tests des restrictions
-            self.test_category_modification_restrictions()
+            # 5. Tests des paramètres
+            self.test_get_parametres_apria()
             
             # 6. Nettoyage
             self.cleanup_test_data()
@@ -1009,7 +595,7 @@ class EquipmentModuleTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = EquipmentModuleTester()
+    tester = APRIAModuleTester()
     success = tester.run_comprehensive_tests()
     
     # Code de sortie
