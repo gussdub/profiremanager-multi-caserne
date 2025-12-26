@@ -215,6 +215,15 @@ const MaterielEquipementsModule = ({ user }) => {
           onEditEquipement={openEditEquipement}
           onDeleteEquipement={handleDeleteEquipement}
           onMaintenance={openMaintenance}
+          onInspectionAPRIA={(equip) => {
+            setSelectedEquipementAPRIA(equip);
+            setShowInspectionAPRIAModal(true);
+          }}
+          onHistoriqueAPRIA={(equip) => {
+            setSelectedEquipementAPRIA(equip);
+            setShowHistoriqueAPRIAModal(true);
+          }}
+          isAPRIA={isAPRIA}
           user={user}
         />
       ) : (
