@@ -30091,18 +30091,6 @@ async def get_dates_tests_bornes_seches(
     return {"dates": dates_tests}
 
 
-app.include_router(api_router)
-app.include_router(pwa_router, prefix="/api")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 # ==================== MODULE APPROVISIONNEMENT EN EAU ====================
 
 # Modèles Pydantic pour les points d'eau
