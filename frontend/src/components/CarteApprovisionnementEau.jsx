@@ -663,11 +663,11 @@ const CarteApprovisionnementEau = ({ user }) => {
               color: currentView === 'liste' ? '#3b82f6' : '#6b7280',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.95rem',
+              fontSize: '0.85rem',
               whiteSpace: 'nowrap'
             }}
           >
-            📋 Liste
+            📋
           </button>
         </div>
       </div>
