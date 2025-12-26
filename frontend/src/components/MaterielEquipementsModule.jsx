@@ -521,7 +521,7 @@ const EquipementsTab = ({
           placeholder="🔍 Rechercher..."
           value={filtreRecherche}
           onChange={(e) => setFiltreRecherche(e.target.value)}
-          style={{ width: '200px' }}
+          style={{ minWidth: '150px', flex: '1 1 auto', maxWidth: '300px' }}
         />
         
         {/* Filtres par catégorie et état - masqués pour les pompiers */}
