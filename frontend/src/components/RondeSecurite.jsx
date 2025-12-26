@@ -269,17 +269,21 @@ const RondeSecurite = ({ vehicule, user, onClose, onSuccess }) => {
                 />
               </div>
               <div>
-                <Label>Lieu * {gpsLoading && '📍 Détection GPS...'}</Label>
+                <Label>
+                  Lieu * 
+                  {gpsLoading && <span style={{ color: '#3498db', marginLeft: '5px' }}>📍 Détection GPS...</span>}
+                  {addressLoading && <span style={{ color: '#f39c12', marginLeft: '5px' }}>🔄 Recherche adresse...</span>}
+                </Label>
                 <Input
                   type="text"
                   value={formData.lieu}
                   onChange={(e) => setFormData({ ...formData, lieu: e.target.value })}
-                  placeholder="Ex: Caserne principale"
+                  placeholder="Ex: 123 Rue Principale, Ville"
                   required
                 />
                 {formData.position_gps && (
-                  <p style={{ fontSize: '11px', color: '#28a745', marginTop: '3px' }}>
-                    ✅ GPS: {formData.position_gps[0].toFixed(6)}, {formData.position_gps[1].toFixed(6)}
+                  <p style={{ fontSize: '11px', color: '#6c757d', marginTop: '3px' }}>
+                    📍 Coordonnées: {formData.position_gps[0].toFixed(4)}, {formData.position_gps[1].toFixed(4)}
                   </p>
                 )}
               </div>
