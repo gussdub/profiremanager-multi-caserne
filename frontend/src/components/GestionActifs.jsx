@@ -768,16 +768,16 @@ const MobileTabButton = ({ label, active, onClick }) => (
 const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires }) => {
   if (vehicules.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
-        <div style={{ fontSize: '64px', marginBottom: '20px' }}>🚗</div>
-        <h3>Aucun véhicule enregistré</h3>
-        <p>Commencez par ajouter votre premier véhicule</p>
+      <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚗</div>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>Aucun véhicule enregistré</h3>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>Commencez par ajouter votre premier véhicule</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '16px' }}>
       {vehicules.map(vehicule => (
         <VehiculeCard 
           key={vehicule.id}
