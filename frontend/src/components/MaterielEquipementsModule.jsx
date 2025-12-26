@@ -531,6 +531,9 @@ const EquipementsTab = ({
               onEdit={() => onEditEquipement(equip)}
               onDelete={() => onDeleteEquipement(equip)}
               onMaintenance={() => onMaintenance(equip)}
+              onInspectionAPRIA={() => onInspectionAPRIA && onInspectionAPRIA(equip)}
+              onHistoriqueAPRIA={() => onHistoriqueAPRIA && onHistoriqueAPRIA(equip)}
+              isAPRIA={isAPRIA && isAPRIA(equip)}
               canEdit={user?.role === 'admin' || user?.role === 'superviseur'}
               canDelete={user?.role === 'admin'}
             />
