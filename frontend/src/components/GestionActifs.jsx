@@ -338,8 +338,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <h1 style={{ margin: 0, fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>🚒 Gestion des Actifs</h1>
         
-        {/* Bouton Ajouter à droite */}
-        {activeTab === 'vehicules' && (
+        {/* Bouton Ajouter à droite - Caché pour les employés */}
+        {activeTab === 'vehicules' && user?.role !== 'employe' && (
           <button 
             onClick={openCreateModal}
             style={{
