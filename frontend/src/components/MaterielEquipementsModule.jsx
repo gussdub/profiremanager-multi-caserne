@@ -354,6 +354,9 @@ const EquipementsTab = ({
   onEditEquipement,
   onDeleteEquipement,
   onMaintenance,
+  onInspectionAPRIA,
+  onHistoriqueAPRIA,
+  isAPRIA,
   user
 }) => {
   return (
