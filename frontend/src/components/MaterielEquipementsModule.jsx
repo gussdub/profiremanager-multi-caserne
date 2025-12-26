@@ -411,7 +411,7 @@ const EquipementsTab = ({
     <div>
       {/* Barre d'actions et filtres */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-        {(user?.role === 'admin' || user?.role === 'superviseur') && (
+        {!isPompier && (user?.role === 'admin' || user?.role === 'superviseur') && (
           <>
             <Button onClick={onCreateEquipement} style={{ background: '#22c55e' }}>
               ➕ Ajouter un équipement
