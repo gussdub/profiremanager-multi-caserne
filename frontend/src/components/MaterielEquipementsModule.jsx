@@ -172,7 +172,7 @@ const MaterielEquipementsModule = ({ user }) => {
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            🔧 Matériel & Équipements
+            {isPompier ? '📝 Inspections APRIA' : '🔧 Matériel & Équipements'}
           </h2>
           {user?.role === 'admin' && categories.length === 0 && (
             <Button onClick={handleInitialiserCategories} disabled={loading}>
@@ -181,8 +181,8 @@ const MaterielEquipementsModule = ({ user }) => {
           )}
         </div>
 
-        {/* Stats Cards */}
-        {stats && (
+        {/* Stats Cards - Masqués pour les pompiers */}
+        {stats && !isPompier && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
             <StatCard label="Total" value={stats.total} icon="📊" color="#3b82f6" />
             <StatCard label="En bon état" value={stats.par_etat?.bon || 0} icon="✅" color="#22c55e" />
@@ -191,24 +191,33 @@ const MaterielEquipementsModule = ({ user }) => {
             <StatCard label="Alertes" value={stats.alertes?.total || 0} icon="⚠️" color="#dc2626" />
           </div>
         )}
+        
+        {/* Message pour les pompiers */}
+        {isPompier && (
+          <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+            Sélectionnez un équipement APRIA ci-dessous pour effectuer une inspection ou consulter l'historique.
+          </p>
+        )}
       </div>
 
-      {/* Sous-onglets */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
-        <SubTabButton 
-          label="📋 Équipements" 
-          active={activeSubTab === 'equipements'} 
-          onClick={() => setActiveSubTab('equipements')} 
-        />
-        <SubTabButton 
-          label="📁 Catégories" 
-          active={activeSubTab === 'categories'} 
-          onClick={() => setActiveSubTab('categories')} 
-        />
-      </div>
+      {/* Sous-onglets - Masqués pour les pompiers */}
+      {!isPompier && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+          <SubTabButton 
+            label="📋 Équipements" 
+            active={activeSubTab === 'equipements'} 
+            onClick={() => setActiveSubTab('equipements')} 
+          />
+          <SubTabButton 
+            label="📁 Catégories" 
+            active={activeSubTab === 'categories'} 
+            onClick={() => setActiveSubTab('categories')} 
+          />
+        </div>
+      )}
 
       {/* Contenu selon sous-onglet */}
-      {activeSubTab === 'equipements' ? (
+      {(activeSubTab === 'equipements' || isPompier) ? (
         <EquipementsTab
           equipements={equipementsFiltres}
           categories={categories}
