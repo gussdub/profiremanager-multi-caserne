@@ -43,7 +43,7 @@ import os
 
 class APRIAModuleTester:
     def __init__(self):
-        self.base_url = "https://firemanager-1.preview.emergentagent.com/api"
+        self.base_url = "https://safety-inspect-27.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
