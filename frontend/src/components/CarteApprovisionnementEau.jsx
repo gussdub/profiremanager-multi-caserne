@@ -544,60 +544,19 @@ const CarteApprovisionnementEau = ({ user }) => {
         </p>
       </div>
 
-      {/* Statistiques */}
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <img src={iconUrls.borne_fontaine} alt="Borne fontaine" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
-              {stats.par_type?.bornes_fontaines || 0}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Bornes-fontaines</div>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <img src={iconUrls.borne_seche} alt="Borne sèche" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
-              {stats.par_type?.bornes_seches || 0}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Bornes sèches</div>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <img src={iconUrls.point_eau_statique} alt="Point statique" style={{ width: '40px', height: '40px', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
-              {stats.par_type?.points_statiques || 0}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Points statiques</div>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✓</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#10b981', marginBottom: '0.25rem' }}>
-              {stats.par_etat?.fonctionnels || 0}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Fonctionnels</div>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#3b82f6', marginBottom: '0.25rem' }}>
-              {stats.inspections_30_jours || 0}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Inspections (30j)</div>
-          </div>
-        </div>
-      )}
-
-      {/* Barre d'outils */}
+      {/* Barre d'outils - Responsive */}
       <div style={{ 
         background: 'white', 
-        padding: '1rem', 
+        padding: 'clamp(0.75rem, 2vw, 1rem)', 
         borderRadius: '12px', 
-        marginBottom: '1.5rem',
+        marginBottom: '1rem',
         border: '1px solid #e5e7eb',
         display: 'flex',
         flexWrap: 'wrap',
-        gap: '1rem',
+        gap: '0.75rem',
         alignItems: 'center'
       }}>
-        {/* Bouton Ajouter */}
+        {/* Bouton Ajouter - Caché pour employés */}
         {(user?.role === 'admin' || user?.role === 'superviseur') && (
           <button
             onClick={() => openPointModal(null)}
