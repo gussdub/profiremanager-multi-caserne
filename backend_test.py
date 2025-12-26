@@ -47,7 +47,7 @@ class APRIAModuleTester:
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
-        self.credentials = {"email": "test@shefford.ca", "password": "Test123!"}
+        self.credentials = {"email": "test@shefford.ca", "mot_de_passe": "Test123!"}
         
         # Résultats des tests
         self.test_results = []
