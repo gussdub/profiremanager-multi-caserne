@@ -817,29 +817,30 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
 
   // Liste des modèles
   return (
-    <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
-            🔧 Configuration des Inspections de Bornes Sèches
-          </h2>
-          <p style={{ margin: '0.5rem 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
-            Créez et personnalisez les formulaires d'inspection
-          </p>
-        </div>
+    <div style={{ padding: '0.75rem' }}>
+      {/* Header responsive */}
+      <div style={{ marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600', color: '#111827' }}>
+          🔧 Configuration des Inspections
+        </h2>
+        <p style={{ margin: '0.25rem 0 0.75rem', color: '#6b7280', fontSize: '12px' }}>
+          Formulaires d'inspection de Bornes Sèches
+        </p>
         <button
           onClick={nouveauModele}
           style={{
-            padding: '0.75rem 1.25rem',
+            padding: '0.5rem 0.75rem',
             backgroundColor: '#dc2626',
             color: 'white',
             border: 'none',
             borderRadius: '0.5rem',
             cursor: 'pointer',
             fontWeight: '600',
+            fontSize: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.35rem',
+            whiteSpace: 'nowrap'
           }}
         >
           ➕ Nouveau modèle
