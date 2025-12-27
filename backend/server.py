@@ -4419,6 +4419,174 @@ async def update_mon_profil(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour profil: {str(e)}")
 
+# ==================== PHOTO DE PROFIL ====================
+
+class PhotoProfilUpload(BaseModel):
+    photo_base64: str  # Image en base64 (data:image/jpeg;base64,... ou juste le base64)
+
+def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
+    """
+    Redimensionne et compresse une image base64 à max_size x max_size pixels
+    Retourne une image JPEG en base64
+    """
+    try:
+        # Nettoyer le préfixe data:image si présent
+        if ',' in base64_string:
+            base64_string = base64_string.split(',')[1]
+        
+        # Décoder le base64
+        image_data = base64.b64decode(base64_string)
+        
+        # Vérifier la taille (max 2MB)
+        if len(image_data) > 2 * 1024 * 1024:
+            raise ValueError("Image trop volumineuse (max 2MB)")
+        
+        # Ouvrir l'image avec PIL
+        img = PILImage.open(BytesIO(image_data))
+        
+        # Convertir en RGB si nécessaire (pour les PNG avec transparence)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Redimensionner en carré (crop au centre puis resize)
+        width, height = img.size
+        min_dim = min(width, height)
+        
+        # Crop au centre
+        left = (width - min_dim) // 2
+        top = (height - min_dim) // 2
+        right = left + min_dim
+        bottom = top + min_dim
+        img = img.crop((left, top, right, bottom))
+        
+        # Redimensionner à max_size x max_size
+        img = img.resize((max_size, max_size), PILImage.Resampling.LANCZOS)
+        
+        # Sauvegarder en JPEG avec compression
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=85, optimize=True)
+        buffer.seek(0)
+        
+        # Encoder en base64
+        result_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        return f"data:image/jpeg;base64,{result_base64}"
+        
+    except Exception as e:
+        raise ValueError(f"Erreur traitement image: {str(e)}")
+
+@api_router.post("/{tenant_slug}/users/photo-profil")
+async def upload_photo_profil(
+    tenant_slug: str,
+    photo_data: PhotoProfilUpload,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload une photo de profil pour l'utilisateur connecté
+    Redimensionne automatiquement à 200x200 pixels
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Traiter et redimensionner l'image
+        processed_photo = resize_and_compress_image(photo_data.photo_base64)
+        
+        # Mettre à jour l'utilisateur
+        result = await db.users.update_one(
+            {"id": current_user.id, "tenant_id": tenant.id},
+            {"$set": {"photo_profil": processed_photo}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        return {"message": "Photo de profil mise à jour", "photo_profil": processed_photo}
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
+
+@api_router.post("/{tenant_slug}/users/{user_id}/photo-profil")
+async def upload_photo_profil_admin(
+    tenant_slug: str,
+    user_id: str,
+    photo_data: PhotoProfilUpload,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload une photo de profil pour un utilisateur (Admin uniquement)
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Vérifier que l'utilisateur existe
+        user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        # Traiter et redimensionner l'image
+        processed_photo = resize_and_compress_image(photo_data.photo_base64)
+        
+        # Mettre à jour l'utilisateur
+        await db.users.update_one(
+            {"id": user_id, "tenant_id": tenant.id},
+            {"$set": {"photo_profil": processed_photo}}
+        )
+        
+        return {"message": "Photo de profil mise à jour", "photo_profil": processed_photo}
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
+
+@api_router.delete("/{tenant_slug}/users/photo-profil")
+async def delete_photo_profil(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime la photo de profil de l'utilisateur connecté
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.users.update_one(
+        {"id": current_user.id, "tenant_id": tenant.id},
+        {"$set": {"photo_profil": None}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    return {"message": "Photo de profil supprimée"}
+
+@api_router.delete("/{tenant_slug}/users/{user_id}/photo-profil")
+async def delete_photo_profil_admin(
+    tenant_slug: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime la photo de profil d'un utilisateur (Admin uniquement)
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"photo_profil": None}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    return {"message": "Photo de profil supprimée"}
+
 @api_router.put("/{tenant_slug}/users/{user_id}", response_model=User)
 async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
