@@ -9,6 +9,7 @@ import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
 import ConfigurationEmailsEPI from './ConfigurationEmailsEPI';
 import CarteApprovisionnementEau from './CarteApprovisionnementEau';
 import InspectionsBornesSeches from './InspectionsBornesSeches';
+import InspectionBorneSecheModal from './InspectionBorneSecheModal';
 import InventaireVehiculeModal from './InventaireVehiculeModal';
 import HistoriqueInventairesVehicule from './HistoriqueInventairesVehicule';
 import ParametresInventairesVehicules from './ParametresInventairesVehicules';
