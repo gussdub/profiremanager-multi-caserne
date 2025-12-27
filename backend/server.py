@@ -9956,10 +9956,10 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         
         # Vérifier que le tenant existe et est actif
         tenant = await get_tenant_from_slug(tenant_slug)
-        logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
+        print(f"✅ DEBUG: Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         
         # Chercher l'utilisateur dans ce tenant
-        logging.info(f"🔍 Recherche utilisateur: email={user_login.email}, tenant_id={tenant.id}")
+        print(f"🔍 DEBUG: Recherche utilisateur: email={user_login.email}, tenant_id={tenant.id}")
         user_data = await db.users.find_one({
             "email": user_login.email,
             "tenant_id": tenant.id
