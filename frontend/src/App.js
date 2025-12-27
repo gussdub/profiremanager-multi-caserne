@@ -16025,6 +16025,87 @@ const MonProfil = () => {
       <div className="profil-grid-layout">
         {/* Colonne gauche - Informations principales */}
         <div className="profil-main-column">
+          
+          {/* Section Photo de Profil */}
+          <div className="formation-card" style={{ marginBottom: '1.5rem' }}>
+            <div className="formation-header">
+              <h3>📷 Photo de profil</h3>
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1.5rem',
+              padding: '1rem',
+              flexWrap: 'wrap'
+            }}>
+              {/* Photo preview */}
+              <div style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: '#f3f4f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '3px solid #e5e7eb',
+                flexShrink: 0
+              }}>
+                {userProfile?.photo_profil ? (
+                  <img 
+                    src={userProfile.photo_profil} 
+                    alt="Photo de profil"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{ 
+                    fontSize: '3rem', 
+                    color: '#9ca3af',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    👤
+                  </div>
+                )}
+              </div>
+              
+              {/* Boutons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <input
+                  type="file"
+                  ref={photoInputRef}
+                  onChange={handlePhotoSelect}
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={photoUploading}
+                  style={{ minWidth: '160px' }}
+                >
+                  {photoUploading ? '⏳ Upload...' : '📤 Changer la photo'}
+                </Button>
+                {userProfile?.photo_profil && (
+                  <Button
+                    variant="outline"
+                    onClick={handleDeletePhoto}
+                    style={{ minWidth: '160px', color: '#ef4444' }}
+                  >
+                    🗑️ Supprimer
+                  </Button>
+                )}
+                <p style={{ 
+                  fontSize: '0.75rem', 
+                  color: '#6b7280',
+                  margin: '0.5rem 0 0 0'
+                }}>
+                  JPG, PNG ou WEBP • Max 2 MB
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Informations personnelles */}
           <div className="formation-card">
             <div className="formation-header">
