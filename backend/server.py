@@ -30314,7 +30314,7 @@ async def create_point_eau(
         raise HTTPException(status_code=403, detail="Permission refusée")
     
     point_dict = point_data.dict()
-    point_dict['id'] = str(uuid4())
+    point_dict['id'] = str(uuid.uuid4())
     point_dict['tenant_id'] = tenant.id
     point_dict['created_by_id'] = current_user.id
     point_dict['created_at'] = datetime.now(timezone.utc).isoformat()
