@@ -259,6 +259,7 @@ tasks:
     needs_retesting: true
 
 test_plan:
-  current_focus: ["Formulaires d'inspection personnalisés"]
-  test_all: true
+  current_focus: ["UI - Paramètres inspections bornes sèches", "UI - Formulaire d'inspection dans PointEauModal"]
+  stuck_tasks: []
+  test_all: false
   test_priority: "high_first"
