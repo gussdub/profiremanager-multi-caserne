@@ -369,6 +369,22 @@ const InspectionsBornesSeches = ({ user }) => {
                       📋 Effectuer une inspection
                     </button>
                     
+                    <button
+                      onClick={() => openHistoriqueModal(borne)}
+                      style={{
+                        padding: '0.5rem',
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}
+                    >
+                      📜 Historique des inspections
+                    </button>
+                    
                     {(user?.role === 'admin' || user?.role === 'superviseur') && (
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
