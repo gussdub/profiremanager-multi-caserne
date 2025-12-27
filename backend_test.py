@@ -645,7 +645,7 @@ class InspectionModelsE2ETester:
 
 def main():
     """Point d'entrée principal"""
-    tester = MesEPIModuleTester()
+    tester = InspectionModelsE2ETester()
     success = tester.run_comprehensive_tests()
     
     # Code de sortie
