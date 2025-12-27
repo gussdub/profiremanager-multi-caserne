@@ -137,401 +137,239 @@ class PhotoProfilE2ETester:
         if data and not success:
             print(f"   📄 Data: {json.dumps(data, indent=2)[:200]}...")
     
-    def test_get_modeles_inspection(self):
-        """Test 1: GET /api/shefford/bornes-seches/modeles-inspection - Liste des modèles"""
-        print(f"\n🧪 Test 1: Récupération de la liste des modèles d'inspection")
+    def test_upload_photo_profil(self):
+        """Test 1: POST /api/shefford/users/photo-profil - Upload photo"""
+        print(f"\n🧪 Test 1: Upload de la photo de profil")
         
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection"
-        
-        try:
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                modeles = response.json()
-                self.test_data["modeles_existants"] = modeles
-                
-                self.log_test_result(
-                    "GET Modèles Inspection", 
-                    True, 
-                    f"{len(modeles)} modèles trouvés"
-                )
-                
-                print(f"   📋 Modèles existants:")
-                for modele in modeles:
-                    print(f"      - {modele.get('nom', 'N/A')} (ID: {modele.get('id', 'N/A')}) - Actif: {modele.get('est_actif', False)}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "GET Modèles Inspection", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("GET Modèles Inspection", False, f"Exception: {str(e)}")
+        if not self.test_data["test_image_base64"]:
+            self.log_test_result(
+                "POST Upload Photo", 
+                False, 
+                "Aucune image de test disponible"
+            )
             return False
-    
-    def test_get_modele_actif(self):
-        """Test 2: GET /api/shefford/bornes-seches/modeles-inspection/actif - Modèle actif"""
-        print(f"\n🧪 Test 2: Récupération du modèle d'inspection actif")
         
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/actif"
+        url = f"{self.base_url}/{self.tenant_slug}/users/photo-profil"
         
-        try:
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                modele_actif = response.json()
-                self.test_data["modele_actif"] = modele_actif
-                
-                self.log_test_result(
-                    "GET Modèle Actif", 
-                    True, 
-                    f"Modèle actif récupéré: {modele_actif.get('nom', 'N/A')}"
-                )
-                
-                # Vérifier la structure du modèle
-                required_fields = ['id', 'nom', 'description', 'est_actif', 'sections']
-                missing_fields = [field for field in required_fields if field not in modele_actif]
-                
-                if not missing_fields:
-                    self.log_test_result(
-                        "GET Modèle Actif - Structure", 
-                        True, 
-                        "Structure de réponse correcte"
-                    )
-                else:
-                    self.log_test_result(
-                        "GET Modèle Actif - Structure", 
-                        False, 
-                        f"Champs manquants: {missing_fields}"
-                    )
-                
-                print(f"   📋 Modèle actif: {modele_actif.get('nom', 'N/A')}")
-                print(f"   📝 Description: {modele_actif.get('description', 'N/A')}")
-                print(f"   🔧 Sections: {len(modele_actif.get('sections', []))}")
-                print(f"   🆔 ID: {modele_actif.get('id', 'N/A')}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "GET Modèle Actif", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("GET Modèle Actif", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_create_modele_inspection(self):
-        """Test 3: POST /api/shefford/bornes-seches/modeles-inspection - Créer un modèle"""
-        print(f"\n🧪 Test 3: Création d'un nouveau modèle d'inspection")
-        
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection"
-        
-        # Structure de données selon la spécification de la review request
-        modele_data = {
-            "nom": "Test Modèle Inspection",
-            "description": "Modèle de test pour les tests automatisés E2E",
-            "sections": [
-                {
-                    "id": f"test-field-{int(time.time())}",
-                    "titre": "Test Field",
-                    "type_champ": "text",
-                    "obligatoire": True,
-                    "description": "Description du champ de test",
-                    "ordre": 0
-                },
-                {
-                    "id": f"test-radio-{int(time.time())}",
-                    "titre": "Test Radio",
-                    "type_champ": "radio",
-                    "options": [
-                        {"label": "Conforme", "declencherAlerte": False},
-                        {"label": "Non conforme", "declencherAlerte": True}
-                    ],
-                    "ordre": 1
-                }
-            ]
+        # Données pour l'upload
+        photo_data = {
+            "photo_base64": self.test_data["test_image_base64"]
         }
         
         try:
-            response = requests.post(url, headers=self.headers, json=modele_data)
+            response = requests.post(url, headers=self.headers, json=photo_data)
             
             if response.status_code == 200:
                 result = response.json()
-                modele_id = result.get('id')
-                
-                self.test_data["modele_test_id"] = modele_id
-                self.created_items.append(('modele', modele_id))
                 
                 self.log_test_result(
-                    "POST Créer Modèle", 
+                    "POST Upload Photo", 
                     True, 
-                    f"Modèle créé avec ID: {modele_id}"
+                    "Photo de profil uploadée avec succès"
                 )
                 
-                print(f"   📋 Modèle créé: {modele_data['nom']}")
-                print(f"   📝 Description: {modele_data['description']}")
-                print(f"   🔧 Sections: {len(modele_data['sections'])}")
-                print(f"   🆔 ID: {modele_id}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "POST Créer Modèle", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("POST Créer Modèle", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_update_modele_inspection(self):
-        """Test 4: PUT /api/shefford/bornes-seches/modeles-inspection/{id} - Modifier un modèle"""
-        print(f"\n🧪 Test 4: Modification du modèle d'inspection")
-        
-        if not self.test_data["modele_test_id"]:
-            self.log_test_result(
-                "PUT Modifier Modèle", 
-                False, 
-                "Aucun modèle de test disponible pour modification"
-            )
-            return False
-        
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_test_id']}"
-        
-        # Données de modification
-        update_data = {
-            "nom": "Test Modèle Inspection - Modifié",
-            "description": "Modèle de test modifié pour validation E2E",
-            "sections": [
-                {
-                    "id": f"modified-field-{int(time.time())}",
-                    "titre": "Modified Test Field",
-                    "type_champ": "text",
-                    "obligatoire": False,
-                    "description": "Champ modifié lors du test",
-                    "ordre": 0
-                }
-            ]
-        }
-        
-        try:
-            response = requests.put(url, headers=self.headers, json=update_data)
-            
-            if response.status_code == 200:
-                self.log_test_result(
-                    "PUT Modifier Modèle", 
-                    True, 
-                    "Modèle modifié avec succès"
-                )
-                
-                print(f"   📋 Nouveau nom: {update_data['nom']}")
-                print(f"   📝 Nouvelle description: {update_data['description']}")
-                print(f"   🔧 Sections modifiées: {len(update_data['sections'])}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "PUT Modifier Modèle", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("PUT Modifier Modèle", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_activer_modele(self):
-        """Test 5: POST /api/shefford/bornes-seches/modeles-inspection/{id}/activer - Activer un modèle"""
-        print(f"\n🧪 Test 5: Activation du modèle d'inspection")
-        
-        if not self.test_data["modele_test_id"]:
-            self.log_test_result(
-                "POST Activer Modèle", 
-                False, 
-                "Aucun modèle de test disponible pour activation"
-            )
-            return False
-        
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_test_id']}/activer"
-        
-        try:
-            response = requests.post(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                self.log_test_result(
-                    "POST Activer Modèle", 
-                    True, 
-                    "Modèle activé avec succès"
-                )
-                
-                # Vérifier que le modèle est maintenant actif
-                get_url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/actif"
-                get_response = requests.get(get_url, headers=self.headers)
-                
-                if get_response.status_code == 200:
-                    modele_actif = get_response.json()
-                    if modele_actif.get('id') == self.test_data["modele_test_id"]:
+                # Vérifier que la réponse contient la photo redimensionnée
+                if "photo_profil" in result:
+                    photo_returned = result["photo_profil"]
+                    if photo_returned and photo_returned.startswith("data:image/jpeg;base64,"):
                         self.log_test_result(
-                            "POST Activer Modèle - Vérification", 
+                            "POST Upload Photo - Format", 
                             True, 
-                            "Le modèle est maintenant actif"
+                            "Photo retournée au format JPEG base64"
+                        )
+                        print(f"   📸 Photo redimensionnée retournée: {len(photo_returned)} caractères")
+                    else:
+                        self.log_test_result(
+                            "POST Upload Photo - Format", 
+                            False, 
+                            "Format de photo retournée incorrect"
+                        )
+                else:
+                    self.log_test_result(
+                        "POST Upload Photo - Réponse", 
+                        False, 
+                        "Champ photo_profil manquant dans la réponse"
+                    )
+                
+                print(f"   📋 Message: {result.get('message', 'N/A')}")
+                
+                return True
+            else:
+                self.log_test_result(
+                    "POST Upload Photo", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("POST Upload Photo", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_get_user_with_photo(self):
+        """Test 2: GET /api/shefford/users/{user_id} - Vérifier photo_profil dans réponse"""
+        print(f"\n🧪 Test 2: Récupération des infos utilisateur avec photo")
+        
+        if not self.test_data["user_id"]:
+            self.log_test_result(
+                "GET User avec Photo", 
+                False, 
+                "Aucun user_id disponible"
+            )
+            return False
+        
+        url = f"{self.base_url}/{self.tenant_slug}/users/{self.test_data['user_id']}"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                
+                self.log_test_result(
+                    "GET User avec Photo", 
+                    True, 
+                    "Données utilisateur récupérées avec succès"
+                )
+                
+                # Vérifier que photo_profil est présente
+                if "photo_profil" in user_data:
+                    photo_profil = user_data["photo_profil"]
+                    if photo_profil and photo_profil.startswith("data:image/jpeg;base64,"):
+                        self.log_test_result(
+                            "GET User - Photo Présente", 
+                            True, 
+                            "Photo de profil présente et au bon format"
+                        )
+                        print(f"   📸 Photo de profil trouvée: {len(photo_profil)} caractères")
+                        print(f"   👤 Utilisateur: {user_data.get('prenom', '')} {user_data.get('nom', '')}")
+                        print(f"   📧 Email: {user_data.get('email', 'N/A')}")
+                    elif photo_profil is None:
+                        self.log_test_result(
+                            "GET User - Photo Présente", 
+                            False, 
+                            "Photo de profil est null (pas uploadée ou supprimée)"
                         )
                     else:
                         self.log_test_result(
-                            "POST Activer Modèle - Vérification", 
+                            "GET User - Photo Présente", 
                             False, 
-                            "Le modèle n'est pas devenu actif"
+                            f"Format de photo incorrect: {str(photo_profil)[:50]}..."
                         )
+                else:
+                    self.log_test_result(
+                        "GET User - Photo Présente", 
+                        False, 
+                        "Champ photo_profil manquant dans la réponse"
+                    )
                 
                 return True
             else:
                 self.log_test_result(
-                    "POST Activer Modèle", 
+                    "GET User avec Photo", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("POST Activer Modèle", False, f"Exception: {str(e)}")
+            self.log_test_result("GET User avec Photo", False, f"Exception: {str(e)}")
             return False
     
-    def test_dupliquer_modele(self):
-        """Test 6: POST /api/shefford/bornes-seches/modeles-inspection/{id}/dupliquer - Dupliquer un modèle"""
-        print(f"\n🧪 Test 6: Duplication du modèle d'inspection")
+    def test_delete_photo_profil(self):
+        """Test 3: DELETE /api/shefford/users/photo-profil - Supprimer la photo"""
+        print(f"\n🧪 Test 3: Suppression de la photo de profil")
         
-        if not self.test_data["modele_test_id"]:
-            self.log_test_result(
-                "POST Dupliquer Modèle", 
-                False, 
-                "Aucun modèle de test disponible pour duplication"
-            )
-            return False
-        
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_test_id']}/dupliquer"
-        
-        # Données pour la duplication
-        duplicate_data = {
-            "nouveau_nom": "Test Modèle Inspection - Copie"
-        }
-        
-        try:
-            response = requests.post(url, headers=self.headers, json=duplicate_data)
-            
-            if response.status_code == 200:
-                result = response.json()
-                modele_duplique_id = result.get('id')
-                
-                self.test_data["modele_duplique_id"] = modele_duplique_id
-                self.created_items.append(('modele', modele_duplique_id))
-                
-                self.log_test_result(
-                    "POST Dupliquer Modèle", 
-                    True, 
-                    f"Modèle dupliqué avec ID: {modele_duplique_id}"
-                )
-                
-                print(f"   📋 Modèle dupliqué: {result.get('nom', 'N/A')}")
-                print(f"   🆔 ID original: {self.test_data['modele_test_id']}")
-                print(f"   🆔 ID copie: {modele_duplique_id}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "POST Dupliquer Modèle", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("POST Dupliquer Modèle", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_delete_modele_inspection(self):
-        """Test 7: DELETE /api/shefford/bornes-seches/modeles-inspection/{id} - Supprimer un modèle"""
-        print(f"\n🧪 Test 7: Suppression du modèle d'inspection dupliqué")
-        
-        if not self.test_data["modele_duplique_id"]:
-            self.log_test_result(
-                "DELETE Supprimer Modèle", 
-                False, 
-                "Aucun modèle dupliqué disponible pour suppression"
-            )
-            return False
-        
-        # D'abord, s'assurer que le modèle n'est pas actif
-        if self.test_data["modele_actif"] and self.test_data["modele_actif"].get('id'):
-            activate_url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_actif']['id']}/activer"
-            requests.post(activate_url, headers=self.headers)
-        
-        url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_duplique_id']}"
+        url = f"{self.base_url}/{self.tenant_slug}/users/photo-profil"
         
         try:
             response = requests.delete(url, headers=self.headers)
             
             if response.status_code == 200:
+                result = response.json()
+                
                 self.log_test_result(
-                    "DELETE Supprimer Modèle", 
+                    "DELETE Photo Profil", 
                     True, 
-                    "Modèle supprimé avec succès"
+                    "Photo de profil supprimée avec succès"
                 )
                 
-                # Retirer de la liste des items à nettoyer
-                self.created_items = [(t, i) for t, i in self.created_items if i != self.test_data["modele_duplique_id"]]
-                
-                print(f"   🗑️ Modèle supprimé: {self.test_data['modele_duplique_id']}")
+                print(f"   📋 Message: {result.get('message', 'N/A')}")
                 
                 return True
             else:
                 self.log_test_result(
-                    "DELETE Supprimer Modèle", 
+                    "DELETE Photo Profil", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("DELETE Supprimer Modèle", False, f"Exception: {str(e)}")
+            self.log_test_result("DELETE Photo Profil", False, f"Exception: {str(e)}")
             return False
     
-    def cleanup_test_data(self):
-        """Nettoyer les données créées pendant les tests"""
-        print(f"\n🧹 Nettoyage des données de test...")
+    def test_verify_photo_deleted(self):
+        """Test 4: Vérifier que photo_profil est null après suppression"""
+        print(f"\n🧪 Test 4: Vérification que la photo est bien supprimée")
         
-        # Réactiver le modèle original s'il existe
-        if self.test_data["modele_actif"] and self.test_data["modele_actif"].get('id'):
-            try:
-                activate_url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{self.test_data['modele_actif']['id']}/activer"
-                response = requests.post(activate_url, headers=self.headers)
-                if response.status_code == 200:
-                    print(f"   ✅ Modèle original réactivé: {self.test_data['modele_actif']['id']}")
-            except Exception as e:
-                print(f"   ⚠️ Erreur réactivation modèle original: {str(e)}")
+        if not self.test_data["user_id"]:
+            self.log_test_result(
+                "Vérification Suppression", 
+                False, 
+                "Aucun user_id disponible"
+            )
+            return False
         
-        for item_type, item_id in reversed(self.created_items):
-            try:
-                if item_type == 'modele':
-                    # Supprimer le modèle de test
-                    url = f"{self.base_url}/{self.tenant_slug}/bornes-seches/modeles-inspection/{item_id}"
-                    response = requests.delete(url, headers=self.headers)
-                    if response.status_code == 200:
-                        print(f"   ✅ Modèle {item_id} supprimé")
-                    else:
-                        print(f"   ⚠️ Impossible de supprimer le modèle {item_id}: {response.status_code}")
+        url = f"{self.base_url}/{self.tenant_slug}/users/{self.test_data['user_id']}"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                user_data = response.json()
                 
-            except Exception as e:
-                print(f"   ❌ Erreur suppression {item_type} {item_id}: {str(e)}")
+                self.log_test_result(
+                    "Vérification Suppression", 
+                    True, 
+                    "Données utilisateur récupérées pour vérification"
+                )
+                
+                # Vérifier que photo_profil est null
+                if "photo_profil" in user_data:
+                    photo_profil = user_data["photo_profil"]
+                    if photo_profil is None:
+                        self.log_test_result(
+                            "Vérification Photo Null", 
+                            True, 
+                            "Photo de profil est bien null après suppression"
+                        )
+                        print(f"   ✅ Photo de profil: null (supprimée correctement)")
+                    else:
+                        self.log_test_result(
+                            "Vérification Photo Null", 
+                            False, 
+                            f"Photo de profil n'est pas null: {str(photo_profil)[:50]}..."
+                        )
+                else:
+                    self.log_test_result(
+                        "Vérification Photo Null", 
+                        False, 
+                        "Champ photo_profil manquant dans la réponse"
+                    )
+                
+                return True
+            else:
+                self.log_test_result(
+                    "Vérification Suppression", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Vérification Suppression", False, f"Exception: {str(e)}")
+            return False
     
     def generate_test_report(self):
         """Générer le rapport final des tests"""
