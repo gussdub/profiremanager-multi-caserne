@@ -279,3 +279,65 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+# ============================================
+# TEST SESSION: Endpoints de photo de profil
+# Date: 2024-12-27
+# ============================================
+
+test_session_photo_profil:
+  focus: "Endpoints de photo de profil pour utilisateurs"
+  credentials:
+    admin:
+      tenant: "shefford"
+      email: "gussdub@gmail.com"
+      password: "230685Juin+"
+
+tasks_photo_profil:
+  - task: "API - Upload photo de profil"
+    endpoint: "POST /{tenant_slug}/users/photo-profil"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Upload d'image 50x50 pixels rouge réussie. Image automatiquement redimensionnée à 200x200 pixels et retournée au format JPEG base64. Traitement et compression opérationnels."
+    
+  - task: "API - Récupération utilisateur avec photo"
+    endpoint: "GET /{tenant_slug}/users/{user_id}"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Champ photo_profil correctement présent dans la réponse après upload. Photo au format data:image/jpeg;base64 comme attendu. Structure de réponse conforme."
+    
+  - task: "API - Suppression photo de profil"
+    endpoint: "DELETE /{tenant_slug}/users/photo-profil"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Suppression de photo réussie avec message de confirmation. Opération effectuée correctement."
+    
+  - task: "API - Vérification suppression photo"
+    endpoint: "GET /{tenant_slug}/users/{user_id} (après suppression)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Vérification réussie. Champ photo_profil correctement mis à null après suppression. Comportement conforme aux spécifications."
+
+agent_communication_photo_profil:
+  - agent: "testing"
+    message: "✅ BACKEND TESTS COMPLETS - Endpoints de photo de profil testés avec succès à 100% (7/7 tests réussis). Tous les endpoints fonctionnent parfaitement avec tenant 'shefford' et credentials admin de production (gussdub@gmail.com). Tests réalisés : 1) POST /users/photo-profil (upload avec redimensionnement automatique 50x50→200x200), 2) GET /users/{user_id} (vérification présence photo_profil), 3) DELETE /users/photo-profil (suppression), 4) Vérification que photo_profil=null après suppression. Image de test créée programmatiquement (50x50 pixels rouge), redimensionnement et compression JPEG opérationnels. Tous les formats de réponse conformes (data:image/jpeg;base64). Backend prêt pour utilisation en production."
