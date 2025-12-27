@@ -204,11 +204,46 @@ const MaterielEquipementsModule = ({ user }) => {
         {/* Stats Cards - Masqués pour les pompiers */}
         {stats && !isEmploye && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-            <StatCard label="Total" value={stats.total} icon="📊" color="#3b82f6" />
-            <StatCard label="En bon état" value={stats.par_etat?.bon || 0} icon="✅" color="#22c55e" />
-            <StatCard label="À réparer" value={stats.par_etat?.a_reparer || 0} icon="🔧" color="#f59e0b" />
-            <StatCard label="Hors service" value={stats.par_etat?.hors_service || 0} icon="❌" color="#ef4444" />
-            <StatCard label="Alertes" value={stats.alertes?.total || 0} icon="⚠️" color="#dc2626" />
+            <StatCard 
+              label="Total" 
+              value={stats.total} 
+              icon="📊" 
+              color="#3b82f6" 
+              onClick={() => handleKPIClick('total')}
+              active={filtreKPI === 'total'}
+            />
+            <StatCard 
+              label="En bon état" 
+              value={stats.par_etat?.bon || 0} 
+              icon="✅" 
+              color="#22c55e" 
+              onClick={() => handleKPIClick('bon')}
+              active={filtreKPI === 'bon'}
+            />
+            <StatCard 
+              label="À réparer" 
+              value={stats.par_etat?.a_reparer || 0} 
+              icon="🔧" 
+              color="#f59e0b" 
+              onClick={() => handleKPIClick('a_reparer')}
+              active={filtreKPI === 'a_reparer'}
+            />
+            <StatCard 
+              label="Hors service" 
+              value={stats.par_etat?.hors_service || 0} 
+              icon="❌" 
+              color="#ef4444" 
+              onClick={() => handleKPIClick('hors_service')}
+              active={filtreKPI === 'hors_service'}
+            />
+            <StatCard 
+              label="Alertes" 
+              value={stats.alertes?.total || 0} 
+              icon="⚠️" 
+              color="#dc2626" 
+              onClick={() => handleKPIClick('alertes')}
+              active={filtreKPI === 'alertes'}
+            />
           </div>
         )}
         
