@@ -206,7 +206,7 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                ⏱️ Temps d'amorçage
+                ⏱️ Temps d&apos;amorçage
               </div>
               <div style={{ 
                 fontWeight: '700',
