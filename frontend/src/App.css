@@ -239,7 +239,7 @@ body {
     top: 0;
     left: 0;
     height: 100vh;
-    width: 280px;
+    width: min(85vw, 300px); /* 85% de l'écran ou max 300px */
     pointer-events: auto;
     background: #dc2626;
   }
