@@ -104,12 +104,19 @@ body {
 
 /* Sidebar logo flame */
 .sidebar-logo .logo-flame .flame-container {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
 .sidebar-logo .logo-flame .flame-icon {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+}
+
+/* Sidebar logo text container */
+.sidebar-logo > div:last-child {
+  min-width: 0; /* Permet le text-overflow */
+  flex: 1;
 }
 
 .logo h1 {
