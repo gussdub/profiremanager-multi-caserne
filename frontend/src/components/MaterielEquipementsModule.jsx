@@ -113,8 +113,22 @@ const MaterielEquipementsModule = ({ user }) => {
     // Si c'est un employé, ne montrer que les APRIA
     if (isEmploye && !isAPRIA(e)) return false;
     
+    // Filtre par KPI (cartes cliquables)
+    if (filtreKPI === 'alertes') {
+      // Montrer uniquement les équipements avec des alertes
+      if (!e.alerte_maintenance && !e.alerte_expiration && !e.alerte_fin_vie) return false;
+    } else if (filtreKPI && filtreKPI !== 'total') {
+      // Filtre par état depuis les cartes KPI
+      if (e.etat !== filtreKPI) return false;
+    }
+    
+    // Filtre par catégorie (dropdown)
     if (filtreCategorie && e.categorie_id !== filtreCategorie) return false;
-    if (filtreEtat && e.etat !== filtreEtat) return false;
+    
+    // Filtre par état (dropdown) - seulement si pas de filtre KPI actif
+    if (!filtreKPI && filtreEtat && e.etat !== filtreEtat) return false;
+    
+    // Filtre par recherche
     if (filtreRecherche) {
       const search = filtreRecherche.toLowerCase();
       return (
