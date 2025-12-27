@@ -210,12 +210,14 @@ body {
   display: none;
   position: fixed;
   top: 0;
-  left: 280px;
+  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 998;
   pointer-events: auto;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 /* Responsive Sidebar - Correction complète clics mobile */
