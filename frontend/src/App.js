@@ -6450,6 +6450,79 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             </div>
             <div className="modal-body">
               <div className="personnel-form-grid">
+                {/* Section Photo de Profil */}
+                <div className="form-section" style={{ gridColumn: '1 / -1' }}>
+                  <h4 className="section-title">📷 Photo de profil</h4>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1.5rem',
+                    padding: '0.75rem',
+                    background: '#f9fafb',
+                    borderRadius: '8px',
+                    flexWrap: 'wrap'
+                  }}>
+                    {/* Photo preview */}
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      background: '#e5e7eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid #d1d5db',
+                      flexShrink: 0
+                    }}>
+                      {selectedUser?.photo_profil ? (
+                        <img 
+                          src={selectedUser.photo_profil} 
+                          alt="Photo de profil"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '2rem', color: '#9ca3af' }}>👤</span>
+                      )}
+                    </div>
+                    
+                    {/* Boutons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <input
+                        type="file"
+                        ref={photoInputRef}
+                        onChange={handlePhotoSelectAdmin}
+                        accept="image/jpeg,image/png,image/webp"
+                        style={{ display: 'none' }}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={photoUploading}
+                      >
+                        {photoUploading ? '⏳ Upload...' : '📤 Changer la photo'}
+                      </Button>
+                      {selectedUser?.photo_profil && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleDeletePhotoAdmin}
+                          style={{ color: '#ef4444' }}
+                        >
+                          🗑️ Supprimer
+                        </Button>
+                      )}
+                    </div>
+                    <p style={{ 
+                      fontSize: '0.7rem', 
+                      color: '#6b7280',
+                      margin: 0
+                    }}>
+                      JPG, PNG ou WEBP • Max 2 MB
+                    </p>
+                  </div>
+                </div>
+
                 {/* Section 1: Informations personnelles */}
                 <div className="form-section">
                   <h4 className="section-title">👤 Informations personnelles</h4>
