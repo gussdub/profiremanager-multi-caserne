@@ -228,7 +228,7 @@ body {
   
   .mobile-overlay {
     display: block;
-    left: 280px;
+    left: 0;
   }
   
   .sidebar {
