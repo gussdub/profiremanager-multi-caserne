@@ -34,6 +34,26 @@ const MaterielEquipementsModule = ({ user }) => {
   const [filtreCategorie, setFiltreCategorie] = useState('');
   const [filtreEtat, setFiltreEtat] = useState('');
   const [filtreRecherche, setFiltreRecherche] = useState('');
+  const [filtreKPI, setFiltreKPI] = useState(''); // Filtre actif via les cartes KPI
+
+  // Fonction pour gérer le clic sur une carte KPI (toggle)
+  const handleKPIClick = (filterType) => {
+    if (filtreKPI === filterType) {
+      // Si on clique sur le même filtre, on le désactive
+      setFiltreKPI('');
+      setFiltreEtat('');
+    } else {
+      // Sinon on active le nouveau filtre
+      setFiltreKPI(filterType);
+      if (filterType === 'alertes') {
+        setFiltreEtat(''); // Les alertes ont une logique spéciale
+      } else if (filterType === 'total') {
+        setFiltreEtat('');
+      } else {
+        setFiltreEtat(filterType);
+      }
+    }
+  };
 
   // Vérifier si un équipement est un APRIA
   const isAPRIA = (equipement) => {
