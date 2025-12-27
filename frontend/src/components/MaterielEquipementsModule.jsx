@@ -328,19 +328,25 @@ const MaterielEquipementsModule = ({ user }) => {
 };
 
 // ===== Composants utilitaires =====
-const StatCard = ({ label, value, icon, color }) => (
-  <div style={{
-    background: 'white',
-    borderRadius: '0.5rem',
-    padding: '1rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    borderLeft: `4px solid ${color}`
-  }}>
+const StatCard = ({ label, value, icon, color, onClick, active }) => (
+  <div 
+    onClick={onClick}
+    style={{
+      background: active ? color : 'white',
+      borderRadius: '0.5rem',
+      padding: '1rem',
+      boxShadow: active ? `0 4px 12px ${color}40` : '0 1px 3px rgba(0,0,0,0.1)',
+      borderLeft: `4px solid ${color}`,
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'all 0.2s ease',
+      transform: active ? 'scale(1.02)' : 'scale(1)'
+    }}
+  >
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
       <span style={{ fontSize: '1.5rem' }}>{icon}</span>
       <div>
-        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>{value}</div>
-        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{label}</div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: active ? 'white' : color }}>{value}</div>
+        <div style={{ fontSize: '0.75rem', color: active ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>{label}</div>
       </div>
     </div>
   </div>
