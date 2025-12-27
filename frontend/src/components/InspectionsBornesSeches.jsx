@@ -547,6 +547,18 @@ const InspectionsBornesSeches = ({ user }) => {
           }}
         />
       )}
+
+      {/* Modal d'historique des inspections */}
+      {showHistoriqueModal && selectedBorne && (
+        <HistoriqueInspectionsBorneSecheModal
+          borne={selectedBorne}
+          tenantSlug={tenantSlug}
+          onClose={() => {
+            setShowHistoriqueModal(false);
+            setSelectedBorne(null);
+          }}
+        />
+      )}
     </div>
   );
 };
