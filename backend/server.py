@@ -9959,6 +9959,7 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         
         # Chercher l'utilisateur dans ce tenant
+        logging.info(f"🔍 Recherche utilisateur: email={user_login.email}, tenant_id={tenant.id}")
         user_data = await db.users.find_one({
             "email": user_login.email,
             "tenant_id": tenant.id
