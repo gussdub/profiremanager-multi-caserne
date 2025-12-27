@@ -261,6 +261,43 @@ const MaterielEquipementsModule = ({ user }) => {
           </div>
         )}
         
+        {/* Indicateur de filtre actif */}
+        {filtreKPI && !isEmploye && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            marginBottom: '1rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem'
+          }}>
+            <span>🔍 Filtre actif :</span>
+            <span style={{ fontWeight: '600' }}>
+              {filtreKPI === 'total' && 'Tous les équipements'}
+              {filtreKPI === 'bon' && 'En bon état'}
+              {filtreKPI === 'a_reparer' && 'À réparer'}
+              {filtreKPI === 'hors_service' && 'Hors service'}
+              {filtreKPI === 'alertes' && 'Alertes'}
+            </span>
+            <button
+              onClick={() => { setFiltreKPI(''); setFiltreEtat(''); }}
+              style={{
+                marginLeft: 'auto',
+                padding: '0.25rem 0.75rem',
+                backgroundColor: '#e5e7eb',
+                border: 'none',
+                borderRadius: '0.25rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem'
+              }}
+            >
+              ✕ Effacer
+            </button>
+          </div>
+        )}
+        
         {/* Message pour les pompiers */}
         {isEmploye && (
           <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
