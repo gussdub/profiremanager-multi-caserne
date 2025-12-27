@@ -15664,6 +15664,97 @@ const MonProfil = () => {
     }
   }, [user?.id, tenantSlug]);
 
+  // Gestion de l'upload de photo de profil
+  const handlePhotoSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez choisir une image JPG, PNG ou WEBP",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérifier la taille (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Image trop volumineuse",
+        description: "La taille maximale est de 2 MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPhotoUploading(true);
+
+    try {
+      // Convertir en base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        
+        try {
+          const response = await apiPost(tenantSlug, '/users/photo-profil', {
+            photo_base64: base64
+          });
+          
+          // Mettre à jour le profil local
+          setUserProfile(prev => ({...prev, photo_profil: response.photo_profil}));
+          
+          toast({
+            title: "Photo mise à jour",
+            description: "Votre photo de profil a été enregistrée",
+          });
+        } catch (error) {
+          toast({
+            title: "Erreur",
+            description: error.message || "Impossible de sauvegarder la photo",
+            variant: "destructive"
+          });
+        } finally {
+          setPhotoUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setPhotoUploading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de lire l'image",
+        variant: "destructive"
+      });
+    }
+    
+    // Reset l'input pour permettre de re-sélectionner le même fichier
+    event.target.value = '';
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre photo de profil ?')) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, '/users/photo-profil');
+      setUserProfile(prev => ({...prev, photo_profil: null}));
+      toast({
+        title: "Photo supprimée",
+        description: "Votre photo de profil a été supprimée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la photo",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
       // Valider heures_max_semaine avant sauvegarde
