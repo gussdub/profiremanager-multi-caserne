@@ -1,40 +1,45 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET DU MODULE "MES EPI" AVEC INTÉGRATION MASQUE APRIA
+TEST COMPLET E2E DES FORMULAIRES D'INSPECTION PERSONNALISÉS POUR BORNES SÈCHES
 
 CONTEXTE:
-Test du module "Mes EPI" (My PPE - Personal Protective Equipment) qui affiche:
-1. Les EPI réguliers assignés à l'utilisateur (collection db.epis)
-2. Les masques APRIA assignés à l'utilisateur (collection db.equipements avec employe_id)
+Test des formulaires d'inspection personnalisés pour les bornes sèches selon la review request.
+Teste les endpoints API et la fonctionnalité complète de gestion des modèles d'inspection.
 
 TENANT: shefford
-CREDENTIALS: email: test@shefford.ca, mot_de_passe: Test123!
+CREDENTIALS: 
+- Admin: gussdub@gmail.com / 230685Juin+
+- Employee: employe@shefford.ca / Employe123!
 
 ENDPOINTS À TESTER:
 
 1. **Authentification:**
-   - POST /api/shefford/auth/login - Obtenir le token d'authentification
+   - POST /api/shefford/auth/login - Obtenir le token d'authentification (champ: mot_de_passe)
 
-2. **Module Mes EPI:**
-   - GET /api/shefford/mes-epi/masque-apria - Retourne le masque APRIA assigné à l'utilisateur
-   - GET /api/shefford/mes-epi - Retourne les EPI réguliers assignés
-
-3. **Inspections APRIA:**
-   - POST /api/shefford/apria/inspections - Créer une inspection APRIA
-   - GET /api/shefford/apria/equipements/{equipement_id}/historique - Historique des inspections
+2. **Modèles d'inspection bornes sèches:**
+   - GET /api/shefford/bornes-seches/modeles-inspection - Liste des modèles d'inspection
+   - GET /api/shefford/bornes-seches/modeles-inspection/actif - Récupérer le modèle actif
+   - POST /api/shefford/bornes-seches/modeles-inspection - Créer un nouveau modèle
+   - PUT /api/shefford/bornes-seches/modeles-inspection/{id} - Modifier un modèle
+   - POST /api/shefford/bornes-seches/modeles-inspection/{id}/activer - Activer un modèle
+   - POST /api/shefford/bornes-seches/modeles-inspection/{id}/dupliquer - Dupliquer un modèle
+   - DELETE /api/shefford/bornes-seches/modeles-inspection/{id} - Supprimer un modèle
 
 SCÉNARIO DE TEST:
-1. Login en tant qu'admin (test@shefford.ca / Test123!) sur tenant "shefford"
-2. Test GET /api/shefford/mes-epi/masque-apria - devrait retourner 404 (pas de masque assigné)
-3. Créer un équipement de test (masque APRIA) assigné à l'utilisateur admin
-4. Test GET /api/shefford/mes-epi/masque-apria - devrait retourner le masque
-5. Créer une inspection APRIA pour ce masque
-6. Vérifier que l'inspection apparaît dans l'historique
+1. Login en tant qu'admin (gussdub@gmail.com / 230685Juin+) sur tenant "shefford"
+2. Récupérer la liste des modèles d'inspection existants
+3. Récupérer le modèle actif (ou créer un par défaut)
+4. Créer un nouveau modèle de test avec des champs personnalisés
+5. Activer le nouveau modèle
+6. Dupliquer le modèle
+7. Modifier le modèle dupliqué
+8. Supprimer le modèle de test
+9. Nettoyer les données de test
 
 RÉSULTATS ATTENDUS:
 - Tous les endpoints doivent fonctionner correctement
-- Le masque APRIA doit être correctement assigné et récupéré
-- Les inspections doivent être créées et apparaître dans l'historique
+- Les modèles doivent être créés, modifiés, activés et supprimés
+- La structure de données doit être conforme aux spécifications
 """
 
 import requests
