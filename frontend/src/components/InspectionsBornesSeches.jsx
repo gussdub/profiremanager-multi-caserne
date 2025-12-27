@@ -154,6 +154,12 @@ const InspectionsBornesSeches = ({ user }) => {
     setShowInspectionModal(true);
   };
 
+  // Ouvrir le modal d'historique
+  const openHistoriqueModal = (borne) => {
+    setSelectedBorne(borne);
+    setShowHistoriqueModal(true);
+  };
+
   // Changer le statut d'une borne (admin/superviseur uniquement)
   const changeStatutBorne = async (borneId, nouveauStatut) => {
     try {
