@@ -39,6 +39,7 @@ import qrcode
 from pwa_manifest import pwa_router
 from io import BytesIO
 import base64
+from PIL import Image as PILImage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
