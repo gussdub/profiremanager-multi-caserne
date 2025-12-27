@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://fire-inspector-5.preview.emergentagent.com
+- **URL** : https://firehubpro.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://fire-inspector-5.preview.emergentagent.com"
+  "apiUrl": "https://firehubpro.preview.emergentagent.com"
 }
 ```
 

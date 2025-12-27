@@ -47,7 +47,7 @@ import os
 
 class MesEPIModuleTester:
     def __init__(self):
-        self.base_url = "https://fire-inspector-5.preview.emergentagent.com/api"
+        self.base_url = "https://firehubpro.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
