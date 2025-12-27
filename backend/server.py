@@ -2133,6 +2133,7 @@ class User(BaseModel):
     competences: List[str] = []  # Liste des UUIDs de compétences acquises/certifiées (pour auto-attribution)
     accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
     est_preventionniste: bool = False  # Désigné comme préventionniste (module Prévention)
+    photo_profil: Optional[str] = None  # Photo de profil en base64 (redimensionnée 200x200)
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
