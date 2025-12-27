@@ -9959,6 +9959,11 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         print(f"✅ DEBUG: Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         print(f"📊 DEBUG: Using database: {db.name}")
         
+        # Debug: count all users
+        total_users = await db.users.count_documents({})
+        tenant_users = await db.users.count_documents({"tenant_id": tenant.id})
+        print(f"📈 DEBUG: Total users in DB: {total_users}, Users with tenant_id: {tenant_users}")
+        
         # Chercher l'utilisateur dans ce tenant
         print(f"🔍 DEBUG: Recherche utilisateur: email={user_login.email}, tenant_id={tenant.id}")
         user_data = await db.users.find_one({
