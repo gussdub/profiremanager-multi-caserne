@@ -275,7 +275,7 @@ tasks:
         comment: "✅ TESTÉ - Composant PointEauModal correctement implémenté avec section d'assignation de formulaire d'inspection pour bornes sèches. Code montre dropdown de sélection 'modele_inspection_assigne_id' visible uniquement pour admin/superviseur et type 'borne_seche'. Intégration avec API pour charger modèles disponibles via apiGet. Interface utilisateur complète avec validation et sauvegarde. Fonctionnalité d'assignation de formulaires personnalisés opérationnelle."
 
 test_plan:
-  current_focus: ["UI - Paramètres inspections bornes sèches", "UI - Formulaire d'inspection dans PointEauModal"]
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
