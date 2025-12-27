@@ -28249,7 +28249,7 @@ async def import_inspections_bornes(
             
             # Créer l'inspection
             inspection = {
-                "id": str(uuid4()),
+                "id": str(uuid.uuid4()),
                 "tenant_id": tenant.id,
                 "borne_id": borne['id'],
                 "numero_borne": numero_borne,
