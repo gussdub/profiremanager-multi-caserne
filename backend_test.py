@@ -374,7 +374,7 @@ class PhotoProfilE2ETester:
     def generate_test_report(self):
         """Générer le rapport final des tests"""
         print("\n" + "="*80)
-        print("📊 RAPPORT FINAL - FORMULAIRES D'INSPECTION PERSONNALISÉS BORNES SÈCHES")
+        print("📊 RAPPORT FINAL - ENDPOINTS DE PHOTO DE PROFIL")
         print("="*80)
         
         print(f"🏢 Tenant testé: {self.tenant_slug}")
@@ -395,24 +395,24 @@ class PhotoProfilE2ETester:
         # Grouper par catégorie
         categories = {
             "Authentification": [],
-            "Récupération Modèles": [],
-            "Création/Modification": [],
-            "Activation/Duplication": [],
-            "Suppression": []
+            "Upload Photo": [],
+            "Récupération Données": [],
+            "Suppression Photo": [],
+            "Vérifications": []
         }
         
         for result in self.test_results:
             test_name = result['test']
             if 'auth' in test_name.lower() or 'login' in test_name.lower():
                 categories["Authentification"].append(result)
-            elif 'get' in test_name.lower():
-                categories["Récupération Modèles"].append(result)
-            elif 'post créer' in test_name.lower() or 'put' in test_name.lower():
-                categories["Création/Modification"].append(result)
-            elif 'activer' in test_name.lower() or 'dupliquer' in test_name.lower():
-                categories["Activation/Duplication"].append(result)
+            elif 'upload' in test_name.lower() or 'post' in test_name.lower():
+                categories["Upload Photo"].append(result)
+            elif 'get' in test_name.lower() and 'user' in test_name.lower():
+                categories["Récupération Données"].append(result)
             elif 'delete' in test_name.lower():
-                categories["Suppression"].append(result)
+                categories["Suppression Photo"].append(result)
+            elif 'vérification' in test_name.lower() or 'format' in test_name.lower():
+                categories["Vérifications"].append(result)
         
         for category, tests in categories.items():
             if tests:
@@ -426,13 +426,10 @@ class PhotoProfilE2ETester:
         
         critical_tests = [
             ("Authentification admin", any("auth" in r['test'].lower() for r in self.test_results if r['success'])),
-            ("Liste des modèles", any("GET Modèles" in r['test'] and r['success'] for r in self.test_results)),
-            ("Modèle actif", any("GET Modèle Actif" in r['test'] and r['success'] for r in self.test_results)),
-            ("Création modèle", any("POST Créer" in r['test'] and r['success'] for r in self.test_results)),
-            ("Modification modèle", any("PUT Modifier" in r['test'] and r['success'] for r in self.test_results)),
-            ("Activation modèle", any("POST Activer" in r['test'] and r['success'] for r in self.test_results)),
-            ("Duplication modèle", any("POST Dupliquer" in r['test'] and r['success'] for r in self.test_results)),
-            ("Suppression modèle", any("DELETE Supprimer" in r['test'] and r['success'] for r in self.test_results))
+            ("Upload photo de profil", any("POST Upload Photo" in r['test'] and r['success'] for r in self.test_results)),
+            ("Photo dans réponse GET user", any("GET User" in r['test'] and "Photo" in r['test'] and r['success'] for r in self.test_results)),
+            ("Suppression photo", any("DELETE Photo" in r['test'] and r['success'] for r in self.test_results)),
+            ("Vérification suppression", any("Vérification" in r['test'] and "Null" in r['test'] and r['success'] for r in self.test_results))
         ]
         
         for feature, status in critical_tests:
@@ -442,7 +439,8 @@ class PhotoProfilE2ETester:
         # Recommandations
         print(f"\n💡 RECOMMANDATIONS:")
         if success_rate >= 90:
-            print("   🎉 Excellent! Les formulaires d'inspection personnalisés fonctionnent parfaitement.")
+            print("   🎉 Excellent! Les endpoints de photo de profil fonctionnent parfaitement.")
+            print("   📸 L'upload, le redimensionnement et la suppression sont opérationnels.")
         elif success_rate >= 75:
             print("   ✅ Très bon résultat. Quelques ajustements mineurs nécessaires.")
         elif success_rate >= 50:
@@ -453,43 +451,36 @@ class PhotoProfilE2ETester:
         return success_rate >= 75  # Critère de succès
     
     def run_comprehensive_tests(self):
-        """Exécuter tous les tests E2E des formulaires d'inspection"""
-        print("🚀 DÉBUT DES TESTS E2E - FORMULAIRES D'INSPECTION PERSONNALISÉS BORNES SÈCHES")
+        """Exécuter tous les tests E2E des endpoints de photo de profil"""
+        print("🚀 DÉBUT DES TESTS E2E - ENDPOINTS DE PHOTO DE PROFIL")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
-        print(f"🎯 Objectif: Tester les formulaires d'inspection personnalisés pour bornes sèches")
+        print(f"🎯 Objectif: Tester les endpoints de photo de profil")
         
-        # 1. Authentification admin
-        if not self.authenticate(use_admin=True):
+        # 1. Créer l'image de test
+        if not self.create_test_image():
+            print("❌ ÉCHEC CRITIQUE: Impossible de créer l'image de test")
+            return False
+        
+        # 2. Authentification admin
+        if not self.authenticate():
             print("❌ ÉCHEC CRITIQUE: Impossible de s'authentifier en tant qu'admin")
             return False
         
         try:
-            # 2. Récupérer la liste des modèles existants
-            self.test_get_modeles_inspection()
+            # 3. Upload de la photo de profil
+            self.test_upload_photo_profil()
             
-            # 3. Récupérer le modèle actif
-            self.test_get_modele_actif()
+            # 4. Vérifier que la photo est dans la réponse GET user
+            self.test_get_user_with_photo()
             
-            # 4. Créer un nouveau modèle de test
-            self.test_create_modele_inspection()
+            # 5. Supprimer la photo de profil
+            self.test_delete_photo_profil()
             
-            # 5. Modifier le modèle créé
-            self.test_update_modele_inspection()
+            # 6. Vérifier que la photo est bien supprimée
+            self.test_verify_photo_deleted()
             
-            # 6. Activer le modèle
-            self.test_activer_modele()
-            
-            # 7. Dupliquer le modèle
-            self.test_dupliquer_modele()
-            
-            # 8. Supprimer le modèle dupliqué
-            self.test_delete_modele_inspection()
-            
-            # 9. Nettoyage
-            self.cleanup_test_data()
-            
-            # 10. Rapport final
+            # 7. Rapport final
             overall_success = self.generate_test_report()
             
             return overall_success
@@ -500,7 +491,7 @@ class PhotoProfilE2ETester:
 
 def main():
     """Point d'entrée principal"""
-    tester = InspectionModelsE2ETester()
+    tester = PhotoProfilE2ETester()
     success = tester.run_comprehensive_tests()
     
     # Code de sortie
