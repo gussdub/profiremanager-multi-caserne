@@ -146,3 +146,61 @@ agent_communication:
     message: "✅ BACKEND TESTS COMPLETS - Module Mes EPI avec intégration masque APRIA testé avec succès à 100%. Tous les endpoints fonctionnent parfaitement : 1) GET /mes-epi/masque-apria retourne 404 sans masque et les détails avec dernière inspection quand assigné, 2) GET /mes-epi retourne les EPI réguliers, 3) POST /apria/inspections crée correctement les inspections, 4) GET /apria/equipements/{id}/historique retourne l'historique complet. L'intégration est parfaite - les masques APRIA assignés via employe_id sont correctement identifiés et récupérés. Tests automatisés créent/assignent/inspectent/nettoient les données de test. Prêt pour tests frontend."
   - agent: "testing"
     message: "✅ FRONTEND TESTS COMPLETS - Module Mes EPI avec intégration APRIA testé avec succès. Page accessible via navigation sidebar, titre '🛡️ Mes EPI' affiché correctement, description présente. Empty state 'Aucun EPI ne vous est assigné pour le moment' fonctionne quand aucun EPI/masque assigné. Code vérifié : Section APRIA s'affiche conditionnellement via loadMasqueAPRIA(), boutons Inspecter/Historique ouvrent les bons modals (InspectionAPRIAModal, HistoriqueInspectionsAPRIA) avec props correctes. Intégration frontend-backend complète et fonctionnelle. Tests UI réussis avec tenant 'shefford' et user test@shefford.ca."
+
+# ============================================
+# TEST SESSION: Formulaires d'inspection personnalisés
+# Date: 2024-12-27
+# ============================================
+
+test_session:
+  focus: "Formulaires d'inspection personnalisés pour bornes sèches"
+  credentials:
+    admin:
+      tenant: "shefford"
+      email: "gussdub@gmail.com"
+      password: "230685Juin+"
+    employee:
+      tenant: "shefford"
+      email: "employe@shefford.ca"
+      password: "Employe123!"
+
+tasks:
+  - task: "API - Liste des modèles d'inspection"
+    endpoint: "GET /{tenant_slug}/bornes-seches/modeles-inspection"
+    implemented: true
+    working: "NA"
+    priority: "high"
+    needs_retesting: true
+    
+  - task: "API - Création modèle d'inspection"
+    endpoint: "POST /{tenant_slug}/bornes-seches/modeles-inspection"
+    implemented: true
+    working: "NA"
+    priority: "high"
+    needs_retesting: true
+    
+  - task: "API - Activation modèle"
+    endpoint: "POST /{tenant_slug}/bornes-seches/modeles-inspection/{id}/activer"
+    implemented: true
+    working: "NA"
+    priority: "high"
+    needs_retesting: true
+    
+  - task: "UI - Paramètres inspections bornes sèches"
+    file: "frontend/src/components/ParametresInspectionsBornesSeches.jsx"
+    implemented: true
+    working: "NA"
+    priority: "high"
+    needs_retesting: true
+    
+  - task: "UI - Formulaire d'inspection dans PointEauModal"
+    file: "frontend/src/components/PointEauModal.jsx"
+    implemented: true
+    working: "NA"
+    priority: "medium"
+    needs_retesting: true
+
+test_plan:
+  current_focus: ["Formulaires d'inspection personnalisés"]
+  test_all: true
+  test_priority: "high_first"
