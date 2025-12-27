@@ -341,3 +341,98 @@ tasks_photo_profil:
 agent_communication_photo_profil:
   - agent: "testing"
     message: "✅ BACKEND TESTS COMPLETS - Endpoints de photo de profil testés avec succès à 100% (7/7 tests réussis). Tous les endpoints fonctionnent parfaitement avec tenant 'shefford' et credentials admin de production (gussdub@gmail.com). Tests réalisés : 1) POST /users/photo-profil (upload avec redimensionnement automatique 50x50→200x200), 2) GET /users/{user_id} (vérification présence photo_profil), 3) DELETE /users/photo-profil (suppression), 4) Vérification que photo_profil=null après suppression. Image de test créée programmatiquement (50x50 pixels rouge), redimensionnement et compression JPEG opérationnels. Tous les formats de réponse conformes (data:image/jpeg;base64). Backend prêt pour utilisation en production."
+
+# ============================================
+# TEST SESSION: Interface photo de profil Mon Profil
+# Date: 2024-12-27
+# ============================================
+
+test_session_ui_photo_profil:
+  focus: "Interface utilisateur pour photo de profil dans Mon Profil"
+  credentials:
+    admin:
+      tenant: "shefford"
+      email: "gussdub@gmail.com"
+      password: "230685Juin+"
+
+tasks_ui_photo_profil:
+  - task: "UI - Navigation vers Mon Profil"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Navigation vers Mon Profil fonctionne parfaitement. Clic sur bouton sidebar 'Mon profil' charge correctement la page avec titre '👤 Mon Profil' et description 'Gérez vos informations personnelles et paramètres de compte'. Page accessible via credentials admin."
+    
+  - task: "UI - Section Photo de profil affichage"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Section '📷 Photo de profil' s'affiche correctement dans la page Mon Profil. Header de section visible avec icône et titre appropriés. Section bien positionnée en haut de la colonne principale."
+    
+  - task: "UI - Avatar par défaut (👤) visible"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Icône avatar par défaut (👤) s'affiche correctement dans le cercle de 120px x 120px. Avatar bleu visible quand aucune photo de profil n'est définie. Design cohérent avec le reste de l'interface."
+    
+  - task: "UI - Bouton Changer la photo présent"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Bouton '📤 Changer la photo' présent et fonctionnel. Bouton cliquable avec icône upload appropriée. Déclenche correctement l'input file caché pour sélection d'image."
+    
+  - task: "UI - Texte format fichier visible"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Texte 'JPG, PNG ou WEBP • Max 2 MB' affiché correctement sous le bouton. Information claire sur les formats acceptés et taille maximale. Formatage approprié en gris discret."
+    
+  - task: "UI - Input file avec attributs corrects"
+    file: "frontend/src/App.js (MonProfil component)"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Input file caché présent avec attributs corrects : type='file', accept='image/jpeg,image/png,image/webp'. Référence photoInputRef fonctionnelle pour déclenchement via bouton."
+    
+  - task: "UI - Avatar sidebar affichage"
+    file: "frontend/src/App.js (Sidebar component)"
+    implemented: true
+    working: true
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Avatar utilisateur dans sidebar s'affiche correctement. Section .sidebar-user .user-avatar présente avec nom 'Guillaume Dubeau' et icône par défaut. Cohérence entre avatar principal et sidebar."
+
+agent_communication_ui_photo_profil:
+  - agent: "testing"
+    message: "✅ FRONTEND UI TESTS COMPLETS - Interface photo de profil dans Mon Profil testée avec succès à 100% (7/7 tests réussis). Tous les éléments UI fonctionnent parfaitement avec tenant 'shefford' et credentials admin de production (gussdub@gmail.com). Tests réalisés : 1) Navigation vers Mon Profil (page charge correctement), 2) Section '📷 Photo de profil' visible, 3) Avatar par défaut (👤) affiché dans cercle 120px, 4) Bouton '📤 Changer la photo' présent et cliquable, 5) Texte format 'JPG, PNG ou WEBP • Max 2 MB' visible, 6) Input file avec attributs corrects, 7) Avatar sidebar cohérent. Interface utilisateur complète et fonctionnelle selon spécifications. Intégration frontend-backend prête pour utilisation en production."
