@@ -1725,7 +1725,20 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         <div className="sidebar-user">
           <div className="user-info">
             <div className="user-avatar">
-              <span className="user-icon">👤</span>
+              {user?.photo_profil ? (
+                <img 
+                  src={user.photo_profil} 
+                  alt="Photo de profil"
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }}
+                />
+              ) : (
+                <span className="user-icon">👤</span>
+              )}
             </div>
             <div className="user-details">
               <p className="user-name">{user?.prenom} {user?.nom}</p>
