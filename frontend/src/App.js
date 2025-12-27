@@ -4511,6 +4511,103 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
+  // Gestion de la photo de profil (Admin)
+  const handlePhotoSelectAdmin = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedUser) return;
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez choisir une image JPG, PNG ou WEBP",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérifier la taille (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Image trop volumineuse",
+        description: "La taille maximale est de 2 MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPhotoUploading(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        
+        try {
+          const response = await apiPost(tenantSlug, `/users/${selectedUser.id}/photo-profil`, {
+            photo_base64: base64
+          });
+          
+          // Mettre à jour l'utilisateur sélectionné et la liste
+          setSelectedUser(prev => ({...prev, photo_profil: response.photo_profil}));
+          setUsers(prev => prev.map(u => 
+            u.id === selectedUser.id ? {...u, photo_profil: response.photo_profil} : u
+          ));
+          
+          toast({
+            title: "Photo mise à jour",
+            description: `Photo de ${selectedUser.prenom} enregistrée`,
+          });
+        } catch (error) {
+          toast({
+            title: "Erreur",
+            description: error.message || "Impossible de sauvegarder la photo",
+            variant: "destructive"
+          });
+        } finally {
+          setPhotoUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setPhotoUploading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de lire l'image",
+        variant: "destructive"
+      });
+    }
+    
+    event.target.value = '';
+  };
+
+  const handleDeletePhotoAdmin = async () => {
+    if (!selectedUser) return;
+    
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${selectedUser.prenom} ?`)) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, `/users/${selectedUser.id}/photo-profil`);
+      setSelectedUser(prev => ({...prev, photo_profil: null}));
+      setUsers(prev => prev.map(u => 
+        u.id === selectedUser.id ? {...u, photo_profil: null} : u
+      ));
+      toast({
+        title: "Photo supprimée",
+        description: `Photo de ${selectedUser.prenom} supprimée`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la photo",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleEditUser = async (user) => {
     // Charger les EPIs de l'utilisateur AVANT d'ouvrir le modal
     try {
