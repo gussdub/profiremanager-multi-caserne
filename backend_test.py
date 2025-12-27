@@ -68,19 +68,43 @@ class PhotoProfilE2ETester:
             "test_image_base64": None
         }
         
-    def authenticate(self, use_admin=True):
-        """Authentification sur le tenant shefford avec les credentials de production"""
-        credentials = self.admin_credentials if use_admin else self.employee_credentials
-        user_type = "admin" if use_admin else "employee"
+    def create_test_image(self):
+        """Créer une image de test 50x50 pixels rouge en base64"""
+        print(f"🎨 Création d'une image de test 50x50 pixels rouge...")
         
-        print(f"🔐 Authentification tenant {self.tenant_slug} ({user_type})...")
+        try:
+            # Créer une image rouge 50x50 pixels
+            img = Image.new('RGB', (50, 50), color='red')
+            
+            # Convertir en base64
+            buffer = BytesIO()
+            img.save(buffer, format='JPEG')
+            base64_img = base64.b64encode(buffer.getvalue()).decode()
+            
+            # Format avec préfixe data:image
+            self.test_data["test_image_base64"] = f"data:image/jpeg;base64,{base64_img}"
+            
+            print(f"✅ Image de test créée: {len(base64_img)} caractères base64")
+            print(f"   📏 Taille: 50x50 pixels")
+            print(f"   🎨 Couleur: Rouge")
+            print(f"   📄 Format: JPEG")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Erreur création image de test: {str(e)}")
+            return False
+    
+    def authenticate(self):
+        """Authentification sur le tenant shefford avec les credentials de production"""
+        print(f"🔐 Authentification tenant {self.tenant_slug} (admin)...")
         
         auth_url = f"{self.base_url}/{self.tenant_slug}/auth/login"
         
         print(f"📍 URL: {auth_url}")
-        print(f"📋 Email: {credentials['email']}")
+        print(f"📋 Email: {self.admin_credentials['email']}")
         
-        response = requests.post(auth_url, json=credentials)
+        response = requests.post(auth_url, json=self.admin_credentials)
         
         if response.status_code == 200:
             data = response.json()
