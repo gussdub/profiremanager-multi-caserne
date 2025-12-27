@@ -22324,7 +22324,7 @@ async def import_equipements_csv(
             
             # Générer code unique si absent
             if not code_unique:
-                code_unique = f"{categorie['nom'][:3].upper()}-{str(uuid4())[:8]}"
+                code_unique = f"{categorie['nom'][:3].upper()}-{str(uuid.uuid4())[:8]}"
             
             # Vérifier si l'équipement existe déjà (par code unique)
             existing_equipement = await db.equipements.find_one({
