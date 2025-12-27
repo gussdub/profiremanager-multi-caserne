@@ -22366,7 +22366,7 @@ async def import_equipements_csv(
             
             # 5. Créer ou mettre à jour l'équipement
             equipement_obj = {
-                "id": existing_equipement["id"] if existing_equipement else str(uuid4()),
+                "id": existing_equipement["id"] if existing_equipement else str(uuid.uuid4()),
                 "tenant_id": tenant.id,
                 "nom": nom,
                 "code_unique": code_unique,
