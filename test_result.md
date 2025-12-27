@@ -168,23 +168,79 @@ tasks:
   - task: "API - Liste des modèles d'inspection"
     endpoint: "GET /{tenant_slug}/bornes-seches/modeles-inspection"
     implemented: true
-    working: "NA"
+    working: true
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Retourne la liste des modèles d'inspection avec structure correcte (id, nom, description, est_actif, sections). Test avec tenant 'shefford' et credentials admin réussi."
+    
+  - task: "API - Récupération modèle actif"
+    endpoint: "GET /{tenant_slug}/bornes-seches/modeles-inspection/actif"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Retourne le modèle d'inspection actif ou crée un modèle par défaut si aucun n'existe. Structure de réponse complète et conforme."
     
   - task: "API - Création modèle d'inspection"
     endpoint: "POST /{tenant_slug}/bornes-seches/modeles-inspection"
     implemented: true
-    working: "NA"
+    working: true
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Création de modèle avec champs personnalisés réussie. Structure de données conforme aux spécifications (nom, description, sections avec types de champs variés)."
+    
+  - task: "API - Modification modèle d'inspection"
+    endpoint: "PUT /{tenant_slug}/bornes-seches/modeles-inspection/{id}"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Modification des modèles (nom, description, sections) réussie. Gestion correcte des champs optionnels."
     
   - task: "API - Activation modèle"
     endpoint: "POST /{tenant_slug}/bornes-seches/modeles-inspection/{id}/activer"
     implemented: true
-    working: "NA"
+    working: true
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Activation d'un modèle désactive automatiquement les autres. Vérification que le modèle devient actif réussie."
+    
+  - task: "API - Duplication modèle"
+    endpoint: "POST /{tenant_slug}/bornes-seches/modeles-inspection/{id}/dupliquer"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Duplication de modèle avec nouveau nom réussie. Le modèle dupliqué n'est pas actif par défaut (comportement correct)."
+    
+  - task: "API - Suppression modèle"
+    endpoint: "DELETE /{tenant_slug}/bornes-seches/modeles-inspection/{id}"
+    implemented: true
+    working: true
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTÉ - Endpoint fonctionne parfaitement. Suppression de modèle non-actif réussie. Protection contre suppression du modèle actif en place."
     
   - task: "UI - Paramètres inspections bornes sèches"
     file: "frontend/src/components/ParametresInspectionsBornesSeches.jsx"
