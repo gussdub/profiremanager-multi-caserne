@@ -422,11 +422,13 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               active={activeTab === 'epi'}
               onClick={() => { setActiveTab('epi'); setMobileMenuOpen(false); }}
             />
-            <MobileTabButton
-              label="⚙️ Paramètres"
-              active={activeTab === 'parametres'}
-              onClick={() => { setActiveTab('parametres'); setMobileMenuOpen(false); }}
-            />
+            {user?.role !== 'employe' && (
+              <MobileTabButton
+                label="⚙️ Paramètres"
+                active={activeTab === 'parametres'}
+                onClick={() => { setActiveTab('parametres'); setMobileMenuOpen(false); }}
+              />
+            )}
           </div>
         )}
       </div>
