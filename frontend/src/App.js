@@ -8315,9 +8315,9 @@ const Planning = () => {
         )}
       </div>
 
-      {/* Boutons d'Assignation Mis en Évidence - Optimisé Mobile */}
+      {/* Boutons d'Assignation - Responsive Mobile/Desktop */}
       {user.role !== 'employe' && (
-        <div style={{
+        <div className="planning-action-buttons" style={{
           display: 'flex', 
           flexWrap: 'wrap',
           gap: '0.5rem', 
@@ -8326,18 +8326,7 @@ const Planning = () => {
           padding: '0 0.5rem'
         }}>
           <Button 
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              padding: '0.6rem 0.8rem',
-              fontSize: '0.85rem',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-              whiteSpace: 'nowrap',
-              flex: '1 1 auto',
-              minWidth: '140px',
-              maxWidth: '200px'
-            }}
+            className="planning-btn planning-btn-auto"
             onClick={() => {
               setAutoAttributionConfig({
                 periode: viewMode,
@@ -8347,43 +8336,27 @@ const Planning = () => {
             }}
             data-testid="auto-assign-btn"
           >
-            ✨ Auto
+            <span className="btn-icon">✨</span>
+            <span className="btn-text-short">Auto</span>
+            <span className="btn-text-full">Attribution Automatique</span>
           </Button>
           <Button 
-            style={{
-              background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
-              color: 'white',
-              padding: '0.6rem 0.8rem',
-              fontSize: '0.85rem',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 8px rgba(252, 165, 165, 0.3)',
-              whiteSpace: 'nowrap',
-              flex: '1 1 auto',
-              minWidth: '140px',
-              maxWidth: '200px'
-            }}
+            className="planning-btn planning-btn-manual"
             onClick={() => setShowAdvancedAssignModal(true)}
             data-testid="manual-assign-btn"
           >
-            👤 Manuelle
+            <span className="btn-icon">👤</span>
+            <span className="btn-text-short">Manuelle</span>
+            <span className="btn-text-full">Assignation Manuelle</span>
           </Button>
           <Button 
-            style={{
-              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-              color: 'white',
-              padding: '0.6rem 0.8rem',
-              fontSize: '0.85rem',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-              whiteSpace: 'nowrap',
-              flex: '1 1 auto',
-              minWidth: '140px',
-              maxWidth: '200px'
-            }}
+            className="planning-btn planning-btn-rapport"
             onClick={() => setShowRapportHeuresModal(true)}
             data-testid="rapport-heures-btn"
           >
-            📊 Rapport
+            <span className="btn-icon">📊</span>
+            <span className="btn-text-short">Rapport</span>
+            <span className="btn-text-full">Rapport d'Heures</span>
           </Button>
         </div>
       )}
