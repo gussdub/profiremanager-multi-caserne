@@ -1,45 +1,40 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET E2E DES FORMULAIRES D'INSPECTION PERSONNALISÉS POUR BORNES SÈCHES
+TEST COMPLET E2E DES ENDPOINTS DE PHOTO DE PROFIL
 
 CONTEXTE:
-Test des formulaires d'inspection personnalisés pour les bornes sèches selon la review request.
-Teste les endpoints API et la fonctionnalité complète de gestion des modèles d'inspection.
+Test des endpoints de photo de profil selon la review request.
+Teste l'upload, la récupération et la suppression des photos de profil.
 
 TENANT: shefford
 CREDENTIALS: 
 - Admin: gussdub@gmail.com / 230685Juin+
-- Employee: employe@shefford.ca / Employe123!
 
 ENDPOINTS À TESTER:
 
 1. **Authentification:**
    - POST /api/shefford/auth/login - Obtenir le token d'authentification (champ: mot_de_passe)
 
-2. **Modèles d'inspection bornes sèches:**
-   - GET /api/shefford/bornes-seches/modeles-inspection - Liste des modèles d'inspection
-   - GET /api/shefford/bornes-seches/modeles-inspection/actif - Récupérer le modèle actif
-   - POST /api/shefford/bornes-seches/modeles-inspection - Créer un nouveau modèle
-   - PUT /api/shefford/bornes-seches/modeles-inspection/{id} - Modifier un modèle
-   - POST /api/shefford/bornes-seches/modeles-inspection/{id}/activer - Activer un modèle
-   - POST /api/shefford/bornes-seches/modeles-inspection/{id}/dupliquer - Dupliquer un modèle
-   - DELETE /api/shefford/bornes-seches/modeles-inspection/{id} - Supprimer un modèle
+2. **Photo de profil:**
+   - POST /api/shefford/users/photo-profil - Upload photo (utilisateur connecté)
+   - GET /api/shefford/users/{user_id} - Vérifier que photo_profil est dans la réponse
+   - DELETE /api/shefford/users/photo-profil - Supprimer la photo
+   - Vérifier que la photo_profil est bien null après suppression
 
 SCÉNARIO DE TEST:
 1. Login en tant qu'admin (gussdub@gmail.com / 230685Juin+) sur tenant "shefford"
-2. Récupérer la liste des modèles d'inspection existants
-3. Récupérer le modèle actif (ou créer un par défaut)
-4. Créer un nouveau modèle de test avec des champs personnalisés
-5. Activer le nouveau modèle
-6. Dupliquer le modèle
-7. Modifier le modèle dupliqué
-8. Supprimer le modèle de test
-9. Nettoyer les données de test
+2. Créer une image de test en base64 (50x50 pixels rouge)
+3. Upload de la photo de profil
+4. Vérifier que l'image est redimensionnée et retournée
+5. Récupérer les infos utilisateur et vérifier que photo_profil est présente
+6. Supprimer la photo de profil
+7. Vérifier que photo_profil est null après suppression
 
 RÉSULTATS ATTENDUS:
 - Tous les endpoints doivent fonctionner correctement
-- Les modèles doivent être créés, modifiés, activés et supprimés
-- La structure de données doit être conforme aux spécifications
+- L'image doit être redimensionnée à 200x200 pixels
+- La photo doit être correctement sauvegardée et récupérée
+- La suppression doit fonctionner correctement
 """
 
 import requests
