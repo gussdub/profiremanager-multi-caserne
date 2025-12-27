@@ -487,7 +487,7 @@ const InspectionsBornesSeches = ({ user }) => {
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => openInspectionModal(borne)}
                           style={{
@@ -504,7 +504,7 @@ const InspectionsBornesSeches = ({ user }) => {
                           📋 Inspecter
                         </button>
                         <button
-                          onClick={() => openInspectionModal(borne)}
+                          onClick={() => openHistoriqueModal(borne)}
                           style={{
                             padding: '0.5rem 0.75rem',
                             background: '#3b82f6',
@@ -516,7 +516,7 @@ const InspectionsBornesSeches = ({ user }) => {
                             fontWeight: '500'
                           }}
                         >
-                          ✏️ Modifier
+                          📜 Historique
                         </button>
                       </div>
                     </td>
