@@ -242,6 +242,29 @@ body {
     background: #dc2626;
   }
   
+  /* Sidebar header pour mobile - Fix logo coupé */
+  .sidebar .sidebar-header {
+    padding: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+  
+  .sidebar .sidebar-logo {
+    gap: 0.5rem;
+  }
+  
+  .sidebar .sidebar-logo h2 {
+    font-size: 1.1rem;
+  }
+  
+  .sidebar .sidebar-logo .version {
+    font-size: 0.65rem;
+  }
+  
+  .sidebar .sidebar-logo .logo-flame .flame-container {
+    width: 32px;
+    height: 32px;
+  }
+  
   .sidebar.mobile-open {
     transform: translateX(0);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
