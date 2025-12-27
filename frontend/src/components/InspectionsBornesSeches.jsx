@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { apiGet, apiPost, apiPut } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
 import InspectionBorneSecheModal from './InspectionBorneSecheModal';
+import HistoriqueInspectionsBorneSecheModal from './HistoriqueInspectionsBorneSecheModal';
 
 const InspectionsBornesSeches = ({ user }) => {
   const { tenantSlug } = useTenant();
@@ -12,6 +13,7 @@ const InspectionsBornesSeches = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [selectedBorne, setSelectedBorne] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [showHistoriqueModal, setShowHistoriqueModal] = useState(false);
   const [currentView, setCurrentView] = useState('carte');
   const [mapCenter, setMapCenter] = useState([45.5017, -73.5673]);
   const [mapZoom, setMapZoom] = useState(12);
