@@ -5488,7 +5488,20 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           {filteredUsers.map(user => (
             <div key={user.id} className="personnel-card" data-testid={`user-card-${user.id}`}>
               <div className="card-header">
-                <div className="user-avatar-card">👤</div>
+                <div className="user-avatar-card" style={{
+                  overflow: 'hidden',
+                  background: user.photo_profil ? 'transparent' : '#e5e7eb'
+                }}>
+                  {user.photo_profil ? (
+                    <img 
+                      src={user.photo_profil} 
+                      alt={`${user.prenom} ${user.nom}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                    />
+                  ) : (
+                    '👤'
+                  )}
+                </div>
                 <div>
                   <h3>
                     {user.prenom} {user.nom}
