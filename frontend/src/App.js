@@ -4281,6 +4281,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [exportScope, setExportScope] = useState('all'); // 'all' ou 'individual'
   const [selectedPersonForExport, setSelectedPersonForExport] = useState('');
   
+  // État pour la photo de profil
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = React.useRef(null);
+  
   const [newDisponibilite, setNewDisponibilite] = useState({
     date: new Date().toISOString().split('T')[0],
     heure_debut: '08:00',
