@@ -8315,17 +8315,28 @@ const Planning = () => {
         )}
       </div>
 
-      {/* Boutons d'Assignation Mis en Évidence */}
+      {/* Boutons d'Assignation Mis en Évidence - Optimisé Mobile */}
       {user.role !== 'employe' && (
-        <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center'}}>
+        <div style={{
+          display: 'flex', 
+          flexWrap: 'wrap',
+          gap: '0.5rem', 
+          marginBottom: '1.5rem', 
+          justifyContent: 'center',
+          padding: '0 0.5rem'
+        }}>
           <Button 
             style={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1.1rem',
+              padding: '0.6rem 0.8rem',
+              fontSize: '0.85rem',
               fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+              whiteSpace: 'nowrap',
+              flex: '1 1 auto',
+              minWidth: '140px',
+              maxWidth: '200px'
             }}
             onClick={() => {
               setAutoAttributionConfig({
@@ -8336,35 +8347,43 @@ const Planning = () => {
             }}
             data-testid="auto-assign-btn"
           >
-            ✨ Attribution Automatique
+            ✨ Auto
           </Button>
           <Button 
             style={{
               background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
               color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1.1rem',
+              padding: '0.6rem 0.8rem',
+              fontSize: '0.85rem',
               fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(252, 165, 165, 0.4)'
+              boxShadow: '0 2px 8px rgba(252, 165, 165, 0.3)',
+              whiteSpace: 'nowrap',
+              flex: '1 1 auto',
+              minWidth: '140px',
+              maxWidth: '200px'
             }}
             onClick={() => setShowAdvancedAssignModal(true)}
             data-testid="manual-assign-btn"
           >
-            👤 Assignation Manuelle Avancée
+            👤 Manuelle
           </Button>
           <Button 
             style={{
               background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
               color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1.1rem',
+              padding: '0.6rem 0.8rem',
+              fontSize: '0.85rem',
               fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+              whiteSpace: 'nowrap',
+              flex: '1 1 auto',
+              minWidth: '140px',
+              maxWidth: '200px'
             }}
             onClick={() => setShowRapportHeuresModal(true)}
             data-testid="rapport-heures-btn"
           >
-            📊 Rapport d'Heures
+            📊 Rapport
           </Button>
         </div>
       )}
