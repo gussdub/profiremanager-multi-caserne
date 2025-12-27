@@ -44,8 +44,11 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import os
+import base64
+from PIL import Image
+from io import BytesIO
 
-class InspectionModelsE2ETester:
+class PhotoProfilE2ETester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
         self.base_url = "https://firehubpro.preview.emergentagent.com/api"
@@ -55,19 +58,14 @@ class InspectionModelsE2ETester:
         
         # Credentials de production selon la review request
         self.admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
-        self.employee_credentials = {"email": "employe@shefford.ca", "mot_de_passe": "Employe123!"}
         
         # Résultats des tests
         self.test_results = []
-        self.created_items = []  # Pour nettoyer après les tests
         
         # IDs récupérés pendant les tests
         self.test_data = {
             "user_id": None,
-            "modeles_existants": [],
-            "modele_actif": None,
-            "modele_test_id": None,
-            "modele_duplique_id": None
+            "test_image_base64": None
         }
         
     def authenticate(self, use_admin=True):
