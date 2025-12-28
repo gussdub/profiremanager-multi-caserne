@@ -1648,10 +1648,11 @@ const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated })
                   display: 'inline-block',
                   marginRight: '10px'
                 }}>
-                  📂 Changer l'image
+                  📷 Changer l'image
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleFileSelect}
                     style={{ display: 'none' }}
                   />
@@ -1676,10 +1677,11 @@ const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated })
                 fontSize: '14px',
                 marginBottom: '10px'
               }}>
-                📂 Choisir une image
+                📷 Prendre une photo
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
