@@ -15856,8 +15856,12 @@ const MonProfil = () => {
   // États pour le crop d'image
   const [showCropModal, setShowCropModal] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const cropContainerRef = React.useRef(null);
   const cropImageRef = React.useRef(null);
   
   const { toast } = useToast();
