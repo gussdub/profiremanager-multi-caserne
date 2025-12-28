@@ -1690,7 +1690,10 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         ></div>
       )}
 
-      <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <div 
+        className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="logo-flame">
