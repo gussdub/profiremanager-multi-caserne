@@ -760,7 +760,8 @@ const MonProfil = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: '3px solid #e5e7eb',
-                flexShrink: 0
+                flexShrink: 0,
+                position: 'relative'
               }}>
                 {userProfile?.photo_profil ? (
                   <img 
@@ -781,14 +782,14 @@ const MonProfil = () => {
                 )}
               </div>
               
-              {/* Boutons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {/* Boutons et Menu */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+                {/* Input fichier caché pour les fichiers */}
                 <input
                   type="file"
                   ref={photoInputRef}
                   onChange={handlePhotoSelect}
                   accept="image/jpeg,image/png,image/webp"
-                  
                   style={{ 
                     position: 'absolute',
                     width: '1px',
@@ -801,22 +802,163 @@ const MonProfil = () => {
                     border: '0'
                   }}
                 />
+                {/* Input fichier caché pour photothèque (images uniquement) */}
+                <input
+                  type="file"
+                  ref={photoLibraryRef}
+                  onChange={handlePhotoSelect}
+                  accept="image/*"
+                  style={{ 
+                    position: 'absolute',
+                    width: '1px',
+                    height: '1px',
+                    padding: '0',
+                    margin: '-1px',
+                    overflow: 'hidden',
+                    clip: 'rect(0, 0, 0, 0)',
+                    whiteSpace: 'nowrap',
+                    border: '0'
+                  }}
+                />
+                
+                {/* Bouton principal - Modifier la photo */}
                 <Button
-                  onClick={openPhotoCapture}
+                  onClick={() => setShowPhotoMenu(!showPhotoMenu)}
                   disabled={photoUploading}
-                  style={{ minWidth: '160px' }}
+                  style={{ minWidth: '200px' }}
                 >
-                  {photoUploading ? '⏳ Téléversement...' : '📷 Prendre une photo'}
+                  {photoUploading ? '⏳ Téléversement...' : '✏️ Modifier la photo'}
                 </Button>
+
+                {/* Menu déroulant des options */}
+                {showPhotoMenu && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: '0.5rem',
+                    background: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    border: '1px solid #e5e7eb',
+                    zIndex: 100,
+                    minWidth: '220px',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Option: Prendre une photo */}
+                    <button
+                      onClick={openCameraCapture}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        textAlign: 'left',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>📷</span>
+                      <span>Prendre une photo</span>
+                    </button>
+
+                    {/* Option: Photothèque */}
+                    <button
+                      onClick={openPhotoLibrary}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        textAlign: 'left',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>🖼️</span>
+                      <span>Choisir dans la photothèque</span>
+                    </button>
+
+                    {/* Option: Fichier */}
+                    <button
+                      onClick={openFilePicker}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        textAlign: 'left',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>📁</span>
+                      <span>Choisir un fichier</span>
+                    </button>
+
+                    {/* Option: Recadrer l'existante (si photo existante) */}
+                    {userProfile?.photo_profil && (
+                      <>
+                        <div style={{ 
+                          height: '1px', 
+                          background: '#e5e7eb', 
+                          margin: '0.25rem 0' 
+                        }} />
+                        <button
+                          onClick={openCropExisting}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            textAlign: 'left',
+                            transition: 'background 0.15s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <span style={{ fontSize: '1.2rem' }}>✂️</span>
+                          <span>Recadrer la photo actuelle</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Bouton Supprimer (si photo existante) */}
                 {userProfile?.photo_profil && (
                   <Button
                     variant="outline"
                     onClick={handleDeletePhoto}
-                    style={{ minWidth: '160px', color: '#ef4444' }}
+                    style={{ minWidth: '200px', color: '#ef4444' }}
                   >
-                    🗑️ Supprimer
+                    🗑️ Supprimer la photo
                   </Button>
                 )}
+                
                 <p style={{ 
                   fontSize: '0.75rem', 
                   color: '#6b7280',
@@ -827,6 +969,7 @@ const MonProfil = () => {
               </div>
             </div>
           </div>
+
 
           {/* Modal de recadrage d'image avec drag-and-drop */}
           {showCropModal && imageToCrop && (
