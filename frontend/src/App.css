@@ -68,6 +68,22 @@ body {
   line-height: 1.6;
 }
 
+/* Quand le menu mobile est ouvert, cacher le débordement du contenu */
+body.mobile-menu-open .main-content {
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-menu-open .main-content * {
+  pointer-events: none !important;
+}
+
+body.mobile-menu-open .sidebar,
+body.mobile-menu-open .sidebar *,
+body.mobile-menu-open .mobile-close-area {
+  pointer-events: auto !important;
+}
+
 .App {
   min-height: 100vh;
 }
