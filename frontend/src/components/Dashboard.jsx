@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -9,53 +10,248 @@ const Dashboard = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
-  const [stats, setStats] = useState({
+  
+  // États pour les données personnelles
+  const [heuresTravaillees, setHeuresTravaillees] = useState({ internes: 0, externes: 0, total: 0 });
+  const [formationsInscrites, setFormationsInscrites] = useState([]);
+  const [tauxPresence, setTauxPresence] = useState(0);
+  const [prochainGarde, setProchainGarde] = useState(null);
+  const [mesEPIAlerts, setMesEPIAlerts] = useState([]);
+  
+  // États pour les données admin
+  const [tauxCouverture, setTauxCouverture] = useState(0);
+  const [demandesConges, setDemandesConges] = useState([]);
+  const [activitesRecentes, setActivitesRecentes] = useState([]);
+  const [statsGenerales, setStatsGenerales] = useState({
     personnel: 0,
     vehicules: 0,
-    formations: 0,
-    epi: 0
+    epiActifs: 0,
+    formationsAVenir: 0
   });
+  
   const [loading, setLoading] = useState(true);
 
   const API = process.env.REACT_APP_BACKEND_URL 
     ? `${process.env.REACT_APP_BACKEND_URL}/api` 
     : '/api';
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'production';
+
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
+      if (!tenantSlug || !user) return;
+      
       try {
         const token = localStorage.getItem(`${tenantSlug}_token`);
         const headers = { Authorization: `Bearer ${token}` };
 
-        // Fetch personnel count
-        const usersResponse = await axios.get(`${API}/${tenantSlug}/users`, { headers });
+        // ===== DONNÉES PERSONNELLES =====
         
-        // Fetch vehicules count
-        let vehiculesCount = 0;
+        // 1. Heures travaillées ce mois
         try {
-          const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/vehicules`, { headers });
-          vehiculesCount = vehiculesResponse.data?.length || 0;
+          const now = new Date();
+          const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+          const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+          
+          const heuresResponse = await axios.get(
+            `${API}/${tenantSlug}/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}&user_id=${user.id}`,
+            { headers }
+          );
+          
+          if (heuresResponse.data) {
+            const data = heuresResponse.data;
+            setHeuresTravaillees({
+              internes: data.heures_internes || 0,
+              externes: data.heures_externes || 0,
+              total: data.heures_totales || (data.heures_internes || 0) + (data.heures_externes || 0)
+            });
+          }
         } catch (e) {
-          console.log('No vehicules endpoint or error');
+          console.log('Heures non disponibles');
         }
 
-        setStats({
-          personnel: usersResponse.data?.length || 0,
-          vehicules: vehiculesCount,
-          formations: 0,
-          epi: 0
-        });
+        // 2. Taux de présence aux formations
+        try {
+          const tauxResponse = await axios.get(
+            `${API}/${tenantSlug}/formations/mon-taux-presence`,
+            { headers }
+          );
+          setTauxPresence(tauxResponse.data?.taux_presence || 0);
+        } catch (e) {
+          console.log('Taux présence non disponible');
+        }
+
+        // 3. Formations inscrites à venir
+        try {
+          const formationsResponse = await axios.get(
+            `${API}/${tenantSlug}/formations?annee=${new Date().getFullYear()}`,
+            { headers }
+          );
+          
+          const now = new Date();
+          const formationsAVenir = (formationsResponse.data || [])
+            .filter(f => {
+              const dateFormation = new Date(f.date_debut || f.date);
+              return dateFormation >= now;
+            })
+            .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
+            .slice(0, 3);
+          
+          setFormationsInscrites(formationsAVenir);
+        } catch (e) {
+          console.log('Formations non disponibles');
+        }
+
+        // 4. Prochain garde/assignation
+        try {
+          const now = new Date();
+          const lundi = new Date(now);
+          lundi.setDate(now.getDate() - now.getDay() + 1);
+          const semaineDebut = lundi.toISOString().split('T')[0];
+          
+          const planningResponse = await axios.get(
+            `${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`,
+            { headers }
+          );
+          
+          const mesAssignations = (planningResponse.data || [])
+            .filter(a => a.user_id === user.id && new Date(a.date) >= now)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+          
+          if (mesAssignations.length > 0) {
+            setProchainGarde(mesAssignations[0]);
+          }
+        } catch (e) {
+          console.log('Planning non disponible');
+        }
+
+        // 5. Alertes EPI (expirations proches)
+        try {
+          const epiResponse = await axios.get(
+            `${API}/${tenantSlug}/mes-epi`,
+            { headers }
+          );
+          
+          const now = new Date();
+          const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          
+          const alertes = (epiResponse.data || [])
+            .filter(epi => {
+              const dateExpiration = new Date(epi.date_expiration || epi.date_fin_vie);
+              return dateExpiration <= dans30Jours && dateExpiration >= now;
+            })
+            .slice(0, 3);
+          
+          setMesEPIAlerts(alertes);
+        } catch (e) {
+          console.log('EPI non disponibles');
+        }
+
+        // ===== DONNÉES ADMIN =====
+        if (isAdmin) {
+          // 1. Stats générales
+          try {
+            const usersResponse = await axios.get(`${API}/${tenantSlug}/users`, { headers });
+            setStatsGenerales(prev => ({ ...prev, personnel: usersResponse.data?.length || 0 }));
+          } catch (e) {}
+
+          try {
+            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/vehicules`, { headers });
+            setStatsGenerales(prev => ({ ...prev, vehicules: vehiculesResponse.data?.length || 0 }));
+          } catch (e) {}
+
+          // 2. Demandes de congés à approuver
+          try {
+            const congesResponse = await axios.get(
+              `${API}/${tenantSlug}/demandes-conge`,
+              { headers }
+            );
+            
+            const enAttente = (congesResponse.data || [])
+              .filter(d => d.statut === 'en_attente')
+              .slice(0, 5);
+            
+            setDemandesConges(enAttente);
+          } catch (e) {
+            console.log('Congés non disponibles');
+          }
+
+          // 3. Taux de couverture du planning
+          try {
+            const now = new Date();
+            const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
+            const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const joursRestants = Math.ceil((finMois - now) / (1000 * 60 * 60 * 24));
+            
+            const lundi = new Date(now);
+            lundi.setDate(now.getDate() - now.getDay() + 1);
+            
+            const planningResponse = await axios.get(
+              `${API}/${tenantSlug}/planning?semaine_debut=${lundi.toISOString().split('T')[0]}`,
+              { headers }
+            );
+            
+            // Calculer un taux approximatif basé sur les assignations
+            const assignations = planningResponse.data || [];
+            const joursCouverts = new Set(assignations.map(a => a.date)).size;
+            const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
+            setTauxCouverture(taux);
+          } catch (e) {
+            console.log('Couverture non disponible');
+          }
+
+          // 4. Activités récentes (notifications/logs)
+          try {
+            const notifResponse = await axios.get(
+              `${API}/${tenantSlug}/notifications?limit=10`,
+              { headers }
+            );
+            
+            const activites = (notifResponse.data || [])
+              .slice(0, 5)
+              .map(n => ({
+                id: n.id,
+                message: n.message || n.titre,
+                date: n.created_at || n.date_creation,
+                type: n.type
+              }));
+            
+            setActivitesRecentes(activites);
+          } catch (e) {
+            console.log('Activités non disponibles');
+          }
+        }
+
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        console.error('Erreur chargement dashboard:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (tenantSlug) {
-      fetchStats();
-    }
-  }, [tenantSlug, API]);
+    fetchDashboardData();
+  }, [tenantSlug, user, API, isAdmin]);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-CA', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short' 
+    });
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-CA', { 
+      day: 'numeric', 
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   if (loading) {
     return (
@@ -65,67 +261,328 @@ const Dashboard = () => {
         alignItems: 'center', 
         height: '50vh' 
       }}>
-        <div className="loading-spinner">Chargement...</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔄</div>
+          <p>Chargement du tableau de bord...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      {/* En-tête */}
       <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b' }}>
           👋 Bienvenue, {user?.prenom || 'Utilisateur'}
         </h1>
         <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
-          {tenant?.nom || 'ProFireManager'} - Tableau de Bord
+          {tenant?.nom || 'ProFireManager'} - {new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
-      <div className="stats-grid" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1.5rem',
-        marginBottom: '2rem'
-      }}>
-        <Card style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
-          <CardContent style={{ padding: '1.5rem', color: 'white' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.personnel}</div>
-            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>👥 Personnel</div>
-          </CardContent>
-        </Card>
+      {/* ===================== SECTION PERSONNELLE ===================== */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h2 style={{ 
+          fontSize: '1.25rem', 
+          fontWeight: '600', 
+          color: '#374151', 
+          marginBottom: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          👤 Mon Espace Personnel
+        </h2>
 
-        <Card style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-          <CardContent style={{ padding: '1.5rem', color: 'white' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.vehicules}</div>
-            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>🚒 Véhicules</div>
-          </CardContent>
-        </Card>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+          gap: '1rem'
+        }}>
+          {/* Heures travaillées ce mois */}
+          <Card>
+            <CardHeader style={{ paddingBottom: '0.5rem' }}>
+              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                ⏱️ Heures ce mois
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1e293b' }}>
+                {heuresTravaillees.total}h
+              </div>
+              {(heuresTravaillees.internes > 0 || heuresTravaillees.externes > 0) && (
+                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                  {heuresTravaillees.internes > 0 && <span>Internes: {heuresTravaillees.internes}h</span>}
+                  {heuresTravaillees.internes > 0 && heuresTravaillees.externes > 0 && ' • '}
+                  {heuresTravaillees.externes > 0 && <span>Externes: {heuresTravaillees.externes}h</span>}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-          <CardContent style={{ padding: '1.5rem', color: 'white' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.formations}</div>
-            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>📚 Formations</div>
-          </CardContent>
-        </Card>
+          {/* Taux de présence formations */}
+          <Card>
+            <CardHeader style={{ paddingBottom: '0.5rem' }}>
+              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                📊 Taux de présence formations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ 
+                fontSize: '2rem', 
+                fontWeight: '700', 
+                color: tauxPresence >= 80 ? '#10b981' : tauxPresence >= 60 ? '#f59e0b' : '#ef4444'
+              }}>
+                {tauxPresence}%
+              </div>
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: tauxPresence >= 80 ? '#10b981' : '#6b7280',
+                marginTop: '0.25rem'
+              }}>
+                {tauxPresence >= 80 ? '✅ Conforme' : tauxPresence >= 60 ? '⚠️ À améliorer' : '❌ Non conforme'}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-          <CardContent style={{ padding: '1.5rem', color: 'white' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.epi}</div>
-            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>🦺 EPI Actifs</div>
-          </CardContent>
-        </Card>
+          {/* Prochain garde */}
+          <Card>
+            <CardHeader style={{ paddingBottom: '0.5rem' }}>
+              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                📅 Prochaine garde
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {prochainGarde ? (
+                <>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e293b' }}>
+                    {formatDate(prochainGarde.date)}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    {prochainGarde.type_garde || prochainGarde.poste || 'Garde'}
+                  </div>
+                </>
+              ) : (
+                <div style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                  Aucune garde planifiée
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Formations à venir */}
+          <Card>
+            <CardHeader style={{ paddingBottom: '0.5rem' }}>
+              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                📚 Mes formations à venir
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {formationsInscrites.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {formationsInscrites.map((f, idx) => (
+                    <div key={idx} style={{ 
+                      fontSize: '0.85rem', 
+                      padding: '0.5rem',
+                      background: '#f1f5f9',
+                      borderRadius: '6px'
+                    }}>
+                      <div style={{ fontWeight: '500' }}>{f.titre || f.nom}</div>
+                      <div style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                        {formatDate(f.date_debut || f.date)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                  Aucune formation inscrite
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Alertes EPI */}
+        {mesEPIAlerts.length > 0 && (
+          <Card style={{ marginTop: '1rem', borderLeft: '4px solid #f59e0b' }}>
+            <CardContent style={{ padding: '1rem' }}>
+              <div style={{ fontWeight: '600', color: '#92400e', marginBottom: '0.5rem' }}>
+                ⚠️ EPI nécessitant attention ({mesEPIAlerts.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {mesEPIAlerts.map((epi, idx) => (
+                  <span key={idx} style={{
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '999px',
+                    fontSize: '0.8rem'
+                  }}>
+                    {epi.type || epi.nom} - Exp. {formatDate(epi.date_expiration || epi.date_fin_vie)}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>📋 Accès Rapide</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p style={{ color: '#64748b' }}>
-            Utilisez le menu latéral pour accéder aux différents modules de l'application.
-          </p>
-        </CardContent>
-      </Card>
+      {/* ===================== SECTION ADMIN ===================== */}
+      {isAdmin && (
+        <div>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            color: '#374151', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🏢 Vue Générale du Service
+          </h2>
+
+          {/* KPIs Admin */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            <Card style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
+              <CardContent style={{ padding: '1.25rem', color: 'white' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{statsGenerales.personnel}</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>👥 Personnel actif</div>
+              </CardContent>
+            </Card>
+
+            <Card style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+              <CardContent style={{ padding: '1.25rem', color: 'white' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{tauxCouverture}%</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>📅 Couverture planning</div>
+              </CardContent>
+            </Card>
+
+            <Card style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+              <CardContent style={{ padding: '1.25rem', color: 'white' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{demandesConges.length}</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>📝 Congés à approuver</div>
+              </CardContent>
+            </Card>
+
+            <Card style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+              <CardContent style={{ padding: '1.25rem', color: 'white' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{statsGenerales.vehicules}</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>🚒 Véhicules</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+            gap: '1rem'
+          }}>
+            {/* Demandes de congés */}
+            <Card>
+              <CardHeader>
+                <CardTitle style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>📝 Demandes de congés en attente</span>
+                  {demandesConges.length > 0 && (
+                    <span style={{
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      {demandesConges.length}
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {demandesConges.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {demandesConges.map((demande, idx) => (
+                      <div key={idx} style={{
+                        padding: '0.75rem',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        borderLeft: '3px solid #3b82f6'
+                      }}>
+                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
+                          {demande.user_nom || demande.nom_employe || 'Employé'}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          {formatDate(demande.date_debut)} → {formatDate(demande.date_fin)}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                          {demande.type_conge || demande.motif || 'Congé'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '2rem',
+                    color: '#9ca3af'
+                  }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
+                    Aucune demande en attente
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Fil d'activité */}
+            <Card>
+              <CardHeader>
+                <CardTitle style={{ fontSize: '1rem' }}>
+                  📋 Activité récente
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activitesRecentes.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {activitesRecentes.map((activite, idx) => (
+                      <div key={idx} style={{
+                        padding: '0.5rem',
+                        borderBottom: idx < activitesRecentes.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        fontSize: '0.85rem'
+                      }}>
+                        <div style={{ color: '#374151' }}>
+                          {activite.type === 'planning_assigne' && '📅 '}
+                          {activite.type === 'conge_demande' && '📝 '}
+                          {activite.type === 'formation_inscrit' && '📚 '}
+                          {activite.type === 'remplacement_demande' && '🔄 '}
+                          {activite.message}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                          {formatDateTime(activite.date)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '2rem',
+                    color: '#9ca3af'
+                  }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
+                    Aucune activité récente
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
