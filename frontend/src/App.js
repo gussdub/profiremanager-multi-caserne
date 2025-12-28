@@ -24,6 +24,7 @@ const AuditModal = lazy(() => import("./components/AuditModal"));
 // Composants extraits pour réduire la taille de App.js
 const Planning = lazy(() => import("./components/Planning"));
 const Personnel = lazy(() => import("./components/Personnel"));
+const ModuleEPI = lazy(() => import("./components/ModuleEPI"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
