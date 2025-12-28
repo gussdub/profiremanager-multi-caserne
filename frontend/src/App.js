@@ -15932,8 +15932,99 @@ const MonProfil = () => {
     }
   }, [user?.id, tenantSlug]);
 
-  // Gestion de l'upload de photo de profil
+  // Gestion de l'upload de photo de profil - Ouvre le modal de crop
   const handlePhotoSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez choisir une image JPG, PNG ou WEBP",
+        variant: "destructive"
+      });
+      event.target.value = '';
+      return;
+    }
+
+    // Lire l'image et ouvrir le modal de crop
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageToCrop(e.target.result);
+      setShowCropModal(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  // Fonction pour recadrer et uploader l'image
+  const handleCropComplete = async () => {
+    if (!imageToCrop || !cropImageRef.current) return;
+    
+    setPhotoUploading(true);
+    
+    try {
+      const img = cropImageRef.current;
+      const canvas = document.createElement('canvas');
+      const size = 400; // Taille du crop carré
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // Calculer les dimensions du crop
+      const imgWidth = img.naturalWidth;
+      const imgHeight = img.naturalHeight;
+      const minDim = Math.min(imgWidth, imgHeight);
+      
+      // Appliquer le zoom et le déplacement
+      const scaledSize = minDim / zoom;
+      const offsetX = (crop.x / 100) * (imgWidth - scaledSize);
+      const offsetY = (crop.y / 100) * (imgHeight - scaledSize);
+      
+      // Dessiner l'image croppée
+      ctx.drawImage(
+        img,
+        offsetX, offsetY, scaledSize, scaledSize,
+        0, 0, size, size
+      );
+      
+      // Convertir en base64 JPEG
+      const base64 = canvas.toDataURL('image/jpeg', 0.9);
+      
+      const response = await apiPost(tenantSlug, '/users/photo-profil', {
+        photo_base64: base64
+      });
+      
+      // Mettre à jour le profil local
+      setUserProfile(prev => ({...prev, photo_profil: response.photo_profil}));
+      
+      // Mettre à jour le user global (pour la sidebar)
+      setUser(prev => ({...prev, photo_profil: response.photo_profil}));
+      
+      setShowCropModal(false);
+      setImageToCrop(null);
+      
+      toast({
+        title: "Photo mise à jour",
+        description: "Votre photo de profil a été enregistrée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de sauvegarder la photo",
+        variant: "destructive"
+      });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  // Ancienne fonction de compression (gardée pour compatibilité mais pas utilisée)
+  const handlePhotoSelectOld = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
