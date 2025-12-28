@@ -6610,6 +6610,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         ref={photoInputRef}
                         onChange={handlePhotoSelectAdmin}
                         accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
                         style={{ display: 'none' }}
                       />
                       <Button
@@ -6617,7 +6618,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         onClick={() => photoInputRef.current?.click()}
                         disabled={photoUploading}
                       >
-                        {photoUploading ? '⏳ Upload...' : '📤 Changer la photo'}
+                        {photoUploading ? '⏳ Téléversement...' : '📷 Prendre une photo'}
                       </Button>
                       {selectedUser?.photo_profil && (
                         <Button
