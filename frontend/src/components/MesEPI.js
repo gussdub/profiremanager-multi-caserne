@@ -313,6 +313,29 @@ const MesEPI = ({ user }) => {
     }
   };
 
+  // Gestionnaire pour la capture caméra iOS
+  const handleCameraCapture = (file) => {
+    setShowCameraCapture(false);
+    if (file) {
+      setPhotoFile(file);
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Fonction pour ouvrir la capture photo (détection iOS automatique)
+  const openPhotoCapture = () => {
+    if (isIOS()) {
+      setShowCameraCapture(true);
+    } else {
+      document.getElementById('photo-input')?.click();
+    }
+  };
+
   const removePhoto = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
