@@ -16555,7 +16555,7 @@ const MonProfil = () => {
             </div>
           </div>
 
-          {/* Modal de recadrage d'image */}
+          {/* Modal de recadrage d'image avec drag-and-drop */}
           {showCropModal && imageToCrop && (
             <div 
               style={{
@@ -16564,13 +16564,16 @@ const MonProfil = () => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(0,0,0,0.8)',
+                background: 'rgba(0,0,0,0.85)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 9999,
                 padding: '20px'
               }}
+              onMouseUp={handleCropMouseUp}
+              onMouseLeave={handleCropMouseUp}
+              onTouchEnd={handleCropMouseUp}
             >
               <div 
                 style={{
@@ -16578,92 +16581,97 @@ const MonProfil = () => {
                   borderRadius: '16px',
                   padding: '24px',
                   width: '100%',
-                  maxWidth: '500px',
+                  maxWidth: '450px',
                   maxHeight: '90vh',
                   overflow: 'auto'
                 }}
               >
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
                   ✂️ Recadrer votre photo
                 </h3>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+                  Glissez l&apos;image pour la positionner dans le cercle
+                </p>
                 
-                <div style={{ 
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: '1',
-                  background: '#f3f4f6',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  marginBottom: '16px'
-                }}>
+                {/* Zone de crop avec drag */}
+                <div 
+                  ref={cropContainerRef}
+                  style={{ 
+                    position: 'relative',
+                    width: '100%',
+                    aspectRatio: '1',
+                    background: '#1f2937',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    marginBottom: '16px',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    touchAction: 'none'
+                  }}
+                  onMouseDown={handleCropMouseDown}
+                  onMouseMove={handleCropMouseMove}
+                  onTouchStart={handleCropMouseDown}
+                  onTouchMove={handleCropMouseMove}
+                >
                   <img
                     ref={cropImageRef}
                     src={imageToCrop}
                     alt="À recadrer"
+                    draggable={false}
                     style={{
-                      width: '100%',
-                      height: '100%',
+                      position: 'absolute',
+                      width: imageSize.width > imageSize.height 
+                        ? `${(imageSize.width / imageSize.height) * 100 * zoom}%` 
+                        : `${100 * zoom}%`,
+                      height: imageSize.height > imageSize.width 
+                        ? `${(imageSize.height / imageSize.width) * 100 * zoom}%` 
+                        : `${100 * zoom}%`,
+                      minWidth: `${100 * zoom}%`,
+                      minHeight: `${100 * zoom}%`,
                       objectFit: 'cover',
-                      transform: `scale(${zoom}) translate(${-crop.x}%, ${-crop.y}%)`,
-                      transformOrigin: 'center center'
+                      left: cropPosition.x,
+                      top: cropPosition.y,
+                      pointerEvents: 'none',
+                      userSelect: 'none'
                     }}
                   />
-                  {/* Overlay avec cercle de crop */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    boxShadow: 'inset 0 0 0 9999px rgba(0,0,0,0.5)',
-                    borderRadius: '50%',
-                    pointerEvents: 'none'
-                  }} />
+                  {/* Overlay avec cercle transparent au centre */}
+                  <svg 
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <mask id="cropMask">
+                        <rect x="0" y="0" width="100" height="100" fill="white"/>
+                        <circle cx="50" cy="50" r="48" fill="black"/>
+                      </mask>
+                    </defs>
+                    <rect x="0" y="0" width="100" height="100" fill="rgba(0,0,0,0.6)" mask="url(#cropMask)"/>
+                    <circle cx="50" cy="50" r="48" fill="none" stroke="white" strokeWidth="0.5" strokeDasharray="2,2"/>
+                  </svg>
                 </div>
                 
-                {/* Contrôles de zoom */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#4b5563' }}>
-                    🔍 Zoom: {Math.round(zoom * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="3"
-                    step="0.1"
-                    value={zoom}
-                    onChange={(e) => setZoom(parseFloat(e.target.value))}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                
-                {/* Contrôles de position */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: '#6b7280' }}>
-                      ↔️ Horizontal
-                    </label>
+                {/* Contrôle de zoom */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '20px' }}>🔍</span>
                     <input
                       type="range"
-                      min="-50"
-                      max="50"
-                      value={crop.x}
-                      onChange={(e) => setCrop(prev => ({...prev, x: parseFloat(e.target.value)}))}
-                      style={{ width: '100%' }}
+                      min="1"
+                      max="3"
+                      step="0.05"
+                      value={zoom}
+                      onChange={(e) => {
+                        const newZoom = parseFloat(e.target.value);
+                        setZoom(newZoom);
+                        // Recentrer après zoom
+                        setCropPosition({ x: 0, y: 0 });
+                      }}
+                      style={{ flex: 1, height: '8px' }}
                     />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: '#6b7280' }}>
-                      ↕️ Vertical
-                    </label>
-                    <input
-                      type="range"
-                      min="-50"
-                      max="50"
-                      value={crop.y}
-                      onChange={(e) => setCrop(prev => ({...prev, y: parseFloat(e.target.value)}))}
-                      style={{ width: '100%' }}
-                    />
+                    <span style={{ fontSize: '14px', color: '#6b7280', minWidth: '50px' }}>
+                      {Math.round(zoom * 100)}%
+                    </span>
                   </div>
                 </div>
                 
