@@ -6610,7 +6610,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         ref={photoInputRef}
                         onChange={handlePhotoSelectAdmin}
                         accept="image/jpeg,image/png,image/webp"
-                        capture="environment"
+                        
                         style={{ display: 'none' }}
                       />
                       <Button
@@ -16571,7 +16571,7 @@ const MonProfil = () => {
                   ref={photoInputRef}
                   onChange={handlePhotoSelect}
                   accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
+                  
                   style={{ display: 'none' }}
                 />
                 <Button
@@ -20060,7 +20060,7 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                           <input
                             type="file"
                             accept="image/*"
-                            capture="environment"
+                            
                             multiple
                             onChange={(e) => {
                               const files = Array.from(e.target.files);
@@ -22060,7 +22060,7 @@ const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
         <input
           type="file"
           accept="image/*"
-          capture="environment"
+          
           multiple
           onChange={handleFileChange}
           disabled={uploading || photos.length >= maxPhotos}

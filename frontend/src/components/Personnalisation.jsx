@@ -233,7 +233,7 @@ const Personnalisation = ({ tenantSlug, toast }) => {
                 id="logo-upload"
                 type="file"
                 accept="image/*"
-                capture="environment"
+                
                 onChange={handleLogoUpload}
                 style={{ display: 'none' }}
               />

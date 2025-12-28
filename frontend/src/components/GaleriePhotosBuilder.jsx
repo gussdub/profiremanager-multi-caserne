@@ -330,7 +330,7 @@ const PhotoUploadModal = ({ onClose, onSave }) => {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                
                 multiple
                 onChange={(e) => handleFilesSelect(e.target.files)}
                 style={{ display: 'none' }}
@@ -491,7 +491,7 @@ const PhotoUploadModal = ({ onClose, onSave }) => {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
+                  
                   multiple
                   onChange={(e) => {
                     const newFiles = Array.from(e.target.files);

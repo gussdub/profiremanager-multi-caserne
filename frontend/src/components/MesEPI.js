@@ -712,7 +712,7 @@ const MesEPI = ({ user }) => {
                       type="file"
                       id="photo-input"
                       accept="image/*"
-                      capture="environment"
+                      
                       onChange={handlePhotoChange}
                       className="photo-input-hidden"
                     />

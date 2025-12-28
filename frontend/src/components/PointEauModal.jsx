@@ -989,7 +989,7 @@ const PointEauModal = ({
             <input
               type="file"
               accept="image/*"
-              capture="environment"
+              
               onChange={handlePhotoUpload}
               disabled={uploadingPhoto}
               style={{
