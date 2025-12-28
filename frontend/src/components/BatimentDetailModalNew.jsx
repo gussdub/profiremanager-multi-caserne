@@ -1141,7 +1141,7 @@ const BatimentForm = ({
                   <input 
                     type="file" 
                     accept="image/*"
-                    capture="environment"
+                    
                     onChange={handlePhotoUpload}
                     style={{ display: 'none' }}
                   />
@@ -1181,7 +1181,7 @@ const BatimentForm = ({
                   <input 
                     type="file" 
                     accept="image/*"
-                    capture="environment"
+                    
                     onChange={(e) => {
                       handlePhotoUpload(e);
                       setShowPhotoUpload(false);

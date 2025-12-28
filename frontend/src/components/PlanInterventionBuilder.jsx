@@ -1652,7 +1652,7 @@ const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated })
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    
                     onChange={handleFileSelect}
                     style={{ display: 'none' }}
                   />
@@ -1681,7 +1681,7 @@ const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated })
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
+                  
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
@@ -2025,7 +2025,7 @@ const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      
                       onChange={handleFileSelect}
                       style={{ display: 'none' }}
                     />
@@ -2069,7 +2069,7 @@ const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    
                     onChange={handleFileSelect}
                     style={{ display: 'none' }}
                   />
@@ -2316,7 +2316,7 @@ const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
+                  
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />

@@ -217,7 +217,7 @@ const IconePersonnaliseeModal = ({ onClose, onSave }) => {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      
                       onChange={handleFileInput}
                       style={{ display: 'none' }}
                       id="file-input"

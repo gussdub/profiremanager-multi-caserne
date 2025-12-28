@@ -450,7 +450,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
                       ref={el => fileInputRefs.current[questionId] = el}
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      
                       multiple
                       style={{ display: 'none' }}
                       onChange={(e) => handlePhotoChange(qIdx, e.target.files)}
