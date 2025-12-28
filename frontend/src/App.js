@@ -1709,12 +1709,22 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           {filteredMenuItems.map(item => (
             <button
               key={item.id}
+              type="button"
               className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setCurrentPage(item.id);
                 setIsMobileMenuOpen(false); // Fermer menu mobile après clic
               }}
+              onTouchEnd={(e) => {
+                // Fix iOS: utiliser onTouchEnd en plus de onClick
+                e.preventDefault();
+                setCurrentPage(item.id);
+                setIsMobileMenuOpen(false);
+              }}
               data-testid={`nav-${item.id}-btn`}
+              style={{ WebkitTapHighlightColor: 'rgba(255, 255, 255, 0.2)' }}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
