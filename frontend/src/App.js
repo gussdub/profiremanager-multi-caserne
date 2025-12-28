@@ -24574,6 +24574,15 @@ const ApprovisionnementEau = () => {
                       href={`https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => {
+                        // Sur iOS, essayer d'ouvrir Apple Plans si disponible
+                        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                        if (isIOS) {
+                          e.preventDefault();
+                          // Utiliser le schéma maps:// pour iOS
+                          window.location.href = `maps://maps.apple.com/?daddr=${point.latitude},${point.longitude}&dirflg=d`;
+                        }
+                      }}
                       style={{
                         padding: '0.5rem',
                         background: '#059669',
@@ -24587,7 +24596,7 @@ const ApprovisionnementEau = () => {
                         fontWeight: '500'
                       }}
                     >
-                      🗺️ Navigation (Google Maps)
+                      🗺️ Navigation GPS
                     </a>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button
