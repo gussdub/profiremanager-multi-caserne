@@ -1915,15 +1915,37 @@ const ModuleEPI = ({ user }) => {
   const [rapportRetraits, setRapportRetraits] = useState(null);
   const [rapportTCO, setRapportTCO] = useState(null);
   
-  // Types EPI
-  const typesEPI = [
-    { id: 'casque', nom: 'Casque', icone: '🪖' },
-    { id: 'bottes', nom: 'Bottes', icone: '👢' },
+  // Types EPI - chargés dynamiquement depuis l'API
+  const [typesEPI, setTypesEPI] = useState([
+    { id: 'casque', nom: 'Casque', icone: '⛑️' },
+    { id: 'bottes', nom: 'Bottes', icone: '🥾' },
     { id: 'veste_bunker', nom: 'Manteau Habit de Combat', icone: '🧥' },
     { id: 'pantalon_bunker', nom: 'Pantalon Habit de Combat', icone: '👖' },
     { id: 'gants', nom: 'Gants', icone: '🧤' },
     { id: 'cagoule', nom: 'Cagoule Anti-Particules', icone: '🎭' }
-  ];
+  ]);
+  
+  // Charger les types EPI depuis l'API
+  useEffect(() => {
+    const fetchTypesEPI = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/types-epi');
+        if (data && data.length > 0) {
+          // Mapper les données pour utiliser le nom comme ID (pour compatibilité)
+          setTypesEPI(data.map(t => ({
+            id: t.nom,  // Utiliser le nom comme ID pour compatibilité
+            nom: t.nom,
+            icone: t.icone
+          })));
+        }
+      } catch (error) {
+        console.log('Types EPI par défaut utilisés');
+      }
+    };
+    if (tenantSlug) {
+      fetchTypesEPI();
+    }
+  }, [tenantSlug]);
   
   // Checklists NFPA 1851
   const getChecklistTemplate = (type) => {
