@@ -9141,7 +9141,7 @@ class EPI(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     numero_serie: str  # Numéro de série interne (format libre)
-    type_epi: str  # casque, bottes, veste_bunker, pantalon_bunker, gants, cagoule
+    type_epi: str  # ID du type d'EPI personnalisé
     marque: str
     modele: str
     numero_serie_fabricant: str = ""
@@ -9156,6 +9156,32 @@ class EPI(BaseModel):
     notes: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== TYPES D'EPI PERSONNALISÉS ====================
+class TypeEPI(BaseModel):
+    """Type/Catégorie d'EPI personnalisable"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Casque", "Harnais", "Bottes"
+    icone: str = "🛡️"  # Emoji pour l'affichage
+    description: str = ""
+    ordre: int = 0  # Pour trier l'affichage
+    est_defaut: bool = False  # Types par défaut non supprimables
+    actif: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TypeEPICreate(BaseModel):
+    nom: str
+    icone: str = "🛡️"
+    description: str = ""
+    ordre: int = 0
+
+class TypeEPIUpdate(BaseModel):
+    nom: Optional[str] = None
+    icone: Optional[str] = None
+    description: Optional[str] = None
+    ordre: Optional[int] = None
+    actif: Optional[bool] = None
 
 class EPICreate(BaseModel):
     tenant_id: Optional[str] = None
