@@ -48,6 +48,9 @@ const MonProfil = () => {
   const cropContainerRef = React.useRef(null);
   const cropImageRef = React.useRef(null);
   
+  // État pour la capture caméra iOS
+  const [showCameraCapture, setShowCameraCapture] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
