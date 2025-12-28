@@ -15852,6 +15852,14 @@ const MonProfil = () => {
   const [epiTailles, setEpiTailles] = useState({});
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
+  
+  // États pour le crop d'image
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const cropImageRef = React.useRef(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
