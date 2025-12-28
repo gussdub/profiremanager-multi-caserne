@@ -1714,11 +1714,20 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         <span className="hamburger-line"></span>
       </button>
 
-      {/* Mobile overlay - fond sombre pour fermer le menu */}
+      {/* Zone cliquable pour fermer le menu mobile */}
       {isMobileMenuOpen && (
         <div 
           className="mobile-overlay"
           onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 'min(85vw, 300px)',
+            right: 0,
+            bottom: 0,
+            zIndex: 1000,
+            background: 'transparent'
+          }}
         ></div>
       )}
 
