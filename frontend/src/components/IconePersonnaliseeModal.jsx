@@ -217,6 +217,7 @@ const IconePersonnaliseeModal = ({ onClose, onSave }) => {
                     <input
                       type="file"
                       accept="image/*"
+                      capture="environment"
                       onChange={handleFileInput}
                       style={{ display: 'none' }}
                       id="file-input"
@@ -225,7 +226,7 @@ const IconePersonnaliseeModal = ({ onClose, onSave }) => {
                       variant="outline"
                       onClick={() => document.getElementById('file-input').click()}
                     >
-                      Choisir un fichier
+                      📷 Prendre une photo
                     </Button>
                     <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
                       Max 10MB • Tous formats image acceptés
