@@ -1725,9 +1725,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 1000,
-            background: 'transparent',
-            pointerEvents: 'auto'
+            zIndex: 999,
+            background: 'transparent'
           }}
         ></div>
       )}
