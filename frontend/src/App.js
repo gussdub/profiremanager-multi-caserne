@@ -32,6 +32,7 @@ const MonProfil = lazy(() => import("./components/MonProfil"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const Rapports = lazy(() => import("./components/Rapports"));
+const ApprovisionnementEau = lazy(() => import("./components/ApprovisionnementEau"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
