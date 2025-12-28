@@ -226,7 +226,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: transparent; /* Fond transparent - on utilisera un gradient */
+  background: rgba(0, 0, 0, 0.6);
   z-index: 999;
   -webkit-tap-highlight-color: transparent;
 }
@@ -239,9 +239,8 @@ body {
   
   .mobile-overlay {
     display: block;
-    /* Décaler l'overlay pour ne pas couvrir la sidebar */
-    left: min(85vw, 300px);
-    background: rgba(0, 0, 0, 0.6);
+    /* Couvre tout l'écran, la sidebar est au-dessus avec z-index supérieur */
+    left: 0;
   }
   
   .sidebar {
