@@ -22060,6 +22060,7 @@ const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
         <input
           type="file"
           accept="image/*"
+          capture="environment"
           multiple
           onChange={handleFileChange}
           disabled={uploading || photos.length >= maxPhotos}
@@ -22073,7 +22074,7 @@ const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
           onClick={() => document.getElementById('photo-upload').click()}
           disabled={uploading || photos.length >= maxPhotos}
         >
-          {uploading ? '⏳ Upload...' : '📷 Ajouter photos'}
+          {uploading ? '⏳ Téléversement...' : '📷 Ajouter photos'}
         </Button>
       </div>
 
