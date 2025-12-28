@@ -3413,7 +3413,8 @@ async def login_legacy(user_login: UserLogin):
                 "email": user.email,
                 "role": user.role,
                 "grade": user.grade,
-                "type_emploi": user.type_emploi
+                "type_emploi": user.type_emploi,
+                "photo_profil": user.photo_profil  # Ajouter la photo de profil
             }
         }
     except HTTPException:
