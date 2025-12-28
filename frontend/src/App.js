@@ -19027,10 +19027,10 @@ const ImportBatiments = ({ onImportComplete }) => {
             >
               <div className="step-circle">{stepNum}</div>
               <div className="step-label">
-                {stepNum === 1 && 'Upload'}
-                {stepNum === 2 && 'Mapping'}
-                {stepNum === 3 && 'Preview'}
-                {stepNum === 4 && 'Import'}
+                {stepNum === 1 && 'Téléverser'}
+                {stepNum === 2 && 'Mappage'}
+                {stepNum === 3 && 'Aperçu'}
+                {stepNum === 4 && 'Importer'}
               </div>
             </div>
           ))}
