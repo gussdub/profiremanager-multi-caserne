@@ -1266,6 +1266,17 @@ const MonProfil = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de capture caméra iOS */}
+      {showCameraCapture && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCameraCapture(false)}
+          maxWidth={800}
+          quality={0.9}
+          facingMode="user"
+        />
+      )}
     </div>
   );
 };
