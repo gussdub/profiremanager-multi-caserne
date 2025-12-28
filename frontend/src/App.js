@@ -1687,12 +1687,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         <div 
           className="mobile-overlay"
           onClick={() => setIsMobileMenuOpen(false)}
-          onTouchStart={(e) => {
-            // Seulement fermer si on touche l'overlay, pas la sidebar
-            if (e.target.classList.contains('mobile-overlay')) {
-              setIsMobileMenuOpen(false);
-            }
-          }}
         ></div>
       )}
 
