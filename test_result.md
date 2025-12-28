@@ -136,10 +136,46 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: ["iOS Camera Fix - CameraCapture component"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+# ============================================
+# TEST SESSION: iOS Camera Fix
+# Date: 2024-12-28
+# ============================================
+
+test_session_ios_camera:
+  focus: "Correction du bug caméra iOS avec composant CameraCapture"
+  
+  implementation_summary:
+    - "Créé CameraCapture.jsx avec getUserMedia() API"
+    - "Intégré dans MonProfil.jsx et MesEPI.js"
+    - "Détection automatique iOS via isIOS()"
+    - "UI caméra complète avec preview et compression"
+  
+  files_modified:
+    - "/app/frontend/src/components/CameraCapture.jsx (NEW)"
+    - "/app/frontend/src/components/MonProfil.jsx"
+    - "/app/frontend/src/components/MesEPI.js"
+    - "/app/frontend/src/App.css (styles caméra)"
+
+  test_items:
+    - task: "CameraCapture component renders correctly"
+      status: "needs_testing"
+    - task: "MonProfil photo button triggers camera on iOS detection"
+      status: "needs_testing"
+    - task: "MesEPI inspection photo upload works"
+      status: "needs_testing"
+    - task: "Application builds without errors"
+      status: "PASSED"
+
+  note_for_user: |
+    Le fix iOS a été implémenté mais nécessite un test sur appareil iOS réel.
+    Sur iOS, le composant CameraCapture s'ouvrira automatiquement au lieu du
+    picker natif iOS qui crashait. Sur desktop/Android, le comportement reste
+    inchangé (input file classique).
 
 agent_communication:
   - agent: "testing"
