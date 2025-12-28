@@ -25,6 +25,9 @@ const AuditModal = lazy(() => import("./components/AuditModal"));
 const Planning = lazy(() => import("./components/Planning"));
 const Personnel = lazy(() => import("./components/Personnel"));
 const ModuleEPI = lazy(() => import("./components/ModuleEPI"));
+const Remplacements = lazy(() => import("./components/Remplacements"));
+const Formations = lazy(() => import("./components/Formations"));
+const MesDisponibilites = lazy(() => import("./components/MesDisponibilites"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
