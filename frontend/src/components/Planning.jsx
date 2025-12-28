@@ -10,6 +10,7 @@ import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { fr } from "date-fns/locale";
 const RapportHeuresModal = lazy(() => import("./RapportHeuresModal"));
+const AuditModal = lazy(() => import("./AuditModal"));
 
 const Planning = () => {
   const { user, tenant } = useAuth();
