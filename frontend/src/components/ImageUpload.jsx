@@ -178,7 +178,7 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
             onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#4f46e5')}
             onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#6366f1')}
           >
-            {uploading ? '⏳' : '📷'} {uploading ? 'Upload...' : 'Ajouter photo'}
+            {uploading ? '⏳' : '📷'} {uploading ? 'Téléversement...' : 'Prendre photo'}
           </button>
         ) : (
           <div style={{ 
