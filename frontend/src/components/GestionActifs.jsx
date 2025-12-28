@@ -2410,6 +2410,209 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           </div>
         </div>
 
+        {/* Sous-section: Catégories d'EPI */}
+        <div style={{ 
+          background: 'white', 
+          padding: 'clamp(12px, 3vw, 20px)', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginBottom: '15px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📦</span> Catégories d&apos;EPI
+              </h3>
+              <p style={{ color: '#7f8c8d', margin: 0, fontSize: '12px' }}>
+                Gérez les types d&apos;équipements de protection disponibles
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setEditingTypeEPI(null);
+                setNewTypeEPI({ nom: '', icone: '🛡️', description: '' });
+                setShowTypeEPIModal(true);
+              }}
+              style={{ background: '#10B981', color: 'white', fontSize: '13px', padding: '8px 16px' }}
+            >
+              ➕ Nouveau type
+            </Button>
+          </div>
+
+          {/* Liste des types d'EPI */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {typesEPI.length === 0 ? (
+              <p style={{ color: '#9ca3af', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>
+                Chargement des types d&apos;EPI...
+              </p>
+            ) : (
+              typesEPI.map(type => (
+                <div
+                  key={type.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    background: type.est_defaut ? '#f0f9ff' : '#f9fafb',
+                    borderRadius: '8px',
+                    border: type.est_defaut ? '1px solid #bae6fd' : '1px solid #e5e7eb',
+                    flexWrap: 'wrap',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
+                    <span style={{ fontSize: '24px' }}>{type.icone}</span>
+                    <div>
+                      <p style={{ fontWeight: '600', color: '#1f2937', margin: 0, fontSize: '14px' }}>
+                        {type.nom}
+                        {type.est_defaut && (
+                          <span style={{ 
+                            marginLeft: '8px', 
+                            fontSize: '10px', 
+                            background: '#0ea5e9', 
+                            color: 'white', 
+                            padding: '2px 6px', 
+                            borderRadius: '4px' 
+                          }}>
+                            Par défaut
+                          </span>
+                        )}
+                      </p>
+                      {type.description && (
+                        <p style={{ color: '#6b7280', margin: 0, fontSize: '12px' }}>{type.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditTypeEPI(type)}
+                      style={{ fontSize: '12px', padding: '6px 10px' }}
+                    >
+                      ✏️ Modifier
+                    </Button>
+                    {!type.est_defaut && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteTypeEPI(type.id, type.nom)}
+                        style={{ fontSize: '12px', padding: '6px 10px', color: '#ef4444', borderColor: '#fca5a5' }}
+                      >
+                        🗑️
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Modal création/édition type EPI */}
+        {showTypeEPIModal && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px'
+            }}
+            onClick={() => setShowTypeEPIModal(false)}
+          >
+            <div 
+              style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: '24px',
+                width: '100%',
+                maxWidth: '450px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>
+                {editingTypeEPI ? '✏️ Modifier le type d\'EPI' : '➕ Nouveau type d\'EPI'}
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <Label style={{ marginBottom: '6px', display: 'block' }}>Nom du type *</Label>
+                  <Input
+                    value={newTypeEPI.nom}
+                    onChange={e => setNewTypeEPI({...newTypeEPI, nom: e.target.value})}
+                    placeholder="Ex: Harnais, Lunettes, etc."
+                  />
+                </div>
+                
+                <div>
+                  <Label style={{ marginBottom: '6px', display: 'block' }}>Icône (emoji)</Label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <Input
+                      value={newTypeEPI.icone}
+                      onChange={e => setNewTypeEPI({...newTypeEPI, icone: e.target.value})}
+                      style={{ width: '80px', textAlign: 'center', fontSize: '20px' }}
+                    />
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {['🛡️', '🪢', '👓', '🦺', '🎒', '🧯', '⛑️', '🥽'].map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setNewTypeEPI({...newTypeEPI, icone: emoji})}
+                          style={{
+                            padding: '6px',
+                            fontSize: '18px',
+                            background: newTypeEPI.icone === emoji ? '#dbeafe' : '#f3f4f6',
+                            border: newTypeEPI.icone === emoji ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label style={{ marginBottom: '6px', display: 'block' }}>Description (optionnel)</Label>
+                  <Input
+                    value={newTypeEPI.description}
+                    onChange={e => setNewTypeEPI({...newTypeEPI, description: e.target.value})}
+                    placeholder="Brève description du type d'équipement"
+                  />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTypeEPIModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleSaveTypeEPI}
+                  disabled={typeEPILoading}
+                  style={{ background: '#10B981', color: 'white' }}
+                >
+                  {typeEPILoading ? '⏳ Enregistrement...' : (editingTypeEPI ? 'Mettre à jour' : 'Créer')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sous-section: Notifications Destinataires */}
         <div style={{ 
           background: 'white', 
