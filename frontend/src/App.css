@@ -33,6 +33,21 @@ div[style*="position: fixed"][style*="bottom: 20px"][style*="right: 20px"] {
   box-sizing: border-box;
 }
 
+/* Style pour cacher les inputs de fichiers de manière compatible iOS */
+.sr-only,
+input[type="file"][style*="display: none"],
+input[type="file"][style*="display:none"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* iOS Safari specific fixes for touch events */
 @supports (-webkit-touch-callout: none) {
   .sidebar.mobile-open {
