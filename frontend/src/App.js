@@ -1197,6 +1197,18 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
+  // Effet pour ajouter une classe au body quand le menu mobile est ouvert
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('mobile-menu-open');
+    } else {
+      document.body.classList.remove('mobile-menu-open');
+    }
+    return () => {
+      document.body.classList.remove('mobile-menu-open');
+    };
+  }, [isMobileMenuOpen]);
+  
   // Paramètres de notifications (localStorage)
   const [notificationSettings, setNotificationSettings] = useState(() => {
     const saved = localStorage.getItem('notificationSettings');
