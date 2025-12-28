@@ -750,7 +750,7 @@ const MonProfil = () => {
         <div className="profil-main-column">
           
           {/* Section Photo de Profil */}
-          <div className="formation-card" style={{ marginBottom: '1.5rem' }}>
+          <div className="formation-card" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
             <div className="formation-header">
               <h3>📷 Photo de profil</h3>
             </div>
@@ -759,7 +759,8 @@ const MonProfil = () => {
               alignItems: 'center', 
               gap: '1.5rem',
               padding: '1rem',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              overflow: 'visible'
             }}>
               {/* Photo preview */}
               <div style={{
