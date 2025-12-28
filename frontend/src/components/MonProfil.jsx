@@ -36,6 +36,7 @@ const MonProfil = () => {
   const [epiTailles, setEpiTailles] = useState({});
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
+  const photoLibraryRef = React.useRef(null);
   
   // États pour le crop d'image
   const [showCropModal, setShowCropModal] = useState(false);
@@ -50,6 +51,8 @@ const MonProfil = () => {
   
   // État pour la capture caméra iOS
   const [showCameraCapture, setShowCameraCapture] = useState(false);
+  // État pour le menu de modification photo
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   
   const { toast } = useToast();
 
