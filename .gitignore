@@ -593,3 +593,7 @@ Thumbs.db
 # Environment files
 *.env
 *.env.*
+
+# Firebase credentials (secret)
+firebase-credentials.json
+*.json.bak
