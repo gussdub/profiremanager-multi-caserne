@@ -989,6 +989,7 @@ const PointEauModal = ({
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handlePhotoUpload}
               disabled={uploadingPhoto}
               style={{
@@ -999,7 +1000,7 @@ const PointEauModal = ({
                 fontSize: '0.875rem'
               }}
             />
-            {uploadingPhoto && <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>Téléchargement...</p>}
+            {uploadingPhoto && <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>Téléversement...</p>}
             
             {/* Aperçu des photos */}
             {formData.photos.length > 0 && (
