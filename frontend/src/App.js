@@ -11,6 +11,7 @@ import { Toaster } from "./components/ui/toaster";
 import VehiculeQRAction from './components/VehiculeQRAction';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTenant } from "./contexts/TenantContext";
+import { useAuth, AuthProvider } from "./contexts/AuthContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
@@ -20,6 +21,8 @@ import { fr } from "date-fns/locale";
 const Chart = lazy(() => import("react-apexcharts"));
 const RapportHeuresModal = lazy(() => import("./components/RapportHeuresModal"));
 const AuditModal = lazy(() => import("./components/AuditModal"));
+// Composants extraits pour réduire la taille de App.js
+const Planning = lazy(() => import("./components/Planning"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
