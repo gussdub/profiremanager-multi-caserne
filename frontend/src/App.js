@@ -16002,6 +16002,9 @@ const MonProfil = () => {
       // Mettre à jour le profil local
       setUserProfile(prev => ({...prev, photo_profil: response.photo_profil}));
       
+      // Mettre à jour le user global (pour la sidebar)
+      setUser(prev => ({...prev, photo_profil: response.photo_profil}));
+      
       toast({
         title: "Photo mise à jour",
         description: "Votre photo de profil a été enregistrée",
