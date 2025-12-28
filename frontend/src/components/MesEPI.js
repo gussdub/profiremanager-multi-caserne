@@ -732,7 +732,7 @@ const MesEPI = ({ user }) => {
                 <Label className="form-label-bold">Ajouter une photo</Label>
                 
                 {!photoPreview ? (
-                  <div className="photo-upload-zone">
+                  <div className="photo-upload-zone" onClick={openPhotoCapture} style={{ cursor: 'pointer' }}>
                     <input
                       type="file"
                       id="photo-input"
@@ -741,13 +741,13 @@ const MesEPI = ({ user }) => {
                       onChange={handlePhotoChange}
                       className="photo-input-hidden"
                     />
-                    <label htmlFor="photo-input" className="photo-upload-label">
+                    <div className="photo-upload-label">
                       <div className="photo-upload-icon">📷</div>
                       <div className="photo-upload-text">
                         <strong>Prendre ou choisir une photo</strong>
                         <span>Appuyez pour capturer ou sélectionner (max 5 MB)</span>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 ) : (
                   <div className="photo-preview-container">
