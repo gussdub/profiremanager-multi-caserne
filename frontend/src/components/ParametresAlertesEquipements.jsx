@@ -287,6 +287,5 @@ const ParametresAlertesEquipements = ({ tenantSlug, user }) => {
 };
 
 
-export default GestionActifs;
 
 export default ParametresAlertesEquipements;
