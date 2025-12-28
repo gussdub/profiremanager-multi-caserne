@@ -254,10 +254,23 @@ body {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height pour iOS */
     width: min(85vw, 300px); /* 85% de l'écran ou max 300px */
-    pointer-events: none;
     background: #dc2626;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+  }
+  
+  /* Fond sombre derrière la sidebar quand ouverte */
+  .sidebar.mobile-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(85vw, 300px);
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+    pointer-events: none;
   }
   
   /* Sidebar header pour mobile - Fix logo coupé */
