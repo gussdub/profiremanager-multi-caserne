@@ -16570,6 +16570,7 @@ const MonProfil = () => {
                   ref={photoInputRef}
                   onChange={handlePhotoSelect}
                   accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
                   style={{ display: 'none' }}
                 />
                 <Button
@@ -16577,7 +16578,7 @@ const MonProfil = () => {
                   disabled={photoUploading}
                   style={{ minWidth: '160px' }}
                 >
-                  {photoUploading ? '⏳ Upload...' : '📤 Changer la photo'}
+                  {photoUploading ? '⏳ Téléversement...' : '📷 Prendre une photo'}
                 </Button>
                 {userProfile?.photo_profil && (
                   <Button
