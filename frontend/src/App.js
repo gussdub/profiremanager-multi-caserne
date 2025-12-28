@@ -16490,11 +16490,145 @@ const MonProfil = () => {
                   color: '#6b7280',
                   margin: '0.5rem 0 0 0'
                 }}>
-                  JPG, PNG ou WEBP • Max 2 MB
+                  JPG, PNG ou WEBP • Recadrage disponible
                 </p>
               </div>
             </div>
           </div>
+
+          {/* Modal de recadrage d'image */}
+          {showCropModal && imageToCrop && (
+            <div 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999,
+                padding: '20px'
+              }}
+            >
+              <div 
+                style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  width: '100%',
+                  maxWidth: '500px',
+                  maxHeight: '90vh',
+                  overflow: 'auto'
+                }}
+              >
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>
+                  ✂️ Recadrer votre photo
+                </h3>
+                
+                <div style={{ 
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: '1',
+                  background: '#f3f4f6',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  marginBottom: '16px'
+                }}>
+                  <img
+                    ref={cropImageRef}
+                    src={imageToCrop}
+                    alt="À recadrer"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: `scale(${zoom}) translate(${-crop.x}%, ${-crop.y}%)`,
+                      transformOrigin: 'center center'
+                    }}
+                  />
+                  {/* Overlay avec cercle de crop */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    boxShadow: 'inset 0 0 0 9999px rgba(0,0,0,0.5)',
+                    borderRadius: '50%',
+                    pointerEvents: 'none'
+                  }} />
+                </div>
+                
+                {/* Contrôles de zoom */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#4b5563' }}>
+                    🔍 Zoom: {Math.round(zoom * 100)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                
+                {/* Contrôles de position */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: '#6b7280' }}>
+                      ↔️ Horizontal
+                    </label>
+                    <input
+                      type="range"
+                      min="-50"
+                      max="50"
+                      value={crop.x}
+                      onChange={(e) => setCrop(prev => ({...prev, x: parseFloat(e.target.value)}))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: '#6b7280' }}>
+                      ↕️ Vertical
+                    </label>
+                    <input
+                      type="range"
+                      min="-50"
+                      max="50"
+                      value={crop.y}
+                      onChange={(e) => setCrop(prev => ({...prev, y: parseFloat(e.target.value)}))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCropModal(false);
+                      setImageToCrop(null);
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={handleCropComplete}
+                    disabled={photoUploading}
+                    style={{ background: '#10B981', color: 'white' }}
+                  >
+                    {photoUploading ? '⏳ Enregistrement...' : '✅ Valider'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Informations personnelles */}
           <div className="formation-card">
