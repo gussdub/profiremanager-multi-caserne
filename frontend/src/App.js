@@ -16031,6 +16031,8 @@ const MonProfil = () => {
     try {
       await apiDelete(tenantSlug, '/users/photo-profil');
       setUserProfile(prev => ({...prev, photo_profil: null}));
+      // Mettre à jour le user global (pour la sidebar)
+      setUser(prev => ({...prev, photo_profil: null}));
       toast({
         title: "Photo supprimée",
         description: "Votre photo de profil a été supprimée",
