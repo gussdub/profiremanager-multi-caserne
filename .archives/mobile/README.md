@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://profpics-collab.preview.emergentagent.com
+- **URL** : https://mobile-menu-revamp-2.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://profpics-collab.preview.emergentagent.com"
+  "apiUrl": "https://mobile-menu-revamp-2.preview.emergentagent.com"
 }
 ```
 
