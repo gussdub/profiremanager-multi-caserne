@@ -214,8 +214,9 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 998;
+  z-index: 999;
   pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Responsive Sidebar - Correction complète clics mobile */
