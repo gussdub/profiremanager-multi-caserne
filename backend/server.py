@@ -10216,7 +10216,8 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
                 "email": user.email,
                 "role": user.role,
                 "grade": user.grade,
-                "type_emploi": user.type_emploi
+                "type_emploi": user.type_emploi,
+                "photo_profil": user.photo_profil  # Ajouter la photo de profil
             }
         }
     except HTTPException:
