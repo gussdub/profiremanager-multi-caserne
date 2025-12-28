@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import axios from 'axios';
 import InventairesTab from './GestionInventaires';
 import RondeSecurite from './RondeSecurite';
@@ -23,6 +23,21 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+
+// Lazy load extracted components
+const BornesSechesTab = lazy(() => import('./BornesSeches').then(m => ({ default: m.BornesSechesTab })));
+const BorneSecheModal = lazy(() => import('./BornesSeches').then(m => ({ default: m.BorneSecheModal })));
+const ParametresActifsTab = lazy(() => import('./ParametresActifs'));
+const ImportCSVModal = lazy(() => import('./ImportCSVActifs'));
+const ParametresAlertesEquipements = lazy(() => import('./ParametresAlertesEquipements'));
+const ActifsModalsModule = lazy(() => import('./ActifsModals'));
+
+// Loading component
+const LoadingSpinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
+    <div className="loading-spinner"></div>
+  </div>
+);
 
 const GestionActifs = ({ user, ModuleEPI }) => {
   const [activeTab, setActiveTab] = useState('vehicules');
