@@ -4437,9 +4437,9 @@ def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
         # Décoder le base64
         image_data = base64.b64decode(base64_string)
         
-        # Vérifier la taille (max 2MB)
-        if len(image_data) > 2 * 1024 * 1024:
-            raise ValueError("Image trop volumineuse (max 2MB)")
+        # Vérifier la taille (max 10MB - sera compressée)
+        if len(image_data) > 10 * 1024 * 1024:
+            raise ValueError("Image trop volumineuse (max 10MB)")
         
         # Ouvrir l'image avec PIL
         img = PILImage.open(BytesIO(image_data))
