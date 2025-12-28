@@ -126,6 +126,18 @@ const MonProfil = () => {
     }
   }, [user?.id, tenantSlug]);
 
+  // Fermer le menu photo si on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPhotoMenu && !event.target.closest('.photo-menu-container')) {
+        setShowPhotoMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPhotoMenu]);
+
   // Gestion de l'upload de photo de profil - Ouvre le modal de crop
   const handlePhotoSelect = async (event) => {
     const file = event.target.files?.[0];
