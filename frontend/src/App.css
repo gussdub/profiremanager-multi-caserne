@@ -293,20 +293,6 @@ body {
     z-index: 99999 !important;
   }
   
-  /* Fond sombre à droite de la sidebar (cliquable via JS) */
-  .sidebar.mobile-open::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 100%; /* Commence juste après la sidebar */
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    background: rgba(0, 0, 0, 0.6);
-    pointer-events: none; /* Les clics passent au JS */
-    z-index: 99998;
-  }
-  
   .sidebar.mobile-open .sidebar-nav {
     pointer-events: auto;
     position: relative;
