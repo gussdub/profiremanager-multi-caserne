@@ -760,7 +760,7 @@ const MonProfil = () => {
                   }}
                 />
                 <Button
-                  onClick={() => photoInputRef.current?.click()}
+                  onClick={openPhotoCapture}
                   disabled={photoUploading}
                   style={{ minWidth: '160px' }}
                 >
