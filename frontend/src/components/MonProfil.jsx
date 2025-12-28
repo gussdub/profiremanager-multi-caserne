@@ -795,7 +795,7 @@ const MonProfil = () => {
               </div>
               
               {/* Boutons et Menu */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+              <div className="photo-menu-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
                 {/* Input fichier caché pour les fichiers */}
                 <input
                   type="file"
