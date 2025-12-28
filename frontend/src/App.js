@@ -15956,44 +15956,99 @@ const MonProfil = () => {
     // Lire l'image et ouvrir le modal de crop
     const reader = new FileReader();
     reader.onload = (e) => {
-      setImageToCrop(e.target.result);
-      setShowCropModal(true);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
+      // Charger l'image pour obtenir ses dimensions
+      const img = new Image();
+      img.onload = () => {
+        setImageSize({ width: img.width, height: img.height });
+        setImageToCrop(e.target.result);
+        setShowCropModal(true);
+        setCropPosition({ x: 0, y: 0 });
+        setZoom(1);
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
     event.target.value = '';
   };
 
+  // Gestion du drag pour déplacer l'image
+  const handleCropMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    setDragStart({ x: clientX - cropPosition.x, y: clientY - cropPosition.y });
+  };
+
+  const handleCropMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const container = cropContainerRef.current;
+    if (!container) return;
+    
+    const containerSize = container.offsetWidth;
+    const scaledWidth = imageSize.width * zoom;
+    const scaledHeight = imageSize.height * zoom;
+    
+    // Calculer les limites de déplacement
+    const minX = containerSize - scaledWidth;
+    const minY = containerSize - scaledHeight;
+    
+    let newX = clientX - dragStart.x;
+    let newY = clientY - dragStart.y;
+    
+    // Contraindre le déplacement pour que l'image couvre toujours le cercle
+    newX = Math.min(0, Math.max(minX, newX));
+    newY = Math.min(0, Math.max(minY, newY));
+    
+    setCropPosition({ x: newX, y: newY });
+  };
+
+  const handleCropMouseUp = () => {
+    setIsDragging(false);
+  };
+
   // Fonction pour recadrer et uploader l'image
   const handleCropComplete = async () => {
-    if (!imageToCrop || !cropImageRef.current) return;
+    if (!imageToCrop) return;
     
     setPhotoUploading(true);
     
     try {
-      const img = cropImageRef.current;
+      const img = new Image();
+      img.src = imageToCrop;
+      
+      await new Promise((resolve) => {
+        if (img.complete) resolve();
+        else img.onload = resolve;
+      });
+      
       const canvas = document.createElement('canvas');
-      const size = 400; // Taille du crop carré
-      canvas.width = size;
-      canvas.height = size;
+      const outputSize = 400; // Taille de sortie
+      canvas.width = outputSize;
+      canvas.height = outputSize;
       const ctx = canvas.getContext('2d');
       
-      // Calculer les dimensions du crop
-      const imgWidth = img.naturalWidth;
-      const imgHeight = img.naturalHeight;
-      const minDim = Math.min(imgWidth, imgHeight);
+      // Calculer la zone de crop basée sur la position et le zoom
+      const container = cropContainerRef.current;
+      const containerSize = container ? container.offsetWidth : 300;
       
-      // Appliquer le zoom et le déplacement
-      const scaledSize = minDim / zoom;
-      const offsetX = (crop.x / 100) * (imgWidth - scaledSize);
-      const offsetY = (crop.y / 100) * (imgHeight - scaledSize);
+      // Ratio entre la taille affichée et la taille réelle
+      const displayRatio = containerSize / (Math.min(imageSize.width, imageSize.height) * zoom);
+      
+      // Position du crop dans l'image originale
+      const sourceX = -cropPosition.x / displayRatio / zoom;
+      const sourceY = -cropPosition.y / displayRatio / zoom;
+      const sourceSize = containerSize / displayRatio / zoom;
       
       // Dessiner l'image croppée
       ctx.drawImage(
         img,
-        offsetX, offsetY, scaledSize, scaledSize,
-        0, 0, size, size
+        sourceX, sourceY, sourceSize, sourceSize,
+        0, 0, outputSize, outputSize
       );
       
       // Convertir en base64 JPEG
