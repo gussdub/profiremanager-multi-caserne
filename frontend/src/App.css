@@ -239,8 +239,9 @@ body {
   
   .mobile-overlay {
     display: block;
-    /* Couvre tout l'écran, la sidebar est au-dessus avec z-index supérieur */
-    left: 0;
+    /* Découper l'overlay pour ne pas couvrir la sidebar */
+    clip-path: inset(0 0 0 min(85vw, 300px));
+    -webkit-clip-path: inset(0 0 0 min(85vw, 300px));
   }
   
   .sidebar {
