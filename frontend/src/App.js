@@ -1802,25 +1802,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                   }
                   setIsMobileMenuOpen(false);
                 }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  if (switchTenant) {
-                    switchTenant();
-                  } else {
-                    localStorage.removeItem('profiremanager_last_tenant');
-                    window.location.href = '/';
-                  }
-                  setIsMobileMenuOpen(false);
-                }}
                 className="switch-tenant-btn"
                 style={{ 
                   fontSize: '0.85rem', 
                   padding: '0.5rem 0.75rem',
                   background: 'rgba(255,255,255,0.1)',
                   border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'white',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'rgba(255,255,255,0.2)'
+                  color: 'white'
                 }}
               >
                 🏢 Changer de caserne
@@ -1832,17 +1820,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                 logout();
                 setIsMobileMenuOpen(false);
               }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                logout();
-                setIsMobileMenuOpen(false);
-              }}
               className="logout-btn"
               data-testid="logout-btn"
-              style={{
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'rgba(255,255,255,0.2)'
-              }}
             >
               🚪 Déconnexion
             </Button>
