@@ -90,14 +90,30 @@ api_router = APIRouter(prefix="/api")
 # ==================== FIREBASE INITIALIZATION ====================
 
 # Initialiser Firebase Admin
+# Option 1: Via variable d'environnement FIREBASE_CREDENTIALS (JSON en base64)
+# Option 2: Via fichier firebase-credentials.json (pour développement local)
+firebase_credentials_env = os.environ.get('FIREBASE_CREDENTIALS')
 firebase_cred_path = ROOT_DIR / 'firebase-credentials.json'
-if firebase_cred_path.exists():
+
+if firebase_credentials_env:
+    try:
+        import base64
+        import json
+        # Décoder les credentials depuis la variable d'environnement (base64)
+        cred_json = base64.b64decode(firebase_credentials_env).decode('utf-8')
+        cred_dict = json.loads(cred_json)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin SDK initialized from environment variable")
+    except Exception as e:
+        print(f"⚠️ Firebase initialization error (env): {e}")
+elif firebase_cred_path.exists():
     try:
         cred = credentials.Certificate(str(firebase_cred_path))
         firebase_admin.initialize_app(cred)
-        print("✅ Firebase Admin SDK initialized successfully")
+        print("✅ Firebase Admin SDK initialized from file")
     except Exception as e:
-        print(f"⚠️ Firebase initialization error: {e}")
+        print(f"⚠️ Firebase initialization error (file): {e}")
 else:
     print("ℹ️ Firebase credentials not configured - Push notifications disabled (optional feature)")
 
