@@ -19049,6 +19049,182 @@ async def update_parametres_disponibilites(
 
 # ==================== EPI ROUTES NFPA 1851 ====================
 
+# ========== TYPES D'EPI PERSONNALISÉS ==========
+
+# Types d'EPI par défaut
+TYPES_EPI_DEFAUT = [
+    {"nom": "Casque", "icone": "⛑️", "description": "Casque de protection incendie", "ordre": 1},
+    {"nom": "Bottes", "icone": "🥾", "description": "Bottes de combat incendie", "ordre": 2},
+    {"nom": "Manteau Habit de Combat", "icone": "🧥", "description": "Veste/Manteau bunker gear", "ordre": 3},
+    {"nom": "Pantalon Habit de Combat", "icone": "👖", "description": "Pantalon bunker gear", "ordre": 4},
+    {"nom": "Gants", "icone": "🧤", "description": "Gants de protection incendie", "ordre": 5},
+    {"nom": "Cagoule Anti-Particules", "icone": "🎭", "description": "Cagoule de protection", "ordre": 6},
+]
+
+async def ensure_default_types_epi(tenant_id: str):
+    """Crée les types d'EPI par défaut s'ils n'existent pas"""
+    existing = await db.types_epi.count_documents({"tenant_id": tenant_id})
+    if existing == 0:
+        for type_defaut in TYPES_EPI_DEFAUT:
+            await db.types_epi.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "nom": type_defaut["nom"],
+                "icone": type_defaut["icone"],
+                "description": type_defaut["description"],
+                "ordre": type_defaut["ordre"],
+                "est_defaut": True,
+                "actif": True,
+                "created_at": datetime.now(timezone.utc)
+            })
+
+@api_router.get("/{tenant_slug}/types-epi")
+async def get_types_epi(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère tous les types d'EPI du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # S'assurer que les types par défaut existent
+    await ensure_default_types_epi(tenant.id)
+    
+    types = await db.types_epi.find(
+        {"tenant_id": tenant.id, "actif": True},
+        {"_id": 0}
+    ).sort("ordre", 1).to_list(100)
+    
+    return types
+
+@api_router.post("/{tenant_slug}/types-epi")
+async def create_type_epi(
+    tenant_slug: str, 
+    type_data: TypeEPICreate, 
+    current_user: User = Depends(get_current_user)
+):
+    """Crée un nouveau type d'EPI (Admin uniquement)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si le nom existe déjà
+    existing = await db.types_epi.find_one({
+        "tenant_id": tenant.id, 
+        "nom": {"$regex": f"^{type_data.nom}$", "$options": "i"},
+        "actif": True
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Un type d'EPI avec ce nom existe déjà")
+    
+    # Trouver le prochain ordre
+    max_ordre = await db.types_epi.find_one(
+        {"tenant_id": tenant.id},
+        sort=[("ordre", -1)]
+    )
+    next_ordre = (max_ordre.get("ordre", 0) + 1) if max_ordre else 1
+    
+    new_type = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": type_data.nom,
+        "icone": type_data.icone or "🛡️",
+        "description": type_data.description or "",
+        "ordre": type_data.ordre if type_data.ordre > 0 else next_ordre,
+        "est_defaut": False,
+        "actif": True,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.types_epi.insert_one(new_type)
+    del new_type["_id"]
+    
+    return new_type
+
+@api_router.put("/{tenant_slug}/types-epi/{type_id}")
+async def update_type_epi(
+    tenant_slug: str,
+    type_id: str,
+    type_data: TypeEPIUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifie un type d'EPI (Admin uniquement)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le type existe
+    type_epi = await db.types_epi.find_one({"id": type_id, "tenant_id": tenant.id})
+    if not type_epi:
+        raise HTTPException(status_code=404, detail="Type d'EPI non trouvé")
+    
+    # Préparer les mises à jour
+    update_data = {}
+    if type_data.nom is not None:
+        # Vérifier unicité du nom
+        existing = await db.types_epi.find_one({
+            "tenant_id": tenant.id,
+            "nom": {"$regex": f"^{type_data.nom}$", "$options": "i"},
+            "id": {"$ne": type_id},
+            "actif": True
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="Un type d'EPI avec ce nom existe déjà")
+        update_data["nom"] = type_data.nom
+    
+    if type_data.icone is not None:
+        update_data["icone"] = type_data.icone
+    if type_data.description is not None:
+        update_data["description"] = type_data.description
+    if type_data.ordre is not None:
+        update_data["ordre"] = type_data.ordre
+    if type_data.actif is not None:
+        update_data["actif"] = type_data.actif
+    
+    if update_data:
+        await db.types_epi.update_one(
+            {"id": type_id, "tenant_id": tenant.id},
+            {"$set": update_data}
+        )
+    
+    updated = await db.types_epi.find_one({"id": type_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/{tenant_slug}/types-epi/{type_id}")
+async def delete_type_epi(
+    tenant_slug: str,
+    type_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime un type d'EPI (Admin uniquement, types non-défaut uniquement)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que le type existe
+    type_epi = await db.types_epi.find_one({"id": type_id, "tenant_id": tenant.id})
+    if not type_epi:
+        raise HTTPException(status_code=404, detail="Type d'EPI non trouvé")
+    
+    # Empêcher la suppression des types par défaut
+    if type_epi.get("est_defaut"):
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un type d'EPI par défaut. Vous pouvez le désactiver.")
+    
+    # Vérifier si des EPIs utilisent ce type
+    epis_count = await db.epi.count_documents({
+        "tenant_id": tenant.id,
+        "type_epi": type_epi.get("nom")
+    })
+    
+    if epis_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer: {epis_count} EPI(s) utilisent ce type. Désactivez-le plutôt."
+        )
+    
+    await db.types_epi.delete_one({"id": type_id, "tenant_id": tenant.id})
+    
+    return {"message": "Type d'EPI supprimé"}
+
 # ========== EPI CRUD ==========
 
 @api_router.post("/{tenant_slug}/epi", response_model=EPI)
