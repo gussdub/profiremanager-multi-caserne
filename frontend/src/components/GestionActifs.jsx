@@ -22,6 +22,7 @@ import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 const GestionActifs = ({ user, ModuleEPI }) => {
   const [activeTab, setActiveTab] = useState('vehicules');
