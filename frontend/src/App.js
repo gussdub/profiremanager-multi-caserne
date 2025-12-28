@@ -1690,9 +1690,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 };
 
 
-// Mon Profil Component épuré - sans disponibilités et remplacements
-};
-
 // ====================================================================
 // MODULE RAPPORTS AVANCÉS - INTERNES ET EXTERNES
 // ====================================================================
