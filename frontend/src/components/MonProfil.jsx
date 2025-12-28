@@ -269,6 +269,39 @@ const MonProfil = () => {
     }
   };
 
+  // Gestionnaire de capture depuis le composant CameraCapture (iOS)
+  const handleCameraCapture = async (file) => {
+    setShowCameraCapture(false);
+    
+    if (!file) return;
+    
+    // Lire le fichier capturé et ouvrir le modal de crop
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        setImageSize({ width: img.width, height: img.height });
+        setImageToCrop(e.target.result);
+        setShowCropModal(true);
+        setCropPosition({ x: 0, y: 0 });
+        setZoom(1);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Fonction pour ouvrir la capture photo (détection iOS automatique)
+  const openPhotoCapture = () => {
+    if (isIOS()) {
+      // Sur iOS, utiliser le composant caméra personnalisé
+      setShowCameraCapture(true);
+    } else {
+      // Sur les autres plateformes, utiliser l'input file classique
+      photoInputRef.current?.click();
+    }
+  };
+
   // Ancienne fonction de compression (gardée pour compatibilité mais pas utilisée)
   const handlePhotoSelectOld = async (event) => {
     const file = event.target.files?.[0];
