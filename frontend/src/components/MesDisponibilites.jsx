@@ -1,0 +1,3155 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Calendar } from "./ui/calendar";
+import { useToast } from "../hooks/use-toast";
+import { useTenant } from "../contexts/TenantContext";
+import { useAuth } from "../contexts/AuthContext";
+import { fr } from "date-fns/locale";
+
+const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
+  const { user, tenant } = useAuth();
+  const { tenantSlug } = useTenant();
+  
+  // Déterminer quel utilisateur on gère (soi-même ou un autre)
+  const targetUser = managingUser || user;
+  const [userDisponibilites, setUserDisponibilites] = useState([]);
+  const [users, setUsers] = useState([]); // Liste de tous les utilisateurs pour les KPIs
+  const [typesGarde, setTypesGarde] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [savingDisponibilites, setSavingDisponibilites] = useState(false);
+  const [savingMessage, setSavingMessage] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
+  
+  // États pour le calendrier visuel mensuel
+  const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(new Date().getMonth());
+  const [calendarCurrentYear, setCalendarCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDayForDetail, setSelectedDayForDetail] = useState(null);
+  const [showDayDetailModal, setShowDayDetailModal] = useState(false);
+  const [dayDetailData, setDayDetailData] = useState({ disponibilites: [], indisponibilites: [] });
+  const [selectedDateDetails, setSelectedDateDetails] = useState(null);
+  const [pendingConfigurations, setPendingConfigurations] = useState([]);
+  const [availabilityConfig, setAvailabilityConfig] = useState({
+    type_garde_id: '',
+    heure_debut: '08:00',
+    heure_fin: '16:00',
+    statut: 'disponible',
+    // Pour mode récurrence
+    mode: 'calendrier', // 'calendrier' ou 'recurrence'
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    recurrence_type: 'hebdomadaire',
+    recurrence_frequence: 'jours',
+    recurrence_intervalle: 1,
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
+  });
+
+  // États pour la gestion des conflits
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictData, setConflictData] = useState({
+    conflicts: [],
+    newItem: null,
+    itemType: null
+  });
+  const [generationConfig, setGenerationConfig] = useState({
+    horaire_type: 'montreal',
+    equipe: 'Rouge',
+    date_debut: new Date().toISOString().split('T')[0],  // Date du jour
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],  // 31 décembre de l'année en cours
+    conserver_manuelles: true
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [indispoTab, setIndispoTab] = useState('generation'); // 'generation', 'manuelle_calendrier', 'manuelle_recurrence'
+  const [manualIndispoMode, setManualIndispoMode] = useState('calendrier'); // 'calendrier' ou 'recurrence'
+  const [manualIndispoConfig, setManualIndispoConfig] = useState({
+    // Pour mode calendrier (clics multiples)
+    dates: [],
+    
+    // Pour mode récurrence
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+    heure_debut: '00:00',
+    heure_fin: '23:59',
+    
+    // Options de récurrence
+    recurrence_type: 'hebdomadaire', // 'hebdomadaire', 'bihebdomadaire', 'mensuelle', 'annuelle', 'personnalisee'
+    recurrence_frequence: 'jours', // Pour personnalisée: 'jours', 'semaines', 'mois', 'ans'
+    recurrence_intervalle: 1, // Tous les X (jours/semaines/mois/ans)
+    jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
+  });
+  const [showReinitModal, setShowReinitModal] = useState(false);
+  const [reinitConfig, setReinitConfig] = useState({
+    periode: 'mois',
+    mode: 'generees_seulement',
+    type_entree: 'les_deux',
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date().toISOString().split('T')[0]
+  });
+
+  // États pour formatage planning (demo uniquement)
+  const [showFormatageSection, setShowFormatageSection] = useState(false);
+  const [moisFormatage, setMoisFormatage] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [isReinitializing, setIsReinitializing] = useState(false);
+  const [reinitWarning, setReinitWarning] = useState(null);
+  
+  // Nouveau modal d'ajout rapide
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [quickAddType, setQuickAddType] = useState('disponibilite'); // 'disponibilite' ou 'indisponibilite'
+  const [quickAddConfig, setQuickAddConfig] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type_garde_id: '',
+    heure_debut: '08:00',
+    heure_fin: '16:00'
+  });
+  
+  // État pour le nouveau modal de résolution de conflits multiples
+  const [showBatchConflictModal, setShowBatchConflictModal] = useState(false);
+  const [batchConflicts, setBatchConflicts] = useState([]);
+  const [batchConflictSelections, setBatchConflictSelections] = useState({});
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchDisponibilites = async () => {
+      if (!tenantSlug) return;
+      
+      try {
+        const [dispoData, typesData, usersData] = await Promise.all([
+          apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
+          apiGet(tenantSlug, '/types-garde'),
+          apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+        ]);
+        setUserDisponibilites(dispoData);
+        setTypesGarde(typesData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des disponibilités:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les disponibilités",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (targetUser?.id && targetUser?.type_emploi === 'temps_partiel') {
+      fetchDisponibilites();
+    } else {
+      setLoading(false);
+    }
+  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug, user.role, toast]);
+
+  const handleTypeGardeChange = (typeGardeId) => {
+    const selectedType = typesGarde.find(t => t.id === typeGardeId);
+    
+    if (selectedType) {
+      // Auto-remplir les horaires du type de garde
+      setAvailabilityConfig({
+        ...availabilityConfig,
+        type_garde_id: typeGardeId,
+        heure_debut: selectedType.heure_debut,
+        heure_fin: selectedType.heure_fin
+      });
+    } else {
+      // "Tous les types" - garder les horaires personnalisés
+      setAvailabilityConfig({
+        ...availabilityConfig,
+        type_garde_id: typeGardeId
+      });
+    }
+  };
+
+
+
+  const handleAddConfiguration = () => {
+    if (selectedDates.length === 0) {
+      toast({
+        title: "Aucune date sélectionnée",
+        description: "Veuillez sélectionner au moins une date",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
+    const newConfig = {
+      id: Date.now(),
+      type_garde_id: availabilityConfig.type_garde_id,
+      type_garde_name: selectedType ? selectedType.nom : 'Tous les types',
+      couleur: selectedType ? selectedType.couleur : '#10B981',
+      heure_debut: selectedType ? selectedType.heure_debut : availabilityConfig.heure_debut,
+      heure_fin: selectedType ? selectedType.heure_fin : availabilityConfig.heure_fin,
+      statut: availabilityConfig.statut,
+      dates: [...selectedDates]
+    };
+
+    setPendingConfigurations([...pendingConfigurations, newConfig]);
+    setSelectedDates([]);
+    
+    toast({
+      title: "Configuration ajoutée",
+      description: `${newConfig.dates.length} jour(s) pour ${newConfig.type_garde_name}`,
+      variant: "success"
+    });
+  };
+
+  const handleRemoveConfiguration = (configId) => {
+    setPendingConfigurations(prev => prev.filter(c => c.id !== configId));
+  };
+
+  const handleSaveAllConfigurations = async () => {
+    if (pendingConfigurations.length === 0) {
+      toast({
+        title: "Aucune configuration",
+        description: "Veuillez ajouter au moins une configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Combiner avec les disponibilités existantes + nouvelles configurations
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: targetUser.id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut
+      }));
+
+      const newDispos = pendingConfigurations.flatMap(config => 
+        config.dates.map(date => ({
+          user_id: targetUser.id,
+          date: date.toISOString().split('T')[0],
+          type_garde_id: config.type_garde_id || null,
+          heure_debut: config.heure_debut,
+          heure_fin: config.heure_fin,
+          statut: config.statut
+        }))
+      );
+
+      const allDisponibilites = [...existingDispos, ...newDispos];
+
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "Toutes les disponibilités sauvegardées",
+        description: `${newDispos.length} nouvelles disponibilités ajoutées`,
+        variant: "success"
+      });
+      
+      setShowCalendarModal(false);
+      setPendingConfigurations([]);
+      
+      // Reload disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveAvailability = async () => {
+    try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des disponibilités...');
+      
+      let disponibilitesACreer = [];
+      
+      if (availabilityConfig.mode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (selectedDates.length === 0) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setSavingMessage(`Création de ${selectedDates.length} disponibilité(s)...`);
+        
+        // Créer une disponibilité pour chaque date sélectionnée
+        for (const date of selectedDates) {
+          disponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: date.toISOString().split('T')[0],
+            type_garde_id: availabilityConfig.type_garde_id || null,
+            heure_debut: availabilityConfig.heure_debut,
+            heure_fin: availabilityConfig.heure_fin,
+            statut: availabilityConfig.statut,
+            origine: 'manuelle' // Origine manuelle car sélection date par date via calendrier
+          });
+        }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        setSavingMessage('Calcul des dates de récurrence...');
+        
+        const dateDebut = parseDateLocal(availabilityConfig.date_debut);
+        const dateFin = parseDateLocal(availabilityConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (availabilityConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30;
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            if (availabilityConfig.recurrence_frequence === 'jours') {
+              intervalJours = availabilityConfig.recurrence_intervalle;
+            } else if (availabilityConfig.recurrence_frequence === 'semaines') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 7;
+            } else if (availabilityConfig.recurrence_frequence === 'mois') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 30;
+            } else if (availabilityConfig.recurrence_frequence === 'ans') {
+              intervalJours = availabilityConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000;
+        
+        // Mapping des jours pour la vérification
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
+        // DEBUG: Afficher les jours sélectionnés
+        console.log('===== DEBUG RÉCURRENCE =====');
+        console.log('Date début:', dateDebut.toISOString().split('T')[0]);
+        console.log('Date fin:', dateFin.toISOString().split('T')[0]);
+        console.log('Jours sélectionnés:', availabilityConfig.jours_semaine);
+        console.log('DayMap:', dayMap);
+        console.log('============================');
+        
+        // Pour bi-hebdomadaire : Compteur de semaines depuis le début
+        let weeksFromStart = 0;
+        let lastWeekProcessed = -1;
+        
+        // Pour bi-hebdomadaire : calculer le numéro de semaine ISO de la date de début comme référence
+        const getWeekNumber = (date) => {
+          const tempDate = new Date(date);
+          tempDate.setHours(0, 0, 0, 0);
+          // Set to nearest Thursday: current date + 4 - current day number, make Sunday's day number 7
+          tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+          // Get first day of year
+          const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+          // Calculate full weeks to nearest Thursday
+          const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+          return weekNo;
+        };
+        
+        const referenceWeekNumber = getWeekNumber(dateDebut);
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          // Calculer le numéro de semaine ISO pour la date actuelle
+          const currentWeekNumber = getWeekNumber(currentDate);
+          // Calculer la différence de semaines depuis la référence
+          const weeksDifference = currentWeekNumber - referenceWeekNumber;
+          
+          // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés
+          let includeDate = false; // FIX: Par défaut false, includeDate devient true seulement si le jour correspond
+          if ((availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') 
+              && availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0) {
+            
+            const dayOfWeek = currentDate.getDay();
+            
+            // DEBUG: Log pour comprendre le problème
+            if (compteur < 10) {
+              console.log(`DEBUG Récurrence - Date: ${currentDate.toISOString().split('T')[0]}, getDay(): ${dayOfWeek}, Jours sélectionnés:`, availabilityConfig.jours_semaine);
+              availabilityConfig.jours_semaine.forEach(jour => {
+                console.log(`  ${jour} -> dayMap[${jour}] = ${dayMap[jour]}, match: ${dayMap[jour] === dayOfWeek}`);
+              });
+            }
+            
+            // Vérifier si ce jour est dans les jours sélectionnés
+            includeDate = availabilityConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+            
+            // Pour bi-hebdomadaire : ne garder que les semaines paires (0, 2, 4, 6...)
+            if (includeDate && availabilityConfig.recurrence_type === 'bihebdomadaire') {
+              includeDate = weeksDifference % 2 === 0;
+            }
+          }
+          
+          if (includeDate) {
+            disponibilitesACreer.push({
+              user_id: targetUser.id,
+              date: formatDateLocal(currentDate),
+              type_garde_id: availabilityConfig.type_garde_id || null,
+              heure_debut: availabilityConfig.heure_debut,
+              heure_fin: availabilityConfig.heure_fin,
+              statut: availabilityConfig.statut,
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
+            });
+          }
+          
+          // Avancer d'un jour (on vérifie tous les jours mais on filtre selon récurrence)
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + 1);
+          compteur++;
+        }
+      }
+      
+      setSavingMessage(`Enregistrement de ${disponibilitesACreer.length} disponibilité(s)...`);
+      
+      // Envoyer les disponibilités au backend - COLLECTER LES CONFLITS
+      let successCount = 0;
+      let collectedConflicts = [];
+      let errorCount = 0;
+      
+      for (let i = 0; i < disponibilitesACreer.length; i++) {
+        const dispo = disponibilitesACreer[i];
+        try {
+          await apiPost(tenantSlug, '/disponibilites', dispo);
+          successCount++;
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            const conflictDetails = error.response.data.detail;
+            const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+            
+            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
+            collectedConflicts.push({
+              newItem: dispo,
+              conflicts: conflictDetails.conflicts,
+              newType: typeGarde?.nom || 'Disponibilité',
+              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+              existingOrigine: conflictDetails.conflicts[0]?.origine
+            });
+          } else {
+            errorCount++;
+            console.error(`Erreur création disponibilité (${dispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+          }
+        }
+        
+        // Mettre à jour le message tous les 10 enregistrements
+        if ((i + 1) % 10 === 0 || i === disponibilitesACreer.length - 1) {
+          setSavingMessage(`Enregistrement... ${i + 1}/${disponibilitesACreer.length}`);
+        }
+      }
+      
+      setSavingMessage('Finalisation...');
+      setSavingDisponibilites(false);
+      
+      // Si des conflits ont été détectés, afficher le modal
+      if (collectedConflicts.length > 0) {
+        setBatchConflicts(collectedConflicts);
+        setBatchConflictSelections({});
+        setShowBatchConflictModal(true);
+        setShowCalendarModal(false);
+        
+        toast({
+          title: "Conflits détectés",
+          description: `${successCount} créée(s), ${collectedConflicts.length} conflit(s) à résoudre`,
+          variant: "default"
+        });
+        
+        return; // Ne pas fermer le modal ou recharger
+      }
+      
+      // Si pas de conflits, message de succès normal
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} disponibilité(s) créée(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Disponibilités enregistrées" : "Attention",
+        description: message || "Aucune disponibilité créée",
+        variant: successCount > 0 ? "success" : "destructive"
+      });
+      
+      setShowCalendarModal(false);
+      setSelectedDates([]);
+      
+      // Réinitialiser la config
+      setAvailabilityConfig({
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00',
+        statut: 'disponible',
+        mode: 'calendrier',
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1,
+        jours_semaine: []
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      setSavingDisponibilites(false);
+      
+    } catch (error) {
+      setSavingDisponibilites(false);
+      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les disponibilités";
+      console.error('Erreur sauvegarde disponibilités:', errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+
+  // Fonctions pour le calendrier visuel
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Convertir dimanche (0) en 6, lundi reste 0
+  };
+
+  const navigateMonth = (direction) => {
+    if (direction === 'prev') {
+      if (calendarCurrentMonth === 0) {
+        setCalendarCurrentMonth(11);
+        setCalendarCurrentYear(calendarCurrentYear - 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth - 1);
+      }
+    } else {
+      if (calendarCurrentMonth === 11) {
+        setCalendarCurrentMonth(0);
+        setCalendarCurrentYear(calendarCurrentYear + 1);
+      } else {
+        setCalendarCurrentMonth(calendarCurrentMonth + 1);
+      }
+    }
+  };
+
+  const getDisponibilitesForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return userDisponibilites.filter(d => d.date === dateStr);
+  };
+
+  const handleDayClick = (dayNumber) => {
+    const clickedDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+    
+    const disponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'disponible');
+    const indisponibilites = userDisponibilites.filter(d => (d.date === dateStr || d.date.startsWith(dateStr)) && d.statut === 'indisponible');
+    
+    setSelectedDayForDetail(clickedDate);
+    setDayDetailData({ disponibilites, indisponibilites });
+    setShowDayDetailModal(true);
+  };
+
+  // Fonction pour résoudre les conflits en batch
+  const handleResolveBatchConflicts = async () => {
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Traiter uniquement les conflits sélectionnés
+      for (let i = 0; i < batchConflicts.length; i++) {
+        const conflict = batchConflicts[i];
+        const isSelected = batchConflictSelections[i];
+        
+        if (isSelected) {
+          // Remplacer: supprimer l'ancien et créer le nouveau
+          try {
+            // Supprimer les conflits existants
+            for (const existingConflict of conflict.conflicts) {
+              await apiDelete(tenantSlug, `/disponibilites/${existingConflict.id}`);
+            }
+            
+            // Créer la nouvelle disponibilité
+            await apiPost(tenantSlug, '/disponibilites', conflict.newItem);
+            successCount++;
+          } catch (error) {
+            console.error(`Erreur lors du remplacement pour ${conflict.newItem.date}:`, error);
+            errorCount++;
+          }
+        }
+        // Si non sélectionné, on ignore simplement (ne crée pas)
+      }
+      
+      // Message récapitulatif
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} conflit(s) résolu(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      const ignoredCount = batchConflicts.length - Object.values(batchConflictSelections).filter(Boolean).length;
+      if (ignoredCount > 0) {
+        message += (message ? ', ' : '') + `${ignoredCount} ignoré(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Conflits résolus" : "Attention",
+        description: message || "Aucun conflit résolu",
+        variant: successCount > 0 ? "success" : "default"
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Fermer le modal et réinitialiser
+      setShowBatchConflictModal(false);
+      setBatchConflicts([]);
+      setBatchConflictSelections({});
+      
+    } catch (error) {
+      console.error('Erreur lors de la résolution des conflits:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de résoudre les conflits",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteDisponibilite = async (dispoId) => {
+    try {
+      await apiDelete(tenantSlug, `/disponibilites/${dispoId}`);
+      toast({
+        title: "Supprimé",
+        description: "Entrée supprimée avec succès",
+        variant: "success"
+      });
+      
+      // Recharger
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Mettre à jour le modal
+      const dateStr = selectedDayForDetail.toISOString().split('T')[0];
+      const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
+      const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
+      setDayDetailData({ disponibilites, indisponibilites });
+      
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getMonthName = (month) => {
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return months[month];
+  };
+
+
+
+  // Fonction pour formater le planning (demo uniquement)
+  const handleFormaterPlanning = async () => {
+    if (tenantSlug !== 'demo') {
+      alert('Cette fonctionnalité est réservée au tenant demo');
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      alert('Accès réservé aux administrateurs');
+      return;
+    }
+
+    const confirmation = window.confirm(
+      `⚠️ ATTENTION\n\nVous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.\n\nConfirmer?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+      const response = await apiDelete(tenantSlug, `/planning/formater-mois?mois=${moisFormatage}`);
+
+      alert(`✅ ${response.message}\n\n` +
+            `📊 Résumé:\n` +
+            `- ${response.assignations_supprimees} assignation(s) supprimée(s)\n` +
+            `- ${response.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
+      
+      // Recharger la page
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur formatage planning:', error);
+      alert('❌ Erreur lors du formatage: ' + error.message);
+    }
+  };
+
+  const handleGenerateIndisponibilites = async () => {
+    setIsGenerating(true);
+    
+    try {
+      const response = await apiPost(tenantSlug, '/disponibilites/generer', {
+        user_id: targetUser.id,
+        horaire_type: generationConfig.horaire_type,
+        equipe: generationConfig.equipe,
+        date_debut: generationConfig.date_debut,
+        date_fin: generationConfig.date_fin,
+        conserver_manuelles: generationConfig.conserver_manuelles
+      });
+      
+      toast({
+        title: "Génération réussie",
+        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe} (${generationConfig.date_debut} au ${generationConfig.date_fin})`,
+        variant: "success"
+      });
+      
+      setShowGenerationModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur génération:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de générer les indisponibilités",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleReinitialiser = async () => {
+    // Validation des dates pour période personnalisée
+    if (reinitConfig.periode === 'personnalisee') {
+      const dateDebut = new Date(reinitConfig.date_debut);
+      const dateFin = new Date(reinitConfig.date_fin);
+      
+      if (dateDebut > dateFin) {
+        toast({
+          title: "Erreur",
+          description: "La date de début doit être avant la date de fin",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Limiter à 1 an maximum
+      const diffTime = Math.abs(dateFin - dateDebut);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 365) {
+        toast({
+          title: "Erreur",
+          description: "La plage de dates ne peut pas dépasser 1 an",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Vérifier les dates bloquées si l'avertissement n'a pas déjà été confirmé
+      if (!reinitWarning) {
+        try {
+          const params = await apiGet(tenantSlug, '/parametres/disponibilites');
+          const joursBlocage = params.jour_blocage_dispos || 0;
+          
+          if (joursBlocage > 0) {
+            const today = new Date();
+            const dateBloquee = new Date(today);
+            dateBloquee.setDate(dateBloquee.getDate() + joursBlocage);
+            
+            // Vérifier si des dates sont dans la période bloquée
+            if (dateDebut < dateBloquee) {
+              setReinitWarning(`⚠️ Certaines dates sont dans la période bloquée (moins de ${joursBlocage} jours). Êtes-vous sûr de vouloir continuer?`);
+              return; // Afficher l'avertissement et attendre confirmation
+            }
+          }
+        } catch (error) {
+          console.error('Erreur vérification blocage:', error);
+        }
+      }
+    }
+    
+    setIsReinitializing(true);
+    setReinitWarning(null); // Réinitialiser l'avertissement
+    
+    try {
+      const requestBody = {
+        user_id: targetUser.id,
+        periode: reinitConfig.periode,
+        mode: reinitConfig.mode,
+        type_entree: reinitConfig.type_entree
+      };
+      
+      // Ajouter les dates si période personnalisée
+      if (reinitConfig.periode === 'personnalisee') {
+        requestBody.date_debut = reinitConfig.date_debut;
+        requestBody.date_fin = reinitConfig.date_fin;
+      }
+      
+      const response = await apiCall(tenantSlug, '/disponibilites/reinitialiser', {
+        method: 'DELETE',
+        body: JSON.stringify(requestBody)
+      });
+      
+      const periodeLabel = reinitConfig.periode === 'personnalisee'
+        ? `du ${reinitConfig.date_debut} au ${reinitConfig.date_fin}`
+        : {
+            'semaine': 'la semaine courante',
+            'mois': 'le mois courant',
+            'annee': "l'année courante"
+          }[reinitConfig.periode];
+      
+      const typeLabel = {
+        'disponibilites': 'disponibilités',
+        'indisponibilites': 'indisponibilités',
+        'les_deux': 'disponibilités et indisponibilités'
+      }[reinitConfig.type_entree];
+      
+      const modeLabel = reinitConfig.mode === 'tout' 
+        ? 'Toutes les' 
+        : 'Les entrées générées automatiquement de';
+      
+      toast({
+        title: "Réinitialisation réussie",
+        description: `${modeLabel} ${typeLabel} de ${periodeLabel} ont été supprimées (${response.nombre_supprimees} entrée(s))`,
+        variant: "success"
+      });
+      
+      setShowReinitModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+    } catch (error) {
+      console.error('Erreur réinitialisation:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de réinitialiser",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReinitializing(false);
+    }
+  };
+
+  const handleSaveManualIndisponibilites = async () => {
+    try {
+      setSavingDisponibilites(true);
+      setSavingMessage('Préparation des indisponibilités...');
+      
+      let indisponibilitesACreer = [];
+      
+      if (manualIndispoMode === 'calendrier') {
+        // MODE CALENDRIER: Clics multiples sur dates
+        if (manualIndispoConfig.dates.length === 0) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Aucune date sélectionnée",
+            description: "Veuillez cliquer sur les dates dans le calendrier",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setSavingMessage(`Création de ${manualIndispoConfig.dates.length} indisponibilité(s)...`);
+        
+        // Créer une indisponibilité pour chaque date sélectionnée
+        for (const date of manualIndispoConfig.dates) {
+          indisponibilitesACreer.push({
+            user_id: targetUser.id,
+            date: new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString().split('T')[0],
+            type_garde_id: null,
+            heure_debut: manualIndispoConfig.heure_debut,
+            heure_fin: manualIndispoConfig.heure_fin,
+            statut: 'indisponible',
+            origine: 'manuelle' // Origine manuelle car sélection date par date via calendrier
+          });
+        }
+        
+      } else {
+        // MODE RÉCURRENCE: Date début/fin avec récurrence
+        setSavingMessage('Calcul des dates de récurrence...');
+        
+        const dateDebut = parseDateLocal(manualIndispoConfig.date_debut);
+        const dateFin = parseDateLocal(manualIndispoConfig.date_fin);
+        
+        if (dateDebut > dateFin) {
+          setSavingDisponibilites(false);
+          toast({
+            title: "Dates invalides",
+            description: "La date de début doit être avant la date de fin",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Calculer l'intervalle selon le type de récurrence
+        let intervalJours = 1;
+        
+        switch (manualIndispoConfig.recurrence_type) {
+          case 'hebdomadaire':
+            intervalJours = 7;
+            break;
+          case 'bihebdomadaire':
+            intervalJours = 14;
+            break;
+          case 'mensuelle':
+            intervalJours = 30; // Approximation
+            break;
+          case 'annuelle':
+            intervalJours = 365;
+            break;
+          case 'personnalisee':
+            // Calculer selon la fréquence et l'intervalle
+            if (manualIndispoConfig.recurrence_frequence === 'jours') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle;
+            } else if (manualIndispoConfig.recurrence_frequence === 'semaines') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 7;
+            } else if (manualIndispoConfig.recurrence_frequence === 'mois') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 30;
+            } else if (manualIndispoConfig.recurrence_frequence === 'ans') {
+              intervalJours = manualIndispoConfig.recurrence_intervalle * 365;
+            }
+            break;
+        }
+        
+        // Générer les dates avec récurrence
+        let currentDate = new Date(dateDebut);
+        let compteur = 0;
+        const maxIterations = 1000; // Sécurité pour éviter boucle infinie
+        
+        // Mapping des jours pour la vérification
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
+        // Pour bi-hebdomadaire : calculer le numéro de semaine ISO de la date de début comme référence
+        const getWeekNumber = (date) => {
+          const tempDate = new Date(date);
+          tempDate.setHours(0, 0, 0, 0);
+          // Set to nearest Thursday: current date + 4 - current day number, make Sunday's day number 7
+          tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+          // Get first day of year
+          const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+          // Calculate full weeks to nearest Thursday
+          const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+          return weekNo;
+        };
+        
+        const referenceWeekNumber = getWeekNumber(dateDebut);
+        
+        while (currentDate <= dateFin && compteur < maxIterations) {
+          // Calculer le numéro de semaine ISO pour la date actuelle
+          const currentWeekNumber = getWeekNumber(currentDate);
+          // Calculer la différence de semaines depuis la référence
+          const weeksDifference = currentWeekNumber - referenceWeekNumber;
+          
+          // Si hebdomadaire/bihebdomadaire ET des jours sont sélectionnés, filtrer par jour
+          let includeDate = true;
+          if ((manualIndispoConfig.recurrence_type === 'hebdomadaire' || manualIndispoConfig.recurrence_type === 'bihebdomadaire') 
+              && manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0) {
+            const dayOfWeek = currentDate.getDay();
+            includeDate = manualIndispoConfig.jours_semaine.some(jour => dayMap[jour] === dayOfWeek);
+            
+            // Pour bi-hebdomadaire : ne garder que les semaines paires (0, 2, 4, 6...)
+            if (includeDate && manualIndispoConfig.recurrence_type === 'bihebdomadaire') {
+              includeDate = weeksDifference % 2 === 0;
+            }
+          }
+          
+          if (includeDate) {
+            indisponibilitesACreer.push({
+              user_id: targetUser.id,
+              date: formatDateLocal(currentDate),
+              type_garde_id: null,
+              heure_debut: manualIndispoConfig.heure_debut,
+              heure_fin: manualIndispoConfig.heure_fin,
+              statut: 'indisponible',
+              origine: 'recurrence' // Origine récurrence car généré automatiquement
+            });
+          }
+          
+          // Avancer à la prochaine date
+          currentDate = new Date(currentDate);
+          currentDate.setDate(currentDate.getDate() + 1); // Toujours avancer de 1 jour pour vérifier tous les jours
+          compteur++;
+        }
+      }
+      
+      setSavingMessage(`Enregistrement de ${indisponibilitesACreer.length} indisponibilité(s)...`);
+      
+      // Envoyer les indisponibilités au backend - COLLECTER LES CONFLITS
+      let successCount = 0;
+      let collectedConflicts = [];
+      let errorCount = 0;
+      
+      for (let i = 0; i < indisponibilitesACreer.length; i++) {
+        const indispo = indisponibilitesACreer[i];
+        
+        try {
+          await apiPost(tenantSlug, '/disponibilites', indispo);
+          successCount++;
+        } catch (error) {
+          // Vérifier si c'est une erreur de conflit (409)
+          if (error.response && error.response.status === 409) {
+            const conflictDetails = error.response.data.detail;
+            
+            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
+            collectedConflicts.push({
+              newItem: indispo,
+              conflicts: conflictDetails.conflicts,
+              newType: 'Indisponibilité',
+              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+              existingOrigine: conflictDetails.conflicts[0]?.origine
+            });
+          } else {
+            // Autre erreur
+            errorCount++;
+            console.error(`Erreur création indisponibilité (${indispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+          }
+        }
+        
+        // Mettre à jour le message tous les 10 enregistrements
+        if ((i + 1) % 10 === 0 || i === indisponibilitesACreer.length - 1) {
+          setSavingMessage(`Enregistrement... ${i + 1}/${indisponibilitesACreer.length}`);
+        }
+      }
+      
+      setSavingMessage('Finalisation...');
+      setSavingDisponibilites(false);
+      
+      // Si des conflits ont été détectés, afficher le modal
+      if (collectedConflicts.length > 0) {
+        setBatchConflicts(collectedConflicts);
+        setBatchConflictSelections({});
+        setShowBatchConflictModal(true);
+        setShowGenerationModal(false);
+        
+        toast({
+          title: "Conflits détectés",
+          description: `${successCount} créée(s), ${collectedConflicts.length} conflit(s) à résoudre`,
+          variant: "default"
+        });
+        
+        return; // Ne pas fermer le modal ou recharger
+      }
+      
+      // Si pas de conflits, message de succès normal
+      let message = '';
+      if (successCount > 0) {
+        message += `${successCount} indisponibilité(s) créée(s)`;
+      }
+      if (errorCount > 0) {
+        message += (message ? ', ' : '') + `${errorCount} erreur(s)`;
+      }
+      
+      toast({
+        title: successCount > 0 ? "Indisponibilités enregistrées" : "Attention",
+        description: message || "Aucune indisponibilité créée",
+        variant: successCount > 0 ? "success" : "destructive"
+      });
+      
+      setShowGenerationModal(false);
+      
+      // Réinitialiser la config
+      setManualIndispoConfig({
+        dates: [],
+        date_debut: new Date().toISOString().split('T')[0],
+        date_fin: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+        heure_debut: '00:00',
+        heure_fin: '23:59',
+        recurrence_type: 'hebdomadaire',
+        recurrence_frequence: 'jours',
+        recurrence_intervalle: 1,
+        jours_semaine: []
+      });
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      setSavingDisponibilites(false);
+      
+    } catch (error) {
+      setSavingDisponibilites(false);
+      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les indisponibilités";
+      console.error('Erreur sauvegarde indisponibilités:', errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getTypeGardeName = (typeGardeId) => {
+    if (!typeGardeId) return 'Tous types';
+    const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+    return typeGarde ? typeGarde.nom : 'Type non spécifié';
+  };
+
+  const getAvailableDates = () => {
+    return userDisponibilites
+      .filter(d => d.statut === 'disponible')
+      .map(d => parseDateLocal(d.date));
+  };
+
+  const getColorByTypeGarde = (typeGardeId) => {
+    if (!typeGardeId) return '#10B981'; // Vert par défaut pour "Tous types"
+    const typeGarde = typesGarde.find(t => t.id === typeGardeId);
+    return typeGarde ? typeGarde.couleur : '#10B981';
+  };
+
+  // Fonction pour sauvegarde rapide (ajout simple d'une dispo ou indispo)
+  const handleQuickAddSave = async () => {
+    try {
+      // Validation
+      if (!quickAddConfig.date) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner une date",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'entrée
+      const newEntry = {
+        user_id: targetUser.id,
+        date: quickAddConfig.date,
+        type_garde_id: quickAddConfig.type_garde_id || null,
+        heure_debut: quickAddConfig.heure_debut,
+        heure_fin: quickAddConfig.heure_fin,
+        statut: quickAddType === 'disponibilite' ? 'disponible' : 'indisponible',
+        origine: 'manuelle'
+      };
+
+      // Récupérer les disponibilités existantes
+      const existingDispos = userDisponibilites.map(d => ({
+        user_id: d.user_id,
+        date: d.date,
+        type_garde_id: d.type_garde_id || null,
+        heure_debut: d.heure_debut,
+        heure_fin: d.heure_fin,
+        statut: d.statut,
+        origine: d.origine
+      }));
+
+      // Ajouter la nouvelle entrée
+      const allDisponibilites = [...existingDispos, newEntry];
+
+      // Sauvegarder
+      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      
+      toast({
+        title: "✅ Enregistré !",
+        description: quickAddType === 'disponibilite' 
+          ? `Disponibilité ajoutée pour le ${quickAddConfig.date}`
+          : `Indisponibilité ajoutée pour le ${quickAddConfig.date}`,
+        variant: "success"
+      });
+      
+      setShowQuickAddModal(false);
+      
+      // Recharger les disponibilités
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+      
+      // Réinitialiser le formulaire
+      setQuickAddConfig({
+        date: new Date().toISOString().split('T')[0],
+        type_garde_id: '',
+        heure_debut: '08:00',
+        heure_fin: '16:00'
+      });
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde rapide:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'enregistrer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getDisponibiliteForDate = (date) => {
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return userDisponibilites.find(d => d.date === dateStr || d.date.startsWith(dateStr));
+  };
+
+  const handleDateClick = (date) => {
+    // Format YYYY-MM-DD sans conversion UTC
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const dispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
+    
+    console.log('Date cliquée:', dateStr, 'Disponibilités trouvées:', dispos.length);
+    
+    if (dispos.length > 0) {
+      // Afficher TOUTES les disponibilités pour cette date
+      setSelectedDateDetails({
+        date: normalizedDate,
+        disponibilites: dispos, // Tableau au lieu d'un seul objet
+        count: dispos.length
+      });
+    } else {
+      setSelectedDateDetails(null);
+    }
+  };
+
+  // Vérifier le type d'emploi de la personne dont on gère les disponibilités
+  if (targetUser?.type_emploi !== 'temps_partiel') {
+    return (
+      <div className="access-denied">
+        <h1>Module réservé aux employés temps partiel</h1>
+        <p>Ce module permet aux employés à temps partiel de gérer leurs disponibilités.</p>
+        {managingUser && (
+          <p style={{ marginTop: '10px', color: '#dc2626' }}>
+            ⚠️ <strong>{targetUser?.prenom} {targetUser?.nom}</strong> est un employé <strong>temps plein</strong> et ne peut pas gérer de disponibilités.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fonctions d'export Disponibilités
+  const handleExportDisponibilites = async (userId = null) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem(`${tenantSlug}_token`);
+      
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = userId 
+        ? `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}?user_id=${userId}`
+        : `${backendUrl}/api/${tenantSlug}/disponibilites/${endpoint}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de l\'export');
+      
+      const blob = await response.blob();
+      
+      if (exportType === 'pdf') {
+        // Pour les PDF, ouvrir directement le dialogue d'impression
+        const pdfUrl = window.URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 100);
+        };
+      } else {
+        // Pour les Excel, télécharger directement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = userId 
+          ? `disponibilites_${userId}.xlsx` 
+          : `disponibilites_tous.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+      }
+      
+      toast({ 
+        title: "Succès", 
+        description: `Export ${exportType.toUpperCase()} ${exportType === 'pdf' ? 'prêt à imprimer' : 'téléchargé'}`,
+        variant: "success"
+      });
+      
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({ 
+        title: "Erreur", 
+        description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  if (loading) return <div className="loading" data-testid="disponibilites-loading">Chargement...</div>;
+
+  // Ne pas afficher le module pour les utilisateurs temps plein (sauf si admin gère un autre utilisateur)
+  if (!managingUser && targetUser?.type_emploi !== 'temps_partiel') {
+    return null;
+  }
+
+  return (
+    <div className="disponibilites-refonte">
+      {/* Bouton retour si on gère un autre utilisateur */}
+      {managingUser && (
+        <div style={{ marginBottom: '20px' }}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setManagingUserDisponibilites(null);
+              setCurrentPage('personnel');
+            }}
+          >
+            ← Retour à Personnel
+          </Button>
+        </div>
+      )}
+
+      {/* Header Moderne */}
+      <div className="module-header">
+        <div>
+          <h1 data-testid="disponibilites-title">
+            {managingUser 
+              ? `📅 Disponibilités de ${targetUser.prenom} ${targetUser.nom}`
+              : '📅 Mes Disponibilités'}
+          </h1>
+          <p>
+            {managingUser 
+              ? `Gérez les disponibilités de ${targetUser.prenom} ${targetUser.nom} pour les quarts de travail`
+              : 'Gérez vos disponibilités pour les quarts de travail temps partiel'}
+          </p>
+        </div>
+      </div>
+
+      {/* KPIs - Toujours affichés pour la personne en question */}
+      {!managingUser && (() => {
+        // Filtrer les disponibilités de l'utilisateur cible uniquement
+        const myDisponibilites = userDisponibilites.filter(d => d.user_id === targetUser.id && d.statut === 'disponible');
+        const myIndisponibilites = userDisponibilites.filter(d => d.user_id === targetUser.id && d.statut === 'indisponible');
+        
+        // Calculer les jours uniques avec disponibilités (ignorer les doublons)
+        const joursAvecDispo = [...new Set(myDisponibilites.map(d => d.date))].length;
+        
+        // Calculer le nombre de types de garde différents couverts
+        const typesGardeCouvert = [...new Set(myDisponibilites.map(d => d.type_garde_id))].length;
+        
+        return (
+          <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+            <div className="kpi-card" style={{background: '#D1FAE5'}}>
+              <h3>{myDisponibilites.length}</h3>
+              <p>Mes Disponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
+            </div>
+            <div className="kpi-card" style={{background: '#FCA5A5'}}>
+              <h3>{myIndisponibilites.length}</h3>
+              <p>Mes Indisponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
+            </div>
+            <div className="kpi-card" style={{background: '#DBEAFE'}}>
+              <h3>{joursAvecDispo}</h3>
+              <p>Jours Disponibles</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Jours uniques</small>
+            </div>
+            <div className="kpi-card" style={{background: '#FEF3C7'}}>
+              <h3>{typesGardeCouvert}</h3>
+              <p>Types de Garde</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Couverts</small>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Barre de Contrôles */}
+      <div className="personnel-controls" style={{marginBottom: '2rem'}}>
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+          {/* Boutons d'action */}
+          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+            <Button 
+              variant="default" 
+              onClick={() => setShowCalendarModal(true)}
+              data-testid="configure-availability-btn"
+            >
+              ✅ Mes Disponibilités
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGenerationModal(true)}
+              data-testid="generate-indisponibilites-btn"
+            >
+              ❌ Indisponibilités
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowReinitModal(true)}
+              data-testid="reinit-disponibilites-btn"
+            >
+              🗑️ Supprimer Tout
+            </Button>
+          </div>
+
+          {/* Exports - Uniquement pour Admin/Superviseur */}
+          {(user.role === 'admin' || user.role === 'superviseur') && (
+            <div style={{display: 'flex', gap: '1rem'}}>
+              <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
+                📄 Export PDF
+              </Button>
+              <Button variant="outline" onClick={() => { setExportType('excel'); setShowExportModal(true); }}>
+                📊 Export Excel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Module Disponibilités - Calendrier Visuel */}
+      <div className="disponibilites-visual-container">
+
+        {/* Barre de navigation du mois - Harmonisée */}
+        <div style={{
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '2rem',
+          padding: '1rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigateMonth('prev')}
+          >
+            ← Mois précédent
+          </Button>
+          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
+            {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
+          </h2>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigateMonth('next')}
+          >
+            Mois suivant →
+          </Button>
+        </div>
+
+        {/* Grand Calendrier Visuel */}
+        <div className="visual-calendar">
+          {/* Jours de la semaine */}
+          <div className="calendar-weekdays">
+            <div className="calendar-weekday">Lun</div>
+            <div className="calendar-weekday">Mar</div>
+            <div className="calendar-weekday">Mer</div>
+            <div className="calendar-weekday">Jeu</div>
+            <div className="calendar-weekday">Ven</div>
+            <div className="calendar-weekday">Sam</div>
+            <div className="calendar-weekday">Dim</div>
+          </div>
+
+          {/* Grille des jours */}
+          <div className="calendar-days-grid">
+            {/* Cases vides pour aligner le premier jour */}
+            {Array.from({ length: getFirstDayOfMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, index) => (
+              <div key={`empty-${index}`} className="calendar-day-cell empty"></div>
+            ))}
+
+            {/* Jours du mois */}
+            {Array.from({ length: getDaysInMonth(calendarCurrentMonth, calendarCurrentYear) }).map((_, dayIndex) => {
+              const dayNumber = dayIndex + 1;
+              const currentDate = new Date(calendarCurrentYear, calendarCurrentMonth, dayNumber);
+              // Format YYYY-MM-DD sans conversion UTC
+              const dateStr = `${calendarCurrentYear}-${String(calendarCurrentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+              const today = new Date();
+              const isToday = currentDate.toDateString() === today.toDateString();
+              
+              const dayDispos = userDisponibilites.filter(d => d.date === dateStr || d.date.startsWith(dateStr));
+              const disponibilites = dayDispos.filter(d => d.statut === 'disponible');
+              const hasIndisponibilite = dayDispos.some(d => d.statut === 'indisponible');
+
+              return (
+                <div 
+                  key={dayNumber} 
+                  className={`calendar-day-cell ${isToday ? 'today' : ''}`}
+                  onClick={() => handleDayClick(dayNumber)}
+                >
+                  <div className="calendar-day-number">{dayNumber}</div>
+                  <div className="calendar-day-content">
+                    {/* Indisponibilité: croix rouge */}
+                    {hasIndisponibilite && (
+                      <div className="calendar-indispo-marker">❌</div>
+                    )}
+
+                    {/* Disponibilités: pastilles colorées */}
+                    {!hasIndisponibilite && disponibilites.length > 0 && (
+                      <div className="calendar-dispo-pills">
+                        {disponibilites.slice(0, 2).map((dispo, idx) => {
+                          const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                          const color = typeGarde?.couleur || '#3b82f6';
+                          const typeName = typeGarde?.nom || 'Dispo';
+                          
+                          return (
+                            <div 
+                              key={idx}
+                              className="calendar-dispo-pill"
+                              style={{ backgroundColor: color }}
+                              title={`${typeName} ${dispo.heure_debut}-${dispo.heure_fin}`}
+                            >
+                              {typeName}
+                            </div>
+                          );
+                        })}
+                        {disponibilites.length > 2 && (
+                          <div className="calendar-dispo-more">+{disponibilites.length - 2}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Légende du calendrier */}
+        <div className="calendar-legend">
+          <div className="calendar-legend-item">
+            <span className="calendar-legend-icon">❌</span>
+            <span className="calendar-legend-label">Indisponible</span>
+          </div>
+          {typesGarde.map(type => (
+            <div key={type.id} className="calendar-legend-item">
+              <div 
+                className="calendar-legend-pill" 
+                style={{ backgroundColor: type.couleur }}
+              ></div>
+              <span className="calendar-legend-label">{type.nom}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal détail du jour */}
+      {showDayDetailModal && selectedDayForDetail && (
+        <div className="day-detail-modal" onClick={() => setShowDayDetailModal(false)}>
+          <div className="day-detail-content" onClick={(e) => e.stopPropagation()}>
+            <div className="day-detail-header">
+              <h3>📅 {selectedDayForDetail.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3>
+              <Button variant="ghost" onClick={() => setShowDayDetailModal(false)}>✕</Button>
+            </div>
+            
+            <div className="day-detail-body">
+              {/* Disponibilités */}
+              <div className="day-detail-section">
+                <h4>✅ Disponibilités ({dayDetailData.disponibilites.length})</h4>
+                {dayDetailData.disponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune disponibilité ce jour</div>
+                ) : (
+                  dayDetailData.disponibilites.map(dispo => {
+                    const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
+                    return (
+                      <div key={dispo.id} className="day-detail-item">
+                        <div className="day-detail-item-header">
+                          <span className="day-detail-item-type" style={{ color: typeGarde?.couleur || '#3b82f6' }}>
+                            {typeGarde?.nom || 'Disponibilité'}
+                          </span>
+                          <div className="day-detail-item-actions">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleDeleteDisponibilite(dispo.id)}
+                            >
+                              🗑️ Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="day-detail-item-info">
+                          ⏰ {dispo.heure_debut} - {dispo.heure_fin}
+                          {dispo.origine && <span> • Origine: {dispo.origine}</span>}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Indisponibilités */}
+              <div className="day-detail-section">
+                <h4>❌ Indisponibilités ({dayDetailData.indisponibilites.length})</h4>
+                {dayDetailData.indisponibilites.length === 0 ? (
+                  <div className="day-detail-empty">Aucune indisponibilité ce jour</div>
+                ) : (
+                  dayDetailData.indisponibilites.map(indispo => (
+                    <div key={indispo.id} className="day-detail-item">
+                      <div className="day-detail-item-header">
+                        <span className="day-detail-item-type" style={{ color: '#dc2626' }}>
+                          Indisponible
+                        </span>
+                        <div className="day-detail-item-actions">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleDeleteDisponibilite(indispo.id)}
+                          >
+                            🗑️ Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="day-detail-item-info">
+                        ⏰ {indispo.heure_debut} - {indispo.heure_fin}
+                        {indispo.origine && <span> • Origine: {indispo.origine}</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="day-detail-footer">
+              <Button variant="outline" onClick={() => setShowDayDetailModal(false)}>
+                Fermer
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={() => {
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '08:00',
+                      heure_fin: '16:00'
+                    });
+                    setQuickAddType('disponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
+                }}
+                style={{ background: '#16a34a', borderColor: '#16a34a' }}
+              >
+                ✅ Ajouter disponibilité
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (selectedDayForDetail) {
+                    setQuickAddConfig({
+                      date: selectedDayForDetail.toISOString().split('T')[0],
+                      type_garde_id: '',
+                      heure_debut: '00:00',
+                      heure_fin: '23:59'
+                    });
+                    setQuickAddType('indisponibilite');
+                    setShowDayDetailModal(false);
+                    setShowQuickAddModal(true);
+                  }
+                }}
+              >
+                ❌ Ajouter indisponibilité
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOUVEAU : Modal d'ajout rapide */}
+      {showQuickAddModal && (
+        <div className="modal-overlay" onClick={() => setShowQuickAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </h3>
+              <Button variant="ghost" onClick={() => setShowQuickAddModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Date fixe - non modifiable */}
+              <div className="config-section" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <Label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#64748b' }}>📅 Date</Label>
+                <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0f172a', marginTop: '0.5rem' }}>
+                  {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              </div>
+
+              {/* Sélection du type de garde */}
+              <div className="config-section">
+                <Label>🚒 Type de garde</Label>
+                <select
+                  value={quickAddConfig.type_garde_id}
+                  onChange={(e) => {
+                    const selectedType = typesGarde.find(t => t.id === e.target.value);
+                    setQuickAddConfig({
+                      ...quickAddConfig,
+                      type_garde_id: e.target.value,
+                      heure_debut: selectedType ? selectedType.heure_debut : quickAddConfig.heure_debut,
+                      heure_fin: selectedType ? selectedType.heure_fin : quickAddConfig.heure_fin
+                    });
+                  }}
+                  className="form-select"
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  <option value="">
+                    {quickAddType === 'disponibilite' ? 'Tous les types de garde' : 'Toute la journée'}
+                  </option>
+                  {typesGarde.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.nom} ({type.heure_debut} - {type.heure_fin})
+                    </option>
+                  ))}
+                </select>
+                <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                  {quickAddConfig.type_garde_id 
+                    ? 'Les horaires du type de garde sont appliqués automatiquement'
+                    : quickAddType === 'disponibilite'
+                      ? 'Vous êtes disponible pour tous les types de garde avec les horaires ci-dessous'
+                      : 'Vous êtes indisponible toute la journée'
+                  }
+                </small>
+              </div>
+
+              {/* Horaires personnalisés si pas de type spécifique */}
+              <div className="config-section">
+                <Label>⏰ Horaires</Label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '0.5rem' }}>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de début</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_debut}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_debut: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                  <div>
+                    <Label style={{ fontSize: '0.85rem', color: '#64748b' }}>Heure de fin</Label>
+                    <Input 
+                      type="time" 
+                      value={quickAddConfig.heure_fin}
+                      onChange={(e) => setQuickAddConfig({...quickAddConfig, heure_fin: e.target.value})}
+                      disabled={!!quickAddConfig.type_garde_id}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Résumé */}
+              <div style={{ 
+                background: quickAddType === 'disponibilite' ? '#f0fdf4' : '#fef2f2', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                border: quickAddType === 'disponibilite' ? '2px solid #16a34a' : '2px solid #dc2626',
+                marginTop: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626' }}>
+                  📋 Résumé
+                </div>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#0f172a' }}>
+                  {quickAddType === 'disponibilite' ? '✅ Vous serez disponible' : '❌ Vous serez indisponible'}<br/>
+                  📅 Le {new Date(quickAddConfig.date + 'T00:00:00').toLocaleDateString('fr-FR')}<br/>
+                  ⏰ De {quickAddConfig.heure_debut} à {quickAddConfig.heure_fin}<br/>
+                  🚒 {quickAddConfig.type_garde_id 
+                    ? `Pour ${typesGarde.find(t => t.id === quickAddConfig.type_garde_id)?.nom}`
+                    : quickAddType === 'disponibilite' ? 'Pour tous les types de garde' : 'Toute la journée'
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowQuickAddModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={handleQuickAddSave}
+                style={{ 
+                  background: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626',
+                  borderColor: quickAddType === 'disponibilite' ? '#16a34a' : '#dc2626'
+                }}
+              >
+                {quickAddType === 'disponibilite' ? '✅ Ajouter disponibilité' : '❌ Ajouter indisponibilité'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de configuration avancée */}
+      {showCalendarModal && (
+        <div className="modal-overlay" onClick={() => setShowCalendarModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="availability-config-modal">
+            <div className="modal-header">
+              <h3>✅ Gérer disponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowCalendarModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="availability-config-advanced">
+                {/* Sélecteur de mode */}
+                <div className="config-section" style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'calendrier'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'calendrier' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'calendrier' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'calendrier' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'calendrier' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      📅 Calendrier (Clics multiples)
+                    </button>
+                    <button
+                      onClick={() => setAvailabilityConfig({...availabilityConfig, mode: 'recurrence'})}
+                      style={{
+                        padding: '10px 20px',
+                        border: availabilityConfig.mode === 'recurrence' ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: availabilityConfig.mode === 'recurrence' ? '#f0fdf4' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: availabilityConfig.mode === 'recurrence' ? 'bold' : 'normal',
+                        color: availabilityConfig.mode === 'recurrence' ? '#16a34a' : '#64748b'
+                      }}
+                    >
+                      🔄 Avec récurrence
+                    </button>
+                  </div>
+                </div>
+
+                {/* Configuration du type de garde */}
+                <div className="config-section">
+                  <h4>🚒 Type de garde spécifique</h4>
+                  <div className="type-garde-selection">
+                    <Label>Pour quel type de garde êtes-vous disponible ?</Label>
+                    <select
+                      value={availabilityConfig.type_garde_id}
+                      onChange={(e) => handleTypeGardeChange(e.target.value)}
+                      className="form-select"
+                      data-testid="availability-type-garde-select"
+                    >
+                      <option value="">Tous les types de garde</option>
+                      {typesGarde.map(type => (
+                        <option key={type.id} value={type.id}>
+                          {type.nom} ({type.heure_debut} - {type.heure_fin})
+                        </option>
+                      ))}
+                    </select>
+                    <small>
+                      Sélectionnez un type spécifique ou laissez "Tous les types" pour une disponibilité générale
+                    </small>
+                  </div>
+                </div>
+
+                {/* Configuration des horaires - Seulement si "Tous les types" */}
+                {!availabilityConfig.type_garde_id && (
+                  <div className="config-section">
+                    <h4>⏰ Créneaux horaires personnalisés</h4>
+                    <p className="section-note">Définissez vos horaires de disponibilité générale</p>
+                    <div className="time-config-row">
+                      <div className="time-field">
+                        <Label>Heure de début</Label>
+                        <Input 
+                          type="time" 
+                          value={availabilityConfig.heure_debut}
+                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, heure_debut: e.target.value})}
+                          data-testid="availability-start-time"
+                        />
+                      </div>
+                      <div className="time-field">
+                        <Label>Heure de fin</Label>
+                        <Input 
+                          type="time" 
+                          value={availabilityConfig.heure_fin}
+                          onChange={(e) => setAvailabilityConfig({...availabilityConfig, heure_fin: e.target.value})}
+                          data-testid="availability-end-time"
+                        />
+                      </div>
+                    </div>
+                    <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                      ℹ️ Les entrées créées ici seront automatiquement marquées comme "Disponible"
+                    </small>
+                  </div>
+                )}
+
+                {/* Horaires automatiques si type spécifique sélectionné */}
+                {availabilityConfig.type_garde_id && (
+                  <div className="config-section">
+                    <h4>⏰ Horaires du type de garde</h4>
+                    <div className="automatic-hours">
+                      <div className="hours-display">
+                        <span className="hours-label">Horaires automatiques :</span>
+                        <span className="hours-value">
+                          {(() => {
+                            const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
+                            return selectedType ? `${selectedType.heure_debut} - ${selectedType.heure_fin}` : 'Non défini';
+                          })()}
+                        </span>
+                      </div>
+                      <small style={{ marginTop: '8px', display: 'block', color: '#64748b' }}>
+                        ℹ️ Les disponibilités seront automatiquement enregistrées avec ces horaires
+                      </small>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE CALENDRIER - Sélection des dates */}
+                {availabilityConfig.mode === 'calendrier' && (
+                  <div className="config-section">
+                    <h4>📆 Sélection des dates</h4>
+                    <div className="calendar-instructions">
+                      <p>Cliquez sur les dates où vous êtes disponible :</p>
+                      <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                        ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
+                      </small>
+                    </div>
+                    
+                    <Calendar
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={setSelectedDates}
+                      className="interactive-calendar"
+                      disabled={(date) => date < new Date().setHours(0,0,0,0)}
+                      indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
+                    />
+                    
+                    <div className="selection-summary-advanced">
+                      <div className="summary-item">
+                        <strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}
+                      </div>
+                      <div className="summary-item">
+                        <strong>Dates sélectionnées :</strong> {selectedDates?.length || 0} jour(s)
+                      </div>
+                      <div className="summary-item">
+                        <strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE RÉCURRENCE - Période avec récurrence */}
+                {availabilityConfig.mode === 'recurrence' && (
+                  <>
+                    <div className="config-section">
+                      <h4>📅 Période</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <Label>Date de début</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_debut}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_debut: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Date de fin</Label>
+                          <Input
+                            type="date"
+                            value={availabilityConfig.date_fin}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, date_fin: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section">
+                      <h4>🔄 Récurrence</h4>
+                      <Label>Type de récurrence</Label>
+                      <select
+                        value={availabilityConfig.recurrence_type}
+                        onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_type: e.target.value})}
+                        className="form-select"
+                      >
+                        <option value="hebdomadaire">Toutes les semaines (hebdomadaire)</option>
+                        <option value="bihebdomadaire">Toutes les deux semaines (bihebdomadaire)</option>
+                        <option value="mensuelle">Tous les mois (mensuelle)</option>
+                        <option value="annuelle">Tous les ans (annuelle)</option>
+                        <option value="personnalisee">Personnalisée</option>
+                      </select>
+
+                      {availabilityConfig.recurrence_type === 'personnalisee' && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>⚙️ Configuration personnalisée</h5>
+                          <Label>Fréquence</Label>
+                          <select
+                            value={availabilityConfig.recurrence_frequence}
+                            onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_frequence: e.target.value})}
+                            className="form-select"
+                            style={{ marginBottom: '10px' }}
+                          >
+                            <option value="jours">Jours</option>
+                            <option value="semaines">Semaines</option>
+                            <option value="mois">Mois</option>
+                            <option value="ans">Ans</option>
+                          </select>
+
+                          <Label>Intervalle : Tous les</Label>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={availabilityConfig.recurrence_intervalle}
+                              onChange={(e) => setAvailabilityConfig({...availabilityConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                              style={{ width: '100px' }}
+                            />
+                            <span>{availabilityConfig.recurrence_frequence}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                      {(availabilityConfig.recurrence_type === 'hebdomadaire' || availabilityConfig.recurrence_type === 'bihebdomadaire') && (
+                        <div style={{ marginTop: '15px', padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                            {[
+                              { label: 'Lun', value: 'monday' },
+                              { label: 'Mar', value: 'tuesday' },
+                              { label: 'Mer', value: 'wednesday' },
+                              { label: 'Jeu', value: 'thursday' },
+                              { label: 'Ven', value: 'friday' },
+                              { label: 'Sam', value: 'saturday' },
+                              { label: 'Dim', value: 'sunday' }
+                            ].map(jour => (
+                              <label
+                                key={jour.value}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  border: `2px solid ${availabilityConfig.jours_semaine?.includes(jour.value) ? '#16a34a' : '#cbd5e1'}`,
+                                  background: availabilityConfig.jours_semaine?.includes(jour.value) ? '#dcfce7' : 'white',
+                                  cursor: 'pointer',
+                                  fontWeight: availabilityConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={availabilityConfig.jours_semaine?.includes(jour.value) || false}
+                                  onChange={(e) => {
+                                    const currentJours = availabilityConfig.jours_semaine || [];
+                                    const newJours = e.target.checked
+                                      ? [...currentJours, jour.value]
+                                      : currentJours.filter(j => j !== jour.value);
+                                    setAvailabilityConfig({...availabilityConfig, jours_semaine: newJours});
+                                  }}
+                                  style={{ marginRight: '6px' }}
+                                />
+                                {jour.label}
+                              </label>
+                            ))}
+                          </div>
+                          {availabilityConfig.jours_semaine && availabilityConfig.jours_semaine.length > 0 && (
+                            <p style={{ marginTop: '10px', color: '#16a34a', fontSize: '0.9rem' }}>
+                              ✓ {availabilityConfig.jours_semaine.length} jour(s) sélectionné(s)
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Résumé pour le mode récurrence */}
+                    <div className="config-section" style={{ background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <h4 style={{ color: '#15803d', marginTop: 0 }}>📊 Résumé</h4>
+                      <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#15803d' }}>
+                        <li><strong>Mode :</strong> Récurrence</li>
+                        <li><strong>Type de garde :</strong> {getTypeGardeName(availabilityConfig.type_garde_id)}</li>
+                        <li><strong>Période :</strong> Du {new Date(availabilityConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(availabilityConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                        <li><strong>Récurrence :</strong> {
+                          availabilityConfig.recurrence_type === 'hebdomadaire' ? 'Toutes les semaines' :
+                          availabilityConfig.recurrence_type === 'bihebdomadaire' ? 'Toutes les 2 semaines' :
+                          availabilityConfig.recurrence_type === 'mensuelle' ? 'Tous les mois' :
+                          availabilityConfig.recurrence_type === 'annuelle' ? 'Tous les ans' :
+                          `Tous les ${availabilityConfig.recurrence_intervalle} ${availabilityConfig.recurrence_frequence}`
+                        }</li>
+                        <li><strong>Horaires :</strong> {availabilityConfig.heure_debut} - {availabilityConfig.heure_fin}</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowCalendarModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleSaveAvailability}
+                  data-testid="save-availability-btn"
+                  disabled={availabilityConfig.mode === 'calendrier' && (!selectedDates || selectedDates.length === 0)}
+                >
+                  {availabilityConfig.mode === 'calendrier' 
+                    ? `✅ Sauvegarder (${selectedDates?.length || 0} jour${selectedDates?.length > 1 ? 's' : ''})`
+                    : '✅ Générer les disponibilités'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de génération automatique d'indisponibilités */}
+      {showGenerationModal && (
+        <div className="modal-overlay" onClick={() => setShowGenerationModal(false)}>
+          <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>❌ Gérer indisponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowGenerationModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              {/* Onglets */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
+                <button
+                  onClick={() => setIndispoTab('generation')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'generation' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'generation' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'generation' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'generation' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  🚒 Génération automatique
+                </button>
+                <button
+                  onClick={() => setIndispoTab('manuelle')}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: indispoTab === 'manuelle' ? 'white' : 'transparent',
+                    borderBottom: indispoTab === 'manuelle' ? '3px solid #dc2626' : 'none',
+                    fontWeight: indispoTab === 'manuelle' ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    color: indispoTab === 'manuelle' ? '#dc2626' : '#64748b'
+                  }}
+                >
+                  ✍️ Saisie manuelle
+                </button>
+              </div>
+
+              {/* Contenu de l'onglet Génération */}
+              {indispoTab === 'generation' && (
+              <div>
+              <div className="generation-config">
+                {/* Sélection du type d'horaire */}
+                <div className="config-section">
+                  <h4>📋 Type d'horaire</h4>
+                  <select
+                    value={generationConfig.horaire_type}
+                    onChange={(e) => setGenerationConfig({...generationConfig, horaire_type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="montreal">Montreal 7/24 (Cycle 28 jours)</option>
+                    <option value="quebec">Quebec 10/14 (Cycle 28 jours)</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {generationConfig.horaire_type === 'montreal' 
+                      ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
+                      : 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'}
+                  </small>
+                </div>
+
+                {/* Sélection de l'équipe */}
+                <div className="config-section">
+                  <h4>👥 Équipe</h4>
+                  <div className="equipe-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    {[
+                      {nom: 'Vert', numero: 1},
+                      {nom: 'Bleu', numero: 2},
+                      {nom: 'Jaune', numero: 3},
+                      {nom: 'Rouge', numero: 4}
+                    ].map(equipe => (
+                      <button
+                        key={equipe.nom}
+                        onClick={() => setGenerationConfig({...generationConfig, equipe: equipe.nom})}
+                        className={`equipe-button ${generationConfig.equipe === equipe.nom ? 'selected' : ''}`}
+                        style={{
+                          padding: '12px',
+                          border: generationConfig.equipe === equipe.nom ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          background: generationConfig.equipe === equipe.nom ? '#fef2f2' : 'white',
+                          cursor: 'pointer',
+                          fontWeight: generationConfig.equipe === equipe.nom ? 'bold' : 'normal'
+                        }}
+                      >
+                        {equipe.nom} (#{equipe.numero})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sélection des dates */}
+                <div className="config-section">
+                  <h4>📅 Période de génération</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de début</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_debut}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_debut: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date de fin</label>
+                      <Input
+                        type="date"
+                        value={generationConfig.date_fin}
+                        onChange={(e) => setGenerationConfig({...generationConfig, date_fin: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    Les indisponibilités seront générées entre ces deux dates
+                  </small>
+                </div>
+
+                {/* Option de conservation des modifications manuelles */}
+                <div className="config-section">
+                  <h4>⚠️ Gestion des données existantes</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                    <input
+                      type="checkbox"
+                      id="conserver-manuelles"
+                      checked={generationConfig.conserver_manuelles}
+                      onChange={(e) => setGenerationConfig({...generationConfig, conserver_manuelles: e.target.checked})}
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <label htmlFor="conserver-manuelles" style={{ cursor: 'pointer', color: '#78350f' }}>
+                      <strong>Conserver les modifications manuelles</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>
+                        {generationConfig.conserver_manuelles 
+                          ? 'Les disponibilités ajoutées manuellement seront préservées'
+                          : '⚠️ ATTENTION : Toutes les disponibilités existantes seront supprimées'}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Résumé de la génération */}
+                <div className="config-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                  <h4 style={{ color: '#1e40af', marginTop: 0 }}>📊 Résumé de la génération</h4>
+                  <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#1e40af' }}>
+                    <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
+                    <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
+                    <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                    <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
+
+
+                {/* Section Formatage Planning supprimée - déplacée vers modal Planning */}
+                {false && (
+                  <div style={{
+                    marginTop: '30px',
+                    padding: '20px',
+                    backgroundColor: '#fef2f2',
+                    border: '2px solid #fecaca',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: showFormatageSection ? '15px' : '0'
+                    }}>
+                      <h4 style={{ margin: 0, color: '#991b1b', fontSize: '14px' }}>
+                        🗑️ Formatage Planning (DEMO)
+                      </h4>
+                      <button
+                        onClick={() => setShowFormatageSection(!showFormatageSection)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #dc2626',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#dc2626'
+                        }}
+                      >
+                        {showFormatageSection ? '▲ Masquer' : '▼ Afficher'}
+                      </button>
+                    </div>
+
+                    {showFormatageSection && (
+                      <div>
+                        <p style={{ 
+                          fontSize: '13px', 
+                          color: '#7f1d1d',
+                          marginBottom: '15px',
+                          lineHeight: '1.5'
+                        }}>
+                          ⚠️ Cette fonctionnalité supprime <strong>toutes les assignations et demandes de remplacement</strong> du mois sélectionné. Utilisez-la pour vider le planning avant une démonstration.
+                        </p>
+
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ 
+                            display: 'block', 
+                            marginBottom: '8px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            color: '#7f1d1d'
+                          }}>
+                            📅 Sélectionner le mois à formater:
+                          </label>
+                          <input
+                            type="month"
+                            value={moisFormatage}
+                            onChange={(e) => setMoisFormatage(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #dc2626',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleFormaterPlanning}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
+                        >
+                          🗑️ Formater le planning de {new Date(moisFormatage + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                  </ul>
+                  <p style={{ margin: '10px 0 0 0', fontSize: '0.875rem', color: '#1e40af' }}>
+                    💡 Les <strong>INDISPONIBILITÉS</strong> seront générées pour tous les jours où votre équipe <strong>TRAVAILLE</strong> à son emploi principal selon le cycle sélectionné (vous ne serez donc pas disponible pour les gardes de pompiers ces jours-là).
+                  </p>
+                </div>
+              </div>
+
+                <div className="modal-actions">
+                  <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                    Annuler
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleGenerateIndisponibilites}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Génération en cours...' : '🚀 Générer les indisponibilités'}
+                  </Button>
+                </div>
+              </div>
+              )}
+
+              {/* Contenu de l'onglet Saisie manuelle */}
+              {indispoTab === 'manuelle' && (
+                <div>
+                  <div className="manual-indispo-config">
+                    {/* Sélecteur de mode */}
+                    <div className="config-section" style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => setManualIndispoMode('calendrier')}
+                          style={{
+                            padding: '10px 20px',
+                            border: manualIndispoMode === 'calendrier' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                            borderRadius: '8px',
+                            background: manualIndispoMode === 'calendrier' ? '#fef2f2' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: manualIndispoMode === 'calendrier' ? 'bold' : 'normal',
+                            color: manualIndispoMode === 'calendrier' ? '#dc2626' : '#64748b'
+                          }}
+                        >
+                          📅 Calendrier (Clics multiples)
+                        </button>
+                        <button
+                          onClick={() => setManualIndispoMode('recurrence')}
+                          style={{
+                            padding: '10px 20px',
+                            border: manualIndispoMode === 'recurrence' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                            borderRadius: '8px',
+                            background: manualIndispoMode === 'recurrence' ? '#fef2f2' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: manualIndispoMode === 'recurrence' ? 'bold' : 'normal',
+                            color: manualIndispoMode === 'recurrence' ? '#dc2626' : '#64748b'
+                          }}
+                        >
+                          🔄 Avec récurrence
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* MODE CALENDRIER */}
+                    {manualIndispoMode === 'calendrier' && (
+                      <>
+                        <div className="config-section">
+                          <h4>📆 Sélection des dates d'indisponibilité</h4>
+                          <Calendar
+                            mode="multiple"
+                            selected={manualIndispoConfig.dates}
+                            onSelect={(dates) => setManualIndispoConfig({...manualIndispoConfig, dates: dates || []})}
+                            className="availability-calendar-large"
+                            locale={fr}
+                            indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
+                          />
+                          <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                            📌 Cliquez sur plusieurs dates pour sélectionner vos jours d'indisponibilité
+                          </small>
+                          <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                            ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
+                          </small>
+                          {manualIndispoConfig.dates.length > 0 && (
+                            <p style={{ marginTop: '10px', color: '#dc2626', fontWeight: 'bold' }}>
+                              ✓ {manualIndispoConfig.dates.length} date(s) sélectionnée(s)
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* MODE RÉCURRENCE */}
+                    {manualIndispoMode === 'recurrence' && (
+                      <>
+                        <div className="config-section">
+                          <h4>📅 Période</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                              <Label>Date de début</Label>
+                              <Input
+                                type="date"
+                                value={manualIndispoConfig.date_debut}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, date_debut: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label>Date de fin</Label>
+                              <Input
+                                type="date"
+                                value={manualIndispoConfig.date_fin}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, date_fin: e.target.value})}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="config-section">
+                          <h4>🔄 Récurrence</h4>
+                          <Label>Type de récurrence</Label>
+                          <select
+                            value={manualIndispoConfig.recurrence_type}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_type: e.target.value})}
+                            className="form-select"
+                          >
+                            <option value="hebdomadaire">Toutes les semaines (hebdomadaire)</option>
+                            <option value="bihebdomadaire">Toutes les deux semaines (bihebdomadaire)</option>
+                            <option value="mensuelle">Tous les mois (mensuelle)</option>
+                            <option value="annuelle">Tous les ans (annuelle)</option>
+                            <option value="personnalisee">Personnalisée</option>
+                          </select>
+
+                          {manualIndispoConfig.recurrence_type === 'personnalisee' && (
+                            <div style={{ marginTop: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+                              <h5 style={{ marginTop: 0, marginBottom: '10px' }}>⚙️ Configuration personnalisée</h5>
+                              <Label>Fréquence</Label>
+                              <select
+                                value={manualIndispoConfig.recurrence_frequence}
+                                onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_frequence: e.target.value})}
+                                className="form-select"
+                                style={{ marginBottom: '10px' }}
+                              >
+                                <option value="jours">Jours</option>
+                                <option value="semaines">Semaines</option>
+                                <option value="mois">Mois</option>
+                                <option value="ans">Ans</option>
+                              </select>
+
+                              <Label>Intervalle : Tous les</Label>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="365"
+                                  value={manualIndispoConfig.recurrence_intervalle}
+                                  onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, recurrence_intervalle: parseInt(e.target.value) || 1})}
+                                  style={{ width: '100px' }}
+                                />
+                                <span>{manualIndispoConfig.recurrence_frequence}</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Sélection des jours de la semaine pour hebdomadaire/bihebdomadaire */}
+                          {(manualIndispoConfig.recurrence_type === 'hebdomadaire' || manualIndispoConfig.recurrence_type === 'bihebdomadaire') && (
+                            <div style={{ marginTop: '15px', padding: '15px', background: '#fef2f2', borderRadius: '8px' }}>
+                              <h5 style={{ marginTop: 0, marginBottom: '10px' }}>📅 Sélectionnez les jours de la semaine</h5>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                                {[
+                                  { label: 'Lun', value: 'monday' },
+                                  { label: 'Mar', value: 'tuesday' },
+                                  { label: 'Mer', value: 'wednesday' },
+                                  { label: 'Jeu', value: 'thursday' },
+                                  { label: 'Ven', value: 'friday' },
+                                  { label: 'Sam', value: 'saturday' },
+                                  { label: 'Dim', value: 'sunday' }
+                                ].map(jour => (
+                                  <label
+                                    key={jour.value}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      padding: '8px',
+                                      borderRadius: '8px',
+                                      border: `2px solid ${manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#dc2626' : '#cbd5e1'}`,
+                                      background: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '#fee2e2' : 'white',
+                                      cursor: 'pointer',
+                                      fontWeight: manualIndispoConfig.jours_semaine?.includes(jour.value) ? '600' : '400'
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={manualIndispoConfig.jours_semaine?.includes(jour.value) || false}
+                                      onChange={(e) => {
+                                        const currentJours = manualIndispoConfig.jours_semaine || [];
+                                        const newJours = e.target.checked
+                                          ? [...currentJours, jour.value]
+                                          : currentJours.filter(j => j !== jour.value);
+                                        setManualIndispoConfig({...manualIndispoConfig, jours_semaine: newJours});
+                                      }}
+                                      style={{ marginRight: '6px' }}
+                                    />
+                                    {jour.label}
+                                  </label>
+                                ))}
+                              </div>
+                              {manualIndispoConfig.jours_semaine && manualIndispoConfig.jours_semaine.length > 0 && (
+                                <p style={{ marginTop: '10px', color: '#dc2626', fontSize: '0.9rem' }}>
+                                  ✓ {manualIndispoConfig.jours_semaine.length} jour(s) sélectionné(s)
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Configuration des horaires (commun aux deux modes) */}
+                    <div className="config-section">
+                      <h4>⏰ Horaires d'indisponibilité</h4>
+                      <div className="time-config-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <Label>Heure de début</Label>
+                          <Input 
+                            type="time" 
+                            value={manualIndispoConfig.heure_debut}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_debut: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Heure de fin</Label>
+                          <Input 
+                            type="time" 
+                            value={manualIndispoConfig.heure_fin}
+                            onChange={(e) => setManualIndispoConfig({...manualIndispoConfig, heure_fin: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
+                        💡 Par défaut : 00:00-23:59 (toute la journée)
+                      </small>
+                    </div>
+
+                    {/* Résumé */}
+                    <div className="config-section" style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                      <h4 style={{ color: '#991b1b', marginTop: 0 }}>📊 Résumé</h4>
+                      {manualIndispoMode === 'calendrier' ? (
+                        <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#991b1b' }}>
+                          <li><strong>Mode :</strong> Calendrier (clics multiples)</li>
+                          <li><strong>Dates sélectionnées :</strong> {manualIndispoConfig.dates.length} jour(s)</li>
+                          <li><strong>Horaires :</strong> {manualIndispoConfig.heure_debut} - {manualIndispoConfig.heure_fin}</li>
+                        </ul>
+                      ) : (
+                        <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#991b1b' }}>
+                          <li><strong>Mode :</strong> Récurrence</li>
+                          <li><strong>Période :</strong> Du {new Date(manualIndispoConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(manualIndispoConfig.date_fin).toLocaleDateString('fr-FR')}</li>
+                          <li><strong>Récurrence :</strong> {
+                            manualIndispoConfig.recurrence_type === 'hebdomadaire' ? 'Toutes les semaines' :
+                            manualIndispoConfig.recurrence_type === 'bihebdomadaire' ? 'Toutes les 2 semaines' :
+                            manualIndispoConfig.recurrence_type === 'mensuelle' ? 'Tous les mois' :
+                            manualIndispoConfig.recurrence_type === 'annuelle' ? 'Tous les ans' :
+                            `Tous les ${manualIndispoConfig.recurrence_intervalle} ${manualIndispoConfig.recurrence_frequence}`
+                          }</li>
+                          <li><strong>Horaires :</strong> {manualIndispoConfig.heure_debut} - {manualIndispoConfig.heure_fin}</li>
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="modal-actions">
+                    <Button variant="outline" onClick={() => setShowGenerationModal(false)}>
+                      Annuler
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={handleSaveManualIndisponibilites}
+                      disabled={manualIndispoMode === 'calendrier' && manualIndispoConfig.dates.length === 0}
+                    >
+                      {manualIndispoMode === 'calendrier' 
+                        ? `✅ Enregistrer ${manualIndispoConfig.dates.length > 0 ? `(${manualIndispoConfig.dates.length} jour${manualIndispoConfig.dates.length > 1 ? 's' : ''})` : ''}`
+                        : '✅ Générer les indisponibilités'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de réinitialisation */}
+      {showReinitModal && (
+        <div className="modal-overlay" onClick={() => setShowReinitModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🗑️ Réinitialiser les disponibilités</h3>
+              <Button variant="ghost" onClick={() => setShowReinitModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body">
+              <div className="reinit-config">
+                {/* Sélection de la période */}
+                <div className="config-section">
+                  <h4>📅 Période à réinitialiser</h4>
+                  <select
+                    value={reinitConfig.periode}
+                    onChange={(e) => {
+                      setReinitConfig({...reinitConfig, periode: e.target.value});
+                      setReinitWarning(null); // Réinitialiser l'avertissement lors du changement
+                    }}
+                    className="form-select"
+                  >
+                    <option value="semaine">Semaine courante</option>
+                    <option value="mois">Mois courant</option>
+                    <option value="mois_prochain">Mois prochain</option>
+                    <option value="annee">Année courante</option>
+                    <option value="personnalisee">Période personnalisée</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {reinitConfig.periode === 'semaine' && 'Du lundi au dimanche de la semaine en cours'}
+                    {reinitConfig.periode === 'mois' && 'Du 1er au dernier jour du mois en cours'}
+                    {reinitConfig.periode === 'mois_prochain' && 'Du 1er au dernier jour du mois prochain'}
+                    {reinitConfig.periode === 'annee' && 'Du 1er janvier au 31 décembre de l\'année en cours'}
+                    {reinitConfig.periode === 'personnalisee' && 'Sélectionnez une plage de dates personnalisée (max 1 an)'}
+                  </small>
+                  
+                  {/* Champs de dates pour période personnalisée */}
+                  {reinitConfig.periode === 'personnalisee' && (
+                    <div style={{ marginTop: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div>
+                          <Label>Date de début</Label>
+                          <Input
+                            type="date"
+                            value={reinitConfig.date_debut}
+                            onChange={(e) => {
+                              setReinitConfig({...reinitConfig, date_debut: e.target.value});
+                              setReinitWarning(null);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label>Date de fin</Label>
+                          <Input
+                            type="date"
+                            value={reinitConfig.date_fin}
+                            onChange={(e) => {
+                              setReinitConfig({...reinitConfig, date_fin: e.target.value});
+                              setReinitWarning(null);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Avertissement pour dates bloquées */}
+                      {reinitWarning && (
+                        <div style={{
+                          marginTop: '15px',
+                          padding: '12px',
+                          background: '#fef3c7',
+                          border: '2px solid #f59e0b',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                          <div style={{ flex: 1 }}>
+                            <strong style={{ display: 'block', marginBottom: '5px', color: '#92400e' }}>
+                              Attention - Dates bloquées
+                            </strong>
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#78350f' }}>
+                              {reinitWarning}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sélection du type d'entrées */}
+                <div className="config-section">
+                  <h4>📊 Type d'entrées à supprimer</h4>
+                  <select
+                    value={reinitConfig.type_entree}
+                    onChange={(e) => setReinitConfig({...reinitConfig, type_entree: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="les_deux">Disponibilités ET Indisponibilités</option>
+                    <option value="disponibilites">Disponibilités uniquement</option>
+                    <option value="indisponibilites">Indisponibilités uniquement</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {reinitConfig.type_entree === 'disponibilites' && '✅ Supprime uniquement les jours disponibles'}
+                    {reinitConfig.type_entree === 'indisponibilites' && '❌ Supprime uniquement les jours indisponibles'}
+                    {reinitConfig.type_entree === 'les_deux' && '🔄 Supprime tous les types d\'entrées'}
+                  </small>
+                </div>
+
+                {/* Sélection du mode */}
+                <div className="config-section">
+                  <h4>🎯 Mode de suppression</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <label style={{ 
+                      padding: '15px', 
+                      border: reinitConfig.mode === 'generees_seulement' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      background: reinitConfig.mode === 'generees_seulement' ? '#eff6ff' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="generees_seulement"
+                        checked={reinitConfig.mode === 'generees_seulement'}
+                        onChange={(e) => setReinitConfig({...reinitConfig, mode: e.target.value})}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <strong>Supprimer uniquement les entrées générées automatiquement</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '5px', marginLeft: '25px', color: '#64748b' }}>
+                        ✅ Préserve vos modifications manuelles (origine: manuelle)
+                      </div>
+                    </label>
+
+                    <label style={{ 
+                      padding: '15px', 
+                      border: reinitConfig.mode === 'tout' ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      background: reinitConfig.mode === 'tout' ? '#fef2f2' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="tout"
+                        checked={reinitConfig.mode === 'tout'}
+                        onChange={(e) => setReinitConfig({...reinitConfig, mode: e.target.value})}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <strong>Supprimer TOUTES les entrées</strong>
+                      <div style={{ fontSize: '0.875rem', marginTop: '5px', marginLeft: '25px', color: '#991b1b' }}>
+                        ⚠️ Supprime tout (manuelles + générées automatiquement)
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Résumé et confirmation */}
+                <div className="config-section" style={{ 
+                  background: reinitConfig.mode === 'tout' ? '#fef2f2' : '#eff6ff', 
+                  padding: '15px', 
+                  borderRadius: '8px', 
+                  border: `1px solid ${reinitConfig.mode === 'tout' ? '#dc2626' : '#3b82f6'}` 
+                }}>
+                  <h4 style={{ color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af', marginTop: 0 }}>
+                    ⚠️ Confirmation requise
+                  </h4>
+                  <p style={{ margin: '10px 0', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
+                    Vous êtes sur le point de <strong>
+                      {reinitConfig.mode === 'tout' 
+                        ? 'SUPPRIMER TOUTES LES' 
+                        : 'supprimer les entrées générées de'}
+                    </strong> {' '}
+                    <strong>
+                      {reinitConfig.type_entree === 'disponibilites' && 'DISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'indisponibilites' && 'INDISPONIBILITÉS'}
+                      {reinitConfig.type_entree === 'les_deux' && 'DISPONIBILITÉS ET INDISPONIBILITÉS'}
+                    </strong> {' de '}
+                    {reinitConfig.periode === 'semaine' && 'la semaine courante'}
+                    {reinitConfig.periode === 'mois' && 'du mois courant'}
+                    {reinitConfig.periode === 'annee' && 'de l\'année courante'}
+                  </p>
+                  <p style={{ margin: '10px 0', fontSize: '0.875rem', color: reinitConfig.mode === 'tout' ? '#991b1b' : '#1e40af' }}>
+                    {reinitConfig.mode === 'tout' 
+                      ? `🚨 Cette action supprimera toutes les ${reinitConfig.type_entree === 'disponibilites' ? 'disponibilités' : reinitConfig.type_entree === 'indisponibilites' ? 'indisponibilités' : 'entrées'} (manuelles et automatiques).`
+                      : '✅ Vos modifications manuelles seront préservées.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <Button variant="outline" onClick={() => setShowReinitModal(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  variant={reinitConfig.mode === 'tout' ? 'destructive' : 'default'}
+                  onClick={handleReinitialiser}
+                  disabled={isReinitializing}
+                >
+                  {isReinitializing ? 'Suppression...' : '🗑️ Confirmer la suppression'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Export Disponibilités */}
+      {showExportModal && (
+        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="modal-header">
+              <h3>📊 Export Disponibilités {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
+              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
+            </div>
+            <div className="modal-body" style={{padding: '2rem'}}>
+              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
+                Que souhaitez-vous exporter ?
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <Button 
+                  onClick={() => handleExportDisponibilites()}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>📋</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Toutes les disponibilités</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Exporter les disponibilités de tous les pompiers temps partiel
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    // Pour l'instant, exporter une personne spécifique nécessiterait un select
+                    // On peut améliorer cela plus tard
+                    toast({ title: "Info", description: "Sélectionnez un pompier depuis le module Personnel pour exporter ses disponibilités" });
+                  }}
+                  style={{
+                    padding: '1.5rem',
+                    justifyContent: 'flex-start',
+                    gap: '1rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <span style={{fontSize: '1.5rem'}}>👤</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontWeight: '600'}}>Une personne spécifique</div>
+                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
+                      Disponible depuis le module Personnel
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Overlay de chargement lors de l'enregistrement */}
+      {savingDisponibilites && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            minWidth: '400px',
+            maxWidth: '500px'
+          }}>
+            {/* Spinner animé */}
+            <div style={{
+              width: '60px',
+              height: '60px',
+              border: '4px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '4px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            
+            {/* Message */}
+            <div style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              {savingMessage}
+            </div>
+            
+            <div style={{
+              fontSize: '0.9rem',
+              opacity: 0.9,
+              textAlign: 'center'
+            }}>
+              Veuillez patienter...
+            </div>
+          </div>
+          
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+      )}
+
+      {/* Nouveau Modal de résolution de conflits multiples (batch) */}
+      {showBatchConflictModal && (
+        <div className="modal-overlay" onClick={() => setShowBatchConflictModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '800px', maxHeight: '80vh', overflow: 'auto'}}>
+            <div className="modal-header">
+              <h3>⚠️ Conflits Détectés ({batchConflicts.length})</h3>
+              <Button variant="ghost" onClick={() => setShowBatchConflictModal(false)}>✕</Button>
+            </div>
+            
+            <div className="modal-body" style={{padding: '1.5rem'}}>
+              <p style={{marginBottom: '1rem', color: '#64748b'}}>
+                Les disponibilités suivantes sont en conflit avec des entrées existantes. 
+                Sélectionnez les conflits que vous souhaitez remplacer :
+              </p>
+              
+              <div style={{marginBottom: '1rem', display: 'flex', gap: '0.5rem'}}>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    const allSelected = {};
+                    batchConflicts.forEach((_, idx) => allSelected[idx] = true);
+                    setBatchConflictSelections(allSelected);
+                  }}
+                >
+                  ✅ Tout sélectionner
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBatchConflictSelections({})}
+                >
+                  ❌ Tout désélectionner
+                </Button>
+              </div>
+              
+              <div style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}>
+                {batchConflicts.map((conflict, index) => {
+                  const isSelected = batchConflictSelections[index] || false;
+                  return (
+                    <div 
+                      key={index}
+                      style={{
+                        padding: '1rem',
+                        borderBottom: index < batchConflicts.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        background: isSelected ? '#fef3c7' : 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onClick={() => {
+                        setBatchConflictSelections(prev => ({
+                          ...prev,
+                          [index]: !prev[index]
+                        }));
+                      }}
+                    >
+                      <div style={{display: 'flex', alignItems: 'flex-start', gap: '1rem'}}>
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setBatchConflictSelections(prev => ({
+                              ...prev,
+                              [index]: e.target.checked
+                            }));
+                          }}
+                          style={{marginTop: '0.25rem', cursor: 'pointer'}}
+                        />
+                        <div style={{flex: 1}}>
+                          <div style={{fontWeight: '600', marginBottom: '0.5rem'}}>
+                            📅 {conflict.newItem.date}
+                          </div>
+                          <div style={{fontSize: '0.875rem', color: '#64748b'}}>
+                            <div style={{marginBottom: '0.25rem'}}>
+                              <strong>Existant:</strong> {conflict.existingType} {conflict.existingHours}
+                              {conflict.existingOrigine && <span style={{marginLeft: '0.5rem', fontSize: '0.75rem', padding: '0.125rem 0.5rem', background: '#e5e7eb', borderRadius: '4px'}}>{conflict.existingOrigine}</span>}
+                            </div>
+                            <div>
+                              <strong>Nouveau:</strong> {conflict.newType} {conflict.newItem.heure_debut}-{conflict.newItem.heure_fin}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: '#f3f4f6', borderRadius: '8px', fontSize: '0.875rem'}}>
+                <div style={{marginBottom: '0.5rem'}}>
+                  <strong>Résumé:</strong>
+                </div>
+                <div>
+                  • {Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) sélectionné(s) pour remplacement
+                </div>
+                <div>
+                  • {batchConflicts.length - Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) seront ignorés (existant conservé)
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => setShowBatchConflictModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                variant="default"
+                onClick={async () => {
+                  await handleResolveBatchConflicts();
+                }}
+              >
+                ✅ Confirmer ({Object.values(batchConflictSelections).filter(Boolean).length} remplacements)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de résolution des conflits */}
+      {showConflictModal && (
+        <Suspense fallback={<LoadingComponent />}>
+          <ConflictResolutionModal
+            isOpen={showConflictModal}
+            onClose={() => {
+              setShowConflictModal(false);
+              setConflictData({ conflicts: [], newItem: null, itemType: null });
+            }}
+            conflicts={conflictData.conflicts}
+            newItem={conflictData.newItem}
+            itemType="disponibilite"
+            onResolve={handleResolveConflict}
+          />
+        </Suspense>
+      )}
+    </div>
+  );
+};
+
+// Mon Profil Component épuré - sans disponibilités et remplacements
+// Mon Profil Component épuré - sans disponibilités et remplacements
+
+export default MesDisponibilites;
