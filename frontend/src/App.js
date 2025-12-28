@@ -35,6 +35,10 @@ const Rapports = lazy(() => import("./components/Rapports"));
 const ApprovisionnementEau = lazy(() => import("./components/ApprovisionnementEau"));
 const GestionPreventionnistes = lazy(() => import("./components/GestionPreventionnistes"));
 const ImportBatiments = lazy(() => import("./components/ImportBatiments"));
+const AuthComponentsModule = lazy(() => import("./components/AuthComponents"));
+const GrillesInspectionModule = lazy(() => import("./components/GrillesInspectionComponents"));
+const InspectionComponentsModule = lazy(() => import("./components/InspectionComponents"));
+const PointEauModalsModule = lazy(() => import("./components/PointEauModals"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
