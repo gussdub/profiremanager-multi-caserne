@@ -1757,11 +1757,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             </button>
           ))}
         </nav>
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
 
         <div className="sidebar-user">
           <div className="user-info">
