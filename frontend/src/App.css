@@ -215,7 +215,7 @@ body {
   position: fixed;
   top: calc(1rem + var(--safe-area-top, 0px) + 35px);
   left: 1rem;
-  z-index: 10002;
+  z-index: 99999;
   background: #dc2626;
   border: none;
   border-radius: 8px;
