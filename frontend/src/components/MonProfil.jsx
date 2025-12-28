@@ -294,13 +294,52 @@ const MonProfil = () => {
     reader.readAsDataURL(file);
   };
 
-  // Fonction pour ouvrir la capture photo (détection iOS automatique)
-  const openPhotoCapture = () => {
+  // Fonction pour ouvrir la capture photo (caméra)
+  const openCameraCapture = () => {
+    setShowPhotoMenu(false);
     if (isIOS()) {
       // Sur iOS, utiliser le composant caméra personnalisé
       setShowCameraCapture(true);
     } else {
-      // Sur les autres plateformes, utiliser l'input file classique
+      // Sur desktop, on peut essayer getUserMedia ou fallback sur input
+      setShowCameraCapture(true);
+    }
+  };
+
+  // Fonction pour choisir depuis la photothèque (images uniquement)
+  const openPhotoLibrary = () => {
+    setShowPhotoMenu(false);
+    photoLibraryRef.current?.click();
+  };
+
+  // Fonction pour choisir un fichier (tous types d'images)
+  const openFilePicker = () => {
+    setShowPhotoMenu(false);
+    photoInputRef.current?.click();
+  };
+
+  // Fonction pour recadrer la photo existante
+  const openCropExisting = () => {
+    setShowPhotoMenu(false);
+    if (userProfile?.photo_profil) {
+      // Charger l'image existante dans le modal de crop
+      const img = new Image();
+      img.onload = () => {
+        setImageSize({ width: img.width, height: img.height });
+        setImageToCrop(userProfile.photo_profil);
+        setShowCropModal(true);
+        setCropPosition({ x: 0, y: 0 });
+        setZoom(1);
+      };
+      img.src = userProfile.photo_profil;
+    }
+  };
+
+  // Ancienne fonction openPhotoCapture renommée (gardée pour compatibilité)
+  const openPhotoCapture = () => {
+    if (isIOS()) {
+      setShowCameraCapture(true);
+    } else {
       photoInputRef.current?.click();
     }
   };
