@@ -422,7 +422,7 @@ const Login = () => {
   
   // Charger le module de stockage au montage
   useEffect(() => {
-    import('./utils/storage').then(module => {
+    import('../utils/storage').then(module => {
       storageModule.current = module;
       console.log('[Login] ✅ Module de stockage chargé');
     });
