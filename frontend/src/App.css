@@ -71,16 +71,14 @@ body {
 /* Quand le menu mobile est ouvert, cacher le débordement du contenu */
 body.mobile-menu-open .main-content {
   overflow: hidden !important;
-  pointer-events: none !important;
-}
-
-body.mobile-menu-open .main-content * {
-  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 body.mobile-menu-open .sidebar,
 body.mobile-menu-open .sidebar *,
-body.mobile-menu-open .mobile-close-area {
+body.mobile-menu-open .mobile-close-area,
+body.mobile-menu-open .mobile-menu-toggle {
+  visibility: visible !important;
   pointer-events: auto !important;
 }
 
