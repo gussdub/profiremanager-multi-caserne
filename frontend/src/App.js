@@ -20060,6 +20060,7 @@ const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
                           <input
                             type="file"
                             accept="image/*"
+                            capture="environment"
                             multiple
                             onChange={(e) => {
                               const files = Array.from(e.target.files);
