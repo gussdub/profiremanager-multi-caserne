@@ -15828,7 +15828,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 // Mon Profil Component épuré - sans disponibilités et remplacements
 // Mon Profil Component épuré - sans disponibilités et remplacements
 const MonProfil = () => {
-  const { user, tenant } = useAuth();
+  const { user, setUser, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const [userProfile, setUserProfile] = useState(null);
   const [formations, setFormations] = useState([]);
