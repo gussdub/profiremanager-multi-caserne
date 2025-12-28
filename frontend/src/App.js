@@ -1717,16 +1717,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       {/* Zone cliquable pour fermer le menu mobile */}
       {isMobileMenuOpen && (
         <div 
-          className="mobile-overlay"
+          className="mobile-close-area"
           onClick={() => setIsMobileMenuOpen(false)}
           style={{
             position: 'fixed',
             top: 0,
-            left: 'min(85vw, 300px)',
+            left: 0,
             right: 0,
             bottom: 0,
             zIndex: 1000,
-            background: 'transparent'
+            background: 'transparent',
+            pointerEvents: 'auto'
           }}
         ></div>
       )}
