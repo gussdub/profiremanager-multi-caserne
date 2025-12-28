@@ -1321,7 +1321,6 @@ export {
   RealiserInspection, 
   DetailInspection,
   GestionNonConformites,
-  CalendrierInspections,
-  ModuleRapports
+  CalendrierInspections
 };
 export default ListeInspections;
