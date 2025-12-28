@@ -15915,54 +15915,80 @@ const MonProfil = () => {
       return;
     }
 
-    // Vérifier la taille (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: "Image trop volumineuse",
-        description: "La taille maximale est de 2 MB",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setPhotoUploading(true);
 
     try {
-      // Convertir en base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target.result;
-        
-        try {
-          const response = await apiPost(tenantSlug, '/users/photo-profil', {
-            photo_base64: base64
-          });
-          
-          // Mettre à jour le profil local
-          setUserProfile(prev => ({...prev, photo_profil: response.photo_profil}));
-          
-          toast({
-            title: "Photo mise à jour",
-            description: "Votre photo de profil a été enregistrée",
-          });
-        } catch (error) {
-          toast({
-            title: "Erreur",
-            description: error.message || "Impossible de sauvegarder la photo",
-            variant: "destructive"
-          });
-        } finally {
-          setPhotoUploading(false);
-        }
+      // Fonction pour compresser l'image côté client
+      const compressImage = (file, maxWidth = 400, quality = 0.8) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              
+              // Redimensionner si nécessaire
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Convertir en JPEG compressé
+              const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+              resolve(compressedBase64);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       };
-      reader.readAsDataURL(file);
+
+      // Compresser si > 500KB, sinon utiliser directement
+      let base64;
+      if (file.size > 500 * 1024) {
+        toast({
+          title: "Compression en cours...",
+          description: "L'image est optimisée automatiquement",
+        });
+        base64 = await compressImage(file, 400, 0.85);
+      } else {
+        base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      const response = await apiPost(tenantSlug, '/users/photo-profil', {
+        photo_base64: base64
+      });
+      
+      // Mettre à jour le profil local
+      setUserProfile(prev => ({...prev, photo_profil: response.photo_profil}));
+      
+      toast({
+        title: "Photo mise à jour",
+        description: "Votre photo de profil a été enregistrée",
+      });
     } catch (error) {
-      setPhotoUploading(false);
       toast({
         title: "Erreur",
-        description: "Impossible de lire l'image",
+        description: error.message || "Impossible de sauvegarder la photo",
         variant: "destructive"
       });
+    } finally {
+      setPhotoUploading(false);
     }
     
     // Reset l'input pour permettre de re-sélectionner le même fichier
