@@ -291,6 +291,7 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handleFileSelect}
             style={{ display: 'none' }}
           />
