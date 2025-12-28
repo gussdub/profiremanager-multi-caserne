@@ -1823,11 +1823,11 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           style={{
             position: 'fixed',
             top: 0,
+            left: 0,
             right: 0,
             bottom: 0,
-            width: 'calc(100vw - min(85vw, 300px))',
-            zIndex: 99998,
-            background: 'transparent',
+            zIndex: 99997,
+            background: 'rgba(0, 0, 0, 0.6)',
             cursor: 'pointer'
           }}
         ></div>
