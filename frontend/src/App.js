@@ -1814,6 +1814,24 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           </div>
         </div>
       </div>
+      
+      {/* Zone cliquable pour fermer le menu - APRÈS la sidebar dans le DOM */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-close-area"
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 'calc(100vw - min(85vw, 300px))',
+            zIndex: 1002,
+            background: 'transparent',
+            cursor: 'pointer'
+          }}
+        ></div>
+      )}
     </>
   );
 };
