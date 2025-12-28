@@ -2312,10 +2312,11 @@ const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
                 fontSize: '14px',
                 marginBottom: '10px'
               }}>
-                📂 Choisir une image
+                📷 Prendre une photo
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
