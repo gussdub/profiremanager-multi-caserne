@@ -1826,7 +1826,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             right: 0,
             bottom: 0,
             width: 'calc(100vw - min(85vw, 300px))',
-            zIndex: 1002,
+            zIndex: 10002,
             background: 'transparent',
             cursor: 'pointer'
           }}
