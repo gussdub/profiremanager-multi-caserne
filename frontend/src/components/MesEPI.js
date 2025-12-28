@@ -985,6 +985,17 @@ const MesEPI = ({ user }) => {
           equipementNom={masqueAPRIA.nom || 'Pièce faciale APRIA'}
         />
       )}
+
+      {/* Modal de capture caméra iOS */}
+      {showCameraCapture && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCameraCapture(false)}
+          maxWidth={1280}
+          quality={0.85}
+          facingMode="environment"
+        />
+      )}
     </div>
   );
 };
