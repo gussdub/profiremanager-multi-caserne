@@ -330,13 +330,14 @@ const PhotoUploadModal = ({ onClose, onSave }) => {
               <input
                 type="file"
                 accept="image/*"
+                capture="environment"
                 multiple
                 onChange={(e) => handleFilesSelect(e.target.files)}
                 style={{ display: 'none' }}
                 id="photos-input"
               />
               <Button onClick={() => document.getElementById('photos-input').click()}>
-                Choisir des fichiers
+                📷 Prendre des photos
               </Button>
               <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
                 Max 10MB par photo • Tous formats image acceptés
