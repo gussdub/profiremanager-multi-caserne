@@ -1721,16 +1721,26 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setCurrentPage(item.id);
-                setIsMobileMenuOpen(false); // Fermer menu mobile après clic
+                setIsMobileMenuOpen(false);
+              }}
+              onTouchStart={(e) => {
+                // Fix iOS Safari: capturer l'événement touch immédiatement
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
               }}
               onTouchEnd={(e) => {
-                // Fix iOS: utiliser onTouchEnd en plus de onClick
+                // Fix iOS: navigation sur touchend
                 e.preventDefault();
+                e.stopPropagation();
                 setCurrentPage(item.id);
                 setIsMobileMenuOpen(false);
               }}
               data-testid={`nav-${item.id}-btn`}
-              style={{ WebkitTapHighlightColor: 'rgba(255, 255, 255, 0.2)' }}
+              style={{ 
+                WebkitTapHighlightColor: 'rgba(255, 255, 255, 0.2)',
+                touchAction: 'manipulation',
+                WebkitUserSelect: 'none',
+                userSelect: 'none'
+              }}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
