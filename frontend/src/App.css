@@ -223,13 +223,26 @@ body {
   display: none;
   position: fixed;
   top: 0;
-  left: 0;
+  left: min(85vw, 300px); /* Commence après la sidebar */
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   z-index: 999;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Pseudo-element pour le fond sombre derrière la sidebar */
+.mobile-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(85vw, 300px);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: -1;
+  pointer-events: none; /* Ne pas intercepter les clics sur la sidebar */
 }
 
 /* Responsive Sidebar - Correction complète clics mobile */
