@@ -3437,7 +3437,8 @@ async def get_current_user_info(tenant_slug: str, current_user: User = Depends(g
         "role": current_user.role,
         "grade": current_user.grade,
         "type_emploi": current_user.type_emploi,
-        "formations": current_user.formations
+        "formations": current_user.formations,
+        "photo_profil": current_user.photo_profil
     }
 
 
