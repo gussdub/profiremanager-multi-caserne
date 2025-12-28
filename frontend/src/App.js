@@ -1577,13 +1577,45 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                     <div 
                       onClick={() => {
                         marquerCommeLue(notif.id);
-                        if (notif.type === 'remplacement_disponible' && notif.data?.demande_id) {
-                          // Ouvrir le modal de remplacement
-                          openRemplacementModal(notif.data.demande_id);
-                          setShowNotifications(false);
-                        } else if (notif.lien) {
-                          setCurrentPage(notif.lien.replace(/^\/[^\/]+\//, ''));
-                          setShowNotifications(false);
+                        setShowNotifications(false);
+                        
+                        // Navigation intelligente selon le type de notification
+                        switch (notif.type) {
+                          case 'remplacement_disponible':
+                            if (notif.data?.demande_id) {
+                              openRemplacementModal(notif.data.demande_id);
+                            } else {
+                              setCurrentPage('remplacements');
+                            }
+                            break;
+                          case 'remplacement_accepte':
+                          case 'remplacement_refuse':
+                          case 'remplacement_demande':
+                          case 'remplacement_pourvu':
+                            // Aller au module Remplacements
+                            setCurrentPage('remplacements');
+                            break;
+                          case 'planning_assigne':
+                          case 'planning_modifie':
+                            // Aller au Planning
+                            setCurrentPage('planning');
+                            break;
+                          case 'conge_approuve':
+                          case 'conge_refuse':
+                          case 'conge_demande':
+                            // Aller aux disponibilités
+                            setCurrentPage('disponibilites');
+                            break;
+                          case 'formation_assignee':
+                          case 'formation_rappel':
+                            // Aller aux formations
+                            setCurrentPage('formations');
+                            break;
+                          default:
+                            // Utiliser le lien par défaut si disponible
+                            if (notif.lien) {
+                              setCurrentPage(notif.lien.replace(/^\/[^\/]+\//, ''));
+                            }
                         }
                       }}
                       style={{ cursor: 'pointer', flex: 1 }}
