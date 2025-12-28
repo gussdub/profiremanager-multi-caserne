@@ -33,6 +33,19 @@ div[style*="position: fixed"][style*="bottom: 20px"][style*="right: 20px"] {
   box-sizing: border-box;
 }
 
+/* iOS Safari specific fixes for touch events */
+@supports (-webkit-touch-callout: none) {
+  .sidebar.mobile-open {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  
+  .sidebar.mobile-open .nav-item {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+  }
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: #f8fafc;
