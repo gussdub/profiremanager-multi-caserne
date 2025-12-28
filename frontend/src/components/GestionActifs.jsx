@@ -1662,10 +1662,72 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     epi_jour_alerte_inspection_mensuelle: 20
   });
 
+  // États pour les types d'EPI personnalisés
+  const [typesEPI, setTypesEPI] = useState([]);
+  const [showTypeEPIModal, setShowTypeEPIModal] = useState(false);
+  const [editingTypeEPI, setEditingTypeEPI] = useState(null);
+  const [newTypeEPI, setNewTypeEPI] = useState({ nom: '', icone: '🛡️', description: '' });
+  const [typeEPILoading, setTypeEPILoading] = useState(false);
+
   useEffect(() => {
     fetchParametres();
     fetchEpiSettings();
+    fetchTypesEPI();
   }, [tenantSlug]);
+
+  const fetchTypesEPI = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/types-epi');
+      setTypesEPI(data || []);
+    } catch (error) {
+      console.error('Erreur chargement types EPI:', error);
+    }
+  };
+
+  const handleSaveTypeEPI = async () => {
+    if (!newTypeEPI.nom.trim()) {
+      alert('Le nom du type d\'EPI est requis');
+      return;
+    }
+    
+    setTypeEPILoading(true);
+    try {
+      if (editingTypeEPI) {
+        // Mise à jour
+        await apiPut(tenantSlug, `/types-epi/${editingTypeEPI.id}`, newTypeEPI);
+      } else {
+        // Création
+        await apiPost(tenantSlug, '/types-epi', newTypeEPI);
+      }
+      await fetchTypesEPI();
+      setShowTypeEPIModal(false);
+      setEditingTypeEPI(null);
+      setNewTypeEPI({ nom: '', icone: '🛡️', description: '' });
+    } catch (error) {
+      alert('Erreur: ' + (error.message || 'Impossible de sauvegarder'));
+    } finally {
+      setTypeEPILoading(false);
+    }
+  };
+
+  const handleDeleteTypeEPI = async (typeId, typeName) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le type "${typeName}" ?`)) {
+      return;
+    }
+    
+    try {
+      await apiDelete(tenantSlug, `/types-epi/${typeId}`);
+      await fetchTypesEPI();
+    } catch (error) {
+      alert('Erreur: ' + (error.message || 'Impossible de supprimer'));
+    }
+  };
+
+  const handleEditTypeEPI = (type) => {
+    setEditingTypeEPI(type);
+    setNewTypeEPI({ nom: type.nom, icone: type.icone, description: type.description || '' });
+    setShowTypeEPIModal(true);
+  };
 
   const fetchParametres = async () => {
     try {
