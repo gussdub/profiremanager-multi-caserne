@@ -854,9 +854,9 @@ const MonProfil = () => {
                     borderRadius: '8px',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                     border: '1px solid #e5e7eb',
-                    zIndex: 100,
-                    minWidth: '220px',
-                    overflow: 'hidden'
+                    zIndex: 9999,
+                    minWidth: '250px',
+                    overflow: 'visible'
                   }}>
                     {/* Option: Prendre une photo */}
                     <button
