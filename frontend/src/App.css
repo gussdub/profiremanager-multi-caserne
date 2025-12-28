@@ -394,6 +394,9 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   min-height: 0; /* Permet au flex de réduire */
+  /* iOS fixes */
+  position: relative;
+  z-index: 1;
 }
 
 .nav-item {
