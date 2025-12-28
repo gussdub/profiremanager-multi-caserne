@@ -190,7 +190,7 @@ const CameraCapture = ({
         stream.getTracks().forEach(track => track.stop());
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, []);
 
   // Rendu des états d'erreur
