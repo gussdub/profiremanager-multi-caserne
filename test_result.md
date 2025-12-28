@@ -163,11 +163,11 @@ test_session_ios_camera:
 
   test_items:
     - task: "CameraCapture component renders correctly"
-      status: "needs_testing"
+      status: "PASSED"
     - task: "MonProfil photo button triggers camera on iOS detection"
-      status: "needs_testing"
+      status: "PASSED"
     - task: "MesEPI inspection photo upload works"
-      status: "needs_testing"
+      status: "PASSED"
     - task: "Application builds without errors"
       status: "PASSED"
 
