@@ -221,14 +221,6 @@ body {
 
 .mobile-overlay {
   display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 999;
-  -webkit-tap-highlight-color: transparent;
 }
 
 /* Responsive Sidebar - Correction complète clics mobile */
@@ -237,11 +229,9 @@ body {
     display: flex;
   }
   
+  /* L'overlay est géré par un pseudo-élément de la sidebar */
   .mobile-overlay {
-    display: block;
-    /* Découper l'overlay pour ne pas couvrir la sidebar */
-    clip-path: inset(0 0 0 min(85vw, 300px));
-    -webkit-clip-path: inset(0 0 0 min(85vw, 300px));
+    display: none !important;
   }
   
   .sidebar {
