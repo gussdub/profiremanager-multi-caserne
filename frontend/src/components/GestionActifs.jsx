@@ -1586,6 +1586,7 @@ const BorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) => {
                     <input
                       type="file"
                       accept="image/jpeg,image/jpg,image/png"
+                      capture="environment"
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) handleFileUpload(field, file);
