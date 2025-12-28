@@ -9,6 +9,7 @@ import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import CameraCapture, { isIOS } from "./CameraCapture";
 
 const MonProfil = () => {
   const { user, setUser, tenant } = useAuth();
