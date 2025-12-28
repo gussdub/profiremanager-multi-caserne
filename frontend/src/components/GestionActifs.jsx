@@ -30,7 +30,12 @@ const BorneSecheModal = lazy(() => import('./BornesSeches').then(m => ({ default
 const ParametresActifsTab = lazy(() => import('./ParametresActifs'));
 const ImportCSVModal = lazy(() => import('./ImportCSVActifs'));
 const ParametresAlertesEquipements = lazy(() => import('./ParametresAlertesEquipements'));
-const ActifsModalsModule = lazy(() => import('./ActifsModals'));
+const Modal = lazy(() => import('./ActifsModals').then(m => ({ default: m.Modal })));
+const VehiculeForm = lazy(() => import('./ActifsModals').then(m => ({ default: m.VehiculeForm })));
+const BorneForm = lazy(() => import('./ActifsModals').then(m => ({ default: m.BorneForm })));
+const QRCodeModal = lazy(() => import('./ActifsModals').then(m => ({ default: m.QRCodeModal })));
+const FicheVieModal = lazy(() => import('./ActifsModals').then(m => ({ default: m.FicheVieModal })));
+const InspectionHistoryModal = lazy(() => import('./ActifsModals').then(m => ({ default: m.InspectionHistoryModal })));
 
 // Loading component
 const LoadingSpinner = () => (
