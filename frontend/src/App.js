@@ -28,6 +28,7 @@ const ModuleEPI = lazy(() => import("./components/ModuleEPI"));
 const Remplacements = lazy(() => import("./components/Remplacements"));
 const Formations = lazy(() => import("./components/Formations"));
 const MesDisponibilites = lazy(() => import("./components/MesDisponibilites"));
+const MonProfil = lazy(() => import("./components/MonProfil"));
 import "./App.css";
 
 // Composant d'installation PWA pour iOS
