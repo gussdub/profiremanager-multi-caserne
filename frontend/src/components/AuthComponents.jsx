@@ -10,7 +10,7 @@ import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = BACKEND_URL ? \`\${BACKEND_URL}/api\` : '/api';
+const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
 
 const ForgotPassword = ({ onBack }) => {
   const [email, setEmail] = useState('');
