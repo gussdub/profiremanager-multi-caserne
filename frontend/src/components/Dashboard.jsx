@@ -156,7 +156,7 @@ const Dashboard = () => {
           } catch (e) {}
 
           try {
-            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/vehicules`, { headers });
+            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers });
             setStatsGenerales(prev => ({ ...prev, vehicules: vehiculesResponse.data?.length || 0 }));
           } catch (e) {}
 
