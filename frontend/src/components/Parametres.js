@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import axios from "axios";
 import { Button } from "./ui/button.jsx";
 import { Input } from "./ui/input.jsx";
@@ -10,6 +10,9 @@ import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import Personnalisation from "./Personnalisation.jsx";
+
+// Lazy load du composant Attribution pour optimiser les performances
+const ParametresAttribution = lazy(() => import("./ParametresAttribution.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
