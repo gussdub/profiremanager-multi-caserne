@@ -154,7 +154,7 @@ const ParametresAttribution = ({
             <DetailCard icon="🏢" title="Temps plein" description="Éligible automatiquement" detail="Agit comme backup si pas assez de temps partiel" />
             <DetailCard icon="📊" title="Calcul équitable" description="Cumul mensuel des heures" detail="Priorité à ceux avec moins d'heures assignées" />
             <DetailCard icon="📅" title="Ancienneté" description="Basée sur date d'embauche" detail="Plus ancien = priorité en cas d'égalité d'heures" />
-            <DetailCard icon="⚙️" title="Déclenchement" description="Bouton \"Attribution auto\"" detail="Processus sur demande dans le module Planning" />
+            <DetailCard icon="⚙️" title="Déclenchement" description='Bouton "Attribution auto"' detail="Processus sur demande dans le module Planning" />
             <DetailCard icon="🔍" title="Audit" description="Traçabilité complète" detail="Cliquez sur une garde pour voir le détail de sélection" />
           </div>
         </div>
