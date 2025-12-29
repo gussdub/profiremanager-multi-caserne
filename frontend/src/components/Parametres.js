@@ -5,14 +5,14 @@ import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { useToast } from "../hooks/use-toast";
 import { buildApiUrl } from "../utils/api";
-import ImportCSVEPI from "./ImportCSVEPI.jsx";
-import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
-import ImportCSVRapports from "./ImportCSVRapports.jsx";
-import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import Personnalisation from "./Personnalisation.jsx";
 
-// Lazy load du composant Attribution pour optimiser les performances
+// Lazy load des composants pour optimiser les performances
 const ParametresAttribution = lazy(() => import("./ParametresAttribution.jsx"));
+const ParametresRemplacements = lazy(() => import("./ParametresRemplacements.jsx"));
+const ParametresDisponibilites = lazy(() => import("./ParametresDisponibilites.jsx"));
+const ParametresFormations = lazy(() => import("./ParametresFormations.jsx"));
+const ParametresImports = lazy(() => import("./ParametresImports.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
