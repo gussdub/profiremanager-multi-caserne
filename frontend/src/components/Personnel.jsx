@@ -9,6 +9,7 @@ import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
 const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const { user } = useAuth();

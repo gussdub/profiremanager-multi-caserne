@@ -8,6 +8,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
+import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { useAuth } from "../contexts/AuthContext";
 import CameraCapture, { isIOS } from "./CameraCapture";
 

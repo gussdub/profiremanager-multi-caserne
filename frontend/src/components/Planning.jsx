@@ -9,6 +9,7 @@ import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { fr } from "date-fns/locale";
+import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 const RapportHeuresModal = lazy(() => import("./RapportHeuresModal"));
 const AuditModal = lazy(() => import("./AuditModal"));
 

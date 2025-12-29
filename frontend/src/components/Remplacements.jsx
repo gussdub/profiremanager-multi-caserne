@@ -8,6 +8,7 @@ import { Calendar } from "./ui/calendar";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { fr } from "date-fns/locale";
 
 const Remplacements = () => {
