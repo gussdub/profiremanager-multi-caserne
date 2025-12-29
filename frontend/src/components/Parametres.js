@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import axios from "axios";
 import { Button } from "./ui/button.jsx";
 import { Input } from "./ui/input.jsx";
@@ -10,6 +10,22 @@ import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import Personnalisation from "./Personnalisation.jsx";
+
+// Lazy load extracted tab components
+const ParametresAttribution = lazy(() => import('./ParametresAttribution'));
+const ParametresPersonnalisation = lazy(() => import('./ParametresPersonnalisation'));
+const ParametresRemplacements = lazy(() => import('./ParametresRemplacements'));
+const ParametresDisponibilites = lazy(() => import('./ParametresDisponibilites'));
+const ParametresFormations = lazy(() => import('./ParametresFormations'));
+const ParametresImports = lazy(() => import('./ParametresImports'));
+
+// Loading component
+const TabLoading = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}>
+    <div className="loading-spinner"></div>
+    <span style={{ marginLeft: '1rem' }}>Chargement...</span>
+  </div>
+);
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
