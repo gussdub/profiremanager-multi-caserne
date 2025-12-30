@@ -50,193 +50,131 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem(`${tenantSlug}_token`);
       const headers = { Authorization: `Bearer ${token}` };
+      const now = new Date();
+      const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      const lundi = new Date(now);
+      lundi.setDate(now.getDate() - now.getDay() + 1);
+      const semaineDebut = lundi.toISOString().split('T')[0];
 
-        // ===== DONNÉES PERSONNELLES =====
-        
-        // 1. Heures travaillées ce mois
-        try {
-          const now = new Date();
-          const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-          const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-          
-          const heuresResponse = await axios.get(
-            `${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`,
-            { headers, timeout: 10000 }
-          );
-          
-          if (heuresResponse.data?.employes) {
-            // Trouver l'utilisateur courant dans la liste
-            const userHeures = heuresResponse.data.employes.find(e => e.user_id === user.id);
-            if (userHeures) {
-              setHeuresTravaillees({
-                internes: userHeures.heures_internes || 0,
-                externes: userHeures.heures_externes || 0,
-                total: userHeures.total_heures || userHeures.heures_internes || 0
-              });
-            }
-          }
-        } catch (e) {
-          console.log('Heures non disponibles:', e.message);
-        }
-
-        // 2. Taux de présence aux formations
-        try {
-          const tauxResponse = await axios.get(
-            `${API}/${tenantSlug}/formations/mon-taux-presence`,
-            { headers, timeout: 10000 }
-          );
-          setTauxPresence(tauxResponse.data?.taux_presence || 0);
-        } catch (e) {
-          console.log('Taux présence non disponible');
-        }
-
-        // 3. Formations inscrites à venir
-        try {
-          const formationsResponse = await axios.get(
-            `${API}/${tenantSlug}/formations?annee=${new Date().getFullYear()}`,
-            { headers, timeout: 10000 }
-          );
-          
-          const now = new Date();
-          const formationsAVenir = (formationsResponse.data || [])
-            .filter(f => {
-              const dateFormation = new Date(f.date_debut || f.date);
-              return dateFormation >= now;
-            })
-            .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
-            .slice(0, 3);
-          
-          setFormationsInscrites(formationsAVenir);
-        } catch (e) {
-          console.log('Formations non disponibles');
-        }
-
-        // 4. Prochain garde/assignation
-        try {
-          const now = new Date();
-          const lundi = new Date(now);
-          lundi.setDate(now.getDate() - now.getDay() + 1);
-          const semaineDebut = lundi.toISOString().split('T')[0];
-          
-          const planningResponse = await axios.get(
-            `${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`,
-            { headers, timeout: 10000 }
-          );
-          
-          const mesAssignations = (planningResponse.data || [])
-            .filter(a => a.user_id === user.id && new Date(a.date) >= now)
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-          
-          if (mesAssignations.length > 0) {
-            setProchainGarde(mesAssignations[0]);
-          }
-        } catch (e) {
-          console.log('Planning non disponible');
-        }
-
-        // 5. Alertes EPI (expirations proches)
-        try {
-          const epiResponse = await axios.get(
-            `${API}/${tenantSlug}/mes-epi`,
-            { headers, timeout: 10000 }
-          );
-          
-          const now = new Date();
-          const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-          
-          const alertes = (epiResponse.data || [])
-            .filter(epi => {
-              const dateExpiration = new Date(epi.date_expiration || epi.date_fin_vie);
-              return dateExpiration <= dans30Jours && dateExpiration >= now;
-            })
-            .slice(0, 3);
-          
-          setMesEPIAlerts(alertes);
-        } catch (e) {
-          console.log('EPI non disponibles');
-        }
-
-        // ===== DONNÉES ADMIN =====
-        if (isAdmin) {
-          // 1. Stats générales
-          try {
-            const usersResponse = await axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 });
-            setStatsGenerales(prev => ({ ...prev, personnel: usersResponse.data?.length || 0 }));
-          } catch (e) {}
-
-          try {
-            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 });
-            setStatsGenerales(prev => ({ ...prev, vehicules: vehiculesResponse.data?.length || 0 }));
-          } catch (e) {}
-
-          // 2. Demandes de congés à approuver
-          try {
-            const congesResponse = await axios.get(
-              `${API}/${tenantSlug}/demandes-conge`,
-              { headers, timeout: 10000 }
-            );
-            
-            const enAttente = (congesResponse.data || [])
-              .filter(d => d.statut === 'en_attente')
-              .slice(0, 5);
-            
-            setDemandesConges(enAttente);
-          } catch (e) {
-            console.log('Congés non disponibles');
-          }
-
-          // 3. Taux de couverture du planning
-          try {
-            const now = new Date();
-            const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
-            const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            const joursRestants = Math.ceil((finMois - now) / (1000 * 60 * 60 * 24));
-            
-            const lundi = new Date(now);
-            lundi.setDate(now.getDate() - now.getDay() + 1);
-            
-            const planningResponse = await axios.get(
-              `${API}/${tenantSlug}/planning?semaine_debut=${lundi.toISOString().split('T')[0]}`,
-              { headers, timeout: 10000 }
-            );
-            
-            // Calculer un taux approximatif basé sur les assignations
-            const assignations = planningResponse.data || [];
-            const joursCouverts = new Set(assignations.map(a => a.date)).size;
-            const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
-            setTauxCouverture(taux);
-          } catch (e) {
-            console.log('Couverture non disponible');
-          }
-
-          // 4. Activités récentes (notifications/logs)
-          try {
-            const notifResponse = await axios.get(
-              `${API}/${tenantSlug}/notifications?limit=10`,
-              { headers, timeout: 10000 }
-            );
-            
-            const activites = (notifResponse.data || [])
-              .slice(0, 5)
-              .map(n => ({
-                id: n.id,
-                message: n.message || n.titre,
-                date: n.created_at || n.date_creation,
-                type: n.type
-              }));
-            
-            setActivitesRecentes(activites);
-          } catch (e) {
-            console.log('Activités non disponibles');
-          }
-        }
-
-      } catch (error) {
-        console.error('Erreur chargement dashboard:', error);
-      } finally {
-        setLoading(false);
+      // ===== APPELS EN PARALLÈLE =====
+      const promises = [
+        // 1. Heures travaillées
+        axios.get(`${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
+        // 2. Formations
+        axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
+        // 3. Assignations
+        axios.get(`${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
+        // 4. Mes EPI
+        axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
+      ];
+      
+      // Ajouter les appels admin si nécessaire
+      if (isAdmin) {
+        promises.push(
+          axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/demandes-conge`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/planning?semaine_debut=${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/notifications?limit=10`, { headers, timeout: 10000 }).catch(() => null),
+        );
       }
-    }, [tenantSlug, user, API, isAdmin]);
+
+      const results = await Promise.all(promises);
+      
+      // ===== TRAITEMENT DES RÉSULTATS =====
+      
+      // 1. Heures travaillées
+      if (results[0]?.data?.employes) {
+        const userHeures = results[0].data.employes.find(e => e.user_id === user.id);
+        if (userHeures) {
+          setHeuresTravaillees({
+            internes: userHeures.heures_internes || 0,
+            externes: userHeures.heures_externes || 0,
+            total: userHeures.total_heures || userHeures.heures_internes || 0
+          });
+        }
+      }
+      
+      // 2. Formations inscrites
+      if (results[1]?.data) {
+        const formationsAVenir = (results[1].data || [])
+          .filter(f => new Date(f.date_debut || f.date) >= now)
+          .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
+          .slice(0, 3);
+        setFormationsInscrites(formationsAVenir);
+      }
+      
+      // 3. Prochain garde
+      if (results[2]?.data) {
+        const mesAssignations = (results[2].data || [])
+          .filter(a => a.user_id === user.id && new Date(a.date) >= now)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+        if (mesAssignations.length > 0) {
+          setProchainGarde(mesAssignations[0]);
+        }
+      }
+      
+      // 4. Alertes EPI
+      if (results[3]?.data) {
+        const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const alertes = (results[3].data || [])
+          .filter(epi => {
+            const dateExpiration = epi.date_expiration ? new Date(epi.date_expiration) : null;
+            return dateExpiration && dateExpiration <= dans30Jours;
+          })
+          .slice(0, 5);
+        setMesEPIAlerts(alertes);
+      }
+
+      // ===== DONNÉES ADMIN =====
+      if (isAdmin && results.length > 4) {
+        // Users
+        if (results[4]?.data) {
+          setStatsGenerales(prev => ({ ...prev, personnel: results[4].data.length || 0 }));
+        }
+        
+        // Véhicules
+        if (results[5]?.data) {
+          setStatsGenerales(prev => ({ ...prev, vehicules: results[5].data.length || 0 }));
+        }
+        
+        // Congés
+        if (results[6]?.data) {
+          const enAttente = (results[6].data || [])
+            .filter(d => d.statut === 'en_attente')
+            .slice(0, 5);
+          setDemandesConges(enAttente);
+        }
+        
+        // Couverture planning
+        if (results[7]?.data) {
+          const assignations = results[7].data || [];
+          const joursCouverts = new Set(assignations.map(a => a.date)).size;
+          const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
+          setTauxCouverture(taux);
+        }
+        
+        // Activités récentes
+        if (results[8]?.data) {
+          const activites = (results[8].data || [])
+            .slice(0, 5)
+            .map(n => ({
+              id: n.id,
+              message: n.message || n.titre,
+              date: n.created_at || n.date_creation,
+              type: n.type
+            }));
+          setActivitesRecentes(activites);
+        }
+      }
+
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantSlug, user, API, isAdmin]);
 
   // Effect principal - chargement initial et rafraîchissement
   useEffect(() => {
