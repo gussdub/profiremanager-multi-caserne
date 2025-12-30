@@ -91,7 +91,7 @@ const Dashboard = () => {
         try {
           const formationsResponse = await axios.get(
             `${API}/${tenantSlug}/formations?annee=${new Date().getFullYear()}`,
-            { headers }
+            { headers, timeout: 10000 }
           );
           
           const now = new Date();
@@ -117,7 +117,7 @@ const Dashboard = () => {
           
           const planningResponse = await axios.get(
             `${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`,
-            { headers }
+            { headers, timeout: 10000 }
           );
           
           const mesAssignations = (planningResponse.data || [])
@@ -135,7 +135,7 @@ const Dashboard = () => {
         try {
           const epiResponse = await axios.get(
             `${API}/${tenantSlug}/mes-epi`,
-            { headers }
+            { headers, timeout: 10000 }
           );
           
           const now = new Date();
