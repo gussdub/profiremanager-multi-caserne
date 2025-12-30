@@ -2,10 +2,18 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 
 /**
+ * Détection iOS
+ */
+const isIOSDevice = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+/**
  * CameraCapture - Composant de capture photo compatible iOS
  * 
- * Utilise getUserMedia() au lieu du picker natif iOS qui peut crasher.
- * Fournit une UI pour capturer une photo directement depuis le navigateur.
+ * Sur iOS: Utilise l'input natif avec capture="environment" (fiable)
+ * Ailleurs: Utilise getUserMedia() pour une meilleure UX
  * 
  * @param {function} onCapture - Callback appelé avec le fichier capturé (File object)
  * @param {function} onClose - Callback pour fermer le composant
@@ -25,11 +33,75 @@ const CameraCapture = ({
   const [isLoading, setIsLoading] = useState(true);
   const [capturedImage, setCapturedImage] = useState(null);
   const [currentFacingMode, setCurrentFacingMode] = useState(facingMode);
+  const [useNativeInput, setUseNativeInput] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  // Démarrer la caméra
+  // Sur iOS, utiliser l'input natif directement
+  useEffect(() => {
+    if (isIOSDevice()) {
+      setUseNativeInput(true);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Gérer la sélection de fichier (pour iOS ou fallback)
+  const handleFileSelect = useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Optionnel: redimensionner l'image si nécessaire
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Calculer les dimensions en conservant le ratio
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = Math.round(height * ratio);
+          }
+          
+          // Créer un canvas pour redimensionner
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convertir en blob et créer un File
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const resizedFile = new File([blob], file.name, { 
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                onCapture(resizedFile);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [maxWidth, quality, onCapture]);
+
+  // Démarrer la caméra (pour non-iOS)
   const startCamera = useCallback(async (facing = currentFacingMode) => {
+    // Sur iOS, on utilise l'input natif
+    if (isIOSDevice()) {
+      setUseNativeInput(true);
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -41,7 +113,10 @@ const CameraCapture = ({
     try {
       // Vérifier si getUserMedia est disponible
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('UNSUPPORTED');
+        // Fallback vers input natif
+        setUseNativeInput(true);
+        setIsLoading(false);
+        return;
       }
 
       const constraints = {
@@ -67,12 +142,12 @@ const CameraCapture = ({
     } catch (err) {
       console.error('Erreur caméra:', err);
       
-      if (err.message === 'UNSUPPORTED') {
-        setError('UNSUPPORTED');
-      } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      // Sur toute erreur, fallback vers input natif
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setError('PERMISSION_DENIED');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('NO_CAMERA');
+        // Pas de caméra, utiliser input natif
+        setUseNativeInput(true);
       } else if (err.name === 'OverconstrainedError') {
         // Si la caméra demandée n'est pas disponible, essayer sans contrainte facingMode
         try {
@@ -90,10 +165,12 @@ const CameraCapture = ({
           }
           return;
         } catch (fallbackErr) {
-          setError('CAMERA_ERROR');
+          // Fallback vers input natif
+          setUseNativeInput(true);
         }
       } else {
-        setError('CAMERA_ERROR');
+        // Fallback vers input natif pour toute autre erreur
+        setUseNativeInput(true);
       }
       setIsLoading(false);
     }
