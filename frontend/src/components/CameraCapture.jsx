@@ -378,7 +378,10 @@ const CameraCapture = ({
 
         {/* Contenu principal */}
         <div className="camera-capture-content">
-          {error ? (
+          {useNativeInput ? (
+            // Mode iOS : Input natif
+            renderNativeInput()
+          ) : error ? (
             renderError()
           ) : isLoading && !capturedImage ? (
             <div className="camera-loading">
