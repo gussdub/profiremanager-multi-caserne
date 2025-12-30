@@ -418,8 +418,8 @@ const CameraCapture = ({
         {/* Canvas caché pour la capture */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-        {/* Actions */}
-        {!error && !isLoading && (
+        {/* Actions (seulement pour mode non-iOS avec getUserMedia) */}
+        {!useNativeInput && !error && !isLoading && (
           <div className="camera-capture-actions">
             {capturedImage ? (
               // Actions après capture
@@ -453,20 +453,12 @@ const CameraCapture = ({
 };
 
 /**
- * Utilitaire pour détecter si on devrait utiliser getUserMedia
- * Retourne true sur iOS (où le picker natif peut crasher)
+ * Utilitaire pour détecter iOS
  */
-export const shouldUseGetUserMedia = () => {
-  // Détecter iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+export const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  
-  // Détecter si on est en mode PWA standalone
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-    window.navigator.standalone === true;
-  
-  // Vérifier si getUserMedia est disponible
-  const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+};
   
   // Utiliser getUserMedia sur iOS (surtout en PWA) si disponible
   return isIOS && hasGetUserMedia;
