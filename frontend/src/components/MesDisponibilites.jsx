@@ -10,7 +10,7 @@ import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { fr } from "date-fns/locale";
-import { ReinitModal, ExportModal } from './disponibilites';
+import { ReinitModal, ExportModal, DayDetailModal, QuickAddModal } from './disponibilites';
 
 const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
   const { user, tenant } = useAuth();
