@@ -40,7 +40,10 @@ const Dashboard = () => {
 
   // Fonction de chargement des données (mémorisée pour réutilisation)
   const fetchDashboardData = useCallback(async () => {
-    if (!tenantSlug || !user) return;
+    if (!tenantSlug || !user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     
@@ -58,7 +61,7 @@ const Dashboard = () => {
           
           const heuresResponse = await axios.get(
             `${API}/${tenantSlug}/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}&user_id=${user.id}`,
-            { headers }
+            { headers, timeout: 10000 }
           );
           
           if (heuresResponse.data) {
@@ -77,7 +80,7 @@ const Dashboard = () => {
         try {
           const tauxResponse = await axios.get(
             `${API}/${tenantSlug}/formations/mon-taux-presence`,
-            { headers }
+            { headers, timeout: 10000 }
           );
           setTauxPresence(tauxResponse.data?.taux_presence || 0);
         } catch (e) {
