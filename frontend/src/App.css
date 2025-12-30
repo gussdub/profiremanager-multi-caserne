@@ -1926,6 +1926,9 @@ body.mobile-menu-open .mobile-menu-toggle {
     max-height: 100vh !important;
     border-radius: 0 !important;
     z-index: 10000 !important;
+    padding-top: env(safe-area-inset-top, 20px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    box-sizing: border-box !important;
   }
   
   .notifications-header {
@@ -1933,11 +1936,19 @@ body.mobile-menu-open .mobile-menu-toggle {
     top: 0;
     z-index: 10;
     padding: 1rem;
+    padding-top: calc(env(safe-area-inset-top, 20px) + 0.5rem);
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .notifications-header h3 {
+    margin-right: auto;
   }
   
   .notifications-list {
-    max-height: calc(100vh - 80px);
+    max-height: calc(100vh - 120px - env(safe-area-inset-top, 20px));
     padding-bottom: 20px;
+    overflow-y: auto;
   }
 
   .notification-item {
@@ -1952,8 +1963,18 @@ body.mobile-menu-open .mobile-menu-toggle {
   
   /* Paramètres de notification responsive */
   .notification-settings {
-    margin: 0 !important;
-    border-radius: 0 !important;
+    margin: 0.5rem !important;
+    border-radius: 8px !important;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .notification-settings h4 {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem !important;
   }
 }
 
