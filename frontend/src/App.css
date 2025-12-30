@@ -7332,30 +7332,37 @@ body.mobile-menu-open .mobile-menu-toggle {
     font-size: 0.85rem;
   }
 
-  /* Calendriers dans les modals - responsive MOBILE */
+  /* Calendriers dans les modals - responsive MOBILE - cellules adaptatives */
   .interactive-calendar {
-    padding: 1.5rem !important;
+    padding: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
 
   .interactive-calendar .rdp {
-    --rdp-cell-size: 50px !important;
-    font-size: 1rem !important;
+    --rdp-cell-size: calc((100vw - 50px) / 7) !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
   }
 
   .interactive-calendar .rdp-day {
-    width: 50px !important;
-    height: 50px !important;
-    min-width: 50px !important;
-    min-height: 50px !important;
-    font-size: 0.95rem !important;
+    width: calc((100vw - 50px) / 7) !important;
+    max-width: 42px !important;
+    height: 38px !important;
+    min-width: unset !important;
+    min-height: unset !important;
+    font-size: 0.8rem !important;
+    padding: 1px !important;
   }
 
   .interactive-calendar .rdp-caption {
-    font-size: 1.25rem !important;
+    font-size: 1rem !important;
   }
 
   .interactive-calendar .rdp-head_cell {
-    font-size: 0.85rem !important;
+    font-size: 0.65rem !important;
+    width: calc((100vw - 50px) / 7) !important;
   }
 }
 
