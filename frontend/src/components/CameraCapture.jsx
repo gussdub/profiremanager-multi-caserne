@@ -273,19 +273,10 @@ const CameraCapture = ({
   // Rendu des états d'erreur
   const renderError = () => {
     const errorMessages = {
-      UNSUPPORTED: {
-        title: "Caméra non supportée",
-        message: "Votre navigateur ne supporte pas l'accès à la caméra. Veuillez utiliser Safari ou un navigateur récent.",
-        showFallback: true
-      },
       PERMISSION_DENIED: {
         title: "Permission refusée",
         message: "Veuillez autoriser l'accès à la caméra dans les paramètres de votre navigateur, puis réessayez.",
-        showRetry: true
-      },
-      NO_CAMERA: {
-        title: "Caméra introuvable",
-        message: "Aucune caméra n'a été détectée sur votre appareil.",
+        showRetry: true,
         showFallback: true
       },
       CAMERA_ERROR: {
@@ -310,13 +301,65 @@ const CameraCapture = ({
             </Button>
           )}
           {errorInfo.showFallback && (
-            <Button onClick={handleClose} variant="outline">
-              📁 Choisir depuis les fichiers
-            </Button>
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline">
+                📷 Utiliser l'appareil photo
+              </Button>
+            </>
           )}
           <Button onClick={handleClose} variant="ghost">
             ✕ Fermer
           </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Rendu pour iOS (input natif)
+  const renderNativeInput = () => {
+    return (
+      <div className="camera-native-input">
+        <div className="native-input-content">
+          <div className="native-input-icon">📷</div>
+          <h3>Prendre une photo</h3>
+          <p>Appuyez sur le bouton ci-dessous pour ouvrir l'appareil photo</p>
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
+          
+          <div className="native-input-actions">
+            <Button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="capture-main-btn"
+              style={{ 
+                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                color: 'white',
+                padding: '16px 32px',
+                fontSize: '1.1rem',
+                borderRadius: '12px'
+              }}
+            >
+              📷 Ouvrir l'appareil photo
+            </Button>
+            
+            <Button onClick={handleClose} variant="ghost">
+              ✕ Annuler
+            </Button>
+          </div>
         </div>
       </div>
     );
