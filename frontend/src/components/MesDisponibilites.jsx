@@ -2689,64 +2689,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       />
 
       {/* Modal Export Disponibilités */}
-      {showExportModal && (
-        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
-            <div className="modal-header">
-              <h3>📊 Export Disponibilités {exportType === 'pdf' ? 'PDF' : 'Excel'}</h3>
-              <Button variant="ghost" onClick={() => setShowExportModal(false)}>✕</Button>
-            </div>
-            <div className="modal-body" style={{padding: '2rem'}}>
-              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>
-                Que souhaitez-vous exporter ?
-              </p>
-              
-              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                <Button 
-                  onClick={() => handleExportDisponibilites()}
-                  style={{
-                    padding: '1.5rem',
-                    justifyContent: 'flex-start',
-                    gap: '1rem',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <span style={{fontSize: '1.5rem'}}>📋</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{fontWeight: '600'}}>Toutes les disponibilités</div>
-                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                      Exporter les disponibilités de tous les pompiers temps partiel
-                    </div>
-                  </div>
-                </Button>
 
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    // Pour l'instant, exporter une personne spécifique nécessiterait un select
-                    // On peut améliorer cela plus tard
-                    toast({ title: "Info", description: "Sélectionnez un pompier depuis le module Personnel pour exporter ses disponibilités" });
-                  }}
-                  style={{
-                    padding: '1.5rem',
-                    justifyContent: 'flex-start',
-                    gap: '1rem',
-                    fontSize: '1rem'
-                  }}
-                >
-                  <span style={{fontSize: '1.5rem'}}>👤</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{fontWeight: '600'}}>Une personne spécifique</div>
-                    <div style={{fontSize: '0.875rem', opacity: 0.8}}>
-                      Disponible depuis le module Personnel
-                    </div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Export Disponibilités */}
+      <ExportModal
+        show={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        exportType={exportType}
+        onExportAll={() => handleExportDisponibilites()}
+        toast={toast}
+      />
       
       {/* Overlay de chargement lors de l'enregistrement */}
       {savingDisponibilites && (
