@@ -157,12 +157,12 @@ const Dashboard = () => {
         if (isAdmin) {
           // 1. Stats générales
           try {
-            const usersResponse = await axios.get(`${API}/${tenantSlug}/users`, { headers });
+            const usersResponse = await axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 });
             setStatsGenerales(prev => ({ ...prev, personnel: usersResponse.data?.length || 0 }));
           } catch (e) {}
 
           try {
-            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers });
+            const vehiculesResponse = await axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 });
             setStatsGenerales(prev => ({ ...prev, vehicules: vehiculesResponse.data?.length || 0 }));
           } catch (e) {}
 
@@ -170,7 +170,7 @@ const Dashboard = () => {
           try {
             const congesResponse = await axios.get(
               `${API}/${tenantSlug}/demandes-conge`,
-              { headers }
+              { headers, timeout: 10000 }
             );
             
             const enAttente = (congesResponse.data || [])
@@ -194,7 +194,7 @@ const Dashboard = () => {
             
             const planningResponse = await axios.get(
               `${API}/${tenantSlug}/planning?semaine_debut=${lundi.toISOString().split('T')[0]}`,
-              { headers }
+              { headers, timeout: 10000 }
             );
             
             // Calculer un taux approximatif basé sur les assignations
@@ -210,7 +210,7 @@ const Dashboard = () => {
           try {
             const notifResponse = await axios.get(
               `${API}/${tenantSlug}/notifications?limit=10`,
-              { headers }
+              { headers, timeout: 10000 }
             );
             
             const activites = (notifResponse.data || [])
