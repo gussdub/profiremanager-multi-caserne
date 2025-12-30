@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -30,6 +30,7 @@ const Dashboard = () => {
   });
   
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   const API = process.env.REACT_APP_BACKEND_URL 
     ? `${process.env.REACT_APP_BACKEND_URL}/api` 
@@ -37,13 +38,15 @@ const Dashboard = () => {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'production';
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!tenantSlug || !user) return;
-      
-      try {
-        const token = localStorage.getItem(`${tenantSlug}_token`);
-        const headers = { Authorization: `Bearer ${token}` };
+  // Fonction de chargement des données (mémorisée pour réutilisation)
+  const fetchDashboardData = useCallback(async () => {
+    if (!tenantSlug || !user) return;
+    
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem(`${tenantSlug}_token`);
+      const headers = { Authorization: `Bearer ${token}` };
 
         // ===== DONNÉES PERSONNELLES =====
         
