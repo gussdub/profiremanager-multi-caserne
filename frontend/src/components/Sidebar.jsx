@@ -208,20 +208,29 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       };
       
       const freqs = frequencies[settings.soundType] || frequencies.default;
+      const duration = 0.4; // Durée totale du son en secondes
       
+      // Volume initial puis fade out
       gainNode.gain.setValueAtTime(settings.volume / 200, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
       
+      // Jouer les fréquences en séquence
+      oscillator.frequency.setValueAtTime(freqs[0], audioContext.currentTime);
       freqs.forEach((freq, index) => {
-        setTimeout(() => {
-          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-          if (index === 0) {
-            oscillator.start(audioContext.currentTime);
-          }
-        }, index * 100);
+        if (index > 0) {
+          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + (index * 0.1));
+        }
       });
       
-      oscillator.stop(audioContext.currentTime + 0.5);
+      // Démarrer et arrêter proprement
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+      
+      // Fermer le contexte audio après la fin
+      setTimeout(() => {
+        audioContext.close().catch(() => {});
+      }, (duration + 0.1) * 1000);
+      
     } catch (error) {
       console.error('Erreur lecture son:', error);
     }
