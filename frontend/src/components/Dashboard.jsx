@@ -230,10 +230,47 @@ const Dashboard = () => {
       } finally {
         setLoading(false);
       }
+    }, [tenantSlug, user, API, isAdmin]);
+
+  // Effect principal - chargement initial et rafraîchissement
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData, lastRefresh]);
+
+  // Rafraîchir quand l'app revient au premier plan (iOS fix)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Rafraîchir les données quand l'utilisateur revient sur la page
+        setLastRefresh(Date.now());
+      }
     };
 
-    fetchDashboardData();
-  }, [tenantSlug, user, API, isAdmin]);
+    const handleFocus = () => {
+      // Rafraîchir aussi quand la fenêtre regagne le focus
+      setLastRefresh(Date.now());
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    // Pour iOS PWA - écouter les événements de resume
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        setLastRefresh(Date.now());
+      }
+    });
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Fonction de rafraîchissement manuel
+  const handleRefresh = () => {
+    setLastRefresh(Date.now());
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
