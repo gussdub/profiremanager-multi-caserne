@@ -312,13 +312,23 @@ const Dashboard = () => {
   return (
     <div className="dashboard-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* En-tête */}
-      <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b' }}>
-          👋 Bienvenue, {user?.prenom || 'Utilisateur'}
-        </h1>
-        <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
-          {tenant?.nom || 'ProFireManager'} - {new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+      <div className="dashboard-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b' }}>
+            👋 Bienvenue, {user?.prenom || 'Utilisateur'}
+          </h1>
+          <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
+            {tenant?.nom || 'ProFireManager'} - {new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh}
+          disabled={loading}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          {loading ? '⏳' : '🔄'} Actualiser
+        </Button>
       </div>
 
       {/* ===================== SECTION PERSONNELLE ===================== */}
