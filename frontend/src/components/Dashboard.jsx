@@ -270,11 +270,6 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Fonction de rafraîchissement manuel
-  const handleRefresh = () => {
-    setLastRefresh(Date.now());
-  };
-
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
