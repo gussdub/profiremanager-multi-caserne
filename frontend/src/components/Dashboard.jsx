@@ -60,20 +60,23 @@ const Dashboard = () => {
           const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
           
           const heuresResponse = await axios.get(
-            `${API}/${tenantSlug}/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}&user_id=${user.id}`,
+            `${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`,
             { headers, timeout: 10000 }
           );
           
-          if (heuresResponse.data) {
-            const data = heuresResponse.data;
-            setHeuresTravaillees({
-              internes: data.heures_internes || 0,
-              externes: data.heures_externes || 0,
-              total: data.heures_totales || (data.heures_internes || 0) + (data.heures_externes || 0)
-            });
+          if (heuresResponse.data?.employes) {
+            // Trouver l'utilisateur courant dans la liste
+            const userHeures = heuresResponse.data.employes.find(e => e.user_id === user.id);
+            if (userHeures) {
+              setHeuresTravaillees({
+                internes: userHeures.heures_internes || 0,
+                externes: userHeures.heures_externes || 0,
+                total: userHeures.total_heures || userHeures.heures_internes || 0
+              });
+            }
           }
         } catch (e) {
-          console.log('Heures non disponibles');
+          console.log('Heures non disponibles:', e.message);
         }
 
         // 2. Taux de présence aux formations
