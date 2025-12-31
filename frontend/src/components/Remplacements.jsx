@@ -344,19 +344,41 @@ const Remplacements = () => {
       {/* Barre de Contrôles */}
       <div className="personnel-controls" style={{marginBottom: '2rem'}}>
         <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
-          {/* Boutons d'action */}
+          {/* Boutons d'action - Mis en évidence */}
           <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center'}}>
             <Button 
-              variant="default" 
               onClick={() => setShowCreateRemplacementModal(true)}
               data-testid="create-replacement-btn"
+              style={{
+                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                color: 'white',
+                padding: '1rem 1.5rem',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                borderRadius: '12px',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                border: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              className="hover:scale-105"
             >
               🔄 Demande de Remplacement
             </Button>
             <Button 
-              variant="outline" 
               onClick={() => setShowCreateCongeModal(true)}
               data-testid="create-conge-btn"
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: 'white',
+                padding: '1rem 1.5rem',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                borderRadius: '12px',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+                border: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              className="hover:scale-105"
             >
               🏖️ Demande de Congé
             </Button>
