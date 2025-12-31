@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://firebug-hunter.preview.emergentagent.com
+- **URL** : https://camera-dashboard-fix.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://firebug-hunter.preview.emergentagent.com"
+  "apiUrl": "https://camera-dashboard-fix.preview.emergentagent.com"
 }
 ```
 
