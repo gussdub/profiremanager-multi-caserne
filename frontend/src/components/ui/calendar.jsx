@@ -12,8 +12,18 @@ function Calendar({
   indisponibilites = [], // Nouvelle props pour afficher les indisponibilités
   ...props
 }) {
-  // Detect if used in modal (large calendar)
-  const isLargeCalendar = className && (
+  // Detect screen size for responsive calendar
+  const [isMobile, setIsMobile] = React.useState(false);
+  
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Detect if used in modal (large calendar) - but only on desktop
+  const isLargeCalendar = !isMobile && className && (
     className.includes('interactive-calendar') || 
     className.includes('availability-calendar-large')
   );
