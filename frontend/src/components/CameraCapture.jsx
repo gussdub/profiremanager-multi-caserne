@@ -315,12 +315,12 @@ const CameraCapture = ({
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
-                capture="environment"
+                {...(!isPWAMode() && { capture: "environment" })}
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
               />
               <Button onClick={() => fileInputRef.current?.click()} variant="outline">
-                📷 Utiliser l'appareil photo
+                📷 {isPWAMode() ? "Choisir une photo" : "Utiliser l'appareil photo"}
               </Button>
             </>
           )}
