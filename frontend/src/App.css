@@ -2799,6 +2799,13 @@ body.mobile-menu-open .mobile-menu-toggle {
   z-index: 1000;
 }
 
+/* Sur desktop, décaler le modal pour tenir compte de la sidebar */
+@media (min-width: 769px) {
+  .modal-overlay {
+    left: 280px; /* Largeur de la sidebar */
+  }
+}
+
 .modal-content {
   background: white;
   border-radius: 12px;
