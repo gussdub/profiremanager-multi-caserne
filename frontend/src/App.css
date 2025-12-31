@@ -20546,3 +20546,149 @@ body {
   min-height: 54px;
 }
 
+
+/* ============================================================
+   FIX CALENDRIER iOS/MOBILE - Correction définitive
+   Problème: Le calendrier est tronqué sur les côtés sur iOS
+   ============================================================ */
+
+/* Force le calendrier à prendre 100% de la largeur sur mobile */
+@media (max-width: 768px) {
+  /* Container du modal pour occuper tout l'écran */
+  .extra-large-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+  
+  .extra-large-modal .modal-body {
+    padding: 8px !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Calendrier interactif - CORRECTION iOS */
+  .interactive-calendar {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  /* react-day-picker - forcer la table à prendre 100% largeur */
+  .interactive-calendar .rdp {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .interactive-calendar .rdp-months {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .interactive-calendar .rdp-month {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .interactive-calendar .rdp-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 2px !important;
+  }
+
+  .interactive-calendar .rdp-head {
+    width: 100% !important;
+  }
+
+  .interactive-calendar .rdp-head_row {
+    width: 100% !important;
+    display: table-row !important;
+  }
+
+  .interactive-calendar .rdp-head_cell {
+    width: calc(100% / 7) !important;
+    padding: 4px 0 !important;
+    font-size: 0.7rem !important;
+    text-align: center !important;
+  }
+
+  .interactive-calendar .rdp-tbody {
+    width: 100% !important;
+  }
+
+  .interactive-calendar .rdp-row {
+    width: 100% !important;
+    display: table-row !important;
+  }
+
+  .interactive-calendar .rdp-cell {
+    width: calc(100% / 7) !important;
+    padding: 2px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+
+  .interactive-calendar .rdp-day {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: unset !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 4px !important;
+  }
+
+  .interactive-calendar .rdp-button {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Navigation du calendrier */
+  .interactive-calendar .rdp-caption {
+    padding: 8px 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .interactive-calendar .rdp-caption_label {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+  }
+
+  .interactive-calendar .rdp-nav {
+    gap: 8px !important;
+  }
+
+  .interactive-calendar .rdp-nav_button {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .interactive-calendar .rdp-day {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .interactive-calendar .rdp-head_cell {
+    font-size: 0.6rem !important;
+  }
+
+  .interactive-calendar .rdp-caption_label {
+    font-size: 0.9rem !important;
+  }
+}
