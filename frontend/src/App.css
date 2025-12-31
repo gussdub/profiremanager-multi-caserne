@@ -4657,11 +4657,14 @@ body.mobile-menu-open .mobile-menu-toggle {
     margin: 0 !important;
     border-radius: 0 !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
   
   .extra-large-modal .modal-body {
     padding: 12px !important;
     overflow-x: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   .extra-large-modal .modal-header {
@@ -4677,57 +4680,46 @@ body.mobile-menu-open .mobile-menu-toggle {
     font-size: 1.1rem !important;
   }
   
-  /* Calendrier responsive pour mobile - iPhone */
+  /* Calendrier responsive pour mobile - iPhone - CORRIGÉ pour iOS */
   .interactive-calendar {
-    padding: 4px !important;
-    margin: 4px 0 !important;
+    padding: 8px !important;
+    margin: 8px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
   
   .interactive-calendar .rdp {
-    --rdp-cell-size: calc((100vw - 40px) / 7) !important;
+    --rdp-cell-size: 40px !important;
     font-size: 0.75rem !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .interactive-calendar .rdp-month {
     width: 100% !important;
-  }
-  
-  .interactive-calendar .rdp-day {
-    width: calc((100vw - 40px) / 7) !important;
-    max-width: 45px !important;
-    height: 40px !important;
-    font-size: 0.8rem !important;
-    border-radius: 6px !important;
-    padding: 2px !important;
-  }
-  
-  .interactive-calendar .rdp-caption {
-    font-size: 0.95rem !important;
-    padding: 6px 0 !important;
-  }
-  
-  .interactive-calendar .rdp-head_cell {
-    font-size: 0.65rem !important;
-    padding: 2px !important;
-    width: calc((100vw - 40px) / 7) !important;
-  }
-  
-  .interactive-calendar .rdp-nav_button {
-    width: 28px !important;
-    height: 28px !important;
+    padding: 0 !important;
   }
   
   .interactive-calendar .rdp-table {
     width: 100% !important;
     table-layout: fixed !important;
-    border-collapse: collapse !important;
+    border-collapse: separate !important;
+    border-spacing: 2px !important;
+  }
+  
+  .interactive-calendar .rdp-head_row {
+    display: table-row !important;
+  }
+  
+  .interactive-calendar .rdp-head_cell {
+    font-size: 0.65rem !important;
+    padding: 4px 2px !important;
+    width: calc(100% / 7) !important;
+    text-align: center !important;
   }
   
   .interactive-calendar .rdp-tbody {
@@ -4735,13 +4727,43 @@ body.mobile-menu-open .mobile-menu-toggle {
   }
   
   .interactive-calendar .rdp-row {
-    display: flex !important;
-    width: 100% !important;
+    display: table-row !important;
   }
   
   .interactive-calendar .rdp-cell {
-    flex: 1 !important;
-    max-width: calc(100% / 7) !important;
+    width: calc(100% / 7) !important;
+    padding: 1px !important;
+    text-align: center !important;
+  }
+  
+  .interactive-calendar .rdp-day {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: unset !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px !important;
+    padding: 2px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .interactive-calendar .rdp-caption {
+    font-size: 1rem !important;
+    padding: 8px 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .interactive-calendar .rdp-nav {
+    gap: 4px !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button {
+    width: 32px !important;
+    height: 32px !important;
   }
   
   /* Sélecteur de mode responsive */
