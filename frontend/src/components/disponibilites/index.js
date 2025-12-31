@@ -4,3 +4,4 @@ export { default as ExportModal } from './ExportModal';
 export { default as DayDetailModal } from './DayDetailModal';
 export { default as QuickAddModal } from './QuickAddModal';
 export { default as BatchConflictModal } from './BatchConflictModal';
+export { default as AvailabilityCalendarModal } from './AvailabilityCalendarModal';
