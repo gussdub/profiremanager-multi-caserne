@@ -85,14 +85,14 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex justify-center",
+        head_row: "flex w-full",
         head_cell: cn(
-          "text-muted-foreground rounded-md font-normal",
-          isLargeCalendar ? "w-[125px] text-lg font-bold" : "w-8 text-[0.8rem]"
+          "text-muted-foreground rounded-md font-normal flex-1 text-center",
+          isLargeCalendar ? "text-lg font-bold" : "text-[0.65rem]"
         ),
-        row: "flex w-full mt-2 justify-center",
+        row: "flex w-full mt-2",
         cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent",
+          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent flex-1",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
             : "[&:has([aria-selected])]:rounded-md"
