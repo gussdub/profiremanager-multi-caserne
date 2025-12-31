@@ -20768,3 +20768,13 @@ body {
     overflow: hidden !important;
   }
 }
+
+/* ============================================================
+   FIX MODAL - Décalage pour la sidebar sur desktop
+   ============================================================ */
+@media (min-width: 769px) {
+  .modal-overlay {
+    left: 280px !important;
+    width: calc(100% - 280px) !important;
+  }
+}
