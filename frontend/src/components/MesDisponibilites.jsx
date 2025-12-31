@@ -1466,16 +1466,16 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
           <Button 
+            variant="outline"
             onClick={() => navigateMonth('prev')}
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-              color: 'white',
               padding: '0.75rem 1.25rem',
               fontSize: '1rem',
-              fontWeight: '600',
+              fontWeight: '700',
               borderRadius: '10px',
-              boxShadow: '0 3px 10px rgba(99, 102, 241, 0.3)',
-              border: 'none'
+              border: '2px solid #374151',
+              background: 'white',
+              color: '#374151'
             }}
           >
             ← Mois précédent
@@ -1484,16 +1484,16 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
           </h2>
           <Button 
+            variant="outline"
             onClick={() => navigateMonth('next')}
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-              color: 'white',
               padding: '0.75rem 1.25rem',
               fontSize: '1rem',
-              fontWeight: '600',
+              fontWeight: '700',
               borderRadius: '10px',
-              boxShadow: '0 3px 10px rgba(99, 102, 241, 0.3)',
-              border: 'none'
+              border: '2px solid #374151',
+              background: 'white',
+              color: '#374151'
             }}
           >
             Mois suivant →
