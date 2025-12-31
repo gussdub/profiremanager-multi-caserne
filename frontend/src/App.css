@@ -7403,20 +7403,30 @@ body.mobile-menu-open .mobile-menu-toggle {
     padding: 0.5rem !important;
     width: 100% !important;
     max-width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
   }
 
   .interactive-calendar .rdp {
-    --rdp-cell-size: calc((100vw - 50px) / 7) !important;
+    --rdp-cell-size: 38px !important;
     font-size: 0.8rem !important;
     width: 100% !important;
   }
 
+  .interactive-calendar .rdp-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .interactive-calendar .rdp-cell {
+    width: calc(100% / 7) !important;
+  }
+
   .interactive-calendar .rdp-day {
-    width: calc((100vw - 50px) / 7) !important;
-    max-width: 42px !important;
-    height: 38px !important;
+    width: 100% !important;
+    max-width: none !important;
     min-width: unset !important;
+    height: 36px !important;
     min-height: unset !important;
     font-size: 0.8rem !important;
     padding: 1px !important;
@@ -7428,7 +7438,7 @@ body.mobile-menu-open .mobile-menu-toggle {
 
   .interactive-calendar .rdp-head_cell {
     font-size: 0.65rem !important;
-    width: calc((100vw - 50px) / 7) !important;
+    width: calc(100% / 7) !important;
   }
 }
 
