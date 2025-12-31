@@ -20697,3 +20697,67 @@ body {
     font-size: 0.9rem !important;
   }
 }
+
+/* ============================================================
+   FIX CALENDRIER - Desktop pleine largeur + Mobile overflow fix
+   ============================================================ */
+
+/* DESKTOP - Calendrier grande taille */
+@media (min-width: 769px) {
+  .interactive-calendar {
+    width: 100% !important;
+    max-width: none !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+  
+  .interactive-calendar .rdp {
+    width: auto !important;
+    min-width: 900px !important;
+  }
+  
+  .interactive-calendar .rdp-month {
+    width: auto !important;
+  }
+  
+  .interactive-calendar .rdp-table {
+    width: auto !important;
+  }
+  
+  .interactive-calendar .rdp-head_cell,
+  .interactive-calendar .rdp-cell {
+    width: 125px !important;
+    min-width: 125px !important;
+  }
+  
+  .interactive-calendar .rdp-day {
+    width: 125px !important;
+    height: 125px !important;
+    min-width: 125px !important;
+  }
+}
+
+/* MOBILE - Fix overflow des dates */
+@media (max-width: 768px) {
+  .interactive-calendar .rdp-cell {
+    overflow: hidden !important;
+  }
+  
+  .interactive-calendar .rdp-day {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  
+  /* S'assurer que les boutons des jours ne débordent pas */
+  .interactive-calendar .rdp-button {
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
+  
+  /* Fix spécifique pour les jours sélectionnés qui pourraient déborder */
+  .interactive-calendar .rdp-day_selected,
+  .interactive-calendar .rdp-day_today {
+    overflow: hidden !important;
+  }
+}
