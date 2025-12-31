@@ -10,6 +10,15 @@ const isIOSDevice = () => {
 };
 
 /**
+ * Détection PWA (mode standalone)
+ * Important: Sur iOS PWA, input type="file" avec capture="camera" cause un crash
+ */
+const isPWAMode = () => {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+         window.navigator.standalone === true;
+};
+
+/**
  * CameraCapture - Composant de capture photo compatible iOS
  * 
  * Sur iOS: Utilise l'input natif avec capture="environment" (fiable)
