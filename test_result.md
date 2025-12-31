@@ -1,115 +1,92 @@
 test_plan:
-  current_focus: ["Validation post-correction imports API"]
+  current_focus: ["iOS Camera Bug Fix", "Calendar Mobile Responsiveness Fix"]
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 # ============================================
-# TEST SESSION: Bug Fix Validation - Missing API Imports
-# Date: 2024-12-29
+# TEST SESSION: iOS Bug Fixes
+# Date: 2024-12-31
 # ============================================
 
-test_session_bug_fix:
-  focus: "Validation que tous les modules affichent correctement les données après ajout des imports API manquants"
+test_session_ios_fixes:
+  focus: "Correction des bugs iOS: Caméra et Calendrier responsive"
   
-  bug_description: |
-    Le bug était causé par des imports manquants dans plusieurs composants frontend.
-    Les fonctions apiGet, apiPost, apiPut, apiDelete de '../utils/api' n'étaient pas
-    importées dans les fichiers suivants après le refactoring :
-    - Personnel.jsx
-    - Formations.jsx
-    - MesDisponibilites.jsx
-    - ModuleEPI.jsx
-    - MonProfil.jsx
-    - Planning.jsx
-    - Remplacements.jsx
-    
-    GestionActifs.jsx fonctionnait car il avait l'import correct.
-  
-  fix_applied: |
-    Ajout de la ligne d'import suivante dans tous les fichiers concernés :
-    import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+  bugs_fixed:
+    - name: "iOS Camera Crash in PWA"
+      status: "FIXED"
+      description: |
+        L'application crashait/fermait quand l'utilisateur cliquait sur "Ouvrir l'appareil photo"
+        sur iOS en mode PWA (ajouté à l'écran d'accueil).
+      root_cause: |
+        Bug connu de WebKit: L'attribut capture="environment" sur <input type="file"> 
+        cause un crash dans les PWA iOS (iOS 17-18).
+      fix_applied: |
+        - Ajout de la fonction isPWAMode() pour détecter si l'app tourne en mode standalone
+        - En mode PWA iOS: Utilisation de accept="image/*" sans l'attribut capture
+        - L'utilisateur voit maintenant un menu de choix (Photothèque ou Appareil photo)
+        - En Safari normal: L'attribut capture="environment" est conservé
+      files_modified:
+        - frontend/src/components/CameraCapture.jsx
+        
+    - name: "Calendar Truncated on Mobile/iOS"  
+      status: "FIXED"
+      description: |
+        Le calendrier dans le modal "Gérer disponibilités" était coupé sur les côtés
+        sur iPhone. Seuls 3 jours de la semaine étaient visibles (We, Th, Fr).
+      root_cause: |
+        1. Le composant Calendar de shadcn utilisait des tailles fixes (w-8 = 32px)
+        2. Le layout flexbox avec justify-center ne distribuait pas les cellules uniformément
+        3. Les styles CSS utilisant calc(100vw - X) ne fonctionnaient pas dans un modal
+      fix_applied: |
+        1. Modification du composant Calendar.jsx:
+           - head_row: "flex w-full" au lieu de "flex justify-center"
+           - head_cell: "flex-1 text-center" au lieu de "w-8"
+           - cell: ajout de "flex-1" pour distribution uniforme
+           - day: "w-full" au lieu de "w-8"
+        2. Ajout de CSS responsive à App.css pour forcer les cellules à prendre
+           leur part équitable de l'espace disponible
+      files_modified:
+        - frontend/src/components/ui/calendar.jsx
+        - frontend/src/App.css
 
   test_credentials:
     admin:
       tenant: "shefford"
       email: "gussdub@gmail.com"
       password: "230685Juin+"
-    employee:
-      tenant: "shefford"
-      email: "employe@shefford.ca"
-      password: "Employe123!"
 
-  modules_to_test:
-    - module: "Personnel"
-      priority: "P0"
-      expected: "Should display 33 users with statistics"
-      test_steps:
-        - Login as admin
-        - Navigate to Personnel module
-        - Verify statistics cards show data (33 Total, 32 Actif, etc.)
-        - Verify table displays user list
-    - module: "Mes Disponibilités"
-      priority: "P0"
-      expected: "Should display availability calendar and statistics"
-      test_steps:
-        - Navigate to Mes disponibilités
-        - Verify statistics cards show data
-        - Verify calendar displays
-    - module: "Planning"
-      priority: "P0"
-      expected: "Should display planning statistics and calendar"
-      test_steps:
-        - Navigate to Planning
-        - Verify statistics (122/59 couverts, 2076h, 72%)
-        - Verify calendar displays
-    - module: "Formations"
-      priority: "P1"
-      expected: "Should display formations list and statistics"
-      test_steps:
-        - Navigate to Formations
-        - Verify formations are listed
-    - module: "Remplacements"
-      priority: "P1"
-      expected: "Should display remplacements interface"
-      test_steps:
-        - Navigate to Remplacements
-        - Verify interface loads correctly
-    - module: "Gestion des Actifs"
-      priority: "P1"
-      expected: "Should continue working (was already working)"
-      test_steps:
-        - Navigate to Gestion des Actifs
-        - Verify vehicles are displayed
+  verification_needed:
+    - "Camera on iOS PWA - User must test on physical device"
+    - "Calendar display on iOS - User must verify on physical device"
 
 # Incorporate User Feedback
 user_feedback:
-  - "Test that ALL modules display data correctly, not just Personnel"
-  - "Verify no console errors related to undefined functions"
+  - "Camera: l'application se ferme et rien ne se passe"
+  - "Calendrier: dates coupées sur les côtés sur iPhone"
+  - "Notifications: parfait (résolu)"
+  - "Dashboard: plus rapide et acceptable"
+  - "Son notification: résolu"
 
 agent_communication:
   - agent: "main"
-    message: "Bug fix implemented for missing API imports in multiple modules. Added import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api'; to Personnel.jsx, MesDisponibilites.jsx, Planning.jsx, Formations.jsx, and Remplacements.jsx. All modules should now display data correctly instead of showing empty states."
-  - agent: "testing"
-    message: "✅ COMPREHENSIVE TESTING COMPLETED - API imports bug fix validation successful. All 6 modules tested and working correctly:
-
-    **P0 MODULES (CRITICAL) - ALL WORKING:**
-    - Personnel: ✅ Displays 33 total personnel, 32 active, 7 full-time, 26 part-time. User table shows all 33 users with correct data.
-    - Mes Disponibilités: ✅ Shows 81 disponibilités, 111 indisponibilités, 41 jours, 8 types. Calendar displays correctly with availability entries.
-    - Planning: ✅ Shows 122/59 couverts/non couverts, 2076h heures, 72% couverture. Planning calendar displays detailed shift assignments.
-
-    **P1 MODULES (SECONDARY) - ALL WORKING:**
-    - Formations: ✅ Shows formations grid with 'Désincarcération' formation. Statistics: 3.5h planifiées, 0h effectuées, 0/33 pompiers formés.
-    - Remplacements: ✅ Interface loads with action buttons 'Demande de Remplacement' and 'Demande de Congé'. Statistics show 0 total demandes (expected for new system).
-    - Gestion des Actifs: ✅ Displays 7 vehicles correctly with tabs for Véhicules and Inventaires. Vehicle cards show proper details and action buttons.
-
-    **VALIDATION RESULTS:**
-    - No console errors related to undefined apiGet/apiPost/apiPut/apiDelete functions
-    - All modules load without errors and display their data correctly
-    - Statistics cards show real data instead of zeros or empty states
-    - User authentication and navigation working properly
-
-    **CONCLUSION:** The API imports bug fix is completely successful. All modules that were previously showing empty data due to missing API function imports are now functioning correctly and displaying the expected data."
+    message: |
+      ✅ CORRECTIONS iOS APPLIQUÉES:
+      
+      1. BUG CAMÉRA iOS PWA (P0 - CRITIQUE):
+         - Détection du mode PWA via isPWAMode()
+         - En PWA: suppression de capture="environment" qui causait le crash
+         - L'utilisateur verra un menu de choix au lieu d'un crash
+         
+      2. CALENDRIER TRONQUÉ iOS (P1):
+         - Modification du composant Calendar.jsx pour utiliser flex-1
+         - Les 7 jours de la semaine (Mo-Su) sont maintenant tous visibles
+         - Testé sur viewport 375px (iPhone) - tous les jours affichés
+         
+      ⚠️ À VÉRIFIER PAR L'UTILISATEUR:
+         - Ces corrections doivent être testées sur un appareil iOS physique
+         - La caméra devrait maintenant proposer un choix au lieu de crasher
+         - Le calendrier devrait afficher tous les 7 jours
 
 # Updated Task Status After Testing
 frontend:
