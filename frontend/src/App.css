@@ -20608,11 +20608,14 @@ body {
 
   .interactive-calendar .rdp-head_row {
     width: 100% !important;
-    display: table-row !important;
+    display: flex !important;
+    justify-content: space-between !important;
   }
 
   .interactive-calendar .rdp-head_cell {
+    flex: 1 1 0 !important;
     width: calc(100% / 7) !important;
+    min-width: 0 !important;
     padding: 4px 0 !important;
     font-size: 0.7rem !important;
     text-align: center !important;
@@ -20624,14 +20627,16 @@ body {
 
   .interactive-calendar .rdp-row {
     width: 100% !important;
-    display: table-row !important;
+    display: flex !important;
+    justify-content: space-between !important;
   }
 
   .interactive-calendar .rdp-cell {
+    flex: 1 1 0 !important;
     width: calc(100% / 7) !important;
+    min-width: 0 !important;
     padding: 2px !important;
     text-align: center !important;
-    vertical-align: middle !important;
   }
 
   .interactive-calendar .rdp-day {
