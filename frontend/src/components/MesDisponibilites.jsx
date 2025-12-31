@@ -2566,127 +2566,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       )}
 
       {/* Nouveau Modal de résolution de conflits multiples (batch) */}
-      {showBatchConflictModal && (
-        <div className="modal-overlay" onClick={() => setShowBatchConflictModal(false)}>
-          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '800px', maxHeight: '80vh', overflow: 'auto'}}>
-            <div className="modal-header">
-              <h3>⚠️ Conflits Détectés ({batchConflicts.length})</h3>
-              <Button variant="ghost" onClick={() => setShowBatchConflictModal(false)}>✕</Button>
-            </div>
-            
-            <div className="modal-body" style={{padding: '1.5rem'}}>
-              <p style={{marginBottom: '1rem', color: '#64748b'}}>
-                Les disponibilités suivantes sont en conflit avec des entrées existantes. 
-                Sélectionnez les conflits que vous souhaitez remplacer :
-              </p>
-              
-              <div style={{marginBottom: '1rem', display: 'flex', gap: '0.5rem'}}>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => {
-                    const allSelected = {};
-                    batchConflicts.forEach((_, idx) => allSelected[idx] = true);
-                    setBatchConflictSelections(allSelected);
-                  }}
-                >
-                  ✅ Tout sélectionner
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setBatchConflictSelections({})}
-                >
-                  ❌ Tout désélectionner
-                </Button>
-              </div>
-              
-              <div style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}>
-                {batchConflicts.map((conflict, index) => {
-                  const isSelected = batchConflictSelections[index] || false;
-                  return (
-                    <div 
-                      key={index}
-                      style={{
-                        padding: '1rem',
-                        borderBottom: index < batchConflicts.length - 1 ? '1px solid #e5e7eb' : 'none',
-                        background: isSelected ? '#fef3c7' : 'white',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onClick={() => {
-                        setBatchConflictSelections(prev => ({
-                          ...prev,
-                          [index]: !prev[index]
-                        }));
-                      }}
-                    >
-                      <div style={{display: 'flex', alignItems: 'flex-start', gap: '1rem'}}>
-                        <input 
-                          type="checkbox" 
-                          checked={isSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            setBatchConflictSelections(prev => ({
-                              ...prev,
-                              [index]: e.target.checked
-                            }));
-                          }}
-                          style={{marginTop: '0.25rem', cursor: 'pointer'}}
-                        />
-                        <div style={{flex: 1}}>
-                          <div style={{fontWeight: '600', marginBottom: '0.5rem'}}>
-                            📅 {conflict.newItem.date}
-                          </div>
-                          <div style={{fontSize: '0.875rem', color: '#64748b'}}>
-                            <div style={{marginBottom: '0.25rem'}}>
-                              <strong>Existant:</strong> {conflict.existingType} {conflict.existingHours}
-                              {conflict.existingOrigine && <span style={{marginLeft: '0.5rem', fontSize: '0.75rem', padding: '0.125rem 0.5rem', background: '#e5e7eb', borderRadius: '4px'}}>{conflict.existingOrigine}</span>}
-                            </div>
-                            <div>
-                              <strong>Nouveau:</strong> {conflict.newType} {conflict.newItem.heure_debut}-{conflict.newItem.heure_fin}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <div style={{marginTop: '1rem', padding: '1rem', background: '#f3f4f6', borderRadius: '8px', fontSize: '0.875rem'}}>
-                <div style={{marginBottom: '0.5rem'}}>
-                  <strong>Résumé:</strong>
-                </div>
-                <div>
-                  • {Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) sélectionné(s) pour remplacement
-                </div>
-                <div>
-                  • {batchConflicts.length - Object.values(batchConflictSelections).filter(Boolean).length} conflit(s) seront ignorés (existant conservé)
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-actions">
-              <Button variant="outline" onClick={() => setShowBatchConflictModal(false)}>
-                Annuler
-              </Button>
-              <Button 
-                variant="default"
-                onClick={async () => {
-                  await handleResolveBatchConflicts();
-                }}
-              >
-                ✅ Confirmer ({Object.values(batchConflictSelections).filter(Boolean).length} remplacements)
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      {/* Modal de conflits en batch */}
+      <BatchConflictModal
+        show={showBatchConflictModal}
+        conflicts={batchConflicts}
+        selections={batchConflictSelections}
+        setSelections={setBatchConflictSelections}
+        onClose={() => setShowBatchConflictModal(false)}
+        onConfirm={handleResolveBatchConflicts}
+      />
+
 
       {/* Modal de résolution des conflits */}
       {showConflictModal && (
