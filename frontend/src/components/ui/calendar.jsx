@@ -87,19 +87,22 @@ function Calendar({
         table: "w-full border-collapse space-y-1",
         head_row: "flex w-full",
         head_cell: cn(
-          "text-muted-foreground rounded-md font-normal flex-1 text-center",
-          isLargeCalendar ? "text-lg font-bold" : "text-[0.65rem]"
+          "text-muted-foreground rounded-md font-normal text-center",
+          isLargeCalendar ? "w-[125px] text-lg font-bold" : "flex-1 min-w-0 text-[0.65rem] overflow-hidden"
         ),
         row: "flex w-full mt-2",
         cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent flex-1",
+          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent overflow-hidden",
+          isLargeCalendar ? "w-[125px]" : "flex-1 min-w-0",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
             : "[&:has([aria-selected])]:rounded-md"
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          isLargeCalendar ? "h-[125px] w-full text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-10 w-full",
+          isLargeCalendar 
+            ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" 
+            : "h-10 w-full max-w-full overflow-hidden",
           "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
