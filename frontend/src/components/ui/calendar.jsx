@@ -99,7 +99,7 @@ function Calendar({
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          isLargeCalendar ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-8 w-8",
+          isLargeCalendar ? "h-[125px] w-full text-xl font-semibold border-2 border-gray-200 rounded-xl" : "h-10 w-full",
           "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
