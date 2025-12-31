@@ -333,19 +333,32 @@ const CameraCapture = ({
   };
 
   // Rendu pour iOS (input natif)
+  // IMPORTANT: Sur iOS PWA, l'attribut capture="environment" cause un crash de l'app
+  // On utilise donc accept="image/*" seul, qui ouvre un menu de choix (Photo Library ou Camera)
   const renderNativeInput = () => {
+    const isInPWA = isPWAMode();
+    
     return (
       <div className="camera-native-input">
         <div className="native-input-content">
           <div className="native-input-icon">📷</div>
           <h3>Prendre une photo</h3>
-          <p>Appuyez sur le bouton ci-dessous pour ouvrir l'appareil photo</p>
+          <p>
+            {isInPWA 
+              ? "Appuyez sur le bouton ci-dessous et sélectionnez \"Prendre une photo\"" 
+              : "Appuyez sur le bouton ci-dessous pour ouvrir l'appareil photo"
+            }
+          </p>
           
+          {/* 
+            PWA iOS: Ne pas utiliser capture="environment" - cause un crash
+            Safari normal: capture="environment" fonctionne
+          */}
           <input
             type="file"
             ref={fileInputRef}
             accept="image/*"
-            capture="environment"
+            {...(!isInPWA && { capture: "environment" })}
             onChange={handleFileSelect}
             style={{ display: 'none' }}
           />
@@ -362,7 +375,7 @@ const CameraCapture = ({
                 borderRadius: '12px'
               }}
             >
-              📷 Ouvrir l'appareil photo
+              📷 {isInPWA ? "Choisir / Prendre une photo" : "Ouvrir l'appareil photo"}
             </Button>
             
             <Button onClick={handleClose} variant="ghost">
