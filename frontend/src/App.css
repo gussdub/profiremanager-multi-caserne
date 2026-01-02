@@ -1397,21 +1397,27 @@ body.mobile-menu-open .mobile-menu-toggle {
     gap: 0.5rem;
   }
   
-  /* Module disponibilités - Navigation mois responsive */
-  .disponibilites-visual-container > div:first-of-type {
+  /* Module disponibilités - Navigation mois responsive - CORRIGÉ */
+  .disponibilites-visual-container > div:first-of-type:not(.calendar-month-nav) {
     flex-direction: column !important;
     gap: 1rem !important;
     padding: 0.75rem !important;
   }
   
-  .disponibilites-visual-container > div:first-of-type button {
+  .disponibilites-visual-container > div:first-of-type:not(.calendar-month-nav) button {
     width: 100%;
     justify-content: center;
   }
   
-  .disponibilites-visual-container > div:first-of-type h2 {
+  .disponibilites-visual-container > div:first-of-type:not(.calendar-month-nav) h2 {
     font-size: 1.1rem !important;
     text-align: center;
+  }
+  
+  /* Barre de navigation calendrier - FORCÉ en ligne */
+  .calendar-month-nav {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
   }
   
   /* Module Prévention - Bâtiments header responsive */
