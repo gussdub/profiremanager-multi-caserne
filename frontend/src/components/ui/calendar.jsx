@@ -90,14 +90,14 @@ function Calendar({
         caption: cn(
           "w-full",
           isMobile 
-            ? "flex flex-row justify-between items-center mb-2 px-1 gap-2" 
+            ? "grid grid-cols-[32px_1fr_32px] gap-2 items-center mb-2 px-1" 
             : "flex justify-center items-center relative mb-4"
         ),
         caption_label: cn(
-          "text-sm font-semibold",
-          isMobile && "flex-1 text-center"
+          "text-sm font-semibold text-center",
+          isMobile && "col-start-2"
         ),
-        nav: "flex items-center gap-1",
+        nav: isMobile ? "contents" : "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
           isMobile
@@ -106,8 +106,8 @@ function Calendar({
               ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
               : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
         ),
-        nav_button_previous: !isMobile && "absolute left-1",
-        nav_button_next: !isMobile && "absolute right-1",
+        nav_button_previous: isMobile ? "col-start-1 row-start-1" : "absolute left-1",
+        nav_button_next: isMobile ? "col-start-3 row-start-1" : "absolute right-1",
         table: "w-full border-collapse",
         head_row: "flex w-full",
         head_cell: cn(
