@@ -321,7 +321,7 @@ class PermissionsE2ETester:
             return False, None
     
     def test_create_inspection_apria(self, user_type="employee"):
-        """Test: POST /api/shefford/inspections-apria - Créer inspection APRIA"""
+        """Test: POST /api/shefford/apria/inspections - Créer inspection APRIA"""
         print(f"\n🧪 Test: Création inspection APRIA ({user_type})")
         
         if not self.test_data["equipement_apria_id"]:
@@ -332,7 +332,7 @@ class PermissionsE2ETester:
             )
             return False
         
-        url = f"{self.base_url}/{self.tenant_slug}/inspections-apria"
+        url = f"{self.base_url}/{self.tenant_slug}/apria/inspections"
         
         # Données d'inspection APRIA réalistes
         inspection_data = {
