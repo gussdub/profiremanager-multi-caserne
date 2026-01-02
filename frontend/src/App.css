@@ -21066,3 +21066,52 @@ body {
     font-weight: 600 !important;
   }
 }
+
+/* ===== RESPONSIVE FIXES - Remplacements Empty State ===== */
+.demandes-list .empty-state,
+.conges-list .empty-state,
+.remplacements-content .empty-state {
+  padding: 1.5rem !important;
+  text-align: center;
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+.demandes-list .empty-state h3,
+.conges-list .empty-state h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  word-wrap: break-word;
+}
+
+.demandes-list .empty-state p,
+.conges-list .empty-state p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+/* Mobile specific for Remplacements */
+@media (max-width: 480px) {
+  .demandes-list,
+  .conges-list {
+    padding: 1rem !important;
+  }
+  
+  .demandes-list .empty-state,
+  .conges-list .empty-state {
+    padding: 1rem !important;
+  }
+  
+  .demandes-list .empty-state h3,
+  .conges-list .empty-state h3 {
+    font-size: 0.9rem;
+  }
+  
+  .demandes-list .empty-state p,
+  .conges-list .empty-state p {
+    font-size: 0.8rem;
+  }
+}
+
