@@ -5,7 +5,15 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
+import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
+import ConfigurationEmailsEquipements from './ConfigurationEmailsEquipements';
+import ConfigurationEmailsEPI from './ConfigurationEmailsEPI';
 import ParametresInventairesVehicules from './ParametresInventairesVehicules';
+import ParametresAlertesEquipements from './ParametresAlertesEquipements';
+import ParametresInspectionsAPRIA from './ParametresInspectionsAPRIA';
+import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSeches';
+import ImportCSVEquipements from './ImportCSVEquipements';
+import ImportCSVEPI from './ImportCSVEPI';
 
 // ==================== ONGLET PARAMÈTRES ====================
 const ParametresActifsTab = ({ tenantSlug, user }) => {
