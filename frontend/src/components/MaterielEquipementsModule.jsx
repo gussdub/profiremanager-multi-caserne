@@ -701,6 +701,7 @@ const EquipementsTab = ({
               isAPRIA={isAPRIA && isAPRIA(equip)}
               canEdit={user?.role === 'admin' || user?.role === 'superviseur'}
               canDelete={user?.role === 'admin'}
+              canViewHistory={user?.role === 'admin' || user?.role === 'superviseur'}
             />
           ))}
         </div>
