@@ -390,7 +390,7 @@ class PermissionsE2ETester:
             )
             return False
         
-        url = f"{self.base_url}/{self.tenant_slug}/inspections-apria/{self.test_data['equipement_apria_id']}/historique"
+        url = f"{self.base_url}/{self.tenant_slug}/apria/equipements/{self.test_data['equipement_apria_id']}/historique"
         
         try:
             response = requests.get(url, headers=self.headers)
