@@ -527,7 +527,7 @@ const Login = () => {
         await storageModule.current.saveCredentials(tenantSlug, email, motDePasse);
         toast({
           title: "✅ Identifiants sauvegardés",
-          description: "Vous serez connecté automatiquement la prochaine fois"
+          description: "Vos identifiants seront pré-remplis lors de votre prochaine visite"
         });
       }
     } else {
