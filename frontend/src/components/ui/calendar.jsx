@@ -88,29 +88,26 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: cn("w-full", isMobile && "space-y-2"),
         caption: cn(
-          "mb-3 w-full px-1",
+          "w-full",
           isMobile 
-            ? "flex justify-between items-center" 
-            : "flex justify-center items-center relative"
+            ? "flex flex-row justify-between items-center mb-2 px-1 gap-2" 
+            : "flex justify-center items-center relative mb-4"
         ),
         caption_label: cn(
-          "text-center text-sm font-semibold",
-          isMobile && "order-2 flex-1 px-2"
+          "text-sm font-semibold",
+          isMobile && "flex-1 text-center"
         ),
-        nav: cn(
-          "flex items-center",
-          isMobile && "contents"
-        ),
+        nav: "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
           isMobile
-            ? "h-8 w-8 p-0 bg-white border border-gray-300 rounded-lg flex-shrink-0"
+            ? "h-8 w-8 p-0 bg-white border border-gray-300 rounded-lg"
             : isLargeCalendar 
               ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
               : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
         ),
-        nav_button_previous: isMobile ? "order-1" : "absolute left-1",
-        nav_button_next: isMobile ? "order-3" : "absolute right-1",
+        nav_button_previous: !isMobile && "absolute left-1",
+        nav_button_next: !isMobile && "absolute right-1",
         table: "w-full border-collapse",
         head_row: "flex w-full",
         head_cell: cn(
