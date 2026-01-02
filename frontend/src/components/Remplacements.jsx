@@ -515,7 +515,6 @@ const Remplacements = () => {
                   </ul>
                 </div>
               </div>
-            )}
 
             {/* Liste des demandes de remplacement */}
             <div className="demandes-list">
