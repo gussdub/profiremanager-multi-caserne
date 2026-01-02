@@ -20929,16 +20929,17 @@ body {
     width: 100% !important;
   }
   
-  /* La barre de navigation du calendrier - forcer les boutons de chaque côté */
+  /* La barre de navigation du calendrier - SANS position absolute */
   .interactive-calendar .rdp-caption {
-    position: relative !important;
+    position: static !important;
     display: flex !important;
-    justify-content: center !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
     min-height: 32px !important;
     margin-bottom: 12px !important;
-    padding: 0 36px !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
   
@@ -20946,20 +20947,27 @@ body {
     text-align: center !important;
     font-size: 0.9rem !important;
     font-weight: 600 !important;
+    flex: 1 !important;
+    order: 2 !important;
   }
   
-  /* Boutons de navigation */
+  /* Container nav invisible - les boutons sortent */
+  .interactive-calendar .rdp-nav {
+    display: contents !important;
+  }
+  
+  /* Boutons de navigation - sans position absolute */
   .interactive-calendar .rdp-nav_button {
-    position: absolute !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
+    position: static !important;
+    transform: none !important;
+    flex-shrink: 0 !important;
   }
   
   .interactive-calendar .rdp-nav_button_previous {
-    left: 0 !important;
+    order: 1 !important;
   }
   
   .interactive-calendar .rdp-nav_button_next {
-    right: 0 !important;
+    order: 3 !important;
   }
 }
