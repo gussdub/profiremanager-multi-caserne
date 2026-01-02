@@ -90,12 +90,14 @@ function Calendar({
         caption: "flex justify-between items-center mb-4 px-1",
         caption_label: cn(
           "text-center flex-1 order-2",
-          isLargeCalendar ? "text-3xl font-bold" : "text-base font-semibold"
+          isLargeCalendar ? "text-3xl font-bold" : "text-sm font-semibold"
         ),
         nav: "contents",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
+          isLargeCalendar 
+            ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
+            : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
         ),
         nav_button_previous: "order-1",
         nav_button_next: "order-3",
