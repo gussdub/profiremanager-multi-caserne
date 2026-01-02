@@ -20824,3 +20824,47 @@ body {
     font-size: 0.9rem !important;
   }
 }
+
+/* ============================================================
+   FIX NAVIGATION CALENDRIER MOBILE - Flèches sur les côtés
+   ============================================================ */
+.calendar-month-nav {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+}
+
+.month-nav-btn {
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 500px) {
+  .calendar-month-nav {
+    padding: 0.75rem !important;
+    gap: 0.25rem !important;
+  }
+  
+  .month-nav-btn {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* Cacher le texte "Mois précédent" / "Mois suivant" sur très petits écrans */
+  .month-nav-btn .nav-btn-text {
+    display: none !important;
+  }
+  
+  .calendar-month-nav h2 {
+    font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .month-nav-btn {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .calendar-month-nav h2 {
+    font-size: 0.9rem !important;
+  }
+}
