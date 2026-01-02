@@ -223,16 +223,19 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
               <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
                 Type d'inspection
               </Label>
-              <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <label style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '0.5rem',
-                  padding: '0.75rem 1rem',
+                  padding: '0.5rem 0.75rem',
                   backgroundColor: typeInspection === 'mensuelle' ? '#fef3c7' : 'white',
                   border: typeInspection === 'mensuelle' ? '2px solid #f97316' : '1px solid #d1d5db',
                   borderRadius: '0.5rem',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  flex: '1 1 auto',
+                  minWidth: '120px'
                 }}>
                   <input
                     type="radio"
@@ -247,7 +250,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '0.5rem',
-                  padding: '0.75rem 1rem',
+                  padding: '0.5rem 0.75rem',
                   backgroundColor: typeInspection === 'apres_usage' ? '#fef3c7' : 'white',
                   border: typeInspection === 'apres_usage' ? '2px solid #f97316' : '1px solid #d1d5db',
                   borderRadius: '0.5rem',
