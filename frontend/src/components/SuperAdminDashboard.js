@@ -619,81 +619,86 @@ const SuperAdminDashboard = ({ onLogout }) => {
         <Debogage />
       ) : (
         <>
-          {/* Statistiques globales */}
+          {/* Statistiques globales - Responsive */}
           {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
           <Card>
-            <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Casernes Actives</CardTitle>
+            <CardHeader style={{ padding: '12px 12px 4px' }}>
+              <CardTitle style={{ fontSize: '12px', color: '#666' }}>Casernes Actives</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>
+            <CardContent style={{ padding: '4px 12px 12px' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>
                 {stats.casernes_actives || 0}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Casernes Inactives</CardTitle>
+            <CardHeader style={{ padding: '12px 12px 4px' }}>
+              <CardTitle style={{ fontSize: '12px', color: '#666' }}>Casernes Inactives</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ef4444' }}>
+            <CardContent style={{ padding: '4px 12px 12px' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444' }}>
                 {stats.casernes_inactives || 0}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: '#666' }}>Total Pompiers</CardTitle>
+            <CardHeader style={{ padding: '12px 12px 4px' }}>
+              <CardTitle style={{ fontSize: '12px', color: '#666' }}>Total Pompiers</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2563eb' }}>
+            <CardContent style={{ padding: '4px 12px 12px' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>
                 {stats.total_pompiers || 0}
               </div>
             </CardContent>
           </Card>
 
           <Card style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none' }}>
-            <CardHeader>
-              <CardTitle style={{ fontSize: '14px', color: 'white' }}>💰 Revenus Mensuels</CardTitle>
+            <CardHeader style={{ padding: '12px 12px 4px' }}>
+              <CardTitle style={{ fontSize: '12px', color: 'white' }}>💰 Revenus</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'white' }}>
+            <CardContent style={{ padding: '4px 12px 12px' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>
                 {stats.revenus_mensuels ? `${stats.revenus_mensuels}$` : '0$'}
               </div>
-              <small style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                Basé sur {stats.total_pompiers || 0} pompiers actifs
+              <small style={{ color: 'rgba(255,255,255,0.8)', fontSize: '10px' }}>
+                {stats.total_pompiers || 0} pompiers
               </small>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Liste des casernes */}
+      {/* Liste des casernes - Responsive */}
       <Card>
-        <CardHeader style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <CardTitle>Casernes</CardTitle>
-          <Button onClick={() => setShowCreateModal(true)}>
+        <CardHeader style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: '12px',
+          padding: '12px'
+        }}>
+          <CardTitle style={{ fontSize: '1rem' }}>Casernes</CardTitle>
+          <Button onClick={() => setShowCreateModal(true)} style={{ width: '100%', fontSize: '0.875rem' }}>
             ➕ Créer une caserne
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent style={{ padding: '12px' }}>
           {tenants.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <div style={{ textAlign: 'center', padding: '20px', color: '#666', fontSize: '0.875rem' }}>
               Aucune caserne créée. Créez votre première caserne pour commencer.
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '15px' }}>
+            <div style={{ display: 'grid', gap: '12px' }}>
               {tenants.map(tenant => (
-                <Card key={tenant.id} style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <Card key={tenant.id} style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 8px 0' }}>
                         🏢 {tenant.nom}
                       </h3>
-                      <div style={{ display: 'grid', gap: '5px', fontSize: '14px', color: '#666' }}>
+                      <div style={{ display: 'grid', gap: '4px', fontSize: '0.8rem', color: '#666' }}>
                         <div>
                           <strong>URL:</strong> /{tenant.slug}
                         </div>
