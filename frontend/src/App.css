@@ -20929,45 +20929,43 @@ body {
     width: 100% !important;
   }
   
-  /* La barre de navigation du calendrier - SANS position absolute */
+  /* La barre de navigation - utiliser CSS Grid */
   .interactive-calendar .rdp-caption {
-    position: static !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
     align-items: center !important;
     width: 100% !important;
     min-height: 32px !important;
     margin-bottom: 12px !important;
     padding: 0 !important;
-    box-sizing: border-box !important;
+    gap: 8px !important;
   }
   
   .interactive-calendar .rdp-caption_label {
+    grid-column: 2 !important;
     text-align: center !important;
     font-size: 0.9rem !important;
     font-weight: 600 !important;
-    flex: 1 !important;
-    order: 2 !important;
   }
   
-  /* Container nav invisible - les boutons sortent */
+  /* Container nav */
   .interactive-calendar .rdp-nav {
     display: contents !important;
   }
   
-  /* Boutons de navigation - sans position absolute */
+  /* Boutons de navigation */
   .interactive-calendar .rdp-nav_button {
     position: static !important;
     transform: none !important;
-    flex-shrink: 0 !important;
   }
   
   .interactive-calendar .rdp-nav_button_previous {
-    order: 1 !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
   }
   
   .interactive-calendar .rdp-nav_button_next {
-    order: 3 !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
   }
 }
