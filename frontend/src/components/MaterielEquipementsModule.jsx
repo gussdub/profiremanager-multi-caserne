@@ -1680,10 +1680,11 @@ const ModalWrapper = ({ children, onClose, large }) => (
       inset: 0,
       background: 'rgba(0,0,0,0.5)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'center',
       zIndex: 1000,
-      padding: '1rem'
+      padding: '0.5rem',
+      overflowY: 'auto'
     }}
     onClick={onClose}
   >
@@ -1691,15 +1692,20 @@ const ModalWrapper = ({ children, onClose, large }) => (
       style={{
         background: 'white',
         borderRadius: '0.5rem',
-        padding: '1.5rem',
+        padding: '1rem',
         width: large ? '800px' : '500px',
         maxWidth: '95vw',
-        maxHeight: '90vh',
-        overflow: 'auto'
+        maxHeight: 'calc(100vh - 2rem)',
+        overflow: 'visible',
+        marginTop: '1rem',
+        marginBottom: '1rem',
+        position: 'relative'
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {children}
+      <div style={{ maxHeight: 'calc(100vh - 4rem)', overflowY: 'auto', overflowX: 'hidden' }}>
+        {children}
+      </div>
     </div>
   </div>
 );
