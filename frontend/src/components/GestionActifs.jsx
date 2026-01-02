@@ -838,7 +838,7 @@ const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVi
   );
 };
 
-const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires }) => {
+const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires, canManageActifs }) => {
   const getStatusColor = (status) => {
     switch(status) {
       case 'actif': return '#27ae60';
