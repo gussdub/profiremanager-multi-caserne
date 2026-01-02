@@ -1228,29 +1228,30 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
 
   return (
     <ModalWrapper onClose={onClose} large>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+      <h2 style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
         {mode === 'edit' ? '✏️ Modifier l\'équipement' : '➕ Nouvel équipement'}
       </h2>
       
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div style={{ display: 'grid', gap: '0.75rem', paddingRight: '0.25rem' }}>
           {/* Informations de base */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
             <div>
-              <Label>Code unique *</Label>
+              <Label style={{ fontSize: '0.8rem' }}>Code unique *</Label>
               <Input
                 value={formData.code_unique}
                 onChange={(e) => setFormData({ ...formData, code_unique: e.target.value.toUpperCase() })}
                 placeholder="Ex: TUY-001"
                 required
+                style={{ fontSize: '0.875rem' }}
               />
             </div>
             <div>
-              <Label>Catégorie</Label>
+              <Label style={{ fontSize: '0.8rem' }}>Catégorie</Label>
               <select
                 value={formData.categorie_id}
                 onChange={(e) => setFormData({ ...formData, categorie_id: e.target.value })}
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db' }}
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem' }}
               >
                 <option value="">Sélectionner...</option>
                 {categories.map(cat => (
