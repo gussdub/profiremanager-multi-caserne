@@ -167,6 +167,28 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
             <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
             Chargement...
           </div>
+        ) : noFormulaire ? (
+          <div style={{ 
+            padding: '3rem', 
+            textAlign: 'center',
+            backgroundColor: '#fef3c7',
+            borderRadius: '12px',
+            border: '2px solid #f59e0b'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+            <h3 style={{ color: '#92400e', marginBottom: '0.5rem', fontSize: '1.25rem' }}>
+              Formulaire non disponible
+            </h3>
+            <p style={{ color: '#78350f', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+              Aucun formulaire d'inspection APRIA n'a été configuré pour cette caserne.
+            </p>
+            <p style={{ color: '#92400e', fontSize: '0.875rem' }}>
+              Veuillez contacter un administrateur pour créer un modèle d'inspection.
+            </p>
+            <Button onClick={onClose} style={{ marginTop: '1.5rem' }}>
+              Fermer
+            </Button>
+          </div>
         ) : (
           <div style={{ padding: '1rem 0' }}>
             {/* Sélection équipement */}
