@@ -55,6 +55,11 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({});
   
+  // Permissions basées sur le rôle de l'utilisateur
+  const isAdmin = user?.role === 'admin';
+  const isSuperviseur = user?.role === 'superviseur';
+  const canManageActifs = isAdmin || isSuperviseur; // Peut modifier, supprimer, créer, voir fiche de vie, etc.
+  
   // Nouveaux états pour Phase 1
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrCodeData, setQRCodeData] = useState(null);
