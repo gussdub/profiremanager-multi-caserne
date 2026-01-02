@@ -254,7 +254,10 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
                   backgroundColor: typeInspection === 'apres_usage' ? '#fef3c7' : 'white',
                   border: typeInspection === 'apres_usage' ? '2px solid #f97316' : '1px solid #d1d5db',
                   borderRadius: '0.5rem',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  flex: '1 1 auto',
+                  minWidth: '120px'
                 }}>
                   <input
                     type="radio"
