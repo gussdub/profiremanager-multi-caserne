@@ -331,29 +331,16 @@ const CameraCapture = ({
     );
   };
 
-  // Rendu pour iOS (input natif)
-  // IMPORTANT: Sur iOS PWA, l'attribut capture cause un crash de l'app
-  // On utilise donc accept="image/*" seul, qui ouvre un menu de choix (Photo Library ou Camera)
+  // Rendu pour iOS (input natif simplifié)
+  // Sur iOS PWA, on propose simplement d'importer depuis la photothèque
   const renderNativeInput = () => {
-    const isInPWA = isPWAMode();
-    const isIOS = isIOSDevice();
-    
     return (
       <div className="camera-native-input">
         <div className="native-input-content">
-          <div className="native-input-icon">📷</div>
-          <h3>Prendre une photo</h3>
-          <p>
-            {isIOS 
-              ? "Appuyez sur le bouton ci-dessous pour choisir ou prendre une photo" 
-              : "Appuyez sur le bouton ci-dessous pour ouvrir l'appareil photo"
-            }
-          </p>
+          <div className="native-input-icon">🖼️</div>
+          <h3>Importer une photo</h3>
+          <p>Sélectionnez une photo depuis votre photothèque ou vos fichiers</p>
           
-          {/* 
-            iOS (PWA ou Safari): Ne JAMAIS utiliser capture - cause un crash
-            Utiliser seulement accept="image/*" qui ouvre le menu iOS natif
-          */}
           <input
             type="file"
             ref={fileInputRef}
@@ -367,14 +354,14 @@ const CameraCapture = ({
               onClick={() => fileInputRef.current?.click()} 
               className="capture-main-btn"
               style={{ 
-                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                 color: 'white',
                 padding: '16px 32px',
                 fontSize: '1.1rem',
                 borderRadius: '12px'
               }}
             >
-              📷 {isIOS ? "Choisir / Prendre une photo" : "Ouvrir l'appareil photo"}
+              🖼️ Choisir depuis la photothèque
             </Button>
             
             <Button onClick={handleClose} variant="ghost">
