@@ -337,6 +337,7 @@ class PermissionsE2ETester:
         # Données d'inspection APRIA réalistes
         inspection_data = {
             "equipement_id": self.test_data["equipement_apria_id"],
+            "inspecteur_id": self.test_data.get("employee_user_id") if user_type == "employee" else self.test_data.get("admin_user_id"),
             "date_inspection": datetime.now().strftime("%Y-%m-%d"),
             "inspecteur_nom": "Test Inspecteur APRIA",
             "etat_general": "conforme",
