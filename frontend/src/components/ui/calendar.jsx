@@ -118,11 +118,11 @@ function Calendar({
         head_cell: cn(
           "text-muted-foreground rounded-md font-normal text-center",
           isLargeCalendar ? "w-[125px] text-lg font-bold" : "flex-1 min-w-0 text-[0.7rem] overflow-hidden",
-          isMobile && "py-2 text-slate-500 font-medium"
+          isMobile && "py-2 text-slate-400 font-medium"
         ),
         row: cn(
           "flex w-full",
-          isMobile ? "gap-1.5 mt-1.5" : "mt-2"
+          isMobile ? "gap-2 mt-2" : "mt-2"
         ),
         cell: cn(
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent overflow-hidden",
@@ -136,7 +136,7 @@ function Calendar({
           isLargeCalendar 
             ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" 
             : isMobile 
-              ? "h-11 w-full rounded-lg bg-slate-50 border border-slate-200 font-medium text-sm hover:bg-slate-100"
+              ? "h-10 w-full rounded-xl bg-white border border-gray-200 font-medium text-sm shadow-sm"
               : "h-10 w-full max-w-full overflow-hidden",
           "p-0 font-normal aria-selected:opacity-100"
         ),
@@ -144,21 +144,21 @@ function Calendar({
         day_range_end: "day-range-end",
         day_selected: cn(
           isMobile 
-            ? "bg-rose-200 text-rose-800 border-rose-300 hover:bg-rose-200 hover:text-rose-800 focus:bg-rose-200 focus:text-rose-800"
+            ? "bg-pink-200 text-pink-900 border-pink-300 shadow-sm"
             : "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground"
         ),
         day_today: cn(
           isMobile
-            ? "bg-red-100 border-red-300 text-red-700 font-bold"
+            ? "bg-white border-2 border-red-400 text-red-600 font-bold"
             : "bg-accent text-accent-foreground"
         ),
         day_outside: cn(
-          "text-muted-foreground opacity-50",
-          isMobile && "bg-transparent border-transparent"
+          "text-muted-foreground opacity-40",
+          isMobile && "bg-transparent border-transparent shadow-none"
         ),
         day_disabled: cn(
-          "text-muted-foreground opacity-50",
-          isMobile && "bg-slate-100 border-slate-100"
+          "text-muted-foreground opacity-40",
+          isMobile && "bg-gray-50 border-gray-100 shadow-none"
         ),
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
