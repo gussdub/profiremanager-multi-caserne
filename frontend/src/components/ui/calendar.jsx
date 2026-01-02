@@ -86,17 +86,16 @@ function Calendar({
       locale={fr}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4 w-full",
+        month: cn("w-full", isMobile && "space-y-2"),
         caption: cn(
-          "mb-4 w-full",
+          "mb-3 w-full px-1",
           isMobile 
-            ? "flex justify-between items-center gap-2" 
+            ? "flex justify-between items-center" 
             : "flex justify-center items-center relative"
         ),
         caption_label: cn(
-          "text-center",
-          isLargeCalendar ? "text-3xl font-bold" : "text-sm font-semibold",
-          isMobile && "order-2 flex-1"
+          "text-center text-sm font-semibold",
+          isMobile && "order-2 flex-1 px-2"
         ),
         nav: cn(
           "flex items-center",
@@ -104,29 +103,25 @@ function Calendar({
         ),
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          isLargeCalendar 
-            ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
-            : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
+          isMobile
+            ? "h-8 w-8 p-0 bg-white border border-gray-300 rounded-lg flex-shrink-0"
+            : isLargeCalendar 
+              ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
+              : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
         ),
         nav_button_previous: isMobile ? "order-1" : "absolute left-1",
         nav_button_next: isMobile ? "order-3" : "absolute right-1",
-        table: cn(
-          "w-full",
-          isMobile ? "border-separate" : "border-collapse space-y-1"
-        ),
+        table: "w-full border-collapse",
         head_row: "flex w-full",
         head_cell: cn(
-          "text-muted-foreground rounded-md font-normal text-center",
-          isLargeCalendar ? "w-[125px] text-lg font-bold" : "flex-1 min-w-0 text-[0.7rem] overflow-hidden",
-          isMobile && "py-2 text-slate-400 font-medium"
+          "text-muted-foreground font-normal text-center flex-1",
+          isLargeCalendar ? "w-[125px] text-lg font-bold" : "text-xs",
+          isMobile && "py-1 text-gray-400"
         ),
-        row: cn(
-          "flex w-full",
-          isMobile ? "gap-2 mt-2" : "mt-2"
-        ),
+        row: "flex w-full mt-1",
         cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent overflow-hidden",
-          isLargeCalendar ? "w-[125px]" : "flex-1 min-w-0",
+          "relative p-0.5 text-center text-sm focus-within:relative focus-within:z-20 flex-1",
+          isLargeCalendar && "w-[125px]",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
             : "[&:has([aria-selected])]:rounded-md"
@@ -136,7 +131,7 @@ function Calendar({
           isLargeCalendar 
             ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" 
             : isMobile 
-              ? "h-10 w-full rounded-xl bg-white border border-gray-200 font-medium text-sm shadow-sm"
+              ? "h-9 w-full rounded-lg bg-white border border-gray-200 text-sm"
               : "h-10 w-full max-w-full overflow-hidden",
           "p-0 font-normal aria-selected:opacity-100"
         ),
@@ -144,21 +139,21 @@ function Calendar({
         day_range_end: "day-range-end",
         day_selected: cn(
           isMobile 
-            ? "bg-pink-200 text-pink-900 border-pink-300 shadow-sm"
+            ? "bg-pink-100 text-pink-800 border-pink-200"
             : "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground"
         ),
         day_today: cn(
           isMobile
-            ? "bg-white border-2 border-red-400 text-red-600 font-bold"
+            ? "bg-white border-2 border-red-400 text-red-600 font-semibold"
             : "bg-accent text-accent-foreground"
         ),
         day_outside: cn(
-          "text-muted-foreground opacity-40",
-          isMobile && "bg-transparent border-transparent shadow-none"
+          "text-muted-foreground opacity-30",
+          isMobile && "bg-transparent border-transparent"
         ),
         day_disabled: cn(
-          "text-muted-foreground opacity-40",
-          isMobile && "bg-gray-50 border-gray-100 shadow-none"
+          "text-muted-foreground opacity-30",
+          isMobile && "bg-gray-50 border-gray-100"
         ),
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
