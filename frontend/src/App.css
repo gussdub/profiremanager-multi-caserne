@@ -20778,3 +20778,49 @@ body {
     width: calc(100% - 280px) !important;
   }
 }
+
+/* ============================================================
+   FIX FLÈCHES CALENDRIER iOS/Mobile - Navigation côte à côte
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Barre de navigation du calendrier dans MesDisponibilites */
+  .disponibilites-visual-container > div:first-of-type {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Boutons de navigation mois - compacts sur mobile */
+  .disponibilites-visual-container > div:first-of-type button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-width: auto !important;
+  }
+  
+  /* Titre du mois - centré et flexible */
+  .disponibilites-visual-container > div:first-of-type h2 {
+    font-size: 1rem !important;
+    text-align: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+  .disponibilites-visual-container > div:first-of-type button {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .disponibilites-visual-container > div:first-of-type h2 {
+    font-size: 0.9rem !important;
+  }
+}
