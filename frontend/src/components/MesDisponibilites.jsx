@@ -2263,7 +2263,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                             mode="multiple"
                             selected={manualIndispoConfig.dates}
                             onSelect={(dates) => setManualIndispoConfig({...manualIndispoConfig, dates: dates || []})}
-                            className="availability-calendar-large"
+                            className="interactive-calendar"
                             locale={fr}
                             indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
                           />
