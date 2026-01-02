@@ -970,7 +970,7 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
         />
       </div>
 
-      {/* Actions inventaire - Visibles pour TOUS */}
+      {/* Actions inventaire - Inventaire pour tous, Historique pour admin/superviseur */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         <ActionButton
           label="📦 Inventaire"
@@ -978,12 +978,14 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
           onClick={() => onCreateInventaire(vehicule)}
           small
         />
-        <ActionButton
-          label="📋 Historique inventaires"
-          color="#9b59b6"
-          onClick={() => onViewHistoriqueInventaires(vehicule)}
-          small
-        />
+        {canManageActifs && (
+          <ActionButton
+            label="📋 Historique inventaires"
+            color="#9b59b6"
+            onClick={() => onViewHistoriqueInventaires(vehicule)}
+            small
+          />
+        )}
       </div>
 
       {/* Actions tertiaires - Admin/Superviseur seulement */}
