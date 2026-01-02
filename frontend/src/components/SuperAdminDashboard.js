@@ -526,16 +526,21 @@ const SuperAdminDashboard = ({ onLogout }) => {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+    <div style={{ padding: '12px', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Header - Responsive */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: '16px',
+        marginBottom: '20px'
+      }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 5px 0' }}>
+          <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: 'bold', margin: '0 0 5px 0' }}>
             🔧 Administration Multi-Tenant
           </h1>
-          <p style={{ color: '#666', margin: 0 }}>Gestion centralisée des casernes ProFireManager</p>
+          <p style={{ color: '#666', margin: 0, fontSize: '0.875rem' }}>Gestion centralisée des casernes</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {activeTab === 'tenants' && (
             <>
               <Button 
@@ -543,9 +548,9 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 onClick={() => {
                   setShowCreateSuperAdminModal(true);
                 }}
-                style={{ background: '#10b981' }}
+                style={{ background: '#10b981', fontSize: '0.8rem', padding: '8px 12px', flex: '1 1 auto', minWidth: '120px' }}
               >
-                ➕ Ajouter un super admin
+                ➕ Super admin
               </Button>
               <Button 
                 variant="default" 
@@ -553,29 +558,30 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   fetchSuperAdmins();
                   setShowManageSuperAdminsModal(true);
                 }}
-                style={{ background: '#3b82f6' }}
+                style={{ background: '#3b82f6', fontSize: '0.8rem', padding: '8px 12px', flex: '1 1 auto', minWidth: '120px' }}
               >
-                👥 Gérer les super admins
+                👥 Gérer admins
               </Button>
             </>
           )}
-          <Button variant="outline" onClick={onLogout}>
+          <Button variant="outline" onClick={onLogout} style={{ fontSize: '0.8rem', padding: '8px 12px' }}>
             Déconnexion
           </Button>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
+      {/* Tabs Navigation - Responsive */}
       <div style={{
         display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '2rem',
-        borderBottom: '2px solid #e2e8f0'
+        gap: '0.25rem',
+        marginBottom: '1.5rem',
+        borderBottom: '2px solid #e2e8f0',
+        overflowX: 'auto'
       }}>
         <button
           onClick={() => setActiveTab('tenants')}
           style={{
-            padding: '1rem 2rem',
+            padding: '0.75rem 1rem',
             border: 'none',
             backgroundColor: 'transparent',
             color: activeTab === 'tenants' ? '#2563eb' : '#64748b',
@@ -583,15 +589,16 @@ const SuperAdminDashboard = ({ onLogout }) => {
             cursor: 'pointer',
             borderBottom: activeTab === 'tenants' ? '2px solid #2563eb' : '2px solid transparent',
             marginBottom: '-2px',
-            fontSize: '1rem'
+            fontSize: '0.875rem',
+            whiteSpace: 'nowrap'
           }}
         >
-          🏢 Gestion Tenants
+          🏢 Tenants
         </button>
         <button
           onClick={() => setActiveTab('debogage')}
           style={{
-            padding: '1rem 2rem',
+            padding: '0.75rem 1rem',
             border: 'none',
             backgroundColor: 'transparent',
             color: activeTab === 'debogage' ? '#dc2626' : '#64748b',
@@ -599,7 +606,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
             cursor: 'pointer',
             borderBottom: activeTab === 'debogage' ? '2px solid #dc2626' : '2px solid transparent',
             marginBottom: '-2px',
-            fontSize: '1rem'
+            fontSize: '0.875rem',
+            whiteSpace: 'nowrap'
           }}
         >
           🛠️ Débogage
