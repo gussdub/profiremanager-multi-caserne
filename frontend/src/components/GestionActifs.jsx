@@ -542,6 +542,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
               onCreateInspection={handleCreateInspection}
               onCreateInventaire={handleCreateInventaire}
               onViewHistoriqueInventaires={handleViewHistoriqueInventaires}
+              canManageActifs={canManageActifs}
             />
           ) : activeTab === 'eau' ? (
             <div>
