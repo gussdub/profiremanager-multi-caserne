@@ -488,12 +488,14 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           active={activeTab === 'materiel'}
           onClick={() => setActiveTab('materiel')}
         />
-        <TabButton
-          label="🛡️ Gestion EPI"
-          active={activeTab === 'epi'}
-          onClick={() => setActiveTab('epi')}
-        />
-        {user?.role !== 'employe' && (
+        {canManageActifs && (
+          <TabButton
+            label="🛡️ Gestion EPI"
+            active={activeTab === 'epi'}
+            onClick={() => setActiveTab('epi')}
+          />
+        )}
+        {canManageActifs && (
           <TabButton
             label="⚙️ Paramètres"
             active={activeTab === 'parametres'}
