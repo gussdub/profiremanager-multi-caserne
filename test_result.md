@@ -1,8 +1,76 @@
 test_plan:
-  current_focus: ["iOS Camera Bug Fix", "Calendar Mobile Responsiveness Fix"]
+  current_focus: ["Employee Permissions - Bornes Sèches", "Employee Permissions - Matériel APRIA"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+# ============================================
+# TEST SESSION: Employee Permissions Update
+# Date: 2026-01-02
+# ============================================
+
+test_session_permissions:
+  focus: "Permissions employés dans Gestion des Actifs - Bornes Sèches et APRIA"
+  
+  changes_made:
+    - name: "Hide 'Historique' button for employees in Bornes Sèches"
+      status: "IMPLEMENTED"
+      description: |
+        Les employés ne doivent pas voir le bouton "Historique" dans la section Bornes Sèches.
+        Ils peuvent uniquement effectuer des inspections et voir les boutons "Inspecter".
+      files_modified:
+        - frontend/src/components/InspectionsBornesSeches.jsx
+        
+    - name: "Hide 'Historique APRIA' button for employees in Matériel & Équipements"
+      status: "IMPLEMENTED"
+      description: |
+        Les employés ne doivent pas voir le bouton "Historique" (📋) pour les équipements APRIA.
+        Ils peuvent uniquement effectuer des inspections via le bouton "Inspecter" (📝).
+      files_modified:
+        - frontend/src/components/MaterielEquipementsModule.jsx
+
+  test_credentials:
+    admin:
+      tenant: "shefford"
+      email: "gussdub@gmail.com"
+      password: "230685Juin+"
+    employe:
+      tenant: "shefford"
+      email: "employe@shefford.ca"
+      password: "Employe123!"
+    super_admin:
+      email: "gussdub@icloud.com"
+      password: "230685Juin+"
+
+  tests_to_run:
+    - test: "Employee permissions in Bornes Sèches"
+      url: "/shefford"
+      steps:
+        1. Login as employee (employe@shefford.ca / Employe123!)
+        2. Navigate to Gestion des Actifs > Approvisionnement en Eau > Bornes Sèches
+        3. In Carte view, click on a borne marker popup
+        4. VERIFY: "Inspecter" button is visible
+        5. VERIFY: "Historique" button is NOT visible for employees
+        6. VERIFY: "À refaire" and "Réinitialiser" buttons are NOT visible for employees
+        7. Switch to Liste view
+        8. VERIFY: Only "Inspecter" button is visible, NOT "Historique"
+    
+    - test: "Employee permissions in Matériel & Équipements (APRIA)"
+      url: "/shefford"
+      steps:
+        1. Login as employee
+        2. Navigate to Gestion des Actifs > Matériel & Équipements
+        3. Find an APRIA equipment in the list
+        4. VERIFY: "📝" (Inspecter) button is visible
+        5. VERIFY: "📋" (Historique) button is NOT visible for employees
+        6. VERIFY: Edit/Delete buttons are NOT visible for employees
+        
+    - test: "Admin sees all buttons in Bornes Sèches"
+      url: "/shefford"
+      steps:
+        1. Login as admin (gussdub@gmail.com / 230685Juin+)
+        2. Navigate to Gestion des Actifs > Approvisionnement en Eau > Bornes Sèches
+        3. VERIFY: All buttons visible (Inspecter, Historique, À refaire, Réinitialiser)
 
 # ============================================
 # TEST SESSION: iOS Bug Fixes
