@@ -490,28 +490,28 @@ const Remplacements = () => {
         {activeTab === 'remplacements' && (
           <div className="remplacements-content">
               <div style={{ 
-                background: '#eff6ff', 
-                border: '1px solid #3b82f6', 
+                background: '#dbeafe', 
+                border: '1px solid #93c5fd', 
                 borderRadius: '8px', 
-                padding: '1rem', 
-                marginBottom: '1.5rem',
+                padding: '0.75rem', 
+                marginBottom: '1rem',
                 display: 'flex',
                 alignItems: 'start',
-                gap: '0.75rem'
+                gap: '0.5rem',
+                overflow: 'hidden'
               }}>
-                <span style={{ fontSize: '1.5rem' }}>💡</span>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ color: '#1e40af', display: 'block', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>💡</span>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <strong style={{ color: '#1e40af', display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
                     Actions manuelles disponibles
                   </strong>
-                  <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0, lineHeight: '1.5' }}>
-                    Les demandes de remplacement sont <strong>automatiquement traitées</strong> selon vos paramètres. 
-                    Les boutons ci-dessous permettent d'<strong>intervenir manuellement</strong> si nécessaire :
+                  <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0, lineHeight: '1.4' }}>
+                    Les demandes sont traitées automatiquement. Utilisez les boutons pour intervenir :
                   </p>
-                  <ul style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 1.5rem', lineHeight: '1.6' }}>
-                    <li><strong>🔍 Recherche auto</strong> : Relancer la recherche si l'automatisation a échoué</li>
-                    <li><strong>✅ Approuver</strong> : Valider manuellement (remplaçant trouvé hors système)</li>
-                    <li><strong>❌ Rejeter</strong> : Annuler si la demande n'est plus nécessaire</li>
+                  <ul style={{ fontSize: '0.8rem', color: '#1e40af', margin: '0.25rem 0 0 1rem', lineHeight: '1.5', paddingLeft: '0.5rem' }}>
+                    <li>🔍 Relancer la recherche auto</li>
+                    <li>✅ Approuver manuellement</li>
+                    <li>❌ Rejeter/Annuler</li>
                   </ul>
                 </div>
               </div>
