@@ -29015,10 +29015,35 @@ async def get_ronde_securite_by_id(
 async def export_ronde_securite_pdf(
     tenant_slug: str,
     ronde_id: str,
-    current_user: User = Depends(get_current_user)
+    token: str = None,
+    current_user: User = Depends(get_current_user_optional)
 ):
-    """Exporter une ronde de sécurité en PDF (style rapport de temps)"""
+    """Exporter une ronde de sécurité en PDF (style rapport de temps)
+    
+    Sur mobile (iOS/Android), le token peut être passé en paramètre URL car
+    l'ouverture dans un nouvel onglet ne supporte pas les headers d'authentification.
+    """
     try:
+        # Si pas d'utilisateur via header, essayer avec le token en paramètre URL (pour mobile)
+        if current_user is None and token:
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                email = payload.get("sub")
+                tenant_id = payload.get("tenant_id")
+                if email and tenant_id:
+                    user_data = await db.users.find_one(
+                        {"email": email, "tenant_id": tenant_id, "actif": True},
+                        {"_id": 0}
+                    )
+                    if user_data:
+                        current_user = User(**user_data)
+            except Exception as e:
+                logger.error(f"Erreur décodage token URL: {e}")
+                raise HTTPException(status_code=401, detail="Token invalide")
+        
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Non authentifié")
+        
         logger.info(f"📄 Export PDF demandé - tenant: {tenant_slug}, ronde_id: {ronde_id}, user: {current_user.email}")
         
         tenant = await get_tenant_from_slug(tenant_slug)
