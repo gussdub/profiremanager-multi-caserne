@@ -1455,7 +1455,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       <div className="disponibilites-visual-container">
 
         {/* Barre de navigation du mois - Harmonisée */}
-        <div style={{
+        <div className="calendar-month-nav" style={{
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
@@ -1463,11 +1463,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           padding: '1rem',
           background: 'white',
           borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          gap: '0.5rem',
+          flexWrap: 'nowrap'
         }}>
           <Button 
             variant="outline"
             onClick={() => navigateMonth('prev')}
+            className="month-nav-btn"
             style={{
               padding: '0.75rem 1.25rem',
               fontSize: '1rem',
@@ -1475,17 +1478,19 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               borderRadius: '10px',
               border: '2px solid #374151',
               background: 'white',
-              color: '#374151'
+              color: '#374151',
+              flexShrink: 0
             }}
           >
-            ← Mois précédent
+            ← <span className="nav-btn-text">Mois précédent</span>
           </Button>
-          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
+          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937', textAlign: 'center', flex: 1, minWidth: 0}}>
             {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
           </h2>
           <Button 
             variant="outline"
             onClick={() => navigateMonth('next')}
+            className="month-nav-btn"
             style={{
               padding: '0.75rem 1.25rem',
               fontSize: '1rem',
@@ -1493,10 +1498,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               borderRadius: '10px',
               border: '2px solid #374151',
               background: 'white',
-              color: '#374151'
+              color: '#374151',
+              flexShrink: 0
             }}
           >
-            Mois suivant →
+            <span className="nav-btn-text">Mois suivant</span> →
           </Button>
         </div>
 
