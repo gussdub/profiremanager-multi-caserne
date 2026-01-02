@@ -52,18 +52,23 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
       if (data && data.sections && data.sections.length > 0) {
         setModeleActif(data);
         setNoFormulaire(false);
-      // Initialiser les réponses
-      const initialReponses = {};
-      data.sections?.forEach(section => {
-        if (section.items && section.items.length > 0) {
-          section.items.forEach(item => {
-            initialReponses[item.id] = '';
-          });
-        }
-      });
-      setReponses(initialReponses);
+        // Initialiser les réponses
+        const initialReponses = {};
+        data.sections?.forEach(section => {
+          if (section.items && section.items.length > 0) {
+            section.items.forEach(item => {
+              initialReponses[item.id] = '';
+            });
+          }
+        });
+        setReponses(initialReponses);
+      } else {
+        setModeleActif(null);
+        setNoFormulaire(true);
+      }
     } catch (error) {
       console.error('Erreur chargement modèle:', error);
+      setNoFormulaire(true);
     }
   };
 
