@@ -87,7 +87,10 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4 w-full",
-        caption: "flex justify-center items-center mb-4 w-full relative",
+        caption: cn(
+          "flex justify-center items-center mb-4 w-full",
+          !isMobile && "relative"
+        ),
         caption_label: cn(
           "text-center",
           isLargeCalendar ? "text-3xl font-bold" : "text-sm font-semibold"
