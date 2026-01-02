@@ -20892,3 +20892,28 @@ body {
     font-size: 0.9rem !important;
   }
 }
+
+/* ============================================================
+   FIX CALENDRIER MODAL - Navigation mois sur mobile
+   ============================================================ */
+@media (max-width: 500px) {
+  /* Forcer la caption du calendrier à prendre toute la largeur */
+  .rdp-caption {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 4px !important;
+  }
+  
+  .rdp-caption_label {
+    flex: 1 !important;
+    text-align: center !important;
+    font-size: 0.9rem !important;
+    min-width: 0 !important;
+  }
+  
+  .rdp-nav_button {
+    flex-shrink: 0 !important;
+  }
+}
