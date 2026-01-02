@@ -20897,7 +20897,19 @@ body {
    FIX CALENDRIER MODAL - Navigation mois sur mobile
    ============================================================ */
 @media (max-width: 768px) {
-  /* Forcer la caption du calendrier à prendre toute la largeur */
+  /* Réduire le padding des sections de config sur mobile */
+  .config-section {
+    padding: 0.75rem !important;
+  }
+  
+  /* Calendrier interactif - prendre toute la largeur */
+  .interactive-calendar {
+    width: 100% !important;
+    padding: 8px !important;
+    margin: 0 -4px !important;
+  }
+  
+  /* La barre de navigation du calendrier */
   .interactive-calendar .rdp-caption,
   .rdp-caption {
     display: flex !important;
