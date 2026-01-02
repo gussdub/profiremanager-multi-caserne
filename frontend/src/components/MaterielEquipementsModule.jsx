@@ -766,13 +766,15 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
               >
                 📝
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
-                style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
-                title="Historique inspections"
-              >
-                📋
-              </button>
+              {canViewHistory && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
+                  style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                  title="Historique inspections"
+                >
+                  📋
+                </button>
+              )}
             </>
           )}
           {canEdit && (
