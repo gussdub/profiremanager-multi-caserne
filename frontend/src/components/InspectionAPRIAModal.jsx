@@ -313,19 +313,19 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
 
                 {/* Items à vérifier (radio/checkbox) */}
                 {(section.type_champ === 'radio' || section.type_champ === 'checkbox') && section.items?.length > 0 && (
-                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
                     {section.items.map((item, itemIndex) => (
                       <div 
                         key={item.id || itemIndex}
                         style={{ 
-                          padding: '0.75rem',
+                          padding: '0.5rem',
                           backgroundColor: 'white',
                           borderRadius: '0.375rem',
                           border: reponses[item.id] === 'Non conforme' ? '2px solid #ef4444' : '1px solid #e5e7eb'
                         }}
                       >
-                        <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>{item.nom}</div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem' }}>{item.nom}</div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           {(section.options || [{ label: 'Conforme' }, { label: 'Non conforme' }]).map((opt, optIndex) => (
                             <label 
                               key={optIndex}
@@ -333,11 +333,13 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 gap: '0.25rem',
-                                fontSize: '0.875rem',
+                                fontSize: '0.8rem',
                                 cursor: 'pointer',
                                 padding: '0.25rem 0.5rem',
                                 borderRadius: '0.25rem',
-                                backgroundColor: reponses[item.id] === opt.label ? (opt.declencherAlerte ? '#fef2f2' : '#f0fdf4') : 'transparent'
+                                backgroundColor: reponses[item.id] === opt.label ? (opt.declencherAlerte ? '#fef2f2' : '#f0fdf4') : 'transparent',
+                                border: reponses[item.id] === opt.label ? '1px solid' : '1px solid transparent',
+                                borderColor: reponses[item.id] === opt.label ? (opt.declencherAlerte ? '#ef4444' : '#22c55e') : 'transparent'
                               }}
                             >
                               <input
