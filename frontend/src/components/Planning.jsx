@@ -1449,12 +1449,17 @@ const Planning = () => {
         padding: '1rem',
         background: 'white',
         borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        gap: '0.5rem',
+        flexWrap: 'nowrap'
+      }}
+      className="calendar-month-nav"
+      >
         <Button 
           variant="outline"
           onClick={() => viewMode === 'mois' ? navigateMonth(-1) : navigateWeek(-1)}
           data-testid="prev-period-btn"
+          className="month-nav-btn"
           style={{
             padding: '0.75rem 1.25rem',
             fontSize: '1rem',
@@ -1462,12 +1467,13 @@ const Planning = () => {
             borderRadius: '10px',
             border: '2px solid #374151',
             background: 'white',
-            color: '#374151'
+            color: '#374151',
+            flexShrink: 0
           }}
         >
-          ← {viewMode === 'mois' ? 'Mois précédent' : 'Semaine précédente'}
+          ← <span className="nav-btn-text">{viewMode === 'mois' ? 'Mois précédent' : 'Semaine préc.'}</span>
         </Button>
-        <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937'}}>
+        <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937', textAlign: 'center', flex: 1, minWidth: 0}}>
           {viewMode === 'mois' ? (
             new Date(currentMonth + '-01T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
           ) : (
@@ -1478,6 +1484,7 @@ const Planning = () => {
           variant="outline"
           onClick={() => viewMode === 'mois' ? navigateMonth(1) : navigateWeek(1)}
           data-testid="next-period-btn"
+          className="month-nav-btn"
           style={{
             padding: '0.75rem 1.25rem',
             fontSize: '1rem',
@@ -1485,10 +1492,11 @@ const Planning = () => {
             borderRadius: '10px',
             border: '2px solid #374151',
             background: 'white',
-            color: '#374151'
+            color: '#374151',
+            flexShrink: 0
           }}
         >
-          {viewMode === 'mois' ? 'Mois suivant' : 'Semaine suivante'} →
+          <span className="nav-btn-text">{viewMode === 'mois' ? 'Mois suivant' : 'Semaine suiv.'}</span> →
         </Button>
       </div>
 
