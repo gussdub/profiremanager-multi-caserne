@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
+import ParametresInventairesVehicules from './ParametresInventairesVehicules';
 
 // ==================== ONGLET PARAMÈTRES ====================
 const ParametresActifsTab = ({ tenantSlug, user }) => {
