@@ -1,8 +1,8 @@
 test_plan:
-  current_focus: ["Employee Permissions - Bornes Sèches", "Employee Permissions - Matériel APRIA"]
+  current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "high_first"
+  test_priority: "completed"
 
 # ============================================
 # TEST SESSION: Employee Permissions Update
