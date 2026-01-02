@@ -710,7 +710,7 @@ const EquipementsTab = ({
 };
 
 // ===== Carte Équipement =====
-const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, isAPRIA, canEdit, canDelete }) => {
+const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, isAPRIA, canEdit, canDelete, canViewHistory = true }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
