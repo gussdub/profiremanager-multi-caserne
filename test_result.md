@@ -249,9 +249,109 @@ metadata:
   last_updated: "2026-01-02T19:58:00Z"
   testing_completed: true
 
+# ============================================
+# BACKEND TEST SESSION: Employee Permissions
+# Date: 2026-01-02 22:09:01
+# ============================================
+
+backend:
+  - task: "Employee Permissions - Bornes Sèches API"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: Employees can access history endpoints when they shouldn't. GET /api/shefford/points-eau/{point_id}/inspections should be restricted to admin/superviseur only. Currently returns 200 OK for employees instead of 403 Forbidden."
+
+  - task: "Employee Permissions - APRIA API"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: Employees can access APRIA history endpoints when they shouldn't. GET /api/shefford/apria/equipements/{equipement_id}/historique should be restricted to admin/superviseur only. Currently returns 200 OK for employees instead of 403 Forbidden."
+
+  - task: "Employee Inspection Creation - Bornes Sèches"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Employees can successfully create borne sèche inspections via POST /api/shefford/points-eau/{point_id}/inspections. Inspection created with ID: 87cc377b-c3e1-4990-bbb8-26c36e951eb8"
+
+  - task: "Employee Inspection Creation - APRIA"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Employees can successfully create APRIA inspections via POST /api/shefford/apria/inspections. Inspection created with ID: 95d8eca8-6281-41cc-aab3-84ebff00a0ca"
+
+  - task: "Admin Full Access - All Endpoints"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Admin users have full access to all endpoints including history. Can access both borne sèche history (2 inspections found) and APRIA history (1 inspection found)."
+
 test_plan:
   current_focus: []
-  stuck_tasks: []
+  stuck_tasks: ["Employee Permissions - Bornes Sèches API", "Employee Permissions - APRIA API"]
   test_all: false
   test_priority: "completed"
-  testing_status: "Calendar navigation arrows fix validated - working on mobile and desktop"
+  testing_status: "Employee permissions testing completed - CRITICAL backend permission issues found"
+
+agent_communication:
+  - agent: "testing"
+    message: |
+      🚨 CRITICAL BACKEND PERMISSION ISSUES FOUND:
+      
+      FRONTEND IMPLEMENTATION: ✅ WORKING
+      - Frontend correctly hides "Historique" buttons for employees in both Bornes Sèches and APRIA sections
+      - Only admin/superviseur users see the history buttons in the UI
+      - Employee role restrictions implemented correctly in React components
+      
+      BACKEND API SECURITY: ❌ FAILING
+      - Employees can directly access history endpoints via API calls
+      - GET /api/shefford/points-eau/{point_id}/inspections returns 200 OK for employees (should be 403)
+      - GET /api/shefford/apria/equipements/{equipement_id}/historique returns 200 OK for employees (should be 403)
+      
+      WORKING FUNCTIONALITY:
+      ✅ Employee authentication working correctly
+      ✅ Employees can create inspections for both Bornes Sèches and APRIA
+      ✅ Admin users have full access to all endpoints
+      ✅ Data retrieval endpoints working for both roles
+      
+      SECURITY VULNERABILITY:
+      🔴 Any employee with API knowledge can bypass frontend restrictions and access inspection history
+      🔴 This violates the business requirement that only admin/superviseur should see history
+      
+      IMMEDIATE ACTION REQUIRED:
+      1. Add role-based authorization checks to history endpoints in backend/server.py
+      2. Implement @require_role(['admin', 'superviseur']) decorators on history endpoints
+      3. Return 403 Forbidden for employee role attempting to access history
+      
+      TEST RESULTS: 8/10 tests passed (80% success rate)
+      - All inspection creation and data access working
+      - Critical permission bypass vulnerability identified
