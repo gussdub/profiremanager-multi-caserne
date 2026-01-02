@@ -178,12 +178,12 @@ const SignatureField = ({ value, onChange }) => {
   };
 
   return (
-    <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+    <div style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
       <canvas
         ref={canvasRef}
         width={300}
         height={150}
-        style={{ border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', touchAction: 'none', width: '100%', maxWidth: '300px' }}
+        style={{ border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', touchAction: 'none', width: '100%', maxWidth: '100%', height: 'auto', aspectRatio: '2/1' }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
