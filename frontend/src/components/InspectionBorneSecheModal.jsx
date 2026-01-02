@@ -621,27 +621,27 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '700px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', marginTop: '2rem', marginBottom: '2rem' }}>
-        {/* Header */}
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#dc2626', borderRadius: '0.75rem 0.75rem 0 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: '600' }}>
-                🔍 Inspection: {borne?.nom || borne?.numero_identification}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '0.5rem', overflowY: 'auto' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '700px', maxHeight: '95vh', display: 'flex', flexDirection: 'column', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+        {/* Header - Responsive */}
+        <div style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#dc2626', borderRadius: '0.75rem 0.75rem 0 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ margin: 0, color: 'white', fontSize: 'clamp(1rem, 4vw, 1.25rem)', fontWeight: '600', wordBreak: 'break-word' }}>
+                🔍 {borne?.nom || borne?.numero_identification}
               </h2>
-              <p style={{ margin: '0.25rem 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>
+              <p style={{ margin: '0.25rem 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem' }}>
                 {modele?.nom}
               </p>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: '1.25rem', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
           </div>
           
           {/* Sélecteur de formulaire pour admin/superviseur */}
           {canSelectModele && modelesDisponibles.length > 1 && (
             <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-              <label style={{ display: 'block', color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                📋 Formulaire d'inspection:
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem', marginBottom: '0.25rem' }}>
+                📋 Formulaire:
               </label>
               <select
                 value={selectedModeleId || ''}
@@ -651,14 +651,14 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                   padding: '0.5rem',
                   borderRadius: '0.375rem',
                   border: 'none',
-                  fontSize: '0.875rem',
+                  fontSize: '0.8rem',
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   cursor: 'pointer'
                 }}
               >
                 {modelesDisponibles.map(m => (
                   <option key={m.id} value={m.id}>
-                    {m.nom} {m.est_actif ? '(actif)' : ''} {borne.modele_inspection_assigne_id === m.id ? '★ assigné' : ''}
+                    {m.nom} {m.est_actif ? '(actif)' : ''} {borne.modele_inspection_assigne_id === m.id ? '★' : ''}
                   </option>
                 ))}
               </select>
