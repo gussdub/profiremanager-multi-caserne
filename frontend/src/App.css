@@ -4859,12 +4859,28 @@ body.mobile-menu-open .mobile-menu-toggle {
   
   /* Time config responsive */
   .time-config-row {
+    display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
   }
   
   .time-config-row .time-field {
     width: 100% !important;
+  }
+  
+  .config-section .time-config-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .config-section .time-config-row .time-field {
+    width: 100% !important;
+  }
+  
+  .config-section .time-config-row .time-field input {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* Selection summary responsive */
