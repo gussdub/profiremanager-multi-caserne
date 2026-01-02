@@ -938,21 +938,23 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
         </div>
       )}
 
-      {/* Actions principales */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-        <ActionButton
-          label="✏️ Modifier"
-          color="#3498db"
-          onClick={() => onEdit(vehicule)}
-        />
-        <ActionButton
-          label="📋 Fiche de vie"
-          color="#9b59b6"
-          onClick={() => onViewFicheVie(vehicule)}
-        />
-      </div>
+      {/* Actions principales - Admin/Superviseur seulement */}
+      {canManageActifs && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <ActionButton
+            label="✏️ Modifier"
+            color="#3498db"
+            onClick={() => onEdit(vehicule)}
+          />
+          <ActionButton
+            label="📋 Fiche de vie"
+            color="#9b59b6"
+            onClick={() => onViewFicheVie(vehicule)}
+          />
+        </div>
+      )}
 
-      {/* Actions secondaires */}
+      {/* Actions secondaires - Rondes de sécurité visibles pour tous */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         <ActionButton
           label="📝 Historique rondes de sécurité"
@@ -968,37 +970,41 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
         />
       </div>
 
-      {/* Actions inventaire */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-        <ActionButton
-          label="📦 Inventaire"
-          color="#8e44ad"
-          onClick={() => onCreateInventaire(vehicule)}
-          small
-        />
-        <ActionButton
-          label="📋 Historique inventaires"
-          color="#9b59b6"
-          onClick={() => onViewHistoriqueInventaires(vehicule)}
-          small
-        />
-      </div>
+      {/* Actions inventaire - Admin/Superviseur seulement */}
+      {canManageActifs && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <ActionButton
+            label="📦 Inventaire"
+            color="#8e44ad"
+            onClick={() => onCreateInventaire(vehicule)}
+            small
+          />
+          <ActionButton
+            label="📋 Historique inventaires"
+            color="#9b59b6"
+            onClick={() => onViewHistoriqueInventaires(vehicule)}
+            small
+          />
+        </div>
+      )}
 
-      {/* Actions tertiaires */}
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <ActionButton
-          label="📱 QR Code"
-          color="#f39c12"
-          onClick={() => onGenerateQR(vehicule)}
-          small
-        />
-        <ActionButton
-          label="🗑️ Supprimer"
-          color="#e74c3c"
-          onClick={() => onDelete(vehicule.id)}
-          small
-        />
-      </div>
+      {/* Actions tertiaires - Admin/Superviseur seulement */}
+      {canManageActifs && (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <ActionButton
+            label="📱 QR Code"
+            color="#f39c12"
+            onClick={() => onGenerateQR(vehicule)}
+            small
+          />
+          <ActionButton
+            label="🗑️ Supprimer"
+            color="#e74c3c"
+            onClick={() => onDelete(vehicule.id)}
+            small
+          />
+        </div>
+      )}
     </div>
   );
 };
