@@ -2783,6 +2783,33 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**user)
 
+# Version optionnelle qui retourne None au lieu de lever une exception
+security_optional = HTTPBearer(auto_error=False)
+
+async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security_optional), tenant_slug: str = None):
+    """
+    Version optionnelle de get_current_user - retourne None si pas de token valide.
+    Utilisé pour les endpoints qui supportent aussi l'authentification via paramètre URL (mobile).
+    """
+    if credentials is None:
+        return None
+    
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")
+        
+        if user_id is None:
+            return None
+    except jwt.PyJWTError:
+        return None
+    
+    user = await db.users.find_one({"id": user_id})
+    if user is None:
+        return None
+    
+    return User(**user)
+
 async def trouver_opportunites_regroupement(
     date_str: str,
     types_garde: list,
