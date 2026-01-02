@@ -20903,11 +20903,11 @@ body {
     overflow: visible !important;
   }
   
-  /* Calendrier interactif - centré et sans débordement */
+  /* Calendrier interactif */
   .interactive-calendar {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 4px !important;
+    padding: 8px !important;
     margin: 0 !important;
     box-sizing: border-box !important;
   }
@@ -20921,37 +20921,38 @@ body {
     width: 100% !important;
   }
   
-  /* La barre de navigation du calendrier - position relative avec boutons absolus */
+  /* La barre de navigation du calendrier */
   .interactive-calendar .rdp-caption {
     position: relative !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
     width: 100% !important;
-    padding: 0 32px !important;
+    min-height: 32px !important;
     margin-bottom: 12px !important;
-    box-sizing: border-box !important;
   }
   
   .interactive-calendar .rdp-caption_label {
     text-align: center !important;
-    font-size: 0.95rem !important;
+    font-size: 0.9rem !important;
     font-weight: 600 !important;
   }
   
+  /* Boutons avec position absolute à l'intérieur de caption */
   .interactive-calendar .rdp-nav_button {
     position: absolute !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     width: 28px !important;
     height: 28px !important;
+    z-index: 5 !important;
   }
   
   .interactive-calendar .rdp-nav_button_previous {
-    left: 0 !important;
+    left: 4px !important;
   }
   
   .interactive-calendar .rdp-nav_button_next {
-    right: 0 !important;
+    right: 4px !important;
   }
 }
