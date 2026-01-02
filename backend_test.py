@@ -51,7 +51,7 @@ from io import BytesIO
 class PhotoProfilE2ETester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://camera-dashboard-fix.preview.emergentagent.com/api"
+        self.base_url = "https://emergency-ui-fix.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"
