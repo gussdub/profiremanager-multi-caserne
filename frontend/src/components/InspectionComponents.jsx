@@ -445,18 +445,31 @@ const NouvelleInspection = ({ setCurrentView, batiments, selectedBatiment, onBat
 
         <div className="form-section">
           <label>Grille d'inspection *</label>
-          <select
-            value={formData.grille_inspection_id}
-            onChange={(e) => setFormData({ ...formData, grille_inspection_id: e.target.value })}
-            className="form-select"
-          >
-            <option value="">-- Sélectionner une grille --</option>
-            {grilles.map(g => (
-              <option key={g.id} value={g.id}>
-                {g.nom} {g.groupe_occupation ? `(Groupe ${g.groupe_occupation})` : ''}
-              </option>
-            ))}
-          </select>
+          {grilles.length === 0 ? (
+            <div style={{
+              padding: '1rem',
+              backgroundColor: '#fef3c7',
+              border: '1px solid #f59e0b',
+              borderRadius: '8px',
+              color: '#92400e',
+              fontSize: '0.9rem'
+            }}>
+              ⚠️ Aucun formulaire d'inspection disponible. Contactez un administrateur.
+            </div>
+          ) : (
+            <select
+              value={formData.grille_inspection_id}
+              onChange={(e) => setFormData({ ...formData, grille_inspection_id: e.target.value })}
+              className="form-select"
+            >
+              <option value="">-- Sélectionner une grille --</option>
+              {grilles.map(g => (
+                <option key={g.id} value={g.id}>
+                  {g.nom} {g.groupe_occupation ? `(Groupe ${g.groupe_occupation})` : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="form-section">
