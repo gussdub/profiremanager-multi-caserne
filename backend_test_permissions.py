@@ -157,7 +157,7 @@ class PermissionsE2ETester:
             return False, None
     
     def test_create_inspection_borne(self, user_type="employee"):
-        """Test: POST /api/shefford/inspections-bornes-seches - Créer inspection"""
+        """Test: POST /api/shefford/points-eau/{point_id}/inspections - Créer inspection"""
         print(f"\n🧪 Test: Création inspection borne sèche ({user_type})")
         
         if not self.test_data["borne_seche_id"]:
@@ -168,11 +168,10 @@ class PermissionsE2ETester:
             )
             return False
         
-        url = f"{self.base_url}/{self.tenant_slug}/inspections-bornes-seches"
+        url = f"{self.base_url}/{self.tenant_slug}/points-eau/{self.test_data['borne_seche_id']}/inspections"
         
         # Données d'inspection réalistes
         inspection_data = {
-            "point_eau_id": self.test_data["borne_seche_id"],
             "date_inspection": datetime.now().strftime("%Y-%m-%d"),
             "inspecteur_nom": "Test Inspecteur",
             "etat_general": "bon",
