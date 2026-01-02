@@ -564,6 +564,16 @@ const SuperAdminDashboard = ({ onLogout }) => {
               </Button>
             </>
           )}
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              // Rediriger vers la page d'accueil pour changer de tenant
+              window.location.href = '/';
+            }}
+            style={{ fontSize: '0.8rem', padding: '8px 12px', background: '#8b5cf6', color: 'white', border: 'none' }}
+          >
+            🔄 Changer de tenant
+          </Button>
           <Button variant="outline" onClick={onLogout} style={{ fontSize: '0.8rem', padding: '8px 12px' }}>
             Déconnexion
           </Button>
