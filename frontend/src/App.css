@@ -20900,56 +20900,58 @@ body {
   /* Réduire le padding des sections de config sur mobile */
   .config-section {
     padding: 0.75rem !important;
+    overflow: visible !important;
   }
   
-  /* Calendrier interactif - prendre toute la largeur */
+  /* Calendrier interactif - centré et sans débordement */
   .interactive-calendar {
     width: 100% !important;
-    padding: 8px !important;
-    margin: 0 -4px !important;
+    max-width: 100% !important;
+    padding: 4px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
   }
   
-  /* La barre de navigation du calendrier */
-  .interactive-calendar .rdp-caption,
-  .rdp-caption {
+  .interactive-calendar .rdp {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .interactive-calendar .rdp-month {
+    width: 100% !important;
+  }
+  
+  /* La barre de navigation du calendrier - position relative avec boutons absolus */
+  .interactive-calendar .rdp-caption {
+    position: relative !important;
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     align-items: center !important;
     width: 100% !important;
-    padding: 0 !important;
+    padding: 0 32px !important;
     margin-bottom: 12px !important;
+    box-sizing: border-box !important;
   }
   
-  .interactive-calendar .rdp-caption_label,
-  .rdp-caption_label {
-    flex: 1 !important;
+  .interactive-calendar .rdp-caption_label {
     text-align: center !important;
     font-size: 0.95rem !important;
     font-weight: 600 !important;
-    order: 2 !important;
   }
   
-  .interactive-calendar .rdp-nav,
-  .rdp-nav {
-    display: contents !important;
-  }
-  
-  .interactive-calendar .rdp-nav_button,
-  .rdp-nav_button {
-    flex-shrink: 0 !important;
+  .interactive-calendar .rdp-nav_button {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     width: 28px !important;
     height: 28px !important;
-    min-width: 28px !important;
   }
   
-  .interactive-calendar .rdp-nav_button_previous,
-  .rdp-nav_button_previous {
-    order: 1 !important;
+  .interactive-calendar .rdp-nav_button_previous {
+    left: 0 !important;
   }
   
-  .interactive-calendar .rdp-nav_button_next,
-  .rdp-nav_button_next {
-    order: 3 !important;
+  .interactive-calendar .rdp-nav_button_next {
+    right: 0 !important;
   }
 }
