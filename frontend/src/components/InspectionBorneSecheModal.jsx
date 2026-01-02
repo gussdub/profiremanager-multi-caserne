@@ -746,17 +746,17 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           </div>
         </form>
 
-        {/* Footer */}
-        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button type="button" onClick={onClose} variant="outline">
+        {/* Footer - Responsive */}
+        <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.5rem', justifyContent: 'stretch', flexDirection: 'row' }}>
+          <Button type="button" onClick={onClose} variant="outline" style={{ flex: 1, fontSize: '0.875rem', padding: '0.625rem' }}>
             Annuler
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={submitting}
-            style={{ backgroundColor: submitting ? '#9ca3af' : '#10b981', color: 'white', fontWeight: '600' }}
+            style={{ backgroundColor: submitting ? '#9ca3af' : '#10b981', color: 'white', fontWeight: '600', flex: 1, fontSize: '0.875rem', padding: '0.625rem' }}
           >
-            {submitting ? '⏳ Enregistrement...' : '✓ Terminer l\'inspection'}
+            {submitting ? '⏳...' : '✓ Terminer'}
           </Button>
         </div>
       </div>
