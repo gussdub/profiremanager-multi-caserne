@@ -4695,19 +4695,17 @@ body.mobile-menu-open .mobile-menu-toggle {
   
   /* Calendrier responsive pour mobile - iPhone - CORRIGÉ pour iOS */
   .interactive-calendar {
-    padding: 12px !important;
-    margin: 8px 0 !important;
+    padding: 8px !important;
+    margin: 4px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: white !important;
-    border-radius: 12px !important;
+    border-radius: 8px !important;
   }
   
   .interactive-calendar .rdp {
-    --rdp-cell-size: 44px !important;
-    font-size: 0.85rem !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -4722,21 +4720,21 @@ body.mobile-menu-open .mobile-menu-toggle {
   .interactive-calendar .rdp-table {
     width: 100% !important;
     table-layout: fixed !important;
-    border-collapse: separate !important;
-    border-spacing: 6px !important;
+    border-collapse: collapse !important;
   }
   
   .interactive-calendar .rdp-head_row {
-    display: table-row !important;
+    display: flex !important;
+    width: 100% !important;
   }
   
   .interactive-calendar .rdp-head_cell {
-    font-size: 0.75rem !important;
+    flex: 1 !important;
+    font-size: 0.7rem !important;
     font-weight: 500 !important;
-    padding: 8px 2px !important;
-    width: calc(100% / 7) !important;
+    padding: 4px 0 !important;
     text-align: center !important;
-    color: #64748b !important;
+    color: #9ca3af !important;
   }
   
   .interactive-calendar .rdp-tbody {
@@ -4744,60 +4742,82 @@ body.mobile-menu-open .mobile-menu-toggle {
   }
   
   .interactive-calendar .rdp-row {
-    display: table-row !important;
+    display: flex !important;
+    width: 100% !important;
   }
   
   .interactive-calendar .rdp-cell {
-    width: calc(100% / 7) !important;
+    flex: 1 !important;
     padding: 2px !important;
     text-align: center !important;
+    box-sizing: border-box !important;
   }
   
   .interactive-calendar .rdp-day {
     width: 100% !important;
-    max-width: none !important;
-    min-width: unset !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    font-size: 0.9rem !important;
-    font-weight: 500 !important;
+    height: 36px !important;
+    font-size: 0.85rem !important;
     border-radius: 8px !important;
-    padding: 4px !important;
+    padding: 0 !important;
     margin: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-  }
-  
-  .interactive-calendar .rdp-day:not(.rdp-day_disabled):hover {
-    background: #f1f5f9 !important;
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    box-sizing: border-box !important;
   }
   
   .interactive-calendar .rdp-day_selected {
-    background: #fecdd3 !important;
-    border-color: #fda4af !important;
-    color: #be123c !important;
+    background: #fce7f3 !important;
+    border-color: #f9a8d4 !important;
+    color: #9d174d !important;
   }
   
   .interactive-calendar .rdp-day_today {
-    background: #fee2e2 !important;
-    border-color: #fca5a5 !important;
-    font-weight: 700 !important;
+    border: 2px solid #ef4444 !important;
+    color: #dc2626 !important;
+    font-weight: 600 !important;
   }
   
   .interactive-calendar .rdp-day_outside {
-    opacity: 0.4 !important;
+    opacity: 0.3 !important;
     background: transparent !important;
     border-color: transparent !important;
   }
   
   .interactive-calendar .rdp-day_disabled {
     opacity: 0.3 !important;
-    background: #f1f5f9 !important;
   }
   
+  .interactive-calendar .rdp-caption {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0 4px 8px 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .interactive-calendar .rdp-nav {
+    display: contents !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+    border: 1px solid #d1d5db !important;
+    background: white !important;
+  }
+  
+  .interactive-calendar .rdp-caption_label {
+    flex: 1 !important;
+    text-align: center !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+  }
   .interactive-calendar .rdp-caption {
     font-size: 1rem !important;
     padding: 8px 0 !important;
