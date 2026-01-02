@@ -34,20 +34,20 @@ const TimerField = ({ value, onChange, unite, seuilAlerte }) => {
   const isOverThreshold = seuilAlerte && time > seuilAlerte;
 
   return (
-    <div style={{ padding: '1rem', backgroundColor: isOverThreshold ? '#fef2f2' : '#f9fafb', borderRadius: '0.5rem', border: isOverThreshold ? '2px solid #dc2626' : '1px solid #e5e7eb' }}>
-      <div style={{ fontSize: '2.5rem', fontFamily: 'monospace', fontWeight: 'bold', textAlign: 'center', color: isOverThreshold ? '#dc2626' : '#111827', marginBottom: '1rem' }}>
+    <div style={{ padding: '0.75rem', backgroundColor: isOverThreshold ? '#fef2f2' : '#f9fafb', borderRadius: '0.5rem', border: isOverThreshold ? '2px solid #dc2626' : '1px solid #e5e7eb' }}>
+      <div style={{ fontSize: 'clamp(1.75rem, 8vw, 2.5rem)', fontFamily: 'monospace', fontWeight: 'bold', textAlign: 'center', color: isOverThreshold ? '#dc2626' : '#111827', marginBottom: '0.75rem' }}>
         {formatTime(time)}
       </div>
       {isOverThreshold && (
-        <div style={{ textAlign: 'center', color: '#dc2626', fontWeight: '600', marginBottom: '0.5rem' }}>
+        <div style={{ textAlign: 'center', color: '#dc2626', fontWeight: '600', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
           ⚠️ Seuil dépassé ({seuilAlerte} {unite || 'sec'})
         </div>
       )}
-      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         <Button
           type="button"
           onClick={() => setIsRunning(!isRunning)}
-          style={{ backgroundColor: isRunning ? '#f59e0b' : '#10b981', color: 'white', padding: '0.75rem 1.5rem', fontWeight: '600' }}
+          style={{ backgroundColor: isRunning ? '#f59e0b' : '#10b981', color: 'white', padding: '0.625rem 1rem', fontWeight: '600', fontSize: '0.875rem', flex: '1 1 auto', maxWidth: '140px' }}
         >
           {isRunning ? '⏸️ Pause' : '▶️ Démarrer'}
         </Button>
@@ -55,12 +55,12 @@ const TimerField = ({ value, onChange, unite, seuilAlerte }) => {
           type="button"
           onClick={() => { setTime(0); onChange(0); setIsRunning(false); }}
           variant="outline"
-          style={{ padding: '0.75rem 1.5rem' }}
+          style={{ padding: '0.625rem 1rem', fontSize: '0.875rem', flex: '1 1 auto', maxWidth: '140px' }}
         >
           🔄 Reset
         </Button>
       </div>
-      {unite && <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.75rem', marginTop: '0.5rem' }}>Unité: {unite}</p>}
+      {unite && <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.7rem', marginTop: '0.5rem' }}>Unité: {unite}</p>}
     </div>
   );
 };
