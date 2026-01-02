@@ -4712,6 +4712,10 @@ body.mobile-menu-open .mobile-menu-toggle {
     padding: 0 !important;
   }
   
+  .interactive-calendar .rdp-months {
+    width: 100% !important;
+  }
+  
   .interactive-calendar .rdp-month {
     width: 100% !important;
     padding: 0 !important;
@@ -4790,11 +4794,13 @@ body.mobile-menu-open .mobile-menu-toggle {
     opacity: 0.3 !important;
   }
   
+  /* Navigation du calendrier - IMPORTANT pour éviter débordement */
   .interactive-calendar .rdp-caption {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: 0 4px 8px 4px !important;
+    padding: 4px !important;
+    margin-bottom: 8px !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -4805,11 +4811,15 @@ body.mobile-menu-open .mobile-menu-toggle {
   
   .interactive-calendar .rdp-nav_button {
     width: 32px !important;
+    min-width: 32px !important;
     height: 32px !important;
     flex-shrink: 0 !important;
     border-radius: 8px !important;
     border: 1px solid #d1d5db !important;
     background: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   
   .interactive-calendar .rdp-caption_label {
@@ -4817,6 +4827,10 @@ body.mobile-menu-open .mobile-menu-toggle {
     text-align: center !important;
     font-size: 0.9rem !important;
     font-weight: 600 !important;
+    padding: 0 8px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   .interactive-calendar .rdp-caption {
     font-size: 1rem !important;
