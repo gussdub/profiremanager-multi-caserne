@@ -1144,11 +1144,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       {/* Barre de contrôles */}
       <div className="personnel-controls">
         <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'}}>
-          <div style={{flex: 1, minWidth: '300px'}}>
+          <div style={{flex: 1, minWidth: '150px', maxWidth: '100%'}}>
             <Input 
               placeholder="🔍 Rechercher par nom, email, grade..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              style={{width: '100%', boxSizing: 'border-box'}}
             />
           </div>
           
