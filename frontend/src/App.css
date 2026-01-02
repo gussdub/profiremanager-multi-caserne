@@ -20831,40 +20831,58 @@ body {
 .calendar-month-nav {
   display: flex !important;
   flex-wrap: nowrap !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .month-nav-btn {
   flex-shrink: 0 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  border: 2px solid #374151 !important;
+  background: white !important;
+  color: #374151 !important;
+  border-radius: 8px !important;
+  min-width: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.month-nav-title {
+  font-size: 1.1rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 @media (max-width: 500px) {
   .calendar-month-nav {
-    padding: 0.75rem !important;
+    padding: 0.5rem !important;
     gap: 0.25rem !important;
   }
   
   .month-nav-btn {
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.9rem !important;
+    padding: 0.4rem 0.75rem !important;
+    font-size: 1.1rem !important;
+    min-width: 40px !important;
   }
   
-  /* Cacher le texte "Mois précédent" / "Mois suivant" sur très petits écrans */
-  .month-nav-btn .nav-btn-text {
-    display: none !important;
-  }
-  
-  .calendar-month-nav h2 {
+  .month-nav-title {
     font-size: 1rem !important;
   }
 }
 
 @media (max-width: 380px) {
   .month-nav-btn {
-    padding: 0.4rem 0.6rem !important;
-    font-size: 0.85rem !important;
+    padding: 0.35rem 0.6rem !important;
+    font-size: 1rem !important;
+    min-width: 36px !important;
   }
   
-  .calendar-month-nav h2 {
+  .month-nav-title {
     font-size: 0.9rem !important;
   }
 }
