@@ -343,26 +343,31 @@ const Remplacements = () => {
 
       {/* Barre de Contrôles */}
       <div className="personnel-controls" style={{marginBottom: '2rem'}}>
-        <div style={{display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+        <div style={{display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between'}}>
           {/* Boutons d'action - Mis en évidence */}
-          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center'}}>
+          <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', width: '100%'}}>
             <Button 
               onClick={() => setShowCreateRemplacementModal(true)}
               data-testid="create-replacement-btn"
               style={{
                 background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
                 color: 'white',
-                padding: '1rem 1.5rem',
-                fontSize: '1.1rem',
+                padding: '0.75rem 1rem',
+                fontSize: '0.95rem',
                 fontWeight: '600',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
                 border: 'none',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                flex: '1 1 auto',
+                minWidth: '140px',
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
-              className="hover:scale-105"
             >
-              🔄 Demande de Remplacement
+              🔄 Remplacement
             </Button>
             <Button 
               onClick={() => setShowCreateCongeModal(true)}
@@ -370,17 +375,22 @@ const Remplacements = () => {
               style={{
                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 color: 'white',
-                padding: '1rem 1.5rem',
-                fontSize: '1.1rem',
+                padding: '0.75rem 1rem',
+                fontSize: '0.95rem',
                 fontWeight: '600',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
                 border: 'none',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                flex: '1 1 auto',
+                minWidth: '140px',
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
-              className="hover:scale-105"
             >
-              🏖️ Demande de Congé
+              🏖️ Congé
             </Button>
             
             {/* Filtre par statut */}
