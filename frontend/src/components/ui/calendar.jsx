@@ -87,18 +87,18 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4 w-full",
-        caption: "flex justify-between pt-1 relative items-center px-2 mb-2",
+        caption: "flex justify-center pt-1 relative items-center px-10 mb-2",
         caption_label: cn(
-          "text-center flex-1",
+          "text-center",
           isLargeCalendar ? "text-3xl font-bold" : "text-base font-semibold"
         ),
-        nav: "flex items-center gap-1",
+        nav: "flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
           "h-8 w-8 bg-white p-0 hover:bg-gray-100 border-2 border-gray-300 z-10"
         ),
-        nav_button_previous: "",
-        nav_button_next: "",
+        nav_button_previous: "absolute left-0",
+        nav_button_next: "absolute right-0",
         table: "w-full border-collapse space-y-1",
         head_row: "flex w-full",
         head_cell: cn(
