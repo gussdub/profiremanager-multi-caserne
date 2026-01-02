@@ -12,6 +12,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   const [saving, setSaving] = useState(false);
   const [equipements, setEquipements] = useState([]);
   const [modeleActif, setModeleActif] = useState(null);
+  const [noFormulaire, setNoFormulaire] = useState(false);
   
   // Données du formulaire
   const [selectedEquipementId, setSelectedEquipementId] = useState(equipementPreselectionne?.id || '');
@@ -24,6 +25,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   // Charger les équipements APRIA et le modèle actif
   useEffect(() => {
     if (isOpen) {
+      setNoFormulaire(false);
       fetchEquipements();
       fetchModeleActif();
       if (equipementPreselectionne) {
@@ -47,7 +49,9 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   const fetchModeleActif = async () => {
     try {
       const data = await apiGet(tenantSlug, '/apria/modeles-inspection/actif');
-      setModeleActif(data);
+      if (data && data.sections && data.sections.length > 0) {
+        setModeleActif(data);
+        setNoFormulaire(false);
       // Initialiser les réponses
       const initialReponses = {};
       data.sections?.forEach(section => {
