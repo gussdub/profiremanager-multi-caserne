@@ -147,16 +147,11 @@ export const AuthProvider = ({ children }) => {
       console.error('Error unregistering push notifications:', err)
     );
     
-    // Effacer les credentials sauvegardés ("Se souvenir de moi")
-    try {
-      const { clearCredentials } = await import('../utils/storage');
-      if (tenantSlug) {
-        await clearCredentials(tenantSlug);
-        console.log('[Logout] Credentials cleared for tenant:', tenantSlug);
-      }
-    } catch (err) {
-      console.error('Error clearing saved credentials:', err);
-    }
+    // NE PAS effacer les credentials sauvegardés ("Se souvenir de moi")
+    // L'utilisateur pourra ainsi voir ses identifiants pré-remplis au prochain login
+    // mais devra quand même cliquer sur "Se connecter"
+    // Les credentials (email/mot de passe) sont conservés dans storage.js
+    console.log('[Logout] Keeping saved credentials for convenience');
     
     // Nettoyer uniquement les données du tenant actuel (pas tous les tenants)
     removeItem('token');
