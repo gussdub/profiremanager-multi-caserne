@@ -428,14 +428,15 @@ const Login = () => {
     });
   }, []);
 
-  // Auto-login au chargement (version async avec stockage robuste)
+  // Charger les identifiants sauvegardés (SANS auto-login)
+  // L'utilisateur devra cliquer sur "Se connecter" manuellement
   useEffect(() => {
     if (!tenantSlug || autoLoginDone) {
       if (!tenantSlug) setLoading(false);
       return;
     }
     
-    const attemptAutoLogin = async () => {
+    const loadSavedCredentials = async () => {
       setAutoLoginDone(true);
       
       // Attendre que le module de stockage soit chargé
@@ -447,7 +448,7 @@ const Login = () => {
       
       if (!storageModule.current) {
         console.log('[Login] ⚠️ Module de stockage non disponible, utilisation localStorage');
-        // Fallback localStorage
+        // Fallback localStorage - seulement pré-remplir les champs
         try {
           const savedCreds = localStorage.getItem('profiremanager_saved_credentials');
           if (savedCreds) {
@@ -456,11 +457,7 @@ const Login = () => {
             if (tenantCreds?.email && tenantCreds?.password) {
               setEmail(tenantCreds.email);
               setMotDePasse(tenantCreds.password);
-              const result = await login(tenantCreds.email, tenantCreds.password);
-              if (result.success) {
-                console.log('[Login] ✅ Auto-connexion réussie (localStorage)!');
-                return;
-              }
+              console.log('[Login] ✅ Identifiants pré-remplis (localStorage) - Cliquez sur Se connecter');
             }
           }
         } catch (e) {}
@@ -468,37 +465,22 @@ const Login = () => {
         return;
       }
       
-      // Utiliser le stockage robuste
+      // Utiliser le stockage robuste - seulement pré-remplir les champs, PAS d'auto-login
       const tenantCreds = await storageModule.current.getCredentials(tenantSlug);
       console.log('[Login] Vérification identifiants pour:', tenantSlug, '- Trouvé:', !!tenantCreds);
       
       if (tenantCreds && tenantCreds.email && tenantCreds.password) {
+        // Pré-remplir les champs sans se connecter automatiquement
         setEmail(tenantCreds.email);
         setMotDePasse(tenantCreds.password);
-        
-        console.log('[Login] Tentative auto-connexion...');
-        
-        try {
-          const result = await login(tenantCreds.email, tenantCreds.password);
-          
-          if (result.success) {
-            console.log('[Login] ✅ Auto-connexion réussie!');
-            return;
-          } else {
-            console.log('[Login] ❌ Auto-connexion échouée:', result.error);
-            await storageModule.current.clearCredentials(tenantSlug);
-            setMotDePasse('');
-          }
-        } catch (error) {
-          console.error('[Login] Erreur auto-login:', error);
-        }
+        console.log('[Login] ✅ Identifiants pré-remplis - Cliquez sur Se connecter');
       }
       
       setLoading(false);
     };
     
-    attemptAutoLogin();
-  }, [tenantSlug, login]);
+    loadSavedCredentials();
+  }, [tenantSlug]);
   
   // Fonction de debug pour afficher l'état du stockage
   const showStorageDebug = async () => {
