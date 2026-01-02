@@ -162,11 +162,23 @@ frontend:
         agent: "testing"
         comment: "✅ WORKING - Gestion des Actifs module displays 7 vehicles correctly with tabs for Véhicules and Inventaires. Vehicle cards show proper details and action buttons. API imports fix successful."
 
+  - task: "Fix calendar navigation arrows position on mobile"
+    implemented: true
+    working: true
+    file: "frontend/src/components/ui/calendar.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ WORKING - Fixed calendar navigation arrows (`<` and `>`) positioning on mobile. Modified calendar.jsx to use flexbox with order property on mobile, and absolute positioning on desktop. Now arrows appear correctly on each side of the month name in both 'Mes Disponibilités' and 'Indisponibilités' modals."
+
 metadata:
   created_by: "main_agent"
-  version: "1.1"
-  test_sequence: 1
-  last_updated: "2025-12-29T02:20:00Z"
+  version: "1.2"
+  test_sequence: 2
+  last_updated: "2026-01-02T19:58:00Z"
   testing_completed: true
 
 test_plan:
@@ -174,4 +186,4 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "completed"
-  testing_status: "All modules validated successfully - API imports bug fix confirmed working"
+  testing_status: "Calendar navigation arrows fix validated - working on mobile and desktop"
