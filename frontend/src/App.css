@@ -20896,24 +20896,48 @@ body {
 /* ============================================================
    FIX CALENDRIER MODAL - Navigation mois sur mobile
    ============================================================ */
-@media (max-width: 500px) {
+@media (max-width: 768px) {
   /* Forcer la caption du calendrier à prendre toute la largeur */
+  .interactive-calendar .rdp-caption,
   .rdp-caption {
     display: flex !important;
+    flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
-    padding: 0 4px !important;
+    padding: 0 !important;
+    margin-bottom: 12px !important;
   }
   
+  .interactive-calendar .rdp-caption_label,
   .rdp-caption_label {
     flex: 1 !important;
     text-align: center !important;
-    font-size: 0.9rem !important;
-    min-width: 0 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    order: 2 !important;
   }
   
+  .interactive-calendar .rdp-nav,
+  .rdp-nav {
+    display: contents !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button,
   .rdp-nav_button {
     flex-shrink: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button_previous,
+  .rdp-nav_button_previous {
+    order: 1 !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button_next,
+  .rdp-nav_button_next {
+    order: 3 !important;
   }
 }
