@@ -1459,50 +1459,33 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          marginBottom: '2rem',
-          padding: '1rem',
+          marginBottom: '1rem',
+          padding: '0.75rem',
           background: 'white',
           borderRadius: '12px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          gap: '0.5rem',
-          flexWrap: 'nowrap'
+          gap: '0.25rem',
+          flexWrap: 'nowrap',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box'
         }}>
           <Button 
             variant="outline"
             onClick={() => navigateMonth('prev')}
             className="month-nav-btn"
-            style={{
-              padding: '0.75rem 1.25rem',
-              fontSize: '1rem',
-              fontWeight: '700',
-              borderRadius: '10px',
-              border: '2px solid #374151',
-              background: 'white',
-              color: '#374151',
-              flexShrink: 0
-            }}
           >
-            ← <span className="nav-btn-text">Mois précédent</span>
+            ←
           </Button>
-          <h2 style={{margin: 0, fontSize: '1.3rem', fontWeight: '600', color: '#1F2937', textAlign: 'center', flex: 1, minWidth: 0}}>
+          <h2 className="month-nav-title" style={{margin: 0, fontSize: '1.1rem', fontWeight: '600', color: '#1F2937', textAlign: 'center', flex: 1, minWidth: 0, whiteSpace: 'nowrap'}}>
             {getMonthName(calendarCurrentMonth)} {calendarCurrentYear}
           </h2>
           <Button 
             variant="outline"
             onClick={() => navigateMonth('next')}
             className="month-nav-btn"
-            style={{
-              padding: '0.75rem 1.25rem',
-              fontSize: '1rem',
-              fontWeight: '700',
-              borderRadius: '10px',
-              border: '2px solid #374151',
-              background: 'white',
-              color: '#374151',
-              flexShrink: 0
-            }}
           >
-            <span className="nav-btn-text">Mois suivant</span> →
+            →
           </Button>
         </div>
 
