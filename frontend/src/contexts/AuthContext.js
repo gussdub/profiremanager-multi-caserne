@@ -141,11 +141,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     // Désenregistrer les notifications push
     PushNotificationService.unregister().catch(err => 
       console.error('Error unregistering push notifications:', err)
     );
+    
+    // Effacer les credentials sauvegardés ("Se souvenir de moi")
+    try {
+      const { clearCredentials } = await import('../utils/storage');
+      if (tenantSlug) {
+        await clearCredentials(tenantSlug);
+        console.log('[Logout] Credentials cleared for tenant:', tenantSlug);
+      }
+    } catch (err) {
+      console.error('Error clearing saved credentials:', err);
+    }
     
     // Nettoyer uniquement les données du tenant actuel (pas tous les tenants)
     removeItem('token');
