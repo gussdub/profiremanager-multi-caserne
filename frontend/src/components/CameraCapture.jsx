@@ -319,7 +319,7 @@ const CameraCapture = ({
                 style={{ display: 'none' }}
               />
               <Button onClick={() => fileInputRef.current?.click()} variant="outline">
-                📷 Choisir une photo
+                🖼️ Importer depuis la photothèque
               </Button>
             </>
           )}
