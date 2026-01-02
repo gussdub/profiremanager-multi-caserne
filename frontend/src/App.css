@@ -13374,27 +13374,48 @@ body.mobile-menu-open .mobile-menu-toggle {
 /* Responsive pour mobile - Calendriers modaux */
 @media (max-width: 768px) {
   .availability-calendar-large {
-    padding: 1rem;
+    padding: 12px !important;
+    background: white !important;
+    border-radius: 12px !important;
   }
 
   .availability-calendar-large .rdp {
-    --rdp-cell-size: 45px;
-    font-size: 0.95rem;
+    --rdp-cell-size: 44px !important;
+    font-size: 0.85rem !important;
+    width: 100% !important;
+  }
+  
+  .availability-calendar-large .rdp-table {
+    border-collapse: separate !important;
+    border-spacing: 6px !important;
   }
   
   .availability-calendar-large .rdp-day {
-    min-height: 45px;
-    font-size: 0.9rem;
+    min-height: 44px !important;
+    height: 44px !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  
+  .availability-calendar-large .rdp-day_selected {
+    background: #fecdd3 !important;
+    border-color: #fda4af !important;
+    color: #be123c !important;
   }
   
   .availability-calendar-large .rdp-caption {
-    font-size: 1.15rem;
-    margin-bottom: 1rem;
+    font-size: 1rem !important;
+    margin-bottom: 12px !important;
   }
   
   .availability-calendar-large .rdp-head_cell {
-    font-size: 0.8rem;
-    padding-bottom: 0.5rem;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    padding-bottom: 8px !important;
+    color: #64748b !important;
   }
 }
 
