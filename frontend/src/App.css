@@ -20986,13 +20986,12 @@ body {
    FIX CALENDRIER MODAL - Navigation mois sur mobile
    ============================================================ */
 @media (max-width: 768px) {
-  /* Forcer overflow hidden pour éviter les débordements */
+  /* Calendrier interactif - mobile */
   .config-section {
     overflow: hidden !important;
     padding: 8px !important;
   }
   
-  /* Calendrier interactif - SANS débordement */
   .interactive-calendar {
     width: 100% !important;
     max-width: 100% !important;
@@ -21002,65 +21001,10 @@ body {
     overflow: hidden !important;
   }
   
-  .interactive-calendar .rdp {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-  
-  .interactive-calendar .rdp-months {
-    width: 100% !important;
-  }
-  
+  .interactive-calendar .rdp,
+  .interactive-calendar .rdp-months,
   .interactive-calendar .rdp-month {
     width: 100% !important;
-  }
-  
-  /* La barre de navigation - utiliser Flexbox simple */
-  .interactive-calendar .rdp-caption {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    width: 100% !important;
-    min-height: 36px !important;
-    margin-bottom: 8px !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-  }
-  
-  .interactive-calendar .rdp-caption_label {
-    flex: 1 !important;
-    text-align: center !important;
-    font-size: 0.9rem !important;
-    font-weight: 600 !important;
-    order: 2 !important;
-    padding: 0 4px !important;
-  }
-  
-  /* Container nav - utiliser contents pour que les boutons soient au niveau caption */
-  .interactive-calendar .rdp-nav {
-    display: contents !important;
-  }
-  
-  /* Boutons de navigation */
-  .interactive-calendar .rdp-nav_button {
-    position: static !important;
-    transform: none !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    flex-shrink: 0 !important;
-    border-radius: 8px !important;
-    border: 1px solid #d1d5db !important;
-    background: white !important;
-  }
-  
-  .interactive-calendar .rdp-nav_button_previous {
-    order: 1 !important;
-  }
-  
-  .interactive-calendar .rdp-nav_button_next {
-    order: 3 !important;
   }
   
   /* Table du calendrier */
