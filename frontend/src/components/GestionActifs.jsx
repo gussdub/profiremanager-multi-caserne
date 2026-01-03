@@ -627,16 +627,22 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       {/* Responsive CSS */}
       <style>{`
         @media (max-width: 768px) {
-          .mobile-tab-toggle {
+          .mobile-menu-grid {
             display: block !important;
-            position: relative;
-            margin-bottom: 16px;
+          }
+          .mobile-tab-toggle-old {
+            display: none !important;
           }
           .desktop-tabs {
             display: none !important;
           }
           .gestion-actifs {
-            padding: 12px !important;
+            padding: 10px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .mobile-menu-grid {
+            display: none !important;
           }
         }
         .desktop-tabs::-webkit-scrollbar {
