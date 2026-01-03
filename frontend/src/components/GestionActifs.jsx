@@ -361,33 +361,153 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   };
 
   return (
-    <div className="gestion-actifs" style={{ padding: '20px', position: 'relative', zIndex: 1, isolation: 'isolate' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ margin: 0, fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>🚒 Gestion des Actifs</h1>
+    <div className="gestion-actifs" style={{ padding: '12px', position: 'relative', zIndex: 1, isolation: 'isolate' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.1rem, 4vw, 1.5rem)' }}>🚒 Gestion des Actifs</h1>
         
         {/* Bouton Ajouter à droite - Caché pour les employés */}
         {activeTab === 'vehicules' && user?.role !== 'employe' && (
           <button 
             onClick={openCreateModal}
             style={{
-              padding: '10px 16px',
+              padding: '8px 12px',
               backgroundColor: '#e74c3c',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 'bold',
               whiteSpace: 'nowrap'
             }}
           >
-            + Ajouter un véhicule
+            + Véhicule
           </button>
         )}
       </div>
 
-      {/* Mobile Menu Toggle */}
-      <div className="mobile-tab-toggle" style={{ display: 'none' }}>
+      {/* Mobile Menu - Grid Cards */}
+      <div className="mobile-menu-grid" style={{ display: 'none' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '10px',
+          marginBottom: '16px'
+        }}>
+          {/* Véhicules */}
+          <button
+            onClick={() => setActiveTab('vehicules')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: activeTab === 'vehicules' ? '#fef2f2' : 'white',
+              border: activeTab === 'vehicules' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>🚗</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'vehicules' ? '#dc2626' : '#374151' }}>Véhicules</span>
+            <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Rondes & Inventaires</span>
+          </button>
+
+          {/* Points d'eau */}
+          <button
+            onClick={() => setActiveTab('eau')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: activeTab === 'eau' ? '#eff6ff' : 'white',
+              border: activeTab === 'eau' ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>💧</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'eau' ? '#2563eb' : '#374151' }}>Points d'eau</span>
+            <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Bornes sèches</span>
+          </button>
+
+          {/* Matériel */}
+          <button
+            onClick={() => setActiveTab('materiel')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: activeTab === 'materiel' ? '#fefce8' : 'white',
+              border: activeTab === 'materiel' ? '2px solid #eab308' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>🔧</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'materiel' ? '#ca8a04' : '#374151' }}>Matériel</span>
+            <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>APRIA & Équip.</span>
+          </button>
+
+          {/* Gestion EPI - Admin/Superviseur only */}
+          {canManageActifs && (
+            <button
+              onClick={() => setActiveTab('epi')}
+              style={{
+                padding: '16px 12px',
+                backgroundColor: activeTab === 'epi' ? '#f0fdf4' : 'white',
+                border: activeTab === 'epi' ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+            >
+              <span style={{ fontSize: '1.75rem' }}>🛡️</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'epi' ? '#16a34a' : '#374151' }}>Gestion EPI</span>
+              <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Équipements perso.</span>
+            </button>
+          )}
+
+          {/* Paramètres - Admin/Superviseur only */}
+          {canManageActifs && (
+            <button
+              onClick={() => setActiveTab('parametres')}
+              style={{
+                padding: '16px 12px',
+                backgroundColor: activeTab === 'parametres' ? '#f5f3ff' : 'white',
+                border: activeTab === 'parametres' ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                gridColumn: !canManageActifs ? 'span 2' : 'auto'
+              }}
+            >
+              <span style={{ fontSize: '1.75rem' }}>⚙️</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'parametres' ? '#7c3aed' : '#374151' }}>Paramètres</span>
+              <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Configuration</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* OLD Mobile Menu Toggle - Hidden, kept for backup */}
+      <div className="mobile-tab-toggle-old" style={{ display: 'none' }}>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           style={{
