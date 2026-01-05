@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost } from '../utils/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPreselectionne = null, onInspectionCreated }) => {
   const [loading, setLoading] = useState(false);
@@ -31,7 +29,17 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
       if (equipementPreselectionne) {
         setSelectedEquipementId(equipementPreselectionne.id);
       }
+      // Bloquer le scroll du body sur iOS
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     }
+    return () => {
+      // Restaurer le scroll
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
   }, [isOpen, tenantSlug]);
 
   const fetchEquipements = async () => {
@@ -52,7 +60,6 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
       if (data && data.sections && data.sections.length > 0) {
         setModeleActif(data);
         setNoFormulaire(false);
-        // Initialiser les réponses
         const initialReponses = {};
         data.sections?.forEach(section => {
           if (section.items && section.items.length > 0) {
@@ -72,7 +79,6 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
     }
   };
 
-  // Réinitialiser le formulaire
   const resetForm = () => {
     setSelectedEquipementId(equipementPreselectionne?.id || '');
     setTypeInspection('mensuelle');
@@ -82,57 +88,32 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
     setRemarques('');
   };
 
-  // Vérifier si l'inspection est conforme
-  const verifierConformite = () => {
-    // Vérifier les réponses non conformes
-    let estConforme = true;
-    
-    modeleActif?.sections?.forEach(section => {
-      if (section.items && section.items.length > 0) {
-        section.items.forEach(item => {
-          const reponse = reponses[item.id];
-          if (reponse === 'Non conforme') {
-            estConforme = false;
-          }
-        });
-      }
-    });
-
-    // Vérifier la pression
-    if (pressionCylindre && parseInt(pressionCylindre) < 4050) {
-      estConforme = false;
-    }
-
-    return estConforme;
-  };
-
-  // Mettre à jour la conformité automatiquement
-  useEffect(() => {
-    if (modeleActif) {
-      setConforme(verifierConformite());
-    }
-  }, [reponses, pressionCylindre]);
-
-  // Soumettre l'inspection
   const handleSubmit = async () => {
     if (!selectedEquipementId) {
-      alert('Veuillez sélectionner un équipement APRIA');
+      alert('Veuillez sélectionner un équipement');
       return;
     }
 
     try {
       setSaving(true);
       
+      let resultatGlobal = conforme;
+      Object.values(reponses).forEach(val => {
+        if (val === 'Non conforme' || val === 'À remplacer' || val === 'Défectueux') {
+          resultatGlobal = false;
+        }
+      });
+
       const inspectionData = {
         equipement_id: selectedEquipementId,
         type_inspection: typeInspection,
-        inspecteur_id: user?.id,
-        date_inspection: new Date().toISOString(),
-        elements: reponses,
-        pression_cylindre: pressionCylindre ? parseInt(pressionCylindre) : null,
-        conforme: conforme,
+        modele_utilise_id: modeleActif?.id || null,
+        reponses: reponses,
+        pression_cylindre: pressionCylindre ? parseFloat(pressionCylindre) : null,
+        conforme: resultatGlobal,
         remarques: remarques,
-        photos: []
+        inspecteur_id: user?.id,
+        inspecteur_nom: `${user?.prenom || ''} ${user?.nom || ''}`.trim()
       };
 
       await apiPost(tenantSlug, '/apria/inspections', inspectionData);
@@ -153,324 +134,420 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
 
   const selectedEquipement = equipements.find(e => e.id === selectedEquipementId);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent style={{ maxWidth: '95vw', width: '700px', maxHeight: '90vh', overflow: 'auto', padding: '1rem' }}>
-        <DialogHeader>
-          <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'clamp(1rem, 4vw, 1.25rem)' }}>
-            📝 Inspection APRIA
-          </DialogTitle>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-            Chargement...
+  return (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        padding: '0.5rem',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0.5rem auto',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 'calc(100vh - 1rem)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header fixe */}
+        <div style={{
+          padding: '1rem',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f97316',
+          borderRadius: '12px 12px 0 0',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ 
+              margin: 0, 
+              color: 'white', 
+              fontSize: '1.1rem', 
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              📝 Inspection APRIA
+            </h2>
+            <button 
+              onClick={onClose}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1
+              }}
+            >
+              ×
+            </button>
           </div>
-        ) : noFormulaire ? (
-          <div style={{ 
-            padding: '3rem', 
-            textAlign: 'center',
-            backgroundColor: '#fef3c7',
-            borderRadius: '12px',
-            border: '2px solid #f59e0b'
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
-            <h3 style={{ color: '#92400e', marginBottom: '0.5rem', fontSize: '1.25rem' }}>
-              Formulaire non disponible
-            </h3>
-            <p style={{ color: '#78350f', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-              Aucun formulaire d'inspection APRIA n'a été configuré pour cette caserne.
-            </p>
-            <p style={{ color: '#92400e', fontSize: '0.875rem' }}>
-              Veuillez contacter un administrateur pour créer un modèle d'inspection.
-            </p>
-            <Button onClick={onClose} style={{ marginTop: '1.5rem' }}>
-              Fermer
-            </Button>
-          </div>
-        ) : (
-          <div style={{ padding: '1rem 0' }}>
-            {/* Sélection équipement */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-                Équipement APRIA *
-              </Label>
-              <Select value={selectedEquipementId} onValueChange={setSelectedEquipementId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un équipement APRIA" />
-                </SelectTrigger>
-                <SelectContent>
+        </div>
+
+        {/* Contenu scrollable */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          padding: '1rem'
+        }}>
+          {loading ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+              Chargement...
+            </div>
+          ) : noFormulaire ? (
+            <div style={{ 
+              padding: '2rem', 
+              textAlign: 'center',
+              backgroundColor: '#fef3c7',
+              borderRadius: '12px',
+              border: '2px solid #f59e0b'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+              <h3 style={{ color: '#92400e', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                Formulaire non disponible
+              </h3>
+              <p style={{ color: '#78350f', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                Aucun formulaire d'inspection APRIA n'a été configuré.
+              </p>
+              <p style={{ color: '#92400e', fontSize: '0.8rem' }}>
+                Contactez un administrateur.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Sélection équipement */}
+              <div style={{ marginBottom: '1rem' }}>
+                <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }}>
+                  Équipement APRIA *
+                </Label>
+                <select
+                  value={selectedEquipementId}
+                  onChange={(e) => setSelectedEquipementId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '16px', // Important pour éviter le zoom sur iOS
+                    backgroundColor: 'white',
+                    appearance: 'none',
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundSize: '1.25rem'
+                  }}
+                >
+                  <option value="">Sélectionner...</option>
                   {equipements.map(eq => (
-                    <SelectItem key={eq.id} value={eq.id}>
+                    <option key={eq.id} value={eq.id}>
                       {eq.numero_serie ? `${eq.numero_serie} - ` : ''}{eq.nom}
                       {eq.emplacement ? ` (${eq.emplacement})` : ''}
-                    </SelectItem>
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
-              {selectedEquipement && (
-                <div style={{ marginTop: '0.5rem', padding: '0.75rem', backgroundColor: '#f3f4f6', borderRadius: '0.375rem', fontSize: '0.875rem' }}>
-                  <strong>Sélectionné:</strong> {selectedEquipement.nom}<br/>
-                  {selectedEquipement.numero_serie && <><strong>N° Série:</strong> {selectedEquipement.numero_serie}<br/></>}
-                  {selectedEquipement.emplacement && <><strong>Emplacement:</strong> {selectedEquipement.emplacement}</>}
-                </div>
-              )}
-            </div>
-
-            {/* Type d'inspection */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-                Type d'inspection
-              </Label>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem',
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: typeInspection === 'mensuelle' ? '#fef3c7' : 'white',
-                  border: typeInspection === 'mensuelle' ? '2px solid #f97316' : '1px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  flex: '1 1 auto',
-                  minWidth: '120px'
-                }}>
-                  <input
-                    type="radio"
-                    name="typeInspection"
-                    value="mensuelle"
-                    checked={typeInspection === 'mensuelle'}
-                    onChange={(e) => setTypeInspection(e.target.value)}
-                  />
-                  📅 Mensuelle
-                </label>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem',
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: typeInspection === 'apres_usage' ? '#fef3c7' : 'white',
-                  border: typeInspection === 'apres_usage' ? '2px solid #f97316' : '1px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  flex: '1 1 auto',
-                  minWidth: '120px'
-                }}>
-                  <input
-                    type="radio"
-                    name="typeInspection"
-                    value="apres_usage"
-                    checked={typeInspection === 'apres_usage'}
-                    onChange={(e) => setTypeInspection(e.target.value)}
-                  />
-                  🔄 Après usage
-                </label>
+                </select>
+                {selectedEquipement && (
+                  <div style={{ 
+                    marginTop: '0.5rem', 
+                    padding: '0.5rem', 
+                    backgroundColor: '#f3f4f6', 
+                    borderRadius: '6px', 
+                    fontSize: '0.8rem' 
+                  }}>
+                    <strong>{selectedEquipement.nom}</strong>
+                    {selectedEquipement.numero_serie && <span> • N° {selectedEquipement.numero_serie}</span>}
+                    {selectedEquipement.emplacement && <span> • {selectedEquipement.emplacement}</span>}
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Sections du modèle */}
-            {modeleActif?.sections?.map((section, sectionIndex) => (
-              <div 
-                key={section.id || sectionIndex}
-                style={{ 
-                  marginBottom: '1.5rem',
-                  padding: '1rem',
-                  backgroundColor: '#fff7ed',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #fed7aa'
-                }}
-              >
-                <h4 style={{ margin: '0 0 1rem', fontWeight: '600', color: '#9a3412' }}>
-                  {section.titre}
-                </h4>
+              {/* Type d'inspection */}
+              <div style={{ marginBottom: '1rem' }}>
+                <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }}>
+                  Type d'inspection
+                </Label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setTypeInspection('mensuelle')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      backgroundColor: typeInspection === 'mensuelle' ? '#f97316' : 'white',
+                      color: typeInspection === 'mensuelle' ? 'white' : '#374151',
+                      border: typeInspection === 'mensuelle' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📅 Mensuelle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTypeInspection('apres_usage')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      backgroundColor: typeInspection === 'apres_usage' ? '#f97316' : 'white',
+                      color: typeInspection === 'apres_usage' ? 'white' : '#374151',
+                      border: typeInspection === 'apres_usage' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔧 Après usage
+                  </button>
+                </div>
+              </div>
 
-                {/* Champ nombre (pression) */}
-                {section.type_champ === 'number' && (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {/* Sections du formulaire */}
+              {modeleActif?.sections?.map((section, sectionIndex) => (
+                <div 
+                  key={section.id || sectionIndex}
+                  style={{
+                    marginBottom: '1rem',
+                    padding: '0.75rem',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <h4 style={{ 
+                    margin: '0 0 0.75rem 0', 
+                    fontSize: '0.95rem', 
+                    fontWeight: '600',
+                    color: '#1f2937',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    {section.icone || '📋'} {section.titre}
+                  </h4>
+
+                  {/* Champ pression cylindre */}
+                  {section.type_champ === 'number' && section.titre.toLowerCase().includes('pression') && (
+                    <div>
                       <Input
                         type="number"
                         value={pressionCylindre}
                         onChange={(e) => setPressionCylindre(e.target.value)}
-                        placeholder={`Minimum: ${section.seuil_minimum || 4050}`}
-                        style={{ 
-                          maxWidth: '200px',
-                          borderColor: pressionCylindre && parseInt(pressionCylindre) < (section.seuil_minimum || 4050) ? '#ef4444' : '#d1d5db'
-                        }}
+                        placeholder="Ex: 4500"
+                        style={{ fontSize: '16px' }}
                       />
-                      <span style={{ color: '#6b7280' }}>{section.unite || 'PSI'}</span>
+                      {section.unite && (
+                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
+                          {section.unite}
+                        </span>
+                      )}
                     </div>
-                    {pressionCylindre && parseInt(pressionCylindre) < (section.seuil_minimum || 4050) && (
-                      <p style={{ color: '#ef4444', fontSize: '0.875rem', margin: '0.5rem 0 0' }}>
-                        ⚠️ Pression inférieure au minimum requis ({section.seuil_minimum || 4050} {section.unite || 'PSI'})
-                      </p>
-                    )}
-                  </div>
-                )}
+                  )}
 
-                {/* Items à vérifier (radio/checkbox) */}
-                {(section.type_champ === 'radio' || section.type_champ === 'checkbox') && section.items?.length > 0 && (
-                  <div style={{ display: 'grid', gap: '0.5rem' }}>
-                    {section.items.map((item, itemIndex) => (
-                      <div 
-                        key={item.id || itemIndex}
-                        style={{ 
-                          padding: '0.5rem',
-                          backgroundColor: 'white',
-                          borderRadius: '0.375rem',
-                          border: reponses[item.id] === 'Non conforme' ? '2px solid #ef4444' : '1px solid #e5e7eb'
-                        }}
-                      >
-                        <div style={{ marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem' }}>{item.nom}</div>
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          {(section.options || [{ label: 'Conforme' }, { label: 'Non conforme' }]).map((opt, optIndex) => (
-                            <label 
-                              key={optIndex}
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.25rem',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '0.25rem',
-                                backgroundColor: reponses[item.id] === opt.label ? (opt.declencherAlerte ? '#fef2f2' : '#f0fdf4') : 'transparent',
-                                border: reponses[item.id] === opt.label ? '1px solid' : '1px solid transparent',
-                                borderColor: reponses[item.id] === opt.label ? (opt.declencherAlerte ? '#ef4444' : '#22c55e') : 'transparent'
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name={`item_${item.id}`}
-                                value={opt.label}
-                                checked={reponses[item.id] === opt.label}
-                                onChange={(e) => setReponses({ ...reponses, [item.id]: e.target.value })}
-                              />
-                              {opt.declencherAlerte && '⚠️'} {opt.label}
-                            </label>
-                          ))}
+                  {/* Items à vérifier */}
+                  {(section.type_champ === 'radio' || section.type_champ === 'checkbox') && section.items?.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {section.items.map((item, itemIndex) => (
+                        <div 
+                          key={item.id || itemIndex}
+                          style={{ 
+                            padding: '0.5rem',
+                            backgroundColor: 'white',
+                            borderRadius: '6px',
+                            border: reponses[item.id] === 'Non conforme' ? '2px solid #ef4444' : '1px solid #e5e7eb'
+                          }}
+                        >
+                          <div style={{ marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.85rem' }}>
+                            {item.nom}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {(section.options || [{ label: 'Conforme' }, { label: 'Non conforme' }]).map((opt, optIndex) => (
+                              <button
+                                key={optIndex}
+                                type="button"
+                                onClick={() => setReponses({ ...reponses, [item.id]: opt.label })}
+                                style={{
+                                  padding: '0.4rem 0.75rem',
+                                  fontSize: '0.8rem',
+                                  borderRadius: '6px',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontWeight: '500',
+                                  backgroundColor: reponses[item.id] === opt.label 
+                                    ? (opt.declencherAlerte ? '#ef4444' : '#22c55e')
+                                    : '#e5e7eb',
+                                  color: reponses[item.id] === opt.label ? 'white' : '#374151'
+                                }}
+                              >
+                                {opt.declencherAlerte && '⚠️'} {opt.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
 
-                {/* Texte libre (remarques) */}
-                {section.type_champ === 'text' && section.titre.toLowerCase().includes('remarque') && (
-                  <Textarea
-                    value={remarques}
-                    onChange={(e) => setRemarques(e.target.value)}
-                    placeholder="Remarques ou observations..."
-                    rows={3}
-                  />
-                )}
-              </div>
-            ))}
-
-            {/* Résultat global */}
-            <div style={{ 
-              padding: '1rem',
-              backgroundColor: conforme ? '#f0fdf4' : '#fef2f2',
-              borderRadius: '0.5rem',
-              border: conforme ? '2px solid #22c55e' : '2px solid #ef4444',
-              marginBottom: '1rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: '600', fontSize: '1.125rem' }}>
-                  Résultat global :
-                </span>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <label style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    backgroundColor: conforme ? '#22c55e' : 'white',
-                    color: conforme ? 'white' : '#374151',
-                    borderRadius: '0.375rem',
-                    cursor: 'pointer',
-                    fontWeight: '600'
-                  }}>
-                    <input
-                      type="radio"
-                      name="conforme"
-                      checked={conforme}
-                      onChange={() => setConforme(true)}
+                  {/* Texte remarques */}
+                  {section.type_champ === 'text' && section.titre.toLowerCase().includes('remarque') && (
+                    <Textarea
+                      value={remarques}
+                      onChange={(e) => setRemarques(e.target.value)}
+                      placeholder="Remarques..."
+                      rows={2}
+                      style={{ fontSize: '16px' }}
                     />
-                    ✅ Conforme
-                  </label>
-                  <label style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    backgroundColor: !conforme ? '#ef4444' : 'white',
-                    color: !conforme ? 'white' : '#374151',
-                    borderRadius: '0.375rem',
-                    cursor: 'pointer',
-                    fontWeight: '600'
-                  }}>
-                    <input
-                      type="radio"
-                      name="conforme"
-                      checked={!conforme}
-                      onChange={() => setConforme(false)}
-                    />
-                    ❌ Non Conforme
-                  </label>
+                  )}
                 </div>
+              ))}
+
+              {/* Résultat global */}
+              <div style={{ 
+                padding: '0.75rem',
+                backgroundColor: conforme ? '#f0fdf4' : '#fef2f2',
+                borderRadius: '8px',
+                border: conforme ? '2px solid #22c55e' : '2px solid #ef4444',
+                marginBottom: '1rem'
+              }}>
+                <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  Résultat global
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setConforme(true)}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      backgroundColor: conforme ? '#22c55e' : 'white',
+                      color: conforme ? 'white' : '#374151',
+                      border: conforme ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✅ Conforme
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConforme(false)}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      backgroundColor: !conforme ? '#ef4444' : 'white',
+                      color: !conforme ? 'white' : '#374151',
+                      border: !conforme ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ❌ Non conforme
+                  </button>
+                </div>
+                {!conforme && (
+                  <p style={{ margin: '0.5rem 0 0', color: '#dc2626', fontSize: '0.8rem' }}>
+                    ⚠️ L'équipement sera marqué "Hors service"
+                  </p>
+                )}
               </div>
-              {!conforme && (
-                <p style={{ margin: '0.75rem 0 0', color: '#dc2626', fontSize: '0.875rem' }}>
-                  ⚠️ L'équipement sera marqué "Hors service" et une alerte sera envoyée aux responsables.
-                </p>
-              )}
-            </div>
 
-            {/* Remarques générales */}
-            <div style={{ marginBottom: '1rem' }}>
-              <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-                Remarques additionnelles
-              </Label>
-              <Textarea
-                value={remarques}
-                onChange={(e) => setRemarques(e.target.value)}
-                placeholder="Notes ou observations supplémentaires..."
-                rows={3}
-              />
-            </div>
+              {/* Remarques */}
+              <div style={{ marginBottom: '1rem' }}>
+                <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }}>
+                  Remarques
+                </Label>
+                <Textarea
+                  value={remarques}
+                  onChange={(e) => setRemarques(e.target.value)}
+                  placeholder="Notes supplémentaires..."
+                  rows={2}
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
 
-            {/* Info inspecteur */}
-            <div style={{ 
-              padding: '0.75rem', 
-              backgroundColor: '#f3f4f6', 
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              color: '#6b7280'
-            }}>
-              <strong>Inspecteur:</strong> {user?.prenom} {user?.nom}<br/>
-              <strong>Date:</strong> {new Date().toLocaleDateString('fr-CA')} à {new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          </div>
-        )}
+              {/* Info inspecteur */}
+              <div style={{ 
+                padding: '0.5rem', 
+                backgroundColor: '#f3f4f6', 
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                color: '#6b7280'
+              }}>
+                <strong>Inspecteur:</strong> {user?.prenom} {user?.nom}<br/>
+                <strong>Date:</strong> {new Date().toLocaleDateString('fr-CA')} à {new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </>
+          )}
+        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+        {/* Footer fixe */}
+        <div style={{
+          padding: '1rem',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: '0.5rem',
+          flexShrink: 0,
+          backgroundColor: 'white',
+          borderRadius: '0 0 12px 12px'
+        }}>
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={saving}
+            style={{ flex: 1, fontSize: '0.9rem', padding: '0.75rem' }}
+          >
             Annuler
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={saving || !selectedEquipementId}
-            style={{ backgroundColor: '#f97316' }}
+            disabled={saving || !selectedEquipementId || noFormulaire}
+            style={{ 
+              flex: 1, 
+              backgroundColor: '#f97316', 
+              fontSize: '0.9rem', 
+              padding: '0.75rem',
+              fontWeight: '600'
+            }}
           >
-            {saving ? '⏳ Enregistrement...' : '💾 Enregistrer l\'inspection'}
+            {saving ? '⏳...' : '💾 Enregistrer'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 };
 
