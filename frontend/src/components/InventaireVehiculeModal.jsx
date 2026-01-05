@@ -19,15 +19,50 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
 
   const fetchModeles = async () => {
     try {
-      const data = await apiGet(tenantSlug, '/parametres/modeles-inventaires-vehicules');
-      setModeles(data || []);
+      // Charger les formulaires d'inventaire depuis le système unifié
+      const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+      
+      // Filtrer pour les formulaires de type "inventaire" qui sont actifs
+      // et qui sont soit assignés à ce véhicule spécifique, soit à tous les véhicules (vehicule_ids vide)
+      const inventaireFormulaires = (allFormulaires || []).filter(f => 
+        f.type === 'inventaire' && 
+        f.actif !== false &&
+        (
+          !f.vehicule_ids || 
+          f.vehicule_ids.length === 0 || 
+          f.vehicule_ids.includes(vehicule.id)
+        )
+      );
+      
+      // Convertir le format unifié vers le format attendu par le composant
+      const modelesConverts = inventaireFormulaires.map(f => ({
+        id: f.id,
+        nom: f.nom,
+        description: f.description || '',
+        sections: (f.sections || []).map(s => ({
+          titre: s.nom,
+          type_champ: s.items?.[0]?.type || 'checkbox',
+          options: s.items?.[0]?.options?.map(opt => ({ label: opt, declencherAlerte: false })) || [],
+          photo_url: '',
+          items: s.items?.map(item => ({
+            id: item.id || `${s.nom}_${item.label}`,
+            nom: item.label,
+            photo_url: '',
+            obligatoire: item.obligatoire || false,
+            ordre: 0
+          })) || []
+        }))
+      }));
+      
+      setModeles(modelesConverts);
       
       // Si un seul modèle existe, le sélectionner automatiquement
-      if (data && data.length === 1) {
-        handleSelectionModele(data[0]);
+      if (modelesConverts && modelesConverts.length === 1) {
+        handleSelectionModele(modelesConverts[0]);
       }
     } catch (error) {
       console.error('Erreur chargement modèles:', error);
+      setModeles([]);
     }
   };
 
