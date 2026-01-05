@@ -24,6 +24,7 @@ const FormulairesInspectionConfig = () => {
     description: '',
     type: 'inspection',
     categorie_ids: [],
+    vehicule_ids: [],  // Pour assigner à des véhicules spécifiques
     frequence: 'mensuelle',
     est_actif: true,
     sections: []
