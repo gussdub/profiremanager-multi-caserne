@@ -1550,7 +1550,7 @@ const Planning = () => {
                           u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
                           (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
                         )
-                      : assignedUsers;
+                      : [];
                   
                   const assignedCount = assignedUsers.length;
                   const requiredCount = typeGarde.personnel_requis;
@@ -1565,7 +1565,7 @@ const Planning = () => {
                   // Vérifier si c'est un quart de l'utilisateur actuel
                   const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
                   
-                  // Vérifier si l'utilisateur recherché est assigné à cette garde
+                  // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                   const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
 
                   // Utiliser la couleur définie dans les paramètres du type de garde
