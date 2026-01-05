@@ -10,16 +10,20 @@ import CameraCapture, { isIOS } from './CameraCapture';
 
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
+  const [equipementsAssignes, setEquipementsAssignes] = useState([]);
   const [masqueAPRIA, setMasqueAPRIA] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedEPI, setSelectedEPI] = useState(null);
+  const [selectedEquipement, setSelectedEquipement] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [showHistoriqueModal, setShowHistoriqueModal] = useState(false);
   const [showRemplacementModal, setShowRemplacementModal] = useState(false);
   const [showInspectionAPRIAModal, setShowInspectionAPRIAModal] = useState(false);
   const [showHistoriqueAPRIAModal, setShowHistoriqueAPRIAModal] = useState(false);
+  const [showInspectionPartieFacialeModal, setShowInspectionPartieFacialeModal] = useState(false);
   const [showCameraCapture, setShowCameraCapture] = useState(false);
   const [historique, setHistorique] = useState([]);
+  const [modelePartieFaciale, setModelePartieFaciale] = useState(null);
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
 
