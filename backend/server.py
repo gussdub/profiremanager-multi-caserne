@@ -29062,15 +29062,22 @@ async def export_ronde_securite_pdf(
                 tenant_id = payload.get("tenant_id")
                 logger.info(f"📄 Token décodé - user_id: {user_id}, tenant_id: {tenant_id}")
                 if user_id and tenant_id:
+                    # Essayer de trouver l'utilisateur par ID ou par _id converti
                     user_data = await db.users.find_one(
                         {"id": user_id, "tenant_id": tenant_id, "actif": True},
                         {"_id": 0}
                     )
+                    # Si pas trouvé, essayer sans le filtre actif (certains users n'ont pas ce champ)
+                    if not user_data:
+                        user_data = await db.users.find_one(
+                            {"id": user_id, "tenant_id": tenant_id},
+                            {"_id": 0}
+                        )
                     if user_data:
                         current_user = User(**user_data)
                         logger.info(f"📄 Utilisateur trouvé via token URL: {current_user.email}")
                     else:
-                        logger.error(f"📄 Utilisateur non trouvé pour user_id: {user_id}")
+                        logger.error(f"📄 Utilisateur non trouvé pour user_id: {user_id}, tenant_id: {tenant_id}")
             except jwt.ExpiredSignatureError:
                 logger.error("📄 Token expiré")
                 raise HTTPException(status_code=401, detail="Token expiré")
