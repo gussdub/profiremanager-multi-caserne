@@ -31895,6 +31895,7 @@ async def create_formulaire_inspection(
         "frequence": formulaire_data.get("frequence", "mensuelle"),
         "est_actif": formulaire_data.get("est_actif", True),
         "sections": formulaire_data.get("sections", []),
+        "vehicule_ids": formulaire_data.get("vehicule_ids", []),
         "created_by": current_user.id,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
