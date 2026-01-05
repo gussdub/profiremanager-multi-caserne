@@ -10238,6 +10238,7 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         # Inclure tenant_id dans le token
         access_token = create_access_token(data={
             "sub": user.id,
+            "email": user.email,  # Ajout de l'email pour le fallback d'authentification
             "tenant_id": tenant.id,
             "tenant_slug": tenant.slug
         })
