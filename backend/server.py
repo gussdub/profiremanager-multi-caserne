@@ -29055,15 +29055,18 @@ async def export_ronde_securite_pdf(
         if current_user is None and token:
             try:
                 payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-                email = payload.get("sub")
+                user_id = payload.get("sub")  # sub contient l'ID utilisateur
                 tenant_id = payload.get("tenant_id")
-                if email and tenant_id:
+                if user_id and tenant_id:
                     user_data = await db.users.find_one(
-                        {"email": email, "tenant_id": tenant_id, "actif": True},
+                        {"id": user_id, "tenant_id": tenant_id, "actif": True},
                         {"_id": 0}
                     )
                     if user_data:
                         current_user = User(**user_data)
+            except jwt.ExpiredSignatureError:
+                logger.error("Token expiré")
+                raise HTTPException(status_code=401, detail="Token expiré")
             except Exception as e:
                 logger.error(f"Erreur décodage token URL: {e}")
                 raise HTTPException(status_code=401, detail="Token invalide")
