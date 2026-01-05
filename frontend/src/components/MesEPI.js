@@ -120,6 +120,8 @@ const MesEPI = ({ user }) => {
   useEffect(() => {
     loadEPIs();
     loadMasqueAPRIA();
+    loadEquipementsAssignes();
+    loadModelePartieFaciale();
   }, []);
 
   const loadEPIs = async () => {
@@ -136,6 +138,28 @@ const MesEPI = ({ user }) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Charger les équipements assignés depuis le module Matériel
+  const loadEquipementsAssignes = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/mes-equipements');
+      setEquipementsAssignes(data?.equipements || []);
+    } catch (error) {
+      console.log('Pas d\'équipements assignés:', error);
+      setEquipementsAssignes([]);
+    }
+  };
+
+  // Charger le modèle d'inspection des parties faciales actif
+  const loadModelePartieFaciale = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/parties-faciales/modeles-inspection/actif');
+      setModelePartieFaciale(data);
+    } catch (error) {
+      console.log('Pas de modèle de partie faciale:', error);
+      setModelePartieFaciale(null);
     }
   };
 
