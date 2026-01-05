@@ -32033,6 +32033,303 @@ async def get_formulaires_par_categorie(
     
     return formulaires
 
+@api_router.post("/{tenant_slug}/formulaires-inspection/migrer-existants")
+async def migrer_formulaires_existants(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Migrer les formulaires existants (APRIA, Bornes Sèches, Parties Faciales) vers le système unifié"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    migrated = []
+    
+    # 1. Migrer les modèles APRIA
+    modeles_apria = await db.modeles_inspection_apria.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    for modele in modeles_apria:
+        # Vérifier si déjà migré
+        existing = await db.formulaires_inspection.find_one({
+            "tenant_id": tenant.id,
+            "source_migration": f"apria_{modele.get('id')}"
+        })
+        if existing:
+            continue
+            
+        # Convertir les sections au nouveau format
+        sections = []
+        for section in modele.get("sections", []):
+            items = []
+            for item in section.get("items", []):
+                items.append({
+                    "id": item.get("id"),
+                    "nom": item.get("nom"),
+                    "type": "conforme_nc",
+                    "ordre": item.get("ordre", 0)
+                })
+            sections.append({
+                "id": section.get("id"),
+                "titre": section.get("titre"),
+                "icone": "🫁",
+                "items": items
+            })
+        
+        # Trouver les catégories APRIA
+        cat_apria = await db.categories_equipements.find_one(
+            {"tenant_id": tenant.id, "nom": {"$regex": "APRIA", "$options": "i"}}
+        )
+        
+        formulaire = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": modele.get("nom"),
+            "description": modele.get("description", "Formulaire migré depuis APRIA"),
+            "type": "inspection",
+            "categorie_ids": [cat_apria["id"]] if cat_apria else [],
+            "frequence": "apres_usage",
+            "est_actif": modele.get("est_actif", True),
+            "sections": sections,
+            "source_migration": f"apria_{modele.get('id')}",
+            "created_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.formulaires_inspection.insert_one(formulaire)
+        migrated.append({"type": "APRIA", "nom": modele.get("nom")})
+    
+    # 2. Migrer les modèles Bornes Sèches
+    modeles_bs = await db.modeles_inspection_bornes_seches.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    for modele in modeles_bs:
+        existing = await db.formulaires_inspection.find_one({
+            "tenant_id": tenant.id,
+            "source_migration": f"borne_seche_{modele.get('id')}"
+        })
+        if existing:
+            continue
+            
+        sections = []
+        for section in modele.get("sections", []):
+            items = []
+            for item in section.get("items", []):
+                items.append({
+                    "id": item.get("id"),
+                    "nom": item.get("nom"),
+                    "type": "conforme_nc",
+                    "ordre": item.get("ordre", 0)
+                })
+            sections.append({
+                "id": section.get("id"),
+                "titre": section.get("titre"),
+                "icone": "🔥",
+                "items": items
+            })
+        
+        formulaire = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": modele.get("nom"),
+            "description": modele.get("description", "Formulaire migré depuis Bornes Sèches"),
+            "type": "inspection",
+            "categorie_ids": ["borne_seche"],  # Catégorie spéciale pour les bornes sèches
+            "frequence": "annuelle",
+            "est_actif": modele.get("est_actif", True),
+            "sections": sections,
+            "source_migration": f"borne_seche_{modele.get('id')}",
+            "created_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.formulaires_inspection.insert_one(formulaire)
+        migrated.append({"type": "Borne Sèche", "nom": modele.get("nom")})
+    
+    # 3. Migrer les modèles Parties Faciales
+    modeles_pf = await db.modeles_inspection_parties_faciales.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    for modele in modeles_pf:
+        existing = await db.formulaires_inspection.find_one({
+            "tenant_id": tenant.id,
+            "source_migration": f"partie_faciale_{modele.get('id')}"
+        })
+        if existing:
+            continue
+            
+        sections = []
+        for section in modele.get("sections", []):
+            items = []
+            for item in section.get("items", []):
+                items.append({
+                    "id": item.get("id"),
+                    "nom": item.get("nom"),
+                    "type": "conforme_nc",
+                    "ordre": item.get("ordre", 0)
+                })
+            sections.append({
+                "id": section.get("id"),
+                "titre": section.get("titre"),
+                "icone": "🎭",
+                "items": items
+            })
+        
+        # Trouver les catégories Parties Faciales
+        cat_pf = await db.categories_equipements.find_one(
+            {"tenant_id": tenant.id, "nom": {"$regex": "faciale", "$options": "i"}}
+        )
+        
+        formulaire = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": modele.get("nom"),
+            "description": modele.get("description", "Formulaire migré depuis Parties Faciales"),
+            "type": "inspection",
+            "categorie_ids": [cat_pf["id"]] if cat_pf else [],
+            "frequence": modele.get("frequence", "mensuelle"),
+            "est_actif": modele.get("est_actif", True),
+            "sections": sections,
+            "source_migration": f"partie_faciale_{modele.get('id')}",
+            "created_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.formulaires_inspection.insert_one(formulaire)
+        migrated.append({"type": "Partie Faciale", "nom": modele.get("nom")})
+    
+    # 4. Créer un formulaire par défaut pour les EPI (habits de combat)
+    existing_epi = await db.formulaires_inspection.find_one({
+        "tenant_id": tenant.id,
+        "source_migration": "epi_default"
+    })
+    
+    if not existing_epi:
+        formulaire_epi = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": "Inspection Habits de Combat",
+            "description": "Formulaire d'inspection annuelle des équipements de protection individuelle (Bunker, Bottes, Casque, Gants, Cagoule)",
+            "type": "inspection",
+            "categorie_ids": ["epi_bunker", "epi_bottes", "epi_casque", "epi_gants", "epi_cagoule"],
+            "frequence": "annuelle",
+            "est_actif": True,
+            "sections": [
+                {
+                    "id": "section_visual",
+                    "titre": "Inspection visuelle",
+                    "icone": "👁️",
+                    "items": [
+                        {"id": "epi_1", "nom": "État général de l'équipement", "type": "conforme_nc", "ordre": 0},
+                        {"id": "epi_2", "nom": "Absence de déchirures ou trous", "type": "conforme_nc", "ordre": 1},
+                        {"id": "epi_3", "nom": "Coutures intactes", "type": "conforme_nc", "ordre": 2},
+                        {"id": "epi_4", "nom": "Bandes réfléchissantes en bon état", "type": "conforme_nc", "ordre": 3},
+                        {"id": "epi_5", "nom": "Étiquettes lisibles", "type": "conforme_nc", "ordre": 4}
+                    ]
+                },
+                {
+                    "id": "section_fermetures",
+                    "titre": "Fermetures et attaches",
+                    "icone": "🔒",
+                    "items": [
+                        {"id": "epi_6", "nom": "Fermetures éclair fonctionnelles", "type": "conforme_nc", "ordre": 0},
+                        {"id": "epi_7", "nom": "Velcros adhèrent correctement", "type": "conforme_nc", "ordre": 1},
+                        {"id": "epi_8", "nom": "Boutons-pression fonctionnels", "type": "conforme_nc", "ordre": 2},
+                        {"id": "epi_9", "nom": "Sangles d'ajustement en bon état", "type": "conforme_nc", "ordre": 3}
+                    ]
+                },
+                {
+                    "id": "section_protection",
+                    "titre": "Protection thermique",
+                    "icone": "🔥",
+                    "items": [
+                        {"id": "epi_10", "nom": "Doublure thermique intacte", "type": "conforme_nc", "ordre": 0},
+                        {"id": "epi_11", "nom": "Barrière d'humidité fonctionnelle", "type": "conforme_nc", "ordre": 1},
+                        {"id": "epi_12", "nom": "Absence de contamination", "type": "conforme_nc", "ordre": 2}
+                    ]
+                },
+                {
+                    "id": "section_remarques",
+                    "titre": "Remarques",
+                    "icone": "📝",
+                    "items": [
+                        {"id": "epi_13", "nom": "Observations / Commentaires", "type": "texte", "ordre": 0}
+                    ]
+                }
+            ],
+            "source_migration": "epi_default",
+            "created_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.formulaires_inspection.insert_one(formulaire_epi)
+        migrated.append({"type": "EPI", "nom": "Inspection Habits de Combat"})
+    
+    # 5. Créer un formulaire par défaut pour les inventaires véhicules
+    existing_inv = await db.formulaires_inspection.find_one({
+        "tenant_id": tenant.id,
+        "source_migration": "inventaire_vehicule_default"
+    })
+    
+    if not existing_inv:
+        formulaire_inv = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": "Inventaire Véhicule Standard",
+            "description": "Formulaire d'inventaire pour les véhicules d'intervention",
+            "type": "inventaire",
+            "categorie_ids": ["vehicule"],
+            "frequence": "hebdomadaire",
+            "est_actif": True,
+            "sections": [
+                {
+                    "id": "section_equipement",
+                    "titre": "Équipements de base",
+                    "icone": "🧰",
+                    "items": [
+                        {"id": "inv_1", "nom": "Extincteur", "type": "oui_non", "ordre": 0},
+                        {"id": "inv_2", "nom": "Trousse de premiers soins", "type": "oui_non", "ordre": 1},
+                        {"id": "inv_3", "nom": "Triangle de signalisation", "type": "oui_non", "ordre": 2},
+                        {"id": "inv_4", "nom": "Lampe de poche", "type": "oui_non", "ordre": 3}
+                    ]
+                },
+                {
+                    "id": "section_intervention",
+                    "titre": "Équipements d'intervention",
+                    "icone": "🚒",
+                    "items": [
+                        {"id": "inv_5", "nom": "Tuyaux", "type": "nombre", "ordre": 0},
+                        {"id": "inv_6", "nom": "Lances", "type": "nombre", "ordre": 1},
+                        {"id": "inv_7", "nom": "Échelles", "type": "oui_non", "ordre": 2}
+                    ]
+                }
+            ],
+            "source_migration": "inventaire_vehicule_default",
+            "created_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.formulaires_inspection.insert_one(formulaire_inv)
+        migrated.append({"type": "Inventaire", "nom": "Inventaire Véhicule Standard"})
+    
+    logger.info(f"Migration des formulaires terminée par {current_user.email}: {len(migrated)} formulaires migrés")
+    return {
+        "message": f"Migration terminée: {len(migrated)} formulaires créés",
+        "formulaires_migres": migrated
+    }
+
 # ==================== FIN MODULE FORMULAIRES D'INSPECTION ====================
 
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
