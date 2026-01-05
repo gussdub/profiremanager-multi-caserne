@@ -42,17 +42,32 @@ const FormulairesInspectionConfig = () => {
 
   const typesChamp = [
     { value: 'conforme_nc', label: 'Conforme / Non conforme' },
+    { value: 'oui_non', label: 'Oui / Non' },
     { value: 'texte', label: 'Texte libre' },
     { value: 'nombre', label: 'Nombre' },
     { value: 'date', label: 'Date' },
     { value: 'liste', label: 'Liste déroulante' },
-    { value: 'oui_non', label: 'Oui / Non' }
+    { value: 'inspecteur', label: '👤 Inspecteur (auto-rempli)' },
+    { value: 'lieu', label: '📍 Lieu (GPS ou adresse)' }
   ];
+
+  const [vehicules, setVehicules] = useState([]);
 
   useEffect(() => {
     loadFormulaires();
     loadCategories();
+    loadVehicules();
   }, []);
+
+  const loadVehicules = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/vehicules');
+      setVehicules(data || []);
+    } catch (error) {
+      console.log('Pas de véhicules:', error);
+      setVehicules([]);
+    }
+  };
 
   const loadFormulaires = async () => {
     setLoading(true);
