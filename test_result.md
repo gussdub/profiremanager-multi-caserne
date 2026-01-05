@@ -1,8 +1,75 @@
 test_plan:
-  current_focus: ["Formulaires d'inspection unifiés", "Bug Planning couleur", "Suppression doublon Mes EPI"]
+  current_focus: ["Constructeur de formulaires - Type Inspection/Inventaire", "Boutons Modifier/Supprimer catégories", "Doublon catégorie Parties Faciales supprimé"]
   stuck_tasks: []
   test_all: false
   test_priority: "in_progress"
+
+# ============================================
+# TEST SESSION: Form Builder and Category Management
+# Date: 2026-01-05
+# ============================================
+
+test_session_form_builder:
+  focus: "Finalisation constructeur de formulaires et gestion catégories"
+  
+  changes_made:
+    - name: "Form Type Selector (Inspection/Inventaire)"
+      status: "IMPLEMENTED"
+      description: |
+        Ajout d'un sélecteur de type de formulaire dans le constructeur.
+        - Type "Inspection": affiche la sélection des catégories d'équipement
+        - Type "Inventaire véhicule": affiche la sélection des véhicules
+        L'affichage est conditionnel et mutuellement exclusif.
+      files_modified:
+        - frontend/src/components/FormulairesInspectionConfig.jsx
+        
+    - name: "Edit/Delete buttons for ALL categories"
+      status: "IMPLEMENTED"
+      description: |
+        Les boutons Modifier (✏️) et Supprimer (🗑️) apparaissent maintenant sur TOUTES les catégories,
+        même celles marquées comme "prédéfinies" ou "système". Une confirmation supplémentaire
+        est demandée pour les catégories système.
+      files_modified:
+        - frontend/src/components/MaterielEquipementsModule.jsx
+        - backend/server.py (endpoint DELETE /equipements/categories/)
+        
+    - name: "Duplicate 'Parties faciales' category removed"
+      status: "IMPLEMENTED"
+      description: |
+        Suppression de la catégorie en double "Parties faciales" (prédéfinie, vide).
+        Conservation de "Parties Faciales" (non prédéfinie, avec 1 équipement).
+        Le formulaire d'inspection associé a été mis à jour pour ne pointer que vers la catégorie conservée.
+      data_fix: true
+
+  tests_to_run:
+    - test: "Form type selector conditional display"
+      url: "/shefford > Gestion des Actifs > Paramètres > Formulaires"
+      steps:
+        1. Login as admin (gussdub@gmail.com / 230685Juin+)
+        2. Navigate to Gestion des Actifs > ⚙️ Paramètres
+        3. Click "+ Nouveau formulaire"
+        4. Verify "Type de formulaire" selector is visible with two options
+        5. Click "📋 Inspection" - verify "Catégories d'équipement" section appears
+        6. Click "🚗 Inventaire véhicule" - verify "Véhicules concernés" section appears
+      expected_result: Conditional display works correctly
+      
+    - test: "Edit/Delete buttons on all categories"
+      url: "/shefford > Gestion des Actifs > Matériel & Équipements > Catégories"
+      steps:
+        1. Login as admin
+        2. Navigate to Gestion des Actifs > Matériel & Équipements > 📁 Catégories
+        3. Scroll through the list of categories
+        4. Verify EVERY category has ✏️ and 🗑️ buttons (including "🔒 Système" ones)
+      expected_result: All categories have edit/delete buttons
+      
+    - test: "Duplicate 'Parties faciales' removed"
+      url: "/shefford > Gestion des Actifs > Matériel & Équipements > Catégories"
+      steps:
+        1. Login as admin
+        2. Navigate to Catégories tab
+        3. Search or scroll to find "Parties Faciales"
+        4. Verify there is only ONE entry for "Parties Faciales"
+      expected_result: Only one "Parties Faciales" category exists
 
 # ============================================
 # TEST SESSION: Employee Permissions Update
