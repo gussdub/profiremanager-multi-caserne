@@ -20639,8 +20639,8 @@ async def get_masque_apria_assigne(tenant_slug: str, current_user: User = Depend
         "tenant_id": tenant.id,
         "employe_id": current_user.id,
         "$or": [
-            {"nom": {"$regex": "(masque|facial|pièce faciale)", "$options": "i"}},
-            {"description": {"$regex": "(masque|facial|pièce faciale)", "$options": "i"}},
+            {"nom": {"$regex": "(masque|facial|partie faciale)", "$options": "i"}},
+            {"description": {"$regex": "(masque|facial|partie faciale)", "$options": "i"}},
             {"categorie_nom": {"$regex": "(masque|facial|APRIA)", "$options": "i"}}
         ]
     }
@@ -31460,30 +31460,30 @@ async def get_historique_inspections_apria(
 
 # ==================== MODULE INSPECTIONS PIÈCES FACIALES ====================
 
-@api_router.get("/{tenant_slug}/pieces-faciales/modeles-inspection")
-async def get_modeles_inspection_pieces_faciales(
+@api_router.get("/{tenant_slug}/parties-faciales/modeles-inspection")
+async def get_modeles_inspection_parties_faciales(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer tous les modèles d'inspection des pièces faciales"""
+    """Récupérer tous les modèles d'inspection des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    modeles = await db.modeles_inspection_pieces_faciales.find(
+    modeles = await db.modeles_inspection_parties_faciales.find(
         {"tenant_id": tenant.id},
         {"_id": 0}
     ).to_list(length=None)
     
     return modeles
 
-@api_router.get("/{tenant_slug}/pieces-faciales/modeles-inspection/actif")
-async def get_modele_inspection_pieces_faciales_actif(
+@api_router.get("/{tenant_slug}/parties-faciales/modeles-inspection/actif")
+async def get_modele_inspection_parties_faciales_actif(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer le modèle d'inspection actif pour les pièces faciales"""
+    """Récupérer le modèle d'inspection actif pour les parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    modele = await db.modeles_inspection_pieces_faciales.find_one(
+    modele = await db.modeles_inspection_parties_faciales.find_one(
         {"tenant_id": tenant.id, "est_actif": True},
         {"_id": 0}
     )
@@ -31493,8 +31493,8 @@ async def get_modele_inspection_pieces_faciales_actif(
         modele_defaut = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "nom": "Inspection Pièce Faciale Standard",
-            "description": "Modèle d'inspection par défaut pour les pièces faciales",
+            "nom": "Inspection Partie Faciale Standard",
+            "description": "Modèle d'inspection par défaut pour les parties faciales",
             "est_actif": True,
             "frequence": "mensuelle",  # mensuelle, apres_usage, les_deux
             "sections": [
@@ -31558,18 +31558,18 @@ async def get_modele_inspection_pieces_faciales_actif(
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
-        await db.modeles_inspection_pieces_faciales.insert_one(modele_defaut)
+        await db.modeles_inspection_parties_faciales.insert_one(modele_defaut)
         return modele_defaut
     
     return modele
 
-@api_router.post("/{tenant_slug}/pieces-faciales/modeles-inspection")
-async def create_modele_inspection_pieces_faciales(
+@api_router.post("/{tenant_slug}/parties-faciales/modeles-inspection")
+async def create_modele_inspection_parties_faciales(
     tenant_slug: str,
     modele_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer un nouveau modèle d'inspection pour les pièces faciales"""
+    """Créer un nouveau modèle d'inspection pour les parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.role not in ['admin', 'superviseur']:
@@ -31587,23 +31587,23 @@ async def create_modele_inspection_pieces_faciales(
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.modeles_inspection_pieces_faciales.insert_one(modele)
+    await db.modeles_inspection_parties_faciales.insert_one(modele)
     return modele
 
-@api_router.put("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}")
-async def update_modele_inspection_pieces_faciales(
+@api_router.put("/{tenant_slug}/parties-faciales/modeles-inspection/{modele_id}")
+async def update_modele_inspection_parties_faciales(
     tenant_slug: str,
     modele_id: str,
     modele_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Mettre à jour un modèle d'inspection des pièces faciales"""
+    """Mettre à jour un modèle d'inspection des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.role not in ['admin', 'superviseur']:
         raise HTTPException(status_code=403, detail="Permission refusée")
     
-    existing = await db.modeles_inspection_pieces_faciales.find_one(
+    existing = await db.modeles_inspection_parties_faciales.find_one(
         {"id": modele_id, "tenant_id": tenant.id}
     )
     if not existing:
@@ -31614,31 +31614,31 @@ async def update_modele_inspection_pieces_faciales(
     
     # Si on active ce modèle, désactiver les autres
     if update_data.get('est_actif'):
-        await db.modeles_inspection_pieces_faciales.update_many(
+        await db.modeles_inspection_parties_faciales.update_many(
             {"tenant_id": tenant.id, "id": {"$ne": modele_id}},
             {"$set": {"est_actif": False}}
         )
     
-    await db.modeles_inspection_pieces_faciales.update_one(
+    await db.modeles_inspection_parties_faciales.update_one(
         {"id": modele_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
     return {"message": "Modèle mis à jour", "id": modele_id}
 
-@api_router.delete("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}")
-async def delete_modele_inspection_pieces_faciales(
+@api_router.delete("/{tenant_slug}/parties-faciales/modeles-inspection/{modele_id}")
+async def delete_modele_inspection_parties_faciales(
     tenant_slug: str,
     modele_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer un modèle d'inspection des pièces faciales"""
+    """Supprimer un modèle d'inspection des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.role not in ['admin']:
         raise HTTPException(status_code=403, detail="Permission refusée - Admin uniquement")
     
-    result = await db.modeles_inspection_pieces_faciales.delete_one(
+    result = await db.modeles_inspection_parties_faciales.delete_one(
         {"id": modele_id, "tenant_id": tenant.id}
     )
     
@@ -31647,8 +31647,8 @@ async def delete_modele_inspection_pieces_faciales(
     
     return {"message": "Modèle supprimé"}
 
-@api_router.post("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}/activer")
-async def activer_modele_inspection_pieces_faciales(
+@api_router.post("/{tenant_slug}/parties-faciales/modeles-inspection/{modele_id}/activer")
+async def activer_modele_inspection_parties_faciales(
     tenant_slug: str,
     modele_id: str,
     current_user: User = Depends(get_current_user)
@@ -31660,13 +31660,13 @@ async def activer_modele_inspection_pieces_faciales(
         raise HTTPException(status_code=403, detail="Permission refusée")
     
     # Désactiver tous les modèles
-    await db.modeles_inspection_pieces_faciales.update_many(
+    await db.modeles_inspection_parties_faciales.update_many(
         {"tenant_id": tenant.id},
         {"$set": {"est_actif": False}}
     )
     
     # Activer le modèle sélectionné
-    result = await db.modeles_inspection_pieces_faciales.update_one(
+    result = await db.modeles_inspection_parties_faciales.update_one(
         {"id": modele_id, "tenant_id": tenant.id},
         {"$set": {"est_actif": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
@@ -31676,14 +31676,14 @@ async def activer_modele_inspection_pieces_faciales(
     
     return {"message": "Modèle activé", "id": modele_id}
 
-# Inspections des pièces faciales (enregistrement)
-@api_router.post("/{tenant_slug}/pieces-faciales/inspections")
+# Inspections des parties faciales (enregistrement)
+@api_router.post("/{tenant_slug}/parties-faciales/inspections")
 async def create_inspection_piece_faciale(
     tenant_slug: str,
     inspection_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une nouvelle inspection de pièce faciale"""
+    """Créer une nouvelle inspection de partie faciale"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     inspection = {
@@ -31703,7 +31703,7 @@ async def create_inspection_piece_faciale(
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.inspections_pieces_faciales.insert_one(inspection)
+    await db.inspections_parties_faciales.insert_one(inspection)
     
     # Si non conforme, créer automatiquement une demande de remplacement si demandé
     if not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
@@ -31726,20 +31726,20 @@ async def create_inspection_piece_faciale(
     
     return inspection
 
-@api_router.get("/{tenant_slug}/pieces-faciales/inspections")
-async def get_inspections_pieces_faciales(
+@api_router.get("/{tenant_slug}/parties-faciales/inspections")
+async def get_inspections_parties_faciales(
     tenant_slug: str,
     equipement_id: str = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer les inspections des pièces faciales"""
+    """Récupérer les inspections des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     query = {"tenant_id": tenant.id}
     if equipement_id:
         query["equipement_id"] = equipement_id
     
-    inspections = await db.inspections_pieces_faciales.find(
+    inspections = await db.inspections_parties_faciales.find(
         query,
         {"_id": 0}
     ).sort("date_inspection", -1).to_list(length=100)
