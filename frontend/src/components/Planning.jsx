@@ -1577,17 +1577,17 @@ const Planning = () => {
                       className="garde-card-vertical"
                       style={{
                         background: isSearchedUserAssigned 
-                          ? '#FFFBEB' 
+                          ? '#EFF6FF' 
                           : isMyShift ? '#3B82F610' : 'white',
                         border: isSearchedUserAssigned
-                          ? '3px solid #F59E0B'
+                          ? '3px solid #2563EB'
                           : `3px solid ${isMyShift ? '#3B82F6' : gardeColor}`,
                         borderRadius: '8px',
                         padding: '1rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         boxShadow: isSearchedUserAssigned
-                          ? '0 4px 12px rgba(245, 158, 11, 0.4)'
+                          ? '0 4px 12px rgba(37, 99, 235, 0.4)'
                           : '0 2px 4px rgba(0,0,0,0.1)',
                         position: 'relative'
                       }}
