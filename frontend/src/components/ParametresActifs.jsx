@@ -625,7 +625,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
         {/* Sous-section: Configuration des alertes */}
         <ParametresAlertesEquipements tenantSlug={tenantSlug} user={user} />
 
-        {/* Sous-section: Gestion APRIA */}
+        {/* Sous-section: Gestion des Catégories */}
         <div style={{ 
           background: 'white', 
           padding: 'clamp(12px, 3vw, 20px)', 
@@ -635,30 +635,12 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           marginTop: '15px'
         }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📝</span> Gestion APRIA
+            <span>📂</span> Gestion des Catégories
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Configurez les formulaires d'inspection et les personnes à contacter pour les APRIA
+            Créez et gérez les catégories d'équipements (APRIA, Parties Faciales, Radios, etc.)
           </p>
-          <ParametresInspectionsAPRIA tenantSlug={tenantSlug} />
-        </div>
-
-        {/* Sous-section: Parties Faciales */}
-        <div style={{ 
-          background: 'white', 
-          padding: 'clamp(12px, 3vw, 20px)', 
-          borderRadius: '10px', 
-          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-          border: '1px solid #e0e0e0',
-          marginTop: '15px'
-        }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🎭</span> Parties Faciales
-          </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Créez et personnalisez les formulaires d'inspection pour les parties faciales (masques, joints, sangles...)
-          </p>
-          <ParametresInspectionsPartiesFaciales tenantSlug={tenantSlug} user={user} />
+          <GestionCategoriesEquipements tenantSlug={tenantSlug} user={user} />
         </div>
 
         {/* Sous-section: Import CSV */}
