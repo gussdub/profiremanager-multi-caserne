@@ -62,7 +62,7 @@ const FormulairesInspectionConfig = () => {
 
   const loadVehicules = async () => {
     try {
-      const data = await apiGet(tenantSlug, '/vehicules');
+      const data = await apiGet(tenantSlug, '/actifs/vehicules');
       setVehicules(data || []);
     } catch (error) {
       console.log('Pas de véhicules:', error);
