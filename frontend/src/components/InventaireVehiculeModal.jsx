@@ -165,28 +165,30 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       });
       
       const inventaireData = {
-        vehicule_id: vehicule.id,
-        vehicule_nom: vehicule.nom,
-        modele_id: modeleSelectionne.id,
-        date_inventaire: heureDebut,
-        heure_debut: heureDebut,
-        heure_fin: heureFin,
-        effectue_par: user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email,
-        effectue_par_id: user.id,
-        items_coches: itemsInventaire.map(item => ({
-          item_id: item.item_id,
-          section: item.section,
-          nom: item.nom,
-          type_champ: item.section_type_champ,
-          valeur: item.valeur,
-          notes: item.notes || '',
-          photo_prise: item.photo_prise || ''
-        })),
+        formulaire_id: modeleSelectionne.id,
+        asset_id: vehicule.id,
+        asset_type: 'vehicule',
+        user_id: user.id,
+        reponses: itemsInventaire.reduce((acc, item) => {
+          acc[item.item_id] = {
+            valeur: item.valeur,
+            notes: item.notes || '',
+            photo: item.photo_prise || ''
+          };
+          return acc;
+        }, {}),
+        conforme: alertes.length === 0,
         notes_generales: commentaire,
-        alertes: alertes
+        alertes: alertes,
+        metadata: {
+          vehicule_nom: vehicule.nom || vehicule.numero,
+          effectue_par: user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email,
+          heure_debut: heureDebut,
+          heure_fin: heureFin
+        }
       };
 
-      await apiPost(tenantSlug, `/vehicules/${vehicule.id}/inventaire`, inventaireData);
+      await apiPost(tenantSlug, '/inspections-unifiees', inventaireData);
       
       if (alertes.length > 0) {
         alert(`✅ Inventaire enregistré avec succès !\n⚠️ ${alertes.length} alerte(s) envoyée(s) aux superviseurs.`);
