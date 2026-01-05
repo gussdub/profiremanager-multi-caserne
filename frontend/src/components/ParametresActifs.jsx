@@ -641,6 +641,24 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           <ParametresInspectionsAPRIA tenantSlug={tenantSlug} />
         </div>
 
+        {/* Sous-section: Pièces Faciales */}
+        <div style={{ 
+          background: 'white', 
+          padding: 'clamp(12px, 3vw, 20px)', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0',
+          marginTop: '15px'
+        }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🎭</span> Pièces Faciales
+          </h3>
+          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
+            Créez et personnalisez les formulaires d'inspection pour les pièces faciales (masques, joints, sangles...)
+          </p>
+          <ParametresInspectionsPiecesFaciales tenantSlug={tenantSlug} user={user} />
+        </div>
+
         {/* Sous-section: Import CSV */}
         <div style={{ 
           background: 'white', 
