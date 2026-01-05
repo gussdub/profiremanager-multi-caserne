@@ -742,56 +742,12 @@ const FormulairesInspectionConfig = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <Label>Catégories concernées</Label>
-                    <div style={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
-                      gap: '0.5rem',
-                      marginTop: '0.5rem',
-                      maxHeight: '150px',
-                      overflowY: 'auto',
-                      padding: '0.5rem',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px'
-                    }}>
-                      {categories.map(cat => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            const ids = formData.categorie_ids || [];
-                            setFormData({
-                              ...formData,
-                              categorie_ids: ids.includes(cat.id)
-                                ? ids.filter(id => id !== cat.id)
-                                : [...ids, cat.id]
-                            });
-                          }}
-                          style={{
-                            padding: '0.4rem 0.75rem',
-                            borderRadius: '999px',
-                            border: `2px solid ${formData.categorie_ids?.includes(cat.id) ? '#3B82F6' : '#e5e7eb'}`,
-                            backgroundColor: formData.categorie_ids?.includes(cat.id) ? '#dbeafe' : 'white',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.25rem'
-                          }}
-                        >
-                          {getTypeIcon(cat.type)} {cat.nom}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Véhicules spécifiques (pour inventaires) */}
-                  {formData.type === 'inventaire' && vehicules.length > 0 && (
+                  {/* Catégories concernées - SEULEMENT pour type "inspection" */}
+                  {formData.type === 'inspection' && (
                     <div>
-                      <Label>🚗 Véhicules spécifiques (optionnel)</Label>
+                      <Label>📂 Catégories d'équipement concernées *</Label>
                       <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0.5rem' }}>
-                        Sélectionnez des véhicules spécifiques ou laissez vide pour tous les véhicules
+                        Sélectionnez les catégories pour lesquelles ce formulaire sera utilisé
                       </p>
                       <div style={{ 
                         display: 'flex', 
@@ -803,24 +759,24 @@ const FormulairesInspectionConfig = () => {
                         backgroundColor: '#f8fafc',
                         borderRadius: '8px'
                       }}>
-                        {vehicules.map(veh => (
+                        {categories.map(cat => (
                           <button
-                            key={veh.id}
+                            key={cat.id}
                             type="button"
                             onClick={() => {
-                              const ids = formData.vehicule_ids || [];
+                              const ids = formData.categorie_ids || [];
                               setFormData({
                                 ...formData,
-                                vehicule_ids: ids.includes(veh.id)
-                                  ? ids.filter(id => id !== veh.id)
-                                  : [...ids, veh.id]
+                                categorie_ids: ids.includes(cat.id)
+                                  ? ids.filter(id => id !== cat.id)
+                                  : [...ids, cat.id]
                               });
                             }}
                             style={{
                               padding: '0.4rem 0.75rem',
                               borderRadius: '999px',
-                              border: `2px solid ${formData.vehicule_ids?.includes(veh.id) ? '#22c55e' : '#e5e7eb'}`,
-                              backgroundColor: formData.vehicule_ids?.includes(veh.id) ? '#dcfce7' : 'white',
+                              border: `2px solid ${formData.categorie_ids?.includes(cat.id) ? '#3B82F6' : '#e5e7eb'}`,
+                              backgroundColor: formData.categorie_ids?.includes(cat.id) ? '#dbeafe' : 'white',
                               cursor: 'pointer',
                               fontSize: '0.85rem',
                               display: 'flex',
@@ -828,10 +784,71 @@ const FormulairesInspectionConfig = () => {
                               gap: '0.25rem'
                             }}
                           >
-                            🚗 {veh.numero || veh.nom || veh.id}
+                            {getTypeIcon(cat.type)} {cat.nom}
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Véhicules concernés - SEULEMENT pour type "inventaire" */}
+                  {formData.type === 'inventaire' && (
+                    <div>
+                      <Label>🚗 Véhicules concernés *</Label>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0.5rem' }}>
+                        Sélectionnez les véhicules pour lesquels ce formulaire d'inventaire sera utilisé
+                      </p>
+                      {vehicules.length === 0 ? (
+                        <div style={{ 
+                          padding: '1rem', 
+                          backgroundColor: '#fef3c7', 
+                          borderRadius: '8px',
+                          color: '#92400e',
+                          fontSize: '0.85rem'
+                        }}>
+                          ⚠️ Aucun véhicule disponible. Ajoutez des véhicules dans le module "Véhicules" pour pouvoir créer un inventaire.
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          display: 'flex', 
+                          flexWrap: 'wrap', 
+                          gap: '0.5rem',
+                          maxHeight: '150px',
+                          overflowY: 'auto',
+                          padding: '0.5rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '8px'
+                        }}>
+                          {vehicules.map(veh => (
+                            <button
+                              key={veh.id}
+                              type="button"
+                              onClick={() => {
+                                const ids = formData.vehicule_ids || [];
+                                setFormData({
+                                  ...formData,
+                                  vehicule_ids: ids.includes(veh.id)
+                                    ? ids.filter(id => id !== veh.id)
+                                    : [...ids, veh.id]
+                                });
+                              }}
+                              style={{
+                                padding: '0.4rem 0.75rem',
+                                borderRadius: '999px',
+                                border: `2px solid ${formData.vehicule_ids?.includes(veh.id) ? '#22c55e' : '#e5e7eb'}`,
+                                backgroundColor: formData.vehicule_ids?.includes(veh.id) ? '#dcfce7' : 'white',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}
+                            >
+                              🚗 {veh.numero || veh.nom || veh.id}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
