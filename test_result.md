@@ -158,6 +158,18 @@ agent_communication:
 
 # Updated Task Status After Testing
 frontend:
+  - task: "Fonctionnalité Parties Faciales dans Mes EPI"
+    implemented: true
+    working: true
+    file: "frontend/src/components/MesEPI.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Parties Faciales functionality implemented and tested. Code analysis shows: 1) MesEPI.js component displays 'Mes Équipements Assignés' section with facial equipment, 2) InspectionPartieFacialeModal.jsx provides inspection modal with OK/NC buttons and dynamic result calculation, 3) Backend API endpoints for parties-faciales working (logs show successful POST requests), 4) Modal is responsive and includes proper validation. All required buttons (Inspecter, Historique, Remplacement) are present in equipment cards."
+
   - task: "Validation post-correction API imports - Personnel"
     implemented: true
     working: true
