@@ -540,27 +540,62 @@ const MesEPI = ({ user }) => {
                     {equip.categorie_nom && <p><strong>Catégorie:</strong> {equip.categorie_nom}</p>}
                     {equip.numero_serie && <p><strong>N° série:</strong> {equip.numero_serie}</p>}
                     {equip.emplacement && <p><strong>Emplacement:</strong> {equip.emplacement}</p>}
-                    {isPartieFaciale && (
-                      <p style={{ color: '#7c3aed', fontWeight: '500', marginTop: '0.5rem' }}>
-                        🎭 Partie faciale - Inspection requise
-                      </p>
-                    )}
+                    {/* Afficher le formulaire d'inspection disponible */}
+                    {(() => {
+                      const formulaire = getFormulaireForCategorie(equip.categorie_id);
+                      if (formulaire) {
+                        return (
+                          <p style={{ color: '#3b82f6', fontWeight: '500', marginTop: '0.5rem' }}>
+                            📋 {formulaire.nom} disponible
+                          </p>
+                        );
+                      } else if (isPartieFaciale) {
+                        return (
+                          <p style={{ color: '#7c3aed', fontWeight: '500', marginTop: '0.5rem' }}>
+                            🎭 Partie faciale - Inspection requise
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   
                   <div className="epi-card-actions">
-                    {isPartieFaciale && modelePartieFaciale && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => {
-                          setSelectedEquipement(equip);
-                          setShowInspectionPartieFacialeModal(true);
-                        }}
-                        style={{ backgroundColor: '#8b5cf6' }}
-                        disabled={equip.etat === 'hors_service'}
-                      >
-                        📋 Inspecter
-                      </Button>
-                    )}
+                    {/* Bouton Inspecter avec formulaire unifié ou legacy */}
+                    {(() => {
+                      const formulaire = getFormulaireForCategorie(equip.categorie_id);
+                      if (formulaire) {
+                        return (
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedEquipement(equip);
+                              setSelectedFormulaire(formulaire);
+                              setShowInspectionUnifieeModal(true);
+                            }}
+                            style={{ backgroundColor: '#3b82f6' }}
+                            disabled={equip.etat === 'hors_service'}
+                          >
+                            📋 Inspecter
+                          </Button>
+                        );
+                      } else if (isPartieFaciale && modelePartieFaciale) {
+                        return (
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedEquipement(equip);
+                              setShowInspectionPartieFacialeModal(true);
+                            }}
+                            style={{ backgroundColor: '#8b5cf6' }}
+                            disabled={equip.etat === 'hors_service'}
+                          >
+                            📋 Inspecter
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })()}
                     <Button 
                       size="sm" 
                       variant="outline"
