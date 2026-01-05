@@ -1667,15 +1667,15 @@ const Planning = () => {
                                 style={{
                                   padding: '0.5rem',
                                   background: searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) 
-                                    ? 'linear-gradient(135deg, #FCD34D 0%, #FDE68A 100%)' 
+                                    ? 'linear-gradient(135deg, #93C5FD 0%, #BFDBFE 100%)' 
                                     : '#F9FAFB',
                                   borderRadius: '4px',
                                   fontSize: '0.85rem',
                                   fontWeight: (searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId)) || u.id === user.id ? 'bold' : 'normal',
                                   border: (searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId)) 
-                                    ? '2px solid #F59E0B' 
+                                    ? '2px solid #2563EB' 
                                     : u.id === user.id ? '2px solid #3B82F6' : '1px solid #E5E7EB',
-                                  boxShadow: searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none'
+                                  boxShadow: searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) ? '0 2px 8px rgba(37, 99, 235, 0.3)' : 'none'
                                 }}
                               >
                                 {searchFilter.trim() && (filteredUsers.includes(u) || u.id === selectedUserId) && '🔍 '}
