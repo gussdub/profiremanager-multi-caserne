@@ -34,6 +34,9 @@ const InspectionUnifieeModal = ({
             case 'oui_non':
               initialReponses[item.id] = 'oui';
               break;
+            case 'present_absent':
+              initialReponses[item.id] = 'present';
+              break;
             case 'nombre':
               initialReponses[item.id] = 0;
               break;
@@ -84,6 +87,9 @@ const InspectionUnifieeModal = ({
           allConforme = false;
         }
         if (item.type === 'oui_non' && reponses[item.id] === 'non') {
+          allConforme = false;
+        }
+        if (item.type === 'present_absent' && (reponses[item.id] === 'absent' || reponses[item.id] === 'defectueux')) {
           allConforme = false;
         }
       });
