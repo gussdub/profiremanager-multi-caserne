@@ -849,41 +849,98 @@ const FormulairesInspectionConfig = () => {
                         <div 
                           key={item.id}
                           style={{
+                            marginBottom: '0.75rem',
+                            padding: '0.75rem',
+                            backgroundColor: '#fafafa',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb'
+                          }}
+                        >
+                          <div style={{
                             display: 'flex',
                             gap: '0.5rem',
                             alignItems: 'center',
-                            marginBottom: '0.5rem',
                             flexWrap: 'wrap'
-                          }}
-                        >
-                          <Input
-                            value={item.nom}
-                            onChange={(e) => updateItem(sectionIndex, itemIndex, 'nom', e.target.value)}
-                            placeholder="Nom du critère"
-                            style={{ flex: 1, minWidth: '150px' }}
-                          />
-                          <select
-                            value={item.type}
-                            onChange={(e) => updateItem(sectionIndex, itemIndex, 'type', e.target.value)}
-                            style={{
+                          }}>
+                            <Input
+                              value={item.nom}
+                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'nom', e.target.value)}
+                              placeholder="Nom du critère"
+                              style={{ flex: 1, minWidth: '150px' }}
+                            />
+                            <select
+                              value={item.type}
+                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'type', e.target.value)}
+                              style={{
+                                padding: '0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid #e5e7eb',
+                                minWidth: '180px'
+                              }}
+                            >
+                              {typesChamp.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => removeItem(sectionIndex, itemIndex)}
+                              style={{ color: '#ef4444' }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                          
+                          {/* Options pour liste déroulante */}
+                          {item.type === 'liste' && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <Label style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                Options de la liste (une par ligne)
+                              </Label>
+                              <Textarea
+                                value={(item.options || []).join('\n')}
+                                onChange={(e) => {
+                                  const options = e.target.value.split('\n').filter(o => o.trim());
+                                  updateItem(sectionIndex, itemIndex, 'options', options);
+                                }}
+                                placeholder="Option 1&#10;Option 2&#10;Option 3"
+                                rows={3}
+                                style={{ 
+                                  width: '100%', 
+                                  fontSize: '0.85rem',
+                                  marginTop: '0.25rem'
+                                }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Info pour les champs auto-remplis */}
+                          {item.type === 'inspecteur' && (
+                            <div style={{ 
+                              marginTop: '0.5rem', 
                               padding: '0.5rem',
+                              backgroundColor: '#dbeafe',
                               borderRadius: '6px',
-                              border: '1px solid #e5e7eb',
-                              minWidth: '150px'
-                            }}
-                          >
-                            {typesChamp.map(t => (
-                              <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                          </select>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => removeItem(sectionIndex, itemIndex)}
-                            style={{ color: '#ef4444' }}
-                          >
-                            ✕
-                          </Button>
+                              fontSize: '0.8rem',
+                              color: '#1e40af'
+                            }}>
+                              👤 Ce champ sera automatiquement rempli avec le nom de l'inspecteur connecté
+                            </div>
+                          )}
+                          
+                          {item.type === 'lieu' && (
+                            <div style={{ 
+                              marginTop: '0.5rem', 
+                              padding: '0.5rem',
+                              backgroundColor: '#dcfce7',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              color: '#166534'
+                            }}>
+                              📍 L'utilisateur pourra utiliser le GPS ou saisir une adresse manuellement
+                            </div>
+                          )}
                         </div>
                       ))}
                       
