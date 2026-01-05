@@ -32033,6 +32033,73 @@ async def get_formulaires_par_categorie(
     
     return formulaires
 
+@api_router.post("/{tenant_slug}/inspections-unifiees")
+async def create_inspection_unifiee(
+    tenant_slug: str,
+    inspection_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une inspection en utilisant le système de formulaires unifiés"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspection = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "equipement_id": inspection_data.get("equipement_id"),
+        "equipement_nom": inspection_data.get("equipement_nom", ""),
+        "formulaire_id": inspection_data.get("formulaire_id"),
+        "formulaire_nom": inspection_data.get("formulaire_nom", ""),
+        "type_inspection": inspection_data.get("type_inspection", "inspection"),
+        "reponses": inspection_data.get("reponses", {}),
+        "conforme": inspection_data.get("conforme", True),
+        "remarques": inspection_data.get("remarques", ""),
+        "inspecteur_id": current_user.id,
+        "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
+        "date_inspection": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections_unifiees.insert_one(inspection)
+    
+    # Si non conforme et demande de remplacement activée
+    if not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
+        demande = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "equipement_id": inspection_data.get("equipement_id"),
+            "equipement_nom": inspection_data.get("equipement_nom"),
+            "type": "remplacement",
+            "raison": "Non conforme lors de l'inspection",
+            "details": inspection_data.get("remarques", ""),
+            "statut": "en_attente",
+            "demandeur_id": current_user.id,
+            "demandeur_nom": f"{current_user.prenom} {current_user.nom}",
+            "inspection_id": inspection["id"],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.demandes_remplacement_equipements.insert_one(demande)
+        logger.info(f"Demande de remplacement créée pour {inspection_data.get('equipement_nom')}")
+    
+    inspection.pop("_id", None)
+    logger.info(f"Inspection unifiée créée pour {inspection_data.get('equipement_nom')} par {current_user.email}")
+    return inspection
+
+@api_router.get("/{tenant_slug}/inspections-unifiees/equipement/{equipement_id}")
+async def get_inspections_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections pour un équipement"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspections = await db.inspections_unifiees.find(
+        {"tenant_id": tenant.id, "equipement_id": equipement_id},
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(100)
+    
+    return inspections
+
 @api_router.post("/{tenant_slug}/formulaires-inspection/migrer-existants")
 async def migrer_formulaires_existants(
     tenant_slug: str,
