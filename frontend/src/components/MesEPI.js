@@ -586,9 +586,9 @@ const MesEPI = ({ user }) => {
       )}
 
       {/* Section EPI classiques */}
-      {epis.length === 0 && !masqueAPRIA ? (
+      {epis.length === 0 && equipementsAssignes.length === 0 ? (
         <div className="empty-state">
-          <p>Aucun EPI ne vous est assigné pour le moment.</p>
+          <p>Aucun EPI ou équipement ne vous est assigné pour le moment.</p>
         </div>
       ) : epis.length > 0 && (
         <>
