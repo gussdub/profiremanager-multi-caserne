@@ -11,9 +11,27 @@ const RondeSecurite = ({ vehicule, user, onClose, onSuccess }) => {
   const { tenantSlug } = useTenant();
   const signatureMandateeRef = useRef(null);
 
+  // Fonction pour obtenir la date locale (Canada EST/EDT)
+  const getLocalDate = () => {
+    const now = new Date();
+    // Utiliser le format local pour la date YYYY-MM-DD
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Fonction pour obtenir l'heure locale
+  const getLocalTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    heure: new Date().toTimeString().slice(0, 5),
+    date: getLocalDate(),
+    heure: getLocalTime(),
     lieu: '',
     position_gps: null,
     km: '',
