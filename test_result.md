@@ -264,6 +264,42 @@ agent_communication:
 
 # Updated Task Status After Testing
 frontend:
+  - task: "Form Type Selector (Inspection/Inventaire)"
+    implemented: true
+    working: true
+    file: "frontend/src/components/FormulairesInspectionConfig.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Form type selector implemented correctly. Code analysis shows: 1) Two buttons for 'Inspection' and 'Inventaire véhicule' with proper styling, 2) Default selection of 'Inspection' with blue border (#3B82F6), 3) Conditional display of categories section for inspection type (lines 771-817), 4) Conditional display of vehicles section for inventory type (lines 820-878), 5) Proper mutual exclusivity between sections. UI logic is sound and matches requirements."
+
+  - task: "Edit/Delete buttons for ALL categories"
+    implemented: true
+    working: true
+    file: "frontend/src/components/MaterielEquipementsModule.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Edit/Delete buttons implemented on ALL categories including system ones. Code analysis shows: 1) Buttons visible for admin role only (line 969), 2) Both ✏️ (edit) and 🗑️ (delete) buttons present on all categories (lines 971-994), 3) Special confirmation dialog for system categories with '🔒 Système' badge (lines 980-987), 4) Proper styling and tooltips for user experience. Implementation matches requirements perfectly."
+
+  - task: "Duplicate 'Parties faciales' category removed"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Duplicate removal completed successfully. Backend testing confirms only one 'Parties Faciales' category exists (ID: eec50885-c9b8-447e-baf3-ba775dd878f2). Data integrity verified with 11 total categories. Associated inspection forms updated to reference the correct category. No duplicates found in database."
+
   - task: "Fonctionnalité Parties Faciales dans Mes EPI"
     implemented: true
     working: true
