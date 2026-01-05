@@ -1801,10 +1801,10 @@ const Planning = () => {
                           key={typeGarde.id}
                           className={`garde-mois-item ${coverage} ${isMyShift ? 'my-shift' : ''} ${isSearchedUserAssigned ? 'searched-user' : ''}`}
                           style={{
-                            backgroundColor: isSearchedUserAssigned ? '#F59E0B' : (isMyShift ? '#3B82F6' : getCoverageColor(coverage)),
+                            backgroundColor: isSearchedUserAssigned ? '#2563EB' : (isMyShift ? '#3B82F6' : getCoverageColor(coverage)),
                             opacity: coverage === 'vacante' ? 0.7 : 1,
-                            border: isSearchedUserAssigned ? '2px solid #D97706' : 'none',
-                            boxShadow: isSearchedUserAssigned ? '0 0 0 3px rgba(245, 158, 11, 0.2)' : 'none'
+                            border: isSearchedUserAssigned ? '2px solid #1D4ED8' : 'none',
+                            boxShadow: isSearchedUserAssigned ? '0 0 0 3px rgba(37, 99, 235, 0.3)' : 'none'
                           }}
                           onClick={() => openGardeDetails(date, typeGarde)}
                           data-testid={`garde-mois-${date.getDate()}-${typeGarde.id}`}
