@@ -31458,6 +31458,332 @@ async def get_historique_inspections_apria(
     
     return inspections
 
+# ==================== MODULE INSPECTIONS PIÈCES FACIALES ====================
+
+@api_router.get("/{tenant_slug}/pieces-faciales/modeles-inspection")
+async def get_modeles_inspection_pieces_faciales(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les modèles d'inspection des pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modeles = await db.modeles_inspection_pieces_faciales.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return modeles
+
+@api_router.get("/{tenant_slug}/pieces-faciales/modeles-inspection/actif")
+async def get_modele_inspection_pieces_faciales_actif(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer le modèle d'inspection actif pour les pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    modele = await db.modeles_inspection_pieces_faciales.find_one(
+        {"tenant_id": tenant.id, "est_actif": True},
+        {"_id": 0}
+    )
+    
+    if not modele:
+        # Créer un modèle par défaut
+        modele_defaut = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "nom": "Inspection Pièce Faciale Standard",
+            "description": "Modèle d'inspection par défaut pour les pièces faciales",
+            "est_actif": True,
+            "frequence": "mensuelle",  # mensuelle, apres_usage, les_deux
+            "sections": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Inspection visuelle du masque",
+                    "icone": "🎭",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non conforme", "declencherAlerte": True}
+                    ],
+                    "items": [
+                        {"id": "pf_1", "nom": "Masque complet - état général", "ordre": 0},
+                        {"id": "pf_2", "nom": "Écran de vision - propreté et intégrité", "ordre": 1},
+                        {"id": "pf_3", "nom": "Joint d'étanchéité facial", "ordre": 2},
+                        {"id": "pf_4", "nom": "Sangles/harnais de fixation", "ordre": 3},
+                        {"id": "pf_5", "nom": "Valve d'expiration", "ordre": 4},
+                        {"id": "pf_6", "nom": "Valve d'inhalation", "ordre": 5},
+                        {"id": "pf_7", "nom": "Membrane vocale", "ordre": 6},
+                        {"id": "pf_8", "nom": "Raccord rapide", "ordre": 7}
+                    ],
+                    "ordre": 0
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Test d'étanchéité",
+                    "icone": "💨",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Réussi", "declencherAlerte": False},
+                        {"label": "Échoué", "declencherAlerte": True}
+                    ],
+                    "items": [
+                        {"id": "pf_test_1", "nom": "Test pression positive", "ordre": 0},
+                        {"id": "pf_test_2", "nom": "Test pression négative", "ordre": 1}
+                    ],
+                    "ordre": 1
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Résultat global",
+                    "icone": "✅",
+                    "type_champ": "radio",
+                    "options": [
+                        {"label": "Conforme", "declencherAlerte": False},
+                        {"label": "Non Conforme", "declencherAlerte": True}
+                    ],
+                    "items": [],
+                    "ordre": 2
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "titre": "Remarques",
+                    "icone": "📝",
+                    "type_champ": "text",
+                    "items": [],
+                    "ordre": 3
+                }
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.modeles_inspection_pieces_faciales.insert_one(modele_defaut)
+        return modele_defaut
+    
+    return modele
+
+@api_router.post("/{tenant_slug}/pieces-faciales/modeles-inspection")
+async def create_modele_inspection_pieces_faciales(
+    tenant_slug: str,
+    modele_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau modèle d'inspection pour les pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    modele = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": modele_data.get("nom", "Nouveau modèle"),
+        "description": modele_data.get("description", ""),
+        "est_actif": modele_data.get("est_actif", False),
+        "frequence": modele_data.get("frequence", "mensuelle"),
+        "sections": modele_data.get("sections", []),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.modeles_inspection_pieces_faciales.insert_one(modele)
+    return modele
+
+@api_router.put("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}")
+async def update_modele_inspection_pieces_faciales(
+    tenant_slug: str,
+    modele_id: str,
+    modele_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un modèle d'inspection des pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    existing = await db.modeles_inspection_pieces_faciales.find_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    update_data = {k: v for k, v in modele_data.items() if k not in ['id', 'tenant_id', 'created_at']}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Si on active ce modèle, désactiver les autres
+    if update_data.get('est_actif'):
+        await db.modeles_inspection_pieces_faciales.update_many(
+            {"tenant_id": tenant.id, "id": {"$ne": modele_id}},
+            {"$set": {"est_actif": False}}
+        )
+    
+    await db.modeles_inspection_pieces_faciales.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Modèle mis à jour", "id": modele_id}
+
+@api_router.delete("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}")
+async def delete_modele_inspection_pieces_faciales(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un modèle d'inspection des pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin uniquement")
+    
+    result = await db.modeles_inspection_pieces_faciales.delete_one(
+        {"id": modele_id, "tenant_id": tenant.id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return {"message": "Modèle supprimé"}
+
+@api_router.post("/{tenant_slug}/pieces-faciales/modeles-inspection/{modele_id}/activer")
+async def activer_modele_inspection_pieces_faciales(
+    tenant_slug: str,
+    modele_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Activer un modèle d'inspection (désactive les autres)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Désactiver tous les modèles
+    await db.modeles_inspection_pieces_faciales.update_many(
+        {"tenant_id": tenant.id},
+        {"$set": {"est_actif": False}}
+    )
+    
+    # Activer le modèle sélectionné
+    result = await db.modeles_inspection_pieces_faciales.update_one(
+        {"id": modele_id, "tenant_id": tenant.id},
+        {"$set": {"est_actif": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return {"message": "Modèle activé", "id": modele_id}
+
+# Inspections des pièces faciales (enregistrement)
+@api_router.post("/{tenant_slug}/pieces-faciales/inspections")
+async def create_inspection_piece_faciale(
+    tenant_slug: str,
+    inspection_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle inspection de pièce faciale"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    inspection = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "equipement_id": inspection_data.get("equipement_id"),
+        "equipement_nom": inspection_data.get("equipement_nom", ""),
+        "type_inspection": inspection_data.get("type_inspection", "mensuelle"),
+        "modele_utilise_id": inspection_data.get("modele_utilise_id"),
+        "reponses": inspection_data.get("reponses", {}),
+        "conforme": inspection_data.get("conforme", True),
+        "remarques": inspection_data.get("remarques", ""),
+        "photos": inspection_data.get("photos", []),
+        "inspecteur_id": current_user.id,
+        "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
+        "date_inspection": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections_pieces_faciales.insert_one(inspection)
+    
+    # Si non conforme, créer automatiquement une demande de remplacement si demandé
+    if not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
+        demande = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "equipement_id": inspection_data.get("equipement_id"),
+            "equipement_nom": inspection_data.get("equipement_nom"),
+            "type": "remplacement",
+            "raison": "Non conforme lors de l'inspection",
+            "details": inspection_data.get("remarques", ""),
+            "statut": "en_attente",
+            "demandeur_id": current_user.id,
+            "demandeur_nom": f"{current_user.prenom} {current_user.nom}",
+            "inspection_id": inspection["id"],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.demandes_remplacement_equipements.insert_one(demande)
+        logger.info(f"Demande de remplacement créée automatiquement pour {inspection_data.get('equipement_nom')}")
+    
+    return inspection
+
+@api_router.get("/{tenant_slug}/pieces-faciales/inspections")
+async def get_inspections_pieces_faciales(
+    tenant_slug: str,
+    equipement_id: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les inspections des pièces faciales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {"tenant_id": tenant.id}
+    if equipement_id:
+        query["equipement_id"] = equipement_id
+    
+    inspections = await db.inspections_pieces_faciales.find(
+        query,
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(length=100)
+    
+    return inspections
+
+# Endpoint pour récupérer les équipements assignés à un utilisateur
+@api_router.get("/{tenant_slug}/mes-equipements")
+async def get_mes_equipements(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les équipements assignés à l'utilisateur courant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les équipements du module Matériel assignés à l'utilisateur
+    equipements = await db.equipements.find(
+        {
+            "tenant_id": tenant.id, 
+            "employe_id": current_user.id
+        },
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    # Récupérer aussi les EPI assignés à l'utilisateur
+    epis = await db.epis.find(
+        {
+            "tenant_id": tenant.id,
+            "$or": [
+                {"user_id": current_user.id},
+                {"employe_id": current_user.id}
+            ]
+        },
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    return {
+        "equipements": equipements,
+        "epis": epis,
+        "total": len(equipements) + len(epis)
+    }
+
+# ==================== FIN MODULE PIÈCES FACIALES ====================
+
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
 
 
