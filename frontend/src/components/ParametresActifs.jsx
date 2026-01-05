@@ -13,6 +13,7 @@ import ParametresAlertesEquipements from './ParametresAlertesEquipements';
 import ParametresInspectionsAPRIA from './ParametresInspectionsAPRIA';
 import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSeches';
 import ParametresInspectionsPartiesFaciales from './ParametresInspectionsPartiesFaciales';
+import FormulairesInspectionConfig from './FormulairesInspectionConfig';
 import ImportCSVEquipements from './ImportCSVEquipements';
 import ImportCSVEPI from './ImportCSVEPI';
 
