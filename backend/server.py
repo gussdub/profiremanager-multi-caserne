@@ -21632,10 +21632,6 @@ async def delete_categorie_equipement(
     if not existing:
         raise HTTPException(status_code=404, detail="Catégorie non trouvée")
     
-    # Vérifier si c'est une catégorie prédéfinie
-    if existing.get('est_predefinit', False):
-        raise HTTPException(status_code=403, detail="Impossible de supprimer une catégorie prédéfinie")
-    
     # Vérifier si des équipements utilisent cette catégorie
     count = await db.equipements.count_documents({
         "tenant_id": tenant.id,
@@ -21645,7 +21641,19 @@ async def delete_categorie_equipement(
     if count > 0:
         raise HTTPException(
             status_code=400,
-            detail=f"Impossible de supprimer: {count} équipement(s) utilisent cette catégorie"
+            detail=f"Impossible de supprimer: {count} équipement(s) utilisent cette catégorie. Réassignez-les d'abord."
+        )
+    
+    # Vérifier si des formulaires d'inspection utilisent cette catégorie
+    form_count = await db.formulaires_inspection.count_documents({
+        "tenant_id": tenant.id,
+        "categorie_ids": categorie_id
+    })
+    
+    if form_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossible de supprimer: {form_count} formulaire(s) d'inspection utilisent cette catégorie. Modifiez-les d'abord."
         )
     
     result = await db.categories_equipement.delete_one({
