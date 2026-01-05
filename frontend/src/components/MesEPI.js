@@ -12,7 +12,6 @@ import InspectionPartieFacialeModal from './InspectionPartieFacialeModal';
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
   const [equipementsAssignes, setEquipementsAssignes] = useState([]);
-  const [masqueAPRIA, setMasqueAPRIA] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedEPI, setSelectedEPI] = useState(null);
   const [selectedEquipement, setSelectedEquipement] = useState(null);
