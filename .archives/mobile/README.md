@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://firecalendar-fix.preview.emergentagent.com
+- **URL** : https://safeinspect-10.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://firecalendar-fix.preview.emergentagent.com"
+  "apiUrl": "https://safeinspect-10.preview.emergentagent.com"
 }
 ```
 
