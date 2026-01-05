@@ -18,10 +18,11 @@ const InspectionUnifieeModal = ({
   const [reponses, setReponses] = useState({});
   const [remarques, setRemarques] = useState('');
   const [demanderRemplacement, setDemanderRemplacement] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   // Initialiser les réponses selon le formulaire
   useEffect(() => {
-    if (isOpen && formulaire) {
+    if (isOpen && formulaire && user) {
       const initialReponses = {};
       formulaire.sections?.forEach(section => {
         section.items?.forEach(item => {
@@ -35,6 +36,13 @@ const InspectionUnifieeModal = ({
               break;
             case 'nombre':
               initialReponses[item.id] = 0;
+              break;
+            case 'inspecteur':
+              // Auto-remplir avec le nom de l'utilisateur connecté
+              initialReponses[item.id] = `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email;
+              break;
+            case 'lieu':
+              initialReponses[item.id] = '';
               break;
             case 'texte':
             case 'date':
