@@ -1135,6 +1135,30 @@ const MesEPI = ({ user }) => {
         />
       )}
 
+      {/* Modal Inspection Unifiée */}
+      {showInspectionUnifieeModal && selectedEquipement && selectedFormulaire && (
+        <InspectionUnifieeModal
+          isOpen={showInspectionUnifieeModal}
+          onClose={() => {
+            setShowInspectionUnifieeModal(false);
+            setSelectedFormulaire(null);
+          }}
+          tenantSlug={tenantSlug}
+          user={user}
+          equipement={selectedEquipement}
+          formulaire={selectedFormulaire}
+          onInspectionCreated={() => {
+            setShowInspectionUnifieeModal(false);
+            setSelectedFormulaire(null);
+            loadEquipementsAssignes();
+            toast({
+              title: "✅ Inspection enregistrée",
+              description: "L'inspection a été sauvegardée avec succès"
+            });
+          }}
+        />
+      )}
+
       {/* Modal de capture caméra iOS */}
       {showCameraCapture && (
         <CameraCapture
