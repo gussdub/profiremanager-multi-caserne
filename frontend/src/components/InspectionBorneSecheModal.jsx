@@ -419,34 +419,51 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
     });
   };
 
-  // Soumettre l'inspection
+  // Soumettre l'inspection vers le système unifié
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      const reponsesArray = Object.values(reponses).map(r => ({
-        ...r,
-        items: Object.entries(r.items || {}).map(([itemId, valeur]) => ({
-          item_id: itemId,
-          valeur
-        }))
-      }));
+      // Convertir les réponses vers le format unifié
+      const reponsesUnifiees = {};
+      Object.values(reponses).forEach(r => {
+        // Si la section a des items, les ajouter séparément
+        if (r.items && Object.keys(r.items).length > 0) {
+          Object.entries(r.items).forEach(([itemId, valeur]) => {
+            reponsesUnifiees[itemId] = {
+              valeur: valeur,
+              section: r.section_titre
+            };
+          });
+        } else {
+          // Sinon, ajouter la valeur de la section directement
+          reponsesUnifiees[r.section_id] = {
+            valeur: r.valeur,
+            section: r.section_titre
+          };
+        }
+      });
 
       const inspectionData = {
-        borne_seche_id: borne.id,
-        modele_id: modele.id,
-        reponses: reponsesArray,
+        formulaire_id: modele.id,
+        asset_id: borne.id,
+        asset_type: 'borne_seche',
+        reponses: reponsesUnifiees,
+        conforme: alertes.length === 0 && !showAnomalieForm,
+        notes_generales: anomalieData.commentaire || '',
         alertes: alertes,
-        has_anomalie: showAnomalieForm,
-        commentaire_anomalie: anomalieData.commentaire,
-        photos_anomalie: anomalieData.photos,
-        latitude: reponses.geolocation?.valeur?.latitude,
-        longitude: reponses.geolocation?.valeur?.longitude,
-        signature_inspecteur: Object.values(reponses).find(r => r.type_champ === 'signature')?.valeur || ''
+        metadata: {
+          borne_nom: borne.nom || borne.numero_identification,
+          has_anomalie: showAnomalieForm,
+          photos_anomalie: anomalieData.photos || [],
+          latitude: reponses.geolocation?.valeur?.latitude,
+          longitude: reponses.geolocation?.valeur?.longitude,
+          signature_inspecteur: Object.values(reponses).find(r => r.type_champ === 'signature')?.valeur || ''
+        }
       };
 
-      await apiPost(tenantSlug, '/bornes-seches/inspections-personnalisees', inspectionData);
+      await apiPost(tenantSlug, '/inspections-unifiees', inspectionData);
       alert('✅ Inspection enregistrée avec succès !');
       onSuccess?.();
       onClose();
