@@ -362,27 +362,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-          border: '1px solid #e0e0e0',
-          marginBottom: '16px'
-        }}>
-          <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
-        </div>
-
-        {/* Sous-section: Modèles d'Inventaires */}
-        <div style={{ 
-          background: 'white', 
-          padding: 'clamp(12px, 3vw, 20px)', 
-          borderRadius: '10px', 
-          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           border: '1px solid #e0e0e0'
         }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📦</span> Modèles d'Inventaires
-          </h3>
-          <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Créez et gérez les modèles d'inventaire pour vos véhicules
-          </p>
-          <ParametresInventairesVehicules tenantSlug={tenantSlug} user={user} />
+          <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
         </div>
       </div>
       )}
