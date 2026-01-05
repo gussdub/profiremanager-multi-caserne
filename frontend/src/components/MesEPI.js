@@ -372,14 +372,23 @@ const MesEPI = ({ user }) => {
   };
 
   const handleDemandeRemplacement = async () => {
-    if (!selectedEPI || !remplacementForm.raison) return;
+    // Vérifier si on a un EPI ou un équipement assigné
+    const isEquipement = !selectedEPI && selectedEquipement;
+    const item = selectedEPI || selectedEquipement;
+    
+    if (!item || !remplacementForm.raison) return;
 
     try {
       // Trouver la raison sélectionnée pour obtenir la valeur backend
       const raisonObj = raisonsRemplacement.find(r => r.id === remplacementForm.raison);
       const raisonBackend = raisonObj ? raisonObj.backendValue : remplacementForm.raison;
       
-      await apiPost(tenantSlug, `/mes-epi/${selectedEPI.id}/demander-remplacement`, {
+      // Utiliser l'endpoint approprié selon le type
+      const endpoint = isEquipement 
+        ? `/equipements/${item.id}/demander-remplacement`
+        : `/mes-epi/${item.id}/demander-remplacement`;
+      
+      await apiPost(tenantSlug, endpoint, {
         raison: raisonBackend,
         notes_employe: remplacementForm.details
       });
@@ -394,14 +403,21 @@ const MesEPI = ({ user }) => {
         raison: '',
         details: ''
       });
-      loadEPIs();
+      setSelectedEquipement(null);
+      
+      // Recharger les données appropriées
+      if (isEquipement) {
+        loadEquipementsAssignes();
+      } else {
+        loadEPIs();
+      }
     } catch (error) {
       console.error('Erreur lors de la demande:', error);
       const errorMsg = error.response?.data?.detail || error.message;
       toast({
         title: "Erreur",
         description: errorMsg.includes("déjà en attente") 
-          ? "Une demande de remplacement est déjà en attente pour cet EPI. Veuillez attendre la réponse de l'administrateur."
+          ? "Une demande de remplacement est déjà en attente. Veuillez attendre la réponse de l'administrateur."
           : "Impossible d'envoyer la demande de remplacement",
         variant: "destructive"
       });
