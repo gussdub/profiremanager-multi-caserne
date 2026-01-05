@@ -1111,6 +1111,26 @@ const MesEPI = ({ user }) => {
         />
       )}
 
+      {/* Modal Inspection Partie Faciale */}
+      {showInspectionPartieFacialeModal && selectedEquipement && modelePartieFaciale && (
+        <InspectionPartieFacialeModal
+          isOpen={showInspectionPartieFacialeModal}
+          onClose={() => setShowInspectionPartieFacialeModal(false)}
+          tenantSlug={tenantSlug}
+          user={user}
+          equipement={selectedEquipement}
+          modele={modelePartieFaciale}
+          onInspectionCreated={() => {
+            setShowInspectionPartieFacialeModal(false);
+            loadEquipementsAssignes();
+            toast({
+              title: "✅ Inspection enregistrée",
+              description: "L'inspection a été sauvegardée avec succès"
+            });
+          }}
+        />
+      )}
+
       {/* Modal Historique APRIA */}
       {showHistoriqueAPRIAModal && masqueAPRIA && (
         <HistoriqueInspectionsAPRIA
