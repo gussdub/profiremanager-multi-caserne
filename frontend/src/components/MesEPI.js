@@ -121,6 +121,7 @@ const MesEPI = ({ user }) => {
     loadEPIs();
     loadEquipementsAssignes();
     loadModelePartieFaciale();
+    loadFormulairesInspection();
   }, []);
 
   const loadEPIs = async () => {
