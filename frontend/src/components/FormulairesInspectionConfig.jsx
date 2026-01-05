@@ -638,6 +638,56 @@ const FormulairesInspectionConfig = () => {
                     />
                   </div>
                   
+                  {/* Type de formulaire */}
+                  <div>
+                    <Label>Type de formulaire *</Label>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'inspection', vehicule_ids: [] })}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          border: `2px solid ${formData.type === 'inspection' ? '#3B82F6' : '#e5e7eb'}`,
+                          backgroundColor: formData.type === 'inspection' ? '#dbeafe' : 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          fontWeight: formData.type === 'inspection' ? '600' : '400'
+                        }}
+                      >
+                        📋 Inspection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'inventaire', categorie_ids: [] })}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          border: `2px solid ${formData.type === 'inventaire' ? '#22c55e' : '#e5e7eb'}`,
+                          backgroundColor: formData.type === 'inventaire' ? '#dcfce7' : 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          fontWeight: formData.type === 'inventaire' ? '600' : '400'
+                        }}
+                      >
+                        🚗 Inventaire véhicule
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                      {formData.type === 'inspection' 
+                        ? '📋 Un formulaire d\'inspection est associé à des catégories d\'équipement (EPI, matériel, etc.)'
+                        : '🚗 Un formulaire d\'inventaire est associé à un ou plusieurs véhicules spécifiques'}
+                    </p>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
                       <Label>Fréquence</Label>
