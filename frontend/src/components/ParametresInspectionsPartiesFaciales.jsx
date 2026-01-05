@@ -29,7 +29,7 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
   const fetchModeles = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, '/pieces-faciales/modeles-inspection');
+      const data = await apiGet(tenantSlug, '/parties-faciales/modeles-inspection');
       setModeles(data || []);
     } catch (error) {
       console.error('Erreur:', error);
@@ -81,9 +81,9 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
     try {
       setSaving(true);
       if (editingModele) {
-        await apiPut(tenantSlug, `/pieces-faciales/modeles-inspection/${editingModele.id}`, formData);
+        await apiPut(tenantSlug, `/parties-faciales/modeles-inspection/${editingModele.id}`, formData);
       } else {
-        await apiPost(tenantSlug, '/pieces-faciales/modeles-inspection', formData);
+        await apiPost(tenantSlug, '/parties-faciales/modeles-inspection', formData);
       }
       await fetchModeles();
       closeEditor();
@@ -97,7 +97,7 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
 
   const handleActivate = async (modeleId) => {
     try {
-      await apiPost(tenantSlug, `/pieces-faciales/modeles-inspection/${modeleId}/activer`, {});
+      await apiPost(tenantSlug, `/parties-faciales/modeles-inspection/${modeleId}/activer`, {});
       await fetchModeles();
     } catch (error) {
       alert('❌ Erreur: ' + error.message);
@@ -107,7 +107,7 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
   const handleDelete = async (modeleId) => {
     if (!window.confirm('Supprimer ce formulaire ?')) return;
     try {
-      await apiDelete(tenantSlug, `/pieces-faciales/modeles-inspection/${modeleId}`);
+      await apiDelete(tenantSlug, `/parties-faciales/modeles-inspection/${modeleId}`);
       await fetchModeles();
     } catch (error) {
       alert('❌ Erreur: ' + error.message);

@@ -12,7 +12,7 @@ import ParametresInventairesVehicules from './ParametresInventairesVehicules';
 import ParametresAlertesEquipements from './ParametresAlertesEquipements';
 import ParametresInspectionsAPRIA from './ParametresInspectionsAPRIA';
 import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSeches';
-import ParametresInspectionsPiecesFaciales from './ParametresInspectionsPiecesFaciales';
+import ParametresInspectionsPartiesFaciales from './ParametresInspectionsPartiesFaciales';
 import ImportCSVEquipements from './ImportCSVEquipements';
 import ImportCSVEPI from './ImportCSVEPI';
 
@@ -641,7 +641,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           <ParametresInspectionsAPRIA tenantSlug={tenantSlug} />
         </div>
 
-        {/* Sous-section: Pièces Faciales */}
+        {/* Sous-section: Parties Faciales */}
         <div style={{ 
           background: 'white', 
           padding: 'clamp(12px, 3vw, 20px)', 
@@ -651,12 +651,12 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           marginTop: '15px'
         }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#34495e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🎭</span> Pièces Faciales
+            <span>🎭</span> Parties Faciales
           </h3>
           <p style={{ color: '#7f8c8d', marginBottom: '12px', fontSize: '12px' }}>
-            Créez et personnalisez les formulaires d'inspection pour les pièces faciales (masques, joints, sangles...)
+            Créez et personnalisez les formulaires d'inspection pour les parties faciales (masques, joints, sangles...)
           </p>
-          <ParametresInspectionsPiecesFaciales tenantSlug={tenantSlug} user={user} />
+          <ParametresInspectionsPartiesFaciales tenantSlug={tenantSlug} user={user} />
         </div>
 
         {/* Sous-section: Import CSV */}
