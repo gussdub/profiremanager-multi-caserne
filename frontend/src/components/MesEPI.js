@@ -1040,17 +1040,21 @@ const MesEPI = ({ user }) => {
         </div>
       )}
 
-      {/* Modal Inspection APRIA */}
-      {showInspectionAPRIAModal && masqueAPRIA && (
+      {/* Modal Inspection APRIA - pour les équipements de catégorie APRIA */}
+      {showInspectionAPRIAModal && selectedEquipement && (
         <InspectionAPRIAModal
           isOpen={showInspectionAPRIAModal}
           onClose={() => setShowInspectionAPRIAModal(false)}
           tenantSlug={tenantSlug}
           user={user}
-          equipementPreselectionne={masqueAPRIA}
+          equipementPreselectionne={selectedEquipement}
           onInspectionCreated={() => {
             setShowInspectionAPRIAModal(false);
-            loadMasqueAPRIA(); // Recharger pour voir la dernière inspection
+            loadEquipementsAssignes();
+            toast({
+              title: "✅ Inspection APRIA enregistrée",
+              description: "L'inspection a été sauvegardée avec succès"
+            });
           }}
         />
       )}
@@ -1076,13 +1080,13 @@ const MesEPI = ({ user }) => {
       )}
 
       {/* Modal Historique APRIA */}
-      {showHistoriqueAPRIAModal && masqueAPRIA && (
+      {showHistoriqueAPRIAModal && selectedEquipement && (
         <HistoriqueInspectionsAPRIA
           isOpen={showHistoriqueAPRIAModal}
           onClose={() => setShowHistoriqueAPRIAModal(false)}
           tenantSlug={tenantSlug}
-          equipementId={masqueAPRIA.id}
-          equipementNom={masqueAPRIA.nom || 'Pièce faciale APRIA'}
+          equipementId={selectedEquipement.id}
+          equipementNom={selectedEquipement.nom || 'Équipement'}
         />
       )}
 
