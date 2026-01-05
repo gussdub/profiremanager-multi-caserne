@@ -238,38 +238,87 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   // Vérifier si l'utilisateur peut choisir le formulaire
   const canSelectModele = userRole === 'admin' || userRole === 'superviseur';
 
-  // Charger les modèles disponibles
+  // Charger les modèles disponibles depuis le système unifié
   useEffect(() => {
     const fetchModeles = async () => {
       try {
-        // Charger tous les modèles pour admin/superviseur
+        // Charger tous les formulaires du système unifié
+        const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+        
+        // Filtrer pour les formulaires de type "inspection" qui concernent les bornes sèches
+        const borneSecheFormulaires = (allFormulaires || []).filter(f => 
+          f.actif !== false &&
+          f.categorie_ids?.includes('borne_seche')
+        );
+        
+        // Convertir vers le format attendu par le composant existant
+        const modelesConverts = borneSecheFormulaires.map(f => ({
+          id: f.id,
+          nom: f.nom,
+          description: f.description || '',
+          est_actif: f.actif !== false,
+          sections: (f.sections || []).map((s, idx) => ({
+            id: s.id || `section_${idx}`,
+            titre: s.nom,
+            description: '',
+            type_champ: s.items?.[0]?.type || 'radio',
+            options: s.items?.[0]?.options?.map(opt => ({ 
+              label: opt, 
+              declencherAlerte: false 
+            })) || [
+              { label: 'Conforme', declencherAlerte: false },
+              { label: 'Non conforme', declencherAlerte: true }
+            ],
+            items: s.items?.map((item, itemIdx) => ({
+              id: item.id || `item_${idx}_${itemIdx}`,
+              nom: item.label,
+              obligatoire: item.obligatoire || false,
+              ordre: itemIdx
+            })) || [],
+            ordre: idx
+          }))
+        }));
+        
         if (canSelectModele) {
-          const data = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection');
-          setModelesDisponibles(data);
+          setModelesDisponibles(modelesConverts);
         }
         
         // Déterminer quel modèle utiliser
         let modeleToUse = null;
         
-        // Si la borne a un modèle assigné, l'utiliser
+        // Si la borne a un modèle assigné, chercher dans les formulaires unifiés
         if (borne.modele_inspection_assigne_id) {
-          try {
-            modeleToUse = await apiGet(tenantSlug, `/bornes-seches/modeles-inspection/${borne.modele_inspection_assigne_id}`);
+          modeleToUse = modelesConverts.find(m => m.id === borne.modele_inspection_assigne_id);
+          if (modeleToUse) {
             setSelectedModeleId(borne.modele_inspection_assigne_id);
-          } catch (e) {
-            console.log('Modèle assigné non trouvé, utilisation du modèle actif');
           }
         }
         
-        // Sinon, utiliser le modèle actif par défaut
-        if (!modeleToUse) {
-          modeleToUse = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection/actif');
+        // Sinon, utiliser le premier formulaire actif trouvé
+        if (!modeleToUse && modelesConverts.length > 0) {
+          modeleToUse = modelesConverts.find(m => m.est_actif) || modelesConverts[0];
           setSelectedModeleId(modeleToUse?.id);
         }
         
         if (modeleToUse) {
           setModele(modeleToUse);
           initializeReponses(modeleToUse);
+        } else {
+          // Fallback: essayer l'ancien système si aucun formulaire unifié n'est trouvé
+          try {
+            const oldModele = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection/actif');
+            if (oldModele) {
+              setModele(oldModele);
+              initializeReponses(oldModele);
+              setSelectedModeleId(oldModele.id);
+              if (canSelectModele) {
+                const oldModeles = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection');
+                setModelesDisponibles(oldModeles || []);
+              }
+            }
+          } catch (e) {
+            console.log('Aucun formulaire trouvé dans l\'ancien système non plus');
+          }
         }
       } catch (error) {
         console.error('Erreur chargement modèle:', error);
