@@ -512,7 +512,7 @@ const MesEPI = ({ user }) => {
               {masqueAPRIA.description && <p><strong>Description:</strong> {masqueAPRIA.description}</p>}
               {masqueAPRIA.categorie_nom && <p><strong>Catégorie:</strong> {masqueAPRIA.categorie_nom}</p>}
               {masqueAPRIA.date_achat && (
-                <p><strong>Date d'achat:</strong> {new Date(masqueAPRIA.date_achat).toLocaleDateString('fr-FR')}</p>
+                <p><strong>Date d&apos;achat:</strong> {new Date(masqueAPRIA.date_achat).toLocaleDateString('fr-FR')}</p>
               )}
               {masqueAPRIA.derniere_inspection_apria ? (
                 <p>
@@ -922,7 +922,7 @@ const MesEPI = ({ user }) => {
                 className="btn-primary"
                 disabled={inspectionForm.statut_inspection === 'defaut' && !inspectionForm.defauts_constates}
               >
-                ✓ Enregistrer l'inspection
+                ✓ Enregistrer l&apos;inspection
               </Button>
             </div>
           </div>
