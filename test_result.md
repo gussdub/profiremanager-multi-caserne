@@ -1,8 +1,8 @@
 test_plan:
-  current_focus: []
+  current_focus: ["Fonctionnalité Parties Faciales dans Mes EPI"]
   stuck_tasks: []
   test_all: false
-  test_priority: "completed"
+  test_priority: "in_progress"
 
 # ============================================
 # TEST SESSION: Employee Permissions Update
