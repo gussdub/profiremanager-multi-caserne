@@ -592,18 +592,16 @@ const MesEPI = ({ user }) => {
         </div>
       ) : epis.length > 0 && (
         <>
-          {masqueAPRIA && (
-            <h2 style={{ 
-              fontSize: '1.25rem', 
-              fontWeight: '600', 
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              🛡️ Mes autres EPI
-            </h2>
-          )}
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🛡️ Mes EPI (Habits de combat)
+          </h2>
           <div className="epi-grid">
             {epis.map((epi) => (
               <div key={epi.id} className="epi-card">
