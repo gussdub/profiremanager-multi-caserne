@@ -119,7 +119,6 @@ const MesEPI = ({ user }) => {
 
   useEffect(() => {
     loadEPIs();
-    loadMasqueAPRIA();
     loadEquipementsAssignes();
     loadModelePartieFaciale();
   }, []);
@@ -160,18 +159,6 @@ const MesEPI = ({ user }) => {
     } catch (error) {
       console.log('Pas de modèle de partie faciale:', error);
       setModelePartieFaciale(null);
-    }
-  };
-
-  // Charger le masque APRIA assigné à l'utilisateur
-  const loadMasqueAPRIA = async () => {
-    try {
-      const data = await apiGet(tenantSlug, '/mes-epi/masque-apria');
-      setMasqueAPRIA(data);
-    } catch (error) {
-      // Pas de masque assigné, c'est normal
-      console.log('Pas de masque APRIA assigné');
-      setMasqueAPRIA(null);
     }
   };
 
