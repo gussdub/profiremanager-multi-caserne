@@ -735,6 +735,55 @@ const FormulairesInspectionConfig = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Véhicules spécifiques (pour inventaires) */}
+                  {formData.type === 'inventaire' && vehicules.length > 0 && (
+                    <div>
+                      <Label>🚗 Véhicules spécifiques (optionnel)</Label>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0.5rem' }}>
+                        Sélectionnez des véhicules spécifiques ou laissez vide pour tous les véhicules
+                      </p>
+                      <div style={{ 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: '0.5rem',
+                        maxHeight: '150px',
+                        overflowY: 'auto',
+                        padding: '0.5rem',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '8px'
+                      }}>
+                        {vehicules.map(veh => (
+                          <button
+                            key={veh.id}
+                            type="button"
+                            onClick={() => {
+                              const ids = formData.vehicule_ids || [];
+                              setFormData({
+                                ...formData,
+                                vehicule_ids: ids.includes(veh.id)
+                                  ? ids.filter(id => id !== veh.id)
+                                  : [...ids, veh.id]
+                              });
+                            }}
+                            style={{
+                              padding: '0.4rem 0.75rem',
+                              borderRadius: '999px',
+                              border: `2px solid ${formData.vehicule_ids?.includes(veh.id) ? '#22c55e' : '#e5e7eb'}`,
+                              backgroundColor: formData.vehicule_ids?.includes(veh.id) ? '#dcfce7' : 'white',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem'
+                            }}
+                          >
+                            🚗 {veh.numero || veh.nom || veh.id}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
