@@ -151,7 +151,27 @@ const MesEPI = ({ user }) => {
     }
   };
 
-  // Charger le modèle d'inspection des parties faciales actif
+  // Charger les formulaires d'inspection unifiés
+  const [formulairesInspection, setFormulairesInspection] = useState([]);
+  
+  const loadFormulairesInspection = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/formulaires-inspection');
+      setFormulairesInspection(data?.filter(f => f.est_actif) || []);
+    } catch (error) {
+      console.log('Pas de formulaires:', error);
+      setFormulairesInspection([]);
+    }
+  };
+
+  // Trouver le formulaire approprié pour une catégorie donnée
+  const getFormulaireForCategorie = (categorieId) => {
+    return formulairesInspection.find(f => 
+      f.categorie_ids?.includes(categorieId)
+    );
+  };
+
+  // Charger le modèle d'inspection des parties faciales actif (legacy - à supprimer plus tard)
   const loadModelePartieFaciale = async () => {
     try {
       const data = await apiGet(tenantSlug, '/parties-faciales/modeles-inspection/actif');
