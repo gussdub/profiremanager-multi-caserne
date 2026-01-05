@@ -113,6 +113,7 @@ const FormulairesInspectionConfig = () => {
       description: '',
       type: 'inspection',
       categorie_ids: [],
+      vehicule_ids: [],
       frequence: 'mensuelle',
       est_actif: true,
       sections: [
@@ -134,6 +135,7 @@ const FormulairesInspectionConfig = () => {
       description: formulaire.description || '',
       type: formulaire.type || 'inspection',
       categorie_ids: formulaire.categorie_ids || [],
+      vehicule_ids: formulaire.vehicule_ids || [],
       frequence: formulaire.frequence || 'mensuelle',
       est_actif: formulaire.est_actif ?? true,
       sections: formulaire.sections || []
