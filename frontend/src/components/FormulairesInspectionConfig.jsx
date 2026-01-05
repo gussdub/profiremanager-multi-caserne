@@ -508,7 +508,7 @@ const FormulairesInspectionConfig = () => {
                 </span>
               </div>
 
-              {/* Catégories */}
+              {/* Catégories ou Véhicules selon le type */}
               <div style={{ 
                 fontSize: '0.8rem', 
                 color: '#64748b',
@@ -517,7 +517,22 @@ const FormulairesInspectionConfig = () => {
                 backgroundColor: '#f8fafc',
                 borderRadius: '6px'
               }}>
-                <strong>Catégories:</strong> {getCategoryNames(formulaire.categorie_ids)}
+                {formulaire.type === 'inventaire' ? (
+                  <>
+                    <strong>🚗 Véhicules:</strong> {
+                      (formulaire.vehicule_ids && formulaire.vehicule_ids.length > 0)
+                        ? formulaire.vehicule_ids.map(vid => {
+                            const v = vehicules.find(veh => veh.id === vid);
+                            return v ? (v.numero || v.nom) : vid;
+                          }).join(', ')
+                        : 'Aucun véhicule sélectionné'
+                    }
+                  </>
+                ) : (
+                  <>
+                    <strong>📂 Catégories:</strong> {getCategoryNames(formulaire.categorie_ids)}
+                  </>
+                )}
               </div>
 
               {/* Actions */}
