@@ -44,6 +44,7 @@ const FormulairesInspectionConfig = () => {
   const typesChamp = [
     { value: 'conforme_nc', label: 'Conforme / Non conforme' },
     { value: 'oui_non', label: 'Oui / Non' },
+    { value: 'present_absent', label: 'Présent / Absent / Défectueux' },
     { value: 'texte', label: 'Texte libre' },
     { value: 'nombre', label: 'Nombre' },
     { value: 'date', label: 'Date' },
