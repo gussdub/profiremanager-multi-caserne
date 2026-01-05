@@ -31724,6 +31724,8 @@ async def create_inspection_piece_faciale(
         await db.demandes_remplacement_equipements.insert_one(demande)
         logger.info(f"Demande de remplacement créée automatiquement pour {inspection_data.get('equipement_nom')}")
     
+    # Retourner l'inspection sans le _id MongoDB
+    inspection.pop("_id", None)
     return inspection
 
 @api_router.get("/{tenant_slug}/parties-faciales/inspections")
