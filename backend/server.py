@@ -32136,6 +32136,32 @@ async def get_inspections_equipement(
     
     return inspections
 
+@api_router.get("/{tenant_slug}/inspections-unifiees/{asset_type}/{asset_id}")
+async def get_inspections_by_asset(
+    tenant_slug: str,
+    asset_type: str,
+    asset_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections/inventaires pour un asset (véhicule, borne_seche, equipement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Requête qui supporte l'ancien et le nouveau format
+    query = {
+        "tenant_id": tenant.id,
+        "$or": [
+            {"asset_id": asset_id, "asset_type": asset_type},
+            {"equipement_id": asset_id} if asset_type == "equipement" else {"asset_id": asset_id}
+        ]
+    }
+    
+    inspections = await db.inspections_unifiees.find(
+        query,
+        {"_id": 0}
+    ).sort("date_inspection", -1).to_list(100)
+    
+    return inspections
+
 @api_router.post("/{tenant_slug}/formulaires-inspection/migrer-existants")
 async def migrer_formulaires_existants(
     tenant_slug: str,
