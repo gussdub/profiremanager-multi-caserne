@@ -257,6 +257,60 @@ const InspectionUnifieeModal = ({
           </div>
         );
       
+      case 'present_absent':
+        return (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => handleReponseChange(item.id, 'present')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                backgroundColor: value === 'present' ? '#22c55e' : '#e5e7eb',
+                color: value === 'present' ? 'white' : '#6b7280'
+              }}
+            >
+              ✅ Présent
+            </button>
+            <button
+              type="button"
+              onClick={() => handleReponseChange(item.id, 'absent')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                backgroundColor: value === 'absent' ? '#f59e0b' : '#e5e7eb',
+                color: value === 'absent' ? 'white' : '#6b7280'
+              }}
+            >
+              ⚠️ Absent
+            </button>
+            <button
+              type="button"
+              onClick={() => handleReponseChange(item.id, 'defectueux')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                backgroundColor: value === 'defectueux' ? '#ef4444' : '#e5e7eb',
+                color: value === 'defectueux' ? 'white' : '#6b7280'
+              }}
+            >
+              ❌ Défectueux
+            </button>
+          </div>
+        );
+      
       case 'nombre':
         return (
           <Input
