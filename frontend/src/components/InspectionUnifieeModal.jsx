@@ -91,6 +91,48 @@ const InspectionUnifieeModal = ({
     return allConforme;
   };
 
+  // Fonction pour obtenir la position GPS
+  const getGPSLocation = async (itemId) => {
+    if (!navigator.geolocation) {
+      alert('La géolocalisation n\'est pas supportée par votre navigateur');
+      return;
+    }
+    
+    setGettingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Essayer de convertir les coordonnées en adresse (reverse geocoding)
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'fr' } }
+          );
+          const data = await response.json();
+          
+          if (data.display_name) {
+            handleReponseChange(itemId, data.display_name);
+          } else {
+            handleReponseChange(itemId, `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          }
+        } catch (error) {
+          // En cas d'erreur, utiliser les coordonnées brutes
+          handleReponseChange(itemId, `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        }
+        
+        setGettingLocation(false);
+      },
+      (error) => {
+        console.error('Erreur GPS:', error);
+        alert('Impossible d\'obtenir votre position. Veuillez saisir l\'adresse manuellement.');
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const handleSubmit = async () => {
     if (!equipement || !formulaire) return;
 
