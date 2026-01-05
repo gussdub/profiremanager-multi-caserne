@@ -473,6 +473,16 @@ const FormulairesInspectionConfig = () => {
                   padding: '0.25rem 0.5rem',
                   borderRadius: '6px',
                   fontSize: '0.75rem',
+                  backgroundColor: formulaire.type === 'inventaire' ? '#dcfce7' : '#dbeafe',
+                  color: formulaire.type === 'inventaire' ? '#166534' : '#1e40af',
+                  fontWeight: '500'
+                }}>
+                  {formulaire.type === 'inventaire' ? '🚗 Inventaire' : '📋 Inspection'}
+                </span>
+                <span style={{
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
                   backgroundColor: '#f1f5f9',
                   color: '#475569'
                 }}>
