@@ -1,8 +1,8 @@
 test_plan:
-  current_focus: []
+  current_focus: ["Formulaires d'inspection unifiés", "Bug Planning couleur", "Suppression doublon Mes EPI"]
   stuck_tasks: []
   test_all: false
-  test_priority: "completed"
+  test_priority: "in_progress"
 
 # ============================================
 # TEST SESSION: Employee Permissions Update
