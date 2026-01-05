@@ -31782,6 +31782,56 @@ async def get_mes_equipements(
         "total": len(equipements) + len(epis)
     }
 
+@api_router.post("/{tenant_slug}/equipements/{equipement_id}/demander-remplacement")
+async def demander_remplacement_equipement(
+    tenant_slug: str,
+    equipement_id: str,
+    demande_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une demande de remplacement pour un équipement assigné"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'équipement existe et est assigné à l'utilisateur
+    equipement = await db.equipements.find_one({
+        "id": equipement_id,
+        "tenant_id": tenant.id,
+        "employe_id": current_user.id
+    })
+    
+    if not equipement:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé ou non assigné à vous")
+    
+    # Vérifier s'il y a déjà une demande en attente
+    demande_existante = await db.demandes_remplacement_equipements.find_one({
+        "equipement_id": equipement_id,
+        "statut": "en_attente",
+        "tenant_id": tenant.id
+    })
+    
+    if demande_existante:
+        raise HTTPException(status_code=400, detail="Une demande de remplacement est déjà en attente pour cet équipement")
+    
+    demande = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "equipement_id": equipement_id,
+        "equipement_nom": equipement.get("nom", "Équipement"),
+        "code_unique": equipement.get("code_unique", ""),
+        "type": "remplacement",
+        "raison": demande_data.get("raison", ""),
+        "details": demande_data.get("notes_employe", ""),
+        "statut": "en_attente",
+        "demandeur_id": current_user.id,
+        "demandeur_nom": f"{current_user.prenom} {current_user.nom}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.demandes_remplacement_equipements.insert_one(demande)
+    logger.info(f"Demande de remplacement créée pour équipement {equipement.get('nom')} par {current_user.email}")
+    
+    return {"message": "Demande de remplacement envoyée", "demande_id": demande["id"]}
+
 # ==================== FIN MODULE PIÈCES FACIALES ====================
 
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
