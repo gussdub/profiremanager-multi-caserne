@@ -540,6 +540,114 @@ const MesEPI = ({ user }) => {
         </div>
       )}
 
+      {/* Section Équipements assignés (Parties Faciales, etc.) */}
+      {equipementsAssignes.length > 0 && (
+        <div className="equipements-section" style={{ marginBottom: '2rem' }}>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🎭 Mes Équipements Assignés
+          </h2>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            Équipements sous votre responsabilité - Inspections et demandes de remplacement
+          </p>
+          <div className="epi-grid">
+            {equipementsAssignes.map((equip) => {
+              const isPartieFaciale = equip.tags?.includes('partie_faciale') || 
+                equip.nom?.toLowerCase().includes('facial') ||
+                equip.nom?.toLowerCase().includes('masque') ||
+                equip.categorie_nom?.toLowerCase().includes('facial');
+              
+              return (
+                <div key={equip.id} className="epi-card" style={{ 
+                  border: isPartieFaciale ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                  backgroundColor: isPartieFaciale ? '#f5f3ff' : 'white'
+                }}>
+                  <div className="epi-card-header">
+                    <span className="epi-icon" style={{ fontSize: '2rem' }}>
+                      {isPartieFaciale ? '🎭' : '🔧'}
+                    </span>
+                    <div>
+                      <h3>{equip.nom || 'Équipement'}</h3>
+                      <p className="epi-numero">#{equip.code_unique}</p>
+                    </div>
+                    <span 
+                      className="epi-statut-badge" 
+                      style={{ 
+                        backgroundColor: equip.etat === 'bon' ? '#22c55e' : 
+                          equip.etat === 'hors_service' ? '#ef4444' : '#f59e0b'
+                      }}
+                    >
+                      {equip.etat === 'bon' ? '✅ OK' : 
+                       equip.etat === 'hors_service' ? '❌ HS' : '⚠️ À vérifier'}
+                    </span>
+                  </div>
+                  
+                  <div className="epi-card-body">
+                    {equip.description && <p><strong>Description:</strong> {equip.description}</p>}
+                    {equip.categorie_nom && <p><strong>Catégorie:</strong> {equip.categorie_nom}</p>}
+                    {equip.numero_serie && <p><strong>N° série:</strong> {equip.numero_serie}</p>}
+                    {equip.emplacement && <p><strong>Emplacement:</strong> {equip.emplacement}</p>}
+                    {isPartieFaciale && (
+                      <p style={{ color: '#7c3aed', fontWeight: '500', marginTop: '0.5rem' }}>
+                        🎭 Partie faciale - Inspection requise
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="epi-card-actions">
+                    {isPartieFaciale && modelePartieFaciale && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setSelectedEquipement(equip);
+                          setShowInspectionPartieFacialeModal(true);
+                        }}
+                        style={{ backgroundColor: '#8b5cf6' }}
+                        disabled={equip.etat === 'hors_service'}
+                      >
+                        📋 Inspecter
+                      </Button>
+                    )}
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        // TODO: Historique des inspections
+                        toast({
+                          title: "📜 Historique",
+                          description: "Fonctionnalité à venir"
+                        });
+                      }}
+                    >
+                      📜 Historique
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedEquipement(equip);
+                        // Ouvrir le modal de demande de remplacement
+                        setRemplacementForm({ raison: '', details: '' });
+                        setShowRemplacementModal(true);
+                      }}
+                      disabled={equip.etat === 'hors_service'}
+                    >
+                      🔄 Remplacement
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Section EPI classiques */}
       {epis.length === 0 && !masqueAPRIA ? (
         <div className="empty-state">
