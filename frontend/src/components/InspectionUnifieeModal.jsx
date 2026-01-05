@@ -297,7 +297,8 @@ const InspectionUnifieeModal = ({
               padding: '0.5rem',
               borderRadius: '6px',
               border: '1px solid #e5e7eb',
-              fontSize: '16px'
+              fontSize: '16px',
+              minWidth: '150px'
             }}
           >
             <option value="">Sélectionner...</option>
@@ -305,6 +306,60 @@ const InspectionUnifieeModal = ({
               <option key={i} value={opt}>{opt}</option>
             ))}
           </select>
+        );
+      
+      case 'inspecteur':
+        return (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            padding: '0.5rem 0.75rem',
+            backgroundColor: '#dbeafe',
+            borderRadius: '6px',
+            fontSize: '0.9rem',
+            color: '#1e40af'
+          }}>
+            👤 {value || 'Non défini'}
+          </div>
+        );
+      
+      case 'lieu':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <Input
+                value={value || ''}
+                onChange={(e) => handleReponseChange(item.id, e.target.value)}
+                placeholder="Adresse ou coordonnées..."
+                style={{ flex: 1, fontSize: '16px' }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => getGPSLocation(item.id)}
+                disabled={gettingLocation}
+                style={{ 
+                  backgroundColor: '#22c55e',
+                  color: 'white',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {gettingLocation ? '⏳' : '📍 GPS'}
+              </Button>
+            </div>
+            {value && (
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#64748b',
+                padding: '0.25rem 0.5rem',
+                backgroundColor: '#f1f5f9',
+                borderRadius: '4px'
+              }}>
+                📍 {value}
+              </div>
+            )}
+          </div>
         );
       
       default:
