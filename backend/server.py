@@ -32049,21 +32049,41 @@ async def create_inspection_unifiee(
     inspection_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une inspection en utilisant le système de formulaires unifiés"""
+    """Créer une inspection/inventaire en utilisant le système de formulaires unifiés
+    
+    Supporte plusieurs types d'assets:
+    - equipement (EPI, matériel)
+    - vehicule (inventaires de véhicules)
+    - borne_seche (inspections de bornes sèches)
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Support pour l'ancien format (equipement_id) et le nouveau format (asset_id/asset_type)
+    asset_id = inspection_data.get("asset_id") or inspection_data.get("equipement_id")
+    asset_type = inspection_data.get("asset_type", "equipement")
+    
+    # Récupérer le nom de l'asset selon son type
+    asset_nom = inspection_data.get("metadata", {}).get("vehicule_nom") or \
+                inspection_data.get("metadata", {}).get("borne_nom") or \
+                inspection_data.get("equipement_nom", "")
     
     inspection = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
-        "equipement_id": inspection_data.get("equipement_id"),
-        "equipement_nom": inspection_data.get("equipement_nom", ""),
+        "asset_id": asset_id,
+        "asset_type": asset_type,
+        # Compatibilité avec l'ancien format
+        "equipement_id": asset_id if asset_type == "equipement" else None,
+        "equipement_nom": asset_nom,
         "formulaire_id": inspection_data.get("formulaire_id"),
         "formulaire_nom": inspection_data.get("formulaire_nom", ""),
         "type_inspection": inspection_data.get("type_inspection", "inspection"),
         "reponses": inspection_data.get("reponses", {}),
         "conforme": inspection_data.get("conforme", True),
-        "remarques": inspection_data.get("remarques", ""),
-        "inspecteur_id": current_user.id,
+        "remarques": inspection_data.get("remarques", "") or inspection_data.get("notes_generales", ""),
+        "alertes": inspection_data.get("alertes", []),
+        "metadata": inspection_data.get("metadata", {}),
+        "inspecteur_id": inspection_data.get("user_id") or current_user.id,
         "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
         "date_inspection": datetime.now(timezone.utc).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -32071,13 +32091,13 @@ async def create_inspection_unifiee(
     
     await db.inspections_unifiees.insert_one(inspection)
     
-    # Si non conforme et demande de remplacement activée
-    if not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
+    # Si non conforme et demande de remplacement activée (seulement pour équipements)
+    if asset_type == "equipement" and not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
         demande = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "equipement_id": inspection_data.get("equipement_id"),
-            "equipement_nom": inspection_data.get("equipement_nom"),
+            "equipement_id": asset_id,
+            "equipement_nom": asset_nom,
             "type": "remplacement",
             "raison": "Non conforme lors de l'inspection",
             "details": inspection_data.get("remarques", ""),
@@ -32088,10 +32108,16 @@ async def create_inspection_unifiee(
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.demandes_remplacement_equipements.insert_one(demande)
-        logger.info(f"Demande de remplacement créée pour {inspection_data.get('equipement_nom')}")
+        logger.info(f"Demande de remplacement créée pour {asset_nom}")
+    
+    # Envoyer des alertes si nécessaire
+    alertes = inspection_data.get("alertes", [])
+    if alertes:
+        logger.warning(f"⚠️ {len(alertes)} alerte(s) détectée(s) pour {asset_type} {asset_nom}")
+        # TODO: Envoyer notification aux superviseurs
     
     inspection.pop("_id", None)
-    logger.info(f"Inspection unifiée créée pour {inspection_data.get('equipement_nom')} par {current_user.email}")
+    logger.info(f"Inspection unifiée créée pour {asset_type} '{asset_nom}' par {current_user.email}")
     return inspection
 
 @api_router.get("/{tenant_slug}/inspections-unifiees/equipement/{equipement_id}")
