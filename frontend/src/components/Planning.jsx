@@ -1791,9 +1791,10 @@ const Planning = () => {
                               u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
                               (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
                             )
-                          : assignedUsers;
+                          : [];
                       
                       const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                      // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                       const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
                       
                       return (
