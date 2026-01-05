@@ -972,7 +972,7 @@ const MesEPI = ({ user }) => {
       )}
 
       {/* Modal Demande de Remplacement */}
-      {showRemplacementModal && selectedEPI && (
+      {showRemplacementModal && (selectedEPI || selectedEquipement) && (
         <div className="modal-overlay" onClick={() => setShowRemplacementModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -980,24 +980,33 @@ const MesEPI = ({ user }) => {
               <button className="modal-close" onClick={() => setShowRemplacementModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              {/* EPI Info Card */}
+              {/* EPI/Équipement Info Card */}
               <div className="epi-info-card" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '1rem',
                 padding: '1rem',
-                backgroundColor: '#f8fafc',
+                backgroundColor: selectedEquipement ? '#f5f3ff' : '#f8fafc',
                 borderRadius: '0.75rem',
-                marginBottom: '1.5rem'
+                marginBottom: '1.5rem',
+                border: selectedEquipement ? '1px solid #ddd6fe' : 'none'
               }}>
-                <div style={{ fontSize: '2.5rem' }}>{getTypeIcon(selectedEPI.type_epi)}</div>
+                <div style={{ fontSize: '2.5rem' }}>
+                  {selectedEquipement ? '🎭' : getTypeIcon(selectedEPI?.type_epi)}
+                </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>{selectedEPI.type_epi}</h4>
+                  <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
+                    {selectedEquipement ? selectedEquipement.nom : selectedEPI?.type_epi}
+                  </h4>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: '#64748b' }}>
-                    {selectedEPI.marque} {selectedEPI.modele}
+                    {selectedEquipement 
+                      ? selectedEquipement.categorie_nom 
+                      : `${selectedEPI?.marque || ''} ${selectedEPI?.modele || ''}`}
                   </p>
                   <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                    N° {selectedEPI.numero_serie}
+                    {selectedEquipement 
+                      ? `#${selectedEquipement.code_unique}` 
+                      : `N° ${selectedEPI?.numero_serie}`}
                   </span>
                 </div>
               </div>
