@@ -8,6 +8,7 @@ import InspectionAPRIAModal from './InspectionAPRIAModal';
 import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
 import CameraCapture, { isIOS } from './CameraCapture';
 import InspectionPartieFacialeModal from './InspectionPartieFacialeModal';
+import InspectionUnifieeModal from './InspectionUnifieeModal';
 
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
