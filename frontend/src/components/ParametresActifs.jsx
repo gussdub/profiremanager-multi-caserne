@@ -195,9 +195,15 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     }
   };
 
-  const [selectedModule, setSelectedModule] = useState('vehicules'); // Par défaut, sélectionner Véhicules
+  const [selectedModule, setSelectedModule] = useState('formulaires'); // Par défaut, sélectionner Formulaires
 
   const modules = [
+    {
+      id: 'formulaires',
+      icon: '📋',
+      title: 'Formulaires d\'inspection',
+      description: 'Créer et gérer les formulaires'
+    },
     {
       id: 'vehicules',
       icon: '🚗',
