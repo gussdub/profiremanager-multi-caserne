@@ -31836,6 +31836,205 @@ async def demander_remplacement_equipement(
 
 # ==================== FIN MODULE PIÈCES FACIALES ====================
 
+# ==================== MODULE FORMULAIRES D'INSPECTION UNIFIÉS ====================
+
+@api_router.get("/{tenant_slug}/formulaires-inspection")
+async def get_formulaires_inspection(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer tous les formulaires d'inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formulaires = await db.formulaires_inspection.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    return formulaires
+
+@api_router.get("/{tenant_slug}/formulaires-inspection/{formulaire_id}")
+async def get_formulaire_inspection(
+    tenant_slug: str,
+    formulaire_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer un formulaire d'inspection spécifique"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formulaire = await db.formulaires_inspection.find_one(
+        {"tenant_id": tenant.id, "id": formulaire_id},
+        {"_id": 0}
+    )
+    
+    if not formulaire:
+        raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+    
+    return formulaire
+
+@api_router.post("/{tenant_slug}/formulaires-inspection")
+async def create_formulaire_inspection(
+    tenant_slug: str,
+    formulaire_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un nouveau formulaire d'inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions (admin seulement)
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    formulaire = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": formulaire_data.get("nom", "Nouveau formulaire"),
+        "description": formulaire_data.get("description", ""),
+        "type": formulaire_data.get("type", "inspection"),  # inspection, inventaire
+        "categorie_ids": formulaire_data.get("categorie_ids", []),
+        "frequence": formulaire_data.get("frequence", "mensuelle"),
+        "est_actif": formulaire_data.get("est_actif", True),
+        "sections": formulaire_data.get("sections", []),
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.formulaires_inspection.insert_one(formulaire)
+    formulaire.pop("_id", None)
+    
+    logger.info(f"Formulaire d'inspection '{formulaire['nom']}' créé par {current_user.email}")
+    return {"message": "Formulaire créé avec succès", "formulaire": formulaire}
+
+@api_router.put("/{tenant_slug}/formulaires-inspection/{formulaire_id}")
+async def update_formulaire_inspection(
+    tenant_slug: str,
+    formulaire_id: str,
+    formulaire_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour un formulaire d'inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    formulaire = await db.formulaires_inspection.find_one(
+        {"tenant_id": tenant.id, "id": formulaire_id}
+    )
+    
+    if not formulaire:
+        raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+    
+    update_data = {
+        "nom": formulaire_data.get("nom", formulaire.get("nom")),
+        "description": formulaire_data.get("description", formulaire.get("description")),
+        "type": formulaire_data.get("type", formulaire.get("type")),
+        "categorie_ids": formulaire_data.get("categorie_ids", formulaire.get("categorie_ids")),
+        "frequence": formulaire_data.get("frequence", formulaire.get("frequence")),
+        "est_actif": formulaire_data.get("est_actif", formulaire.get("est_actif")),
+        "sections": formulaire_data.get("sections", formulaire.get("sections")),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.formulaires_inspection.update_one(
+        {"tenant_id": tenant.id, "id": formulaire_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.formulaires_inspection.find_one(
+        {"tenant_id": tenant.id, "id": formulaire_id},
+        {"_id": 0}
+    )
+    
+    logger.info(f"Formulaire '{formulaire_id}' mis à jour par {current_user.email}")
+    return {"message": "Formulaire mis à jour avec succès", "formulaire": updated}
+
+@api_router.delete("/{tenant_slug}/formulaires-inspection/{formulaire_id}")
+async def delete_formulaire_inspection(
+    tenant_slug: str,
+    formulaire_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un formulaire d'inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    result = await db.formulaires_inspection.delete_one(
+        {"tenant_id": tenant.id, "id": formulaire_id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+    
+    logger.info(f"Formulaire '{formulaire_id}' supprimé par {current_user.email}")
+    return {"message": "Formulaire supprimé avec succès"}
+
+@api_router.post("/{tenant_slug}/formulaires-inspection/{formulaire_id}/dupliquer")
+async def dupliquer_formulaire_inspection(
+    tenant_slug: str,
+    formulaire_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Dupliquer un formulaire d'inspection"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    original = await db.formulaires_inspection.find_one(
+        {"tenant_id": tenant.id, "id": formulaire_id}
+    )
+    
+    if not original:
+        raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+    
+    # Créer une copie avec un nouveau nom et ID
+    copie = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": f"Copie de {original['nom']}",
+        "description": original.get("description", ""),
+        "type": original.get("type", "inspection"),
+        "categorie_ids": original.get("categorie_ids", []),
+        "frequence": original.get("frequence", "mensuelle"),
+        "est_actif": False,  # Désactivé par défaut pour éviter les conflits
+        "sections": original.get("sections", []),
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.formulaires_inspection.insert_one(copie)
+    copie.pop("_id", None)
+    
+    logger.info(f"Formulaire '{original['nom']}' dupliqué par {current_user.email}")
+    return {"message": "Formulaire dupliqué avec succès", "formulaire": copie}
+
+@api_router.get("/{tenant_slug}/formulaires-inspection/categorie/{categorie_id}")
+async def get_formulaires_par_categorie(
+    tenant_slug: str,
+    categorie_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les formulaires d'inspection pour une catégorie donnée"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    formulaires = await db.formulaires_inspection.find(
+        {
+            "tenant_id": tenant.id,
+            "est_actif": True,
+            "categorie_ids": categorie_id
+        },
+        {"_id": 0}
+    ).to_list(100)
+    
+    return formulaires
+
+# ==================== FIN MODULE FORMULAIRES D'INSPECTION ====================
+
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
 
 
