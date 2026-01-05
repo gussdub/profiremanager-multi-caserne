@@ -7,6 +7,7 @@ import { useTenant } from '../contexts/TenantContext';
 import InspectionAPRIAModal from './InspectionAPRIAModal';
 import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
 import CameraCapture, { isIOS } from './CameraCapture';
+import InspectionPartieFacialeModal from './InspectionPartieFacialeModal';
 
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
