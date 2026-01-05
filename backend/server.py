@@ -31932,6 +31932,7 @@ async def update_formulaire_inspection(
         "description": formulaire_data.get("description", formulaire.get("description")),
         "type": formulaire_data.get("type", formulaire.get("type")),
         "categorie_ids": formulaire_data.get("categorie_ids", formulaire.get("categorie_ids")),
+        "vehicule_ids": formulaire_data.get("vehicule_ids", formulaire.get("vehicule_ids", [])),
         "frequence": formulaire_data.get("frequence", formulaire.get("frequence")),
         "est_actif": formulaire_data.get("est_actif", formulaire.get("est_actif")),
         "sections": formulaire_data.get("sections", formulaire.get("sections")),
