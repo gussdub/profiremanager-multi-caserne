@@ -306,6 +306,37 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       </div>
 
       
+      {/* ========== MODULE FORMULAIRES D'INSPECTION ========== */}
+      {selectedModule === 'formulaires' && (
+      <div style={{ 
+        background: '#f8f9fa', 
+        padding: 'clamp(16px, 4vw, 30px)', 
+        borderRadius: '12px', 
+        border: '2px solid #e0e0e0',
+        marginBottom: '24px'
+      }}>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: '700', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>📋</span>
+            Formulaires d'inspection
+          </h2>
+          <p style={{ color: '#6B7280', marginBottom: '0', fontSize: '13px' }}>
+            Créez, personnalisez et gérez tous vos formulaires d'inspection pour les EPI, équipements, véhicules et points d'eau.
+          </p>
+        </div>
+
+        {/* Composant principal des formulaires */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0'
+        }}>
+          <FormulairesInspectionConfig />
+        </div>
+      </div>
+      )}
+
       {/* Contenu du module sélectionné */}
       {selectedModule === 'vehicules' && (
       <div style={{ 
