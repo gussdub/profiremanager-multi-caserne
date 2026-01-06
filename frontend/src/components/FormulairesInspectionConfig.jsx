@@ -1266,97 +1266,116 @@ const FormulairesInspectionConfig = () => {
                         key={section.id || `section-${sectionIndex}`}
                         section={section}
                         sectionIndex={sectionIndex}
-                        onRemove={() => removeSection(sectionIndex)}
                       >
-                        {/* Section header content */}
-                        <div style={{ flex: 1, display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Input
-                            value={section.nom || section.titre || ''}
-                            onChange={(e) => updateSection(sectionIndex, 'nom', e.target.value)}
-                            placeholder="Nom de la section"
-                            style={{ flex: 1, minWidth: '150px' }}
-                          />
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => duplicateSection(sectionIndex)}
-                            title="Dupliquer la section"
-                          >
-                            📋
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => removeSection(sectionIndex)}
-                            style={{ color: '#ef4444' }}
-                            title="Supprimer la section"
-                          >
-                            🗑️
-                          </Button>
-                        </div>
-
-                        {/* Photos de référence de la section */}
-                        <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📷 Photos de référence:</span>
-                            <label style={{
-                              cursor: 'pointer',
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: '#f1f5f9',
-                              borderRadius: '4px',
-                              fontSize: '0.75rem',
-                              border: '1px dashed #cbd5e1'
-                            }}>
-                              + Ajouter
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                style={{ display: 'none' }}
-                                onChange={(e) => handleSectionPhotoUpload(sectionIndex, Array.from(e.target.files))}
+                        {({ dragHandleProps }) => (
+                          <>
+                            {/* Section header avec handle de drag */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                              {/* Handle de drag */}
+                              <button
+                                {...dragHandleProps}
+                                type="button"
+                                style={{
+                                  cursor: 'grab',
+                                  padding: '0.25rem',
+                                  background: 'none',
+                                  border: 'none',
+                                  fontSize: '1.2rem',
+                                  color: '#64748b',
+                                  touchAction: 'none',
+                                  flexShrink: 0
+                                }}
+                                title="Glisser pour réorganiser"
+                              >
+                                ⋮⋮
+                              </button>
+                              <Input
+                                value={section.nom || section.titre || ''}
+                                onChange={(e) => updateSection(sectionIndex, 'nom', e.target.value)}
+                                placeholder="Nom de la section"
+                                style={{ flex: 1, minWidth: '150px' }}
                               />
-                            </label>
-                          </div>
-                          {section.photos && section.photos.length > 0 && (
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              {section.photos.map((photo, photoIndex) => (
-                                <div key={photo.id || photoIndex} style={{ position: 'relative' }}>
-                                  <img
-                                    src={photo.data || photo}
-                                    alt={photo.name || `Photo ${photoIndex + 1}`}
-                                    style={{
-                                      width: '60px',
-                                      height: '60px',
-                                      objectFit: 'cover',
-                                      borderRadius: '4px',
-                                      border: '1px solid #e5e7eb'
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeSectionPhoto(sectionIndex, photoIndex)}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '-5px',
-                                      right: '-5px',
-                                      width: '18px',
-                                      height: '18px',
-                                      borderRadius: '50%',
-                                      backgroundColor: '#ef4444',
-                                      color: 'white',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      fontSize: '10px',
-                                      lineHeight: '1'
-                                    }}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ))}
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => duplicateSection(sectionIndex)}
+                                title="Dupliquer la section"
+                              >
+                                📋
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => removeSection(sectionIndex)}
+                                style={{ color: '#ef4444' }}
+                                title="Supprimer la section"
+                              >
+                                🗑️
+                              </Button>
                             </div>
-                          )}
-                        </div>
+
+                            {/* Photos de référence de la section */}
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📷 Photos de référence:</span>
+                                <label style={{
+                                  cursor: 'pointer',
+                                  padding: '0.25rem 0.5rem',
+                                  backgroundColor: '#f1f5f9',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  border: '1px dashed #cbd5e1'
+                                }}>
+                                  + Ajouter
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => handleSectionPhotoUpload(sectionIndex, Array.from(e.target.files))}
+                                  />
+                                </label>
+                              </div>
+                              {section.photos && section.photos.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  {section.photos.map((photo, photoIndex) => (
+                                    <div key={photo.id || photoIndex} style={{ position: 'relative' }}>
+                                      <img
+                                        src={photo.data || photo}
+                                        alt={photo.name || `Photo ${photoIndex + 1}`}
+                                        style={{
+                                          width: '60px',
+                                          height: '60px',
+                                          objectFit: 'cover',
+                                          borderRadius: '4px',
+                                          border: '1px solid #e5e7eb'
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => removeSectionPhoto(sectionIndex, photoIndex)}
+                                        style={{
+                                          position: 'absolute',
+                                          top: '-5px',
+                                          right: '-5px',
+                                          width: '18px',
+                                          height: '18px',
+                                          borderRadius: '50%',
+                                          backgroundColor: '#ef4444',
+                                          color: 'white',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          fontSize: '10px',
+                                          lineHeight: '1'
+                                        }}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
 
                         {/* Items de la section avec drag & drop */}
                         <DndContext
