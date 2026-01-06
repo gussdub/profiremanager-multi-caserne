@@ -249,8 +249,14 @@ const InspectionUnifieeModal = ({
       
       const alertes = collectAlertes();
       const conforme = alertes.length === 0;
+      
+      // Déterminer le type d'asset
+      const isEPI = equipement.type === 'epi' || equipement.type_epi !== undefined;
+      const assetType = equipement.type || (isEPI ? 'epi' : 'equipement');
 
       const inspectionData = {
+        asset_id: equipement.id,
+        asset_type: assetType,
         equipement_id: equipement.id,
         equipement_nom: equipement.nom || equipement.type_epi || 'Équipement',
         formulaire_id: formulaire.id,
@@ -261,16 +267,16 @@ const InspectionUnifieeModal = ({
         conforme: conforme,
         alertes: alertes, // Liste des alertes détectées
         remarques: remarques,
-        creer_demande_remplacement: !conforme && demanderRemplacement
+        creer_demande_remplacement: !conforme && demanderRemplacement,
+        metadata: {
+          epi_nom: isEPI ? (equipement.nom || equipement.type_epi) : undefined,
+          vehicule_nom: assetType === 'vehicule' ? equipement.nom : undefined,
+          borne_nom: assetType === 'borne_seche' ? equipement.nom : undefined
+        }
       };
 
-      // Utiliser l'endpoint approprié selon le type
-      const isEPI = equipement.type_epi !== undefined;
-      const endpoint = isEPI 
-        ? `/mes-epi/${equipement.id}/inspection`
-        : '/inspections-unifiees';
-
-      await apiPost(tenantSlug, endpoint, inspectionData);
+      // Toujours utiliser l'endpoint unifié
+      await apiPost(tenantSlug, '/inspections-unifiees', inspectionData);
       
       if (onInspectionCreated) {
         onInspectionCreated();
