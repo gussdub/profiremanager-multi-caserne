@@ -3,20 +3,31 @@ import { Button } from './ui/button';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
 
-// Fonction utilitaire pour parser une date ISO en timezone locale Canada (EST = UTC-5)
+// Fonction utilitaire pour parser une date en tant que date LOCALE (sans décalage timezone)
 const parseDateLocal = (dateStr) => {
-  if (!dateStr) return null;
+  if (!dateStr) return new Date();
   try {
-    // Parser la date ISO et convertir en heure locale Canada (UTC-5)
-    const dt = new Date(dateStr);
-    // Ajuster pour le fuseau horaire du Canada (EST = UTC-5)
-    const offset = dt.getTimezoneOffset(); // Offset en minutes
-    const localTime = new Date(dt.getTime() - (5 * 60 * 60 * 1000)); // Soustraire 5 heures
-    return localTime;
+    // Si c'est juste une date YYYY-MM-DD, la parser comme date locale
+    if (dateStr.length === 10 && dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // Crée la date en heure locale
+    }
+    // Si c'est une date ISO complète avec 'Z', la convertir en locale
+    if (dateStr.includes('T') && dateStr.includes('Z')) {
+      const dt = new Date(dateStr);
+      // Créer une nouvelle date avec les composants locaux
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    }
+    // Si c'est une date ISO sans 'Z', l'utiliser telle quelle
+    if (dateStr.includes('T')) {
+      const dt = new Date(dateStr);
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    }
+    // Fallback
+    return new Date(dateStr);
   } catch (e) {
-    // Fallback: parser YYYY-MM-DD
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    console.error('Erreur parsing date:', e);
+    return new Date();
   }
 };
 
