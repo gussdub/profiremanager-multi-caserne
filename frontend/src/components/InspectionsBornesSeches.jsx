@@ -182,34 +182,33 @@ const InspectionsBornesSeches = ({ user }) => {
   };
 
   // Ouvrir le modal d'inspection
-  const openInspectionModal = (borne) => {
-    setSelectedBorne(borne);
+  const openInspectionModal = (point) => {
+    setSelectedBorne(point);
     setShowInspectionModal(true);
   };
 
   // Ouvrir le modal d'historique
-  const openHistoriqueModal = (borne) => {
-    setSelectedBorne(borne);
+  const openHistoriqueModal = (point) => {
+    setSelectedBorne(point);
     setShowHistoriqueModal(true);
   };
 
-  // Changer le statut d'une borne (admin/superviseur uniquement)
-  const changeStatutBorne = async (borneId, nouveauStatut) => {
+  // Changer le statut d'un point d'eau (admin/superviseur uniquement)
+  const changeStatutPoint = async (pointId, nouveauStatut) => {
     try {
       const payload = {
         statut_inspection: nouveauStatut,
-        // Mettre à jour aussi l'état de la borne
         etat: nouveauStatut === 'a_refaire' ? 'hors_service' : 'fonctionnelle'
       };
       
-      await apiPut(tenantSlug, `/points-eau/${borneId}`, payload);
+      await apiPut(tenantSlug, `/points-eau/${pointId}`, payload);
       
       // Rafraîchir la liste
-      fetchBornesSeches();
+      fetchPointsEau();
       
       const message = nouveauStatut === 'a_refaire' 
-        ? '⚠️ Borne marquée "À refaire" et mise hors service' 
-        : '✅ Statut réinitialisé - Borne remise en service';
+        ? '⚠️ Point d\'eau marqué "À refaire" et mis hors service' 
+        : '✅ Statut réinitialisé - Point d\'eau remis en service';
       alert(message);
     } catch (error) {
       console.error('Erreur changement statut:', error);
