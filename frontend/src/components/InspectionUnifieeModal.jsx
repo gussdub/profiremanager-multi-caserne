@@ -33,6 +33,15 @@ const InspectionUnifieeModal = ({
         section.items?.forEach(item => {
           // Valeur par défaut selon le type de champ
           switch (item.type) {
+            case 'radio':
+              // Pour radio, la première option par défaut (si options définies)
+              initialReponses[item.id] = item.options?.[0] || '';
+              break;
+            case 'checkbox':
+              // Pour checkbox, tableau vide par défaut
+              initialReponses[item.id] = [];
+              break;
+            // Rétrocompatibilité avec les anciens types
             case 'conforme_nc':
               initialReponses[item.id] = 'conforme';
               break;
