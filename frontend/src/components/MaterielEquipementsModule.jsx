@@ -1156,6 +1156,46 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
               Permettre l'assignation aux employés
             </Label>
           </div>
+
+          {/* Personne ressource pour les alertes d'inspection */}
+          <div style={{ 
+            marginTop: '0.5rem',
+            padding: '0.75rem',
+            backgroundColor: '#FEF3C7',
+            borderRadius: '8px',
+            border: '1px solid #F59E0B'
+          }}>
+            <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#92400E' }}>
+              👤 Personne ressource (alertes inspections)
+            </Label>
+            <p style={{ fontSize: '0.75rem', color: '#B45309', marginBottom: '0.5rem' }}>
+              Cette personne recevra des notifications lorsque des équipements de cette catégorie nécessitent une inspection.
+            </p>
+            <select
+              value={formData.personne_ressource_id}
+              onChange={(e) => handlePersonneRessourceChange(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                borderRadius: '6px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: 'white',
+                fontSize: '0.9rem'
+              }}
+            >
+              <option value="">-- Aucune personne assignée --</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.prenom} {user.nom} ({user.email}) - {user.role}
+                </option>
+              ))}
+            </select>
+            {formData.personne_ressource_email && (
+              <p style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.25rem' }}>
+                📧 Email: {formData.personne_ressource_email}
+              </p>
+            )}
+          </div>
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
