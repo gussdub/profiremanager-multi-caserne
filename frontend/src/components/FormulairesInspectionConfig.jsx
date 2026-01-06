@@ -1600,24 +1600,25 @@ const FormulairesInspectionConfig = () => {
                                     </div>
                                   )}
 
-                                  {/* Configuration des alertes */}
+                                  {/* Configuration des alertes - Optimisé mobile */}
                                   <div style={{ 
                                     marginTop: '0.5rem', 
-                                    padding: '0.5rem',
+                                    padding: 'clamp(0.35rem, 2vw, 0.5rem)',
                                     backgroundColor: '#fef2f2',
                                     borderRadius: '6px',
                                     border: '1px solid #fecaca'
                                   }}>
                                     <div style={{ 
-                                      fontSize: '0.75rem', 
+                                      fontSize: 'clamp(0.65rem, 2.5vw, 0.75rem)', 
                                       fontWeight: '600', 
                                       color: '#991b1b',
-                                      marginBottom: '0.5rem',
+                                      marginBottom: '0.35rem',
                                       display: 'flex',
                                       alignItems: 'center',
-                                      gap: '0.25rem'
+                                      gap: '0.25rem',
+                                      flexWrap: 'wrap'
                                     }}>
-                                      🔔 Configuration des alertes
+                                      🔔 Alertes
                                     </div>
 
                                     {/* Pour types binaires */}
