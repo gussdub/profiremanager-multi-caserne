@@ -1330,94 +1330,348 @@ const FormulairesInspectionConfig = () => {
                   marginBottom: '1rem'
                 }}>
                   <h4 style={{ margin: 0, color: '#374151' }}>📂 Sections et critères</h4>
-                  <Button size="sm" variant="outline" onClick={addSection}>
-                    ➕ Ajouter une section
-                  </Button>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button size="sm" variant="outline" onClick={addSection}>
+                      ➕ Ajouter une section
+                    </Button>
+                  </div>
                 </div>
 
-                {formData.sections.map((section, sectionIndex) => (
-                  <div 
-                    key={section.id}
-                    style={{
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      marginBottom: '1rem',
-                      overflow: 'hidden'
-                    }}
+                {/* Drag & Drop Context pour les sections */}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleSectionDragEnd}
+                >
+                  <SortableContext
+                    items={formData.sections.map((s, i) => s.id || `section-${i}`)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    {/* Section header */}
-                    <div style={{
-                      padding: '1rem',
-                      backgroundColor: '#f8fafc',
-                      borderBottom: '1px solid #e5e7eb',
-                      display: 'flex',
-                      gap: '0.75rem',
-                      alignItems: 'center',
-                      flexWrap: 'wrap'
-                    }}>
-                      <Input
-                        value={section.icone}
-                        onChange={(e) => updateSection(sectionIndex, 'icone', e.target.value)}
-                        style={{ width: '60px', textAlign: 'center' }}
-                        maxLength={2}
-                      />
-                      <Input
-                        value={section.titre}
-                        onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
-                        placeholder="Titre de la section"
-                        style={{ flex: 1, minWidth: '150px' }}
-                      />
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => removeSection(sectionIndex)}
-                        style={{ color: '#ef4444' }}
+                    {formData.sections.map((section, sectionIndex) => (
+                      <SortableSection
+                        key={section.id || `section-${sectionIndex}`}
+                        section={section}
+                        sectionIndex={sectionIndex}
+                        onRemove={() => removeSection(sectionIndex)}
                       >
-                        🗑️
-                      </Button>
-                    </div>
+                        {/* Section header content */}
+                        <div style={{ flex: 1, display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <Input
+                            value={section.nom || section.titre || ''}
+                            onChange={(e) => updateSection(sectionIndex, 'nom', e.target.value)}
+                            placeholder="Nom de la section"
+                            style={{ flex: 1, minWidth: '150px' }}
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => duplicateSection(sectionIndex)}
+                            title="Dupliquer la section"
+                          >
+                            📋
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => removeSection(sectionIndex)}
+                            style={{ color: '#ef4444' }}
+                            title="Supprimer la section"
+                          >
+                            🗑️
+                          </Button>
+                        </div>
 
-                    {/* Items */}
-                    <div style={{ padding: '1rem' }}>
-                      {section.items.map((item, itemIndex) => (
-                        <div 
-                          key={item.id}
-                          style={{
-                            marginBottom: '0.75rem',
-                            padding: '0.75rem',
-                            backgroundColor: '#fafafa',
-                            borderRadius: '8px',
-                            border: '1px solid #e5e7eb'
-                          }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            alignItems: 'center',
-                            flexWrap: 'wrap'
-                          }}>
-                            <Input
-                              value={item.nom}
-                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'nom', e.target.value)}
-                              placeholder="Nom du critère"
-                              style={{ flex: 1, minWidth: '150px' }}
-                            />
-                            <select
-                              value={item.type}
-                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'type', e.target.value)}
-                              style={{
-                                padding: '0.5rem',
-                                borderRadius: '6px',
-                                border: '1px solid #e5e7eb',
-                                minWidth: '180px'
-                              }}
-                            >
-                              {typesChamp.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
+                        {/* Photos de référence de la section */}
+                        <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📷 Photos de référence:</span>
+                            <label style={{
+                              cursor: 'pointer',
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: '#f1f5f9',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              border: '1px dashed #cbd5e1'
+                            }}>
+                              + Ajouter
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleSectionPhotoUpload(sectionIndex, Array.from(e.target.files))}
+                              />
+                            </label>
+                          </div>
+                          {section.photos && section.photos.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {section.photos.map((photo, photoIndex) => (
+                                <div key={photo.id || photoIndex} style={{ position: 'relative' }}>
+                                  <img
+                                    src={photo.data || photo}
+                                    alt={photo.name || `Photo ${photoIndex + 1}`}
+                                    style={{
+                                      width: '60px',
+                                      height: '60px',
+                                      objectFit: 'cover',
+                                      borderRadius: '4px',
+                                      border: '1px solid #e5e7eb'
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSectionPhoto(sectionIndex, photoIndex)}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '-5px',
+                                      right: '-5px',
+                                      width: '18px',
+                                      height: '18px',
+                                      borderRadius: '50%',
+                                      backgroundColor: '#ef4444',
+                                      color: 'white',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      fontSize: '10px',
+                                      lineHeight: '1'
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
                               ))}
-                            </select>
-                            <Button 
-                              size="sm" 
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Items de la section avec drag & drop */}
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleItemDragEnd(sectionIndex)}
+                        >
+                          <SortableContext
+                            items={(section.items || []).map((item, i) => item.id || `item-${sectionIndex}-${i}`)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {(section.items || []).map((item, itemIndex) => (
+                              <SortableItem
+                                key={item.id || `item-${sectionIndex}-${itemIndex}`}
+                                item={item}
+                                itemIndex={itemIndex}
+                                sectionIndex={sectionIndex}
+                              >
+                                {/* Item content */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <Input
+                                      value={item.label || item.nom || ''}
+                                      onChange={(e) => updateItem(sectionIndex, itemIndex, 'label', e.target.value)}
+                                      placeholder="Nom du critère"
+                                      style={{ flex: 1, minWidth: '150px' }}
+                                    />
+                                    <select
+                                      value={item.type}
+                                      onChange={(e) => updateItem(sectionIndex, itemIndex, 'type', e.target.value)}
+                                      style={{
+                                        padding: '0.5rem',
+                                        borderRadius: '6px',
+                                        border: '1px solid #e5e7eb',
+                                        minWidth: '200px',
+                                        fontSize: '0.85rem'
+                                      }}
+                                    >
+                                      <optgroup label="Basique">
+                                        {typesChamp.filter(t => t.category === 'basic').map(t => (
+                                          <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                      </optgroup>
+                                      <optgroup label="Média">
+                                        {typesChamp.filter(t => t.category === 'media').map(t => (
+                                          <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                      </optgroup>
+                                      <optgroup label="Avancé">
+                                        {typesChamp.filter(t => t.category === 'advanced').map(t => (
+                                          <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                      </optgroup>
+                                      <optgroup label="Auto">
+                                        {typesChamp.filter(t => t.category === 'auto').map(t => (
+                                          <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                      </optgroup>
+                                    </select>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => duplicateItem(sectionIndex, itemIndex)}
+                                      title="Dupliquer"
+                                    >
+                                      📋
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => removeItem(sectionIndex, itemIndex)}
+                                      style={{ color: '#ef4444' }}
+                                      title="Supprimer"
+                                    >
+                                      🗑️
+                                    </Button>
+                                  </div>
+
+                                  {/* Options selon le type de champ */}
+                                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.8rem' }}>
+                                    {/* Obligatoire */}
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={item.obligatoire || false}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'obligatoire', e.target.checked)}
+                                      />
+                                      Obligatoire
+                                    </label>
+                                    
+                                    {/* Permettre photo en réponse */}
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={item.permettre_photo || false}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'permettre_photo', e.target.checked)}
+                                      />
+                                      📷 Photo en réponse
+                                    </label>
+                                  </div>
+
+                                  {/* Options spécifiques selon le type */}
+                                  {item.type === 'liste' && (
+                                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
+                                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Options de la liste:</div>
+                                      {(item.options || []).map((opt, optIndex) => (
+                                        <div key={optIndex} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => updateOption(sectionIndex, itemIndex, optIndex, e.target.value)}
+                                            style={{ flex: 1, fontSize: '0.85rem' }}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeOption(sectionIndex, itemIndex, optIndex)}
+                                            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+                                      <Button size="sm" variant="ghost" onClick={() => addOption(sectionIndex, itemIndex)}>
+                                        + Option
+                                      </Button>
+                                    </div>
+                                  )}
+
+                                  {/* Options pour nombre avec unité */}
+                                  {item.type === 'nombre_unite' && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                      <select
+                                        value={item.config?.unite || ''}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.unite', e.target.value)}
+                                        style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '0.85rem' }}
+                                      >
+                                        <option value="">Unité...</option>
+                                        {unites.map(u => (
+                                          <option key={u.value} value={u.value}>{u.label}</option>
+                                        ))}
+                                      </select>
+                                      <Input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={item.config?.min || ''}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.min', parseFloat(e.target.value))}
+                                        style={{ width: '70px', fontSize: '0.85rem' }}
+                                      />
+                                      <Input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={item.config?.max || ''}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.max', parseFloat(e.target.value))}
+                                        style={{ width: '70px', fontSize: '0.85rem' }}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Options pour slider */}
+                                  {item.type === 'slider' && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                      <Input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={item.config?.min ?? 0}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.min', parseFloat(e.target.value))}
+                                        style={{ width: '70px', fontSize: '0.85rem' }}
+                                      />
+                                      <Input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={item.config?.max ?? 100}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.max', parseFloat(e.target.value))}
+                                        style={{ width: '70px', fontSize: '0.85rem' }}
+                                      />
+                                      <Input
+                                        type="number"
+                                        placeholder="Pas"
+                                        value={item.config?.step ?? 1}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.step', parseFloat(e.target.value))}
+                                        style={{ width: '60px', fontSize: '0.85rem' }}
+                                      />
+                                      <select
+                                        value={item.config?.unite || ''}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.unite', e.target.value)}
+                                        style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '0.85rem' }}
+                                      >
+                                        <option value="">Unité...</option>
+                                        {unites.map(u => (
+                                          <option key={u.value} value={u.value}>{u.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+
+                                  {/* Options pour compte à rebours */}
+                                  {item.type === 'compte_rebours' && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Durée (secondes):</span>
+                                      <Input
+                                        type="number"
+                                        value={item.config?.countdown_seconds || 300}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'config.countdown_seconds', parseInt(e.target.value))}
+                                        style={{ width: '100px', fontSize: '0.85rem' }}
+                                      />
+                                      <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                        ({Math.floor((item.config?.countdown_seconds || 300) / 60)} min)
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </SortableItem>
+                            ))}
+                          </SortableContext>
+                        </DndContext>
+
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => addItem(sectionIndex)}
+                          style={{ marginTop: '0.5rem' }}
+                        >
+                          ➕ Ajouter un critère
+                        </Button>
+                      </SortableSection>
+                    ))}
+                  </SortableContext>
+                </DndContext>
+
+                {formData.sections.length === 0 && ( 
                               variant="outline"
                               onClick={() => removeItem(sectionIndex, itemIndex)}
                               style={{ color: '#ef4444' }}
