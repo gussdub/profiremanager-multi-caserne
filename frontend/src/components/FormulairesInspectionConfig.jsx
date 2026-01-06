@@ -1623,13 +1623,13 @@ const FormulairesInspectionConfig = () => {
 
                                     {/* Pour types binaires */}
                                     {['conforme_nc', 'oui_non', 'present_absent'].includes(item.type) && (
-                                      <div style={{ fontSize: '0.8rem', color: '#7f1d1d' }}>
-                                        <span style={{ marginBottom: '0.25rem', display: 'block' }}>
-                                          Déclencher une alerte si:
+                                      <div style={{ fontSize: 'clamp(0.7rem, 2.5vw, 0.8rem)', color: '#7f1d1d' }}>
+                                        <span style={{ marginBottom: '0.25rem', display: 'block', fontSize: 'clamp(0.65rem, 2vw, 0.75rem)' }}>
+                                          Alerte si:
                                         </span>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
                                           {item.type === 'conforme_nc' && (
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.65rem, 2vw, 0.8rem)' }}>
                                               <input
                                                 type="checkbox"
                                                 checked={item.alertes?.valeurs_declenchantes?.includes('non_conforme') ?? true}
@@ -1641,11 +1641,11 @@ const FormulairesInspectionConfig = () => {
                                                   updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
                                                 }}
                                               />
-                                              ❌ Non conforme
+                                              ❌ NC
                                             </label>
                                           )}
                                           {item.type === 'oui_non' && (
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.65rem, 2vw, 0.8rem)' }}>
                                               <input
                                                 type="checkbox"
                                                 checked={item.alertes?.valeurs_declenchantes?.includes('non') ?? true}
@@ -1662,7 +1662,7 @@ const FormulairesInspectionConfig = () => {
                                           )}
                                           {item.type === 'present_absent' && (
                                             <>
-                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.65rem, 2vw, 0.8rem)' }}>
                                                 <input
                                                   type="checkbox"
                                                   checked={item.alertes?.valeurs_declenchantes?.includes('absent') ?? true}
@@ -1676,7 +1676,7 @@ const FormulairesInspectionConfig = () => {
                                                 />
                                                 ⚠️ Absent
                                               </label>
-                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.65rem, 2vw, 0.8rem)' }}>
                                                 <input
                                                   type="checkbox"
                                                   checked={item.alertes?.valeurs_declenchantes?.includes('defectueux') ?? true}
@@ -1688,7 +1688,7 @@ const FormulairesInspectionConfig = () => {
                                                     updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
                                                   }}
                                                 />
-                                                ❌ Défectueux
+                                                ❌ Défect.
                                               </label>
                                             </>
                                           )}
