@@ -9,7 +9,7 @@ import HistoriqueInspectionsBorneSecheModal from './HistoriqueInspectionsBorneSe
 
 const InspectionsBornesSeches = ({ user }) => {
   const { tenantSlug } = useTenant();
-  const [bornesSeches, setBornesSeches] = useState([]);
+  const [pointsEau, setPointsEau] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBorne, setSelectedBorne] = useState(null);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
@@ -19,30 +19,54 @@ const InspectionsBornesSeches = ({ user }) => {
   const [mapZoom, setMapZoom] = useState(12);
   const [mapLayer, setMapLayer] = useState('plan');
   const [datesTests, setDatesTests] = useState([]);
+  const [filterType, setFilterType] = useState('all'); // Filtre par type
 
-  // URL de l'icône borne sèche
-  const borneSecheIcon = 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png';
+  // Icônes selon le type de point d'eau
+  const typeIcons = {
+    borne_seche: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
+    borne_fontaine: '🚰',
+    borne_incendie: '🔴',
+    piscine: '🏊',
+    lac: '🌊',
+    riviere: '🏞️',
+    point_statique: '💧',
+    autre: '💧'
+  };
 
-  // Charger les bornes sèches
-  const fetchBornesSeches = async () => {
+  const getTypeIcon = (type) => typeIcons[type] || '💧';
+  const getTypeLabel = (type) => {
+    const labels = {
+      borne_seche: 'Borne sèche',
+      borne_fontaine: 'Borne fontaine',
+      borne_incendie: 'Borne incendie',
+      piscine: 'Piscine',
+      lac: 'Lac',
+      riviere: 'Rivière',
+      point_statique: 'Point statique',
+      autre: 'Autre'
+    };
+    return labels[type] || type;
+  };
+
+  // Charger tous les points d'eau
+  const fetchPointsEau = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, '/points-eau?type=borne_seche');
-      setBornesSeches(data);
+      const data = await apiGet(tenantSlug, '/points-eau');
+      setPointsEau(data || []);
       
-      // Calculer le centre de la carte basé sur toutes les bornes
-      if (data.length > 0) {
-        const validBornes = data.filter(b => b.latitude && b.longitude);
-        if (validBornes.length > 0) {
-          // Calculer le centre moyen de toutes les bornes
-          const avgLat = validBornes.reduce((sum, b) => sum + b.latitude, 0) / validBornes.length;
-          const avgLng = validBornes.reduce((sum, b) => sum + b.longitude, 0) / validBornes.length;
+      // Calculer le centre de la carte basé sur tous les points
+      if (data && data.length > 0) {
+        const validPoints = data.filter(b => b.latitude && b.longitude);
+        if (validPoints.length > 0) {
+          const avgLat = validPoints.reduce((sum, b) => sum + b.latitude, 0) / validPoints.length;
+          const avgLng = validPoints.reduce((sum, b) => sum + b.longitude, 0) / validPoints.length;
           setMapCenter([avgLat, avgLng]);
-          setMapZoom(13); // Zoom approprié pour voir toutes les bornes
+          setMapZoom(13);
         }
       }
     } catch (error) {
-      console.error('Erreur chargement bornes sèches:', error);
+      console.error('Erreur chargement points d\'eau:', error);
     } finally {
       setLoading(false);
     }
