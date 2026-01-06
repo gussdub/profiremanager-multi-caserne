@@ -1188,11 +1188,46 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
               }}
             >
               <option value="">-- Aucune personne assignée --</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.prenom} {user.nom} ({user.email}) - {user.role}
-                </option>
-              ))}
+              {/* Admins */}
+              {users.filter(u => u.role === 'admin').length > 0 && (
+                <optgroup label="👑 Administrateurs">
+                  {users.filter(u => u.role === 'admin').map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.prenom} {user.nom} ({user.email})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {/* Superviseurs */}
+              {users.filter(u => u.role === 'superviseur').length > 0 && (
+                <optgroup label="⭐ Superviseurs">
+                  {users.filter(u => u.role === 'superviseur').map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.prenom} {user.nom} ({user.email})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {/* Pompiers */}
+              {users.filter(u => u.role === 'pompier').length > 0 && (
+                <optgroup label="🚒 Pompiers">
+                  {users.filter(u => u.role === 'pompier').map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.prenom} {user.nom} ({user.email})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {/* Stagiaires */}
+              {users.filter(u => u.role === 'stagiaire').length > 0 && (
+                <optgroup label="📚 Stagiaires">
+                  {users.filter(u => u.role === 'stagiaire').map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.prenom} {user.nom} ({user.email})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             {formData.personne_ressource_email && (
               <p style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.25rem' }}>
