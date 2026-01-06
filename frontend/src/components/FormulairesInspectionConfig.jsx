@@ -1531,6 +1531,62 @@ const FormulairesInspectionConfig = () => {
                                     </div>
                                   )}
 
+                                  {/* Options pour bouton radio (choix unique) */}
+                                  {item.type === 'radio' && (
+                                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+                                      <div style={{ fontSize: '0.75rem', color: '#0369a1', marginBottom: '0.25rem', fontWeight: '500' }}>🔘 Options (choix unique):</div>
+                                      {(item.options || []).map((opt, optIndex) => (
+                                        <div key={optIndex} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem', alignItems: 'center' }}>
+                                          <span style={{ color: '#0369a1', fontSize: '0.8rem' }}>○</span>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => updateOption(sectionIndex, itemIndex, optIndex, e.target.value)}
+                                            style={{ flex: 1, fontSize: '0.85rem' }}
+                                            placeholder={`Option ${optIndex + 1}`}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeOption(sectionIndex, itemIndex, optIndex)}
+                                            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+                                      <Button size="sm" variant="ghost" onClick={() => addOption(sectionIndex, itemIndex)} style={{ color: '#0369a1' }}>
+                                        + Ajouter une option
+                                      </Button>
+                                    </div>
+                                  )}
+
+                                  {/* Options pour cases à cocher (choix multiples) */}
+                                  {item.type === 'checkbox' && (
+                                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                                      <div style={{ fontSize: '0.75rem', color: '#166534', marginBottom: '0.25rem', fontWeight: '500' }}>☑️ Options (choix multiples):</div>
+                                      {(item.options || []).map((opt, optIndex) => (
+                                        <div key={optIndex} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem', alignItems: 'center' }}>
+                                          <span style={{ color: '#166534', fontSize: '0.8rem' }}>☐</span>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => updateOption(sectionIndex, itemIndex, optIndex, e.target.value)}
+                                            style={{ flex: 1, fontSize: '0.85rem' }}
+                                            placeholder={`Option ${optIndex + 1}`}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeOption(sectionIndex, itemIndex, optIndex)}
+                                            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+                                      <Button size="sm" variant="ghost" onClick={() => addOption(sectionIndex, itemIndex)} style={{ color: '#166534' }}>
+                                        + Ajouter une option
+                                      </Button>
+                                    </div>
+                                  )}
+
                                   {/* Options pour nombre avec unité */}
                                   {item.type === 'nombre_unite' && (
                                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
