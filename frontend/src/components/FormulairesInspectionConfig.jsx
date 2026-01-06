@@ -406,6 +406,18 @@ const FormulairesInspectionConfig = () => {
       obligatoire: false,
       permettre_photo: false, // Permet de joindre une photo en réponse
       options: [],
+      // Configuration des alertes selon les réponses
+      alertes: {
+        // Pour types binaires (conforme_nc, oui_non, present_absent)
+        valeurs_declenchantes: ['non_conforme', 'non', 'absent', 'defectueux'],
+        // Pour types numériques (nombre, slider)
+        seuil_min: null, // Alerte si valeur < seuil_min
+        seuil_max: null, // Alerte si valeur > seuil_max
+        // Pour liste déroulante - indices des options qui déclenchent une alerte
+        options_declenchantes: [],
+        // Message personnalisé pour l'alerte
+        message: ''
+      },
       // Options avancées selon le type
       config: {
         unite: '',
