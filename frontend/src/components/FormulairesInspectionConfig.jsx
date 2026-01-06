@@ -238,17 +238,32 @@ const FormulairesInspectionConfig = () => {
       // Charger les catégories de Matériel & Équipements
       const equipCats = await apiGet(tenantSlug, '/equipements/categories');
       
-      // Ajouter les types d'EPI comme catégories
-      const epiTypes = [
-        { id: 'epi_bunker', nom: 'Habit de combat (Bunker)', type: 'epi' },
-        { id: 'epi_bottes', nom: 'Bottes', type: 'epi' },
-        { id: 'epi_casque', nom: 'Casque', type: 'epi' },
-        { id: 'epi_gants', nom: 'Gants', type: 'epi' },
-        { id: 'epi_cagoule', nom: 'Cagoule', type: 'epi' },
+      // Charger les types d'EPI depuis l'API
+      let epiTypesFromDB = [];
+      try {
+        const typesEPI = await apiGet(tenantSlug, '/types-epi');
+        epiTypesFromDB = (typesEPI || []).map(t => ({
+          id: `epi_${t.id}`,
+          nom: `🛡️ ${t.nom}`,
+          type: 'epi',
+          original_id: t.id
+        }));
+      } catch (e) {
+        console.warn('Types EPI non chargés:', e);
+      }
+      
+      // Catégories EPI par défaut si aucune depuis l'API
+      const epiTypesDefault = epiTypesFromDB.length > 0 ? [] : [
+        { id: 'epi_bunker', nom: '🛡️ Habit de combat (Bunker)', type: 'epi' },
+        { id: 'epi_bottes', nom: '🛡️ Bottes', type: 'epi' },
+        { id: 'epi_casque', nom: '🛡️ Casque', type: 'epi' },
+        { id: 'epi_gants', nom: '🛡️ Gants', type: 'epi' },
+        { id: 'epi_cagoule', nom: '🛡️ Cagoule', type: 'epi' },
       ];
       
       setCategories([
-        ...epiTypes,
+        ...epiTypesFromDB,
+        ...epiTypesDefault,
         ...(equipCats || []).map(c => ({ ...c, type: 'equipement' }))
       ]);
     } catch (error) {
