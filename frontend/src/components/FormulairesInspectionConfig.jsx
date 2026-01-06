@@ -400,14 +400,14 @@ const FormulairesInspectionConfig = () => {
     const newItem = {
       id: `item-${Date.now()}`,
       label: 'Nouvel élément',
-      type: 'conforme_nc',
+      type: 'radio',
       obligatoire: false,
       permettre_photo: false, // Permet de joindre une photo en réponse
-      options: [],
+      options: ['Oui', 'Non'], // Options par défaut pour radio/checkbox
       // Configuration des alertes selon les réponses
       alertes: {
-        // Pour types binaires (conforme_nc, oui_non, present_absent)
-        valeurs_declenchantes: ['non_conforme', 'non', 'absent', 'defectueux'],
+        // Pour types à choix (radio, checkbox)
+        valeurs_declenchantes: [],
         // Pour types numériques (nombre, slider)
         seuil_min: null, // Alerte si valeur < seuil_min
         seuil_max: null, // Alerte si valeur > seuil_max
