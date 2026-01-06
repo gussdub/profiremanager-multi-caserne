@@ -776,7 +776,32 @@ async def job_verifier_alertes_equipements():
                     logging.info(f"✅ Aucune alerte pour {tenant_nom}")
                     continue
                 
-                logging.info(f"📊 {tenant_nom}: {total_alertes} alertes trouvées - Maintenance: {alertes_count['maintenance']}, Expiration: {alertes_count['expiration']}, Fin de vie: {alertes_count['fin_vie']}, Réparation: {alertes_count['reparation']}")
+                logging.info(f"📊 {tenant_nom}: {total_alertes} alertes trouvées - Maintenance: {alertes_count['maintenance']}, Expiration: {alertes_count['expiration']}, Fin de vie: {alertes_count['fin_vie']}, Réparation: {alertes_count['reparation']}, Inspections dues: {alertes_count['inspections_dues']}")
+                
+                # Générer le HTML pour les inspections dues par catégorie
+                inspections_dues_html = ""
+                if alertes_count["inspections_dues"] > 0:
+                    inspections_dues_html = f'''
+                        <div class="alert-box" style="border-left-color: #F59E0B; background-color: #FEF3C7;">
+                            <div class="alert-title" style="color: #B45309;">📋 Inspections à effectuer</div>
+                            <div class="alert-count" style="color: #92400E;">{alertes_count["inspections_dues"]} équipement(s)</div>
+                            <p>Selon la fréquence d'inspection de leur catégorie</p>
+                            <div style="margin-top: 15px;">
+                    '''
+                    for cat_id, cat_data in alertes_par_categorie.items():
+                        inspections_dues_html += f'''
+                                <div style="background: white; padding: 10px; border-radius: 8px; margin: 8px 0;">
+                                    <strong>{cat_data["icone"]} {cat_data["nom"]}</strong> - {cat_data["count"]} équipement(s)
+                                    <br><small style="color: #666;">Fréquence: {cat_data["frequence"]}</small>
+                                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
+                        '''
+                        for eq in cat_data["equipements"][:5]:  # Limiter à 5 équipements par catégorie
+                            retard_text = f" ({eq['jours_retard']} jours de retard)" if eq.get('jours_retard') else ""
+                            inspections_dues_html += f"<li>{eq['nom']}{retard_text}</li>"
+                        if len(cat_data["equipements"]) > 5:
+                            inspections_dues_html += f"<li><em>... et {len(cat_data['equipements']) - 5} autre(s)</em></li>"
+                        inspections_dues_html += "</ul></div>"
+                    inspections_dues_html += "</div></div>"
                 
                 # Préparer le contenu de l'email
                 subject = f"⚠️ Alertes Équipements - {tenant_nom}"
