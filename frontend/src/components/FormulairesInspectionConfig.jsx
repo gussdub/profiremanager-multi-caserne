@@ -941,7 +941,7 @@ const FormulairesInspectionConfig = () => {
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'center',
-            padding: '1rem',
+            padding: 'clamp(0.5rem, 2vw, 1rem)',
             overflowY: 'auto'
           }}
           onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
@@ -949,28 +949,38 @@ const FormulairesInspectionConfig = () => {
           <div 
             style={{
               backgroundColor: 'white',
-              borderRadius: '16px',
+              borderRadius: 'clamp(8px, 2vw, 16px)',
               width: '100%',
               maxWidth: '800px',
-              maxHeight: 'calc(100vh - 2rem)',
+              maxHeight: 'calc(100vh - 1rem)',
               display: 'flex',
               flexDirection: 'column',
-              margin: '0.5rem auto'
+              margin: '0.25rem auto'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header - Optimisé mobile */}
             <div style={{ 
-              padding: '1.25rem', 
+              padding: 'clamp(0.75rem, 2vw, 1.25rem)', 
               borderBottom: '1px solid #e5e7eb',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: '0.5rem',
               background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
-              borderRadius: '16px 16px 0 0'
+              borderRadius: 'clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px) 0 0',
+              flexShrink: 0
             }}>
-              <h3 style={{ margin: 0, color: 'white', fontWeight: '600' }}>
-                {selectedFormulaire ? '✏️ Modifier le formulaire' : '➕ Nouveau formulaire'}
+              <h3 style={{ 
+                margin: 0, 
+                color: 'white', 
+                fontWeight: '600',
+                fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {selectedFormulaire ? '✏️ Modifier' : '➕ Nouveau'} formulaire
               </h3>
               <button 
                 onClick={() => setShowModal(false)}
@@ -978,22 +988,26 @@ const FormulairesInspectionConfig = () => {
                   background: 'rgba(255,255,255,0.2)', 
                   border: 'none', 
                   color: 'white',
-                  fontSize: '1.5rem',
+                  fontSize: 'clamp(1.2rem, 4vw, 1.5rem)',
                   cursor: 'pointer',
                   borderRadius: '50%',
-                  width: '36px',
-                  height: '36px'
+                  width: 'clamp(32px, 8vw, 36px)',
+                  height: 'clamp(32px, 8vw, 36px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}
               >
                 ×
               </button>
             </div>
 
-            {/* Content */}
+            {/* Content - Padding réduit sur mobile */}
             <div style={{ 
               flex: 1, 
               overflowY: 'auto', 
-              padding: '1.5rem'
+              padding: 'clamp(0.75rem, 3vw, 1.5rem)'
             }}>
               {/* Infos générales */}
               <div style={{ marginBottom: '1.5rem' }}>
