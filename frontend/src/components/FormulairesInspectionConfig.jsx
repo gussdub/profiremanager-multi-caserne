@@ -166,9 +166,8 @@ const FormulairesInspectionConfig = () => {
 
   // Types de champs enrichis
   const typesChamp = [
-    { value: 'conforme_nc', label: '✅ Conforme / Non conforme', category: 'basic' },
-    { value: 'oui_non', label: '👍 Oui / Non', category: 'basic' },
-    { value: 'present_absent', label: '📦 Présent / Absent / Défectueux', category: 'basic' },
+    { value: 'radio', label: '🔘 Bouton radio (choix unique)', category: 'basic' },
+    { value: 'checkbox', label: '☑️ Cases à cocher (choix multiples)', category: 'basic' },
     { value: 'texte', label: '📝 Texte libre', category: 'basic' },
     { value: 'nombre', label: '🔢 Nombre', category: 'basic' },
     { value: 'nombre_unite', label: '📏 Nombre avec unité', category: 'basic' },
