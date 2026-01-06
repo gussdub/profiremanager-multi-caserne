@@ -432,7 +432,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           >
             <span style={{ fontSize: '1.75rem' }}>💧</span>
             <span style={{ fontSize: '0.8rem', fontWeight: '600', color: activeTab === 'eau' ? '#2563eb' : '#374151' }}>Points d'eau</span>
-            <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Bornes sèches</span>
+            <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Inspections</span>
           </button>
 
           {/* Matériel */}
