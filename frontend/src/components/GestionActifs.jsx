@@ -714,7 +714,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
                     minWidth: '140px'
                   }}
                 >
-                  🔥 Bornes Sèches
+                  📋 Inspections
                 </button>
               </div>
 
