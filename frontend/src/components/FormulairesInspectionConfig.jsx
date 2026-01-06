@@ -1328,10 +1328,10 @@ const FormulairesInspectionConfig = () => {
                               </Button>
                             </div>
 
-                            {/* Photos de référence de la section */}
+                            {/* Photos de référence de la section - Optimisé mobile */}
                             <div style={{ marginBottom: '0.75rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📷 Photos de référence:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: 'clamp(0.7rem, 2vw, 0.8rem)', color: '#64748b' }}>📷 Photos réf.:</span>
                                 <label style={{
                                   cursor: 'pointer',
                                   padding: '0.25rem 0.5rem',
