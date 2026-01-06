@@ -94,21 +94,20 @@ const InspectionsBornesSeches = ({ user }) => {
     : pointsEau.filter(p => p.type === filterType);
 
   // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état du point)
-  const getInspectionColor = (borne) => {
-    // PRIORITÉ 1 : Vérifier l'état explicite de la borne (hors_service, fonctionnelle, en_inspection)
-    // Ceci permet aux boutons "À refaire" et "Réinitialiser" de fonctionner correctement
-    if (borne.etat === 'hors_service') {
+  const getInspectionColor = (point) => {
+    // PRIORITÉ 1 : Vérifier l'état explicite du point (hors_service, fonctionnelle, en_inspection)
+    if (point.etat === 'hors_service') {
       return '#ef4444'; // Rouge - Hors service
     }
-    if (borne.etat === 'fonctionnelle') {
-      return '#10b981'; // Vert - Fonctionnelle
+    if (point.etat === 'fonctionnelle') {
+      return '#10b981'; // Vert - Fonctionnel
     }
-    if (borne.etat === 'en_inspection') {
+    if (point.etat === 'en_inspection') {
       return '#f59e0b'; // Orange - En inspection
     }
 
     // PRIORITÉ 2 : Si statut manuel "à refaire" par admin
-    if (borne.statut_inspection === 'a_refaire') {
+    if (point.statut_inspection === 'a_refaire') {
       return '#f59e0b'; // Orange - À refaire
     }
 
@@ -120,43 +119,48 @@ const InspectionsBornesSeches = ({ user }) => {
     });
 
     if (hasPassedTestDate) {
-      return '#ef4444'; // Rouge - Date de test dépassée, toutes repassent en rouge
+      return '#ef4444'; // Rouge - Date de test dépassée
     }
 
     // PRIORITÉ 4 : Si pas d'inspection = pas encore inspectée
-    if (!borne.derniere_inspection_date) {
+    if (!point.derniere_inspection_date) {
       return '#ef4444'; // Rouge - Non inspectée
     }
 
     // PRIORITÉ 5 : Si inspection il y a plus de 6 mois
-    const derniereInspection = new Date(borne.derniere_inspection_date);
+    const derniereInspection = new Date(point.derniere_inspection_date);
     const sixMoisEnMs = 6 * 30 * 24 * 60 * 60 * 1000;
     const tempsPasse = today - derniereInspection;
 
     if (tempsPasse < sixMoisEnMs) {
-      return '#10b981'; // Vert - Inspectée récemment (< 6 mois)
+      return '#10b981'; // Vert - Inspectée récemment
     }
 
-    return '#ef4444'; // Rouge - Inspection trop ancienne (> 6 mois)
+    return '#ef4444'; // Rouge - Inspection trop ancienne
   };
   
   // Obtenir le label du statut d'inspection
-  const getInspectionLabel = (borne) => {
-    const color = getInspectionColor(borne);
+  const getInspectionLabel = (point) => {
+    const color = getInspectionColor(point);
     if (color === '#10b981') return '✓ Inspectée';
     if (color === '#f59e0b') return '⚠ À refaire';
-    if (!borne.derniere_inspection_date) return '✗ Non inspectée';
+    if (!point.derniere_inspection_date) return '✗ Non inspectée';
     return '✗ Inspection expirée';
   };
 
   // Créer l'icône Leaflet avec badge coloré
-  const getLeafletIcon = (borne) => {
-    const badgeColor = getInspectionColor(borne);
+  const getLeafletIcon = (point) => {
+    const badgeColor = getInspectionColor(point);
+    const icon = getTypeIcon(point.type);
+    const isImageUrl = icon.startsWith('http');
 
     return L.divIcon({
       html: `
         <div style="position: relative; width: 40px; height: 40px;">
-          <img src="${borneSecheIcon}" style="width: 40px; height: 40px;" />
+          ${isImageUrl 
+            ? `<img src="${icon}" style="width: 40px; height: 40px;" />`
+            : `<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: white; border-radius: 50%; border: 2px solid #d1d5db;">${icon}</div>`
+          }
           <div style="
             position: absolute;
             bottom: 0px;
