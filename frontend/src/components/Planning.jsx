@@ -1228,7 +1228,14 @@ const Planning = () => {
             <Input 
               placeholder="🔍 Rechercher un pompier..."
               value={searchFilter}
-              onChange={e => setSearchFilter(e.target.value)}
+              onChange={e => {
+                const newValue = e.target.value;
+                setSearchFilter(newValue);
+                // Réinitialiser selectedUserId si le champ est vidé
+                if (!newValue.trim()) {
+                  setSelectedUserId(null);
+                }
+              }}
               onFocus={() => setShowSearchSuggestions(true)}
             />
             {/* Dropdown de suggestions */}
