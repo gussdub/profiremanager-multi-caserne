@@ -84,11 +84,16 @@ const InspectionsBornesSeches = ({ user }) => {
   };
 
   useEffect(() => {
-    fetchBornesSeches();
+    fetchPointsEau();
     fetchDatesTests();
   }, [tenantSlug]);
 
-  // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état de la borne)
+  // Filtrer les points d'eau selon le type sélectionné
+  const filteredPointsEau = filterType === 'all' 
+    ? pointsEau 
+    : pointsEau.filter(p => p.type === filterType);
+
+  // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état du point)
   const getInspectionColor = (borne) => {
     // PRIORITÉ 1 : Vérifier l'état explicite de la borne (hors_service, fonctionnelle, en_inspection)
     // Ceci permet aux boutons "À refaire" et "Réinitialiser" de fonctionner correctement
