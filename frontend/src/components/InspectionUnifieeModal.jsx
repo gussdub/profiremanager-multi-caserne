@@ -986,6 +986,47 @@ const InspectionUnifieeModal = ({
             />
           </div>
 
+          {/* Liste des alertes détectées */}
+          {collectAlertes().length > 0 && (
+            <div style={{
+              padding: '1rem',
+              borderRadius: '12px',
+              backgroundColor: '#fef3c7',
+              border: '2px solid #fcd34d',
+              marginBottom: '1rem'
+            }}>
+              <div style={{ 
+                fontWeight: '700', 
+                fontSize: '0.95rem',
+                color: '#92400e',
+                marginBottom: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                🔔 Alertes détectées ({collectAlertes().length})
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#78350f' }}>
+                Ces alertes seront envoyées au gestionnaire:
+              </div>
+              <ul style={{ 
+                margin: '0.5rem 0 0 0', 
+                paddingLeft: '1.25rem',
+                fontSize: '0.85rem',
+                color: '#92400e'
+              }}>
+                {collectAlertes().map((alerte, idx) => (
+                  <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                    <strong>{alerte.item_label}</strong>: {alerte.type}
+                    {alerte.message && alerte.message !== `Alerte: ${alerte.item_label} - ${alerte.type}` && (
+                      <span style={{ fontStyle: 'italic' }}> - {alerte.message}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Résultat global */}
           <div style={{
             padding: '1rem',
@@ -1009,7 +1050,7 @@ const InspectionUnifieeModal = ({
               <div style={{ fontSize: '0.85rem', color: conformeGlobal ? '#15803d' : '#b91c1c' }}>
                 {conformeGlobal 
                   ? 'Tous les critères sont validés' 
-                  : 'Un ou plusieurs critères sont non conformes'}
+                  : `${collectAlertes().length} alerte(s) seront envoyées au gestionnaire`}
               </div>
             </div>
           </div>
