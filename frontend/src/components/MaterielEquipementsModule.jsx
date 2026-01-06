@@ -1199,7 +1199,7 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
             </Label>
           </div>
 
-          {/* Personne ressource pour les alertes d'inspection */}
+          {/* Personnes ressources pour les alertes d'inspection - Sélection multiple */}
           <div style={{ 
             marginTop: '0.5rem',
             padding: '0.75rem',
@@ -1208,70 +1208,155 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
             border: '1px solid #F59E0B'
           }}>
             <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#92400E' }}>
-              👤 Personne ressource (alertes inspections)
+              👥 Personnes ressources (alertes inspections)
             </Label>
-            <p style={{ fontSize: '0.75rem', color: '#B45309', marginBottom: '0.5rem' }}>
-              Cette personne recevra des notifications lorsque des équipements de cette catégorie nécessitent une inspection.
+            <p style={{ fontSize: '0.75rem', color: '#B45309', marginBottom: '0.75rem' }}>
+              Ces personnes recevront des notifications lorsque des équipements de cette catégorie nécessitent une inspection.
             </p>
-            <select
-              value={formData.personne_ressource_id}
-              onChange={(e) => handlePersonneRessourceChange(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
+            
+            {/* Liste des personnes sélectionnées */}
+            {formData.personnes_ressources?.length > 0 && (
+              <div style={{ 
+                marginBottom: '0.75rem', 
+                padding: '0.5rem', 
+                backgroundColor: '#D1FAE5', 
                 borderRadius: '6px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                fontSize: '0.9rem'
-              }}
-            >
-              <option value="">-- Aucune personne assignée --</option>
+                border: '1px solid #10B981'
+              }}>
+                <span style={{ fontSize: '0.75rem', color: '#065F46', fontWeight: '600' }}>
+                  ✅ {formData.personnes_ressources.length} personne(s) sélectionnée(s):
+                </span>
+                <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                  {formData.personnes_ressources.map(p => {
+                    const user = users.find(u => u.id === p.id);
+                    return (
+                      <span key={p.id} style={{
+                        fontSize: '0.7rem',
+                        padding: '0.15rem 0.4rem',
+                        backgroundColor: '#10B981',
+                        color: 'white',
+                        borderRadius: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        {user ? `${user.prenom} ${user.nom}` : p.email}
+                        <button 
+                          type="button"
+                          onClick={() => handleTogglePersonne(p.id)}
+                          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, fontSize: '0.8rem' }}
+                        >×</button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Liste des utilisateurs avec checkboxes */}
+            <div style={{ 
+              maxHeight: '200px', 
+              overflowY: 'auto', 
+              border: '1px solid #D1D5DB', 
+              borderRadius: '6px',
+              backgroundColor: 'white'
+            }}>
               {/* Admins */}
               {users.filter(u => u.role === 'admin').length > 0 && (
-                <optgroup label="👑 Administrateurs">
+                <div>
+                  <div style={{ padding: '0.35rem 0.5rem', backgroundColor: '#F3F4F6', fontWeight: '600', fontSize: '0.75rem', color: '#4B5563', borderBottom: '1px solid #E5E7EB' }}>
+                    👑 Administrateurs
+                  </div>
                   {users.filter(u => u.role === 'admin').map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.prenom} {user.nom} ({user.email})
-                    </option>
+                    <label key={user.id} style={{ 
+                      display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', 
+                      cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                      backgroundColor: isPersonneSelected(user.id) ? '#DBEAFE' : 'transparent'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isPersonneSelected(user.id)}
+                        onChange={() => handleTogglePersonne(user.id)}
+                      />
+                      <span style={{ fontSize: '0.8rem' }}>{user.prenom} {user.nom}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#6B7280' }}>({user.email})</span>
+                    </label>
                   ))}
-                </optgroup>
+                </div>
               )}
+              
               {/* Superviseurs */}
               {users.filter(u => u.role === 'superviseur').length > 0 && (
-                <optgroup label="⭐ Superviseurs">
+                <div>
+                  <div style={{ padding: '0.35rem 0.5rem', backgroundColor: '#F3F4F6', fontWeight: '600', fontSize: '0.75rem', color: '#4B5563', borderBottom: '1px solid #E5E7EB' }}>
+                    ⭐ Superviseurs
+                  </div>
                   {users.filter(u => u.role === 'superviseur').map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.prenom} {user.nom} ({user.email})
-                    </option>
+                    <label key={user.id} style={{ 
+                      display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', 
+                      cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                      backgroundColor: isPersonneSelected(user.id) ? '#DBEAFE' : 'transparent'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isPersonneSelected(user.id)}
+                        onChange={() => handleTogglePersonne(user.id)}
+                      />
+                      <span style={{ fontSize: '0.8rem' }}>{user.prenom} {user.nom}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#6B7280' }}>({user.email})</span>
+                    </label>
                   ))}
-                </optgroup>
+                </div>
               )}
-              {/* Pompiers */}
-              {users.filter(u => u.role === 'pompier').length > 0 && (
-                <optgroup label="🚒 Pompiers">
-                  {users.filter(u => u.role === 'pompier').map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.prenom} {user.nom} ({user.email})
-                    </option>
+              
+              {/* Employés (Pompiers) */}
+              {users.filter(u => u.role === 'employe').length > 0 && (
+                <div>
+                  <div style={{ padding: '0.35rem 0.5rem', backgroundColor: '#F3F4F6', fontWeight: '600', fontSize: '0.75rem', color: '#4B5563', borderBottom: '1px solid #E5E7EB' }}>
+                    🚒 Pompiers
+                  </div>
+                  {users.filter(u => u.role === 'employe').map(user => (
+                    <label key={user.id} style={{ 
+                      display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', 
+                      cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                      backgroundColor: isPersonneSelected(user.id) ? '#DBEAFE' : 'transparent'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isPersonneSelected(user.id)}
+                        onChange={() => handleTogglePersonne(user.id)}
+                      />
+                      <span style={{ fontSize: '0.8rem' }}>{user.prenom} {user.nom}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#6B7280' }}>({user.email})</span>
+                    </label>
                   ))}
-                </optgroup>
+                </div>
               )}
+              
               {/* Stagiaires */}
               {users.filter(u => u.role === 'stagiaire').length > 0 && (
-                <optgroup label="📚 Stagiaires">
+                <div>
+                  <div style={{ padding: '0.35rem 0.5rem', backgroundColor: '#F3F4F6', fontWeight: '600', fontSize: '0.75rem', color: '#4B5563', borderBottom: '1px solid #E5E7EB' }}>
+                    📚 Stagiaires
+                  </div>
                   {users.filter(u => u.role === 'stagiaire').map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.prenom} {user.nom} ({user.email})
-                    </option>
+                    <label key={user.id} style={{ 
+                      display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', 
+                      cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                      backgroundColor: isPersonneSelected(user.id) ? '#DBEAFE' : 'transparent'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isPersonneSelected(user.id)}
+                        onChange={() => handleTogglePersonne(user.id)}
+                      />
+                      <span style={{ fontSize: '0.8rem' }}>{user.prenom} {user.nom}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#6B7280' }}>({user.email})</span>
+                    </label>
                   ))}
-                </optgroup>
+                </div>
               )}
-            </select>
-            {formData.personne_ressource_email && (
-              <p style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.25rem' }}>
-                📧 Email: {formData.personne_ressource_email}
-              </p>
-            )}
+            </div>
           </div>
         </div>
         
