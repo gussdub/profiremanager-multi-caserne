@@ -977,10 +977,9 @@ async def job_verifier_alertes_equipements():
                             email_response_pr = resend.Emails.send(params_pr)
                             logging.info(f"📧 Email personne ressource envoyé à {email_pr} pour {cat_data['nom']} - ID: {email_response_pr.get('id', 'N/A')}")
                             emails_deja_envoyes.add(email_pr)  # Marquer comme envoyé
-                            logging.info(f"📧 Email personne ressource envoyé à {personne_email} pour {cat_data['nom']} - ID: {email_response_pr.get('id', 'N/A')}")
                         
                         except Exception as e:
-                            logging.error(f"❌ Erreur envoi email personne ressource {personne_email}: {str(e)}")
+                            logging.error(f"❌ Erreur envoi email personne ressource {email_pr}: {str(e)}")
                 
                 logging.info(f"✅ Notifications d'alertes envoyées pour {tenant_nom}")
                 
