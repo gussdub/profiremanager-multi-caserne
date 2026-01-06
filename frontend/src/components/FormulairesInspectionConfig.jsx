@@ -1283,8 +1283,8 @@ const FormulairesInspectionConfig = () => {
                       >
                         {({ dragHandleProps }) => (
                           <>
-                            {/* Section header avec handle de drag */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            {/* Section header avec handle de drag - Optimisé mobile */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(0.25rem, 1vw, 0.5rem)', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                               {/* Handle de drag */}
                               <button
                                 {...dragHandleProps}
@@ -1294,7 +1294,7 @@ const FormulairesInspectionConfig = () => {
                                   padding: '0.25rem',
                                   background: 'none',
                                   border: 'none',
-                                  fontSize: '1.2rem',
+                                  fontSize: 'clamp(1rem, 3vw, 1.2rem)',
                                   color: '#64748b',
                                   touchAction: 'none',
                                   flexShrink: 0
@@ -1307,7 +1307,7 @@ const FormulairesInspectionConfig = () => {
                                 value={section.nom || section.titre || ''}
                                 onChange={(e) => updateSection(sectionIndex, 'nom', e.target.value)}
                                 placeholder="Nom de la section"
-                                style={{ flex: 1, minWidth: '150px' }}
+                                style={{ flex: 1, minWidth: '100px', fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)' }}
                               />
                               <Button 
                                 size="sm" 
