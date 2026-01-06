@@ -152,14 +152,35 @@ const InspectionUnifieeModal = ({
       section.items?.forEach(item => {
         const valeur = reponses[item.id];
         const alertConfig = item.alertes || {};
-        const valeursDeclenchantes = alertConfig.valeurs_declenchantes || ['non_conforme', 'non', 'absent', 'defectueux'];
+        const valeursDeclenchantes = alertConfig.valeurs_declenchantes || [];
         
         let isAlerte = false;
         let typeAlerte = '';
         
-        // Types binaires
-        if (['conforme_nc', 'oui_non', 'present_absent'].includes(item.type)) {
+        // Types à choix personnalisés (radio, checkbox)
+        if (item.type === 'radio') {
           if (valeursDeclenchantes.includes(valeur)) {
+            isAlerte = true;
+            typeAlerte = valeur;
+          }
+        }
+        
+        if (item.type === 'checkbox') {
+          // Pour checkbox, vérifier si une des valeurs sélectionnées est dans les déclencheurs
+          const selectedValues = Array.isArray(valeur) ? valeur : [];
+          const matchedValues = selectedValues.filter(v => valeursDeclenchantes.includes(v));
+          if (matchedValues.length > 0) {
+            isAlerte = true;
+            typeAlerte = matchedValues.join(', ');
+          }
+        }
+        
+        // Rétrocompatibilité: Types binaires anciens
+        if (['conforme_nc', 'oui_non', 'present_absent'].includes(item.type)) {
+          const defaultDeclenchantes = valeursDeclenchantes.length > 0 
+            ? valeursDeclenchantes 
+            : ['non_conforme', 'non', 'absent', 'defectueux'];
+          if (defaultDeclenchantes.includes(valeur)) {
             isAlerte = true;
             typeAlerte = valeur;
           }
@@ -193,7 +214,7 @@ const InspectionUnifieeModal = ({
             item_label: item.label || item.nom,
             section: section.nom || section.titre,
             type: typeAlerte,
-            valeur: valeur,
+            valeur: Array.isArray(valeur) ? valeur.join(', ') : valeur,
             message: alertConfig.message || `Alerte: ${item.label || item.nom} - ${typeAlerte}`
           });
         }
