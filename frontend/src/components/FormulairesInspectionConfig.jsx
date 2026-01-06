@@ -490,13 +490,6 @@ const FormulairesInspectionConfig = () => {
         };
       } else {
         items[itemIndex] = { ...items[itemIndex], [field]: value };
-        
-        // Si on change le type vers radio ou checkbox, initialiser les options par défaut si vides
-        if (field === 'type' && (value === 'radio' || value === 'checkbox')) {
-          if (!items[itemIndex].options || items[itemIndex].options.length === 0) {
-            items[itemIndex].options = ['Oui', 'Non'];
-          }
-        }
       }
       
       sections[sectionIndex] = { ...sections[sectionIndex], items };
