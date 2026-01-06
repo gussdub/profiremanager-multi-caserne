@@ -1140,9 +1140,9 @@ const FormulairesInspectionConfig = () => {
                   {/* Catégories concernées - SEULEMENT pour type "inspection" */}
                   {formData.type === 'inspection' && (
                     <div>
-                      <Label>📂 Catégories d'équipement concernées *</Label>
-                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0.5rem' }}>
-                        Sélectionnez les catégories pour lesquelles ce formulaire sera utilisé
+                      <Label style={{ fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)' }}>📂 Catégories concernées *</Label>
+                      <p style={{ fontSize: 'clamp(0.7rem, 2vw, 0.8rem)', color: '#64748b', margin: '0.25rem 0 0.5rem' }}>
+                        Sélectionnez les catégories pour ce formulaire
                       </p>
                       <div style={{ 
                         display: 'flex', 
