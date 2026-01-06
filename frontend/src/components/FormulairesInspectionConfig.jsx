@@ -403,7 +403,7 @@ const FormulairesInspectionConfig = () => {
       type: 'radio',
       obligatoire: false,
       permettre_photo: false, // Permet de joindre une photo en réponse
-      options: ['Oui', 'Non'], // Options par défaut pour radio/checkbox
+      options: [], // Aucune option par défaut
       // Configuration des alertes selon les réponses
       alertes: {
         // Pour types à choix (radio, checkbox)
