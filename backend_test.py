@@ -650,7 +650,7 @@ class P1FeaturesTester:
 
 def main():
     """Point d'entrée principal"""
-    tester = FormBuilderCategoryTester()
+    tester = P1FeaturesTester()
     success = tester.run_comprehensive_tests()
     
     # Code de sortie
