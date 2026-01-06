@@ -6,7 +6,6 @@ import { useToast } from '../hooks/use-toast';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
 import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
-import ConfigurationEmailsEquipements from './ConfigurationEmailsEquipements';
 import ConfigurationEmailsEPI from './ConfigurationEmailsEPI';
 import ParametresAlertesEquipements from './ParametresAlertesEquipements';
 import FormulairesInspectionConfig from './FormulairesInspectionConfig';
