@@ -896,8 +896,8 @@ const PointEauModal = ({
             </div>
           )}
 
-          {/* Formulaire d'inspection assigné - BORNE SÈCHE uniquement - Admin/Superviseur */}
-          {formData.type === 'borne_seche' && canAssignModele && modelesInspection.length > 0 && (
+          {/* Formulaire d'inspection assigné - TOUS TYPES DE POINTS D'EAU - Admin/Superviseur */}
+          {canAssignModele && (
             <div style={{ marginBottom: '1.25rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #86efac' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem', color: '#166534' }}>
                 📋 Formulaire d'inspection assigné
@@ -914,16 +914,23 @@ const PointEauModal = ({
                   backgroundColor: 'white'
                 }}
               >
-                <option value="">-- Utiliser le formulaire par défaut --</option>
+                <option value="">-- Sélectionner un formulaire --</option>
                 {modelesInspection.map(modele => (
                   <option key={modele.id} value={modele.id}>
-                    {modele.nom} {modele.est_actif ? '(actif par défaut)' : ''}
+                    {modele.nom}
                   </option>
                 ))}
               </select>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#166534' }}>
-                💡 Ce formulaire sera utilisé lors des inspections de cette borne. Si non défini, le formulaire actif par défaut sera utilisé.
-              </p>
+              {modelesInspection.length === 0 && (
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#dc2626' }}>
+                  ⚠️ Aucun formulaire avec la catégorie "Points d'eau" n'a été trouvé. Créez-en un dans Paramètres → Formulaires.
+                </p>
+              )}
+              {modelesInspection.length > 0 && (
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#166534' }}>
+                  💡 Ce formulaire sera utilisé lors des inspections de ce point d'eau.
+                </p>
+              )}
             </div>
           )}
 
