@@ -10164,6 +10164,9 @@ class CategorieEquipement(BaseModel):
     est_predefinit: bool = False  # True pour catégories système
     permet_assignation_employe: bool = False  # Si True, équipements peuvent être assignés à des employés
     champs_supplementaires: List[dict] = []  # Champs spécifiques à la catégorie [{nom, type, options, obligatoire}]
+    # Support pour plusieurs personnes ressources
+    personnes_ressources: List[dict] = []  # [{id: str, email: str}]
+    # Anciens champs gardés pour compatibilité
     personne_ressource_id: str = ""  # ID de l'utilisateur responsable des inspections
     personne_ressource_email: str = ""  # Email pour notifications directes
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
