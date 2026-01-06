@@ -272,7 +272,277 @@ const FormulairesInspectionConfig = () => {
     }
   };
 
-  const handleCreate = () => {
+  // ====== DRAG & DROP HANDLERS ======
+  
+  // Gestion du drag & drop des sections
+  const handleSectionDragEnd = (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over?.id) {
+      setFormData(prev => {
+        const oldIndex = prev.sections.findIndex(s => (s.id || `section-${prev.sections.indexOf(s)}`) === active.id);
+        const newIndex = prev.sections.findIndex(s => (s.id || `section-${prev.sections.indexOf(s)}`) === over.id);
+        
+        return {
+          ...prev,
+          sections: arrayMove(prev.sections, oldIndex, newIndex)
+        };
+      });
+    }
+  };
+
+  // Gestion du drag & drop des items dans une section
+  const handleItemDragEnd = (sectionIndex) => (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over?.id) {
+      setFormData(prev => {
+        const sections = [...prev.sections];
+        const items = sections[sectionIndex].items || [];
+        
+        const oldIndex = items.findIndex(item => (item.id || `item-${sectionIndex}-${items.indexOf(item)}`) === active.id);
+        const newIndex = items.findIndex(item => (item.id || `item-${sectionIndex}-${items.indexOf(item)}`) === over.id);
+        
+        sections[sectionIndex] = {
+          ...sections[sectionIndex],
+          items: arrayMove(items, oldIndex, newIndex)
+        };
+        
+        return { ...prev, sections };
+      });
+    }
+  };
+
+  // ====== SECTION MANAGEMENT ======
+
+  const addSection = () => {
+    const newSection = {
+      id: `section-${Date.now()}`,
+      nom: 'Nouvelle section',
+      description: '',
+      photos: [], // Photos de référence pour la section
+      items: []
+    };
+    setFormData(prev => ({
+      ...prev,
+      sections: [...prev.sections, newSection]
+    }));
+  };
+
+  const removeSection = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      sections: prev.sections.filter((_, i) => i !== index)
+    }));
+  };
+
+  const duplicateSection = (index) => {
+    const sectionToCopy = formData.sections[index];
+    const newSection = {
+      ...JSON.parse(JSON.stringify(sectionToCopy)),
+      id: `section-${Date.now()}`,
+      nom: `${sectionToCopy.nom} (copie)`
+    };
+    setFormData(prev => ({
+      ...prev,
+      sections: [...prev.sections.slice(0, index + 1), newSection, ...prev.sections.slice(index + 1)]
+    }));
+  };
+
+  const updateSection = (index, field, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[index] = { ...sections[index], [field]: value };
+      return { ...prev, sections };
+    });
+  };
+
+  // Upload photo pour une section
+  const handleSectionPhotoUpload = async (sectionIndex, files) => {
+    const newPhotos = [];
+    for (const file of files) {
+      const reader = new FileReader();
+      await new Promise((resolve) => {
+        reader.onloadend = () => {
+          newPhotos.push({
+            id: `photo-${Date.now()}-${Math.random()}`,
+            data: reader.result,
+            name: file.name
+          });
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        photos: [...(sections[sectionIndex].photos || []), ...newPhotos]
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeSectionPhoto = (sectionIndex, photoIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        photos: sections[sectionIndex].photos.filter((_, i) => i !== photoIndex)
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  // ====== ITEM MANAGEMENT ======
+
+  const addItem = (sectionIndex) => {
+    const newItem = {
+      id: `item-${Date.now()}`,
+      label: 'Nouvel élément',
+      type: 'conforme_nc',
+      obligatoire: false,
+      permettre_photo: false, // Permet de joindre une photo en réponse
+      options: [],
+      // Options avancées selon le type
+      config: {
+        unite: '',
+        min: 0,
+        max: 100,
+        step: 1,
+        seuils: [], // Pour validation automatique
+        countdown_seconds: 300, // Pour compte à rebours
+        formule: '' // Pour calcul automatique
+      },
+      // Conditions d'affichage
+      condition: {
+        active: false,
+        field_id: '',
+        operator: 'equals',
+        value: ''
+      }
+    };
+    
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        items: [...(sections[sectionIndex].items || []), newItem]
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeItem = (sectionIndex, itemIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        items: sections[sectionIndex].items.filter((_, i) => i !== itemIndex)
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const duplicateItem = (sectionIndex, itemIndex) => {
+    const itemToCopy = formData.sections[sectionIndex].items[itemIndex];
+    const newItem = {
+      ...JSON.parse(JSON.stringify(itemToCopy)),
+      id: `item-${Date.now()}`,
+      label: `${itemToCopy.label} (copie)`
+    };
+    
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items.splice(itemIndex + 1, 0, newItem);
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const updateItem = (sectionIndex, itemIndex, field, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      
+      if (field.includes('.')) {
+        // Support pour les champs imbriqués comme 'config.min'
+        const [parent, child] = field.split('.');
+        items[itemIndex] = {
+          ...items[itemIndex],
+          [parent]: {
+            ...items[itemIndex][parent],
+            [child]: value
+          }
+        };
+      } else {
+        items[itemIndex] = { ...items[itemIndex], [field]: value };
+      }
+      
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  // Gestion des options pour liste déroulante
+  const addOption = (sectionIndex, itemIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items[itemIndex] = {
+        ...items[itemIndex],
+        options: [...(items[itemIndex].options || []), `Option ${(items[itemIndex].options?.length || 0) + 1}`]
+      };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const updateOption = (sectionIndex, itemIndex, optionIndex, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      const options = [...items[itemIndex].options];
+      options[optionIndex] = value;
+      items[itemIndex] = { ...items[itemIndex], options };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeOption = (sectionIndex, itemIndex, optionIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items[itemIndex] = {
+        ...items[itemIndex],
+        options: items[itemIndex].options.filter((_, i) => i !== optionIndex)
+      };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  // Gestion des seuils de validation
+  const addThreshold = (sectionIndex, itemIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      const seuils = items[itemIndex].config?.seuils || [];
+      items[itemIndex] = {
+        ...items[itemIndex],
+        config: {
+          ...items[itemIndex].config,
+          seuils: [...seuils, { value: 50, color: '#f59e0b', alert: true, message: 'Attention' }]
+        }
+      };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
     setSelectedFormulaire(null);
     setFormData({
       nom: '',
