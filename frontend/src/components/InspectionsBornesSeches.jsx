@@ -511,32 +511,36 @@ const InspectionsBornesSeches = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {bornesSeches.map(borne => (
-                  <tr key={borne.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                {filteredPointsEau.map(point => (
+                  <tr key={point.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '1rem' }}>
-                      <img src={borneSecheIcon} alt="icon" style={{ width: '40px', height: '40px' }} />
+                      {getTypeIcon(point.type).startsWith('http') 
+                        ? <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '40px', height: '40px' }} />
+                        : <span style={{ fontSize: '2rem' }}>{getTypeIcon(point.type)}</span>
+                      }
                     </td>
                     <td style={{ padding: '1rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                      {borne.numero_identification}
+                      {point.numero_identification}
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
-                      {borne.nom}
+                      {point.nom}
+                      <div style={{ fontSize: '0.7rem', color: '#3b82f6' }}>{getTypeLabel(point.type)}</div>
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      {borne.adresse || 'Non défini'}
+                      {point.adresse || 'Non défini'}
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
-                      {borne.derniere_inspection_date 
-                        ? new Date(borne.derniere_inspection_date).toLocaleDateString('fr-FR')
+                      {point.derniere_inspection_date 
+                        ? new Date(point.derniere_inspection_date).toLocaleDateString('fr-FR')
                         : 'Jamais'}
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      {borne.derniere_inspection_date 
-                        ? new Date(new Date(borne.derniere_inspection_date).getTime() + 6 * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                      {point.derniere_inspection_date 
+                        ? new Date(new Date(point.derniere_inspection_date).getTime() + 6 * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
                         : 'À déterminer'}
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '600', textAlign: 'center' }}>
-                      {borne.nombre_inspections || 0}
+                      {point.nombre_inspections || 0}
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{
@@ -544,19 +548,19 @@ const InspectionsBornesSeches = ({ user }) => {
                         borderRadius: '12px',
                         fontSize: '0.75rem',
                         fontWeight: '500',
-                        background: getInspectionColor(borne) + '20',
-                        color: getInspectionColor(borne)
+                        background: getInspectionColor(point) + '20',
+                        color: getInspectionColor(point)
                       }}>
-                        {getInspectionLabel(borne)}
+                        {getInspectionLabel(point)}
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <button
-                          onClick={() => openInspectionModal(borne)}
+                          onClick={() => openInspectionModal(point)}
                           style={{
                             padding: '0.5rem 0.75rem',
-                            background: '#dc2626',
+                            background: '#3b82f6',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
@@ -568,21 +572,53 @@ const InspectionsBornesSeches = ({ user }) => {
                           📋 Inspecter
                         </button>
                         {(user?.role === 'admin' || user?.role === 'superviseur') && (
-                          <button
-                            onClick={() => openHistoriqueModal(borne)}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              background: '#3b82f6',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem',
-                              fontWeight: '500'
-                            }}
-                          >
-                            📜 Historique
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openHistoriqueModal(point)}
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#6366f1',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                            >
+                              📜 Historique
+                            </button>
+                            <button
+                              onClick={() => changeStatutPoint(point.id, 'a_refaire')}
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#f59e0b',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                            >
+                              ⚠ À refaire
+                            </button>
+                            <button
+                              onClick={() => changeStatutPoint(point.id, null)}
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#10b981',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                            >
+                              ✓ Réinitialiser
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -591,9 +627,9 @@ const InspectionsBornesSeches = ({ user }) => {
               </tbody>
             </table>
           </div>
-          {bornesSeches.length === 0 && (
+          {filteredPointsEau.length === 0 && (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-              Aucune borne sèche trouvée
+              Aucun point d'eau trouvé
             </div>
           )}
         </div>
@@ -609,7 +645,7 @@ const InspectionsBornesSeches = ({ user }) => {
             setSelectedBorne(null);
           }}
           onSuccess={() => {
-            fetchBornesSeches();
+            fetchPointsEau();
           }}
         />
       )}
