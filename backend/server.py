@@ -541,6 +541,37 @@ async def job_verifier_notifications_planning():
         logging.error(f"❌ Erreur dans job_verifier_notifications_planning: {str(e)}", exc_info=True)
 
 
+def parse_frequence_inspection_to_days(frequence: str) -> int:
+    """
+    Convertit une fréquence d'inspection en nombre de jours
+    Ex: "1 an" -> 365, "6 mois" -> 180, "5 ans" -> 1825
+    """
+    if not frequence:
+        return 365  # Par défaut: 1 an
+    
+    frequence = frequence.lower().strip()
+    
+    # Extraire le nombre
+    import re
+    match = re.search(r'(\d+)', frequence)
+    if not match:
+        return 365
+    
+    nombre = int(match.group(1))
+    
+    # Déterminer l'unité
+    if 'an' in frequence or 'year' in frequence:
+        return nombre * 365
+    elif 'mois' in frequence or 'month' in frequence:
+        return nombre * 30
+    elif 'semaine' in frequence or 'week' in frequence:
+        return nombre * 7
+    elif 'jour' in frequence or 'day' in frequence:
+        return nombre
+    else:
+        return nombre * 365  # Par défaut en années
+
+
 async def job_verifier_alertes_equipements():
     """
     Job qui vérifie les alertes d'équipements et envoie des notifications par email
