@@ -25,7 +25,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Composant draggable pour les sections
-const SortableSection = ({ section, sectionIndex, children, onRemove }) => {
+const SortableSection = ({ section, sectionIndex, children }) => {
   const {
     attributes,
     listeners,
@@ -50,34 +50,15 @@ const SortableSection = ({ section, sectionIndex, children, onRemove }) => {
         marginBottom: '1rem',
         border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb'
       }}>
-        {/* Le children contient tout le contenu de la section */}
-        {children}
+        {/* Passer les props de drag au children via une fonction */}
+        {typeof children === 'function' 
+          ? children({ dragHandleProps: { ...attributes, ...listeners } })
+          : children
+        }
       </div>
     </div>
   );
 };
-
-// Composant pour le handle de drag
-const DragHandle = ({ attributes, listeners }) => (
-  <button
-    {...attributes}
-    {...listeners}
-    type="button"
-    style={{
-      cursor: 'grab',
-      padding: '0.25rem',
-      background: 'none',
-      border: 'none',
-      fontSize: '1.2rem',
-      color: '#64748b',
-      touchAction: 'none',
-      flexShrink: 0
-    }}
-    title="Glisser pour réorganiser"
-  >
-    ⋮⋮
-  </button>
-);
 
 // Composant draggable pour les items
 const SortableItem = ({ item, itemIndex, sectionIndex, children }) => {
