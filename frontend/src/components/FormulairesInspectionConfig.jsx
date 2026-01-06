@@ -543,6 +543,10 @@ const FormulairesInspectionConfig = () => {
       return { ...prev, sections };
     });
   };
+
+  // ====== CRUD HANDLERS ======
+
+  const handleCreate = () => {
     setSelectedFormulaire(null);
     setFormData({
       nom: '',
@@ -552,11 +556,13 @@ const FormulairesInspectionConfig = () => {
       vehicule_ids: [],
       frequence: 'mensuelle',
       est_actif: true,
+      tags: [],
       sections: [
         {
           id: `section_${Date.now()}`,
-          titre: 'Inspection visuelle',
-          icone: '👁️',
+          nom: 'Inspection visuelle',
+          description: '',
+          photos: [],
           items: []
         }
       ]
