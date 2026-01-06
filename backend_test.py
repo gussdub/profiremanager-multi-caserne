@@ -1,44 +1,47 @@
 #!/usr/bin/env python3
 """
-TEST COMPLET E2E - CONSTRUCTEUR DE FORMULAIRES ET GESTION DES CATÉGORIES
+TEST COMPLET E2E - FONCTIONNALITÉS P1 PROFIREMANAGER
 
 CONTEXTE:
-Test du système de formulaires d'inspection et de la gestion des catégories d'équipements
-selon la review request. Teste les nouvelles fonctionnalités:
-
-1. Constructeur de formulaires unifié avec sélecteur "Type de formulaire"
-2. Gestion des catégories avec boutons Modifier/Supprimer visibles sur TOUTES les catégories
-3. Correction données - Suppression d'une catégorie en double "Parties faciales"
+Test des fonctionnalités P1 implémentées pour l'application de gestion de casernes (ProFireManager)
+avec système de formulaires unifié selon la review request.
 
 TENANT: shefford
 CREDENTIALS: 
 - Admin: gussdub@gmail.com / 230685Juin+
 
-ENDPOINTS À TESTER:
+SCÉNARIOS À TESTER:
 
-1. **Authentification:**
-   - POST /api/shefford/auth/login - Obtenir le token d'authentification
+1. **Logique d'alerte pour fréquences d'inspection (backend)**
+   - Vérifier que la fonction `parse_frequence_inspection_to_days` convertit correctement:
+     - "1 an" → 365 jours
+     - "6 mois" → 180 jours
+     - "5 ans" → 1825 jours
+   - Vérifier les champs `personne_ressource_id` et `personne_ressource_email` dans les catégories
+   - GET /api/shefford/equipements/categories - doit contenir les nouveaux champs
 
-2. **Catégories d'équipements:**
-   - GET /api/shefford/equipements/categories - Vérifier qu'il n'y a qu'UNE seule catégorie "Parties Faciales/faciales"
-   - DELETE /api/shefford/equipements/categories/{id} - Vérifier que la suppression d'une catégorie avec des équipements est bloquée
+2. **Mise à jour de catégorie avec personne ressource**
+   - PUT /api/shefford/equipements/categories/{category_id}
+   - Body: { "personne_ressource_id": "{user_id}", "personne_ressource_email": "email@test.com" }
+   - Vérifier que la mise à jour est enregistrée
 
-3. **Formulaires d'inspection:**
-   - GET /api/shefford/formulaires-inspection - Vérifier que les formulaires ont un champ "type"
-   - POST /api/shefford/formulaires-inspection - Créer un nouveau formulaire de type "inventaire" et vérifier qu'il est bien sauvegardé
+3. **Inspections unifiées avec asset_type 'epi'**
+   - POST /api/shefford/inspections-unifiees
+   - Body: {"asset_id": "test-epi-id", "asset_type": "epi", "formulaire_id": "test-form", ...}
+   - Vérifier que l'inspection est créée avec asset_type='epi'
 
-SCÉNARIO DE TEST:
-1. Login en tant qu'admin (gussdub@gmail.com / 230685Juin+) sur tenant "shefford"
-2. Vérifier les catégories d'équipements (doublon supprimé)
-3. Tester la création de formulaires avec type "inventaire"
-4. Tester la protection contre suppression de catégories utilisées
-5. Vérifier que les formulaires existants ont le champ "type"
+4. **GET inspections pour EPI**
+   - GET /api/shefford/inspections-unifiees/epi/{epi_id}
+   - Vérifier que les inspections EPI sont retournées
 
-RÉSULTATS ATTENDUS:
-- Une seule catégorie "Parties Faciales" doit exister
-- Les formulaires doivent avoir un champ "type" (inspection ou inventaire)
-- La création de formulaires "inventaire" doit fonctionner
-- La suppression de catégories avec équipements doit être bloquée
+5. **Types EPI**
+   - GET /api/shefford/types-epi - Vérifier que les types sont retournés
+   - Les types doivent avoir: id, nom, icone, tenant_id
+
+RÉSULTAT ATTENDU:
+- Toutes les routes API fonctionnent correctement
+- Les nouveaux champs personne_ressource sont bien gérés
+- Les inspections EPI utilisent le système unifié
 """
 
 import requests
