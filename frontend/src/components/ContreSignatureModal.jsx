@@ -114,7 +114,7 @@ const ContreSignatureModal = ({ ronde, vehicule, user, onClose, onSuccess, onRef
             <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '16px' }}>📋 Détails de la ronde existante</h3>
             
             <div style={{ display: 'grid', gap: '10px', fontSize: '14px' }}>
-              <div><strong>📅 Date:</strong> {new Date(ronde.date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
+              <div><strong>📅 Date:</strong> {parseDateLocal(ronde.date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
               <div><strong>🕐 Heure:</strong> {ronde.heure}</div>
               <div><strong>📍 Lieu:</strong> {ronde.lieu}</div>
               <div><strong>🛣️ Kilométrage:</strong> {ronde.km} km</div>
