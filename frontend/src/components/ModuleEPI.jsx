@@ -8,6 +8,7 @@ import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import MesEPI from "./MesEPI";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import InspectionUnifieeModal from './InspectionUnifieeModal';
 
 const ModuleEPI = ({ user }) => {
   const { tenantSlug } = useTenant();
