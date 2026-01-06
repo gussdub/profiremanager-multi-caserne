@@ -7,6 +7,33 @@ import SignatureCanvas from 'react-signature-canvas';
 import { useTenant } from '../contexts/TenantContext';
 import { apiPost } from '../utils/api';
 
+// Fonction utilitaire pour parser une date en tant que date LOCALE (sans décalage timezone)
+const parseDateLocal = (dateStr) => {
+  if (!dateStr) return new Date();
+  try {
+    // Si c'est juste une date YYYY-MM-DD, la parser comme date locale
+    if (dateStr.length === 10 && dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // Crée la date en heure locale
+    }
+    // Si c'est une date ISO complète avec 'Z', la convertir en locale
+    if (dateStr.includes('T') && dateStr.includes('Z')) {
+      const dt = new Date(dateStr);
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    }
+    // Si c'est une date ISO sans 'Z', l'utiliser telle quelle
+    if (dateStr.includes('T')) {
+      const dt = new Date(dateStr);
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    }
+    // Fallback
+    return new Date(dateStr);
+  } catch (e) {
+    console.error('Erreur parsing date:', e);
+    return new Date();
+  }
+};
+
 const ContreSignatureModal = ({ ronde, vehicule, user, onClose, onSuccess, onRefuser }) => {
   const { tenantSlug } = useTenant();
   const signatureRef = useRef(null);
