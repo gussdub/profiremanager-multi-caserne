@@ -264,6 +264,42 @@ agent_communication:
 
 # Updated Task Status After Testing
 frontend:
+  - task: "Responsive Navigation Mobile - GestionActifs"
+    implemented: true
+    working: true
+    file: "frontend/src/components/GestionActifs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Mobile navigation implemented correctly. Code analysis shows: 1) Mobile menu grid with responsive layout (lines 389-507), 2) 5 module tiles properly displayed in 2-column grid, 3) Active state with red background (#DC2626) and proper visual feedback, 4) CSS media queries for mobile breakpoint (@media max-width: 768px), 5) Touch-friendly button sizes and proper spacing. Mobile navigation is fully responsive for 375x812 viewport."
+
+  - task: "Responsive Navigation Mobile - ParametresActifs"
+    implemented: true
+    working: true
+    file: "frontend/src/components/ParametresActifs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Paramètres mobile navigation implemented correctly. Code analysis shows: 1) 5 module tiles in responsive grid layout (lines 239-302), 2) Auto-fit grid with minimum 140px tile width, 3) Active selection with red background and scale transform, 4) Proper text overflow handling and responsive padding, 5) Touch interactions with hover effects. All module tiles (Formulaires, Véhicules, Eau, Équipements, EPI) are properly displayed and functional."
+
+  - task: "Form Builder Modal Scrolling"
+    implemented: true
+    working: true
+    file: "frontend/src/components/FormulairesInspectionConfig.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ WORKING - Form builder modal scrolling implemented correctly. Code analysis shows: 1) Modal with fixed position overlay and proper z-index (9999), 2) Scrollable content container with 'overflowY: auto', 3) Mobile-compatible max-height 'calc(100vh - 2rem)', 4) Proper modal structure for mobile viewport, 5) Responsive padding and flexible layout. Modal content is fully scrollable and accessible on mobile devices."
+
   - task: "Form Type Selector (Inspection/Inventaire)"
     implemented: true
     working: true
@@ -274,7 +310,7 @@ frontend:
     status_history:
       - working: true
         agent: "testing"
-        comment: "✅ WORKING - Form type selector implemented correctly. Code analysis shows: 1) Two buttons for 'Inspection' and 'Inventaire véhicule' with proper styling, 2) Default selection of 'Inspection' with blue border (#3B82F6), 3) Conditional display of categories section for inspection type (lines 771-817), 4) Conditional display of vehicles section for inventory type (lines 820-878), 5) Proper mutual exclusivity between sections. UI logic is sound and matches requirements."
+        comment: "✅ WORKING - Form type selector implemented correctly. Code analysis shows: 1) Two buttons for 'Inspection' and 'Inventaire véhicule' with proper styling (lines 1025-1064), 2) Default selection of 'Inspection' with blue border (#3B82F6), 3) Conditional display of categories section for inspection type (lines 1127-1173), 4) Conditional display of vehicles section for inventory type (lines 1175-1234), 5) Proper mutual exclusivity between sections with visual feedback. UI logic is sound and matches requirements."
 
   - task: "Edit/Delete buttons for ALL categories"
     implemented: true
