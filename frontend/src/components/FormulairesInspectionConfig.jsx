@@ -1582,6 +1582,172 @@ const FormulairesInspectionConfig = () => {
                                       </span>
                                     </div>
                                   )}
+
+                                  {/* Configuration des alertes */}
+                                  <div style={{ 
+                                    marginTop: '0.5rem', 
+                                    padding: '0.5rem',
+                                    backgroundColor: '#fef2f2',
+                                    borderRadius: '6px',
+                                    border: '1px solid #fecaca'
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: '0.75rem', 
+                                      fontWeight: '600', 
+                                      color: '#991b1b',
+                                      marginBottom: '0.5rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem'
+                                    }}>
+                                      🔔 Configuration des alertes
+                                    </div>
+
+                                    {/* Pour types binaires */}
+                                    {['conforme_nc', 'oui_non', 'present_absent'].includes(item.type) && (
+                                      <div style={{ fontSize: '0.8rem', color: '#7f1d1d' }}>
+                                        <span style={{ marginBottom: '0.25rem', display: 'block' }}>
+                                          Déclencher une alerte si:
+                                        </span>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                          {item.type === 'conforme_nc' && (
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={item.alertes?.valeurs_declenchantes?.includes('non_conforme') ?? true}
+                                                onChange={(e) => {
+                                                  const current = item.alertes?.valeurs_declenchantes || [];
+                                                  const newVals = e.target.checked 
+                                                    ? [...current, 'non_conforme']
+                                                    : current.filter(v => v !== 'non_conforme');
+                                                  updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
+                                                }}
+                                              />
+                                              ❌ Non conforme
+                                            </label>
+                                          )}
+                                          {item.type === 'oui_non' && (
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={item.alertes?.valeurs_declenchantes?.includes('non') ?? true}
+                                                onChange={(e) => {
+                                                  const current = item.alertes?.valeurs_declenchantes || [];
+                                                  const newVals = e.target.checked 
+                                                    ? [...current, 'non']
+                                                    : current.filter(v => v !== 'non');
+                                                  updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
+                                                }}
+                                              />
+                                              ❌ Non
+                                            </label>
+                                          )}
+                                          {item.type === 'present_absent' && (
+                                            <>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={item.alertes?.valeurs_declenchantes?.includes('absent') ?? true}
+                                                  onChange={(e) => {
+                                                    const current = item.alertes?.valeurs_declenchantes || [];
+                                                    const newVals = e.target.checked 
+                                                      ? [...current, 'absent']
+                                                      : current.filter(v => v !== 'absent');
+                                                    updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
+                                                  }}
+                                                />
+                                                ⚠️ Absent
+                                              </label>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={item.alertes?.valeurs_declenchantes?.includes('defectueux') ?? true}
+                                                  onChange={(e) => {
+                                                    const current = item.alertes?.valeurs_declenchantes || [];
+                                                    const newVals = e.target.checked 
+                                                      ? [...current, 'defectueux']
+                                                      : current.filter(v => v !== 'defectueux');
+                                                    updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
+                                                  }}
+                                                />
+                                                ❌ Défectueux
+                                              </label>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Pour types numériques */}
+                                    {['nombre', 'nombre_unite', 'slider'].includes(item.type) && (
+                                      <div style={{ fontSize: '0.8rem', color: '#7f1d1d' }}>
+                                        <span style={{ marginBottom: '0.25rem', display: 'block' }}>
+                                          Déclencher une alerte si la valeur:
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <span>&lt;</span>
+                                            <Input
+                                              type="number"
+                                              placeholder="Min"
+                                              value={item.alertes?.seuil_min ?? ''}
+                                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'alertes.seuil_min', e.target.value ? parseFloat(e.target.value) : null)}
+                                              style={{ width: '70px', fontSize: '0.8rem' }}
+                                            />
+                                          </div>
+                                          <span>ou</span>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <span>&gt;</span>
+                                            <Input
+                                              type="number"
+                                              placeholder="Max"
+                                              value={item.alertes?.seuil_max ?? ''}
+                                              onChange={(e) => updateItem(sectionIndex, itemIndex, 'alertes.seuil_max', e.target.value ? parseFloat(e.target.value) : null)}
+                                              style={{ width: '70px', fontSize: '0.8rem' }}
+                                            />
+                                          </div>
+                                          {item.config?.unite && <span>({item.config.unite})</span>}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Pour liste déroulante */}
+                                    {item.type === 'liste' && item.options && item.options.length > 0 && (
+                                      <div style={{ fontSize: '0.8rem', color: '#7f1d1d' }}>
+                                        <span style={{ marginBottom: '0.25rem', display: 'block' }}>
+                                          Cochez les options qui déclenchent une alerte:
+                                        </span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                          {item.options.map((opt, optIdx) => (
+                                            <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={item.alertes?.options_declenchantes?.includes(optIdx) ?? false}
+                                                onChange={(e) => {
+                                                  const current = item.alertes?.options_declenchantes || [];
+                                                  const newOpts = e.target.checked 
+                                                    ? [...current, optIdx]
+                                                    : current.filter(i => i !== optIdx);
+                                                  updateItem(sectionIndex, itemIndex, 'alertes.options_declenchantes', newOpts);
+                                                }}
+                                              />
+                                              🔔 {opt}
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Message personnalisé */}
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                      <Input
+                                        placeholder="Message d'alerte personnalisé (optionnel)"
+                                        value={item.alertes?.message || ''}
+                                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'alertes.message', e.target.value)}
+                                        style={{ fontSize: '0.8rem', width: '100%' }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               </SortableItem>
                             ))}
