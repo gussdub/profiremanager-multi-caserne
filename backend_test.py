@@ -333,8 +333,8 @@ class P1FeaturesTester:
             response = requests.post(url, headers=self.headers, json=inspection_data)
             
             if response.status_code == 200:
-                result = response.json()
-                inspection_created = result.get("inspection", {})
+                # The API returns the inspection object directly, not wrapped
+                inspection_created = response.json()
                 self.test_data["test_inspection_id"] = inspection_created.get("id")
                 
                 self.log_test_result(
