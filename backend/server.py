@@ -21841,11 +21841,15 @@ async def update_categorie_equipement(
     if not existing:
         raise HTTPException(status_code=404, detail="Catégorie non trouvée")
     
-    # Vérifier si c'est une catégorie prédéfinie
-    if existing.get('est_predefinit', False):
-        raise HTTPException(status_code=403, detail="Impossible de modifier une catégorie prédéfinie")
-    
     update_data = {k: v for k, v in categorie.dict().items() if v is not None}
+    
+    # Pour les catégories prédéfinies, on autorise SEULEMENT les champs d'alertes/personnes ressources
+    if existing.get('est_predefinit', False):
+        allowed_fields = ['personnes_ressources', 'personne_ressource_id', 'personne_ressource_email']
+        update_data = {k: v for k, v in update_data.items() if k in allowed_fields}
+        if not update_data:
+            raise HTTPException(status_code=403, detail="Impossible de modifier les champs principaux d'une catégorie prédéfinie")
+    
     if not update_data:
         return {"message": "Aucune modification"}
     
