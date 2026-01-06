@@ -43,13 +43,33 @@ const InspectionUnifieeModal = ({
               initialReponses[item.id] = 'present';
               break;
             case 'nombre':
-              initialReponses[item.id] = 0;
+            case 'nombre_unite':
+              initialReponses[item.id] = item.config?.min || 0;
+              break;
+            case 'slider':
+              initialReponses[item.id] = item.config?.min || 0;
               break;
             case 'inspecteur':
               // Auto-remplir avec le nom de l'utilisateur connecté
               initialReponses[item.id] = `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email;
               break;
             case 'lieu':
+              initialReponses[item.id] = '';
+              break;
+            case 'signature':
+              initialReponses[item.id] = '';
+              break;
+            case 'chronometre':
+            case 'compte_rebours':
+              initialReponses[item.id] = { time: 0, laps: [], formattedTime: '00:00.00' };
+              break;
+            case 'photo':
+              initialReponses[item.id] = [];
+              break;
+            case 'audio':
+              initialReponses[item.id] = null;
+              break;
+            case 'qr_scan':
               initialReponses[item.id] = '';
               break;
             case 'texte':
@@ -61,6 +81,7 @@ const InspectionUnifieeModal = ({
         });
       });
       setReponses(initialReponses);
+      setPhotosReponses({});
       setRemarques('');
       setDemanderRemplacement(false);
       
@@ -75,6 +96,37 @@ const InspectionUnifieeModal = ({
       document.body.style.width = '';
     };
   }, [isOpen, formulaire]);
+
+  // Gestion des photos en réponse
+  const handlePhotoCapture = async (itemId, files) => {
+    const newPhotos = [];
+    for (const file of files) {
+      const reader = new FileReader();
+      await new Promise((resolve) => {
+        reader.onloadend = () => {
+          newPhotos.push({
+            id: `photo-${Date.now()}-${Math.random()}`,
+            data: reader.result,
+            name: file.name
+          });
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    setPhotosReponses(prev => ({
+      ...prev,
+      [itemId]: [...(prev[itemId] || []), ...newPhotos]
+    }));
+  };
+
+  const removePhotoReponse = (itemId, photoIndex) => {
+    setPhotosReponses(prev => ({
+      ...prev,
+      [itemId]: (prev[itemId] || []).filter((_, i) => i !== photoIndex)
+    }));
+  };
 
   const handleReponseChange = (itemId, value) => {
     setReponses(prev => ({
