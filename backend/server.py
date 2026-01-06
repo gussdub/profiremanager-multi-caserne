@@ -757,6 +757,9 @@ async def job_verifier_alertes_equipements():
                                 "icone": categorie.get("icone", "📦"),
                                 "frequence": frequence,
                                 "count": 0,
+                                # Support pour plusieurs personnes ressources
+                                "personnes_ressources": categorie.get("personnes_ressources", []),
+                                # Anciens champs pour compatibilité
                                 "personne_ressource_email": categorie.get("personne_ressource_email", ""),
                                 "personne_ressource_id": categorie.get("personne_ressource_id", ""),
                                 "equipements": []
