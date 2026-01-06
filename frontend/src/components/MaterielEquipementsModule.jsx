@@ -1012,21 +1012,24 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     couleur: categorie?.couleur || '#6366f1',
     icone: categorie?.icone || '📦',
     permet_assignation_employe: categorie?.permet_assignation_employe || false,
+    // Support pour sélection multiple - tableau d'IDs et d'emails
+    personnes_ressources: categorie?.personnes_ressources || [],
+    // Garder les anciens champs pour compatibilité
     personne_ressource_id: categorie?.personne_ressource_id || '',
     personne_ressource_email: categorie?.personne_ressource_email || ''
   });
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
 
-  // Charger la liste de TOUS les utilisateurs (pour permettre plus de flexibilité)
+  // Charger la liste de TOUS les utilisateurs
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const usersData = await apiGet(tenantSlug, '/users');
         // Trier par rôle puis par nom pour faciliter la sélection
         const sorted = (usersData || []).sort((a, b) => {
-          // Ordre des rôles: admin > superviseur > pompier > stagiaire
-          const roleOrder = { admin: 0, superviseur: 1, pompier: 2, stagiaire: 3 };
+          // Ordre des rôles: admin > superviseur > employe (pompiers) > stagiaire
+          const roleOrder = { admin: 0, superviseur: 1, employe: 2, pompier: 2, stagiaire: 3 };
           const roleCompare = (roleOrder[a.role] || 4) - (roleOrder[b.role] || 4);
           if (roleCompare !== 0) return roleCompare;
           return `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`);
@@ -1039,13 +1042,48 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     loadUsers();
   }, [tenantSlug]);
 
-  const handlePersonneRessourceChange = (userId) => {
+  // Initialiser personnes_ressources depuis l'ancien format si nécessaire
+  useEffect(() => {
+    if (categorie?.personne_ressource_id && (!formData.personnes_ressources || formData.personnes_ressources.length === 0)) {
+      setFormData(prev => ({
+        ...prev,
+        personnes_ressources: [{
+          id: categorie.personne_ressource_id,
+          email: categorie.personne_ressource_email || ''
+        }]
+      }));
+    }
+  }, [categorie]);
+
+  const handleTogglePersonne = (userId) => {
     const selectedUser = users.find(u => u.id === userId);
-    setFormData({
-      ...formData,
-      personne_ressource_id: userId,
-      personne_ressource_email: selectedUser?.email || ''
+    if (!selectedUser) return;
+
+    setFormData(prev => {
+      const currentList = prev.personnes_ressources || [];
+      const exists = currentList.some(p => p.id === userId);
+      
+      let newList;
+      if (exists) {
+        // Retirer
+        newList = currentList.filter(p => p.id !== userId);
+      } else {
+        // Ajouter
+        newList = [...currentList, { id: userId, email: selectedUser.email }];
+      }
+      
+      return {
+        ...prev,
+        personnes_ressources: newList,
+        // Mettre à jour les anciens champs pour compatibilité backend
+        personne_ressource_id: newList.length > 0 ? newList[0].id : '',
+        personne_ressource_email: newList.length > 0 ? newList[0].email : ''
+      };
     });
+  };
+
+  const isPersonneSelected = (userId) => {
+    return (formData.personnes_ressources || []).some(p => p.id === userId);
   };
 
   const handleSubmit = async (e) => {
