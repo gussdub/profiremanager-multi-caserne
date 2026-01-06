@@ -479,9 +479,252 @@ const InspectionUnifieeModal = ({
           </div>
         );
       
+      case 'nombre_unite':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Input
+              type="number"
+              value={value || item.config?.min || 0}
+              min={item.config?.min}
+              max={item.config?.max}
+              onChange={(e) => handleReponseChange(item.id, parseFloat(e.target.value) || 0)}
+              style={{ width: '120px', fontSize: '16px' }}
+            />
+            <span style={{ 
+              padding: '0.5rem 0.75rem', 
+              backgroundColor: '#f1f5f9', 
+              borderRadius: '6px',
+              fontWeight: '500',
+              color: '#475569'
+            }}>
+              {item.config?.unite || ''}
+            </span>
+          </div>
+        );
+      
+      case 'slider':
+        return (
+          <Slider
+            value={value || item.config?.min || 0}
+            onChange={(v) => handleReponseChange(item.id, v)}
+            min={item.config?.min || 0}
+            max={item.config?.max || 100}
+            step={item.config?.step || 1}
+            unit={item.config?.unite || ''}
+            thresholds={item.config?.seuils || []}
+          />
+        );
+      
+      case 'signature':
+        return (
+          <SignaturePad
+            initialValue={value}
+            onSignatureChange={(sig) => handleReponseChange(item.id, sig)}
+            label={item.label || 'Signature'}
+          />
+        );
+      
+      case 'chronometre':
+        return (
+          <Stopwatch
+            mode="stopwatch"
+            initialValue={value}
+            onTimeUpdate={(data) => handleReponseChange(item.id, data)}
+            onLapRecorded={(lap, laps) => console.log('Lap:', lap)}
+          />
+        );
+      
+      case 'compte_rebours':
+        return (
+          <Stopwatch
+            mode="countdown"
+            countdownSeconds={item.config?.countdown_seconds || 300}
+            initialValue={value}
+            onTimeUpdate={(data) => handleReponseChange(item.id, data)}
+            onComplete={() => alert('⏱️ Temps écoulé !')}
+          />
+        );
+      
+      case 'photo':
+        return (
+          <div>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              {(value || []).map((photo, idx) => (
+                <div key={idx} style={{ position: 'relative' }}>
+                  <img
+                    src={photo.data || photo}
+                    alt={`Photo ${idx + 1}`}
+                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPhotos = (value || []).filter((_, i) => i !== idx);
+                      handleReponseChange(item.id, newPhotos);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#f1f5f9',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              border: '1px dashed #cbd5e1'
+            }}>
+              📷 Ajouter une photo
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      handleReponseChange(item.id, [...(value || []), { data: reader.result, name: file.name }]);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </label>
+          </div>
+        );
+      
+      case 'qr_scan':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <Input
+              value={value || ''}
+              onChange={(e) => handleReponseChange(item.id, e.target.value)}
+              placeholder="Code scanné ou saisi manuellement..."
+              style={{ fontSize: '16px' }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+              onClick={() => {
+                // TODO: Implémenter le scan QR avec la caméra
+                alert('📱 Le scan QR sera disponible dans une prochaine version. Saisissez le code manuellement.');
+              }}
+            >
+              📱 Scanner un code
+            </Button>
+          </div>
+        );
+      
+      case 'audio':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {value && (
+              <audio controls src={value} style={{ width: '100%' }} />
+            )}
+            <Button
+              type="button"
+              size="sm"
+              style={{ backgroundColor: '#ec4899', color: 'white' }}
+              onClick={() => {
+                // TODO: Implémenter l'enregistrement audio
+                alert('🎤 L\'enregistrement audio sera disponible dans une prochaine version.');
+              }}
+            >
+              🎤 {value ? 'Réenregistrer' : 'Enregistrer une note vocale'}
+            </Button>
+          </div>
+        );
+      
       default:
         return null;
     }
+  };
+
+  // Fonction pour rendre la zone de photo en réponse
+  const renderPhotoResponse = (item) => {
+    if (!item.permettre_photo) return null;
+    
+    const photos = photosReponses[item.id] || [];
+    
+    return (
+      <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #e5e7eb' }}>
+        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>
+          📷 Photo(s) jointe(s) :
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {photos.map((photo, idx) => (
+            <div key={idx} style={{ position: 'relative' }}>
+              <img
+                src={photo.data}
+                alt={photo.name}
+                style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+              />
+              <button
+                type="button"
+                onClick={() => removePhotoReponse(item.id, idx)}
+                style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  right: '-5px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '10px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '50px',
+            height: '50px',
+            backgroundColor: '#f1f5f9',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            border: '1px dashed #cbd5e1'
+          }}>
+            <span style={{ fontSize: '1.5rem', color: '#9ca3af' }}>+</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => handlePhotoCapture(item.id, Array.from(e.target.files))}
+            />
+          </label>
+        </div>
+      </div>
+    );
   };
 
   return (
