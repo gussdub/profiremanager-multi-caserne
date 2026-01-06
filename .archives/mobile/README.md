@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://unified-inspections.preview.emergentagent.com
+- **URL** : https://form-builder-73.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://unified-inspections.preview.emergentagent.com"
+  "apiUrl": "https://form-builder-73.preview.emergentagent.com"
 }
 ```
 
