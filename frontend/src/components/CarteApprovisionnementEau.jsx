@@ -377,42 +377,27 @@ const CarteApprovisionnementEau = ({ user }) => {
                     >
                       🗺️ Navigation GPS
                     </a>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {/* Bouton Modifier - Admin/Superviseur seulement */}
+                    {(user?.role === 'admin' || user?.role === 'superviseur') && (
                       <button
                         onClick={() => {
                           openPointModal(point);
                         }}
                         style={{
-                          flex: 1,
+                          width: '100%',
                           padding: '0.5rem',
                           background: '#3b82f6',
                           color: 'white',
                           border: 'none',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '0.875rem'
+                          fontSize: '0.875rem',
+                          marginTop: '0.5rem'
                         }}
                       >
-                        Modifier
+                        ✏️ Modifier
                       </button>
-                      {point.type === 'borne_seche' && (
-                        <button
-                          onClick={() => openInspectionModal(point)}
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            background: '#dc2626',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          Inspecter
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </Popup>
