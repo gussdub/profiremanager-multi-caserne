@@ -9960,6 +9960,8 @@ class CategorieEquipementCreate(BaseModel):
     icone: str = "📦"
     permet_assignation_employe: bool = False
     champs_supplementaires: List[dict] = []
+    personne_ressource_id: str = ""
+    personne_ressource_email: str = ""
 
 class CategorieEquipementUpdate(BaseModel):
     nom: Optional[str] = None
@@ -9970,6 +9972,8 @@ class CategorieEquipementUpdate(BaseModel):
     icone: Optional[str] = None
     permet_assignation_employe: Optional[bool] = None
     champs_supplementaires: Optional[List[dict]] = None
+    personne_ressource_id: Optional[str] = None
+    personne_ressource_email: Optional[str] = None
 
 class HistoriqueMaintenance(BaseModel):
     """Historique de maintenance/réparation d'un équipement"""
