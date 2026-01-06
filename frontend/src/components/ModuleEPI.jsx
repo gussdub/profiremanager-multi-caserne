@@ -2522,18 +2522,20 @@ const Dashboard = () => {
       {/* Modal Inspection Unifiée (Système de formulaires personnalisés) */}
       {showUnifiedInspectionModal && selectedEPI && selectedFormulaireEPI && (
         <InspectionUnifieeModal
+          isOpen={showUnifiedInspectionModal}
           formulaire={selectedFormulaireEPI}
-          asset={{
+          equipement={{
             id: selectedEPI.id,
             nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
-            type: 'epi'
+            type: 'epi',
+            type_epi: selectedEPI.type_epi
           }}
-          assetType="epi"
+          tenantSlug={tenantSlug}
           onClose={() => {
             setShowUnifiedInspectionModal(false);
             setSelectedFormulaireEPI(null);
           }}
-          onSuccess={() => {
+          onInspectionCreated={() => {
             toast({ title: "Succès", description: "Inspection enregistrée avec succès" });
             setShowUnifiedInspectionModal(false);
             setSelectedFormulaireEPI(null);
