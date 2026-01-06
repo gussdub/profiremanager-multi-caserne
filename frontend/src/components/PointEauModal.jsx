@@ -176,23 +176,35 @@ const PointEauModal = ({
   const [mapCenter, setMapCenter] = useState([45.37, -72.57]); // Shefford par défaut
   const [mapZoom, setMapZoom] = useState(14); // Zoom par défaut
   const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
-  const [modelesInspection, setModelesInspection] = useState([]); // Modèles d'inspection disponibles
+  const [modelesInspection, setModelesInspection] = useState([]); // Formulaires d'inspection disponibles
 
   // Vérifier si l'utilisateur peut assigner un formulaire
   const canAssignModele = userRole === 'admin' || userRole === 'superviseur';
 
-  // Charger les modèles d'inspection disponibles pour les bornes sèches
+  // Charger les formulaires d'inspection pour les points d'eau
   useEffect(() => {
-    const fetchModeles = async () => {
+    const fetchFormulaires = async () => {
       if (!canAssignModele || !tenantSlug) return;
       try {
-        const data = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection');
+        // Charger les formulaires ayant la catégorie "point_eau"
+        const data = await apiGet(tenantSlug, '/formulaires-inspection/categorie/point_eau');
         setModelesInspection(data || []);
       } catch (error) {
-        console.error('Erreur chargement modèles inspection:', error);
+        console.error('Erreur chargement formulaires inspection:', error);
+        // Fallback: essayer de charger tous les formulaires actifs
+        try {
+          const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+          // Filtrer côté client les formulaires avec catégorie point_eau
+          const pointEauFormulaires = (allFormulaires || []).filter(f => 
+            f.est_actif && f.categorie_ids?.includes('point_eau')
+          );
+          setModelesInspection(pointEauFormulaires);
+        } catch (e) {
+          console.error('Erreur fallback formulaires:', e);
+        }
       }
     };
-    fetchModeles();
+    fetchFormulaires();
   }, [tenantSlug, canAssignModele, apiGet]);
 
   // Icône pour le marqueur sélectionné
