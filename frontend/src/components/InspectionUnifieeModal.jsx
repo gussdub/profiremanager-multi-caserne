@@ -247,7 +247,8 @@ const InspectionUnifieeModal = ({
     try {
       setSaving(true);
       
-      const conforme = isConforme();
+      const alertes = collectAlertes();
+      const conforme = alertes.length === 0;
 
       const inspectionData = {
         equipement_id: equipement.id,
@@ -256,7 +257,9 @@ const InspectionUnifieeModal = ({
         formulaire_nom: formulaire.nom,
         type_inspection: formulaire.frequence || 'mensuelle',
         reponses: reponses,
+        photos_reponses: photosReponses, // Photos jointes aux réponses
         conforme: conforme,
+        alertes: alertes, // Liste des alertes détectées
         remarques: remarques,
         creer_demande_remplacement: !conforme && demanderRemplacement
       };
