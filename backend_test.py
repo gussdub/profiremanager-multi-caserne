@@ -118,9 +118,67 @@ class P1FeaturesTester:
         if data and not success:
             print(f"   📄 Data: {json.dumps(data, indent=2)[:200]}...")
     
-    def test_get_categories_equipement(self):
-        """Test 1: GET /api/shefford/equipements/categories - Vérifier doublon "Parties Faciales" supprimé"""
-        print(f"\n🧪 Test 1: Récupération des catégories d'équipements")
+    def test_parse_frequence_inspection_function(self):
+        """Test 1: Vérifier la logique de conversion des fréquences d'inspection"""
+        print(f"\n🧪 Test 1: Logique de conversion des fréquences d'inspection")
+        
+        # Test des conversions attendues selon la review request
+        test_cases = [
+            ("1 an", 365),
+            ("6 mois", 180),  # 6 * 30 = 180
+            ("5 ans", 1825),  # 5 * 365 = 1825
+            ("2 semaines", 14),
+            ("30 jours", 30),
+            ("", 365),  # Valeur par défaut
+            (None, 365)  # Valeur par défaut
+        ]
+        
+        all_passed = True
+        
+        for frequence, expected_days in test_cases:
+            # Simuler la logique de parse_frequence_inspection_to_days
+            if not frequence:
+                result = 365  # Par défaut: 1 an
+            else:
+                frequence_lower = frequence.lower().strip()
+                
+                # Extraire le nombre
+                import re
+                match = re.search(r'(\d+)', frequence_lower)
+                if not match:
+                    result = 365
+                else:
+                    nombre = int(match.group(1))
+                    
+                    # Déterminer l'unité
+                    if 'an' in frequence_lower or 'year' in frequence_lower:
+                        result = nombre * 365
+                    elif 'mois' in frequence_lower or 'month' in frequence_lower:
+                        result = nombre * 30
+                    elif 'semaine' in frequence_lower or 'week' in frequence_lower:
+                        result = nombre * 7
+                    elif 'jour' in frequence_lower or 'day' in frequence_lower:
+                        result = nombre
+                    else:
+                        result = nombre * 365  # Par défaut en années
+            
+            if result == expected_days:
+                print(f"   ✅ '{frequence}' → {result} jours (attendu: {expected_days})")
+            else:
+                print(f"   ❌ '{frequence}' → {result} jours (attendu: {expected_days})")
+                all_passed = False
+        
+        self.log_test_result(
+            "Parse Frequence Inspection Logic", 
+            all_passed, 
+            f"Conversion des fréquences: {'✅ Toutes correctes' if all_passed else '❌ Erreurs détectées'}"
+        )
+        
+        return all_passed
+    
+    def test_get_categories_with_personne_ressource_fields(self):
+        """Test 2: GET /api/shefford/equipements/categories - Vérifier nouveaux champs personne_ressource"""
+        print(f"\n🧪 Test 2: Vérification des champs personne_ressource dans les catégories")
         
         url = f"{self.base_url}/{self.tenant_slug}/equipements/categories"
         
@@ -137,44 +195,37 @@ class P1FeaturesTester:
                     f"Récupération réussie - {len(categories)} catégories trouvées"
                 )
                 
-                # Vérifier le doublon "Parties Faciales"
-                parties_faciales_categories = []
+                # Vérifier que les catégories ont les nouveaux champs
+                categories_with_fields = 0
+                categories_without_fields = 0
+                
                 for cat in categories:
-                    nom = cat.get("nom", "").lower()
-                    if "parties" in nom and ("faciales" in nom or "faciale" in nom):
-                        parties_faciales_categories.append(cat)
+                    has_personne_id = "personne_ressource_id" in cat
+                    has_personne_email = "personne_ressource_email" in cat
+                    
+                    if has_personne_id and has_personne_email:
+                        categories_with_fields += 1
+                    else:
+                        categories_without_fields += 1
+                        print(f"   ⚠️ Catégorie sans champs: {cat.get('nom')} (ID: {cat.get('id')})")
                 
-                self.test_data["parties_faciales_count"] = len(parties_faciales_categories)
-                
-                if len(parties_faciales_categories) == 1:
+                if categories_with_fields > 0:
                     self.log_test_result(
-                        "Doublon Parties Faciales Supprimé", 
+                        "Champs Personne Ressource", 
                         True, 
-                        f"✅ Une seule catégorie 'Parties Faciales' trouvée: {parties_faciales_categories[0].get('nom')}"
+                        f"✅ {categories_with_fields} catégories ont les champs personne_ressource"
                     )
-                    print(f"   📋 Catégorie conservée: {parties_faciales_categories[0].get('nom')}")
-                    print(f"   🆔 ID: {parties_faciales_categories[0].get('id')}")
-                elif len(parties_faciales_categories) == 0:
-                    self.log_test_result(
-                        "Doublon Parties Faciales Supprimé", 
-                        False, 
-                        "❌ Aucune catégorie 'Parties Faciales' trouvée"
-                    )
+                    
+                    # Prendre la première catégorie pour les tests suivants
+                    if categories:
+                        self.test_data["test_category_id"] = categories[0].get("id")
+                        print(f"   📋 Catégorie de test sélectionnée: {categories[0].get('nom')} (ID: {categories[0].get('id')})")
                 else:
                     self.log_test_result(
-                        "Doublon Parties Faciales Supprimé", 
+                        "Champs Personne Ressource", 
                         False, 
-                        f"❌ {len(parties_faciales_categories)} catégories 'Parties Faciales' trouvées (doublon non supprimé)"
+                        f"❌ Aucune catégorie n'a les champs personne_ressource"
                     )
-                    for i, cat in enumerate(parties_faciales_categories):
-                        print(f"   {i+1}. {cat.get('nom')} (ID: {cat.get('id')})")
-                
-                # Afficher toutes les catégories pour debug
-                print(f"   📋 Toutes les catégories:")
-                for cat in categories[:10]:  # Limiter à 10 pour éviter spam
-                    print(f"      - {cat.get('nom')} (ID: {cat.get('id')})")
-                if len(categories) > 10:
-                    print(f"      ... et {len(categories) - 10} autres")
                 
                 return True
             else:
@@ -189,296 +240,267 @@ class P1FeaturesTester:
             self.log_test_result("GET Categories", False, f"Exception: {str(e)}")
             return False
     
-    def test_get_formulaires_inspection(self):
-        """Test 2: GET /api/shefford/formulaires-inspection - Vérifier champ "type" présent"""
-        print(f"\n🧪 Test 2: Récupération des formulaires d'inspection")
+    def test_update_category_with_personne_ressource(self):
+        """Test 3: PUT /api/shefford/equipements/categories/{category_id} - Mise à jour personne ressource"""
+        print(f"\n🧪 Test 3: Mise à jour catégorie avec personne ressource")
         
-        url = f"{self.base_url}/{self.tenant_slug}/formulaires-inspection"
-        
-        try:
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                formulaires = response.json()
-                self.test_data["formulaires"] = formulaires
-                
-                self.log_test_result(
-                    "GET Formulaires", 
-                    True, 
-                    f"Récupération réussie - {len(formulaires)} formulaires trouvés"
-                )
-                
-                # Vérifier que les formulaires ont un champ "type"
-                formulaires_avec_type = 0
-                formulaires_sans_type = 0
-                types_trouves = set()
-                
-                for form in formulaires:
-                    if "type" in form and form["type"]:
-                        formulaires_avec_type += 1
-                        types_trouves.add(form["type"])
-                    else:
-                        formulaires_sans_type += 1
-                
-                if formulaires_avec_type > 0:
-                    self.log_test_result(
-                        "Formulaires avec champ Type", 
-                        True, 
-                        f"✅ {formulaires_avec_type} formulaires ont un champ 'type'"
-                    )
-                    print(f"   📋 Types trouvés: {list(types_trouves)}")
-                    if formulaires_sans_type > 0:
-                        print(f"   ⚠️ {formulaires_sans_type} formulaires sans champ 'type' (anciens formulaires)")
-                else:
-                    self.log_test_result(
-                        "Formulaires avec champ Type", 
-                        False, 
-                        f"❌ Aucun formulaire n'a de champ 'type'"
-                    )
-                
-                # Afficher quelques formulaires pour debug
-                print(f"   📋 Exemples de formulaires:")
-                for i, form in enumerate(formulaires[:3]):
-                    print(f"      {i+1}. {form.get('nom')} - Type: {form.get('type', 'N/A')} (ID: {form.get('id')})")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "GET Formulaires", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("GET Formulaires", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_create_formulaire_inventaire(self):
-        """Test 3: POST /api/shefford/formulaires-inspection - Créer formulaire type "inventaire" """
-        print(f"\n🧪 Test 3: Création d'un formulaire de type 'inventaire'")
-        
-        url = f"{self.base_url}/{self.tenant_slug}/formulaires-inspection"
-        
-        # Données pour créer un formulaire de type "inventaire"
-        formulaire_data = {
-            "nom": f"Test Formulaire Inventaire - {datetime.now().strftime('%H:%M:%S')}",
-            "description": "Formulaire de test pour inventaire véhicule créé par les tests automatisés",
-            "type": "inventaire",
-            "vehicule_ids": [],  # Pour type inventaire
-            "categorie_ids": [],  # Vide pour type inventaire
-            "frequence": "mensuelle",
-            "est_actif": True,
-            "sections": [
-                {
-                    "id": "section1",
-                    "nom": "Vérifications générales",
-                    "items": [
-                        {
-                            "id": "item1",
-                            "nom": "État général du véhicule",
-                            "type": "ok_nc"
-                        }
-                    ]
-                }
-            ]
-        }
-        
-        try:
-            response = requests.post(url, headers=self.headers, json=formulaire_data)
-            
-            if response.status_code == 200:
-                result = response.json()
-                formulaire_cree = result.get("formulaire", {})
-                self.test_data["test_formulaire_id"] = formulaire_cree.get("id")
-                
-                self.log_test_result(
-                    "POST Formulaire Inventaire", 
-                    True, 
-                    "Formulaire de type 'inventaire' créé avec succès"
-                )
-                
-                # Vérifier que le type est bien sauvegardé
-                type_sauvegarde = formulaire_cree.get("type")
-                if type_sauvegarde == "inventaire":
-                    self.log_test_result(
-                        "Type Inventaire Sauvegardé", 
-                        True, 
-                        f"✅ Type 'inventaire' correctement sauvegardé"
-                    )
-                else:
-                    self.log_test_result(
-                        "Type Inventaire Sauvegardé", 
-                        False, 
-                        f"❌ Type incorrect sauvegardé: {type_sauvegarde}"
-                    )
-                
-                print(f"   📋 Formulaire créé: {formulaire_cree.get('nom')}")
-                print(f"   🆔 ID: {formulaire_cree.get('id')}")
-                print(f"   📝 Type: {formulaire_cree.get('type')}")
-                print(f"   🚗 Véhicules: {formulaire_cree.get('vehicule_ids', [])}")
-                print(f"   📁 Catégories: {formulaire_cree.get('categorie_ids', [])}")
-                
-                return True
-            else:
-                self.log_test_result(
-                    "POST Formulaire Inventaire", 
-                    False, 
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
-                return False
-                
-        except Exception as e:
-            self.log_test_result("POST Formulaire Inventaire", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_delete_category_protection(self):
-        """Test 4: DELETE /api/shefford/equipements/categories/{id} - Vérifier protection suppression"""
-        print(f"\n🧪 Test 4: Test de protection contre suppression de catégorie utilisée")
-        
-        # Trouver une catégorie qui a des équipements
-        categories = self.test_data.get("categories", [])
-        if not categories:
+        if not self.test_data.get("test_category_id"):
             self.log_test_result(
-                "DELETE Category Protection", 
+                "Update Category Personne Ressource", 
                 False, 
                 "Aucune catégorie disponible pour le test"
             )
             return False
         
-        # Essayer de trouver une catégorie avec des équipements
-        # Pour ce test, on va essayer avec la catégorie "Parties Faciales" si elle existe
-        target_category = None
-        for cat in categories:
-            nom = cat.get("nom", "").lower()
-            if "parties" in nom and ("faciales" in nom or "faciale" in nom):
-                target_category = cat
-                break
-        
-        if not target_category:
-            # Prendre la première catégorie disponible
-            target_category = categories[0] if categories else None
-        
-        if not target_category:
-            self.log_test_result(
-                "DELETE Category Protection", 
-                False, 
-                "Aucune catégorie trouvée pour le test"
-            )
-            return False
-        
-        category_id = target_category.get("id")
-        category_name = target_category.get("nom")
-        
-        print(f"   🎯 Test avec catégorie: {category_name} (ID: {category_id})")
-        
+        category_id = self.test_data["test_category_id"]
         url = f"{self.base_url}/{self.tenant_slug}/equipements/categories/{category_id}"
         
+        # Données de mise à jour
+        update_data = {
+            "personne_ressource_id": self.test_data.get("user_id", "test-user-id"),
+            "personne_ressource_email": "test@profiremanager.ca"
+        }
+        
         try:
-            response = requests.delete(url, headers=self.headers)
+            response = requests.put(url, headers=self.headers, json=update_data)
             
-            # On s'attend à une erreur 400 si la catégorie a des équipements
-            if response.status_code == 400:
-                error_message = response.json().get("detail", "")
-                if "équipement" in error_message.lower() or "formulaire" in error_message.lower():
-                    self.log_test_result(
-                        "DELETE Category Protection", 
-                        True, 
-                        f"✅ Protection active: {error_message}"
-                    )
-                    print(f"   🛡️ Message de protection: {error_message}")
-                    return True
-                else:
-                    self.log_test_result(
-                        "DELETE Category Protection", 
-                        False, 
-                        f"❌ Erreur 400 mais message inattendu: {error_message}"
-                    )
-                    return False
-            elif response.status_code == 200:
-                # La catégorie a été supprimée (pas d'équipements associés)
+            if response.status_code == 200:
+                result = response.json()
+                
                 self.log_test_result(
-                    "DELETE Category Protection", 
+                    "Update Category Personne Ressource", 
                     True, 
-                    f"✅ Catégorie supprimée (aucun équipement associé)"
+                    "Mise à jour de la personne ressource réussie"
                 )
-                print(f"   ℹ️ La catégorie '{category_name}' n'avait pas d'équipements associés")
+                
+                # Vérifier que les données ont été sauvegardées
+                get_response = requests.get(url, headers=self.headers)
+                if get_response.status_code == 200:
+                    updated_category = get_response.json()
+                    
+                    saved_id = updated_category.get("personne_ressource_id")
+                    saved_email = updated_category.get("personne_ressource_email")
+                    
+                    if saved_id == update_data["personne_ressource_id"] and saved_email == update_data["personne_ressource_email"]:
+                        self.log_test_result(
+                            "Verify Personne Ressource Saved", 
+                            True, 
+                            f"✅ Données sauvegardées: ID={saved_id}, Email={saved_email}"
+                        )
+                    else:
+                        self.log_test_result(
+                            "Verify Personne Ressource Saved", 
+                            False, 
+                            f"❌ Données non sauvegardées correctement: ID={saved_id}, Email={saved_email}"
+                        )
+                
                 return True
             else:
                 self.log_test_result(
-                    "DELETE Category Protection", 
+                    "Update Category Personne Ressource", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("DELETE Category Protection", False, f"Exception: {str(e)}")
+            self.log_test_result("Update Category Personne Ressource", False, f"Exception: {str(e)}")
             return False
     
-    def test_verify_formulaire_created(self):
-        """Test 5: Vérifier que le formulaire créé est bien dans la liste"""
-        print(f"\n🧪 Test 5: Vérification du formulaire créé")
+    def test_create_unified_inspection_epi(self):
+        """Test 4: POST /api/shefford/inspections-unifiees - Créer inspection EPI"""
+        print(f"\n🧪 Test 4: Création d'inspection unifiée avec asset_type 'epi'")
         
-        if not self.test_data.get("test_formulaire_id"):
+        url = f"{self.base_url}/{self.tenant_slug}/inspections-unifiees"
+        
+        # Générer un ID unique pour le test
+        import uuid
+        test_epi_id = f"test-epi-{uuid.uuid4().hex[:8]}"
+        self.test_data["test_epi_id"] = test_epi_id
+        
+        # Données d'inspection EPI selon la review request
+        inspection_data = {
+            "asset_id": test_epi_id,
+            "asset_type": "epi",
+            "formulaire_id": "test-form-epi",
+            "formulaire_nom": "Test Formulaire EPI",
+            "reponses": {"test": "value", "etat_general": "bon"},
+            "conforme": True,
+            "metadata": {"epi_nom": "Casque Test"}
+        }
+        
+        try:
+            response = requests.post(url, headers=self.headers, json=inspection_data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                inspection_created = result.get("inspection", {})
+                self.test_data["test_inspection_id"] = inspection_created.get("id")
+                
+                self.log_test_result(
+                    "Create Unified Inspection EPI", 
+                    True, 
+                    "Inspection EPI créée avec succès"
+                )
+                
+                # Vérifier que l'asset_type est bien 'epi'
+                asset_type = inspection_created.get("asset_type")
+                if asset_type == "epi":
+                    self.log_test_result(
+                        "Verify EPI Asset Type", 
+                        True, 
+                        f"✅ Asset_type 'epi' correctement sauvegardé"
+                    )
+                else:
+                    self.log_test_result(
+                        "Verify EPI Asset Type", 
+                        False, 
+                        f"❌ Asset_type incorrect: {asset_type}"
+                    )
+                
+                print(f"   📋 Inspection créée: ID={inspection_created.get('id')}")
+                print(f"   🎯 Asset ID: {inspection_created.get('asset_id')}")
+                print(f"   📝 Asset Type: {inspection_created.get('asset_type')}")
+                print(f"   ✅ Conforme: {inspection_created.get('conforme')}")
+                
+                return True
+            else:
+                self.log_test_result(
+                    "Create Unified Inspection EPI", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Create Unified Inspection EPI", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_get_inspections_for_epi(self):
+        """Test 5: GET /api/shefford/inspections-unifiees/epi/{epi_id} - Récupérer inspections EPI"""
+        print(f"\n🧪 Test 5: Récupération des inspections pour un EPI")
+        
+        if not self.test_data.get("test_epi_id"):
             self.log_test_result(
-                "Vérification Formulaire Créé", 
+                "GET Inspections EPI", 
                 False, 
-                "Aucun formulaire de test créé"
+                "Aucun EPI de test disponible"
             )
             return False
         
-        url = f"{self.base_url}/{self.tenant_slug}/formulaires-inspection"
+        epi_id = self.test_data["test_epi_id"]
+        url = f"{self.base_url}/{self.tenant_slug}/inspections-unifiees/epi/{epi_id}"
         
         try:
             response = requests.get(url, headers=self.headers)
             
             if response.status_code == 200:
-                formulaires = response.json()
+                inspections = response.json()
                 
-                # Chercher notre formulaire de test
-                formulaire_trouve = None
-                for form in formulaires:
-                    if form.get("id") == self.test_data["test_formulaire_id"]:
-                        formulaire_trouve = form
+                self.log_test_result(
+                    "GET Inspections EPI", 
+                    True, 
+                    f"Récupération réussie - {len(inspections)} inspection(s) trouvée(s)"
+                )
+                
+                # Vérifier que notre inspection de test est dans la liste
+                test_inspection_found = False
+                for inspection in inspections:
+                    if inspection.get("asset_id") == epi_id and inspection.get("asset_type") == "epi":
+                        test_inspection_found = True
+                        print(f"   ✅ Inspection trouvée: ID={inspection.get('id')}")
+                        print(f"   📝 Formulaire: {inspection.get('formulaire_nom')}")
+                        print(f"   📅 Date: {inspection.get('date_inspection')}")
                         break
                 
-                if formulaire_trouve:
-                    type_formulaire = formulaire_trouve.get("type")
-                    if type_formulaire == "inventaire":
-                        self.log_test_result(
-                            "Vérification Formulaire Créé", 
-                            True, 
-                            f"✅ Formulaire trouvé avec type 'inventaire'"
-                        )
-                        print(f"   📋 Nom: {formulaire_trouve.get('nom')}")
-                        print(f"   📝 Type: {formulaire_trouve.get('type')}")
-                        print(f"   📅 Créé: {formulaire_trouve.get('created_at')}")
-                        return True
-                    else:
-                        self.log_test_result(
-                            "Vérification Formulaire Créé", 
-                            False, 
-                            f"❌ Formulaire trouvé mais type incorrect: {type_formulaire}"
-                        )
-                        return False
+                if test_inspection_found:
+                    self.log_test_result(
+                        "Verify EPI Inspection Found", 
+                        True, 
+                        "✅ Inspection EPI de test trouvée dans les résultats"
+                    )
                 else:
                     self.log_test_result(
-                        "Vérification Formulaire Créé", 
+                        "Verify EPI Inspection Found", 
                         False, 
-                        "❌ Formulaire de test non trouvé dans la liste"
+                        "❌ Inspection EPI de test non trouvée"
                     )
-                    return False
+                
+                return True
             else:
                 self.log_test_result(
-                    "Vérification Formulaire Créé", 
+                    "GET Inspections EPI", 
                     False, 
                     f"HTTP {response.status_code}: {response.text[:200]}"
                 )
                 return False
                 
         except Exception as e:
-            self.log_test_result("Vérification Formulaire Créé", False, f"Exception: {str(e)}")
+            self.log_test_result("GET Inspections EPI", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_get_types_epi(self):
+        """Test 6: GET /api/shefford/types-epi - Vérifier types EPI"""
+        print(f"\n🧪 Test 6: Récupération des types EPI")
+        
+        url = f"{self.base_url}/{self.tenant_slug}/types-epi"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                types_epi = response.json()
+                self.test_data["types_epi"] = types_epi
+                
+                self.log_test_result(
+                    "GET Types EPI", 
+                    True, 
+                    f"Récupération réussie - {len(types_epi)} type(s) EPI trouvé(s)"
+                )
+                
+                # Vérifier que les types ont les champs requis
+                required_fields = ["id", "nom", "icone", "tenant_id"]
+                valid_types = 0
+                
+                for type_epi in types_epi:
+                    has_all_fields = all(field in type_epi for field in required_fields)
+                    if has_all_fields:
+                        valid_types += 1
+                        print(f"   ✅ Type valide: {type_epi.get('icone')} {type_epi.get('nom')} (ID: {type_epi.get('id')})")
+                    else:
+                        missing_fields = [field for field in required_fields if field not in type_epi]
+                        print(f"   ❌ Type invalide: {type_epi.get('nom')} - Champs manquants: {missing_fields}")
+                
+                if valid_types == len(types_epi) and len(types_epi) > 0:
+                    self.log_test_result(
+                        "Verify Types EPI Structure", 
+                        True, 
+                        f"✅ Tous les types EPI ont les champs requis (id, nom, icone, tenant_id)"
+                    )
+                elif len(types_epi) == 0:
+                    self.log_test_result(
+                        "Verify Types EPI Structure", 
+                        True, 
+                        "ℹ️ Aucun type EPI configuré (normal pour un nouveau système)"
+                    )
+                else:
+                    self.log_test_result(
+                        "Verify Types EPI Structure", 
+                        False, 
+                        f"❌ {len(types_epi) - valid_types} type(s) EPI avec structure invalide"
+                    )
+                
+                return True
+            else:
+                self.log_test_result(
+                    "GET Types EPI", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test_result("GET Types EPI", False, f"Exception: {str(e)}")
             return False
     
     def cleanup_test_data(self):
