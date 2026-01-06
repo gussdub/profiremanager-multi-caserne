@@ -507,22 +507,22 @@ class P1FeaturesTester:
         """Nettoyer les données de test créées"""
         print(f"\n🧹 Nettoyage des données de test...")
         
-        # Supprimer le formulaire de test créé
-        if self.test_data.get("test_formulaire_id"):
-            url = f"{self.base_url}/{self.tenant_slug}/formulaires-inspection/{self.test_data['test_formulaire_id']}"
+        # Supprimer l'inspection de test créée
+        if self.test_data.get("test_inspection_id"):
+            url = f"{self.base_url}/{self.tenant_slug}/inspections-unifiees/{self.test_data['test_inspection_id']}"
             try:
                 response = requests.delete(url, headers=self.headers)
                 if response.status_code == 200:
-                    print(f"   ✅ Formulaire de test supprimé")
+                    print(f"   ✅ Inspection de test supprimée")
                 else:
-                    print(f"   ⚠️ Impossible de supprimer le formulaire de test: {response.status_code}")
+                    print(f"   ⚠️ Impossible de supprimer l'inspection de test: {response.status_code}")
             except Exception as e:
-                print(f"   ⚠️ Erreur lors de la suppression du formulaire: {str(e)}")
+                print(f"   ⚠️ Erreur lors de la suppression de l'inspection: {str(e)}")
     
     def generate_test_report(self):
         """Générer le rapport final des tests"""
         print("\n" + "="*80)
-        print("📊 RAPPORT FINAL - CONSTRUCTEUR DE FORMULAIRES ET CATÉGORIES")
+        print("📊 RAPPORT FINAL - FONCTIONNALITÉS P1 PROFIREMANAGER")
         print("="*80)
         
         print(f"🏢 Tenant testé: {self.tenant_slug}")
@@ -543,24 +543,24 @@ class P1FeaturesTester:
         # Grouper par catégorie
         categories = {
             "Authentification": [],
+            "Logique d'alerte": [],
             "Catégories d'équipements": [],
-            "Formulaires d'inspection": [],
-            "Protection des données": [],
-            "Vérifications": []
+            "Inspections unifiées": [],
+            "Types EPI": []
         }
         
         for result in self.test_results:
             test_name = result['test']
             if 'auth' in test_name.lower() or 'login' in test_name.lower():
                 categories["Authentification"].append(result)
-            elif 'categories' in test_name.lower() or 'parties faciales' in test_name.lower():
+            elif 'frequence' in test_name.lower() or 'parse' in test_name.lower():
+                categories["Logique d'alerte"].append(result)
+            elif 'categories' in test_name.lower() or 'personne_ressource' in test_name.lower():
                 categories["Catégories d'équipements"].append(result)
-            elif 'formulaire' in test_name.lower() and 'inventaire' in test_name.lower():
-                categories["Formulaires d'inspection"].append(result)
-            elif 'delete' in test_name.lower() or 'protection' in test_name.lower():
-                categories["Protection des données"].append(result)
-            elif 'vérification' in test_name.lower():
-                categories["Vérifications"].append(result)
+            elif 'inspection' in test_name.lower() and ('epi' in test_name.lower() or 'unified' in test_name.lower()):
+                categories["Inspections unifiées"].append(result)
+            elif 'types' in test_name.lower() and 'epi' in test_name.lower():
+                categories["Types EPI"].append(result)
         
         for category, tests in categories.items():
             if tests:
@@ -569,15 +569,15 @@ class P1FeaturesTester:
                     status = "✅" if test['success'] else "❌"
                     print(f"   {status} {test['test']}: {test['details']}")
         
-        # Résumé des fonctionnalités critiques
-        print(f"\n🎯 FONCTIONNALITÉS CRITIQUES:")
+        # Résumé des fonctionnalités critiques P1
+        print(f"\n🎯 FONCTIONNALITÉS P1 CRITIQUES:")
         
         critical_tests = [
             ("Authentification admin", any("auth" in r['test'].lower() for r in self.test_results if r['success'])),
-            ("Doublon Parties Faciales supprimé", any("Doublon" in r['test'] and r['success'] for r in self.test_results)),
-            ("Formulaires avec champ type", any("Type" in r['test'] and "Formulaires" in r['test'] and r['success'] for r in self.test_results)),
-            ("Création formulaire inventaire", any("Inventaire" in r['test'] and "POST" in r['test'] and r['success'] for r in self.test_results)),
-            ("Protection suppression catégorie", any("Protection" in r['test'] and r['success'] for r in self.test_results))
+            ("Logique fréquences d'inspection", any("Parse Frequence" in r['test'] and r['success'] for r in self.test_results)),
+            ("Champs personne_ressource", any("Personne Ressource" in r['test'] and r['success'] for r in self.test_results)),
+            ("Inspections EPI unifiées", any("EPI" in r['test'] and "Inspection" in r['test'] and r['success'] for r in self.test_results)),
+            ("Types EPI disponibles", any("Types EPI" in r['test'] and r['success'] for r in self.test_results))
         ]
         
         for feature, status in critical_tests:
@@ -586,30 +586,31 @@ class P1FeaturesTester:
         
         # Données spécifiques
         print(f"\n📊 DONNÉES SPÉCIFIQUES:")
-        print(f"   📁 Catégories 'Parties Faciales' trouvées: {self.test_data.get('parties_faciales_count', 0)}")
-        print(f"   📋 Formulaires d'inspection total: {len(self.test_data.get('formulaires', []))}")
         print(f"   📁 Catégories d'équipements total: {len(self.test_data.get('categories', []))}")
+        print(f"   🎯 Types EPI configurés: {len(self.test_data.get('types_epi', []))}")
+        print(f"   🆔 EPI de test créé: {self.test_data.get('test_epi_id', 'N/A')}")
+        print(f"   📝 Inspection de test: {self.test_data.get('test_inspection_id', 'N/A')}")
         
         # Recommandations
         print(f"\n💡 RECOMMANDATIONS:")
         if success_rate >= 90:
-            print("   🎉 Excellent! Le constructeur de formulaires et la gestion des catégories fonctionnent parfaitement.")
-            print("   📋 Les nouvelles fonctionnalités (type de formulaire, gestion catégories) sont opérationnelles.")
+            print("   🎉 Excellent! Toutes les fonctionnalités P1 sont opérationnelles.")
+            print("   📋 Le système de formulaires unifiés et les alertes d'inspection fonctionnent parfaitement.")
         elif success_rate >= 75:
-            print("   ✅ Très bon résultat. Quelques ajustements mineurs nécessaires.")
+            print("   ✅ Très bon résultat. Les fonctionnalités P1 sont majoritairement fonctionnelles.")
         elif success_rate >= 50:
-            print("   ⚠️ Résultat correct mais des améliorations sont nécessaires.")
+            print("   ⚠️ Résultat correct mais des améliorations sont nécessaires sur certaines fonctionnalités P1.")
         else:
-            print("   ❌ Problèmes majeurs détectés. Révision complète recommandée.")
+            print("   ❌ Problèmes majeurs détectés. Révision complète des fonctionnalités P1 recommandée.")
         
         return success_rate >= 75  # Critère de succès
     
     def run_comprehensive_tests(self):
-        """Exécuter tous les tests E2E du constructeur de formulaires et catégories"""
-        print("🚀 DÉBUT DES TESTS E2E - CONSTRUCTEUR DE FORMULAIRES ET CATÉGORIES")
+        """Exécuter tous les tests E2E des fonctionnalités P1"""
+        print("🚀 DÉBUT DES TESTS E2E - FONCTIONNALITÉS P1 PROFIREMANAGER")
         print(f"🏢 Tenant: {self.tenant_slug}")
         print(f"🌐 URL: {self.base_url}")
-        print(f"🎯 Objectif: Tester les nouvelles fonctionnalités de formulaires et catégories")
+        print(f"🎯 Objectif: Tester les fonctionnalités P1 implémentées")
         
         # 1. Authentification admin
         if not self.authenticate():
@@ -617,25 +618,28 @@ class P1FeaturesTester:
             return False
         
         try:
-            # 2. Test des catégories d'équipements (doublon supprimé)
-            self.test_get_categories_equipement()
+            # 2. Test logique de conversion des fréquences d'inspection
+            self.test_parse_frequence_inspection_function()
             
-            # 3. Test des formulaires d'inspection (champ type)
-            self.test_get_formulaires_inspection()
+            # 3. Test des catégories avec champs personne_ressource
+            self.test_get_categories_with_personne_ressource_fields()
             
-            # 4. Test création formulaire type "inventaire"
-            self.test_create_formulaire_inventaire()
+            # 4. Test mise à jour catégorie avec personne ressource
+            self.test_update_category_with_personne_ressource()
             
-            # 5. Test protection suppression catégorie
-            self.test_delete_category_protection()
+            # 5. Test création inspection unifiée EPI
+            self.test_create_unified_inspection_epi()
             
-            # 6. Vérification du formulaire créé
-            self.test_verify_formulaire_created()
+            # 6. Test récupération inspections EPI
+            self.test_get_inspections_for_epi()
             
-            # 7. Nettoyage
+            # 7. Test types EPI
+            self.test_get_types_epi()
+            
+            # 8. Nettoyage
             self.cleanup_test_data()
             
-            # 8. Rapport final
+            # 9. Rapport final
             overall_success = self.generate_test_report()
             
             return overall_success
