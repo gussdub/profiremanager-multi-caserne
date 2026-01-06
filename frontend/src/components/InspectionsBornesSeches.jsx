@@ -380,41 +380,45 @@ const InspectionsBornesSeches = ({ user }) => {
             maxZoom={mapLayer === 'satellite' ? 19 : 19}
           />
 
-          {bornesSeches.map(borne => (
+          {filteredPointsEau.filter(p => p.latitude && p.longitude).map(point => (
             <Marker
-              key={borne.id}
-              position={[borne.latitude, borne.longitude]}
-              icon={getLeafletIcon(borne)}
+              key={point.id}
+              position={[point.latitude, point.longitude]}
+              icon={getLeafletIcon(point)}
             >
               <Popup>
                 <div style={{ minWidth: '250px' }}>
                   <h3 style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <img src={borneSecheIcon} alt="icon" style={{ width: '32px', height: '32px' }} />
-                    {borne.numero_identification}
+                    <span style={{ fontSize: '1.5rem' }}>{getTypeIcon(point.type).startsWith('http') ? '' : getTypeIcon(point.type)}</span>
+                    {point.nom || point.numero_identification}
                   </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#3b82f6', marginBottom: '0.5rem' }}>
+                    {getTypeLabel(point.type)}
+                  </div>
                   <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                    {borne.adresse && <p><strong>Adresse:</strong> {borne.adresse}</p>}
-                    {borne.ville && <p><strong>Ville:</strong> {borne.ville}</p>}
-                    <p><strong>Dernière inspection:</strong> {borne.derniere_inspection_date 
-                      ? new Date(borne.derniere_inspection_date).toLocaleDateString('fr-FR')
+                    {point.adresse && <p><strong>Adresse:</strong> {point.adresse}</p>}
+                    {point.ville && <p><strong>Ville:</strong> {point.ville}</p>}
+                    <p><strong>Dernière inspection:</strong> {point.derniere_inspection_date 
+                      ? new Date(point.derniere_inspection_date).toLocaleDateString('fr-FR')
                       : 'Jamais'}</p>
-                    <p><strong>Statut inspection:</strong> <span style={{
+                    <p><strong>Statut:</strong> <span style={{
                       padding: '2px 8px',
                       borderRadius: '12px',
                       fontSize: '0.75rem',
                       fontWeight: '500',
-                      background: getInspectionColor(borne) + '20',
-                      color: getInspectionColor(borne)
+                      background: getInspectionColor(point) + '20',
+                      color: getInspectionColor(point)
                     }}>
-                      {getInspectionLabel(borne)}
+                      {getInspectionLabel(point)}
                     </span></p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    {/* Bouton Inspecter - Visible par tous */}
                     <button
-                      onClick={() => openInspectionModal(borne)}
+                      onClick={() => openInspectionModal(point)}
                       style={{
                         padding: '0.5rem',
-                        background: '#dc2626',
+                        background: '#3b82f6',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
@@ -423,62 +427,63 @@ const InspectionsBornesSeches = ({ user }) => {
                         fontWeight: '500'
                       }}
                     >
-                      📋 Effectuer une inspection
+                      📋 Inspecter
                     </button>
                     
+                    {/* Boutons Admin/Superviseur */}
                     {(user?.role === 'admin' || user?.role === 'superviseur') && (
-                      <button
-                        onClick={() => openHistoriqueModal(borne)}
-                        style={{
-                          padding: '0.5rem',
-                          background: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          fontWeight: '500'
-                        }}
-                      >
-                        📜 Historique des inspections
-                      </button>
-                    )}
-                    
-                    {(user?.role === 'admin' || user?.role === 'superviseur') && (
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <>
                         <button
-                          onClick={() => changeStatutBorne(borne.id, 'a_refaire')}
+                          onClick={() => openHistoriqueModal(point)}
                           style={{
-                            flex: 1,
                             padding: '0.5rem',
-                            background: '#f59e0b',
+                            background: '#6366f1',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '0.75rem',
+                            fontSize: '0.875rem',
                             fontWeight: '500'
                           }}
                         >
-                          ⚠ À refaire
+                          📜 Historique des inspections
                         </button>
-                        <button
-                          onClick={() => changeStatutBorne(borne.id, null)}
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            background: '#10b981',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem',
-                            fontWeight: '500'
-                          }}
-                        >
-                          ✓ Réinitialiser
-                        </button>
-                      </div>
+                        
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => changeStatutPoint(point.id, 'a_refaire')}
+                            style={{
+                              flex: 1,
+                              padding: '0.5rem',
+                              background: '#f59e0b',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            ⚠ À refaire
+                          </button>
+                          <button
+                            onClick={() => changeStatutPoint(point.id, null)}
+                            style={{
+                              flex: 1,
+                              padding: '0.5rem',
+                              background: '#10b981',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            ✓ Réinitialiser
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
