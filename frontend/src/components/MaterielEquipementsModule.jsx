@@ -1018,16 +1018,20 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
 
-  // Charger la liste des utilisateurs (admins et superviseurs)
+  // Charger la liste de TOUS les utilisateurs (pour permettre plus de flexibilité)
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const usersData = await apiGet(tenantSlug, '/users');
-        // Filtrer pour n'afficher que les admins et superviseurs
-        const filtered = (usersData || []).filter(u => 
-          u.role === 'admin' || u.role === 'superviseur'
-        );
-        setUsers(filtered);
+        // Trier par rôle puis par nom pour faciliter la sélection
+        const sorted = (usersData || []).sort((a, b) => {
+          // Ordre des rôles: admin > superviseur > pompier > stagiaire
+          const roleOrder = { admin: 0, superviseur: 1, pompier: 2, stagiaire: 3 };
+          const roleCompare = (roleOrder[a.role] || 4) - (roleOrder[b.role] || 4);
+          if (roleCompare !== 0) return roleCompare;
+          return `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`);
+        });
+        setUsers(sorted);
       } catch (err) {
         console.error('Erreur chargement utilisateurs:', err);
       }
