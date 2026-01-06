@@ -50,31 +50,34 @@ const SortableSection = ({ section, sectionIndex, children, onRemove }) => {
         marginBottom: '1rem',
         border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          {/* Handle de drag */}
-          <button
-            {...attributes}
-            {...listeners}
-            type="button"
-            style={{
-              cursor: 'grab',
-              padding: '0.25rem',
-              background: 'none',
-              border: 'none',
-              fontSize: '1.2rem',
-              color: '#64748b',
-              touchAction: 'none'
-            }}
-            title="Glisser pour réorganiser"
-          >
-            ⋮⋮
-          </button>
-          {children}
-        </div>
+        {/* Le children contient tout le contenu de la section */}
+        {children}
       </div>
     </div>
   );
 };
+
+// Composant pour le handle de drag
+const DragHandle = ({ attributes, listeners }) => (
+  <button
+    {...attributes}
+    {...listeners}
+    type="button"
+    style={{
+      cursor: 'grab',
+      padding: '0.25rem',
+      background: 'none',
+      border: 'none',
+      fontSize: '1.2rem',
+      color: '#64748b',
+      touchAction: 'none',
+      flexShrink: 0
+    }}
+    title="Glisser pour réorganiser"
+  >
+    ⋮⋮
+  </button>
+);
 
 // Composant draggable pour les items
 const SortableItem = ({ item, itemIndex, sectionIndex, children }) => {
