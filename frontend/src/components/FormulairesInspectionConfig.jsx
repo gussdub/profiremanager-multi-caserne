@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -6,6 +6,131 @@ import { Textarea } from './ui/textarea';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
 import { useToast } from '../hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Composant draggable pour les sections
+const SortableSection = ({ section, sectionIndex, children, onRemove }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id || `section-${sectionIndex}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div style={{
+        backgroundColor: '#f8fafc',
+        borderRadius: '12px',
+        padding: '1rem',
+        marginBottom: '1rem',
+        border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          {/* Handle de drag */}
+          <button
+            {...attributes}
+            {...listeners}
+            type="button"
+            style={{
+              cursor: 'grab',
+              padding: '0.25rem',
+              background: 'none',
+              border: 'none',
+              fontSize: '1.2rem',
+              color: '#64748b',
+              touchAction: 'none'
+            }}
+            title="Glisser pour réorganiser"
+          >
+            ⋮⋮
+          </button>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Composant draggable pour les items
+const SortableItem = ({ item, itemIndex, sectionIndex, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id || `item-${sectionIndex}-${itemIndex}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '0.75rem',
+        marginBottom: '0.5rem',
+        border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.5rem'
+      }}>
+        {/* Handle de drag */}
+        <button
+          {...attributes}
+          {...listeners}
+          type="button"
+          style={{
+            cursor: 'grab',
+            padding: '0.25rem',
+            background: 'none',
+            border: 'none',
+            fontSize: '1rem',
+            color: '#9ca3af',
+            touchAction: 'none',
+            flexShrink: 0
+          }}
+          title="Glisser pour réorganiser"
+        >
+          ⋮⋮
+        </button>
+        <div style={{ flex: 1 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FormulairesInspectionConfig = () => {
   const [formulaires, setFormulaires] = useState([]);
@@ -18,15 +143,29 @@ const FormulairesInspectionConfig = () => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
 
+  // Configuration des capteurs pour drag & drop (souris + touch)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // État du formulaire en édition
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
     type: 'inspection',
     categorie_ids: [],
-    vehicule_ids: [],  // Pour assigner à des véhicules spécifiques
+    vehicule_ids: [],
     frequence: 'mensuelle',
     est_actif: true,
+    tags: [],
     sections: []
   });
 
@@ -41,16 +180,42 @@ const FormulairesInspectionConfig = () => {
     { value: 'sur_demande', label: 'Sur demande' }
   ];
 
+  // Types de champs enrichis
   const typesChamp = [
-    { value: 'conforme_nc', label: 'Conforme / Non conforme' },
-    { value: 'oui_non', label: 'Oui / Non' },
-    { value: 'present_absent', label: 'Présent / Absent / Défectueux' },
-    { value: 'texte', label: 'Texte libre' },
-    { value: 'nombre', label: 'Nombre' },
-    { value: 'date', label: 'Date' },
-    { value: 'liste', label: 'Liste déroulante' },
-    { value: 'inspecteur', label: '👤 Inspecteur (auto-rempli)' },
-    { value: 'lieu', label: '📍 Lieu (GPS ou adresse)' }
+    { value: 'conforme_nc', label: '✅ Conforme / Non conforme', category: 'basic' },
+    { value: 'oui_non', label: '👍 Oui / Non', category: 'basic' },
+    { value: 'present_absent', label: '📦 Présent / Absent / Défectueux', category: 'basic' },
+    { value: 'texte', label: '📝 Texte libre', category: 'basic' },
+    { value: 'nombre', label: '🔢 Nombre', category: 'basic' },
+    { value: 'nombre_unite', label: '📏 Nombre avec unité', category: 'basic' },
+    { value: 'slider', label: '📊 Curseur (slider)', category: 'advanced' },
+    { value: 'date', label: '📅 Date', category: 'basic' },
+    { value: 'liste', label: '📋 Liste déroulante', category: 'basic' },
+    { value: 'photo', label: '📷 Photo/Image', category: 'media' },
+    { value: 'signature', label: '✍️ Signature', category: 'media' },
+    { value: 'chronometre', label: '⏱️ Chronomètre', category: 'advanced' },
+    { value: 'compte_rebours', label: '⏳ Compte à rebours', category: 'advanced' },
+    { value: 'qr_scan', label: '📱 Scan QR/Code-barres', category: 'advanced' },
+    { value: 'audio', label: '🎤 Note vocale', category: 'media' },
+    { value: 'inspecteur', label: '👤 Inspecteur (auto-rempli)', category: 'auto' },
+    { value: 'lieu', label: '📍 Lieu (GPS ou adresse)', category: 'auto' },
+    { value: 'calcul', label: '🧮 Calcul automatique', category: 'advanced' }
+  ];
+
+  // Unités disponibles pour le type nombre_unite
+  const unites = [
+    { value: 'psi', label: 'PSI' },
+    { value: 'bar', label: 'Bar' },
+    { value: 'litres', label: 'Litres' },
+    { value: 'gallons', label: 'Gallons' },
+    { value: 'metres', label: 'Mètres' },
+    { value: 'pieds', label: 'Pieds' },
+    { value: 'kg', label: 'Kg' },
+    { value: 'lbs', label: 'Lbs' },
+    { value: 'celsius', label: '°C' },
+    { value: 'fahrenheit', label: '°F' },
+    { value: 'percent', label: '%' },
+    { value: 'custom', label: 'Personnalisé' }
   ];
 
   const [vehicules, setVehicules] = useState([]);
