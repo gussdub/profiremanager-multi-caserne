@@ -135,23 +135,68 @@ const InspectionUnifieeModal = ({
     }));
   };
 
-  // Vérifier si l'inspection est conforme globalement
-  const isConforme = () => {
-    let allConforme = true;
+  // Collecter toutes les alertes basées sur les réponses
+  const collectAlertes = () => {
+    const alertes = [];
+    
     formulaire?.sections?.forEach(section => {
       section.items?.forEach(item => {
-        if (item.type === 'conforme_nc' && reponses[item.id] === 'non_conforme') {
-          allConforme = false;
+        const valeur = reponses[item.id];
+        const alertConfig = item.alertes || {};
+        const valeursDeclenchantes = alertConfig.valeurs_declenchantes || ['non_conforme', 'non', 'absent', 'defectueux'];
+        
+        let isAlerte = false;
+        let typeAlerte = '';
+        
+        // Types binaires
+        if (['conforme_nc', 'oui_non', 'present_absent'].includes(item.type)) {
+          if (valeursDeclenchantes.includes(valeur)) {
+            isAlerte = true;
+            typeAlerte = valeur;
+          }
         }
-        if (item.type === 'oui_non' && reponses[item.id] === 'non') {
-          allConforme = false;
+        
+        // Types numériques
+        if (['nombre', 'nombre_unite', 'slider'].includes(item.type)) {
+          const numVal = parseFloat(valeur) || 0;
+          if (alertConfig.seuil_min !== null && alertConfig.seuil_min !== undefined && numVal < alertConfig.seuil_min) {
+            isAlerte = true;
+            typeAlerte = `Valeur ${numVal} < ${alertConfig.seuil_min}`;
+          }
+          if (alertConfig.seuil_max !== null && alertConfig.seuil_max !== undefined && numVal > alertConfig.seuil_max) {
+            isAlerte = true;
+            typeAlerte = `Valeur ${numVal} > ${alertConfig.seuil_max}`;
+          }
         }
-        if (item.type === 'present_absent' && (reponses[item.id] === 'absent' || reponses[item.id] === 'defectueux')) {
-          allConforme = false;
+        
+        // Liste déroulante
+        if (item.type === 'liste' && item.options) {
+          const optIndex = item.options.indexOf(valeur);
+          if (alertConfig.options_declenchantes?.includes(optIndex)) {
+            isAlerte = true;
+            typeAlerte = `Option: ${valeur}`;
+          }
+        }
+        
+        if (isAlerte) {
+          alertes.push({
+            item_id: item.id,
+            item_label: item.label || item.nom,
+            section: section.nom || section.titre,
+            type: typeAlerte,
+            valeur: valeur,
+            message: alertConfig.message || `Alerte: ${item.label || item.nom} - ${typeAlerte}`
+          });
         }
       });
     });
-    return allConforme;
+    
+    return alertes;
+  };
+
+  // Vérifier si l'inspection est conforme globalement
+  const isConforme = () => {
+    return collectAlertes().length === 0;
   };
 
   // Fonction pour obtenir la position GPS
