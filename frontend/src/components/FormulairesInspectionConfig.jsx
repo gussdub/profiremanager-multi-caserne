@@ -1691,134 +1691,37 @@ const FormulairesInspectionConfig = () => {
                                       🔔 Configuration des alertes
                                     </div>
 
-                                    {/* Pour Conforme/NC - toutes les options */}
-                                    {item.type === 'conforme_nc' && (
+                                    {/* Pour Bouton Radio et Cases à cocher - alertes basées sur les options personnalisées */}
+                                    {(item.type === 'radio' || item.type === 'checkbox') && item.options && item.options.length > 0 && (
                                       <div style={{ fontSize: 'clamp(0.7rem, 2.5vw, 0.8rem)', color: '#7f1d1d' }}>
                                         <span style={{ marginBottom: '0.25rem', display: 'block', fontSize: 'clamp(0.65rem, 2vw, 0.75rem)' }}>
-                                          Déclencher une alerte si:
+                                          Déclencher une alerte si la réponse est:
                                         </span>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('conforme') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'conforme']
-                                                  : current.filter(v => v !== 'conforme');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ✅ Conforme
-                                          </label>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('non_conforme') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'non_conforme']
-                                                  : current.filter(v => v !== 'non_conforme');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ❌ Non conforme
-                                          </label>
+                                          {item.options.map((opt, optIdx) => (
+                                            <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={item.alertes?.valeurs_declenchantes?.includes(opt) ?? false}
+                                                onChange={(e) => {
+                                                  const current = item.alertes?.valeurs_declenchantes || [];
+                                                  const newVals = e.target.checked 
+                                                    ? [...current, opt]
+                                                    : current.filter(v => v !== opt);
+                                                  updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
+                                                }}
+                                              />
+                                              {opt}
+                                            </label>
+                                          ))}
                                         </div>
                                       </div>
                                     )}
 
-                                    {/* Pour Oui/Non - TOUTES les options */}
-                                    {item.type === 'oui_non' && (
-                                      <div style={{ fontSize: 'clamp(0.7rem, 2.5vw, 0.8rem)', color: '#7f1d1d' }}>
-                                        <span style={{ marginBottom: '0.25rem', display: 'block', fontSize: 'clamp(0.65rem, 2vw, 0.75rem)' }}>
-                                          Déclencher une alerte si:
-                                        </span>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('oui') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'oui']
-                                                  : current.filter(v => v !== 'oui');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ✅ Oui
-                                          </label>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('non') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'non']
-                                                  : current.filter(v => v !== 'non');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ❌ Non
-                                          </label>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Pour Présent/Absent/Défectueux - toutes les options */}
-                                    {item.type === 'present_absent' && (
-                                      <div style={{ fontSize: 'clamp(0.7rem, 2.5vw, 0.8rem)', color: '#7f1d1d' }}>
-                                        <span style={{ marginBottom: '0.25rem', display: 'block', fontSize: 'clamp(0.65rem, 2vw, 0.75rem)' }}>
-                                          Déclencher une alerte si:
-                                        </span>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('present') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'present']
-                                                  : current.filter(v => v !== 'present');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ✅ Présent
-                                          </label>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('absent') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'absent']
-                                                  : current.filter(v => v !== 'absent');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ⚠️ Absent
-                                          </label>
-                                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer', fontSize: 'clamp(0.7rem, 2vw, 0.8rem)' }}>
-                                            <input
-                                              type="checkbox"
-                                              checked={item.alertes?.valeurs_declenchantes?.includes('defectueux') ?? false}
-                                              onChange={(e) => {
-                                                const current = item.alertes?.valeurs_declenchantes || [];
-                                                const newVals = e.target.checked 
-                                                  ? [...current, 'defectueux']
-                                                  : current.filter(v => v !== 'defectueux');
-                                                updateItem(sectionIndex, itemIndex, 'alertes.valeurs_declenchantes', newVals);
-                                              }}
-                                            />
-                                            ❌ Défectueux
-                                          </label>
-                                        </div>
+                                    {/* Message si pas d'options définies pour radio/checkbox */}
+                                    {(item.type === 'radio' || item.type === 'checkbox') && (!item.options || item.options.length === 0) && (
+                                      <div style={{ fontSize: 'clamp(0.65rem, 2vw, 0.75rem)', color: '#9ca3af', fontStyle: 'italic' }}>
+                                        Ajoutez des options ci-dessus pour configurer les alertes
                                       </div>
                                     )}
 
