@@ -2518,6 +2518,30 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Inspection Unifiée (Système de formulaires personnalisés) */}
+      {showUnifiedInspectionModal && selectedEPI && selectedFormulaireEPI && (
+        <InspectionUnifieeModal
+          formulaire={selectedFormulaireEPI}
+          asset={{
+            id: selectedEPI.id,
+            nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
+            type: 'epi'
+          }}
+          assetType="epi"
+          onClose={() => {
+            setShowUnifiedInspectionModal(false);
+            setSelectedFormulaireEPI(null);
+          }}
+          onSuccess={() => {
+            toast({ title: "Succès", description: "Inspection enregistrée avec succès" });
+            setShowUnifiedInspectionModal(false);
+            setSelectedFormulaireEPI(null);
+            loadInspections(selectedEPI.id);
+          }}
+          user={user}
+        />
+      )}
     </div>
   );
 };
