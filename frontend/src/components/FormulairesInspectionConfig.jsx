@@ -1535,27 +1535,12 @@ const FormulairesInspectionConfig = () => {
                                   {item.type === 'radio' && (
                                     <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
                                       <div style={{ fontSize: '0.75rem', color: '#0369a1', marginBottom: '0.25rem', fontWeight: '500' }}>🔘 Options (choix unique):</div>
-                                      {(item.options && item.options.length > 0 ? item.options : ['Oui', 'Non']).map((opt, optIndex) => (
+                                      {(item.options || []).map((opt, optIndex) => (
                                         <div key={optIndex} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem', alignItems: 'center' }}>
                                           <span style={{ color: '#0369a1', fontSize: '0.8rem' }}>○</span>
                                           <Input
                                             value={opt}
-                                            onChange={(e) => {
-                                              // Si les options n'existent pas encore, les initialiser d'abord
-                                              if (!item.options || item.options.length === 0) {
-                                                const defaultOptions = ['Oui', 'Non'];
-                                                defaultOptions[optIndex] = e.target.value;
-                                                setFormData(prev => {
-                                                  const sections = [...prev.sections];
-                                                  const items = [...sections[sectionIndex].items];
-                                                  items[itemIndex] = { ...items[itemIndex], options: defaultOptions };
-                                                  sections[sectionIndex] = { ...sections[sectionIndex], items };
-                                                  return { ...prev, sections };
-                                                });
-                                              } else {
-                                                updateOption(sectionIndex, itemIndex, optIndex, e.target.value);
-                                              }
-                                            }}
+                                            onChange={(e) => updateOption(sectionIndex, itemIndex, optIndex, e.target.value)}
                                             style={{ flex: 1, fontSize: '0.85rem' }}
                                             placeholder={`Option ${optIndex + 1}`}
                                           />
