@@ -1011,9 +1011,38 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     frequence_inspection: categorie?.frequence_inspection || '',
     couleur: categorie?.couleur || '#6366f1',
     icone: categorie?.icone || '📦',
-    permet_assignation_employe: categorie?.permet_assignation_employe || false
+    permet_assignation_employe: categorie?.permet_assignation_employe || false,
+    personne_ressource_id: categorie?.personne_ressource_id || '',
+    personne_ressource_email: categorie?.personne_ressource_email || ''
   });
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+
+  // Charger la liste des utilisateurs (admins et superviseurs)
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const usersData = await apiGet(tenantSlug, '/users');
+        // Filtrer pour n'afficher que les admins et superviseurs
+        const filtered = (usersData || []).filter(u => 
+          u.role === 'admin' || u.role === 'superviseur'
+        );
+        setUsers(filtered);
+      } catch (err) {
+        console.error('Erreur chargement utilisateurs:', err);
+      }
+    };
+    loadUsers();
+  }, [tenantSlug]);
+
+  const handlePersonneRessourceChange = (userId) => {
+    const selectedUser = users.find(u => u.id === userId);
+    setFormData({
+      ...formData,
+      personne_ressource_id: userId,
+      personne_ressource_email: selectedUser?.email || ''
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
