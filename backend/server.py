@@ -887,7 +887,7 @@ async def job_verifier_alertes_equipements():
                 </html>
                 """
                 
-                # Envoyer l'email à tous les destinataires généraux
+                # Envoyer l'email au résumé général (si des destinataires configurés)
                 resend.api_key = os.environ.get("RESEND_API_KEY")
                 sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
                 
@@ -907,56 +907,76 @@ async def job_verifier_alertes_equipements():
                         logging.error(f"❌ Erreur envoi email à {email} pour {tenant_nom}: {str(e)}")
                 
                 # =============================================
-                # NOUVEAU: Envoyer emails aux personnes ressources
+                # Envoyer emails à TOUTES les personnes ressources de chaque catégorie
                 # =============================================
+                emails_deja_envoyes = set(emails_destinataires)  # Éviter les doublons
+                
                 for cat_id, cat_data in alertes_par_categorie.items():
-                    personne_email = cat_data.get("personne_ressource_email", "")
-                    if personne_email and personne_email not in emails_destinataires:
+                    # Collecter tous les emails des personnes ressources
+                    emails_pr = []
+                    
+                    # Nouveau format: tableau personnes_ressources
+                    for pr in cat_data.get("personnes_ressources", []):
+                        if pr.get("email") and pr.get("email") not in emails_deja_envoyes:
+                            emails_pr.append(pr.get("email"))
+                    
+                    # Ancien format: personne_ressource_email (pour compatibilité)
+                    ancien_email = cat_data.get("personne_ressource_email", "")
+                    if ancien_email and ancien_email not in emails_deja_envoyes and ancien_email not in emails_pr:
+                        emails_pr.append(ancien_email)
+                    
+                    if not emails_pr:
+                        continue
+                    
+                    # Préparer l'email pour les personnes ressources
+                    subject_pr = f"📋 Inspections dues - {cat_data['nom']} - {tenant_nom}"
+                    
+                    equipements_list_html = "".join([
+                        f"<li><strong>{eq['nom']}</strong> - {eq.get('jours_retard', 'N/A')} jours depuis dernière inspection</li>"
+                        for eq in cat_data["equipements"]
+                    ])
+                    
+                    html_pr = f"""
+                    <html>
+                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <div style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h2>{cat_data['icone']} Inspections dues - {cat_data['nom']}</h2>
+                        </div>
+                        <div style="padding: 20px; background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 0 0 8px 8px;">
+                            <p>Bonjour,</p>
+                            <p>En tant que personne ressource pour la catégorie <strong>{cat_data['nom']}</strong>, vous êtes notifié(e) que <strong>{cat_data['count']} équipement(s)</strong> nécessitent une inspection.</p>
+                            
+                            <p><strong>Fréquence d'inspection :</strong> {cat_data['frequence']}</p>
+                            
+                            <h4>Équipements concernés :</h4>
+                            <ul style="background: white; padding: 15px 30px; border-radius: 8px; border: 1px solid #E5E7EB;">
+                                {equipements_list_html}
+                            </ul>
+                            
+                            <p style="margin-top: 20px;">
+                                Connectez-vous à ProFireManager pour effectuer ces inspections.
+                            </p>
+                        </div>
+                        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+                            Cet email a été envoyé automatiquement. Vous recevez ce message car vous êtes désigné comme personne ressource.
+                        </p>
+                    </body>
+                    </html>
+                    """
+                    
+                    # Envoyer à chaque personne ressource
+                    for email_pr in emails_pr:
                         try:
-                            # Email spécifique pour la personne ressource
-                            subject_pr = f"📋 Inspections dues - {cat_data['nom']} - {tenant_nom}"
-                            
-                            equipements_list_html = "".join([
-                                f"<li><strong>{eq['nom']}</strong> - {eq.get('jours_retard', 'N/A')} jours depuis dernière inspection</li>"
-                                for eq in cat_data["equipements"]
-                            ])
-                            
-                            html_pr = f"""
-                            <html>
-                            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                                <div style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                                    <h2>{cat_data['icone']} Inspections dues - {cat_data['nom']}</h2>
-                                </div>
-                                <div style="padding: 20px; background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 0 0 8px 8px;">
-                                    <p>Bonjour,</p>
-                                    <p>En tant que personne ressource pour la catégorie <strong>{cat_data['nom']}</strong>, vous êtes notifié(e) que <strong>{cat_data['count']} équipement(s)</strong> nécessitent une inspection.</p>
-                                    
-                                    <p><strong>Fréquence d'inspection :</strong> {cat_data['frequence']}</p>
-                                    
-                                    <h4>Équipements concernés :</h4>
-                                    <ul style="background: white; padding: 15px 30px; border-radius: 8px; border: 1px solid #E5E7EB;">
-                                        {equipements_list_html}
-                                    </ul>
-                                    
-                                    <p style="margin-top: 20px;">
-                                        Connectez-vous à ProFireManager pour effectuer ces inspections.
-                                    </p>
-                                </div>
-                                <p style="color: #666; font-size: 12px; margin-top: 20px;">
-                                    Cet email a été envoyé automatiquement. Vous recevez ce message car vous êtes désigné comme personne ressource.
-                                </p>
-                            </body>
-                            </html>
-                            """
-                            
                             params_pr = {
                                 "from": sender_email,
-                                "to": [personne_email],
+                                "to": [email_pr],
                                 "subject": subject_pr,
                                 "html": html_pr
                             }
                             
                             email_response_pr = resend.Emails.send(params_pr)
+                            logging.info(f"📧 Email personne ressource envoyé à {email_pr} pour {cat_data['nom']} - ID: {email_response_pr.get('id', 'N/A')}")
+                            emails_deja_envoyes.add(email_pr)  # Marquer comme envoyé
                             logging.info(f"📧 Email personne ressource envoyé à {personne_email} pour {cat_data['nom']} - ID: {email_response_pr.get('id', 'N/A')}")
                         
                         except Exception as e:
