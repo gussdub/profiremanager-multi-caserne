@@ -855,30 +855,69 @@ const InspectionUnifieeModal = ({
               }}>
                 <span style={{ fontSize: '1.5rem' }}>{section.icone || '📋'}</span>
                 <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                  {section.titre}
+                  {section.titre || section.nom}
                 </h4>
               </div>
+
+              {/* Photos de référence de la section */}
+              {section.photos && section.photos.length > 0 && (
+                <div style={{ 
+                  marginBottom: '0.75rem', 
+                  padding: '0.5rem',
+                  backgroundColor: '#fefce8',
+                  borderRadius: '8px',
+                  border: '1px solid #fef08a'
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#854d0e', marginBottom: '0.5rem' }}>
+                    📷 Photos de référence :
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {section.photos.map((photo, photoIdx) => (
+                      <img
+                        key={photoIdx}
+                        src={photo.data || photo}
+                        alt={`Référence ${photoIdx + 1}`}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          objectFit: 'cover',
+                          borderRadius: '6px',
+                          border: '2px solid #fef08a',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => window.open(photo.data || photo, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {section.items?.map((item, itemIndex) => (
                   <div 
                     key={item.id || itemIndex}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
                       padding: '0.75rem',
                       backgroundColor: 'white',
                       borderRadius: '8px',
-                      border: '1px solid #e5e7eb',
-                      gap: '0.5rem',
-                      flexWrap: 'wrap'
+                      border: '1px solid #e5e7eb'
                     }}
                   >
-                    <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
-                      {item.nom}
-                    </span>
-                    {renderField(item, sectionIndex)}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
+                        {item.label || item.nom}
+                        {item.obligatoire && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+                      </span>
+                      {renderField(item, sectionIndex)}
+                    </div>
+                    {/* Zone de photo en réponse si activée */}
+                    {renderPhotoResponse(item)}
                   </div>
                 ))}
               </div>
