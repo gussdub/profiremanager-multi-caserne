@@ -1765,6 +1765,8 @@ const FormulairesInspectionConfig = () => {
                         >
                           ➕ Ajouter un critère
                         </Button>
+                          </>
+                        )}
                       </SortableSection>
                     ))}
                   </SortableContext>
