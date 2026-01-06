@@ -52,7 +52,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import os
 
-class FormBuilderCategoryTester:
+class P1FeaturesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
         self.base_url = "https://form-builder-73.preview.emergentagent.com/api"
@@ -70,9 +70,10 @@ class FormBuilderCategoryTester:
         self.test_data = {
             "user_id": None,
             "categories": [],
-            "formulaires": [],
-            "test_formulaire_id": None,
-            "parties_faciales_count": 0
+            "test_category_id": None,
+            "test_epi_id": None,
+            "test_inspection_id": None,
+            "types_epi": []
         }
         
     def authenticate(self):
