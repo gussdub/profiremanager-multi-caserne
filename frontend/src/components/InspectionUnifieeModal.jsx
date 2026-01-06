@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiPost } from '../utils/api';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import Stopwatch from './ui/Stopwatch';
+import SignaturePad from './ui/SignaturePad';
+import Slider from './ui/Slider';
 
 const InspectionUnifieeModal = ({ 
   isOpen, 
@@ -16,9 +19,11 @@ const InspectionUnifieeModal = ({
 }) => {
   const [saving, setSaving] = useState(false);
   const [reponses, setReponses] = useState({});
+  const [photosReponses, setPhotosReponses] = useState({}); // Photos jointes aux réponses
   const [remarques, setRemarques] = useState('');
   const [demanderRemplacement, setDemanderRemplacement] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const fileInputRefs = useRef({});
 
   // Initialiser les réponses selon le formulaire
   useEffect(() => {
