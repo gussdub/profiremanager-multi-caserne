@@ -706,8 +706,13 @@ const FormulairesInspectionConfig = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'epi': return '🛡️';
-      case 'equipement': return '🔧';
+      case 'actif_principal': return '📌';
+      case 'vehicule': return '🚗';
+      case 'point_eau': return '💧';
+      case 'epi': 
+      case 'epi_sous': return '🛡️';
+      case 'equipement':
+      case 'equipement_sous': return '🔧';
       default: return '📋';
     }
   };
