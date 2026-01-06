@@ -234,36 +234,41 @@ const FormulairesInspectionConfig = () => {
 
   const loadCategories = async () => {
     try {
-      // Charger les catégories de Matériel & Équipements
-      const equipCats = await apiGet(tenantSlug, '/equipements/categories');
+      // Catégories principales correspondant aux sections du module "Gestion des Actifs"
+      const categoriesPrincipales = [
+        { id: 'vehicule', nom: '🚗 Véhicules', type: 'actif_principal' },
+        { id: 'point_eau', nom: '💧 Points d\'eau', type: 'actif_principal' },
+        { id: 'equipement', nom: '🔧 Matériel & Équipements', type: 'actif_principal' },
+        { id: 'epi', nom: '🦺 EPI (Équipements de protection)', type: 'actif_principal' },
+      ];
       
-      // Charger les types d'EPI depuis l'API
+      // Charger les catégories de Matériel & Équipements (sous-catégories)
+      let equipCats = [];
+      try {
+        const equipCatsData = await apiGet(tenantSlug, '/equipements/categories');
+        equipCats = (equipCatsData || []).map(c => ({ ...c, type: 'equipement_sous' }));
+      } catch (e) {
+        console.warn('Catégories équipements non chargées:', e);
+      }
+      
+      // Charger les types d'EPI depuis l'API (sous-catégories)
       let epiTypesFromDB = [];
       try {
         const typesEPI = await apiGet(tenantSlug, '/types-epi');
         epiTypesFromDB = (typesEPI || []).map(t => ({
           id: `epi_${t.id}`,
           nom: `🛡️ ${t.nom}`,
-          type: 'epi',
+          type: 'epi_sous',
           original_id: t.id
         }));
       } catch (e) {
         console.warn('Types EPI non chargés:', e);
       }
       
-      // Catégories EPI par défaut si aucune depuis l'API
-      const epiTypesDefault = epiTypesFromDB.length > 0 ? [] : [
-        { id: 'epi_bunker', nom: '🛡️ Habit de combat (Bunker)', type: 'epi' },
-        { id: 'epi_bottes', nom: '🛡️ Bottes', type: 'epi' },
-        { id: 'epi_casque', nom: '🛡️ Casque', type: 'epi' },
-        { id: 'epi_gants', nom: '🛡️ Gants', type: 'epi' },
-        { id: 'epi_cagoule', nom: '🛡️ Cagoule', type: 'epi' },
-      ];
-      
       setCategories([
-        ...epiTypesFromDB,
-        ...epiTypesDefault,
-        ...(equipCats || []).map(c => ({ ...c, type: 'equipement' }))
+        ...categoriesPrincipales,
+        ...equipCats,
+        ...epiTypesFromDB
       ]);
     } catch (error) {
       console.error('Erreur chargement catégories:', error);
