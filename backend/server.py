@@ -32289,7 +32289,19 @@ async def create_inspection_unifiee(
     # Récupérer le nom de l'asset selon son type
     asset_nom = inspection_data.get("metadata", {}).get("vehicule_nom") or \
                 inspection_data.get("metadata", {}).get("borne_nom") or \
+                inspection_data.get("metadata", {}).get("epi_nom") or \
                 inspection_data.get("equipement_nom", "")
+    
+    # Si le nom n'est pas fourni, essayer de le récupérer depuis la DB
+    if not asset_nom and asset_id:
+        if asset_type == "epi":
+            epi = await db.epi_employes.find_one({"id": asset_id}, {"_id": 0})
+            if epi:
+                asset_nom = f"{epi.get('type_epi', 'EPI')} - {epi.get('numero_serie', asset_id[:8])}"
+        elif asset_type == "equipement":
+            equip = await db.equipements.find_one({"id": asset_id}, {"_id": 0})
+            if equip:
+                asset_nom = equip.get('nom', asset_id[:8])
     
     inspection = {
         "id": str(uuid.uuid4()),
@@ -32298,6 +32310,7 @@ async def create_inspection_unifiee(
         "asset_type": asset_type,
         # Compatibilité avec l'ancien format
         "equipement_id": asset_id if asset_type == "equipement" else None,
+        "epi_id": asset_id if asset_type == "epi" else None,
         "equipement_nom": asset_nom,
         "formulaire_id": inspection_data.get("formulaire_id"),
         "formulaire_nom": inspection_data.get("formulaire_nom", ""),
@@ -32315,12 +32328,13 @@ async def create_inspection_unifiee(
     
     await db.inspections_unifiees.insert_one(inspection)
     
-    # Si non conforme et demande de remplacement activée (seulement pour équipements)
-    if asset_type == "equipement" and not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
+    # Si non conforme et demande de remplacement activée (pour équipements et EPI)
+    if asset_type in ["equipement", "epi"] and not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
         demande = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "equipement_id": asset_id,
+            "equipement_id": asset_id if asset_type == "equipement" else None,
+            "epi_id": asset_id if asset_type == "epi" else None,
             "equipement_nom": asset_nom,
             "type": "remplacement",
             "raison": "Non conforme lors de l'inspection",
@@ -32331,8 +32345,13 @@ async def create_inspection_unifiee(
             "inspection_id": inspection["id"],
             "created_at": datetime.now(timezone.utc).isoformat()
         }
-        await db.demandes_remplacement_equipements.insert_one(demande)
-        logger.info(f"Demande de remplacement créée pour {asset_nom}")
+        
+        # Utiliser la bonne collection selon le type
+        if asset_type == "epi":
+            await db.demandes_remplacement_epi.insert_one(demande)
+        else:
+            await db.demandes_remplacement_equipements.insert_one(demande)
+        logger.info(f"Demande de remplacement créée pour {asset_type} {asset_nom}")
     
     # Envoyer des alertes si nécessaire
     alertes = inspection_data.get("alertes", [])
