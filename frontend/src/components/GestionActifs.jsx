@@ -16,7 +16,6 @@ import ParametresInventairesVehicules from './ParametresInventairesVehicules';
 import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSeches';
 import ParametresInspectionsAPRIA from './ParametresInspectionsAPRIA';
 import MaterielEquipementsModule from './MaterielEquipementsModule';
-import ConfigurationEmailsEquipements from './ConfigurationEmailsEquipements';
 import ImportCSVEquipements from './ImportCSVEquipements';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
