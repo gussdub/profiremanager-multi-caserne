@@ -129,6 +129,11 @@ const ModuleEPI = ({ user }) => {
   const [rapportRetraits, setRapportRetraits] = useState(null);
   const [rapportTCO, setRapportTCO] = useState(null);
   
+  // États pour l'inspection unifiée (nouveau système de formulaires)
+  const [showUnifiedInspectionModal, setShowUnifiedInspectionModal] = useState(false);
+  const [formulairesEPI, setFormulairesEPI] = useState([]);
+  const [selectedFormulaireEPI, setSelectedFormulaireEPI] = useState(null);
+  
   // Types EPI - chargés dynamiquement depuis l'API
   const [typesEPI, setTypesEPI] = useState([
     { id: 'casque', nom: 'Casque', icone: '⛑️' },
@@ -158,6 +163,26 @@ const ModuleEPI = ({ user }) => {
     };
     if (tenantSlug) {
       fetchTypesEPI();
+    }
+  }, [tenantSlug]);
+  
+  // Charger les formulaires d'inspection EPI (système unifié)
+  useEffect(() => {
+    const loadFormulairesEPI = async () => {
+      try {
+        const formulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+        // Filtrer les formulaires applicables aux EPI
+        const epiFormulaires = (formulaires || []).filter(f => 
+          f.categories_cibles?.some(c => c.startsWith('epi_')) ||
+          f.type === 'inspection_epi'
+        );
+        setFormulairesEPI(epiFormulaires);
+      } catch (error) {
+        console.log('Formulaires EPI non chargés:', error);
+      }
+    };
+    if (tenantSlug) {
+      loadFormulairesEPI();
     }
   }, [tenantSlug]);
   
