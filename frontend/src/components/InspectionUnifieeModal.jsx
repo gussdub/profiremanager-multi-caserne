@@ -35,7 +35,7 @@ const InspectionUnifieeModal = ({
           switch (item.type) {
             case 'radio':
               // Pour radio, la première option par défaut (si options définies)
-              initialReponses[item.id] = item.options?.[0] || '';
+              initialReponses[item.id] = (item.options && item.options.length > 0) ? item.options[0] : '';
               break;
             case 'checkbox':
               // Pour checkbox, tableau vide par défaut
