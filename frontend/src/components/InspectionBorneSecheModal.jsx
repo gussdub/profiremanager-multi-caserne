@@ -245,14 +245,14 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         // Charger tous les formulaires du système unifié
         const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
         
-        // Filtrer pour les formulaires de type "inspection" qui concernent les bornes sèches
-        const borneSecheFormulaires = (allFormulaires || []).filter(f => 
+        // Filtrer pour les formulaires qui concernent les points d'eau (nouvelle catégorie)
+        const pointEauFormulaires = (allFormulaires || []).filter(f => 
           f.actif !== false &&
-          f.categorie_ids?.includes('borne_seche')
+          (f.categorie_ids?.includes('point_eau') || f.categorie_ids?.includes('borne_seche'))
         );
         
         // Convertir vers le format attendu par le composant existant
-        const modelesConverts = borneSecheFormulaires.map(f => ({
+        const modelesConverts = pointEauFormulaires.map(f => ({
           id: f.id,
           nom: f.nom,
           description: f.description || '',
@@ -272,8 +272,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
             items: s.items?.map((item, itemIdx) => ({
               id: item.id || `item_${idx}_${itemIdx}`,
               nom: item.label,
+              type: item.type,
+              options: item.options,
               obligatoire: item.obligatoire || false,
-              ordre: itemIdx
+              ordre: itemIdx,
+              alertes: item.alertes
             })) || [],
             ordre: idx
           }))
@@ -286,15 +289,50 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         // Déterminer quel modèle utiliser
         let modeleToUse = null;
         
-        // Si la borne a un modèle assigné, chercher dans les formulaires unifiés
+        // PRIORITÉ 1: Si le point d'eau a un formulaire assigné, le charger directement
         if (borne.modele_inspection_assigne_id) {
+          // D'abord chercher dans les formulaires convertis
           modeleToUse = modelesConverts.find(m => m.id === borne.modele_inspection_assigne_id);
+          
+          // Si pas trouvé dans les formulaires convertis, charger le formulaire directement
+          if (!modeleToUse) {
+            const assignedFormulaire = (allFormulaires || []).find(f => f.id === borne.modele_inspection_assigne_id);
+            if (assignedFormulaire) {
+              modeleToUse = {
+                id: assignedFormulaire.id,
+                nom: assignedFormulaire.nom,
+                description: assignedFormulaire.description || '',
+                est_actif: assignedFormulaire.actif !== false,
+                sections: (assignedFormulaire.sections || []).map((s, idx) => ({
+                  id: s.id || `section_${idx}`,
+                  titre: s.nom,
+                  description: '',
+                  type_champ: s.items?.[0]?.type || 'radio',
+                  options: s.items?.[0]?.options?.map(opt => ({ 
+                    label: opt, 
+                    declencherAlerte: false 
+                  })) || [],
+                  items: s.items?.map((item, itemIdx) => ({
+                    id: item.id || `item_${idx}_${itemIdx}`,
+                    nom: item.label,
+                    type: item.type,
+                    options: item.options,
+                    obligatoire: item.obligatoire || false,
+                    ordre: itemIdx,
+                    alertes: item.alertes
+                  })) || [],
+                  ordre: idx
+                }))
+              };
+            }
+          }
+          
           if (modeleToUse) {
             setSelectedModeleId(borne.modele_inspection_assigne_id);
           }
         }
         
-        // Sinon, utiliser le premier formulaire actif trouvé
+        // PRIORITÉ 2: Sinon, utiliser le premier formulaire actif de la catégorie point_eau
         if (!modeleToUse && modelesConverts.length > 0) {
           modeleToUse = modelesConverts.find(m => m.est_actif) || modelesConverts[0];
           setSelectedModeleId(modeleToUse?.id);
