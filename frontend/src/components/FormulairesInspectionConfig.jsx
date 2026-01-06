@@ -235,6 +235,7 @@ const FormulairesInspectionConfig = () => {
   const loadCategories = async () => {
     try {
       // Catégories principales correspondant aux sections du module "Gestion des Actifs"
+      // Garder uniquement les 4 catégories principales
       const categoriesPrincipales = [
         { id: 'vehicule', nom: '🚗 Véhicules', type: 'actif_principal' },
         { id: 'point_eau', nom: '💧 Points d\'eau', type: 'actif_principal' },
@@ -242,34 +243,7 @@ const FormulairesInspectionConfig = () => {
         { id: 'epi', nom: '🦺 EPI (Équipements de protection)', type: 'actif_principal' },
       ];
       
-      // Charger les catégories de Matériel & Équipements (sous-catégories)
-      let equipCats = [];
-      try {
-        const equipCatsData = await apiGet(tenantSlug, '/equipements/categories');
-        equipCats = (equipCatsData || []).map(c => ({ ...c, type: 'equipement_sous' }));
-      } catch (e) {
-        console.warn('Catégories équipements non chargées:', e);
-      }
-      
-      // Charger les types d'EPI depuis l'API (sous-catégories)
-      let epiTypesFromDB = [];
-      try {
-        const typesEPI = await apiGet(tenantSlug, '/types-epi');
-        epiTypesFromDB = (typesEPI || []).map(t => ({
-          id: `epi_${t.id}`,
-          nom: `🛡️ ${t.nom}`,
-          type: 'epi_sous',
-          original_id: t.id
-        }));
-      } catch (e) {
-        console.warn('Types EPI non chargés:', e);
-      }
-      
-      setCategories([
-        ...categoriesPrincipales,
-        ...equipCats,
-        ...epiTypesFromDB
-      ]);
+      setCategories(categoriesPrincipales);
     } catch (error) {
       console.error('Erreur chargement catégories:', error);
     }
