@@ -664,6 +664,110 @@ async def job_verifier_alertes_equipements():
                 
                 alertes_count["expiration"] = expiration_count
                 
+                # =============================================
+                # NOUVEAU: Alertes inspections dues par catégorie
+                # =============================================
+                alertes_count["inspections_dues"] = 0
+                alertes_par_categorie = {}  # {categorie_id: {nom, count, personne_ressource_email, equipements}}
+                
+                # Récupérer toutes les catégories avec leur fréquence d'inspection
+                categories = await db.categories_equipements.find(
+                    {"tenant_id": tenant_id},
+                    {"_id": 0}
+                ).to_list(1000)
+                
+                categories_map = {cat.get("id"): cat for cat in categories}
+                
+                for eq in all_equipements:
+                    categorie_id = eq.get("categorie_id")
+                    if not categorie_id or categorie_id not in categories_map:
+                        continue
+                    
+                    categorie = categories_map[categorie_id]
+                    frequence = categorie.get("frequence_inspection", "")
+                    if not frequence:
+                        continue  # Pas de fréquence définie, pas d'alerte
+                    
+                    jours_frequence = parse_frequence_inspection_to_days(frequence)
+                    
+                    # Trouver la dernière inspection unifiée pour cet équipement
+                    derniere_inspection = await db.inspections_unifiees.find_one(
+                        {
+                            "tenant_id": tenant_id,
+                            "asset_id": eq.get("id"),
+                            "asset_type": "equipement"
+                        },
+                        {"_id": 0},
+                        sort=[("date_inspection", -1)]
+                    )
+                    
+                    # Si pas d'inspection unifiée, chercher dans les anciennes collections
+                    if not derniere_inspection:
+                        derniere_inspection = await db.inspections_equipements.find_one(
+                            {
+                                "tenant_id": tenant_id,
+                                "equipement_id": eq.get("id")
+                            },
+                            {"_id": 0},
+                            sort=[("date_inspection", -1)]
+                        )
+                    
+                    # Calculer si l'inspection est due
+                    inspection_due = False
+                    jours_depuis_derniere = None
+                    
+                    if derniere_inspection:
+                        date_derniere = derniere_inspection.get("date_inspection") or derniere_inspection.get("created_at")
+                        if date_derniere:
+                            try:
+                                if isinstance(date_derniere, str):
+                                    date_derniere = datetime.fromisoformat(date_derniere.replace("Z", "+00:00"))
+                                elif isinstance(date_derniere, datetime):
+                                    pass
+                                else:
+                                    date_derniere = None
+                                
+                                if date_derniere:
+                                    jours_depuis_derniere = (datetime.now(timezone.utc) - date_derniere).days
+                                    if jours_depuis_derniere >= jours_frequence:
+                                        inspection_due = True
+                            except:
+                                pass
+                    else:
+                        # Aucune inspection jamais faite - vérifier la date de création de l'équipement
+                        date_creation = eq.get("created_at") or eq.get("date_ajout")
+                        if date_creation:
+                            try:
+                                if isinstance(date_creation, str):
+                                    date_creation = datetime.fromisoformat(date_creation.replace("Z", "+00:00"))
+                                if isinstance(date_creation, datetime):
+                                    jours_depuis_creation = (datetime.now(timezone.utc) - date_creation).days
+                                    if jours_depuis_creation >= jours_frequence:
+                                        inspection_due = True
+                                        jours_depuis_derniere = jours_depuis_creation
+                            except:
+                                pass
+                    
+                    if inspection_due:
+                        alertes_count["inspections_dues"] += 1
+                        
+                        if categorie_id not in alertes_par_categorie:
+                            alertes_par_categorie[categorie_id] = {
+                                "nom": categorie.get("nom", "Catégorie inconnue"),
+                                "icone": categorie.get("icone", "📦"),
+                                "frequence": frequence,
+                                "count": 0,
+                                "personne_ressource_email": categorie.get("personne_ressource_email", ""),
+                                "personne_ressource_id": categorie.get("personne_ressource_id", ""),
+                                "equipements": []
+                            }
+                        
+                        alertes_par_categorie[categorie_id]["count"] += 1
+                        alertes_par_categorie[categorie_id]["equipements"].append({
+                            "nom": eq.get("nom", eq.get("numero_serie", "Équipement")),
+                            "jours_retard": jours_depuis_derniere
+                        })
+                
                 # Calculer le total des alertes
                 total_alertes = sum(alertes_count.values())
                 
