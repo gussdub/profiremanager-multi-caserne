@@ -221,74 +221,99 @@ const InspectionsBornesSeches = ({ user }) => {
       {/* En-tête */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#1f2937' }}>
-          🔥 Inspections Bornes Sèches
+          💧 Inspections des Points d'eau
         </h1>
         <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>
-          Suivi des inspections et tests des bornes sèches
+          Suivi des inspections et tests des points d'eau (bornes, piscines, lacs, etc.)
         </p>
       </div>
 
-      {/* Toggle Carte/Liste */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', background: 'white', borderRadius: '8px', padding: '0.25rem', width: 'fit-content', border: '1px solid #e5e7eb' }}>
-        <button
-          onClick={() => setCurrentView('carte')}
+      {/* Filtre par type + Toggle Carte/Liste */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+        {/* Filtre par type */}
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
           style={{
             padding: '0.5rem 1rem',
-            background: currentView === 'carte' ? '#dc2626' : 'transparent',
-            color: currentView === 'carte' ? 'white' : '#6b7280',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
             fontSize: '0.875rem',
-            transition: 'all 0.2s'
+            background: 'white'
           }}
         >
-          🗺️ Carte
-        </button>
-        <button
-          onClick={() => setCurrentView('liste')}
-          style={{
-            padding: '0.5rem 1rem',
-            background: currentView === 'liste' ? '#dc2626' : 'transparent',
-            color: currentView === 'liste' ? 'white' : '#6b7280',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.875rem',
-            transition: 'all 0.2s'
-          }}
-        >
-          📋 Liste
-        </button>
+          <option value="all">Tous les types</option>
+          <option value="borne_seche">🔥 Bornes sèches</option>
+          <option value="borne_fontaine">🚰 Bornes fontaines</option>
+          <option value="borne_incendie">🔴 Bornes incendie</option>
+          <option value="piscine">🏊 Piscines</option>
+          <option value="lac">🌊 Lacs</option>
+          <option value="riviere">🏞️ Rivières</option>
+          <option value="point_statique">💧 Points statiques</option>
+        </select>
+
+        {/* Toggle Vue */}
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'white', borderRadius: '8px', padding: '0.25rem', border: '1px solid #e5e7eb' }}>
+          <button
+            onClick={() => setCurrentView('carte')}
+            style={{
+              padding: '0.5rem 1rem',
+              background: currentView === 'carte' ? '#3b82f6' : 'transparent',
+              color: currentView === 'carte' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            🗺️ Carte
+          </button>
+          <button
+            onClick={() => setCurrentView('liste')}
+            style={{
+              padding: '0.5rem 1rem',
+              background: currentView === 'liste' ? '#3b82f6' : 'transparent',
+              color: currentView === 'liste' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            📋 Liste
+          </button>
+        </div>
       </div>
 
       {/* Statistiques */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#10b981', marginBottom: '0.25rem' }}>
-            {bornesSeches.filter(b => getInspectionColor(b) === '#10b981').length}
+            {filteredPointsEau.filter(b => getInspectionColor(b) === '#10b981').length}
           </div>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✓ Inspectées</div>
         </div>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#f59e0b', marginBottom: '0.25rem' }}>
-            {bornesSeches.filter(b => getInspectionColor(b) === '#f59e0b').length}
+            {filteredPointsEau.filter(b => getInspectionColor(b) === '#f59e0b').length}
           </div>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>⚠ À refaire</div>
         </div>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ef4444', marginBottom: '0.25rem' }}>
-            {bornesSeches.filter(b => getInspectionColor(b) === '#ef4444').length}
+            {filteredPointsEau.filter(b => getInspectionColor(b) === '#ef4444').length}
           </div>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>✗ Non/Expirées</div>
         </div>
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.25rem' }}>
-            {bornesSeches.length}
+            {filteredPointsEau.length}
           </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total bornes</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total points d'eau</div>
         </div>
       </div>
 
