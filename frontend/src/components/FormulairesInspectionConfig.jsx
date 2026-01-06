@@ -1931,7 +1931,6 @@ const FormulairesInspectionConfig = () => {
                                         onChange={(e) => updateItem(sectionIndex, itemIndex, 'alertes.message', e.target.value)}
                                         style={{ fontSize: 'clamp(0.7rem, 2.5vw, 0.8rem)', width: '100%', padding: 'clamp(0.35rem, 1.5vw, 0.5rem)' }}
                                       />
-                                      />
                                     </div>
                                   </div>
                                 </div>
