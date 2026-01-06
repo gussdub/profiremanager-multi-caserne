@@ -458,6 +458,65 @@ const InspectionUnifieeModal = ({
           </div>
         );
       
+      case 'radio':
+        return (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {(item.options || []).map((opt, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleReponseChange(item.id, opt)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  border: value === opt ? 'none' : '1px solid #d1d5db',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: '500',
+                  backgroundColor: value === opt ? '#3b82f6' : 'white',
+                  color: value === opt ? 'white' : '#374151'
+                }}
+              >
+                {value === opt ? '● ' : '○ '}{opt}
+              </button>
+            ))}
+          </div>
+        );
+      
+      case 'checkbox':
+        const selectedValues = Array.isArray(value) ? value : [];
+        return (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {(item.options || []).map((opt, idx) => {
+              const isSelected = selectedValues.includes(opt);
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const newValues = isSelected 
+                      ? selectedValues.filter(v => v !== opt)
+                      : [...selectedValues, opt];
+                    handleReponseChange(item.id, newValues);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: isSelected ? 'none' : '1px solid #d1d5db',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: '500',
+                    backgroundColor: isSelected ? '#10b981' : 'white',
+                    color: isSelected ? 'white' : '#374151'
+                  }}
+                >
+                  {isSelected ? '☑ ' : '☐ '}{opt}
+                </button>
+              );
+            })}
+          </div>
+        );
+      
       case 'nombre':
         return (
           <Input
