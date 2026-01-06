@@ -1537,11 +1537,25 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               <div className="inspections-section" style={{marginTop: '2rem'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem'}}>
                   <h3>📋 Historique des inspections ({inspections.length})</h3>
-                  <Button onClick={() => setShowInspectionModal(true)}>
-                    ➕ Nouvelle inspection
-                  </Button>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {formulairesEPI.length > 0 && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedFormulaireEPI(formulairesEPI[0]);
+                          setShowUnifiedInspectionModal(true);
+                        }}
+                        style={{ borderColor: '#3B82F6', color: '#3B82F6' }}
+                      >
+                        📝 Inspection formulaire
+                      </Button>
+                    )}
+                    <Button onClick={() => setShowInspectionModal(true)}>
+                      ➕ Inspection NFPA 1851
+                    </Button>
+                  </div>
                 </div>
                 
                 {inspections.length > 0 ? (
