@@ -64,6 +64,16 @@ const MaterielEquipementsModule = ({ user }) => {
     return false;
   };
 
+  // Vérifier si un équipement a un formulaire d'inspection assigné
+  const hasInspectionForm = (equipement) => {
+    return !!equipement.modele_inspection_id;
+  };
+
+  // Vérifier si un équipement est inspectable (APRIA ou a un formulaire assigné)
+  const isInspectable = (equipement) => {
+    return isAPRIA(equipement) || hasInspectionForm(equipement);
+  };
+
   // Charger les données
   const fetchData = useCallback(async () => {
     if (!tenantSlug) return;
@@ -105,13 +115,13 @@ const MaterielEquipementsModule = ({ user }) => {
   };
 
   // Filtrer les équipements
-  // Pour les employés (pompiers) : uniquement les APRIA
+  // Pour les employés (pompiers) : uniquement les équipements inspectables (APRIA ou avec formulaire)
   // Pour admin/superviseur : tout l'inventaire
   const isEmploye = user?.role === 'employe';
   
   const equipementsFiltres = equipements.filter(e => {
-    // Si c'est un employé, ne montrer que les APRIA
-    if (isEmploye && !isAPRIA(e)) return false;
+    // Si c'est un employé, ne montrer que les équipements inspectables
+    if (isEmploye && !isInspectable(e)) return false;
     
     // Filtre par KPI (cartes cliquables)
     if (filtreKPI === 'alertes') {
