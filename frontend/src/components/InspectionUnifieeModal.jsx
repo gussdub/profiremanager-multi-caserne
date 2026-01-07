@@ -1171,200 +1171,151 @@ const InspectionUnifieeModal = ({
                         ← Précédent
                       </button>
                     </div>
-                <span style={{ fontSize: '1.5rem' }}>{section.icone || '📋'}</span>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                  {section.titre || section.nom}
-                </h4>
-              </div>
 
-              {/* Photos de référence de la section */}
-              {section.photos && section.photos.length > 0 && (
-                <div style={{ 
-                  marginBottom: '0.75rem', 
-                  padding: '0.5rem',
-                  backgroundColor: '#fefce8',
-                  borderRadius: '8px',
-                  border: '1px solid #fef08a'
-                }}>
-                  <div style={{ fontSize: '0.75rem', color: '#854d0e', marginBottom: '0.5rem' }}>
-                    📷 Photos de référence :
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {section.photos.map((photo, photoIdx) => (
-                      <img
-                        key={photoIdx}
-                        src={photo.data || photo}
-                        alt={`Référence ${photoIdx + 1}`}
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          objectFit: 'cover',
-                          borderRadius: '6px',
-                          border: '2px solid #fef08a',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => window.open(photo.data || photo, '_blank')}
+                    {/* Remarques */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
+                        📝 Remarques (optionnel)
+                      </Label>
+                      <Textarea
+                        value={remarques}
+                        onChange={(e) => setRemarques(e.target.value)}
+                        placeholder="Ajoutez des remarques si nécessaire..."
+                        rows={3}
+                        style={{ width: '100%', fontSize: '16px', borderRadius: '8px' }}
                       />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {section.items?.map((item, itemIndex) => (
-                  <div 
-                    key={item.id || itemIndex}
-                    style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      border: '1px solid #e5e7eb'
-                    }}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      flexWrap: 'wrap'
-                    }}>
-                      <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
-                        {item.label || item.nom}
-                        {item.obligatoire && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
-                      </span>
-                      {renderField(item, sectionIndex)}
                     </div>
-                    {/* Zone de photo en réponse si activée */}
-                    {renderPhotoResponse(item)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
 
-          {/* Remarques */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-              📝 Remarques (optionnel)
-            </Label>
-            <Textarea
-              value={remarques}
-              onChange={(e) => setRemarques(e.target.value)}
-              placeholder="Ajoutez des remarques si nécessaire..."
-              rows={3}
-              style={{ width: '100%', fontSize: '16px', borderRadius: '8px' }}
-            />
-          </div>
-
-          {/* Liste des alertes détectées */}
-          {collectAlertes().length > 0 && (
-            <div style={{
-              padding: '1rem',
-              borderRadius: '12px',
-              backgroundColor: '#fef3c7',
-              border: '2px solid #fcd34d',
-              marginBottom: '1rem'
-            }}>
-              <div style={{ 
-                fontWeight: '700', 
-                fontSize: '0.95rem',
-                color: '#92400e',
-                marginBottom: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}>
-                🔔 Alertes détectées ({collectAlertes().length})
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#78350f' }}>
-                Ces alertes seront envoyées au gestionnaire:
-              </div>
-              <ul style={{ 
-                margin: '0.5rem 0 0 0', 
-                paddingLeft: '1.25rem',
-                fontSize: '0.85rem',
-                color: '#92400e'
-              }}>
-                {collectAlertes().map((alerte, idx) => (
-                  <li key={idx} style={{ marginBottom: '0.25rem' }}>
-                    <strong>{alerte.item_label}</strong>: {alerte.type}
-                    {alerte.message && alerte.message !== `Alerte: ${alerte.item_label} - ${alerte.type}` && (
-                      <span style={{ fontStyle: 'italic' }}> - {alerte.message}</span>
+                    {/* Liste des alertes détectées */}
+                    {collectAlertes().length > 0 && (
+                      <div style={{
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        backgroundColor: '#fef3c7',
+                        border: '2px solid #fcd34d',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{ 
+                          fontWeight: '700', 
+                          fontSize: '0.95rem',
+                          color: '#92400e',
+                          marginBottom: '0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          🔔 Alertes détectées ({collectAlertes().length})
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#78350f' }}>
+                          Ces alertes seront envoyées au gestionnaire:
+                        </div>
+                        <ul style={{ 
+                          margin: '0.5rem 0 0 0', 
+                          paddingLeft: '1.25rem',
+                          fontSize: '0.85rem',
+                          color: '#92400e'
+                        }}>
+                          {collectAlertes().map((alerte, idx) => (
+                            <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                              <strong>{alerte.item_label}</strong>: {alerte.type}
+                              {alerte.message && alerte.message !== `Alerte: ${alerte.item_label} - ${alerte.type}` && (
+                                <span style={{ fontStyle: 'italic' }}> - {alerte.message}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
-          {/* Résultat global */}
-          <div style={{
-            padding: '1rem',
-            borderRadius: '12px',
-            backgroundColor: conformeGlobal ? '#dcfce7' : '#fee2e2',
-            border: `2px solid ${conformeGlobal ? '#86efac' : '#fca5a5'}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            marginBottom: '1rem'
-          }}>
-            <span style={{ fontSize: '2rem' }}>{conformeGlobal ? '✅' : '⚠️'}</span>
-            <div>
-              <div style={{ 
-                fontWeight: '700', 
-                fontSize: '1.1rem',
-                color: conformeGlobal ? '#166534' : '#991b1b'
-              }}>
-                {conformeGlobal ? 'CONFORME' : 'NON CONFORME'}
-              </div>
-              <div style={{ fontSize: '0.85rem', color: conformeGlobal ? '#15803d' : '#b91c1c' }}>
-                {conformeGlobal 
-                  ? 'Tous les critères sont validés' 
-                  : `${collectAlertes().length} alerte(s) seront envoyées au gestionnaire`}
-              </div>
-            </div>
-          </div>
+                    {/* Résultat global */}
+                    <div style={{
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      backgroundColor: conformeGlobal ? '#dcfce7' : '#fee2e2',
+                      border: `2px solid ${conformeGlobal ? '#86efac' : '#fca5a5'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{ fontSize: '2rem' }}>{conformeGlobal ? '✅' : '⚠️'}</span>
+                      <div>
+                        <div style={{ 
+                          fontWeight: '700', 
+                          fontSize: '1.1rem',
+                          color: conformeGlobal ? '#166534' : '#991b1b'
+                        }}>
+                          {conformeGlobal ? 'CONFORME' : 'NON CONFORME'}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: conformeGlobal ? '#15803d' : '#b91c1c' }}>
+                          {conformeGlobal 
+                            ? 'Tous les critères sont validés' 
+                            : `${collectAlertes().length} alerte(s) seront envoyées au gestionnaire`}
+                        </div>
+                      </div>
+                    </div>
 
-          {/* Option demande de remplacement si non conforme */}
-          {!conformeGlobal && (
-            <div style={{
-              padding: '1rem',
-              backgroundColor: '#fff7ed',
-              border: '1px solid #fed7aa',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={demanderRemplacement}
-                  onChange={(e) => setDemanderRemplacement(e.target.checked)}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <div>
-                  <div style={{ fontWeight: '600', color: '#c2410c' }}>
-                    🔄 Demander un remplacement
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#ea580c' }}>
-                    Une demande sera créée automatiquement
-                  </div>
-                </div>
-              </label>
-            </div>
-          )}
+                    {/* Option demande de remplacement si non conforme */}
+                    {!conformeGlobal && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        borderRadius: '8px',
+                        marginBottom: '1rem'
+                      }}>
+                        <label style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.75rem',
+                          cursor: 'pointer'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={demanderRemplacement}
+                            onChange={(e) => setDemanderRemplacement(e.target.checked)}
+                            style={{ width: '20px', height: '20px' }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#c2410c' }}>
+                              🔄 Demander un remplacement
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: '#ea580c' }}>
+                              Une demande sera créée automatiquement
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    )}
+
+                    {/* Bouton Valider final */}
+                    <Button 
+                      onClick={handleSubmit} 
+                      style={{ 
+                        width: '100%', 
+                        padding: '1rem',
+                        backgroundColor: '#10b981', 
+                        color: 'white',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
+                    </Button>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
 
-        {/* Footer */}
+        {/* Footer - Bouton Annuler uniquement */}
         <div style={{ 
-          padding: '1rem', 
+          padding: '0.75rem 1rem', 
           borderTop: '1px solid #e5e7eb', 
           display: 'flex', 
-          gap: '0.75rem',
+          justifyContent: 'center',
           flexShrink: 0,
           backgroundColor: '#fafafa',
           borderRadius: '0 0 16px 16px'
@@ -1372,17 +1323,10 @@ const InspectionUnifieeModal = ({
           <Button 
             variant="outline" 
             onClick={onClose} 
-            style={{ flex: 1 }}
+            style={{ padding: '0.625rem 1.5rem' }}
             disabled={saving}
           >
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            style={{ flex: 1, backgroundColor: '#3B82F6', color: 'white' }}
-            disabled={saving}
-          >
-            {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            ✕ Annuler l'inspection
           </Button>
         </div>
       </div>
