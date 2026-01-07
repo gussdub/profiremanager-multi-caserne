@@ -579,7 +579,10 @@ const EquipementsTab = ({
   onMaintenance,
   onInspectionAPRIA,
   onHistoriqueAPRIA,
+  onInspectionEquipement,
+  onHistoriqueEquipement,
   isAPRIA,
+  hasInspectionForm,
   isEmploye,
   user
 }) => {
