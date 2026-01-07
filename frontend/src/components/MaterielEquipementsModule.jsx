@@ -8,6 +8,8 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import InspectionAPRIAModal from './InspectionAPRIAModal';
 import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
+import InspectionUnifieeModal from './InspectionUnifieeModal';
+import HistoriqueInspectionsUnifiees from './HistoriqueInspectionsUnifiees';
 
 // ===== Composant principal =====
 const MaterielEquipementsModule = ({ user }) => {
@@ -25,9 +27,12 @@ const MaterielEquipementsModule = ({ user }) => {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showInspectionAPRIAModal, setShowInspectionAPRIAModal] = useState(false);
   const [showHistoriqueAPRIAModal, setShowHistoriqueAPRIAModal] = useState(false);
+  const [showInspectionEquipementModal, setShowInspectionEquipementModal] = useState(false);
+  const [showHistoriqueEquipementModal, setShowHistoriqueEquipementModal] = useState(false);
   const [selectedCategorie, setSelectedCategorie] = useState(null);
   const [selectedEquipement, setSelectedEquipement] = useState(null);
   const [selectedEquipementAPRIA, setSelectedEquipementAPRIA] = useState(null);
+  const [selectedEquipementInspection, setSelectedEquipementInspection] = useState(null);
   const [modalMode, setModalMode] = useState('create');
   
   // Filtres
