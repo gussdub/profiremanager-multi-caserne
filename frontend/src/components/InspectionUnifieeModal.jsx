@@ -23,6 +23,7 @@ const InspectionUnifieeModal = ({
   const [remarques, setRemarques] = useState('');
   const [demanderRemplacement, setDemanderRemplacement] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
   const fileInputRefs = useRef({});
 
   // Initialiser les réponses selon le formulaire
