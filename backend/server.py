@@ -32442,6 +32442,89 @@ async def get_inspections_by_asset(
     
     return inspections
 
+@api_router.post("/{tenant_slug}/formulaires-inspection/migrer-categories")
+async def migrer_categories_formulaires(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Migrer les catégories des formulaires vers les 4 catégories principales"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superadmin']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Mapping des anciennes catégories vers les nouvelles
+    category_mapping = {
+        # EPI - toutes les sous-catégories EPI vers 'epi'
+        'epi_bunker': 'epi',
+        'epi_bottes': 'epi',
+        'epi_casque': 'epi',
+        'epi_gants': 'epi',
+        'epi_cagoule': 'epi',
+        # Tout ce qui commence par 'epi_' va vers 'epi'
+        
+        # Équipements - toutes les sous-catégories vers 'equipement'
+        'APRIA': 'equipement',
+        'Bouteilles APRIA': 'equipement',
+        'Détecteurs': 'equipement',
+        'Extincteurs': 'equipement',
+        
+        # Points d'eau
+        'borne_seche': 'point_eau',
+        'borne_fontaine': 'point_eau',
+        'point_statique': 'point_eau',
+    }
+    
+    # Récupérer tous les formulaires du tenant
+    formulaires = await db.formulaires_inspection.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    updated_count = 0
+    
+    for formulaire in formulaires:
+        old_categories = formulaire.get('categorie_ids', [])
+        new_categories = set()
+        
+        for cat in old_categories:
+            # Vérifier si c'est une catégorie à mapper
+            if cat in category_mapping:
+                new_categories.add(category_mapping[cat])
+            elif cat.startswith('epi_'):
+                new_categories.add('epi')
+            elif cat in ['vehicule', 'point_eau', 'equipement', 'epi']:
+                # Déjà une catégorie principale, garder
+                new_categories.add(cat)
+            else:
+                # Pour les autres catégories inconnues, essayer de deviner
+                cat_lower = cat.lower()
+                if 'epi' in cat_lower or 'bunker' in cat_lower or 'casque' in cat_lower or 'botte' in cat_lower or 'gant' in cat_lower or 'cagoule' in cat_lower:
+                    new_categories.add('epi')
+                elif 'apria' in cat_lower or 'detecteur' in cat_lower or 'extincteur' in cat_lower or 'bouteille' in cat_lower:
+                    new_categories.add('equipement')
+                elif 'borne' in cat_lower or 'eau' in cat_lower or 'piscine' in cat_lower or 'lac' in cat_lower:
+                    new_categories.add('point_eau')
+                elif 'vehicule' in cat_lower or 'camion' in cat_lower or 'auto' in cat_lower:
+                    new_categories.add('vehicule')
+                # Sinon, on ne garde pas la catégorie
+        
+        new_categories_list = list(new_categories)
+        
+        # Mettre à jour si les catégories ont changé
+        if set(old_categories) != set(new_categories_list):
+            await db.formulaires_inspection.update_one(
+                {"id": formulaire['id'], "tenant_id": tenant.id},
+                {"$set": {"categorie_ids": new_categories_list}}
+            )
+            updated_count += 1
+    
+    return {
+        "message": f"Migration des catégories terminée",
+        "formulaires_mis_a_jour": updated_count,
+        "total_formulaires": len(formulaires)
+    }
+
 @api_router.post("/{tenant_slug}/formulaires-inspection/migrer-existants")
 async def migrer_formulaires_existants(
     tenant_slug: str,
