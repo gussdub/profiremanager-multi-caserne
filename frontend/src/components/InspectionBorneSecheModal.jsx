@@ -245,42 +245,44 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         // Charger tous les formulaires du système unifié
         const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
         
-        // Filtrer pour les formulaires qui concernent les points d'eau (nouvelle catégorie)
-        const pointEauFormulaires = (allFormulaires || []).filter(f => 
-          f.actif !== false &&
-          (f.categorie_ids?.includes('point_eau') || f.categorie_ids?.includes('borne_seche'))
-        );
+        console.log('Borne reçue:', borne);
+        console.log('ID du formulaire assigné:', borne.modele_inspection_assigne_id);
+        console.log('Tous les formulaires chargés:', allFormulaires?.length);
         
-        // Convertir vers le format attendu par le composant existant
-        const modelesConverts = pointEauFormulaires.map(f => ({
+        // Fonction pour convertir un formulaire vers le format attendu
+        const convertFormulaire = (f) => ({
           id: f.id,
           nom: f.nom,
           description: f.description || '',
-          est_actif: f.actif !== false,
+          est_actif: f.est_actif !== false,
           sections: (f.sections || []).map((s, idx) => ({
             id: s.id || `section_${idx}`,
-            titre: s.nom,
+            titre: s.titre || s.nom,
             description: '',
-            type_champ: s.items?.[0]?.type || 'radio',
-            options: s.items?.[0]?.options?.map(opt => ({ 
-              label: opt, 
-              declencherAlerte: false 
-            })) || [
-              { label: 'Conforme', declencherAlerte: false },
-              { label: 'Non conforme', declencherAlerte: true }
-            ],
-            items: s.items?.map((item, itemIdx) => ({
+            items: (s.items || []).map((item, itemIdx) => ({
               id: item.id || `item_${idx}_${itemIdx}`,
-              nom: item.label,
+              nom: item.label || item.nom,
               type: item.type,
-              options: item.options,
+              options: item.options || [],
               obligatoire: item.obligatoire || false,
-              ordre: itemIdx,
-              alertes: item.alertes
-            })) || [],
-            ordre: idx
+              ordre: item.ordre || itemIdx,
+              alertes: item.alertes,
+              config: item.config
+            })),
+            ordre: s.ordre || idx
           }))
-        }));
+        });
+        
+        // Filtrer pour les formulaires qui concernent les points d'eau (nouvelle catégorie)
+        const pointEauFormulaires = (allFormulaires || []).filter(f => 
+          f.est_actif !== false &&
+          (f.categorie_ids?.includes('point_eau') || f.categorie_ids?.includes('borne_seche'))
+        );
+        
+        console.log('Formulaires point_eau filtrés:', pointEauFormulaires?.length);
+        
+        // Convertir vers le format attendu par le composant existant
+        const modelesConverts = pointEauFormulaires.map(convertFormulaire);
         
         if (canSelectModele) {
           setModelesDisponibles(modelesConverts);
@@ -291,44 +293,24 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         
         // PRIORITÉ 1: Si le point d'eau a un formulaire assigné, le charger directement
         if (borne.modele_inspection_assigne_id) {
+          console.log('Recherche du formulaire assigné:', borne.modele_inspection_assigne_id);
+          
           // D'abord chercher dans les formulaires convertis
           modeleToUse = modelesConverts.find(m => m.id === borne.modele_inspection_assigne_id);
+          console.log('Trouvé dans modelesConverts:', !!modeleToUse);
           
-          // Si pas trouvé dans les formulaires convertis, charger le formulaire directement
+          // Si pas trouvé dans les formulaires convertis, chercher dans tous et convertir
           if (!modeleToUse) {
             const assignedFormulaire = (allFormulaires || []).find(f => f.id === borne.modele_inspection_assigne_id);
+            console.log('Trouvé dans allFormulaires:', !!assignedFormulaire);
             if (assignedFormulaire) {
-              modeleToUse = {
-                id: assignedFormulaire.id,
-                nom: assignedFormulaire.nom,
-                description: assignedFormulaire.description || '',
-                est_actif: assignedFormulaire.actif !== false,
-                sections: (assignedFormulaire.sections || []).map((s, idx) => ({
-                  id: s.id || `section_${idx}`,
-                  titre: s.nom,
-                  description: '',
-                  type_champ: s.items?.[0]?.type || 'radio',
-                  options: s.items?.[0]?.options?.map(opt => ({ 
-                    label: opt, 
-                    declencherAlerte: false 
-                  })) || [],
-                  items: s.items?.map((item, itemIdx) => ({
-                    id: item.id || `item_${idx}_${itemIdx}`,
-                    nom: item.label,
-                    type: item.type,
-                    options: item.options,
-                    obligatoire: item.obligatoire || false,
-                    ordre: itemIdx,
-                    alertes: item.alertes
-                  })) || [],
-                  ordre: idx
-                }))
-              };
+              modeleToUse = convertFormulaire(assignedFormulaire);
             }
           }
           
           if (modeleToUse) {
             setSelectedModeleId(borne.modele_inspection_assigne_id);
+            console.log('Modèle à utiliser:', modeleToUse.nom);
           }
         }
         
@@ -336,12 +318,15 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         if (!modeleToUse && modelesConverts.length > 0) {
           modeleToUse = modelesConverts.find(m => m.est_actif) || modelesConverts[0];
           setSelectedModeleId(modeleToUse?.id);
+          console.log('Fallback - premier modèle actif:', modeleToUse?.nom);
         }
         
         if (modeleToUse) {
+          console.log('Modèle final sélectionné:', modeleToUse.nom, 'avec', modeleToUse.sections?.length, 'sections');
           setModele(modeleToUse);
           initializeReponses(modeleToUse);
         } else {
+          console.log('Aucun modèle trouvé, tentative fallback ancien système');
           // Fallback: essayer l'ancien système si aucun formulaire unifié n'est trouvé
           try {
             const oldModele = await apiGet(tenantSlug, '/bornes-seches/modeles-inspection/actif');
