@@ -39,7 +39,11 @@ const ModuleEPI = ({ user }) => {
     taille: '',
     user_id: '',
     statut: 'En service',
-    notes: ''
+    notes: '',
+    // Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: '',
+    formulaire_routine_id: '',
+    formulaire_avancee_id: ''
   });
   
   // États inspections
