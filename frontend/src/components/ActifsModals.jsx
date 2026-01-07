@@ -102,91 +102,165 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
   );
 };
 
-const VehiculeForm = ({ formData, handleChange }) => (
-  <>
-    <FormField
-      label="Nom du véhicule *"
-      name="nom"
-      value={formData.nom || ''}
-      onChange={handleChange}
-      required
-      placeholder="Ex: Autopompe 391, Citerne 301"
-    />
+const VehiculeForm = ({ formData, handleChange, setFormData }) => {
+  const { tenantSlug } = useTenant();
+  const [formulairesDisponibles, setFormulairesDisponibles] = useState([]);
+  const [loadingFormulaires, setLoadingFormulaires] = useState(false);
 
-    <FormField
-      label="Type de véhicule"
-      name="type_vehicule"
-      type="select"
-      value={formData.type_vehicule || 'Autopompe'}
-      onChange={handleChange}
-      options={[
-        { value: 'Autopompe', label: 'Autopompe' },
-        { value: 'Citerne', label: 'Citerne' },
-        { value: 'Échelle', label: 'Échelle' },
-        { value: 'Pick-up', label: 'Pick-up' },
-        { value: 'VUS', label: 'VUS' },
-        { value: 'Autre', label: 'Autre' }
-      ]}
-    />
+  // Charger les formulaires d'inspection avec la catégorie "vehicule"
+  useEffect(() => {
+    const fetchFormulaires = async () => {
+      if (!tenantSlug) return;
+      try {
+        setLoadingFormulaires(true);
+        const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+        // Filtrer les formulaires ayant la catégorie "vehicule"
+        const vehiculeFormulaires = (allFormulaires || []).filter(f => 
+          f.est_actif !== false && f.categorie_ids?.includes('vehicule')
+        );
+        setFormulairesDisponibles(vehiculeFormulaires);
+      } catch (error) {
+        console.error('Erreur chargement formulaires:', error);
+      } finally {
+        setLoadingFormulaires(false);
+      }
+    };
+    fetchFormulaires();
+  }, [tenantSlug]);
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-      <FormField
-        label="Marque"
-        name="marque"
-        value={formData.marque || ''}
-        onChange={handleChange}
-        placeholder="Ex: Freightliner, Ford"
-      />
-      <FormField
-        label="Modèle"
-        name="modele"
-        value={formData.modele || ''}
-        onChange={handleChange}
-        placeholder="Ex: M2 106, F-550"
-      />
-    </div>
+  const handleFormulaireChange = (e) => {
+    const value = e.target.value;
+    if (setFormData) {
+      setFormData(prev => ({ ...prev, formulaire_inspection_id: value }));
+    } else {
+      handleChange(e);
+    }
+  };
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+  return (
+    <>
       <FormField
-        label="Année"
-        name="annee"
-        type="number"
-        value={formData.annee || ''}
+        label="Nom du véhicule *"
+        name="nom"
+        value={formData.nom || ''}
         onChange={handleChange}
-        placeholder="2020"
+        required
+        placeholder="Ex: Autopompe 391, Citerne 301"
       />
+
       <FormField
-        label="Statut"
-        name="statut"
+        label="Type de véhicule"
+        name="type_vehicule"
         type="select"
-        value={formData.statut || 'actif'}
+        value={formData.type_vehicule || 'Autopompe'}
         onChange={handleChange}
         options={[
-          { value: 'actif', label: 'En service' },
-          { value: 'maintenance', label: 'En maintenance' },
-          { value: 'retraite', label: 'Retraité' }
+          { value: 'Autopompe', label: 'Autopompe' },
+          { value: 'Citerne', label: 'Citerne' },
+          { value: 'Échelle', label: 'Échelle' },
+          { value: 'Pick-up', label: 'Pick-up' },
+          { value: 'VUS', label: 'VUS' },
+          { value: 'Autre', label: 'Autre' }
         ]}
       />
-    </div>
 
-    <FormField
-      label="VIN (Numéro d'identification)"
-      name="vin"
-      value={formData.vin || ''}
-      onChange={handleChange}
-      placeholder="17 caractères"
-    />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <FormField
+          label="Marque"
+          name="marque"
+          value={formData.marque || ''}
+          onChange={handleChange}
+          placeholder="Ex: Freightliner, Ford"
+        />
+        <FormField
+          label="Modèle"
+          name="modele"
+          value={formData.modele || ''}
+          onChange={handleChange}
+          placeholder="Ex: M2 106, F-550"
+        />
+      </div>
 
-    <FormField
-      label="Notes"
-      name="notes"
-      type="textarea"
-      value={formData.notes || ''}
-      onChange={handleChange}
-      rows={3}
-    />
-  </>
-);
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <FormField
+          label="Année"
+          name="annee"
+          type="number"
+          value={formData.annee || ''}
+          onChange={handleChange}
+          placeholder="2020"
+        />
+        <FormField
+          label="Statut"
+          name="statut"
+          type="select"
+          value={formData.statut || 'actif'}
+          onChange={handleChange}
+          options={[
+            { value: 'actif', label: 'En service' },
+            { value: 'maintenance', label: 'En maintenance' },
+            { value: 'retraite', label: 'Retraité' }
+          ]}
+        />
+      </div>
+
+      <FormField
+        label="VIN (Numéro d'identification)"
+        name="vin"
+        value={formData.vin || ''}
+        onChange={handleChange}
+        placeholder="17 caractères"
+      />
+
+      {/* Sélection du formulaire d'inspection */}
+      <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #86efac' }}>
+        <Label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#166534' }}>
+          📋 Formulaire d'inventaire assigné
+        </Label>
+        <select
+          name="formulaire_inspection_id"
+          value={formData.formulaire_inspection_id || ''}
+          onChange={handleFormulaireChange}
+          style={{
+            width: '100%',
+            padding: '12px',
+            border: '1px solid #86efac',
+            borderRadius: '8px',
+            fontSize: '15px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="">-- Sélectionner un formulaire --</option>
+          {formulairesDisponibles.map(f => (
+            <option key={f.id} value={f.id}>{f.nom}</option>
+          ))}
+        </select>
+        {loadingFormulaires && (
+          <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#6b7280' }}>Chargement...</p>
+        )}
+        {!loadingFormulaires && formulairesDisponibles.length === 0 && (
+          <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#dc2626' }}>
+            ⚠️ Aucun formulaire avec la catégorie "Véhicules" n'a été trouvé. Créez-en un dans Paramètres → Formulaires.
+          </p>
+        )}
+        {formulairesDisponibles.length > 0 && (
+          <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#166534' }}>
+            💡 Ce formulaire sera utilisé pour l'inventaire de ce véhicule.
+          </p>
+        )}
+      </div>
+
+      <FormField
+        label="Notes"
+        name="notes"
+        type="textarea"
+        value={formData.notes || ''}
+        onChange={handleChange}
+        rows={3}
+      />
+    </>
+  );
+};
 
 const BorneForm = ({ formData, handleChange }) => (
   <>
