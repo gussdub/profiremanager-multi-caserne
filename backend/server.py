@@ -9508,6 +9508,10 @@ class EPIUpdate(BaseModel):
     user_id: Optional[str] = None
     statut: Optional[str] = None
     notes: Optional[str] = None
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: Optional[str] = None
+    formulaire_routine_id: Optional[str] = None
+    formulaire_avancee_id: Optional[str] = None
 
 class InspectionEPI(BaseModel):
     """Modèle pour les 3 types d'inspections NFPA 1851"""
