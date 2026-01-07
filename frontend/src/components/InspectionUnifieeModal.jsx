@@ -980,24 +980,197 @@ const InspectionUnifieeModal = ({
             </div>
           </div>
 
-          {/* Sections du formulaire */}
-          {formulaire.sections?.map((section, sectionIndex) => (
-            <div 
-              key={section.id || sectionIndex}
-              style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                backgroundColor: '#fafafa',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb'
-              }}
-            >
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem',
-                marginBottom: '1rem'
-              }}>
+          {/* Pagination - Indicateur de progression */}
+          {(() => {
+            const sections = formulaire.sections || [];
+            const totalSections = sections.length;
+            const sectionCourante = sections[sectionActuelle];
+            const estPremiereSection = sectionActuelle === 0;
+            const estDerniereSection = sectionActuelle === totalSections - 1;
+
+            if (!sectionCourante) return <p>Aucune section trouvée.</p>;
+
+            return (
+              <>
+                {/* Barre de progression */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      Section {sectionActuelle + 1} / {totalSections}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {Math.round(((sectionActuelle + 1) / totalSections) * 100)}%
+                    </span>
+                  </div>
+                  <div style={{
+                    height: '4px',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '2px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      backgroundColor: '#3b82f6',
+                      width: `${((sectionActuelle + 1) / totalSections) * 100}%`,
+                      transition: 'width 0.3s'
+                    }}></div>
+                  </div>
+                </div>
+
+                {/* Section courante uniquement */}
+                <div 
+                  style={{
+                    marginBottom: '1.5rem',
+                    padding: '1rem',
+                    backgroundColor: '#fafafa',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <span style={{ fontSize: '1.5rem' }}>{sectionCourante.icone || '📋'}</span>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+                      {sectionCourante.titre || sectionCourante.nom}
+                    </h4>
+                  </div>
+
+                  {/* Photos de référence de la section */}
+                  {sectionCourante.photos && sectionCourante.photos.length > 0 && (
+                    <div style={{ 
+                      marginBottom: '0.75rem', 
+                      padding: '0.5rem',
+                      backgroundColor: '#fefce8',
+                      borderRadius: '8px',
+                      border: '1px solid #fef08a'
+                    }}>
+                      <div style={{ fontSize: '0.75rem', color: '#854d0e', marginBottom: '0.5rem' }}>
+                        📷 Photos de référence :
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {sectionCourante.photos.map((photo, photoIdx) => (
+                          <img
+                            key={photoIdx}
+                            src={photo.data || photo}
+                            alt={`Référence ${photoIdx + 1}`}
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '6px',
+                              border: '2px solid #fef08a',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => window.open(photo.data || photo, '_blank')}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {sectionCourante.items?.map((item, itemIndex) => (
+                      <div 
+                        key={item.id || itemIndex}
+                        style={{
+                          padding: '0.75rem',
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb'
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
+                            {item.label || item.nom}
+                            {item.obligatoire && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+                          </span>
+                          {renderField(item, sectionActuelle)}
+                        </div>
+                        {/* Zone de photo en réponse si activée */}
+                        {renderPhotoResponse(item)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Boutons de navigation - Affichés sur toutes les pages sauf la dernière */}
+                {!estDerniereSection && (
+                  <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    justifyContent: 'space-between',
+                    marginBottom: '1rem'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                      disabled={estPremiereSection}
+                      style={{
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: estPremiereSection ? '#e5e7eb' : '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: estPremiereSection ? 'not-allowed' : 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      ← Précédent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSectionActuelle(sectionActuelle + 1)}
+                      style={{
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Suivant →
+                    </button>
+                  </div>
+                )}
+
+                {/* Dernière page : Remarques, Alertes, Résultat et boutons finaux */}
+                {estDerniereSection && (
+                  <>
+                    {/* Bouton Précédent seul en haut de la dernière page */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.5rem',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ← Précédent
+                      </button>
+                    </div>
                 <span style={{ fontSize: '1.5rem' }}>{section.icone || '📋'}</span>
                 <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
                   {section.titre || section.nom}
