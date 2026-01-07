@@ -11,6 +11,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   const [equipements, setEquipements] = useState([]);
   const [modeleActif, setModeleActif] = useState(null);
   const [noFormulaire, setNoFormulaire] = useState(false);
+  const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
   
   // Données du formulaire
   const [selectedEquipementId, setSelectedEquipementId] = useState(equipementPreselectionne?.id || '');
@@ -24,6 +25,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   useEffect(() => {
     if (isOpen) {
       setNoFormulaire(false);
+      setSectionActuelle(0); // Réinitialiser la pagination
       fetchEquipements();
       fetchModeleActif();
       if (equipementPreselectionne) {
