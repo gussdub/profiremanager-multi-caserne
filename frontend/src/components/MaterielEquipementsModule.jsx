@@ -1699,6 +1699,26 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
             </div>
           )}
           
+          {/* Formulaire d'inspection assigné (optionnel) */}
+          <div style={{ background: '#EFF6FF', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #BFDBFE' }}>
+            <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#1E40AF' }}>
+              📝 Formulaire d'inspection (optionnel)
+            </Label>
+            <p style={{ fontSize: '0.75rem', color: '#3B82F6', marginBottom: '0.75rem' }}>
+              Si un formulaire est assigné, un bouton "Inspecter" apparaîtra pour cet équipement.
+            </p>
+            <select
+              value={formData.modele_inspection_id}
+              onChange={(e) => setFormData({ ...formData, modele_inspection_id: e.target.value })}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #93C5FD', fontSize: '0.875rem', backgroundColor: 'white' }}
+            >
+              <option value="">Aucun formulaire (pas d'inspection)</option>
+              {formulaires.map(f => (
+                <option key={f.id} value={f.id}>📋 {f.nom}</option>
+              ))}
+            </select>
+          </div>
+          
           <div>
             <Label>Notes</Label>
             <textarea
