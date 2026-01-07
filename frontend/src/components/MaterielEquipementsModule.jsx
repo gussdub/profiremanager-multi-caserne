@@ -456,7 +456,7 @@ const MaterielEquipementsModule = ({ user }) => {
 
       {/* Modal Inspection Équipement (formulaire assigné) */}
       {showInspectionEquipementModal && selectedEquipementInspection && (
-        <InspectionUnifieeModal
+        <InspectionEquipementWrapper
           isOpen={showInspectionEquipementModal}
           onClose={() => {
             setShowInspectionEquipementModal(false);
@@ -464,13 +464,7 @@ const MaterielEquipementsModule = ({ user }) => {
           }}
           tenantSlug={tenantSlug}
           user={user}
-          asset={{
-            id: selectedEquipementInspection.id,
-            nom: selectedEquipementInspection.nom,
-            code_unique: selectedEquipementInspection.code_unique,
-            type: 'equipement'
-          }}
-          formulaireId={selectedEquipementInspection.modele_inspection_id}
+          equipement={selectedEquipementInspection}
           onSuccess={() => {
             setShowInspectionEquipementModal(false);
             setSelectedEquipementInspection(null);
