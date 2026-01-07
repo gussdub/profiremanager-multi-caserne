@@ -29,7 +29,7 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
       
       // 2. Charger les inspections du nouveau système unifié
       try {
-        const newData = await apiGet(tenantSlug, `/inspections-unifiees/asset/${borne.id}`);
+        const newData = await apiGet(tenantSlug, `/inspections-unifiees/borne_seche/${borne.id}`);
         if (newData && Array.isArray(newData)) {
           // Convertir vers le format d'affichage
           const converted = newData.map(i => ({
@@ -42,7 +42,7 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
           allInspections = [...allInspections, ...converted];
         }
       } catch (e) {
-        console.log('Nouveau système non disponible:', e);
+        console.log('Nouveau système unifié non disponible:', e);
       }
       
       // Trier par date décroissante
