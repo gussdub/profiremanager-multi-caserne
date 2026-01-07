@@ -640,12 +640,12 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
           )}
         </div>
 
-        {/* Footer fixe */}
+        {/* Footer fixe - Bouton Annuler uniquement */}
         <div style={{
-          padding: '1rem',
+          padding: '0.75rem 1rem',
           borderTop: '1px solid #e5e7eb',
           display: 'flex',
-          gap: '0.5rem',
+          justifyContent: 'center',
           flexShrink: 0,
           backgroundColor: 'white',
           borderRadius: '0 0 12px 12px'
@@ -654,22 +654,9 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
             variant="outline" 
             onClick={onClose} 
             disabled={saving}
-            style={{ flex: 1, fontSize: '0.9rem', padding: '0.75rem' }}
+            style={{ padding: '0.625rem 1.5rem', fontSize: '0.9rem' }}
           >
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={saving || !selectedEquipementId || noFormulaire}
-            style={{ 
-              flex: 1, 
-              backgroundColor: '#f97316', 
-              fontSize: '0.9rem', 
-              padding: '0.75rem',
-              fontWeight: '600'
-            }}
-          >
-            {saving ? '⏳...' : '💾 Enregistrer'}
+            ✕ Annuler l'inspection
           </Button>
         </div>
       </div>
