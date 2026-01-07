@@ -9439,6 +9439,10 @@ class EPI(BaseModel):
     user_id: Optional[str] = None  # Affecté à quel pompier
     statut: str = "En service"  # En service, En inspection, En réparation, Hors service, Retiré
     notes: str = ""
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: str = ""  # Formulaire pour inspection après utilisation
+    formulaire_routine_id: str = ""  # Formulaire pour inspection routine mensuelle
+    formulaire_avancee_id: str = ""  # Formulaire pour inspection avancée annuelle
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
