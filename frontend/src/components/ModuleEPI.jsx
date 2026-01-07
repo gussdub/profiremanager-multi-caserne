@@ -390,7 +390,10 @@ const ModuleEPI = ({ user }) => {
       taille: '',
       user_id: '',
       statut: 'En service',
-      notes: ''
+      notes: '',
+      formulaire_apres_usage_id: '',
+      formulaire_routine_id: '',
+      formulaire_avancee_id: ''
     });
     setSelectedEPI(null);
   };
@@ -411,7 +414,10 @@ const ModuleEPI = ({ user }) => {
       taille: epi.taille || '',
       user_id: epi.user_id || '',
       statut: epi.statut,
-      notes: epi.notes || ''
+      notes: epi.notes || '',
+      formulaire_apres_usage_id: epi.formulaire_apres_usage_id || '',
+      formulaire_routine_id: epi.formulaire_routine_id || '',
+      formulaire_avancee_id: epi.formulaire_avancee_id || ''
     });
     setShowEPIModal(true);
   };
