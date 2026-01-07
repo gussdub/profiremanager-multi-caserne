@@ -22,37 +22,48 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       // Charger les formulaires d'inventaire depuis le système unifié
       const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
       
-      // Filtrer pour les formulaires de type "inventaire" qui sont actifs
-      // et qui sont soit assignés à ce véhicule spécifique, soit à tous les véhicules (vehicule_ids vide)
-      const inventaireFormulaires = (allFormulaires || []).filter(f => 
-        f.type === 'inventaire' && 
-        f.actif !== false &&
-        (
-          !f.vehicule_ids || 
-          f.vehicule_ids.length === 0 || 
-          f.vehicule_ids.includes(vehicule.id)
-        )
-      );
-      
-      // Convertir le format unifié vers le format attendu par le composant
-      const modelesConverts = inventaireFormulaires.map(f => ({
+      // Fonction pour convertir le format unifié vers le format attendu
+      const convertFormulaire = (f) => ({
         id: f.id,
         nom: f.nom,
         description: f.description || '',
         sections: (f.sections || []).map(s => ({
-          titre: s.nom,
+          id: s.id,
+          titre: s.nom || s.titre,
           type_champ: s.items?.[0]?.type || 'checkbox',
           options: s.items?.[0]?.options?.map(opt => ({ label: opt, declencherAlerte: false })) || [],
           photo_url: '',
           items: s.items?.map(item => ({
             id: item.id || `${s.nom}_${item.label}`,
-            nom: item.label,
+            nom: item.label || item.nom,
+            type: item.type,
+            options: item.options || [],
             photo_url: '',
             obligatoire: item.obligatoire || false,
             ordre: 0
           })) || []
         }))
-      }));
+      });
+      
+      // PRIORITÉ 1: Si le véhicule a un formulaire assigné, l'utiliser
+      if (vehicule.modele_inventaire_id) {
+        const assignedFormulaire = (allFormulaires || []).find(f => f.id === vehicule.modele_inventaire_id);
+        if (assignedFormulaire) {
+          const modeleConverti = convertFormulaire(assignedFormulaire);
+          setModeles([modeleConverti]);
+          handleSelectionModele(modeleConverti);
+          return;
+        }
+      }
+      
+      // PRIORITÉ 2: Filtrer les formulaires avec la catégorie "vehicule" qui sont actifs
+      const vehiculeFormulaires = (allFormulaires || []).filter(f => 
+        f.est_actif !== false &&
+        f.categorie_ids?.includes('vehicule')
+      );
+      
+      // Convertir le format
+      const modelesConverts = vehiculeFormulaires.map(convertFormulaire);
       
       setModeles(modelesConverts);
       
