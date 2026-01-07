@@ -283,8 +283,11 @@ const InspectionUnifieeModal = ({
       const conforme = alertes.length === 0;
       
       // Déterminer le type d'asset
-      const isEPI = equipement.type === 'epi' || equipement.type_epi !== undefined;
-      const assetType = equipement.type || (isEPI ? 'epi' : 'equipement');
+      const isEPI = equipement.type === 'epi' || equipement.asset_type === 'epi' || equipement.type_epi !== undefined;
+      const assetType = equipement.asset_type || equipement.type || (isEPI ? 'epi' : 'equipement');
+      
+      // Type d'inspection : priorité au type passé explicitement, sinon formulaire.frequence
+      const typeInspection = equipement.type_inspection || formulaire.frequence || 'mensuelle';
 
       const inspectionData = {
         asset_id: equipement.id,
@@ -293,7 +296,7 @@ const InspectionUnifieeModal = ({
         equipement_nom: equipement.nom || equipement.type_epi || 'Équipement',
         formulaire_id: formulaire.id,
         formulaire_nom: formulaire.nom,
-        type_inspection: formulaire.frequence || 'mensuelle',
+        type_inspection: typeInspection,
         reponses: reponses,
         photos_reponses: photosReponses, // Photos jointes aux réponses
         conforme: conforme,
@@ -303,7 +306,10 @@ const InspectionUnifieeModal = ({
         metadata: {
           epi_nom: isEPI ? (equipement.nom || equipement.type_epi) : undefined,
           vehicule_nom: assetType === 'vehicule' ? equipement.nom : undefined,
-          borne_nom: assetType === 'borne_seche' ? equipement.nom : undefined
+          borne_nom: assetType === 'borne_seche' ? equipement.nom : undefined,
+          type_inspection_label: typeInspection === 'apres_usage' ? 'Après utilisation' : 
+                                  typeInspection === 'routine' ? 'Routine mensuelle' : 
+                                  typeInspection === 'avancee' ? 'Avancée annuelle' : typeInspection
         }
       };
 
