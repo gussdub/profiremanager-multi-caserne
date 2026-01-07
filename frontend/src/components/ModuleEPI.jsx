@@ -1320,6 +1320,69 @@ const ModuleEPI = ({ user }) => {
                   onChange={e => setEpiForm({...epiForm, notes: e.target.value})}
                 />
               </div>
+              
+              {/* Formulaires d'inspection assignés */}
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#EFF6FF', borderRadius: '0.5rem', border: '1px solid #BFDBFE' }}>
+                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: '600', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  📝 Formulaires d'inspection (optionnel)
+                </h4>
+                <p style={{ fontSize: '0.75rem', color: '#3B82F6', marginBottom: '1rem' }}>
+                  Assignez des formulaires pour activer les boutons d'inspection correspondants.
+                </p>
+                
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {/* Inspection après utilisation */}
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      🔍 Après utilisation
+                    </Label>
+                    <select
+                      value={epiForm.formulaire_apres_usage_id}
+                      onChange={e => setEpiForm({...epiForm, formulaire_apres_usage_id: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #93C5FD', fontSize: '0.875rem', backgroundColor: 'white' }}
+                    >
+                      <option value="">Aucun formulaire</option>
+                      {formulairesEPI.map(f => (
+                        <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Inspection routine mensuelle */}
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      📅 Routine mensuelle
+                    </Label>
+                    <select
+                      value={epiForm.formulaire_routine_id}
+                      onChange={e => setEpiForm({...epiForm, formulaire_routine_id: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #93C5FD', fontSize: '0.875rem', backgroundColor: 'white' }}
+                    >
+                      <option value="">Aucun formulaire</option>
+                      {formulairesEPI.map(f => (
+                        <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Inspection avancée annuelle */}
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      🔧 Avancée annuelle
+                    </Label>
+                    <select
+                      value={epiForm.formulaire_avancee_id}
+                      onChange={e => setEpiForm({...epiForm, formulaire_avancee_id: e.target.value})}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #93C5FD', fontSize: '0.875rem', backgroundColor: 'white' }}
+                    >
+                      <option value="">Aucun formulaire</option>
+                      {formulairesEPI.map(f => (
+                        <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div className="modal-actions">
