@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { useTenant } from '../contexts/TenantContext';
+import { apiGet } from '../utils/api';
 
 // ==================== MODALS ====================
 
