@@ -17,6 +17,7 @@ const InspectionPartieFacialeModal = ({
   const [reponses, setReponses] = useState({});
   const [remarques, setRemarques] = useState('');
   const [demanderRemplacement, setDemanderRemplacement] = useState(false);
+  const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
 
   // Initialiser les réponses selon le modèle
   useEffect(() => {
@@ -35,6 +36,7 @@ const InspectionPartieFacialeModal = ({
       setReponses(initialReponses);
       setRemarques('');
       setDemanderRemplacement(false);
+      setSectionActuelle(0); // Réinitialiser la pagination
       
       // Bloquer le scroll du body sur iOS
       document.body.style.overflow = 'hidden';
