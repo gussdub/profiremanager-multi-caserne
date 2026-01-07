@@ -13,8 +13,42 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
   const fetchHistorique = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, `/bornes-seches/inspections?borne_seche_id=${borne.id}`);
-      setInspections(data);
+      
+      // Charger les inspections des deux systèmes
+      let allInspections = [];
+      
+      // 1. Charger les inspections de l'ancien système (bornes sèches)
+      try {
+        const oldData = await apiGet(tenantSlug, `/bornes-seches/inspections?borne_seche_id=${borne.id}`);
+        if (oldData && Array.isArray(oldData)) {
+          allInspections = [...allInspections, ...oldData.map(i => ({ ...i, source: 'ancien' }))];
+        }
+      } catch (e) {
+        console.log('Ancien système non disponible:', e);
+      }
+      
+      // 2. Charger les inspections du nouveau système unifié
+      try {
+        const newData = await apiGet(tenantSlug, `/inspections-unifiees/asset/${borne.id}`);
+        if (newData && Array.isArray(newData)) {
+          // Convertir vers le format d'affichage
+          const converted = newData.map(i => ({
+            ...i,
+            source: 'unifie',
+            inspecteur: i.inspecteur_nom || i.inspecteur_email || 'Non spécifié',
+            date_inspection: i.date_inspection || i.created_at,
+            pompage_continu_5min: i.conforme ? 'Conforme' : 'Non conforme'
+          }));
+          allInspections = [...allInspections, ...converted];
+        }
+      } catch (e) {
+        console.log('Nouveau système non disponible:', e);
+      }
+      
+      // Trier par date décroissante
+      allInspections.sort((a, b) => new Date(b.date_inspection || b.created_at) - new Date(a.date_inspection || a.created_at));
+      
+      setInspections(allInspections);
     } catch (error) {
       console.error('Erreur chargement historique:', error);
     } finally {
