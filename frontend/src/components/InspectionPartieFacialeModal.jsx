@@ -205,234 +205,358 @@ const InspectionPartieFacialeModal = ({
             </div>
           </div>
 
-          {/* Sections du formulaire */}
-          {modele?.sections?.map((section, sectionIndex) => (
-            <div 
-              key={section.id || sectionIndex}
-              style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                backgroundColor: '#fafafa',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb'
-              }}
-            >
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem',
-                marginBottom: '1rem'
-              }}>
-                <span style={{ fontSize: '1.5rem' }}>{section.icone || '📋'}</span>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                  {section.titre}
-                </h4>
-              </div>
+          {/* Sections du formulaire avec pagination */}
+          {(() => {
+            const sections = modele?.sections || [];
+            const totalSections = sections.length;
+            const sectionCourante = sections[sectionActuelle];
+            const estPremiereSection = sectionActuelle === 0;
+            const estDerniereSection = sectionActuelle === totalSections - 1;
 
-              {/* Si la section a des items */}
-              {section.items && section.items.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {section.items.map((item, itemIndex) => (
-                    <div 
-                      key={item.id || itemIndex}
+            if (!sectionCourante) return <p>Aucune section trouvée.</p>;
+
+            return (
+              <>
+                {/* Barre de progression */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      Section {sectionActuelle + 1} / {totalSections}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {Math.round(((sectionActuelle + 1) / totalSections) * 100)}%
+                    </span>
+                  </div>
+                  <div style={{
+                    height: '4px',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '2px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      backgroundColor: '#8b5cf6',
+                      width: `${((sectionActuelle + 1) / totalSections) * 100}%`,
+                      transition: 'width 0.3s'
+                    }}></div>
+                  </div>
+                </div>
+
+                {/* Section courante uniquement */}
+                <div 
+                  style={{
+                    marginBottom: '1.5rem',
+                    padding: '1rem',
+                    backgroundColor: '#fafafa',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <span style={{ fontSize: '1.5rem' }}>{sectionCourante.icone || '📋'}</span>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+                      {sectionCourante.titre}
+                    </h4>
+                  </div>
+
+                  {/* Si la section a des items */}
+                  {sectionCourante.items && sectionCourante.items.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {sectionCourante.items.map((item, itemIndex) => (
+                        <div 
+                          key={item.id || itemIndex}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            backgroundColor: 'white',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb',
+                            gap: '0.5rem',
+                            flexWrap: 'wrap'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
+                            {item.nom}
+                          </span>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleReponseChange(item.id, 'conforme')}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '6px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem',
+                                fontWeight: '500',
+                                backgroundColor: reponses[item.id] === 'conforme' ? '#22c55e' : '#e5e7eb',
+                                color: reponses[item.id] === 'conforme' ? 'white' : '#6b7280'
+                              }}
+                            >
+                              ✅ OK
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReponseChange(item.id, 'non_conforme')}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '6px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem',
+                                fontWeight: '500',
+                                backgroundColor: reponses[item.id] === 'non_conforme' ? '#ef4444' : '#e5e7eb',
+                                color: reponses[item.id] === 'non_conforme' ? 'white' : '#6b7280'
+                              }}
+                            >
+                              ❌ NC
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    /* Section radio simple (conforme/non conforme pour toute la section) */
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleReponseChange(sectionCourante.id, 'conforme')}
+                        style={{
+                          flex: 1,
+                          minWidth: '120px',
+                          padding: '1rem',
+                          borderRadius: '8px',
+                          border: '2px solid',
+                          borderColor: reponses[sectionCourante.id] === 'conforme' ? '#22c55e' : '#e5e7eb',
+                          cursor: 'pointer',
+                          backgroundColor: reponses[sectionCourante.id] === 'conforme' ? '#dcfce7' : 'white',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.5rem' }}>✅</span>
+                        <span style={{ 
+                          fontWeight: '600',
+                          color: reponses[sectionCourante.id] === 'conforme' ? '#166534' : '#6b7280'
+                        }}>
+                          Conforme
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleReponseChange(sectionCourante.id, 'non_conforme')}
+                        style={{
+                          flex: 1,
+                          minWidth: '120px',
+                          padding: '1rem',
+                          borderRadius: '8px',
+                          border: '2px solid',
+                          borderColor: reponses[sectionCourante.id] === 'non_conforme' ? '#ef4444' : '#e5e7eb',
+                          cursor: 'pointer',
+                          backgroundColor: reponses[sectionCourante.id] === 'non_conforme' ? '#fee2e2' : 'white',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.5rem' }}>❌</span>
+                        <span style={{ 
+                          fontWeight: '600',
+                          color: reponses[sectionCourante.id] === 'non_conforme' ? '#991b1b' : '#6b7280'
+                        }}>
+                          Non conforme
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Boutons de navigation */}
+                {!estDerniereSection && (
+                  <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    justifyContent: 'space-between',
+                    marginBottom: '1rem'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                      disabled={estPremiereSection}
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.75rem',
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        border: '1px solid #e5e7eb',
-                        gap: '0.5rem',
-                        flexWrap: 'wrap'
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: estPremiereSection ? '#e5e7eb' : '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: estPremiereSection ? 'not-allowed' : 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
                       }}
                     >
-                      <span style={{ fontSize: '0.9rem', flex: 1, minWidth: '150px' }}>
-                        {item.nom}
-                      </span>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleReponseChange(item.id, 'conforme')}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '6px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: '500',
-                            backgroundColor: reponses[item.id] === 'conforme' ? '#22c55e' : '#e5e7eb',
-                            color: reponses[item.id] === 'conforme' ? 'white' : '#6b7280'
-                          }}
-                        >
-                          ✅ OK
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReponseChange(item.id, 'non_conforme')}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '6px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: '500',
-                            backgroundColor: reponses[item.id] === 'non_conforme' ? '#ef4444' : '#e5e7eb',
-                            color: reponses[item.id] === 'non_conforme' ? 'white' : '#6b7280'
-                          }}
-                        >
-                          ❌ NC
-                        </button>
+                      ← Précédent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSectionActuelle(sectionActuelle + 1)}
+                      style={{
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: '#8b5cf6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Suivant →
+                    </button>
+                  </div>
+                )}
+
+                {/* Dernière page : Remarques, Résultat et boutons finaux */}
+                {estDerniereSection && (
+                  <>
+                    {/* Bouton Précédent */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.5rem',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ← Précédent
+                      </button>
+                    </div>
+
+                    {/* Remarques */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
+                        📝 Remarques (optionnel)
+                      </Label>
+                      <Textarea
+                        value={remarques}
+                        onChange={(e) => setRemarques(e.target.value)}
+                        placeholder="Ajoutez des remarques si nécessaire..."
+                        rows={3}
+                        style={{ 
+                          width: '100%', 
+                          fontSize: '16px',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </div>
+
+                    {/* Résultat global */}
+                    <div style={{
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      backgroundColor: conformeGlobal ? '#dcfce7' : '#fee2e2',
+                      border: `2px solid ${conformeGlobal ? '#86efac' : '#fca5a5'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{ fontSize: '2rem' }}>{conformeGlobal ? '✅' : '⚠️'}</span>
+                      <div>
+                        <div style={{ 
+                          fontWeight: '700', 
+                          fontSize: '1.1rem',
+                          color: conformeGlobal ? '#166534' : '#991b1b'
+                        }}>
+                          {conformeGlobal ? 'CONFORME' : 'NON CONFORME'}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: conformeGlobal ? '#15803d' : '#b91c1c' }}>
+                          {conformeGlobal 
+                            ? 'Tous les critères sont validés' 
+                            : 'Un ou plusieurs critères sont non conformes'}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                /* Section radio simple (conforme/non conforme pour toute la section) */
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleReponseChange(section.id, 'conforme')}
-                    style={{
-                      flex: 1,
-                      minWidth: '120px',
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      border: '2px solid',
-                      borderColor: reponses[section.id] === 'conforme' ? '#22c55e' : '#e5e7eb',
-                      cursor: 'pointer',
-                      backgroundColor: reponses[section.id] === 'conforme' ? '#dcfce7' : 'white',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.5rem' }}>✅</span>
-                    <span style={{ 
-                      fontWeight: '600',
-                      color: reponses[section.id] === 'conforme' ? '#166534' : '#6b7280'
-                    }}>
-                      Conforme
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleReponseChange(section.id, 'non_conforme')}
-                    style={{
-                      flex: 1,
-                      minWidth: '120px',
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      border: '2px solid',
-                      borderColor: reponses[section.id] === 'non_conforme' ? '#ef4444' : '#e5e7eb',
-                      cursor: 'pointer',
-                      backgroundColor: reponses[section.id] === 'non_conforme' ? '#fee2e2' : 'white',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.5rem' }}>❌</span>
-                    <span style={{ 
-                      fontWeight: '600',
-                      color: reponses[section.id] === 'non_conforme' ? '#991b1b' : '#6b7280'
-                    }}>
-                      Non conforme
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
 
-          {/* Remarques */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-              📝 Remarques (optionnel)
-            </Label>
-            <Textarea
-              value={remarques}
-              onChange={(e) => setRemarques(e.target.value)}
-              placeholder="Ajoutez des remarques si nécessaire..."
-              rows={3}
-              style={{ 
-                width: '100%', 
-                fontSize: '16px',
-                borderRadius: '8px'
-              }}
-            />
-          </div>
+                    {/* Option demande de remplacement si non conforme */}
+                    {!conformeGlobal && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        borderRadius: '8px',
+                        marginBottom: '1rem'
+                      }}>
+                        <label style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.75rem',
+                          cursor: 'pointer'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={demanderRemplacement}
+                            onChange={(e) => setDemanderRemplacement(e.target.checked)}
+                            style={{ width: '20px', height: '20px' }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#c2410c' }}>
+                              🔄 Demander un remplacement
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: '#ea580c' }}>
+                              Une demande de remplacement sera créée automatiquement
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    )}
 
-          {/* Résultat global */}
-          <div style={{
-            padding: '1rem',
-            borderRadius: '12px',
-            backgroundColor: conformeGlobal ? '#dcfce7' : '#fee2e2',
-            border: `2px solid ${conformeGlobal ? '#86efac' : '#fca5a5'}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            marginBottom: '1rem'
-          }}>
-            <span style={{ fontSize: '2rem' }}>{conformeGlobal ? '✅' : '⚠️'}</span>
-            <div>
-              <div style={{ 
-                fontWeight: '700', 
-                fontSize: '1.1rem',
-                color: conformeGlobal ? '#166534' : '#991b1b'
-              }}>
-                {conformeGlobal ? 'CONFORME' : 'NON CONFORME'}
-              </div>
-              <div style={{ fontSize: '0.85rem', color: conformeGlobal ? '#15803d' : '#b91c1c' }}>
-                {conformeGlobal 
-                  ? 'Tous les critères sont validés' 
-                  : 'Un ou plusieurs critères sont non conformes'}
-              </div>
-            </div>
-          </div>
-
-          {/* Option demande de remplacement si non conforme */}
-          {!conformeGlobal && (
-            <div style={{
-              padding: '1rem',
-              backgroundColor: '#fff7ed',
-              border: '1px solid #fed7aa',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={demanderRemplacement}
-                  onChange={(e) => setDemanderRemplacement(e.target.checked)}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <div>
-                  <div style={{ fontWeight: '600', color: '#c2410c' }}>
-                    🔄 Demander un remplacement
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#ea580c' }}>
-                    Une demande de remplacement sera créée automatiquement
-                  </div>
-                </div>
-              </label>
-            </div>
-          )}
+                    {/* Bouton Valider */}
+                    <Button 
+                      onClick={handleSubmit} 
+                      style={{ 
+                        width: '100%',
+                        padding: '1rem',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
+                    </Button>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
 
-        {/* Footer */}
+        {/* Footer - Bouton Annuler uniquement */}
         <div style={{ 
-          padding: '1rem', 
+          padding: '0.75rem 1rem', 
           borderTop: '1px solid #e5e7eb', 
           display: 'flex', 
-          gap: '0.75rem',
+          justifyContent: 'center',
           flexShrink: 0,
           backgroundColor: '#fafafa',
           borderRadius: '0 0 16px 16px'
@@ -440,21 +564,10 @@ const InspectionPartieFacialeModal = ({
           <Button 
             variant="outline" 
             onClick={onClose} 
-            style={{ flex: 1 }}
+            style={{ padding: '0.625rem 1.5rem' }}
             disabled={saving}
           >
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            style={{ 
-              flex: 1, 
-              backgroundColor: '#8b5cf6',
-              color: 'white'
-            }}
-            disabled={saving}
-          >
-            {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            ✕ Annuler l'inspection
           </Button>
         </div>
       </div>
