@@ -850,85 +850,182 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           </div>
         )}
 
-        {/* Formulaire */}
-        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
-          {modele?.sections?.sort((a, b) => a.ordre - b.ordre).map(section => (
-            <div key={section.id} style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {section.type_champ === 'timer' && '⏱️'}
-                {section.type_champ === 'photo' && '📸'}
-                {section.type_champ === 'geolocation' && '📍'}
-                {section.type_champ === 'signature' && '✍️'}
-                {section.titre}
-              </h3>
-              {section.description && <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.875rem' }}>{section.description}</p>}
-              {renderField(section)}
-            </div>
-          ))}
+        {/* Formulaire avec pagination */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+          {(() => {
+            const sections = modele?.sections?.sort((a, b) => a.ordre - b.ordre) || [];
+            const totalSections = sections.length;
+            const sectionCourante = sections[sectionActuelle];
+            const estPremiereSection = sectionActuelle === 0;
+            const estDerniereSection = sectionActuelle === totalSections - 1;
 
-          {/* Bouton Signaler Anomalie */}
-          <div style={{ padding: '1rem', backgroundColor: showAnomalieForm ? '#fef2f2' : '#fff7ed', borderRadius: '0.5rem', border: showAnomalieForm ? '2px solid #dc2626' : '1px solid #fed7aa', marginBottom: '1rem' }}>
-            <button
-              type="button"
-              onClick={() => setShowAnomalieForm(!showAnomalieForm)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: showAnomalieForm ? '#dc2626' : '#f97316',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              ⚠️ {showAnomalieForm ? 'Annuler le signalement' : 'Signaler une anomalie'}
-            </button>
+            if (!sectionCourante) return <p>Aucune section trouvée.</p>;
 
-            {showAnomalieForm && (
-              <div style={{ marginTop: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                  Description de l&apos;anomalie *
-                </label>
-                <textarea
-                  value={anomalieData.commentaire}
-                  onChange={(e) => setAnomalieData({ ...anomalieData, commentaire: e.target.value })}
-                  rows={3}
-                  required={showAnomalieForm}
-                  style={{ width: '100%', padding: '0.75rem', border: '1px solid #fca5a5', borderRadius: '0.375rem', fontSize: '1rem', resize: 'vertical' }}
-                  placeholder="Décrivez l'anomalie constatée..."
-                />
-                <div style={{ marginTop: '0.75rem' }}>
-                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                    Photos de l&apos;anomalie
-                  </label>
-                  <ImageUpload
-                    value={anomalieData.photos}
-                    onChange={(urls) => setAnomalieData({ ...anomalieData, photos: Array.isArray(urls) ? urls : [urls] })}
-                    multiple={true}
-                  />
+            return (
+              <>
+                {/* Indicateur de progression */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      Section {sectionActuelle + 1} / {totalSections}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {Math.round(((sectionActuelle + 1) / totalSections) * 100)}%
+                    </span>
+                  </div>
+                  <div style={{
+                    height: '4px',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '2px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      backgroundColor: '#dc2626',
+                      width: `${((sectionActuelle + 1) / totalSections) * 100}%`,
+                      transition: 'width 0.3s'
+                    }}></div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </form>
 
-        {/* Footer - Responsive */}
-        <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.5rem', justifyContent: 'stretch', flexDirection: 'row' }}>
-          <Button type="button" onClick={onClose} variant="outline" style={{ flex: 1, fontSize: '0.875rem', padding: '0.625rem' }}>
-            Annuler
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{ backgroundColor: submitting ? '#9ca3af' : '#10b981', color: 'white', fontWeight: '600', flex: 1, fontSize: '0.875rem', padding: '0.625rem' }}
-          >
-            {submitting ? '⏳...' : '✓ Terminer'}
+                {/* Section courante */}
+                <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                  <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {sectionCourante.type_champ === 'timer' && '⏱️'}
+                    {sectionCourante.type_champ === 'photo' && '📸'}
+                    {sectionCourante.type_champ === 'geolocation' && '📍'}
+                    {sectionCourante.type_champ === 'signature' && '✍️'}
+                    {sectionCourante.titre}
+                  </h3>
+                  {sectionCourante.description && <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.875rem' }}>{sectionCourante.description}</p>}
+                  {renderField(sectionCourante)}
+                </div>
+
+                {/* Bouton Signaler Anomalie - visible sur toutes les pages */}
+                <div style={{ padding: '1rem', backgroundColor: showAnomalieForm ? '#fef2f2' : '#fff7ed', borderRadius: '0.5rem', border: showAnomalieForm ? '2px solid #dc2626' : '1px solid #fed7aa', marginBottom: '1rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAnomalieForm(!showAnomalieForm)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      backgroundColor: showAnomalieForm ? '#dc2626' : '#f97316',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    ⚠️ {showAnomalieForm ? 'Annuler le signalement' : 'Signaler une anomalie'}
+                  </button>
+
+                  {showAnomalieForm && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
+                        Description de l&apos;anomalie *
+                      </label>
+                      <textarea
+                        value={anomalieData.commentaire}
+                        onChange={(e) => setAnomalieData({ ...anomalieData, commentaire: e.target.value })}
+                        rows={3}
+                        required={showAnomalieForm}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #fca5a5', borderRadius: '0.375rem', fontSize: '1rem', resize: 'vertical' }}
+                        placeholder="Décrivez l'anomalie constatée..."
+                      />
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
+                          Photos de l&apos;anomalie
+                        </label>
+                        <ImageUpload
+                          value={anomalieData.photos}
+                          onChange={(urls) => setAnomalieData({ ...anomalieData, photos: Array.isArray(urls) ? urls : [urls] })}
+                          multiple={true}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Boutons de navigation */}
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  justifyContent: 'space-between',
+                  marginTop: '1rem'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                    disabled={estPremiereSection}
+                    style={{
+                      flex: 1,
+                      padding: '0.875rem',
+                      backgroundColor: estPremiereSection ? '#e5e7eb' : '#6b7280',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: estPremiereSection ? 'not-allowed' : 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                  >
+                    ← Précédent
+                  </button>
+
+                  {estDerniereSection ? (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={submitting}
+                      style={{
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: submitting ? '#9ca3af' : '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: submitting ? 'not-allowed' : 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {submitting ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSectionActuelle(sectionActuelle + 1)}
+                      style={{
+                        flex: 1,
+                        padding: '0.875rem',
+                        backgroundColor: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Suivant →
+                    </button>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Footer - Bouton Annuler uniquement */}
+        <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center' }}>
+          <Button type="button" onClick={onClose} variant="outline" style={{ fontSize: '0.875rem', padding: '0.625rem 1.5rem' }}>
+            ✕ Annuler l'inspection
           </Button>
         </div>
       </div>
