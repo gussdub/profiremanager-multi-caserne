@@ -334,184 +334,308 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
                 </div>
               </div>
 
-              {/* Sections du formulaire */}
-              {modeleActif?.sections?.map((section, sectionIndex) => (
-                <div 
-                  key={section.id || sectionIndex}
-                  style={{
-                    marginBottom: '1rem',
-                    padding: '0.75rem',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                  }}
-                >
-                  <h4 style={{ 
-                    margin: '0 0 0.75rem 0', 
-                    fontSize: '0.95rem', 
-                    fontWeight: '600',
-                    color: '#1f2937',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    {section.icone || '📋'} {section.titre}
-                  </h4>
+              {/* Sections du formulaire avec pagination */}
+              {(() => {
+                const sections = modeleActif?.sections || [];
+                const totalSections = sections.length;
+                const sectionCourante = sections[sectionActuelle];
+                const estPremiereSection = sectionActuelle === 0;
+                const estDerniereSection = sectionActuelle === totalSections - 1;
 
-                  {/* Champ pression cylindre */}
-                  {section.type_champ === 'number' && section.titre.toLowerCase().includes('pression') && (
-                    <div>
-                      <Input
-                        type="number"
-                        value={pressionCylindre}
-                        onChange={(e) => setPressionCylindre(e.target.value)}
-                        placeholder="Ex: 4500"
-                        style={{ fontSize: '16px' }}
-                      />
-                      {section.unite && (
-                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
-                          {section.unite}
+                if (!sectionCourante) return <p>Aucune section trouvée.</p>;
+
+                return (
+                  <>
+                    {/* Barre de progression */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          Section {sectionActuelle + 1} / {totalSections}
                         </span>
+                        <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                          {Math.round(((sectionActuelle + 1) / totalSections) * 100)}%
+                        </span>
+                      </div>
+                      <div style={{
+                        height: '4px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '2px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          backgroundColor: '#f97316',
+                          width: `${((sectionActuelle + 1) / totalSections) * 100}%`,
+                          transition: 'width 0.3s'
+                        }}></div>
+                      </div>
+                    </div>
+
+                    {/* Section courante uniquement */}
+                    <div 
+                      style={{
+                        marginBottom: '1rem',
+                        padding: '0.75rem',
+                        backgroundColor: '#f9fafb',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb'
+                      }}
+                    >
+                      <h4 style={{ 
+                        margin: '0 0 0.75rem 0', 
+                        fontSize: '0.95rem', 
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        {sectionCourante.icone || '📋'} {sectionCourante.titre}
+                      </h4>
+
+                      {/* Champ pression cylindre */}
+                      {sectionCourante.type_champ === 'number' && sectionCourante.titre.toLowerCase().includes('pression') && (
+                        <div>
+                          <Input
+                            type="number"
+                            value={pressionCylindre}
+                            onChange={(e) => setPressionCylindre(e.target.value)}
+                            placeholder="Ex: 4500"
+                            style={{ fontSize: '16px' }}
+                          />
+                          {sectionCourante.unite && (
+                            <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
+                              {sectionCourante.unite}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Items à vérifier */}
+                      {(sectionCourante.type_champ === 'radio' || sectionCourante.type_champ === 'checkbox') && sectionCourante.items?.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {sectionCourante.items.map((item, itemIndex) => (
+                            <div 
+                              key={item.id || itemIndex}
+                              style={{ 
+                                padding: '0.5rem',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: reponses[item.id] === 'Non conforme' ? '2px solid #ef4444' : '1px solid #e5e7eb'
+                              }}
+                            >
+                              <div style={{ marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.85rem' }}>
+                                {item.nom}
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {(sectionCourante.options || [{ label: 'Conforme' }, { label: 'Non conforme' }]).map((opt, optIndex) => (
+                                  <button
+                                    key={optIndex}
+                                    type="button"
+                                    onClick={() => setReponses({ ...reponses, [item.id]: opt.label })}
+                                    style={{
+                                      padding: '0.4rem 0.75rem',
+                                      fontSize: '0.8rem',
+                                      borderRadius: '6px',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      fontWeight: '500',
+                                      backgroundColor: reponses[item.id] === opt.label 
+                                        ? (opt.declencherAlerte ? '#ef4444' : '#22c55e')
+                                        : '#e5e7eb',
+                                      color: reponses[item.id] === opt.label ? 'white' : '#374151'
+                                    }}
+                                  >
+                                    {opt.declencherAlerte && '⚠️'} {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Texte remarques */}
+                      {sectionCourante.type_champ === 'text' && sectionCourante.titre.toLowerCase().includes('remarque') && (
+                        <Textarea
+                          value={remarques}
+                          onChange={(e) => setRemarques(e.target.value)}
+                          placeholder="Remarques..."
+                          rows={2}
+                          style={{ fontSize: '16px' }}
+                        />
                       )}
                     </div>
-                  )}
 
-                  {/* Items à vérifier */}
-                  {(section.type_champ === 'radio' || section.type_champ === 'checkbox') && section.items?.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {section.items.map((item, itemIndex) => (
-                        <div 
-                          key={item.id || itemIndex}
-                          style={{ 
-                            padding: '0.5rem',
-                            backgroundColor: 'white',
-                            borderRadius: '6px',
-                            border: reponses[item.id] === 'Non conforme' ? '2px solid #ef4444' : '1px solid #e5e7eb'
+                    {/* Boutons de navigation */}
+                    {!estDerniereSection && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        justifyContent: 'space-between',
+                        marginBottom: '1rem'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                          disabled={estPremiereSection}
+                          style={{
+                            flex: 1,
+                            padding: '0.875rem',
+                            backgroundColor: estPremiereSection ? '#e5e7eb' : '#6b7280',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: estPremiereSection ? 'not-allowed' : 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '600'
                           }}
                         >
-                          <div style={{ marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.85rem' }}>
-                            {item.nom}
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {(section.options || [{ label: 'Conforme' }, { label: 'Non conforme' }]).map((opt, optIndex) => (
-                              <button
-                                key={optIndex}
-                                type="button"
-                                onClick={() => setReponses({ ...reponses, [item.id]: opt.label })}
-                                style={{
-                                  padding: '0.4rem 0.75rem',
-                                  fontSize: '0.8rem',
-                                  borderRadius: '6px',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  fontWeight: '500',
-                                  backgroundColor: reponses[item.id] === opt.label 
-                                    ? (opt.declencherAlerte ? '#ef4444' : '#22c55e')
-                                    : '#e5e7eb',
-                                  color: reponses[item.id] === opt.label ? 'white' : '#374151'
-                                }}
-                              >
-                                {opt.declencherAlerte && '⚠️'} {opt.label}
-                              </button>
-                            ))}
-                          </div>
+                          ← Précédent
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSectionActuelle(sectionActuelle + 1)}
+                          style={{
+                            flex: 1,
+                            padding: '0.875rem',
+                            backgroundColor: '#f97316',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Suivant →
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Dernière page : afficher résultat et boutons finaux */}
+                    {estDerniereSection && (
+                      <>
+                        {/* Bouton Précédent */}
+                        <div style={{ marginBottom: '1rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSectionActuelle(sectionActuelle - 1)}
+                            style={{
+                              padding: '0.75rem 1.5rem',
+                              backgroundColor: '#6b7280',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '0.5rem',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              fontWeight: '600'
+                            }}
+                          >
+                            ← Précédent
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
 
-                  {/* Texte remarques */}
-                  {section.type_champ === 'text' && section.titre.toLowerCase().includes('remarque') && (
-                    <Textarea
-                      value={remarques}
-                      onChange={(e) => setRemarques(e.target.value)}
-                      placeholder="Remarques..."
-                      rows={2}
-                      style={{ fontSize: '16px' }}
-                    />
-                  )}
-                </div>
-              ))}
+                        {/* Résultat global */}
+                        <div style={{ 
+                          padding: '0.75rem',
+                          backgroundColor: conforme ? '#f0fdf4' : '#fef2f2',
+                          borderRadius: '8px',
+                          border: conforme ? '2px solid #22c55e' : '2px solid #ef4444',
+                          marginBottom: '1rem'
+                        }}>
+                          <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                            Résultat global
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => setConforme(true)}
+                              style={{
+                                flex: 1,
+                                padding: '0.75rem',
+                                backgroundColor: conforme ? '#22c55e' : 'white',
+                                color: conforme ? 'white' : '#374151',
+                                border: conforme ? 'none' : '1px solid #d1d5db',
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ✅ Conforme
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConforme(false)}
+                              style={{
+                                flex: 1,
+                                padding: '0.75rem',
+                                backgroundColor: !conforme ? '#ef4444' : 'white',
+                                color: !conforme ? 'white' : '#374151',
+                                border: !conforme ? 'none' : '1px solid #d1d5db',
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ❌ Non conforme
+                            </button>
+                          </div>
+                          {!conforme && (
+                            <p style={{ margin: '0.5rem 0 0', color: '#dc2626', fontSize: '0.8rem' }}>
+                              ⚠️ L'équipement sera marqué "Hors service"
+                            </p>
+                          )}
+                        </div>
 
-              {/* Résultat global */}
-              <div style={{ 
-                padding: '0.75rem',
-                backgroundColor: conforme ? '#f0fdf4' : '#fef2f2',
-                borderRadius: '8px',
-                border: conforme ? '2px solid #22c55e' : '2px solid #ef4444',
-                marginBottom: '1rem'
-              }}>
-                <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                  Résultat global
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setConforme(true)}
-                    style={{
-                      flex: 1,
-                      padding: '0.75rem',
-                      backgroundColor: conforme ? '#22c55e' : 'white',
-                      color: conforme ? 'white' : '#374151',
-                      border: conforme ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✅ Conforme
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConforme(false)}
-                    style={{
-                      flex: 1,
-                      padding: '0.75rem',
-                      backgroundColor: !conforme ? '#ef4444' : 'white',
-                      color: !conforme ? 'white' : '#374151',
-                      border: !conforme ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ❌ Non conforme
-                  </button>
-                </div>
-                {!conforme && (
-                  <p style={{ margin: '0.5rem 0 0', color: '#dc2626', fontSize: '0.8rem' }}>
-                    ⚠️ L'équipement sera marqué "Hors service"
-                  </p>
-                )}
-              </div>
+                        {/* Remarques */}
+                        <div style={{ marginBottom: '1rem' }}>
+                          <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }}>
+                            Remarques
+                          </Label>
+                          <Textarea
+                            value={remarques}
+                            onChange={(e) => setRemarques(e.target.value)}
+                            placeholder="Notes supplémentaires..."
+                            rows={2}
+                            style={{ fontSize: '16px' }}
+                          />
+                        </div>
 
-              {/* Remarques */}
-              <div style={{ marginBottom: '1rem' }}>
-                <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }}>
-                  Remarques
-                </Label>
-                <Textarea
-                  value={remarques}
-                  onChange={(e) => setRemarques(e.target.value)}
-                  placeholder="Notes supplémentaires..."
-                  rows={2}
-                  style={{ fontSize: '16px' }}
-                />
-              </div>
+                        {/* Info inspecteur */}
+                        <div style={{ 
+                          padding: '0.5rem', 
+                          backgroundColor: '#f3f4f6', 
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          color: '#6b7280',
+                          marginBottom: '1rem'
+                        }}>
+                          <strong>Inspecteur:</strong> {user?.prenom} {user?.nom}<br/>
+                          <strong>Date:</strong> {new Date().toLocaleDateString('fr-CA')} à {new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
 
-              {/* Info inspecteur */}
-              <div style={{ 
-                padding: '0.5rem', 
-                backgroundColor: '#f3f4f6', 
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                color: '#6b7280'
-              }}>
-                <strong>Inspecteur:</strong> {user?.prenom} {user?.nom}<br/>
-                <strong>Date:</strong> {new Date().toLocaleDateString('fr-CA')} à {new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
-              </div>
+                        {/* Bouton Valider */}
+                        <Button 
+                          onClick={handleSubmit} 
+                          disabled={saving || !selectedEquipementId || noFormulaire}
+                          style={{ 
+                            width: '100%',
+                            padding: '1rem',
+                            backgroundColor: '#10b981', 
+                            fontSize: '1rem', 
+                            fontWeight: '600'
+                          }}
+                        >
+                          {saving ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
+                        </Button>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
