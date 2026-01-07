@@ -94,6 +94,7 @@ const InspectionUnifieeModal = ({
       setPhotosReponses({});
       setRemarques('');
       setDemanderRemplacement(false);
+      setSectionActuelle(0); // Réinitialiser la pagination
       
       // Bloquer le scroll du body sur iOS
       document.body.style.overflow = 'hidden';
