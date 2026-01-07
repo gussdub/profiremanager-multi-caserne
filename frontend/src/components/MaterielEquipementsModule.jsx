@@ -765,10 +765,13 @@ const EquipementsTab = ({
               onMaintenance={() => onMaintenance(equip)}
               onInspectionAPRIA={() => onInspectionAPRIA && onInspectionAPRIA(equip)}
               onHistoriqueAPRIA={() => onHistoriqueAPRIA && onHistoriqueAPRIA(equip)}
+              onInspectionEquipement={() => onInspectionEquipement && onInspectionEquipement(equip)}
+              onHistoriqueEquipement={() => onHistoriqueEquipement && onHistoriqueEquipement(equip)}
               isAPRIA={isAPRIA && isAPRIA(equip)}
+              hasInspectionForm={hasInspectionForm && hasInspectionForm(equip)}
               canEdit={user?.role === 'admin' || user?.role === 'superviseur'}
               canDelete={user?.role === 'admin'}
-              canViewHistory={user?.role === 'admin' || user?.role === 'superviseur'}
+              isEmploye={isEmploye}
             />
           ))}
         </div>
@@ -778,7 +781,7 @@ const EquipementsTab = ({
 };
 
 // ===== Carte Équipement =====
-const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, isAPRIA, canEdit, canDelete, canViewHistory = true }) => {
+const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, onInspectionEquipement, onHistoriqueEquipement, isAPRIA, hasInspectionForm, canEdit, canDelete, isEmploye }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
@@ -787,7 +790,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
       borderRadius: '0.5rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
       overflow: 'hidden',
-      border: isAPRIA ? '2px solid #f97316' : 'none'
+      border: isAPRIA ? '2px solid #f97316' : (hasInspectionForm ? '2px solid #3b82f6' : 'none')
     }}>
       {/* En-tête */}
       <div 
@@ -801,11 +804,12 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
         onClick={() => setExpanded(!expanded)}
       >
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 'bold', color: '#1f2937' }}>{equipement.code_unique}</span>
             <EtatBadge etat={equipement.etat} />
             {equipement.alerte_maintenance && <span title="Maintenance requise">⚠️</span>}
             {isAPRIA && <span title="Équipement APRIA" style={{ backgroundColor: '#fed7aa', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: '600', color: '#9a3412' }}>APRIA</span>}
+            {hasInspectionForm && !isAPRIA && <span title="Inspection requise" style={{ backgroundColor: '#dbeafe', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: '600', color: '#1e40af' }}>📝 Inspectable</span>}
           </div>
           <div style={{ fontSize: '1rem', color: '#374151' }}>{equipement.nom}</div>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
