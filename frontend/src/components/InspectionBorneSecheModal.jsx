@@ -423,6 +423,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
     if (!canSelectModele) return;
     
     setLoading(true);
+    setSectionActuelle(0); // Réinitialiser la pagination
     try {
       const selectedModele = modelesDisponibles.find(m => m.id === modeleId);
       if (selectedModele) {
