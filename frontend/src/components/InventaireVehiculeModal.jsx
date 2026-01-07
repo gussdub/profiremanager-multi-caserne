@@ -22,28 +22,38 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       // Charger les formulaires d'inventaire depuis le système unifié
       const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
       
+      console.log('Véhicule:', vehicule);
+      console.log('modele_inventaire_id:', vehicule.modele_inventaire_id);
+      console.log('Tous les formulaires chargés:', allFormulaires?.length);
+      
       // Fonction pour convertir le format unifié vers le format attendu
-      const convertFormulaire = (f) => ({
-        id: f.id,
-        nom: f.nom,
-        description: f.description || '',
-        sections: (f.sections || []).map(s => ({
-          id: s.id,
-          titre: s.nom || s.titre,
-          type_champ: s.items?.[0]?.type || 'checkbox',
-          options: s.items?.[0]?.options?.map(opt => ({ label: opt, declencherAlerte: false })) || [],
-          photo_url: '',
-          items: s.items?.map(item => ({
-            id: item.id || `${s.nom}_${item.label}`,
-            nom: item.label || item.nom,
-            type: item.type,
-            options: item.options || [],
-            photo_url: '',
-            obligatoire: item.obligatoire || false,
-            ordre: 0
-          })) || []
-        }))
-      });
+      const convertFormulaire = (f) => {
+        console.log('Conversion du formulaire:', f.nom, 'avec', f.sections?.length, 'sections');
+        return {
+          id: f.id,
+          nom: f.nom,
+          description: f.description || '',
+          sections: (f.sections || []).map(s => {
+            console.log('  - Section:', s.nom || s.titre, 'avec', s.items?.length, 'items');
+            return {
+              id: s.id,
+              titre: s.nom || s.titre,
+              type_champ: s.items?.[0]?.type || 'checkbox',
+              options: s.items?.[0]?.options?.map(opt => ({ label: opt, declencherAlerte: false })) || [],
+              photo_url: '',
+              items: s.items?.map(item => ({
+                id: item.id || `${s.nom}_${item.label}`,
+                nom: item.label || item.nom,
+                type: item.type,
+                options: item.options || [],
+                photo_url: '',
+                obligatoire: item.obligatoire || false,
+                ordre: 0
+              })) || []
+            };
+          })
+        };
+      };
       
       // PRIORITÉ 1: Si le véhicule a un formulaire assigné, l'utiliser
       if (vehicule.modele_inventaire_id) {
