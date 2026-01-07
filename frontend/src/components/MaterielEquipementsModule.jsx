@@ -316,7 +316,7 @@ const MaterielEquipementsModule = ({ user }) => {
         {/* Message pour les pompiers */}
         {isEmploye && (
           <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-            Sélectionnez un équipement APRIA ci-dessous pour effectuer une inspection ou consulter l'historique.
+            Sélectionnez un équipement ci-dessous pour effectuer une inspection ou consulter l'historique.
           </p>
         )}
       </div>
@@ -360,7 +360,16 @@ const MaterielEquipementsModule = ({ user }) => {
             setSelectedEquipementAPRIA(equip);
             setShowHistoriqueAPRIAModal(true);
           }}
+          onInspectionEquipement={(equip) => {
+            setSelectedEquipementInspection(equip);
+            setShowInspectionEquipementModal(true);
+          }}
+          onHistoriqueEquipement={(equip) => {
+            setSelectedEquipementInspection(equip);
+            setShowHistoriqueEquipementModal(true);
+          }}
           isAPRIA={isAPRIA}
+          hasInspectionForm={hasInspectionForm}
           isEmploye={isEmploye}
           user={user}
         />
