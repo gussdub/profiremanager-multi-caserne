@@ -1223,7 +1223,7 @@ const MesEPI = ({ user }) => {
         />
       )}
 
-      {/* Modal Inspection Unifiée */}
+      {/* Modal Inspection Unifiée - Pour équipements assignés */}
       {showInspectionUnifieeModal && selectedEquipement && selectedFormulaire && (
         <InspectionUnifieeModal
           isOpen={showInspectionUnifieeModal}
@@ -1242,6 +1242,41 @@ const MesEPI = ({ user }) => {
             toast({
               title: "✅ Inspection enregistrée",
               description: "L'inspection a été sauvegardée avec succès"
+            });
+          }}
+        />
+      )}
+
+      {/* Modal Inspection Unifiée - Pour EPI classiques avec formulaires personnalisés */}
+      {showInspectionUnifieeModal && selectedEPI && selectedFormulaire && !selectedEquipement && (
+        <InspectionUnifieeModal
+          isOpen={showInspectionUnifieeModal}
+          onClose={() => {
+            setShowInspectionUnifieeModal(false);
+            setSelectedFormulaire(null);
+            setSelectedEPI(null);
+            setSelectedTypeInspection('');
+          }}
+          tenantSlug={tenantSlug}
+          user={user}
+          equipement={{
+            id: selectedEPI.id,
+            nom: selectedEPI.type_epi,
+            code_unique: selectedEPI.numero_serie,
+            categorie_nom: `${selectedEPI.marque || ''} ${selectedEPI.modele || ''}`.trim(),
+            asset_type: 'epi',
+            type_inspection: selectedTypeInspection // 'apres_usage', 'routine', 'avancee'
+          }}
+          formulaire={selectedFormulaire}
+          onInspectionCreated={() => {
+            setShowInspectionUnifieeModal(false);
+            setSelectedFormulaire(null);
+            setSelectedEPI(null);
+            setSelectedTypeInspection('');
+            loadMyEPIs();
+            toast({
+              title: "✅ Inspection enregistrée",
+              description: `Inspection ${selectedTypeInspection === 'apres_usage' ? 'après usage' : selectedTypeInspection === 'routine' ? 'routine' : 'avancée'} sauvegardée`
             });
           }}
         />
