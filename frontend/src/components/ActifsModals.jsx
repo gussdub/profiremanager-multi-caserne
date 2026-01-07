@@ -131,9 +131,9 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
   const handleFormulaireChange = (e) => {
     const value = e.target.value;
     if (setFormData) {
-      setFormData(prev => ({ ...prev, formulaire_inspection_id: value }));
+      setFormData(prev => ({ ...prev, modele_inventaire_id: value }));
     } else {
-      handleChange(e);
+      handleChange({ target: { name: 'modele_inventaire_id', value } });
     }
   };
 
@@ -218,8 +218,8 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
           📋 Formulaire d'inventaire assigné
         </Label>
         <select
-          name="formulaire_inspection_id"
-          value={formData.formulaire_inspection_id || ''}
+          name="modele_inventaire_id"
+          value={formData.modele_inventaire_id || ''}
           onChange={handleFormulaireChange}
           style={{
             width: '100%',
