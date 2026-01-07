@@ -17,6 +17,7 @@ const MesEPI = ({ user }) => {
   const [selectedEPI, setSelectedEPI] = useState(null);
   const [selectedEquipement, setSelectedEquipement] = useState(null);
   const [selectedFormulaire, setSelectedFormulaire] = useState(null);
+  const [selectedTypeInspection, setSelectedTypeInspection] = useState(''); // 'apres_usage', 'routine', 'avancee'
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [showHistoriqueModal, setShowHistoriqueModal] = useState(false);
   const [showRemplacementModal, setShowRemplacementModal] = useState(false);
@@ -27,6 +28,7 @@ const MesEPI = ({ user }) => {
   const [showCameraCapture, setShowCameraCapture] = useState(false);
   const [historique, setHistorique] = useState([]);
   const [modelePartieFaciale, setModelePartieFaciale] = useState(null);
+  const [formulairesEPI, setFormulairesEPI] = useState([]); // Formulaires d'inspection chargés
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
 
