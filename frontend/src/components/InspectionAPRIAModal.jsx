@@ -110,6 +110,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
         equipement_id: selectedEquipementId,
         type_inspection: typeInspection,
         modele_utilise_id: modeleActif?.id || null,
+        date_inspection: new Date().toISOString(),
         reponses: reponses,
         pression_cylindre: pressionCylindre ? parseFloat(pressionCylindre) : null,
         conforme: resultatGlobal,
