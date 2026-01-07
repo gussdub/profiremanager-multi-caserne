@@ -30501,6 +30501,7 @@ class PointEauCreate(BaseModel):
 
 class PointEauUpdate(BaseModel):
     type: Optional[str] = None
+    nom: Optional[str] = None
     numero_identification: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -30516,6 +30517,11 @@ class PointEauUpdate(BaseModel):
     date_dernier_test: Optional[str] = None
     capacite_litres: Optional[str] = None
     accessibilite: Optional[str] = None
+    debit_max_statique_gpm: Optional[str] = None
+    photos: Optional[List[str]] = None
+    statut_couleur: Optional[str] = None
+    statut_inspection: Optional[str] = None
+    modele_inspection_assigne_id: Optional[str] = None  # ID du formulaire d'inspection assigné
 
 # Endpoints API pour les points d'eau
 @api_router.get("/{tenant_slug}/points-eau")
