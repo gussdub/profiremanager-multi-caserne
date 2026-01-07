@@ -9488,6 +9488,10 @@ class EPICreate(BaseModel):
     user_id: Optional[str] = None
     statut: str = "En service"
     notes: str = ""
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: str = ""
+    formulaire_routine_id: str = ""
+    formulaire_avancee_id: str = ""
 
 class EPIUpdate(BaseModel):
     numero_serie: Optional[str] = None
