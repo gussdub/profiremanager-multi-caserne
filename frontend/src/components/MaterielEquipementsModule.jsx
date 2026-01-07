@@ -828,7 +828,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Boutons APRIA */}
+          {/* Boutons APRIA - accessibles à tous */}
           {isAPRIA && (
             <>
               <button
@@ -838,22 +838,42 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
               >
                 📝
               </button>
-              {canViewHistory && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
-                  style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
-                  title="Historique inspections"
-                >
-                  📋
-                </button>
-              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
+                style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                title="Historique inspections"
+              >
+                📋
+              </button>
             </>
           )}
-          {canEdit && (
+          
+          {/* Boutons Inspection équipement avec formulaire assigné - accessibles à tous */}
+          {hasInspectionForm && !isAPRIA && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onInspectionEquipement && onInspectionEquipement(); }}
+                style={{ padding: '0.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                title="Inspecter"
+              >
+                📝
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onHistoriqueEquipement && onHistoriqueEquipement(); }}
+                style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                title="Historique inspections"
+              >
+                📋
+              </button>
+            </>
+          )}
+          
+          {/* Boutons admin/superviseur uniquement */}
+          {canEdit && !isEmploye && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); onMaintenance(); }}
-                style={{ padding: '0.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
+                style={{ padding: '0.5rem', background: '#059669', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
                 title="Maintenance"
               >
                 🔧
@@ -867,7 +887,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
               </button>
             </>
           )}
-          {canDelete && (
+          {canDelete && !isEmploye && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               style={{ padding: '0.5rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
