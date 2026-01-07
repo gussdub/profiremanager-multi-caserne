@@ -679,13 +679,99 @@ const MesEPI = ({ user }) => {
                 </div>
                 
                 <div className="epi-card-actions">
-                  <Button 
-                    size="sm" 
-                    onClick={() => openInspectionModal(epi)}
-                    disabled={epi.statut === 'Retiré'}
-                  >
-                    📋 Inspection
-                  </Button>
+                  {/* Boutons d'inspection conditionnels selon les formulaires assignés */}
+                  {epi.formulaire_apres_usage_id && (
+                    <Button 
+                      size="sm"
+                      style={{ backgroundColor: '#f97316', color: 'white' }}
+                      onClick={() => {
+                        setSelectedEPI(epi);
+                        setSelectedTypeInspection('apres_usage');
+                        // Charger le formulaire et ouvrir le modal unifié
+                        const loadAndOpenInspection = async () => {
+                          try {
+                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_apres_usage_id}`);
+                            setSelectedFormulaire(formulaire);
+                            setShowInspectionUnifieeModal(true);
+                          } catch (error) {
+                            toast({
+                              title: "Erreur",
+                              description: "Impossible de charger le formulaire",
+                              variant: "destructive"
+                            });
+                          }
+                        };
+                        loadAndOpenInspection();
+                      }}
+                      disabled={epi.statut === 'Retiré'}
+                    >
+                      🔍 Après usage
+                    </Button>
+                  )}
+                  {epi.formulaire_routine_id && (
+                    <Button 
+                      size="sm"
+                      style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                      onClick={() => {
+                        setSelectedEPI(epi);
+                        setSelectedTypeInspection('routine');
+                        const loadAndOpenInspection = async () => {
+                          try {
+                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_routine_id}`);
+                            setSelectedFormulaire(formulaire);
+                            setShowInspectionUnifieeModal(true);
+                          } catch (error) {
+                            toast({
+                              title: "Erreur",
+                              description: "Impossible de charger le formulaire",
+                              variant: "destructive"
+                            });
+                          }
+                        };
+                        loadAndOpenInspection();
+                      }}
+                      disabled={epi.statut === 'Retiré'}
+                    >
+                      📅 Routine
+                    </Button>
+                  )}
+                  {epi.formulaire_avancee_id && (
+                    <Button 
+                      size="sm"
+                      style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+                      onClick={() => {
+                        setSelectedEPI(epi);
+                        setSelectedTypeInspection('avancee');
+                        const loadAndOpenInspection = async () => {
+                          try {
+                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_avancee_id}`);
+                            setSelectedFormulaire(formulaire);
+                            setShowInspectionUnifieeModal(true);
+                          } catch (error) {
+                            toast({
+                              title: "Erreur",
+                              description: "Impossible de charger le formulaire",
+                              variant: "destructive"
+                            });
+                          }
+                        };
+                        loadAndOpenInspection();
+                      }}
+                      disabled={epi.statut === 'Retiré'}
+                    >
+                      🔧 Avancée
+                    </Button>
+                  )}
+                  {/* Bouton inspection par défaut si aucun formulaire assigné */}
+                  {!epi.formulaire_apres_usage_id && !epi.formulaire_routine_id && !epi.formulaire_avancee_id && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => openInspectionModal(epi)}
+                      disabled={epi.statut === 'Retiré'}
+                    >
+                      📋 Inspection
+                    </Button>
+                  )}
                   <Button 
                     size="sm" 
                     variant="outline"
