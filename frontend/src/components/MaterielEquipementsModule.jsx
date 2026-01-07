@@ -8,7 +8,7 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import InspectionAPRIAModal from './InspectionAPRIAModal';
 import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
-import InspectionUnifieeModal from './InspectionUnifieeModal';
+import InspectionEquipementWrapper from './InspectionEquipementWrapper';
 import HistoriqueInspectionsUnifiees from './HistoriqueInspectionsUnifiees';
 
 // ===== Composant principal =====
