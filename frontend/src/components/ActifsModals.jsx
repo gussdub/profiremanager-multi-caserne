@@ -56,7 +56,7 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
         
         <form onSubmit={onSubmit}>
           {type === 'vehicules' ? (
-            <VehiculeForm formData={formData} handleChange={handleChange} />
+            <VehiculeForm formData={formData} handleChange={handleChange} setFormData={setFormData} />
           ) : (
             <BorneForm formData={formData} handleChange={handleChange} />
           )}
