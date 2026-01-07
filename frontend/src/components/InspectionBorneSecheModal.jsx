@@ -527,65 +527,55 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
     }
   };
 
-  // Rendu d'un champ selon son type
-  const renderField = (section) => {
-    const reponse = reponses[section.id];
-    if (!reponse) return null;
+  // Rendu d'une section avec ses items (nouveau format)
+  const renderSection = (section) => {
+    const sectionReponses = reponses[section.id];
+    if (!sectionReponses) return null;
+    
+    // Si la section n'a pas d'items, afficher un message
+    if (!section.items || section.items.length === 0) {
+      return <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Aucun élément dans cette section</p>;
+    }
 
-    switch (section.type_champ) {
-      case 'radio':
-        // Radio avec items
-        if (section.items?.length > 0) {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {section.items.map(item => (
-                <div key={item.id} style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.375rem', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontWeight: '500', marginBottom: '0.5rem' }}>{item.nom}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {section.options?.map(opt => {
-                      const isSelected = reponse.items?.[item.id] === opt.label;
-                      const isAlerte = opt.declencherAlerte;
-                      return (
-                        <label
-                          key={opt.label}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '0.375rem',
-                            cursor: 'pointer',
-                            border: isSelected ? '2px solid' : '1px solid #d1d5db',
-                            borderColor: isSelected ? (isAlerte ? '#dc2626' : '#10b981') : '#d1d5db',
-                            backgroundColor: isSelected ? (isAlerte ? '#fef2f2' : '#f0fdf4') : 'white'
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name={`${section.id}_${item.id}`}
-                            checked={isSelected}
-                            onChange={() => updateReponse(section.id, opt.label, item.id)}
-                            style={{ display: 'none' }}
-                          />
-                          {isAlerte && '⚠️ '}{opt.label}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {section.items.map(item => (
+          <div key={item.id} style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#374151' }}>
+              {item.nom}
+              {item.obligatoire && <span style={{ color: '#dc2626', marginLeft: '0.25rem' }}>*</span>}
             </div>
-          );
-        }
-        // Radio simple
+            {renderItemField(item, section.id, sectionReponses.items?.[item.id])}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Rendu d'un champ individuel selon son type
+  const renderItemField = (item, sectionId, value) => {
+    const type = item.type || 'radio';
+    const options = item.options || [];
+    
+    switch (type) {
+      case 'radio':
+      case 'conforme_nc':
+      case 'oui_non':
+      case 'present_absent':
+        // Champ avec boutons radio
+        const radioOptions = options.length > 0 ? options : 
+          (type === 'conforme_nc' ? ['Conforme', 'Non conforme'] :
+           type === 'oui_non' ? ['Oui', 'Non'] :
+           type === 'present_absent' ? ['Présent', 'Absent', 'Défectueux'] : ['Oui', 'Non']);
+        
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {section.options?.map(opt => {
-              const isSelected = reponse.valeur === opt.label;
-              const isAlerte = opt.declencherAlerte;
+            {radioOptions.map(opt => {
+              const isSelected = value === opt;
+              const isAlerte = item.alertes?.valeurs_declenchantes?.includes(opt);
               return (
                 <label
-                  key={opt.label}
+                  key={opt}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -595,17 +585,18 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                     cursor: 'pointer',
                     border: isSelected ? '2px solid' : '1px solid #d1d5db',
                     borderColor: isSelected ? (isAlerte ? '#dc2626' : '#10b981') : '#d1d5db',
-                    backgroundColor: isSelected ? (isAlerte ? '#fef2f2' : '#f0fdf4') : 'white'
+                    backgroundColor: isSelected ? (isAlerte ? '#fef2f2' : '#f0fdf4') : 'white',
+                    fontSize: '0.875rem'
                   }}
                 >
                   <input
                     type="radio"
-                    name={section.id}
+                    name={`${sectionId}_${item.id}`}
                     checked={isSelected}
-                    onChange={() => updateReponse(section.id, opt.label)}
+                    onChange={() => updateReponse(sectionId, opt, item.id)}
                     style={{ display: 'none' }}
                   />
-                  {isAlerte && '⚠️ '}{opt.label}
+                  {isAlerte && isSelected && '⚠️ '}{opt}
                 </label>
               );
             })}
@@ -614,117 +605,159 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
 
       case 'checkbox':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {section.options?.map(opt => {
-              const isChecked = Array.isArray(reponse.valeur) && reponse.valeur.includes(opt.label);
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {options.map(opt => {
+              const isChecked = Array.isArray(value) && value.includes(opt);
               return (
-                <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <label
+                  key={opt}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    border: isChecked ? '2px solid #10b981' : '1px solid #d1d5db',
+                    backgroundColor: isChecked ? '#f0fdf4' : 'white',
+                    fontSize: '0.875rem'
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => {
-                      const current = Array.isArray(reponse.valeur) ? reponse.valeur : [];
-                      const newValue = isChecked ? current.filter(v => v !== opt.label) : [...current, opt.label];
-                      updateReponse(section.id, newValue);
+                    onChange={(e) => {
+                      const currentValues = Array.isArray(value) ? value : [];
+                      const newValues = e.target.checked 
+                        ? [...currentValues, opt]
+                        : currentValues.filter(v => v !== opt);
+                      updateReponse(sectionId, newValues, item.id);
                     }}
                   />
-                  {opt.declencherAlerte && '⚠️ '}{opt.label}
+                  {opt}
                 </label>
               );
             })}
           </div>
         );
 
-      case 'select':
-        return (
-          <select
-            value={reponse.valeur || ''}
-            onChange={(e) => updateReponse(section.id, e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '1rem' }}
-          >
-            <option value="">-- Sélectionner --</option>
-            {section.options?.map(opt => (
-              <option key={opt.label} value={opt.label}>
-                {opt.declencherAlerte ? '⚠️ ' : ''}{opt.label}
-              </option>
-            ))}
-          </select>
-        );
-
-      case 'text':
+      case 'texte':
         return (
           <textarea
-            value={reponse.valeur || ''}
-            onChange={(e) => updateReponse(section.id, e.target.value)}
-            rows={3}
-            style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '1rem', resize: 'vertical' }}
-            placeholder="Entrez votre commentaire..."
+            value={value || ''}
+            onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
+            placeholder="Entrez votre texte..."
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '0.9rem',
+              minHeight: '80px',
+              resize: 'vertical'
+            }}
           />
         );
 
-      case 'number':
+      case 'nombre':
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input
-              type="number"
-              value={reponse.valeur || ''}
-              onChange={(e) => updateReponse(section.id, e.target.value ? parseFloat(e.target.value) : '')}
-              style={{ flex: 1, padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '1rem' }}
-              placeholder="Valeur"
-            />
-            {section.unite && <span style={{ color: '#6b7280', fontWeight: '500' }}>{section.unite}</span>}
-          </div>
-        );
-
-      case 'toggle':
-        return (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={reponse.valeur || false}
-              onChange={(e) => updateReponse(section.id, e.target.checked)}
-              style={{ width: '1.5rem', height: '1.5rem' }}
-            />
-            <span style={{ fontWeight: '500' }}>{reponse.valeur ? 'Oui ✓' : 'Non'}</span>
-          </label>
+          <input
+            type="number"
+            value={value || ''}
+            onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
+            min={item.config?.min}
+            max={item.config?.max}
+            step={item.config?.step || 1}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
         );
 
       case 'date':
         return (
           <input
             type="date"
-            value={reponse.valeur || ''}
-            onChange={(e) => updateReponse(section.id, e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '1rem' }}
+            value={value || ''}
+            onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
           />
         );
 
-      case 'timer':
-        return <TimerField value={reponse.valeur} onChange={(v) => updateReponse(section.id, v)} unite={section.unite} seuilAlerte={section.seuil_alerte} />;
+      case 'liste':
+        return (
+          <select
+            value={value || ''}
+            onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem',
+              backgroundColor: 'white'
+            }}
+          >
+            <option value="">-- Sélectionner --</option>
+            {options.map((opt, idx) => (
+              <option key={idx} value={opt}>{opt}</option>
+            ))}
+          </select>
+        );
 
-      case 'geolocation':
-        return <GeolocationField value={reponse.valeur} onChange={(v) => updateReponse(section.id, v)} />;
+      case 'lieu':
+        return <GeolocationField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} />;
 
       case 'signature':
-        return <SignatureField value={reponse.valeur} onChange={(v) => updateReponse(section.id, v)} />;
+        return <SignatureField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} />;
 
-      case 'rating':
-        return <RatingField value={reponse.valeur || 0} onChange={(v) => updateReponse(section.id, v)} />;
+      case 'chronometre':
+        return <TimerField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} unite={item.config?.unite} seuilAlerte={item.alertes?.seuil_max} />;
 
       case 'photo':
         return (
-          <div>
-            <ImageUpload
-              value={reponse.valeur || ''}
-              onChange={(url) => updateReponse(section.id, url)}
-              multiple={true}
-            />
-          </div>
+          <ImageUpload
+            value={value || ''}
+            onChange={(url) => updateReponse(sectionId, url, item.id)}
+            multiple={true}
+          />
+        );
+
+      case 'inspecteur':
+        return (
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
+            placeholder="Nom de l'inspecteur"
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
         );
 
       default:
-        return <p style={{ color: '#6b7280' }}>Type de champ non supporté: {section.type_champ}</p>;
+        return <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Type de champ non supporté: {type}</p>;
     }
+  };
+
+  // Ancienne fonction de rendu (pour compatibilité)
+  const renderField = (section) => {
+    return renderSection(section);
   };
 
   if (loading) {
