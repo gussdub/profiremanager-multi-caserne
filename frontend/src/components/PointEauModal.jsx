@@ -1091,7 +1091,7 @@ const PointEauModal = ({
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Sauvegarde...' : (point?.id ? 'Modifier' : 'Créer')}
+              {loading ? 'Sauvegarde...' : (point?.id ? 'Enregistrer' : 'Créer')}
             </button>
           </div>
         </form>
