@@ -353,16 +353,45 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
     fetchModeles();
   }, [tenantSlug, borne, canSelectModele]);
 
-  // Initialiser les réponses pour un modèle
+  // Initialiser les réponses pour un modèle (nouveau format avec items par section)
   const initializeReponses = (modeleData) => {
     const initialReponses = {};
     modeleData.sections?.forEach(section => {
+      // Pour chaque section, initialiser les réponses de tous ses items
+      const itemsReponses = {};
+      (section.items || []).forEach(item => {
+        const type = item.type || 'radio';
+        let defaultValue = '';
+        
+        // Valeur par défaut selon le type
+        switch(type) {
+          case 'checkbox':
+            defaultValue = [];
+            break;
+          case 'radio':
+          case 'conforme_nc':
+          case 'oui_non':
+          case 'present_absent':
+            defaultValue = item.options?.[0] || '';
+            break;
+          case 'nombre':
+          case 'slider':
+            defaultValue = item.config?.min || 0;
+            break;
+          case 'toggle':
+            defaultValue = false;
+            break;
+          default:
+            defaultValue = '';
+        }
+        
+        itemsReponses[item.id] = defaultValue;
+      });
+      
       initialReponses[section.id] = {
         section_id: section.id,
         section_titre: section.titre,
-        type_champ: section.type_champ,
-        valeur: section.type_champ === 'checkbox' ? [] : (section.type_champ === 'toggle' ? false : ''),
-        items: {}
+        items: itemsReponses
       };
     });
     setReponses(initialReponses);
