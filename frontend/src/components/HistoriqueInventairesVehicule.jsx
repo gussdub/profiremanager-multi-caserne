@@ -15,8 +15,47 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
   const fetchInventaires = async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, `/vehicules/${vehicule.id}/inventaires`);
-      setInventaires(data || []);
+      let allInventaires = [];
+      
+      // 1. Charger les inventaires de l'ancien système
+      try {
+        const oldData = await apiGet(tenantSlug, `/vehicules/${vehicule.id}/inventaires`);
+        if (oldData && Array.isArray(oldData)) {
+          allInventaires = [...allInventaires, ...oldData.map(i => ({ ...i, source: 'ancien' }))];
+        }
+      } catch (e) {
+        console.log('Ancien système inventaires non disponible:', e);
+      }
+      
+      // 2. Charger les inspections/inventaires du système unifié
+      try {
+        const newData = await apiGet(tenantSlug, `/inspections-unifiees/vehicule/${vehicule.id}`);
+        if (newData && Array.isArray(newData)) {
+          // Convertir vers le format d'affichage
+          const converted = newData.map(i => ({
+            ...i,
+            source: 'unifie',
+            date_inventaire: i.date_inspection || i.created_at,
+            effectue_par: i.inspecteur_nom || i.inspecteur_email || 'Non spécifié',
+            modele_nom: i.formulaire_nom || 'Formulaire unifié',
+            statut_global: i.conforme ? 'conforme' : 'non_conforme',
+            items_manquants: i.alertes?.length || 0,
+            items_defectueux: 0
+          }));
+          allInventaires = [...allInventaires, ...converted];
+        }
+      } catch (e) {
+        console.log('Système unifié inventaires non disponible:', e);
+      }
+      
+      // Trier par date décroissante
+      allInventaires.sort((a, b) => {
+        const dateA = new Date(a.date_inventaire || a.created_at);
+        const dateB = new Date(b.date_inventaire || b.created_at);
+        return dateB - dateA;
+      });
+      
+      setInventaires(allInventaires);
     } catch (error) {
       console.error('Erreur chargement inventaires:', error);
     } finally {
