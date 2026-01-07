@@ -1389,23 +1389,32 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
     date_achat: equipement?.date_achat || '',
     prix_achat: equipement?.prix_achat || 0,
     notes: equipement?.notes || '',
-    champs_personnalises: equipement?.champs_personnalises || {}
+    champs_personnalises: equipement?.champs_personnalises || {},
+    modele_inspection_id: equipement?.modele_inspection_id || ''
   });
   const [loading, setLoading] = useState(false);
   const [vehicules, setVehicules] = useState([]);
   const [employes, setEmployes] = useState([]);
+  const [formulaires, setFormulaires] = useState([]);
   const [selectedCategorie, setSelectedCategorie] = useState(null);
 
-  // Charger véhicules et employés
+  // Charger véhicules, employés et formulaires
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiculesData, employesData] = await Promise.all([
+        const [vehiculesData, employesData, formulairesData] = await Promise.all([
           apiGet(tenantSlug, '/actifs/vehicules').catch(() => []),
-          apiGet(tenantSlug, '/users').catch(() => [])
+          apiGet(tenantSlug, '/users').catch(() => []),
+          apiGet(tenantSlug, '/formulaires-inspection').catch(() => [])
         ]);
         setVehicules(vehiculesData || []);
         setEmployes(employesData || []);
+        // Filtrer les formulaires actifs de catégorie "equipement"
+        const formulairesEquipement = (formulairesData || []).filter(f => 
+          f.est_actif !== false && 
+          (f.categorie_ids?.includes('equipement') || f.type === 'inspection')
+        );
+        setFormulaires(formulairesEquipement);
       } catch (err) {
         console.error('Erreur chargement données:', err);
       }
