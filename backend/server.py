@@ -10311,6 +10311,9 @@ class Equipement(BaseModel):
     # Champs personnalisés (flexibilité maximale)
     champs_personnalises: Dict[str, Any] = {}  # {nom_champ: valeur}
     
+    # Formulaire d'inspection assigné (optionnel)
+    modele_inspection_id: str = ""  # ID du formulaire d'inspection assigné
+    
     # Métadonnées
     notes: str = ""
     tags: List[str] = []
@@ -10347,6 +10350,7 @@ class EquipementCreate(BaseModel):
     photos: List[str] = []
     documents: List[str] = []
     champs_personnalises: Dict[str, Any] = {}
+    modele_inspection_id: str = ""  # ID du formulaire d'inspection assigné
     notes: str = ""
     tags: List[str] = []
 
@@ -10386,6 +10390,7 @@ class EquipementUpdate(BaseModel):
     alerte_reparation: Optional[bool] = None
     alerte_fin_vie: Optional[bool] = None
     alerte_expiration: Optional[bool] = None
+    modele_inspection_id: Optional[str] = None  # ID du formulaire d'inspection assigné
 
 
 # ==================== MULTI-TENANT DEPENDENCIES ====================
