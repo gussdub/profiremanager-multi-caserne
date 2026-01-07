@@ -872,7 +872,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
             {showAnomalieForm && (
               <div style={{ marginTop: '1rem' }}>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                  Description de l'anomalie *
+                  Description de l&apos;anomalie *
                 </label>
                 <textarea
                   value={anomalieData.commentaire}
