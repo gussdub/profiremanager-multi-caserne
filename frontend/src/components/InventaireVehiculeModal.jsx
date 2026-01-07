@@ -57,9 +57,12 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       
       // PRIORITÉ 1: Si le véhicule a un formulaire assigné, l'utiliser
       if (vehicule.modele_inventaire_id) {
+        console.log('Recherche du formulaire assigné:', vehicule.modele_inventaire_id);
         const assignedFormulaire = (allFormulaires || []).find(f => f.id === vehicule.modele_inventaire_id);
+        console.log('Formulaire trouvé:', assignedFormulaire?.nom);
         if (assignedFormulaire) {
           const modeleConverti = convertFormulaire(assignedFormulaire);
+          console.log('Modèle converti avec', modeleConverti.sections?.length, 'sections');
           setModeles([modeleConverti]);
           handleSelectionModele(modeleConverti);
           return;
@@ -71,6 +74,8 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         f.est_actif !== false &&
         f.categorie_ids?.includes('vehicule')
       );
+      
+      console.log('Formulaires véhicule filtrés:', vehiculeFormulaires.length);
       
       // Convertir le format
       const modelesConverts = vehiculeFormulaires.map(convertFormulaire);
