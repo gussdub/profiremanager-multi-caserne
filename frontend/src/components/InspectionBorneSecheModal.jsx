@@ -884,7 +884,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                 />
                 <div style={{ marginTop: '0.75rem' }}>
                   <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                    Photos de l'anomalie
+                    Photos de l&apos;anomalie
                   </label>
                   <ImageUpload
                     value={anomalieData.photos}
