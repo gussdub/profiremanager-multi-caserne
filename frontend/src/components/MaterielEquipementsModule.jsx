@@ -453,6 +453,46 @@ const MaterielEquipementsModule = ({ user }) => {
           equipementId={selectedEquipementAPRIA?.id}
         />
       )}
+
+      {/* Modal Inspection Équipement (formulaire assigné) */}
+      {showInspectionEquipementModal && selectedEquipementInspection && (
+        <InspectionUnifieeModal
+          isOpen={showInspectionEquipementModal}
+          onClose={() => {
+            setShowInspectionEquipementModal(false);
+            setSelectedEquipementInspection(null);
+          }}
+          tenantSlug={tenantSlug}
+          user={user}
+          asset={{
+            id: selectedEquipementInspection.id,
+            nom: selectedEquipementInspection.nom,
+            code_unique: selectedEquipementInspection.code_unique,
+            type: 'equipement'
+          }}
+          formulaireId={selectedEquipementInspection.modele_inspection_id}
+          onSuccess={() => {
+            setShowInspectionEquipementModal(false);
+            setSelectedEquipementInspection(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Modal Historique Inspections Équipement */}
+      {showHistoriqueEquipementModal && selectedEquipementInspection && (
+        <HistoriqueInspectionsUnifiees
+          isOpen={showHistoriqueEquipementModal}
+          onClose={() => {
+            setShowHistoriqueEquipementModal(false);
+            setSelectedEquipementInspection(null);
+          }}
+          tenantSlug={tenantSlug}
+          assetId={selectedEquipementInspection.id}
+          assetType="equipement"
+          assetName={selectedEquipementInspection.nom}
+        />
+      )}
     </div>
   );
 };
