@@ -254,6 +254,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   const [showAnomalieForm, setShowAnomalieForm] = useState(false);
   const [anomalieData, setAnomalieData] = useState({ commentaire: '', photos: [] });
   const [alertes, setAlertes] = useState([]);
+  const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
 
   // Vérifier si l'utilisateur peut choisir le formulaire
   const canSelectModele = userRole === 'admin' || userRole === 'superviseur';
