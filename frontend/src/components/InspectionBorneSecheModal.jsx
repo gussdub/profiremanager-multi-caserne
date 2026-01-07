@@ -126,6 +126,7 @@ const GeolocationField = ({ value, onChange }) => {
 // Composant Signature
 const SignatureField = ({ value, onChange }) => {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
@@ -137,12 +138,24 @@ const SignatureField = ({ value, onChange }) => {
     }
   }, []);
 
+  // Obtenir les coordonnées correctes en tenant compte de l'échelle
+  const getCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const { x, y } = getCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -153,9 +166,7 @@ const SignatureField = ({ value, onChange }) => {
     e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const { x, y } = getCoordinates(e);
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000';
@@ -178,12 +189,21 @@ const SignatureField = ({ value, onChange }) => {
   };
 
   return (
-    <div style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+    <div ref={containerRef} style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
       <canvas
         ref={canvasRef}
-        width={300}
-        height={150}
-        style={{ border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', touchAction: 'none', width: '100%', maxWidth: '100%', height: 'auto', aspectRatio: '2/1' }}
+        width={400}
+        height={200}
+        style={{ 
+          border: '1px solid #d1d5db', 
+          borderRadius: '0.375rem', 
+          backgroundColor: 'white', 
+          touchAction: 'none', 
+          width: '100%', 
+          maxWidth: '400px',
+          display: 'block',
+          cursor: 'crosshair'
+        }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
