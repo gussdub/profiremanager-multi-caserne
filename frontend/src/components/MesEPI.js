@@ -998,10 +998,23 @@ const MesEPI = ({ user }) => {
                         <span className="historique-date">
                           📅 {new Date(inspection.date_inspection).toLocaleDateString('fr-FR')} à {new Date(inspection.date_inspection).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <span className={`badge ${inspection.statut === 'ok' ? 'badge-success' : 'badge-danger'}`}>
-                          {inspection.statut === 'ok' ? '✅ OK' : '⚠️ Défaut'}
+                        <span className={`badge ${inspection.statut === 'ok' || inspection.statut === 'conforme' ? 'badge-success' : 'badge-danger'}`}>
+                          {inspection.statut === 'ok' || inspection.statut === 'conforme' ? '✅ OK' : '⚠️ Défaut'}
                         </span>
                       </div>
+                      {inspection.formulaire_nom && (
+                        <div style={{ fontSize: '0.85rem', color: '#3b82f6', marginBottom: '0.5rem' }}>
+                          📋 {inspection.formulaire_nom}
+                        </div>
+                      )}
+                      {inspection.type_inspection && inspection.type_inspection !== 'formulaire' && (
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                          Type: {inspection.type_inspection === 'apres_usage' ? 'Après usage' : 
+                                 inspection.type_inspection === 'routine' ? 'Routine mensuelle' : 
+                                 inspection.type_inspection === 'avancee' ? 'Avancée annuelle' : 
+                                 inspection.type_inspection}
+                        </div>
+                      )}
                       {inspection.defauts_constates && (
                         <div className="historique-defauts">
                           <strong>Défauts:</strong> {inspection.defauts_constates}
