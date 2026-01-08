@@ -9634,6 +9634,7 @@ class NettoyageEPI(BaseModel):
     nombre_cycles: int = 1  # Pour suivi limite fabricant
     temperature: str = ""  # Ex: "Eau tiède max 40°C"
     produits_utilises: str = ""
+    cout_nettoyage: float = 0.0  # Coût du nettoyage (pour les externes)
     notes: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
