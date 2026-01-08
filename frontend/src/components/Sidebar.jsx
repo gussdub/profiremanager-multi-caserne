@@ -442,12 +442,33 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           // EPI et équipements
                           case 'demande_remplacement_epi':
                           case 'reponse_demande_remplacement_epi':
+                            setCurrentPage('actifs');
+                            // Naviguer vers l'onglet EPI et ouvrir la demande spécifique
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                              // Si on a l'ID de la demande, l'ouvrir directement
+                              if (notif.data?.demande_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openDemandeRemplacement', { 
+                                    detail: { demandeId: notif.data.demande_id } 
+                                  }));
+                                }, 300);
+                              }
+                            }, 100);
+                            break;
                           case 'epi_inspection':
                           case 'epi_alerte':
                             setCurrentPage('actifs');
-                            // Notifier le composant pour ouvrir l'onglet EPI
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                              // Si on a l'ID de l'EPI, l'ouvrir directement
+                              if (notif.data?.epi_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openEPIDetail', { 
+                                    detail: { epiId: notif.data.epi_id, action: 'inspect' } 
+                                  }));
+                                }, 300);
+                              }
                             }, 100);
                             break;
                           case 'equipement_alerte':
@@ -456,6 +477,14 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             setCurrentPage('actifs');
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'equipements' } }));
+                              // Si on a l'ID de l'équipement, l'ouvrir
+                              if (notif.data?.equipement_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openEquipementDetail', { 
+                                    detail: { equipementId: notif.data.equipement_id } 
+                                  }));
+                                }, 300);
+                              }
                             }, 100);
                             break;
                           case 'borne_seche':
@@ -464,6 +493,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             setCurrentPage('actifs');
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'eau' } }));
+                              if (notif.data?.borne_id || notif.data?.point_eau_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openPointEauDetail', { 
+                                    detail: { pointEauId: notif.data.borne_id || notif.data.point_eau_id } 
+                                  }));
+                                }, 300);
+                              }
                             }, 100);
                             break;
                           case 'vehicule_inspection':
@@ -471,6 +507,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             setCurrentPage('actifs');
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'vehicules' } }));
+                              if (notif.data?.vehicule_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openVehiculeDetail', { 
+                                    detail: { vehiculeId: notif.data.vehicule_id } 
+                                  }));
+                                }, 300);
+                              }
                             }, 100);
                             break;
                           case 'prevention':
