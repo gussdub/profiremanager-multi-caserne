@@ -1707,8 +1707,18 @@ const ModuleEPI = ({ user }) => {
                       <Button 
                         variant="outline"
                         onClick={() => {
-                          setSelectedFormulaireEPI(formulairesEPI[0]);
-                          setShowUnifiedInspectionModal(true);
+                          const formulaire = formulairesEPI[0];
+                          if (formulaire) {
+                            console.log('Ouverture inspection avec formulaire:', formulaire.nom, formulaire.id);
+                            setSelectedFormulaireEPI(formulaire);
+                            setShowUnifiedInspectionModal(true);
+                          } else {
+                            toast({
+                              title: "Erreur",
+                              description: "Aucun formulaire d'inspection EPI disponible",
+                              variant: "destructive"
+                            });
+                          }
                         }}
                         style={{ borderColor: '#3B82F6', color: '#3B82F6' }}
                       >
@@ -1716,7 +1726,7 @@ const ModuleEPI = ({ user }) => {
                       </Button>
                     )}
                     <Button onClick={() => setShowInspectionModal(true)}>
-                      ➕ Inspection NFPA 1851
+                      🔧 Inspection avancée annuelle
                     </Button>
                   </div>
                 </div>
