@@ -2666,6 +2666,7 @@ const Dashboard = () => {
       )}
 
       {/* Modal Inspection Unifiée (Système de formulaires personnalisés) */}
+      {console.log('Modal conditions:', { showUnifiedInspectionModal, hasSelectedEPI: !!selectedEPI, hasFormulaire: !!selectedFormulaireEPI, formulaireId: selectedEPI?.formulaire_avancee_id })}
       {showUnifiedInspectionModal && selectedEPI && selectedFormulaireEPI && (
         <InspectionUnifieeModal
           isOpen={showUnifiedInspectionModal}
