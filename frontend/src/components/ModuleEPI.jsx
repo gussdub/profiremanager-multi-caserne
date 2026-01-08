@@ -257,10 +257,10 @@ const ModuleEPI = ({ user }) => {
       
       if (demandeId) {
         // Charger les données si nécessaire
-        if (demandesRemplacement.length === 0) {
+        if (demandesRemplacementEPI.length === 0) {
           try {
             const data = await apiGet(tenantSlug, '/epi/demandes-remplacement');
-            setDemandesRemplacement(data || []);
+            setDemandesRemplacementEPI(data || []);
             
             // Trouver la demande et l'ouvrir
             const demande = (data || []).find(d => d.id === demandeId);
@@ -274,7 +274,7 @@ const ModuleEPI = ({ user }) => {
           }
         } else {
           // Données déjà chargées, trouver et ouvrir
-          const demande = demandesRemplacement.find(d => d.id === demandeId);
+          const demande = demandesRemplacementEPI.find(d => d.id === demandeId);
           if (demande) {
             setActiveSubTab('remplacements');
             setSelectedDemandeRemplacement(demande);
@@ -312,7 +312,7 @@ const ModuleEPI = ({ user }) => {
       window.removeEventListener('openDemandeRemplacement', handleOpenDemandeRemplacement);
       window.removeEventListener('openEPIDetail', handleOpenEPIDetail);
     };
-  }, [tenantSlug, demandesRemplacement, epis]);
+  }, [tenantSlug, demandesRemplacementEPI, epis]);
   
   useEffect(() => {
     if (activeTab === 'rapports' && tenantSlug) {
