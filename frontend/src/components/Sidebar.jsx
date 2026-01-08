@@ -444,15 +444,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           case 'conge_approuve':
                           case 'conge_refuse':
                           case 'conge_demande':
-                            setCurrentPage('disponibilites');
-                            // Si on a l'ID de la demande, l'ouvrir directement
-                            if (notif.data?.demande_id) {
-                              setTimeout(() => {
-                                window.dispatchEvent(new CustomEvent('openDemandeConge', { 
-                                  detail: { demandeId: notif.data.demande_id } 
-                                }));
-                              }, 300);
-                            }
+                            setCurrentPage('remplacements'); // Les congés sont gérés dans le module Remplacements
+                            // Si on a l'ID de la demande, naviguer vers l'onglet congés
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openDemandeConge', { 
+                                detail: { demandeId: notif.data?.demande_id } 
+                              }));
+                            }, 300);
                             break;
                           case 'formation_assignee':
                           case 'formation_rappel':
