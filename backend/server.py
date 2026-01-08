@@ -9649,6 +9649,7 @@ class NettoyageEPICreate(BaseModel):
     nombre_cycles: int = 1
     temperature: str = ""
     produits_utilises: str = ""
+    cout_nettoyage: float = 0.0
     notes: str = ""
 
 class ReparationEPI(BaseModel):
