@@ -691,6 +691,7 @@ const ModuleEPI = ({ user }) => {
       } else {
         const data = {
           ...reparationForm,
+          epi_id: selectedEPI.id,
           demandeur: reparationForm.demandeur || `${user?.prenom || ''} ${user?.nom || ''}`
         };
         await apiPost(tenantSlug, `/epi/${selectedEPI.id}/reparation`, data);
