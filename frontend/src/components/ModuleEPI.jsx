@@ -175,11 +175,25 @@ const ModuleEPI = ({ user }) => {
     const loadFormulairesEPI = async () => {
       try {
         const formulaires = await apiGet(tenantSlug, '/formulaires-inspection');
-        // Filtrer les formulaires applicables aux EPI uniquement (catégorie 'epi')
-        const epiFormulaires = (formulaires || []).filter(f => 
-          f.est_actif !== false && f.categorie_ids?.includes('epi')
-        );
-        console.log('Formulaires EPI chargés:', epiFormulaires.length, epiFormulaires.map(f => f.nom));
+        // Filtrer les formulaires applicables aux EPI
+        // Un formulaire EPI a 'epi' dans ses categorie_ids OU dans son nom/description
+        const epiFormulaires = (formulaires || []).filter(f => {
+          if (f.est_actif === false) return false;
+          
+          // Vérifier si 'epi' est dans categorie_ids (tableau)
+          if (Array.isArray(f.categorie_ids)) {
+            const hasEpiCategory = f.categorie_ids.some(cat => 
+              typeof cat === 'string' && cat.toLowerCase() === 'epi'
+            );
+            if (hasEpiCategory) return true;
+          }
+          
+          // Vérifier aussi le nom du formulaire (fallback)
+          if (f.nom && f.nom.toLowerCase().includes('epi')) return true;
+          
+          return false;
+        });
+        console.log('Formulaires EPI chargés:', epiFormulaires.length, epiFormulaires.map(f => ({ nom: f.nom, categories: f.categorie_ids })));
         setFormulairesEPI(epiFormulaires);
       } catch (error) {
         console.log('Formulaires EPI non chargés:', error);
