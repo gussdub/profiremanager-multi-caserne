@@ -596,7 +596,7 @@ const Remplacements = () => {
                         <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
-                    {user.role !== 'employe' && demande.statut === 'en_cours' && (
+                    {user.role !== 'employe' && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                       <div className="demande-actions">
                         <Button 
                           variant="outline" 
