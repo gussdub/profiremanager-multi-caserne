@@ -2755,35 +2755,6 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-
-      {/* Modal Inspection Unifiée (Système de formulaires personnalisés) */}
-      {console.log('[DEBUG RENDER] showUnifiedInspectionModal:', showUnifiedInspectionModal, 'selectedEPI:', !!selectedEPI, 'selectedFormulaireEPI:', !!selectedFormulaireEPI)}
-      {showUnifiedInspectionModal && selectedEPI && selectedFormulaireEPI && (
-        <InspectionUnifieeModal
-          isOpen={showUnifiedInspectionModal}
-          formulaire={selectedFormulaireEPI}
-          equipement={{
-            id: selectedEPI.id,
-            nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
-            type: 'epi',
-            type_epi: selectedEPI.type_epi
-          }}
-          tenantSlug={tenantSlug}
-          onClose={() => {
-            setShowUnifiedInspectionModal(false);
-            setSelectedFormulaireEPI(null);
-          }}
-          onInspectionCreated={() => {
-            toast({ title: "Succès", description: "Inspection enregistrée avec succès" });
-            setShowUnifiedInspectionModal(false);
-            setSelectedFormulaireEPI(null);
-            if (selectedEPI) {
-              loadInspections(selectedEPI.id);
-            }
-          }}
-          user={user}
-        />
-      )}
     </div>
   );
 };
