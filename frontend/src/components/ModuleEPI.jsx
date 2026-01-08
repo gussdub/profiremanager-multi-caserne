@@ -1717,31 +1717,29 @@ const ModuleEPI = ({ user }) => {
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem'}}>
                   <h3>📋 Historique des inspections ({inspections.length})</h3>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {formulairesEPI.length > 0 && (
+                    {selectedEPI?.formulaire_avancee_id ? (
                       <Button 
-                        variant="outline"
-                        onClick={() => {
-                          const formulaire = formulairesEPI[0];
-                          if (formulaire) {
-                            console.log('Ouverture inspection avec formulaire:', formulaire.nom, formulaire.id);
+                        onClick={async () => {
+                          try {
+                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${selectedEPI.formulaire_avancee_id}`);
                             setSelectedFormulaireEPI(formulaire);
                             setShowUnifiedInspectionModal(true);
-                          } else {
+                          } catch (error) {
                             toast({
                               title: "Erreur",
-                              description: "Aucun formulaire d'inspection EPI disponible",
+                              description: "Impossible de charger le formulaire d'inspection",
                               variant: "destructive"
                             });
                           }
                         }}
-                        style={{ borderColor: '#3B82F6', color: '#3B82F6' }}
                       >
-                        📝 Inspection formulaire
+                        🔧 Inspection avancée annuelle
                       </Button>
+                    ) : (
+                      <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                        Aucun formulaire d'inspection avancée assigné à cet EPI
+                      </p>
                     )}
-                    <Button onClick={() => setShowInspectionModal(true)}>
-                      🔧 Inspection avancée annuelle
-                    </Button>
                   </div>
                 </div>
                 
