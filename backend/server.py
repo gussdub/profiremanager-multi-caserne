@@ -6772,12 +6772,18 @@ async def trouver_remplacants_potentiels(
         })
         users_list = await users_cursor.to_list(length=None)
         
+        logging.info(f"🔍 Recherche remplaçants - Type garde: {type_garde_id}, Compétences requises: {competences_requises}, Officier obligatoire: {officier_obligatoire}")
+        logging.info(f"🔍 Trouvé {len(users_list)} employés temps partiel (excluant {len(exclus_ids_set)} IDs)")
+        
         remplacants_potentiels = []
         
         for user in users_list:
+            user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
+            
             # 1. Vérifier les compétences
             user_competences = set(user.get("competences", []))
             if competences_requises and not set(competences_requises).issubset(user_competences):
+                logging.debug(f"❌ {user_name} - Compétences insuffisantes: {user_competences} vs requis: {competences_requises}")
                 continue  # Ne possède pas toutes les compétences requises
             
             # 2. Vérifier le grade
