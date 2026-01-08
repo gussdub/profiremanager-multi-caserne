@@ -1980,7 +1980,8 @@ const ModuleEPI = ({ user }) => {
                 id: selectedEPI.id,
                 nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
                 type: 'epi',
-                type_epi: selectedEPI.type_epi
+                type_epi: selectedEPI.type_epi,
+                type_inspection: 'avancee'  // Inspection avancée annuelle
               }}
               tenantSlug={tenantSlug}
               onClose={() => {
