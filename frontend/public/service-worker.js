@@ -165,6 +165,7 @@ self.addEventListener('push', (event) => {
 // Gérer le clic sur une notification
 self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification cliquée:', event.notification.tag);
+  console.log('[Service Worker] Notification data:', event.notification.data);
   
   event.notification.close();
   
@@ -172,22 +173,78 @@ self.addEventListener('notificationclick', (event) => {
   let urlToOpen = '/';
   const data = event.notification.data || {};
   
+  // Priorité: url > lien > tenant/dashboard
   if (data.url) {
     urlToOpen = data.url;
+  } else if (data.lien) {
+    // Construire l'URL complète avec le tenant
+    const tenant = data.tenant || '';
+    if (data.lien.startsWith('/')) {
+      urlToOpen = tenant ? `/${tenant}${data.lien}` : data.lien;
+    } else {
+      urlToOpen = data.lien;
+    }
   } else if (data.tenant) {
     urlToOpen = `/${data.tenant}/dashboard`;
   }
+  
+  // Ajouter les paramètres de navigation si présents
+  if (data.type === 'remplacement_demande' || data.type === 'remplacement_epi') {
+    // Rediriger vers la section remplacements
+    const tenant = data.tenant || '';
+    urlToOpen = tenant ? `/${tenant}/remplacements` : '/remplacements';
+    if (data.demande_id) {
+      urlToOpen += `?demande=${data.demande_id}`;
+    }
+  } else if (data.type === 'inspection_alerte' || data.type === 'equipement_alerte') {
+    // Rediriger vers la gestion des actifs
+    const tenant = data.tenant || '';
+    urlToOpen = tenant ? `/${tenant}/actifs` : '/actifs';
+  } else if (data.type === 'borne_seche' || data.type === 'point_eau') {
+    // Rediriger vers les points d'eau
+    const tenant = data.tenant || '';
+    urlToOpen = tenant ? `/${tenant}/actifs?tab=eau` : '/actifs?tab=eau';
+  } else if (data.type === 'epi_inspection' || data.type === 'epi_remplacement') {
+    // Rediriger vers les EPI
+    const tenant = data.tenant || '';
+    urlToOpen = tenant ? `/${tenant}/epi` : '/epi';
+  }
+  
+  console.log('[Service Worker] URL à ouvrir:', urlToOpen);
   
   // Ouvrir ou focus la fenêtre
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // Chercher une fenêtre déjà ouverte
+        // Chercher une fenêtre déjà ouverte sur le même tenant
         for (const client of windowClients) {
-          if (client.url.includes(urlToOpen) && 'focus' in client) {
+          // Vérifier si une fenêtre existe déjà
+          const clientUrl = new URL(client.url);
+          const targetUrl = new URL(urlToOpen, self.location.origin);
+          
+          if (clientUrl.pathname === targetUrl.pathname && 'focus' in client) {
+            // Naviguer vers la bonne section si nécessaire
+            client.postMessage({
+              type: 'NAVIGATE',
+              url: urlToOpen,
+              data: data
+            });
             return client.focus();
           }
         }
+        
+        // Chercher n'importe quelle fenêtre de l'app
+        for (const client of windowClients) {
+          if ('focus' in client) {
+            client.postMessage({
+              type: 'NAVIGATE',
+              url: urlToOpen,
+              data: data
+            });
+            return client.focus();
+          }
+        }
+        
         // Sinon ouvrir une nouvelle fenêtre
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
