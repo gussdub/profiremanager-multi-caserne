@@ -1970,6 +1970,32 @@ const ModuleEPI = ({ user }) => {
               )}
             </div>
           </div>
+          
+          {/* Modal Inspection Avancée - Rendu DANS le modal de détails pour éviter les conflits de z-index */}
+          {showUnifiedInspectionModal && selectedFormulaireEPI && (
+            <InspectionUnifieeModal
+              isOpen={showUnifiedInspectionModal}
+              formulaire={selectedFormulaireEPI}
+              equipement={{
+                id: selectedEPI.id,
+                nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
+                type: 'epi',
+                type_epi: selectedEPI.type_epi
+              }}
+              tenantSlug={tenantSlug}
+              onClose={() => {
+                setShowUnifiedInspectionModal(false);
+                setSelectedFormulaireEPI(null);
+              }}
+              onInspectionCreated={() => {
+                toast({ title: "Succès", description: "Inspection enregistrée avec succès" });
+                setShowUnifiedInspectionModal(false);
+                setSelectedFormulaireEPI(null);
+                loadInspections(selectedEPI.id);
+              }}
+              user={user}
+            />
+          )}
         </div>
       )}
       
