@@ -272,7 +272,6 @@ const Planning = () => {
         const targetDate = new Date(date);
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(targetDate.getDate()).padStart(2, '0');
         
         // Calculer le début de la semaine (lundi)
         const dayOfWeek = targetDate.getDay();
@@ -285,15 +284,17 @@ const Planning = () => {
         setCurrentWeek(mondayStr);
         setCurrentMonth(`${year}-${month}`);
         
-        // Ouvrir le modal des détails de la journée après un court délai
+        // Ouvrir le modal des détails de la journée après un délai pour laisser le temps aux données de se charger
         setTimeout(() => {
-          // Trouver le premier type de garde pour ouvrir le modal
-          if (typesGarde.length > 0) {
-            const targetDateObj = new Date(Date.UTC(year, parseInt(month) - 1, parseInt(day), 12, 0, 0));
-            setSelectedSlot({ date: targetDateObj, typeGarde: typesGarde[0] });
-            setShowGardeDetailsModal(true);
+          // Créer la date cible pour ouvrir le modal
+          const targetDateObj = new Date(date);
+          
+          // Ouvrir le modal de détails si on a des types de garde
+          if (typesGarde && typesGarde.length > 0) {
+            // Appeler openGardeDetails avec la date et le premier type de garde
+            openGardeDetails(targetDateObj, typesGarde[0]);
           }
-        }, 500);
+        }, 800); // Délai plus long pour laisser les données se charger
       }
     };
 
@@ -302,7 +303,7 @@ const Planning = () => {
     return () => {
       window.removeEventListener('openPlanningDate', handleOpenPlanningDate);
     };
-  }, [typesGarde]);
+  }, [typesGarde, openGardeDetails]);
 
   const fetchPlanningData = async () => {
     if (!tenantSlug) return;
