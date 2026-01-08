@@ -96,6 +96,7 @@ const ModuleEPI = ({ user }) => {
     nombre_cycles: 1,
     temperature: '',
     produits_utilises: '',
+    cout_nettoyage: 0,
     notes: ''
   });
   
