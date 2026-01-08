@@ -50,6 +50,7 @@ const ModuleEPI = ({ user }) => {
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [typeInspection, setTypeInspection] = useState('apres_utilisation');
   const [inspections, setInspections] = useState([]);
+  const [showAllInspections, setShowAllInspections] = useState(false);
   const [inspectionForm, setInspectionForm] = useState({
     date_inspection: new Date().toISOString().split('T')[0],
     inspecteur_nom: '',
