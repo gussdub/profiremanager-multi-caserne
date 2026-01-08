@@ -1779,14 +1779,23 @@ const ModuleEPI = ({ user }) => {
                       <div key={insp.id} className="inspection-card">
                         <div className="inspection-header">
                           <span className="inspection-type-badge">
-                            {insp.type_inspection === 'apres_utilisation' ? '🔍 Après utilisation' :
-                             insp.type_inspection === 'routine_mensuelle' ? '📅 Routine mensuelle' :
-                             '🔬 Avancée annuelle'}
+                            {insp.type_inspection === 'apres_utilisation' || insp.type_inspection === 'apres_usage' ? '🔍 Après utilisation' :
+                             insp.type_inspection === 'routine_mensuelle' || insp.type_inspection === 'routine' ? '📅 Routine mensuelle' :
+                             insp.type_inspection === 'avancee_annuelle' || insp.type_inspection === 'avancee' ? '🔬 Avancée annuelle' :
+                             insp.type_inspection === 'formulaire_personnalise' ? '📋 Formulaire' :
+                             '📋 Inspection'}
                           </span>
                           <span className={`statut-badge ${insp.statut_global}`}>
-                            {insp.statut_global}
+                            {insp.statut_global === 'conforme' ? '✅ Conforme' : 
+                             insp.statut_global === 'non_conforme' ? '❌ Non conforme' : 
+                             insp.statut_global}
                           </span>
                         </div>
+                        {insp.formulaire_nom && (
+                          <p style={{ color: '#3b82f6', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                            📋 {insp.formulaire_nom}
+                          </p>
+                        )}
                         <p><strong>Date:</strong> {new Date(insp.date_inspection).toLocaleDateString('fr-FR')}</p>
                         <p><strong>Inspecteur:</strong> {insp.inspecteur_nom}</p>
                         {insp.isp_nom && <p><strong>ISP:</strong> {insp.isp_nom}</p>}
