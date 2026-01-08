@@ -6850,7 +6850,7 @@ async def trouver_remplacants_potentiels(
             # 5. Ancienneté (date_embauche)
             date_embauche = user.get("date_embauche", "2999-12-31")  # Si pas de date, le plus récent
             
-            logging.info(f"✅ {user_name} - Ajouté comme remplaçant potentiel (dispo déclarée: {has_disponibilite})")
+            logging.warning(f"✅ {user_name} - Ajouté comme remplaçant potentiel (dispo déclarée: {has_disponibilite})")
             
             remplacants_potentiels.append({
                 "user_id": user["id"],
