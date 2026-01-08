@@ -1891,6 +1891,7 @@ const ModuleEPI = ({ user }) => {
                         <p><strong>Date:</strong> {new Date(nett.date_nettoyage).toLocaleDateString('fr-FR')}</p>
                         <p><strong>Effectué par:</strong> {nett.effectue_par}</p>
                         <p><strong>Cycles:</strong> {nett.nombre_cycles}</p>
+                        {(nett.cout_nettoyage > 0) && <p><strong>Coût:</strong> {nett.cout_nettoyage} $</p>}
                         {nett.notes && <p><strong>Notes:</strong> {nett.notes}</p>}
                       </div>
                     ))}
