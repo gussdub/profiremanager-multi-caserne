@@ -1785,30 +1785,31 @@ const ModuleEPI = ({ user }) => {
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {selectedEPI?.formulaire_avancee_id ? (
                       <Button 
-                        onClick={async () => {
+                        onClick={() => {
                           const formulaireId = selectedEPI.formulaire_avancee_id;
-                          console.log('Bouton cliqué, formulaire_avancee_id:', formulaireId);
-                          try {
-                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
-                            console.log('Formulaire chargé:', formulaire);
-                            if (formulaire && formulaire.id) {
-                              setSelectedFormulaireEPI(formulaire);
-                              setShowUnifiedInspectionModal(true);
-                            } else {
+                          const loadAndOpenInspection = async () => {
+                            try {
+                              const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
+                              if (formulaire && formulaire.id) {
+                                setSelectedFormulaireEPI(formulaire);
+                                setShowUnifiedInspectionModal(true);
+                              } else {
+                                toast({
+                                  title: "Erreur",
+                                  description: "Formulaire non trouvé",
+                                  variant: "destructive"
+                                });
+                              }
+                            } catch (error) {
+                              console.error('Erreur chargement formulaire:', error);
                               toast({
                                 title: "Erreur",
-                                description: "Formulaire non trouvé",
+                                description: "Impossible de charger le formulaire d'inspection",
                                 variant: "destructive"
                               });
                             }
-                          } catch (error) {
-                            console.error('Erreur chargement formulaire:', error);
-                            toast({
-                              title: "Erreur",
-                              description: "Impossible de charger le formulaire d'inspection",
-                              variant: "destructive"
-                            });
-                          }
+                          };
+                          loadAndOpenInspection();
                         }}
                       >
                         ➕ Inspection avancée annuelle
