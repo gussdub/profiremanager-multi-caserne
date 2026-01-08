@@ -492,7 +492,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             }, 100);
                             break;
                           case 'epi_defaut':
-                          case 'epi_nouvel_assignation':
                           case 'epi_reparation_terminee':
                             setCurrentPage('actifs');
                             setTimeout(() => {
@@ -506,6 +505,10 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                                 }, 300);
                               }
                             }, 100);
+                            break;
+                          case 'epi_nouvel_assignation':
+                            // Rediriger vers "Mes EPI" pour les nouvelles assignations
+                            setCurrentPage('mesepi');
                             break;
                           case 'epi_inspection':
                           case 'epi_alerte':
