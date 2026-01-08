@@ -230,8 +230,8 @@ const Remplacements = () => {
     if (user.role === 'employe') return;
 
     try {
-      const newStatut = action === 'approuver' ? 'approuve' : 'refuse';
-      await apiPut(tenantSlug, `/remplacements/${demandeId}`, { statut: newStatut });
+      const endpoint = action === 'approuver' ? 'accepter' : 'refuser';
+      await apiPut(tenantSlug, `/remplacements/${demandeId}/${endpoint}`, {});
       toast({
         title: action === 'approuver' ? "Demande approuvée" : "Demande rejetée",
         description: `La demande de remplacement a été ${action === 'approuver' ? 'approuvée' : 'rejetée'}`,
