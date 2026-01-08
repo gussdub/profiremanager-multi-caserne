@@ -1753,11 +1753,14 @@ const ModuleEPI = ({ user }) => {
                     {selectedEPI?.formulaire_avancee_id ? (
                       <Button 
                         onClick={async () => {
+                          console.log('Bouton cliqué, formulaire_avancee_id:', selectedEPI.formulaire_avancee_id);
                           try {
                             const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${selectedEPI.formulaire_avancee_id}`);
+                            console.log('Formulaire chargé:', formulaire);
                             setSelectedFormulaireEPI(formulaire);
                             setShowUnifiedInspectionModal(true);
                           } catch (error) {
+                            console.error('Erreur chargement formulaire:', error);
                             toast({
                               title: "Erreur",
                               description: "Impossible de charger le formulaire d'inspection",
@@ -1777,35 +1780,48 @@ const ModuleEPI = ({ user }) => {
                 </div>
                 
                 {inspections.length > 0 ? (
-                  <div className="inspections-list">
-                    {inspections.map(insp => (
-                      <div key={insp.id} className="inspection-card">
-                        <div className="inspection-header">
-                          <span className="inspection-type-badge">
-                            {insp.type_inspection === 'apres_utilisation' || insp.type_inspection === 'apres_usage' ? '🔍 Après utilisation' :
-                             insp.type_inspection === 'routine_mensuelle' || insp.type_inspection === 'routine' ? '📅 Routine mensuelle' :
-                             insp.type_inspection === 'avancee_annuelle' || insp.type_inspection === 'avancee' ? '🔬 Avancée annuelle' :
-                             insp.type_inspection === 'formulaire_personnalise' ? '📋 Formulaire' :
-                             '📋 Inspection'}
-                          </span>
-                          <span className={`statut-badge ${insp.statut_global}`}>
-                            {insp.statut_global === 'conforme' ? '✅ Conforme' : 
-                             insp.statut_global === 'non_conforme' ? '❌ Non conforme' : 
-                             insp.statut_global}
-                          </span>
+                  <>
+                    <div className="inspections-list">
+                      {(showAllInspections ? inspections : inspections.slice(0, 5)).map(insp => (
+                        <div key={insp.id} className="inspection-card">
+                          <div className="inspection-header">
+                            <span className="inspection-type-badge">
+                              {insp.type_inspection === 'apres_utilisation' || insp.type_inspection === 'apres_usage' ? '🔍 Après utilisation' :
+                               insp.type_inspection === 'routine_mensuelle' || insp.type_inspection === 'routine' ? '📅 Routine mensuelle' :
+                               insp.type_inspection === 'avancee_annuelle' || insp.type_inspection === 'avancee' ? '🔬 Avancée annuelle' :
+                               insp.type_inspection === 'formulaire_personnalise' ? '📋 Formulaire' :
+                               '📋 Inspection'}
+                            </span>
+                            <span className={`statut-badge ${insp.statut_global}`}>
+                              {insp.statut_global === 'conforme' ? '✅ Conforme' : 
+                               insp.statut_global === 'non_conforme' ? '❌ Non conforme' : 
+                               insp.statut_global}
+                            </span>
+                          </div>
+                          {insp.formulaire_nom && (
+                            <p style={{ color: '#3b82f6', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                              📋 {insp.formulaire_nom}
+                            </p>
+                          )}
+                          <p><strong>Date:</strong> {new Date(insp.date_inspection).toLocaleDateString('fr-FR')}</p>
+                          <p><strong>Inspecteur:</strong> {insp.inspecteur_nom}</p>
+                          {insp.isp_nom && <p><strong>ISP:</strong> {insp.isp_nom}</p>}
+                          {insp.commentaires && <p><strong>Commentaires:</strong> {insp.commentaires}</p>}
                         </div>
-                        {insp.formulaire_nom && (
-                          <p style={{ color: '#3b82f6', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                            📋 {insp.formulaire_nom}
-                          </p>
-                        )}
-                        <p><strong>Date:</strong> {new Date(insp.date_inspection).toLocaleDateString('fr-FR')}</p>
-                        <p><strong>Inspecteur:</strong> {insp.inspecteur_nom}</p>
-                        {insp.isp_nom && <p><strong>ISP:</strong> {insp.isp_nom}</p>}
-                        {insp.commentaires && <p><strong>Commentaires:</strong> {insp.commentaires}</p>}
+                      ))}
+                    </div>
+                    {inspections.length > 5 && (
+                      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowAllInspections(!showAllInspections)}
+                        >
+                          {showAllInspections ? '🔼 Voir moins' : `🔽 Voir plus (${inspections.length - 5} autres)`}
+                        </Button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 ) : (
                   <p>Aucune inspection enregistrée</p>
                 )}
