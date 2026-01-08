@@ -248,6 +248,71 @@ const ModuleEPI = ({ user }) => {
       }));
     }
   }, [tenantSlug, user]);
+
+  // Écouter les événements de navigation précise (depuis les notifications)
+  useEffect(() => {
+    const handleOpenDemandeRemplacement = async (event) => {
+      const { demandeId } = event.detail || {};
+      console.log('[ModuleEPI] Ouverture demande de remplacement:', demandeId);
+      
+      if (demandeId) {
+        // Charger les données si nécessaire
+        if (demandesRemplacement.length === 0) {
+          try {
+            const data = await apiGet(tenantSlug, '/epi/demandes-remplacement');
+            setDemandesRemplacement(data || []);
+            
+            // Trouver la demande et l'ouvrir
+            const demande = (data || []).find(d => d.id === demandeId);
+            if (demande) {
+              setActiveSubTab('remplacements');
+              setSelectedDemandeRemplacement(demande);
+              setShowRemplacementModal(true);
+            }
+          } catch (error) {
+            console.error('Erreur chargement demande:', error);
+          }
+        } else {
+          // Données déjà chargées, trouver et ouvrir
+          const demande = demandesRemplacement.find(d => d.id === demandeId);
+          if (demande) {
+            setActiveSubTab('remplacements');
+            setSelectedDemandeRemplacement(demande);
+            setShowRemplacementModal(true);
+          }
+        }
+      }
+    };
+
+    const handleOpenEPIDetail = (event) => {
+      const { epiId, action } = event.detail || {};
+      console.log('[ModuleEPI] Ouverture EPI:', epiId, 'action:', action);
+      
+      if (epiId) {
+        const epi = epis.find(e => e.id === epiId);
+        if (epi) {
+          setActiveSubTab('inventaire');
+          setSelectedEPI(epi);
+          if (action === 'inspect') {
+            setShowInspectionModal(true);
+          } else if (action === 'history') {
+            setShowHistoriqueModal(true);
+          } else {
+            // Ouvrir le modal d'édition par défaut
+            setShowEPIModal(true);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('openDemandeRemplacement', handleOpenDemandeRemplacement);
+    window.addEventListener('openEPIDetail', handleOpenEPIDetail);
+    
+    return () => {
+      window.removeEventListener('openDemandeRemplacement', handleOpenDemandeRemplacement);
+      window.removeEventListener('openEPIDetail', handleOpenEPIDetail);
+    };
+  }, [tenantSlug, demandesRemplacement, epis]);
   
   useEffect(() => {
     if (activeTab === 'rapports' && tenantSlug) {
