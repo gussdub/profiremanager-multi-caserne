@@ -28,14 +28,14 @@ const Remplacements = () => {
   const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
   const [newDemande, setNewDemande] = useState({
     type_garde_id: '',
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     raison: '',
     priorite: 'normale'
   });
   const [newConge, setNewConge] = useState({
     type_conge: '',
-    date_debut: '',
-    date_fin: '',
+    date_debut: new Date().toISOString().split('T')[0],
+    date_fin: new Date().toISOString().split('T')[0],
     raison: '',
     priorite: 'normale'
   });
