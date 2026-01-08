@@ -59,6 +59,60 @@ const Remplacements = () => {
     fetchData();
   }, [tenantSlug]);
 
+  // Écouter les événements de navigation précise (depuis les notifications)
+  useEffect(() => {
+    const handleOpenDemandeConge = async (event) => {
+      const { demandeId } = event.detail || {};
+      console.log('[Remplacements] Ouverture demande de congé:', demandeId);
+      
+      if (demandeId) {
+        // Naviguer vers l'onglet congés
+        setActiveTab('conges');
+        
+        // Si les données ne sont pas encore chargées, les charger
+        if (demandesConge.length === 0) {
+          try {
+            const data = await apiGet(tenantSlug, '/demandes-conges');
+            setDemandesConge(data || []);
+            // Le modal s'ouvrira quand on aura les données
+          } catch (error) {
+            console.error('Erreur chargement congés:', error);
+          }
+        }
+        // TODO: Ouvrir un modal de détail si nécessaire
+      }
+    };
+
+    const handleOpenDemandeRemplacement = async (event) => {
+      const { demandeId } = event.detail || {};
+      console.log('[Remplacements] Ouverture demande de remplacement:', demandeId);
+      
+      if (demandeId) {
+        // Naviguer vers l'onglet remplacements
+        setActiveTab('remplacements');
+        
+        // Si les données ne sont pas encore chargées, les charger
+        if (demandes.length === 0) {
+          try {
+            const data = await apiGet(tenantSlug, '/demandes-remplacement');
+            setDemandes(data || []);
+          } catch (error) {
+            console.error('Erreur chargement remplacements:', error);
+          }
+        }
+        // TODO: Ouvrir un modal de détail si nécessaire
+      }
+    };
+
+    window.addEventListener('openDemandeConge', handleOpenDemandeConge);
+    window.addEventListener('openDemandeRemplacementQuart', handleOpenDemandeRemplacement);
+    
+    return () => {
+      window.removeEventListener('openDemandeConge', handleOpenDemandeConge);
+      window.removeEventListener('openDemandeRemplacementQuart', handleOpenDemandeRemplacement);
+    };
+  }, [tenantSlug, demandesConge.length, demandes.length]);
+
   const fetchData = async () => {
     if (!tenantSlug) return;
     
