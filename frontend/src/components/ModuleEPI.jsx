@@ -654,6 +654,7 @@ const ModuleEPI = ({ user }) => {
     try {
       const data = {
         ...nettoyageForm,
+        epi_id: selectedEPI.id,
         effectue_par: nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`
       };
       await apiPost(tenantSlug, `/epi/${selectedEPI.id}/nettoyage`, data);
@@ -675,7 +676,7 @@ const ModuleEPI = ({ user }) => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de l'enregistrement",
         variant: "destructive"
       });
     }
