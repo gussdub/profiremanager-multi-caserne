@@ -528,9 +528,36 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                                 setCurrentPage('actifs');
                                 setTimeout(() => {
                                   window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                                  // Ouvrir la demande spécifique si l'ID est disponible
+                                  if (notif.data?.demande_id) {
+                                    setTimeout(() => {
+                                      window.dispatchEvent(new CustomEvent('openDemandeRemplacement', { 
+                                        detail: { demandeId: notif.data.demande_id } 
+                                      }));
+                                    }, 300);
+                                  } else if (notif.data?.epi_id) {
+                                    setTimeout(() => {
+                                      window.dispatchEvent(new CustomEvent('openEPIDetail', { 
+                                        detail: { epiId: notif.data.epi_id } 
+                                      }));
+                                    }, 300);
+                                  }
                                 }, 100);
                               } else if (pageName === 'actifs' || pageName === 'equipements') {
                                 setCurrentPage('actifs');
+                                if (notif.data?.equipement_id) {
+                                  setTimeout(() => {
+                                    window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'equipements' } }));
+                                    setTimeout(() => {
+                                      window.dispatchEvent(new CustomEvent('openEquipementDetail', { 
+                                        detail: { equipementId: notif.data.equipement_id } 
+                                      }));
+                                    }, 300);
+                                  }, 100);
+                                }
+                              } else if (pageName === 'remplacements') {
+                                setCurrentPage('remplacements');
+                                // Pourrait ouvrir un modal de demande spécifique ici aussi
                               } else if (pageName) {
                                 setCurrentPage(pageName);
                               }
