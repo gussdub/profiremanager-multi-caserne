@@ -735,33 +735,7 @@ const MesEPI = ({ user }) => {
                       📅 Routine
                     </Button>
                   )}
-                  {epi.formulaire_avancee_id && (
-                    <Button 
-                      size="sm"
-                      style={{ backgroundColor: '#8b5cf6', color: 'white' }}
-                      onClick={() => {
-                        setSelectedEPI(epi);
-                        setSelectedTypeInspection('avancee');
-                        const loadAndOpenInspection = async () => {
-                          try {
-                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_avancee_id}`);
-                            setSelectedFormulaire(formulaire);
-                            setShowInspectionUnifieeModal(true);
-                          } catch (error) {
-                            toast({
-                              title: "Erreur",
-                              description: "Impossible de charger le formulaire",
-                              variant: "destructive"
-                            });
-                          }
-                        };
-                        loadAndOpenInspection();
-                      }}
-                      disabled={epi.statut === 'Retiré'}
-                    >
-                      🔧 Avancée
-                    </Button>
-                  )}
+                  {/* Bouton Avancée masqué - Uniquement disponible dans Gestion des EPI pour les admins/superviseurs */}
                   {/* Bouton inspection par défaut si aucun formulaire assigné */}
                   {!epi.formulaire_apres_usage_id && !epi.formulaire_routine_id && !epi.formulaire_avancee_id && (
                     <Button 
