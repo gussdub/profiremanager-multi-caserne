@@ -429,6 +429,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           case 'planning_assigne':
                           case 'planning_modifie':
                             setCurrentPage('planning');
+                            // Si on a la date du quart, naviguer vers cette date et ouvrir le modal
+                            if (notif.data?.date) {
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openPlanningDate', { 
+                                  detail: { 
+                                    date: notif.data.date,
+                                    assignationId: notif.data.assignation_id
+                                  } 
+                                }));
+                              }, 300);
+                            }
                             break;
                           case 'conge_approuve':
                           case 'conge_refuse':
