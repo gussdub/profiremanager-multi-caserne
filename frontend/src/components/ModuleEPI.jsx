@@ -2722,8 +2722,6 @@ const Dashboard = () => {
             setSelectedFormulaireEPI(null);
             if (selectedEPI) {
               loadInspections(selectedEPI.id);
-              // Rouvrir le modal de détails
-              setShowDetailModal(true);
             }
           }}
           user={user}
