@@ -439,9 +439,58 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           case 'formation_rappel':
                             setCurrentPage('formations');
                             break;
+                          // EPI et équipements
+                          case 'demande_remplacement_epi':
+                          case 'reponse_demande_remplacement_epi':
+                          case 'epi_inspection':
+                          case 'epi_alerte':
+                            setCurrentPage('actifs');
+                            // Notifier le composant pour ouvrir l'onglet EPI
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                            }, 100);
+                            break;
+                          case 'equipement_alerte':
+                          case 'equipement_inspection':
+                          case 'inspection_alerte':
+                            setCurrentPage('actifs');
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'equipements' } }));
+                            }, 100);
+                            break;
+                          case 'borne_seche':
+                          case 'point_eau':
+                          case 'borne_seche_inspection':
+                            setCurrentPage('actifs');
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'eau' } }));
+                            }, 100);
+                            break;
+                          case 'vehicule_inspection':
+                          case 'vehicule_inventaire':
+                            setCurrentPage('actifs');
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'vehicules' } }));
+                            }, 100);
+                            break;
+                          case 'prevention':
+                          case 'prevention_alerte':
+                            setCurrentPage('prevention');
+                            break;
                           default:
+                            // Utiliser le lien s'il est défini
                             if (notif.lien) {
-                              setCurrentPage(notif.lien.replace(/^\/[^\/]+\//, ''));
+                              const pageName = notif.lien.replace(/^\//, '').split('/')[0];
+                              if (pageName === 'gestion-epi' || pageName === 'epi') {
+                                setCurrentPage('actifs');
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                                }, 100);
+                              } else if (pageName === 'actifs' || pageName === 'equipements') {
+                                setCurrentPage('actifs');
+                              } else if (pageName) {
+                                setCurrentPage(pageName);
+                              }
                             }
                         }
                       }}
