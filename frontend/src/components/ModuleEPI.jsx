@@ -2699,7 +2699,11 @@ const Dashboard = () => {
             toast({ title: "Succès", description: "Inspection enregistrée avec succès" });
             setShowUnifiedInspectionModal(false);
             setSelectedFormulaireEPI(null);
-            loadInspections(selectedEPI.id);
+            if (selectedEPI) {
+              loadInspections(selectedEPI.id);
+              // Rouvrir le modal de détails
+              setShowDetailModal(true);
+            }
           }}
           user={user}
         />
