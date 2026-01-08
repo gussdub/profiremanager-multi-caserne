@@ -1772,11 +1772,7 @@ const ModuleEPI = ({ user }) => {
                             console.log('Formulaire chargé:', formulaire);
                             if (formulaire && formulaire.id) {
                               setSelectedFormulaireEPI(formulaire);
-                              // Fermer le modal de détails et ouvrir celui d'inspection
-                              setShowDetailModal(false);
-                              setTimeout(() => {
-                                setShowUnifiedInspectionModal(true);
-                              }, 100);
+                              setShowUnifiedInspectionModal(true);
                             } else {
                               toast({
                                 title: "Erreur",
