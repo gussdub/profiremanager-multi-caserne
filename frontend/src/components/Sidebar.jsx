@@ -445,10 +445,27 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           case 'conge_refuse':
                           case 'conge_demande':
                             setCurrentPage('disponibilites');
+                            // Si on a l'ID de la demande, l'ouvrir directement
+                            if (notif.data?.demande_id) {
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openDemandeConge', { 
+                                  detail: { demandeId: notif.data.demande_id } 
+                                }));
+                              }, 300);
+                            }
                             break;
                           case 'formation_assignee':
                           case 'formation_rappel':
+                          case 'formation_liste_attente':
                             setCurrentPage('formations');
+                            // Si on a l'ID de la formation, l'ouvrir directement
+                            if (notif.data?.formation_id) {
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openFormationDetail', { 
+                                  detail: { formationId: notif.data.formation_id } 
+                                }));
+                              }, 300);
+                            }
                             break;
                           // EPI et équipements
                           case 'demande_remplacement_epi':
