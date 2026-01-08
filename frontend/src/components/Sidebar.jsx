@@ -616,23 +616,30 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           {notif.type === 'remplacement_disponible' && '🔔'}
                           {notif.type === 'remplacement_accepte' && '✅'}
                           {notif.type === 'remplacement_pourvu' && 'ℹ️'}
+                          {notif.type === 'remplacement_expire' && '⏰'}
                           {notif.type === 'conge_approuve' && '✅'}
                           {notif.type === 'conge_refuse' && '❌'}
                           {notif.type === 'conge_demande' && '📝'}
                           {notif.type === 'planning_assigne' && '📅'}
+                          {notif.type === 'planning_modifie' && '📅'}
                           {notif.type === 'demande_remplacement_epi' && '🦺'}
                           {notif.type === 'reponse_demande_remplacement_epi' && '🔄'}
                           {notif.type === 'epi_inspection' && '📋'}
                           {notif.type === 'epi_alerte' && '⚠️'}
+                          {notif.type === 'epi_defaut' && '⚠️'}
+                          {notif.type === 'epi_nouvel_assignation' && '🦺'}
+                          {notif.type === 'epi_reparation_terminee' && '✅'}
                           {notif.type === 'equipement_alerte' && '🔧'}
                           {notif.type === 'equipement_inspection' && '📋'}
                           {notif.type === 'inspection_alerte' && '⚠️'}
                           {notif.type === 'borne_seche' && '🚒'}
                           {notif.type === 'point_eau' && '💧'}
                           {notif.type === 'vehicule_inspection' && '🚒'}
+                          {notif.type === 'vehicule_inventaire' && '📦'}
                           {notif.type === 'prevention' && '🔥'}
                           {notif.type === 'formation_assignee' && '📚'}
                           {notif.type === 'formation_rappel' && '⏰'}
+                          {notif.type === 'formation_liste_attente' && '⏳'}
                         </div>
                         <div className="notification-content" style={{ flex: 1 }}>
                           <h4>{notif.titre}</h4>
