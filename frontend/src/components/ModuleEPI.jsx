@@ -255,6 +255,9 @@ const ModuleEPI = ({ user }) => {
       const { demandeId } = event.detail || {};
       console.log('[ModuleEPI] Ouverture demande de remplacement:', demandeId);
       
+      // D'abord, naviguer vers l'onglet "demandes"
+      setActiveTab('demandes');
+      
       if (demandeId) {
         // Charger les données si nécessaire
         if (demandesRemplacementEPI.length === 0) {
@@ -265,7 +268,6 @@ const ModuleEPI = ({ user }) => {
             // Trouver la demande et l'ouvrir
             const demande = (data || []).find(d => d.id === demandeId);
             if (demande) {
-              setActiveSubTab('remplacements');
               setSelectedDemandeRemplacement(demande);
               setShowRemplacementModal(true);
             }
@@ -276,7 +278,6 @@ const ModuleEPI = ({ user }) => {
           // Données déjà chargées, trouver et ouvrir
           const demande = demandesRemplacementEPI.find(d => d.id === demandeId);
           if (demande) {
-            setActiveSubTab('remplacements');
             setSelectedDemandeRemplacement(demande);
             setShowRemplacementModal(true);
           }
@@ -284,14 +285,27 @@ const ModuleEPI = ({ user }) => {
       }
     };
 
-    const handleOpenEPIDetail = (event) => {
+    const handleOpenEPIDetail = async (event) => {
       const { epiId, action } = event.detail || {};
       console.log('[ModuleEPI] Ouverture EPI:', epiId, 'action:', action);
       
+      // Naviguer vers l'onglet "inventaire"
+      setActiveTab('inventaire');
+      
       if (epiId) {
-        const epi = epis.find(e => e.id === epiId);
+        // Charger les EPIs si nécessaire
+        let epi = epis.find(e => e.id === epiId);
+        if (!epi && epis.length === 0) {
+          try {
+            const data = await apiGet(tenantSlug, '/epi');
+            setEpis(data || []);
+            epi = (data || []).find(e => e.id === epiId);
+          } catch (error) {
+            console.error('Erreur chargement EPI:', error);
+          }
+        }
+        
         if (epi) {
-          setActiveSubTab('inventaire');
           setSelectedEPI(epi);
           if (action === 'inspect') {
             setShowInspectionModal(true);
@@ -305,12 +319,23 @@ const ModuleEPI = ({ user }) => {
       }
     };
 
+    // Handler pour naviguer vers un onglet spécifique sans ouvrir de modal
+    const handleNavigateToSubTab = (event) => {
+      const { subTab } = event.detail || {};
+      console.log('[ModuleEPI] Navigation vers sous-onglet:', subTab);
+      if (subTab) {
+        setActiveTab(subTab);
+      }
+    };
+
     window.addEventListener('openDemandeRemplacement', handleOpenDemandeRemplacement);
     window.addEventListener('openEPIDetail', handleOpenEPIDetail);
+    window.addEventListener('navigateToEPISubTab', handleNavigateToSubTab);
     
     return () => {
       window.removeEventListener('openDemandeRemplacement', handleOpenDemandeRemplacement);
       window.removeEventListener('openEPIDetail', handleOpenEPIDetail);
+      window.removeEventListener('navigateToEPISubTab', handleNavigateToSubTab);
     };
   }, [tenantSlug, demandesRemplacementEPI, epis]);
   
