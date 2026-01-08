@@ -19,6 +19,14 @@ const parseDateLocal = (dateStr) => {
   return new Date(year, month - 1, day);
 };
 
+// Fonction pour formater une date en YYYY-MM-DD (format local)
+const formatDateLocal = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
