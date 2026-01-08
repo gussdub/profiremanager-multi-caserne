@@ -1787,13 +1787,20 @@ const ModuleEPI = ({ user }) => {
                       <Button 
                         onClick={() => {
                           const formulaireId = selectedEPI.formulaire_avancee_id;
+                          console.log('[DEBUG] Bouton cliqué, formulaireId:', formulaireId);
+                          console.log('[DEBUG] selectedEPI:', selectedEPI?.id);
                           const loadAndOpenInspection = async () => {
                             try {
+                              console.log('[DEBUG] Chargement du formulaire...');
                               const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
+                              console.log('[DEBUG] Formulaire reçu:', formulaire?.id, formulaire?.nom);
                               if (formulaire && formulaire.id) {
+                                console.log('[DEBUG] Ouverture du modal...');
                                 setSelectedFormulaireEPI(formulaire);
                                 setShowUnifiedInspectionModal(true);
+                                console.log('[DEBUG] États mis à jour');
                               } else {
+                                console.log('[DEBUG] Formulaire non trouvé');
                                 toast({
                                   title: "Erreur",
                                   description: "Formulaire non trouvé",
@@ -1801,7 +1808,7 @@ const ModuleEPI = ({ user }) => {
                                 });
                               }
                             } catch (error) {
-                              console.error('Erreur chargement formulaire:', error);
+                              console.error('[DEBUG] Erreur:', error);
                               toast({
                                 title: "Erreur",
                                 description: "Impossible de charger le formulaire d'inspection",
