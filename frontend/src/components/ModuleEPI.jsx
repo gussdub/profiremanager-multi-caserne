@@ -2752,6 +2752,10 @@ const Dashboard = () => {
             setSelectedFormulaireEPI(null);
             if (selectedEPI) {
               loadInspections(selectedEPI.id);
+              // Rouvrir le modal de détails après un court délai
+              setTimeout(() => {
+                setShowDetailModal(true);
+              }, 100);
             }
           }}
           user={user}
