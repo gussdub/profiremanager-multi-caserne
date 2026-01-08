@@ -559,6 +559,7 @@ const ModuleEPI = ({ user }) => {
   
   const openDetailEPI = async (epi) => {
     setSelectedEPI(epi);
+    setShowAllInspections(false); // Réinitialiser l'état "voir plus"
     await Promise.all([
       loadInspections(epi.id),
       loadNettoyages(epi.id),
