@@ -26,16 +26,25 @@ const Remplacements = () => {
   const [showCreateCongeModal, setShowCreateCongeModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
+  // Fonction pour obtenir la date locale au format YYYY-MM-DD
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [newDemande, setNewDemande] = useState({
     type_garde_id: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     raison: '',
     priorite: 'normale'
   });
   const [newConge, setNewConge] = useState({
     type_conge: '',
-    date_debut: new Date().toISOString().split('T')[0],
-    date_fin: new Date().toISOString().split('T')[0],
+    date_debut: getLocalDateString(),
+    date_fin: getLocalDateString(),
     raison: '',
     priorite: 'normale'
   });
