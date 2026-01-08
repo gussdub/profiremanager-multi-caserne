@@ -1222,6 +1222,36 @@ const AppLayout = () => {
           console.log('❌ Erreur Service Worker:', error);
         });
 
+      // Écouter les messages du Service Worker (pour la navigation depuis notifications)
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('[App] Message du Service Worker:', event.data);
+        if (event.data && event.data.type === 'NAVIGATE') {
+          const url = event.data.url || '';
+          const data = event.data.data || {};
+          
+          // Parser l'URL pour déterminer la page
+          const urlParts = url.split('/').filter(Boolean);
+          const pageName = urlParts[1] || urlParts[0] || '';
+          
+          // Navigation vers la bonne page
+          if (pageName === 'remplacements' || url.includes('/remplacements')) {
+            setCurrentPage('remplacements');
+          } else if (pageName === 'actifs' || url.includes('/actifs')) {
+            setCurrentPage('actifs');
+          } else if (pageName === 'epi' || url.includes('/epi')) {
+            setCurrentPage('actifs'); // EPI est dans gestion des actifs
+          } else if (pageName === 'dashboard' || url.includes('/dashboard')) {
+            setCurrentPage('dashboard');
+          } else if (pageName === 'planning' || url.includes('/planning')) {
+            setCurrentPage('planning');
+          } else if (pageName === 'prevention' || url.includes('/prevention')) {
+            setCurrentPage('prevention');
+          }
+          
+          console.log('[App] Navigation vers:', pageName);
+        }
+      });
+
       // Mettre à jour le manifest dynamique
       const manifestLink = document.querySelector('link[rel="manifest"]');
       if (manifestLink) {
