@@ -141,6 +141,33 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Écouter les événements de navigation vers un onglet spécifique (depuis les notifications)
+  useEffect(() => {
+    const handleNavigateToTab = (event) => {
+      const { tab } = event.detail || {};
+      console.log('[GestionActifs] Navigation vers onglet:', tab);
+      if (tab) {
+        // Mapper les noms d'onglets possibles
+        const tabMapping = {
+          'epi': 'epi',
+          'gestion-epi': 'epi',
+          'equipements': 'equipements',
+          'materiel': 'equipements',
+          'vehicules': 'vehicules',
+          'eau': 'eau',
+          'water': 'eau',
+          'points-eau': 'eau',
+          'bornes-seches': 'bornes'
+        };
+        const targetTab = tabMapping[tab.toLowerCase()] || tab;
+        setActiveTab(targetTab);
+      }
+    };
+
+    window.addEventListener('navigateToTab', handleNavigateToTab);
+    return () => window.removeEventListener('navigateToTab', handleNavigateToTab);
+  }, []);
+
   const fetchVehicules = async () => {
     setLoading(true);
     try {
