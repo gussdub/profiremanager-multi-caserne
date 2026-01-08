@@ -138,8 +138,12 @@ const Remplacements = () => {
       }
 
       const responses = await Promise.all(promises);
-      setDemandes(responses[0]);
-      setDemandesConge(responses[1]);
+      
+      // Trier par date de création (plus récent en premier)
+      const sortByCreatedAt = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+      
+      setDemandes((responses[0] || []).sort(sortByCreatedAt));
+      setDemandesConge((responses[1] || []).sort(sortByCreatedAt));
       setTypesGarde(responses[2]);
       
       if (responses[3]) {
