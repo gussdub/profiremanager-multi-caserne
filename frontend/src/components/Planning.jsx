@@ -264,12 +264,12 @@ const Planning = () => {
   // Écouter les événements de navigation précise (depuis les notifications)
   useEffect(() => {
     const handleOpenPlanningDate = (event) => {
-      const { date, assignationId } = event.detail || {};
-      console.log('[Planning] Navigation vers date:', date, 'assignation:', assignationId);
+      const { date: dateStr } = event.detail || {};
+      console.log('[Planning] Navigation vers date:', dateStr);
       
-      if (date) {
+      if (dateStr) {
         // Parser la date et naviguer vers la bonne semaine/mois
-        const targetDate = new Date(date);
+        const targetDate = new Date(dateStr);
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         
@@ -284,17 +284,8 @@ const Planning = () => {
         setCurrentWeek(mondayStr);
         setCurrentMonth(`${year}-${month}`);
         
-        // Ouvrir le modal des détails de la journée après un délai pour laisser le temps aux données de se charger
-        setTimeout(() => {
-          // Créer la date cible pour ouvrir le modal
-          const targetDateObj = new Date(date);
-          
-          // Ouvrir le modal de détails si on a des types de garde
-          if (typesGarde && typesGarde.length > 0) {
-            // Appeler openGardeDetails avec la date et le premier type de garde
-            openGardeDetails(targetDateObj, typesGarde[0]);
-          }
-        }, 800); // Délai plus long pour laisser les données se charger
+        // Stocker la date cible pour ouvrir le modal après le chargement des données
+        setPendingOpenDate(targetDate);
       }
     };
 
@@ -303,7 +294,38 @@ const Planning = () => {
     return () => {
       window.removeEventListener('openPlanningDate', handleOpenPlanningDate);
     };
-  }, [typesGarde, openGardeDetails]);
+  }, []);
+
+  // État pour stocker une date en attente d'ouverture du modal
+  const [pendingOpenDate, setPendingOpenDate] = useState(null);
+
+  // Ouvrir le modal quand les données sont chargées et qu'une date est en attente
+  useEffect(() => {
+    if (pendingOpenDate && typesGarde.length > 0 && assignations.length >= 0 && !loading) {
+      const dateStr = pendingOpenDate.toISOString().split('T')[0];
+      const typeGarde = typesGarde[0];
+      
+      const gardeAssignations = assignations.filter(a => 
+        a.date === dateStr && a.type_garde_id === typeGarde.id
+      );
+      
+      const personnelAssigne = gardeAssignations
+        .map(a => {
+          const person = users.find(u => u.id === a.user_id);
+          return person ? { ...person, assignation_id: a.id } : null;
+        })
+        .filter(p => p !== null);
+      
+      setSelectedGardeDetails({
+        date: pendingOpenDate,
+        typeGarde,
+        personnelAssigne,
+        assignations: gardeAssignations
+      });
+      setShowGardeDetailsModal(true);
+      setPendingOpenDate(null); // Reset
+    }
+  }, [pendingOpenDate, typesGarde, assignations, users, loading]);
 
   const fetchPlanningData = async () => {
     if (!tenantSlug) return;
