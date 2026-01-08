@@ -11,6 +11,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { fr } from "date-fns/locale";
 
+// Fonction pour parser une date en évitant les problèmes de timezone
+const parseDateLocal = (dateStr) => {
+  if (!dateStr) return new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 const Remplacements = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
