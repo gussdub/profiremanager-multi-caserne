@@ -424,7 +424,16 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           case 'remplacement_refuse':
                           case 'remplacement_demande':
                           case 'remplacement_pourvu':
+                          case 'remplacement_expire':
                             setCurrentPage('remplacements');
+                            // Si on a l'ID de la demande, naviguer vers celle-ci
+                            if (notif.data?.demande_id) {
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openDemandeRemplacementQuart', { 
+                                  detail: { demandeId: notif.data.demande_id } 
+                                }));
+                              }, 300);
+                            }
                             break;
                           case 'planning_assigne':
                           case 'planning_modifie':
