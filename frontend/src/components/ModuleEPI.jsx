@@ -424,8 +424,29 @@ const ModuleEPI = ({ user }) => {
   
   const loadInspections = async (epiId) => {
     try {
-      const data = await apiGet(tenantSlug, `/epi/${epiId}/inspections`);
-      setInspections(data || []);
+      // Charger les inspections classiques ET les inspections unifiées
+      const [classicInspections, unifiedInspections] = await Promise.all([
+        apiGet(tenantSlug, `/epi/${epiId}/inspections`).catch(() => []),
+        apiGet(tenantSlug, `/inspections-unifiees/epi/${epiId}`).catch(() => [])
+      ]);
+      
+      // Formater les inspections unifiées pour avoir le même format
+      const formattedUnified = (unifiedInspections || []).map(insp => ({
+        ...insp,
+        id: insp.id,
+        type_inspection: insp.type_inspection || 'formulaire_personnalise',
+        statut_global: insp.statut || 'conforme',
+        date_inspection: insp.date_inspection,
+        inspecteur_nom: insp.inspecteur_nom || 'N/A',
+        commentaires: insp.remarques || '',
+        formulaire_nom: insp.formulaire_nom || 'Inspection formulaire'
+      }));
+      
+      // Combiner et trier par date
+      const allInspections = [...(classicInspections || []), ...formattedUnified]
+        .sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection));
+      
+      setInspections(allInspections);
     } catch (error) {
       console.error('Erreur inspections:', error);
     }
