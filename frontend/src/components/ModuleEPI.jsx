@@ -112,6 +112,7 @@ const ModuleEPI = ({ user }) => {
     reparateur_nom: '',
     isp_id: '',
     probleme_description: '',
+    cout_reparation: 0,
     notes: ''
   });
   
