@@ -484,6 +484,22 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                               }
                             }, 100);
                             break;
+                          case 'epi_defaut':
+                          case 'epi_nouvel_assignation':
+                          case 'epi_reparation_terminee':
+                            setCurrentPage('actifs');
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'epi' } }));
+                              // Si on a l'ID de l'EPI, naviguer vers l'inventaire et l'ouvrir
+                              if (notif.data?.epi_id) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openEPIDetail', { 
+                                    detail: { epiId: notif.data.epi_id } 
+                                  }));
+                                }, 300);
+                              }
+                            }, 100);
+                            break;
                           case 'epi_inspection':
                           case 'epi_alerte':
                             setCurrentPage('actifs');
