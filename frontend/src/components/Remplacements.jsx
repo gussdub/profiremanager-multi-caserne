@@ -801,7 +801,7 @@ const Remplacements = () => {
                       </div>
                       <p className="conge-raison">{conge.raison}</p>
                       <div className="conge-meta">
-                        <span>Demandé par: {getUserName(conge.demandeur_id)}</span>
+                        <span>Demandé par: {getUserName(conge.demandeur_id)} </span>
                         <span>Le: {new Date(conge.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
