@@ -322,7 +322,16 @@ const ModuleEPI = ({ user }) => {
         if (epi) {
           setSelectedEPI(epi);
           if (action === 'inspect') {
-            setShowInspectionModal(true);
+            // Ouvrir l'inspection avancée si un formulaire est assigné
+            if (epi.formulaire_avancee_id) {
+              try {
+                const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_avancee_id}`);
+                setSelectedFormulaireEPI(formulaire);
+                setShowUnifiedInspectionModal(true);
+              } catch (error) {
+                console.error('Erreur chargement formulaire:', error);
+              }
+            }
           } else if (action === 'history') {
             setShowHistoriqueModal(true);
           } else {
