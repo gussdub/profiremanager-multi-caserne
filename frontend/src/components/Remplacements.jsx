@@ -619,7 +619,7 @@ const Remplacements = () => {
                     <div className="demande-header">
                       <div className="demande-info">
                         <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
-                        <span className="demande-date">{new Date(demande.date).toLocaleDateString('fr-FR')}</span>
+                        <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
                       </div>
                       <div className="demande-status">
                         <span 
