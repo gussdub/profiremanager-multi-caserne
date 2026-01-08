@@ -261,6 +261,49 @@ const Planning = () => {
     fetchPlanningData();
   }, [currentWeek, currentMonth, viewMode, tenantSlug]);
 
+  // Écouter les événements de navigation précise (depuis les notifications)
+  useEffect(() => {
+    const handleOpenPlanningDate = (event) => {
+      const { date, assignationId } = event.detail || {};
+      console.log('[Planning] Navigation vers date:', date, 'assignation:', assignationId);
+      
+      if (date) {
+        // Parser la date et naviguer vers la bonne semaine/mois
+        const targetDate = new Date(date);
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        
+        // Calculer le début de la semaine (lundi)
+        const dayOfWeek = targetDate.getDay();
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(targetDate);
+        monday.setDate(targetDate.getDate() + diffToMonday);
+        const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+        
+        // Naviguer vers la bonne période
+        setCurrentWeek(mondayStr);
+        setCurrentMonth(`${year}-${month}`);
+        
+        // Ouvrir le modal des détails de la journée après un court délai
+        setTimeout(() => {
+          // Trouver le premier type de garde pour ouvrir le modal
+          if (typesGarde.length > 0) {
+            const targetDateObj = new Date(Date.UTC(year, parseInt(month) - 1, parseInt(day), 12, 0, 0));
+            setSelectedSlot({ date: targetDateObj, typeGarde: typesGarde[0] });
+            setShowGardeDetailsModal(true);
+          }
+        }, 500);
+      }
+    };
+
+    window.addEventListener('openPlanningDate', handleOpenPlanningDate);
+    
+    return () => {
+      window.removeEventListener('openPlanningDate', handleOpenPlanningDate);
+    };
+  }, [typesGarde]);
+
   const fetchPlanningData = async () => {
     if (!tenantSlug) return;
     
