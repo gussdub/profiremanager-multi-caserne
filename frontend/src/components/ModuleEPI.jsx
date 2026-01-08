@@ -701,6 +701,19 @@ const ModuleEPI = ({ user }) => {
       if (selectedReparation) {
         await apiPut(tenantSlug, `/epi/${selectedEPI.id}/reparation/${selectedReparation.id}`, reparationForm);
         toast({ title: "Succès", description: "Réparation mise à jour" });
+        
+        // Si la réparation est terminée ou impossible, mettre à jour le statut de l'EPI
+        if (reparationForm.statut === 'terminee') {
+          await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, { statut: 'En service' });
+          // Mettre à jour l'EPI local
+          setSelectedEPI(prev => ({ ...prev, statut: 'En service' }));
+        } else if (reparationForm.statut === 'impossible') {
+          await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, { statut: 'Hors service' });
+          setSelectedEPI(prev => ({ ...prev, statut: 'Hors service' }));
+        } else if (reparationForm.statut === 'en_cours' || reparationForm.statut === 'demandee') {
+          await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, { statut: 'En réparation' });
+          setSelectedEPI(prev => ({ ...prev, statut: 'En réparation' }));
+        }
       } else {
         const data = {
           ...reparationForm,
@@ -709,9 +722,14 @@ const ModuleEPI = ({ user }) => {
         };
         await apiPost(tenantSlug, `/epi/${selectedEPI.id}/reparation`, data);
         toast({ title: "Succès", description: "Réparation créée" });
+        
+        // Mettre le statut de l'EPI en "En réparation" quand une nouvelle réparation est créée
+        await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, { statut: 'En réparation' });
+        setSelectedEPI(prev => ({ ...prev, statut: 'En réparation' }));
       }
       setShowReparationModal(false);
       loadReparations(selectedEPI.id);
+      loadData(); // Recharger la liste pour mettre à jour le statut
       setSelectedReparation(null);
       setReparationForm({
         statut: 'demandee',
@@ -722,6 +740,7 @@ const ModuleEPI = ({ user }) => {
         reparateur_nom: '',
         isp_id: '',
         probleme_description: '',
+        cout_reparation: 0,
         notes: ''
       });
     } catch (error) {
