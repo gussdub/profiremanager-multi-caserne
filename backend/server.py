@@ -6850,6 +6850,8 @@ async def trouver_remplacants_potentiels(
             # 5. Ancienneté (date_embauche)
             date_embauche = user.get("date_embauche", "2999-12-31")  # Si pas de date, le plus récent
             
+            logging.info(f"✅ {user_name} - Ajouté comme remplaçant potentiel (dispo déclarée: {has_disponibilite})")
+            
             remplacants_potentiels.append({
                 "user_id": user["id"],
                 "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
@@ -6857,7 +6859,7 @@ async def trouver_remplacants_potentiels(
                 "grade": user_grade,
                 "date_embauche": date_embauche,
                 "has_disponibilite": has_disponibilite,
-                "formations": list(user_formations)
+                "formations": list(user_competences)  # Utiliser les compétences de l'utilisateur
             })
         
         # Trier par: 1. Disponibilité déclarée, 2. Ancienneté (date la plus ancienne)
