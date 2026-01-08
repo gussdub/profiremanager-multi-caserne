@@ -6805,6 +6805,7 @@ async def trouver_remplacants_potentiels(
             })
             
             if indispo:
+                logging.warning(f"❌ {user_name} - Indisponible pour cette date")
                 continue  # A une indisponibilité, on passe
             
             # 3b. Vérifier les limites d'heures (gestion heures supplémentaires)
