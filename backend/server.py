@@ -15026,7 +15026,7 @@ async def register_device_token(
         print(f"Erreur lors de l'enregistrement du device token: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
-async def send_push_notification_to_users(user_ids: List[str], title: str, body: str, data: Optional[dict] = None):
+async def send_push_notification_to_users(user_ids: List[str], title: str, body: str, data: Optional[dict] = None, tenant_slug: str = None):
     """
     Helper function pour envoyer des notifications push à plusieurs utilisateurs
     """
@@ -15045,13 +15045,21 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         
         device_tokens = [token["device_token"] for token in tokens_list]
         
+        # Ajouter le tenant aux données si fourni
+        notification_data = data or {}
+        if tenant_slug and "tenant" not in notification_data:
+            notification_data["tenant"] = tenant_slug
+        
+        # S'assurer que toutes les valeurs sont des strings (requis par FCM)
+        string_data = {k: str(v) if v is not None else "" for k, v in notification_data.items()}
+        
         # Créer le message
         message = messaging.MulticastMessage(
             notification=messaging.Notification(
                 title=title,
                 body=body
             ),
-            data=data or {},
+            data=string_data,
             tokens=device_tokens
         )
         
