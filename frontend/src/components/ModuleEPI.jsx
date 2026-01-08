@@ -2121,6 +2121,18 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               <div style={{marginTop: '1rem'}}>
+                <Label>💰 Coût du nettoyage ($)</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={nettoyageForm.cout_nettoyage}
+                  onChange={e => setNettoyageForm({...nettoyageForm, cout_nettoyage: parseFloat(e.target.value) || 0})}
+                  placeholder="0.00 (optionnel pour nettoyages externes)"
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
                 <Label>Notes</Label>
                 <textarea 
                   className="form-textarea"
