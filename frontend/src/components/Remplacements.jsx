@@ -226,6 +226,27 @@ const Remplacements = () => {
     }
   };
 
+  const handleApprouverRemplacement = async (demandeId, action) => {
+    if (user.role === 'employe') return;
+
+    try {
+      const newStatut = action === 'approuver' ? 'approuve' : 'refuse';
+      await apiPut(tenantSlug, `/remplacements/${demandeId}`, { statut: newStatut });
+      toast({
+        title: action === 'approuver' ? "Demande approuvée" : "Demande rejetée",
+        description: `La demande de remplacement a été ${action === 'approuver' ? 'approuvée' : 'rejetée'}`,
+        variant: "success"
+      });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter la demande",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatutColor = (statut) => {
     switch (statut) {
       case 'en_cours': case 'en_attente': return '#F59E0B';
