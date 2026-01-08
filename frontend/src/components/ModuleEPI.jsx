@@ -1763,12 +1763,25 @@ const ModuleEPI = ({ user }) => {
                     {selectedEPI?.formulaire_avancee_id ? (
                       <Button 
                         onClick={async () => {
-                          console.log('Bouton cliqué, formulaire_avancee_id:', selectedEPI.formulaire_avancee_id);
+                          const formulaireId = selectedEPI.formulaire_avancee_id;
+                          console.log('Bouton cliqué, formulaire_avancee_id:', formulaireId);
                           try {
-                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${selectedEPI.formulaire_avancee_id}`);
+                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
                             console.log('Formulaire chargé:', formulaire);
-                            setSelectedFormulaireEPI(formulaire);
-                            setShowUnifiedInspectionModal(true);
+                            if (formulaire && formulaire.id) {
+                              setSelectedFormulaireEPI(formulaire);
+                              // Fermer le modal de détails et ouvrir celui d'inspection
+                              setShowDetailModal(false);
+                              setTimeout(() => {
+                                setShowUnifiedInspectionModal(true);
+                              }, 100);
+                            } else {
+                              toast({
+                                title: "Erreur",
+                                description: "Formulaire non trouvé",
+                                variant: "destructive"
+                              });
+                            }
                           } catch (error) {
                             console.error('Erreur chargement formulaire:', error);
                             toast({
