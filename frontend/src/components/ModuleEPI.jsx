@@ -763,6 +763,7 @@ const ModuleEPI = ({ user }) => {
       reparateur_nom: reparation.reparateur_nom || '',
       isp_id: reparation.isp_id || '',
       probleme_description: reparation.probleme_description,
+      cout_reparation: reparation.cout_reparation || 0,
       notes: reparation.notes || ''
     });
     setShowReparationModal(true);
