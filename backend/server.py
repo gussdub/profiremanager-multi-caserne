@@ -20848,12 +20848,17 @@ async def get_rapport_cout_total(
         # Coût d'achat
         cout_achat = epi.get("cout_achat", 0)
         
-        # Coûts de nettoyage (fictif, à améliorer si prix stockés)
+        # Coûts de nettoyage (utiliser le coût réel si disponible, sinon estimation)
         nettoyages = await db.nettoyages_epi.find({
             "epi_id": epi["id"],
             "tenant_id": tenant.id
         }).to_list(1000)
-        cout_nettoyages = len([n for n in nettoyages if n.get("type_nettoyage") == "avance"]) * 50  # Ex: 50$ par nettoyage avancé
+        # Additionner les coûts réels, ou estimer 50$ pour les nettoyages avancés sans coût
+        cout_nettoyages = sum([
+            n.get("cout_nettoyage", 0) if n.get("cout_nettoyage", 0) > 0 
+            else (50 if n.get("type_nettoyage") == "avance" else 0)
+            for n in nettoyages
+        ])
         
         # Coûts de réparation
         reparations = await db.reparations_epi.find({
