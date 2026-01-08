@@ -2230,6 +2230,18 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               <div style={{marginTop: '1rem'}}>
+                <Label>💰 Coût de la réparation ($)</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={reparationForm.cout_reparation}
+                  onChange={e => setReparationForm({...reparationForm, cout_reparation: parseFloat(e.target.value) || 0})}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div style={{marginTop: '1rem'}}>
                 <Label>Notes</Label>
                 <textarea 
                   className="form-textarea"
