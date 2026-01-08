@@ -1742,7 +1742,7 @@ const ModuleEPI = ({ user }) => {
                           }
                         }}
                       >
-                        🔧 Inspection avancée annuelle
+                        ➕ Inspection avancée annuelle
                       </Button>
                     ) : (
                       <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
