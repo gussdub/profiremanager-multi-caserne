@@ -190,8 +190,29 @@ const MesEPI = ({ user }) => {
 
   const loadHistorique = async (epiId) => {
     try {
-      const data = await apiGet(tenantSlug, `/mes-epi/${epiId}/historique`);
-      setHistorique(data || []);
+      // Charger les inspections classiques ET les inspections unifiées
+      const [classicInspections, unifiedInspections] = await Promise.all([
+        apiGet(tenantSlug, `/mes-epi/${epiId}/historique`).catch(() => []),
+        apiGet(tenantSlug, `/inspections-unifiees/epi/${epiId}`).catch(() => [])
+      ]);
+      
+      // Formater les inspections unifiées pour avoir le même format
+      const formattedUnified = (unifiedInspections || []).map(insp => ({
+        id: insp.id,
+        date_inspection: insp.date_inspection,
+        statut: insp.statut || 'ok',
+        defauts_constates: insp.remarques || '',
+        notes: insp.commentaires || '',
+        photo_url: insp.photo_url || '',
+        type_inspection: insp.type_inspection || 'formulaire',
+        formulaire_nom: insp.formulaire_nom || 'Inspection formulaire'
+      }));
+      
+      // Combiner et trier par date
+      const allInspections = [...(classicInspections || []), ...formattedUnified]
+        .sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection));
+      
+      setHistorique(allInspections);
     } catch (error) {
       console.error('Erreur chargement historique:', error);
       toast({
