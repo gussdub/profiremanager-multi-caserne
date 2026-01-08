@@ -175,16 +175,11 @@ const ModuleEPI = ({ user }) => {
     const loadFormulairesEPI = async () => {
       try {
         const formulaires = await apiGet(tenantSlug, '/formulaires-inspection');
-        // Filtrer les formulaires applicables aux EPI
+        // Filtrer les formulaires applicables aux EPI uniquement (catégorie 'epi')
         const epiFormulaires = (formulaires || []).filter(f => 
-          f.est_actif !== false && (
-            f.categorie_ids?.includes('epi') ||
-            f.categories_cibles?.some(c => c.startsWith('epi')) ||
-            f.type === 'inspection_epi' ||
-            f.type === 'inspection'
-          )
+          f.est_actif !== false && f.categorie_ids?.includes('epi')
         );
-        console.log('Formulaires EPI chargés:', epiFormulaires.length, epiFormulaires);
+        console.log('Formulaires EPI chargés:', epiFormulaires.length, epiFormulaires.map(f => f.nom));
         setFormulairesEPI(epiFormulaires);
       } catch (error) {
         console.log('Formulaires EPI non chargés:', error);
