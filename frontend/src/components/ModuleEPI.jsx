@@ -1787,19 +1787,12 @@ const ModuleEPI = ({ user }) => {
                       <Button 
                         onClick={() => {
                           const formulaireId = selectedEPI.formulaire_avancee_id;
-                          const epiData = { ...selectedEPI }; // Copie des données EPI
                           const loadAndOpenInspection = async () => {
                             try {
                               const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
                               if (formulaire && formulaire.id) {
-                                // Fermer le modal de détails d'abord
-                                setShowDetailModal(false);
-                                // Attendre un peu puis ouvrir le modal d'inspection
-                                setTimeout(() => {
-                                  setSelectedEPI(epiData); // S'assurer que l'EPI est toujours sélectionné
-                                  setSelectedFormulaireEPI(formulaire);
-                                  setShowUnifiedInspectionModal(true);
-                                }, 150);
+                                setSelectedFormulaireEPI(formulaire);
+                                setShowUnifiedInspectionModal(true);
                               } else {
                                 toast({
                                   title: "Erreur",
