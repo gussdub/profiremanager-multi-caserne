@@ -558,14 +558,23 @@ const ModuleEPI = ({ user }) => {
   };
   
   const openDetailEPI = async (epi) => {
-    setSelectedEPI(epi);
-    setShowAllInspections(false); // Réinitialiser l'état "voir plus"
-    await Promise.all([
-      loadInspections(epi.id),
-      loadNettoyages(epi.id),
-      loadReparations(epi.id)
-    ]);
-    setShowDetailModal(true);
+    try {
+      // Recharger les données EPI depuis le serveur pour avoir les dernières infos
+      const freshEPI = await apiGet(tenantSlug, `/epi/${epi.id}`);
+      setSelectedEPI(freshEPI || epi);
+      setShowAllInspections(false); // Réinitialiser l'état "voir plus"
+      await Promise.all([
+        loadInspections(epi.id),
+        loadNettoyages(epi.id),
+        loadReparations(epi.id)
+      ]);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('Erreur chargement EPI:', error);
+      // En cas d'erreur, utiliser les données locales
+      setSelectedEPI(epi);
+      setShowDetailModal(true);
+    }
   };
   
   // Inspections
