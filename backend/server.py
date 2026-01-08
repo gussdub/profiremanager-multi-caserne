@@ -6788,11 +6788,13 @@ async def trouver_remplacants_potentiels(
             
             # 2. Vérifier le grade
             user_grade = user.get("grade", "pompier")
+            user_grade_lower = user_grade.lower() if user_grade else "pompier"
             grades_hierarchie = ["pompier", "lieutenant", "capitaine", "chef"]
             
             if officier_obligatoire:
                 # Pour officier obligatoire, il faut au moins lieutenant OU être éligible
-                if user_grade not in ["lieutenant", "capitaine", "chef", "eligible", "éligible"]:
+                grades_autorises = ["lieutenant", "capitaine", "chef", "eligible", "éligible"]
+                if user_grade_lower not in grades_autorises:
                     logging.warning(f"❌ {user_name} - Grade insuffisant: {user_grade} (officier ou éligible requis)")
                     continue
             
