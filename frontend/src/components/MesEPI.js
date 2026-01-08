@@ -1247,7 +1247,7 @@ const MesEPI = ({ user }) => {
             setSelectedFormulaire(null);
             setSelectedEPI(null);
             setSelectedTypeInspection('');
-            loadMyEPIs();
+            loadEPIs();
             toast({
               title: "✅ Inspection enregistrée",
               description: `Inspection ${selectedTypeInspection === 'apres_usage' ? 'après usage' : selectedTypeInspection === 'routine' ? 'routine' : 'avancée'} sauvegardée`
