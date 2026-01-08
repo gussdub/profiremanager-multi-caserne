@@ -806,7 +806,7 @@ const Remplacements = () => {
                     <div className="conge-details">
                       <div className="conge-dates">
                         <span className="date-range">
-                          {new Date(conge.date_debut).toLocaleDateString('fr-FR')} - {new Date(conge.date_fin).toLocaleDateString('fr-FR')}
+                          {parseDateLocal(conge.date_debut).toLocaleDateString('fr-FR')} - {parseDateLocal(conge.date_fin).toLocaleDateString('fr-FR')}
                         </span>
                         <span className="jours-count">({conge.nombre_jours} jour{conge.nombre_jours > 1 ? 's' : ''})</span>
                       </div>
