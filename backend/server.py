@@ -5795,19 +5795,19 @@ async def export_planning_pdf(
         
         if type == 'semaine':
             # ===== FORMAT GRILLE SEMAINE =====
+            # Styles pour les cellules
+            header_style_white = ParagraphStyle('HeaderWhite', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12)
+            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10)
+            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=9)
+            
             # En-tête : Type de garde + 7 jours
-            header_row = ['Type de garde']
+            header_row = [Paragraph("<b>Type de garde</b>", header_style_white)]
             for i in range(7):
                 d = date_debut + timedelta(days=i)
-                header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d/%m')}", 
-                    ParagraphStyle('HeaderCell', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12)))
+                header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d/%m')}", header_style_white))
             
             table_data = [header_row]
             cell_colors = []  # Pour stocker les couleurs de chaque ligne
-            
-            # Styles pour les cellules
-            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10)
-            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=9)
             
             # Une ligne par type de garde
             for type_garde in types_garde_sorted:
