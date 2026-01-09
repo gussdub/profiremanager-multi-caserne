@@ -1424,6 +1424,44 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         </div>
       </div>
 
+      {/* Alerte de Blocage */}
+      {blocageInfo.blocage_actif && (
+        <div 
+          className={`blocage-alert ${blocageInfo.bloque ? 'bloque' : 'avertissement'}`}
+          style={{
+            padding: '1rem 1.5rem',
+            marginBottom: '1.5rem',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            backgroundColor: blocageInfo.bloque ? '#FEE2E2' : '#FEF3C7',
+            borderLeft: `4px solid ${blocageInfo.bloque ? '#EF4444' : '#F59E0B'}`,
+          }}
+          data-testid="blocage-alert"
+        >
+          <span style={{ fontSize: '1.5rem' }}>
+            {blocageInfo.bloque ? '🚫' : '⏰'}
+          </span>
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: blocageInfo.bloque ? '#B91C1C' : '#92400E' }}>
+              {blocageInfo.bloque ? 'Saisie bloquée' : 'Date limite approche'}
+            </strong>
+            <p style={{ margin: '0.25rem 0 0', color: blocageInfo.bloque ? '#DC2626' : '#B45309', fontSize: '0.9rem' }}>
+              {blocageInfo.raison}
+              {!blocageInfo.bloque && blocageInfo.jours_restants !== null && (
+                <> — <strong>{blocageInfo.jours_restants} jour(s) restant(s)</strong></>
+              )}
+            </p>
+            {blocageInfo.exception_appliquee && (
+              <p style={{ margin: '0.25rem 0 0', color: '#059669', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                ✓ Exception admin/superviseur active — vous pouvez modifier
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* KPIs - Toujours affichés pour la personne en question */}
       {!managingUser && (() => {
         // Filtrer les disponibilités de l'utilisateur cible uniquement
