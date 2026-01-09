@@ -61,8 +61,8 @@ const Dashboard = () => {
       const promises = [
         // 1. Formations
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
-        // 2. Assignations
-        axios.get(`${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
+        // 2. Assignations (mes gardes)
+        axios.get(`${API}/${tenantSlug}/planning/assignations/${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
         // 3. Mes EPI
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
       ];
