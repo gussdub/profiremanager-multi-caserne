@@ -2695,24 +2695,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         onClose={() => setShowBatchConflictModal(false)}
         onConfirm={handleResolveBatchConflicts}
       />
-
-
-      {/* Modal de résolution des conflits */}
-      {showConflictModal && (
-        <Suspense fallback={<LoadingComponent />}>
-          <ConflictResolutionModal
-            isOpen={showConflictModal}
-            onClose={() => {
-              setShowConflictModal(false);
-              setConflictData({ conflicts: [], newItem: null, itemType: null });
-            }}
-            conflicts={conflictData.conflicts}
-            newItem={conflictData.newItem}
-            itemType="disponibilite"
-            onResolve={handleResolveConflict}
-          />
-        </Suspense>
-      )}
     </div>
   );
 };
