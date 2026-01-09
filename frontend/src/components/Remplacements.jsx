@@ -270,6 +270,28 @@ const Remplacements = () => {
     }
   };
 
+  // Handler pour répondre à une proposition de remplacement (pour les remplaçants)
+  const handleRepondreProposition = async (demandeId, action) => {
+    try {
+      const endpoint = action === 'accepter' ? 'accepter' : 'refuser';
+      await apiPut(tenantSlug, `/remplacements/${demandeId}/${endpoint}`, {});
+      toast({
+        title: action === 'accepter' ? "✅ Remplacement accepté" : "Proposition refusée",
+        description: action === 'accepter' 
+          ? "Vous avez accepté ce remplacement. L'échange sera effectué automatiquement."
+          : "Vous avez refusé cette proposition. Un autre remplaçant sera contacté.",
+        variant: action === 'accepter' ? "success" : "default"
+      });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de traiter votre réponse",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatutColor = (statut) => {
     switch (statut) {
       case 'en_cours': case 'en_attente': return '#F59E0B';
