@@ -999,63 +999,17 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                 borderRadius: '0.5rem',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                 borderLeft: `4px solid ${cat.couleur || '#6366f1'}`,
-                padding: '1rem'
+                padding: '1rem',
+                overflow: 'hidden'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>
-                    {cat.icone} <span style={{ fontWeight: 'bold' }}>{cat.nom}</span>
-                  </div>
-                  {cat.description && (
-                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                      {cat.description}
-                    </p>
-                  )}
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    {cat.norme_reference && <span style={{ marginRight: '1rem' }}>📜 {cat.norme_reference}</span>}
-                    {cat.frequence_inspection && <span>🔄 {cat.frequence_inspection}</span>}
-                  </div>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{
-                      background: '#dbeafe',
-                      color: '#1e40af',
-                      padding: '0.125rem 0.5rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.7rem',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {countByCategorie[cat.id] || 0} équipement(s)
-                    </span>
-                    {cat.permet_assignation_employe && (
-                      <span style={{
-                        background: '#fce7f3',
-                        color: '#be185d',
-                        padding: '0.125rem 0.5rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.7rem',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        👤 Assignable
-                      </span>
-                    )}
-                    {cat.est_predefinit && (
-                      <span style={{
-                        background: '#f3f4f6',
-                        color: '#6b7280',
-                        padding: '0.125rem 0.5rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.7rem',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        🔒 Système
-                      </span>
-                    )}
-                  </div>
+              {/* En-tête avec titre et boutons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {cat.icone} {cat.nom}
                 </div>
-                
                 {user?.role === 'admin' && (
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
                     <button
                       onClick={() => onEditCategorie(cat)}
                       style={{ padding: '0.25rem 0.5rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}
@@ -1066,7 +1020,6 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                     <button
                       onClick={() => {
                         if (cat.est_predefinit) {
-                          // Avertissement pour les catégories prédéfinies
                           if (window.confirm(`⚠️ Attention : "${cat.nom}" est une catégorie système.\n\nÊtes-vous sûr de vouloir la supprimer ?`)) {
                             onDeleteCategorie(cat);
                           }
@@ -1080,6 +1033,57 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                       🗑️
                     </button>
                   </div>
+                )}
+              </div>
+              
+              {/* Description */}
+              {cat.description && (
+                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.5rem', lineHeight: '1.3' }}>
+                  {cat.description}
+                </p>
+              )}
+              
+              {/* Infos norme et fréquence */}
+              <div style={{ fontSize: '0.7rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                {cat.norme_reference && <span style={{ marginRight: '0.75rem' }}>📜 {cat.norme_reference}</span>}
+                {cat.frequence_inspection && <span>🔄 {cat.frequence_inspection}</span>}
+              </div>
+              
+              {/* Badges */}
+              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                <span style={{
+                  background: '#dbeafe',
+                  color: '#1e40af',
+                  padding: '0.125rem 0.5rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.7rem',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {countByCategorie[cat.id] || 0} équipement(s)
+                </span>
+                {cat.permet_assignation_employe && (
+                  <span style={{
+                    background: '#fce7f3',
+                    color: '#be185d',
+                    padding: '0.125rem 0.5rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.7rem',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    👤 Assignable
+                  </span>
+                )}
+                {cat.est_predefinit && (
+                  <span style={{
+                    background: '#f3f4f6',
+                    color: '#6b7280',
+                    padding: '0.125rem 0.5rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.7rem',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    🔒 Système
+                  </span>
                 )}
               </div>
             </div>
