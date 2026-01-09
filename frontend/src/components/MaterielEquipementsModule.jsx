@@ -1497,10 +1497,11 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
         ]);
         setVehicules(vehiculesData || []);
         setEmployes(employesData || []);
-        // Filtrer les formulaires actifs de catégorie "equipement"
+        // Filtrer les formulaires actifs qui ont la catégorie "equipement"
+        // Ne PAS inclure les formulaires de type EPI ou autres catégories
         const formulairesEquipement = (formulairesData || []).filter(f => 
           f.est_actif !== false && 
-          (f.categorie_ids?.includes('equipement') || f.type === 'inspection')
+          f.categorie_ids?.includes('equipement')
         );
         setFormulaires(formulairesEquipement);
       } catch (err) {
