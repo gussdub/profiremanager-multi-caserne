@@ -265,6 +265,16 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   };
 
   const handleSaveAllConfigurations = async () => {
+    // Vérifier le blocage avant sauvegarde
+    if (blocageInfo.bloque && !blocageInfo.exception_appliquee) {
+      toast({
+        title: "Saisie bloquée",
+        description: blocageInfo.raison,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (pendingConfigurations.length === 0) {
       toast({
         title: "Aucune configuration",
