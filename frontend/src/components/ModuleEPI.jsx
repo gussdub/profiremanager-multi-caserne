@@ -1879,10 +1879,10 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               {/* Section Nettoyages - Phase 2 */}
-              <div className="nettoyages-section" style={{marginTop: '2rem'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                  <h3>🧼 Historique des nettoyages ({nettoyages.length})</h3>
-                  <Button onClick={() => setShowNettoyageModal(true)}>
+              <div className="nettoyages-section" style={{marginTop: '2rem', padding: '1rem', backgroundColor: '#F0FDF4', borderRadius: '8px'}}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem'}}>
+                  <h3 style={{ margin: 0, fontSize: '1rem' }}>🧼 Historique des nettoyages ({nettoyages.length})</h3>
+                  <Button size="sm" onClick={() => setShowNettoyageModal(true)} style={{ alignSelf: 'flex-start' }}>
                     ➕ Nouveau nettoyage
                   </Button>
                 </div>
