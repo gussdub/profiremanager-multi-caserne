@@ -10,6 +10,7 @@ import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
 import VehiculeQRAction from './components/VehiculeQRAction';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import RemplacementResultat from './components/RemplacementResultat';
 import { useTenant } from "./contexts/TenantContext";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
