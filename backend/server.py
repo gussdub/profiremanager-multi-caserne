@@ -5797,8 +5797,12 @@ async def export_planning_pdf(
             # ===== FORMAT GRILLE SEMAINE =====
             # Styles pour les cellules
             header_style_white = ParagraphStyle('HeaderWhite', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12)
-            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10)
-            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=9)
+            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_LEFT, textColor=colors.white, leading=11)
+            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=10)
+            
+            # Debug: logger les assignations
+            logging.warning(f"DEBUG PDF: {len(assignations_list)} assignations trouvées pour {date_debut.strftime('%Y-%m-%d')} à {date_fin.strftime('%Y-%m-%d')}")
+            logging.warning(f"DEBUG PDF: {len(types_garde_sorted)} types de garde")
             
             # En-tête : Type de garde + 7 jours
             header_row = [Paragraph("<b>Type de garde</b>", header_style_white)]
@@ -5807,19 +5811,20 @@ async def export_planning_pdf(
                 header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d/%m')}", header_style_white))
             
             table_data = [header_row]
-            cell_colors = []  # Pour stocker les couleurs de chaque ligne
+            cell_colors = []
             
             # Une ligne par type de garde
             for type_garde in types_garde_sorted:
                 garde_nom = type_garde.get('nom', 'N/A')
-                heure_debut = type_garde.get('heure_debut', '??:??')
-                heure_fin = type_garde.get('heure_fin', '??:??')
+                heure_debut_garde = type_garde.get('heure_debut', '??:??')
+                heure_fin_garde = type_garde.get('heure_fin', '??:??')
                 personnel_requis = type_garde.get('personnel_requis', 1)
                 jours_app = type_garde.get('jours_application', [])
+                type_garde_id = type_garde.get('id')
                 
-                # Première colonne avec Paragraph pour wrap automatique
-                row = [Paragraph(f"<b>{garde_nom}</b><br/>{heure_debut}-{heure_fin}", garde_cell_style)]
-                row_colors = [PRIMARY_RED]  # Première colonne en rouge
+                # Première colonne - nom complet sans troncature
+                row = [Paragraph(f"<b>{garde_nom}</b><br/><font size='7'>{heure_debut_garde}-{heure_fin_garde}</font>", garde_cell_style)]
+                row_colors = [PRIMARY_RED]
                 
                 for i in range(7):
                     d = date_debut + timedelta(days=i)
@@ -5832,45 +5837,42 @@ async def export_planning_pdf(
                         row_colors.append(LIGHT_GRAY)
                         continue
                     
-                    # Trouver les assignations
+                    # Trouver les assignations pour ce jour et ce type de garde
                     assignations_jour = [a for a in assignations_list 
-                                        if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
+                                        if a.get('date') == date_str and a.get('type_garde_id') == type_garde_id]
                     
-                    # Construire les noms complets des pompiers
+                    # Construire les noms des pompiers
                     noms = []
                     for a in assignations_jour:
-                        if a['user_id'] in users_map:
-                            u = users_map[a['user_id']]
+                        user_id = a.get('user_id')
+                        if user_id and user_id in users_map:
+                            u = users_map[user_id]
                             prenom = u.get('prenom', '')
                             nom = u.get('nom', '')
-                            # Format: P. Nom (ex: J. Dupont)
-                            noms.append(f"{prenom[:1]}. {nom}")
+                            if prenom or nom:
+                                noms.append(f"{prenom[:1]}. {nom}")
                     
                     if noms:
-                        # Afficher tous les noms avec <br/>
                         cell_text = "<br/>".join(noms[:4])
                         if len(noms) > 4:
-                            cell_text += f"<br/>+{len(noms)-4}"
+                            cell_text += f"<br/><font size='6'>+{len(noms)-4}</font>"
+                        row.append(Paragraph(cell_text, day_cell_style))
+                        
+                        if len(noms) >= personnel_requis:
+                            row_colors.append(COMPLETE_GREEN)
+                        else:
+                            row_colors.append(PARTIAL_YELLOW)
                     else:
-                        cell_text = "<font color='#DC2626'>Vacant</font>"
-                    
-                    row.append(Paragraph(cell_text, day_cell_style))
-                    
-                    # Couleur selon statut
-                    if len(noms) == 0:
+                        row.append(Paragraph("<font color='#B91C1C'>Vacant</font>", day_cell_style))
                         row_colors.append(VACANT_RED)
-                    elif len(noms) >= personnel_requis:
-                        row_colors.append(COMPLETE_GREEN)
-                    else:
-                        row_colors.append(PARTIAL_YELLOW)
                 
                 table_data.append(row)
                 cell_colors.append(row_colors)
             
-            # Calculer les largeurs de colonnes - première colonne plus large pour les noms complets
+            # Largeurs de colonnes - première colonne BEAUCOUP plus large
             page_width = landscape(letter)[0]
             available_width = page_width - 1*inch
-            first_col = 1.6*inch  # Largeur pour les noms de garde
+            first_col = 2.0*inch  # Augmenté à 2 pouces
             day_col = (available_width - first_col) / 7
             col_widths = [first_col] + [day_col] * 7
             
