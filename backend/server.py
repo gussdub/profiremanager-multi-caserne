@@ -5715,15 +5715,17 @@ async def export_planning_pdf(
 ):
     """Export du planning en PDF - Format grille visuelle"""
     try:
-        from reportlab.lib.pagesizes import letter, landscape, A4
+        from reportlab.lib.pagesizes import landscape, A4
         from reportlab.lib import colors
-        from reportlab.lib.units import inch, cm
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.enums import TA_CENTER, TA_LEFT
         from io import BytesIO
         
         tenant = await get_tenant_from_slug(tenant_slug)
+        tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id')
+        tenant_nom = tenant.nom if hasattr(tenant, 'nom') else tenant.get('nom', 'Service Incendie')
         
         # Calculer la période
         if type == 'semaine':
@@ -5739,17 +5741,16 @@ async def export_planning_pdf(
         
         # Récupérer les données
         assignations_list = await db.assignations.find({
-            "tenant_id": tenant.id,
+            "tenant_id": tenant_id,
             "date": {
                 "$gte": date_debut.strftime('%Y-%m-%d'),
                 "$lte": date_fin.strftime('%Y-%m-%d')
             }
         }).to_list(length=None)
         
-        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(length=None)
-        users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant_id}).to_list(length=None)
+        users_list = await db.users.find({"tenant_id": tenant_id}).to_list(length=None)
         
-        types_map = {t['id']: t for t in types_garde_list}
         users_map = {u['id']: u for u in users_list}
         
         # Créer le PDF en mode paysage
@@ -5758,26 +5759,207 @@ async def export_planning_pdf(
         doc = SimpleDocTemplate(
             buffer,
             pagesize=landscape(A4),
-            leftMargin=0.4*inch,
-            rightMargin=0.4*inch,
-            topMargin=0.4*inch,
+            leftMargin=0.5*inch,
+            rightMargin=0.5*inch,
+            topMargin=0.5*inch,
             bottomMargin=0.5*inch
         )
         
         elements = []
         styles = getSampleStyleSheet()
         
-        # Couleurs modernes
-        PRIMARY_COLOR = colors.HexColor('#DC2626')  # Rouge pompier
-        HEADER_BG = colors.HexColor('#1F2937')  # Gris foncé
-        COMPLETE_BG = colors.HexColor('#D1FAE5')  # Vert clair
-        PARTIAL_BG = colors.HexColor('#FEF3C7')  # Jaune clair
-        VACANT_BG = colors.HexColor('#FEE2E2')  # Rouge clair
+        # Couleurs
+        HEADER_BG = colors.HexColor('#1F2937')
+        PRIMARY_COLOR = colors.HexColor('#DC2626')
+        COMPLETE_BG = colors.HexColor('#D1FAE5')
+        PARTIAL_BG = colors.HexColor('#FEF3C7')
+        VACANT_BG = colors.HexColor('#FEE2E2')
         LIGHT_GRAY = colors.HexColor('#F3F4F6')
         BORDER_COLOR = colors.HexColor('#E5E7EB')
         
-        # Styles personnalisés
-        title_style = ParagraphStyle(
+        # Styles
+        title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=16, alignment=TA_CENTER, spaceAfter=5)
+        subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, alignment=TA_CENTER, textColor=colors.HexColor('#6B7280'), spaceAfter=15)
+        cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, leading=10)
+        header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER, textColor=colors.white)
+        garde_style = ParagraphStyle('Garde', parent=styles['Normal'], fontSize=8, alignment=TA_LEFT, textColor=colors.white, leading=10)
+        
+        # Jours en français
+        jours_fr = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+        mois_fr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+        
+        # Titre
+        elements.append(Paragraph("PLANNING DES GARDES", title_style))
+        
+        if type == 'semaine':
+            periode_text = f"Semaine du {date_debut.strftime('%d')} au {date_fin.strftime('%d')} {mois_fr[date_debut.month-1]} {date_debut.year}"
+        else:
+            periode_text = f"{mois_fr[date_debut.month-1].capitalize()} {date_debut.year}"
+        
+        elements.append(Paragraph(f"{tenant_nom} - {periode_text}", subtitle_style))
+        
+        # ===== CONSTRUCTION DE LA GRILLE =====
+        if type == 'semaine':
+            # En-têtes : Type de garde + 7 jours
+            header_row = ['Type de garde']
+            for i in range(7):
+                d = date_debut + timedelta(days=i)
+                header_row.append(f"{jours_fr[d.weekday()]}\n{d.strftime('%d/%m')}")
+            
+            table_data = [header_row]
+            row_colors = []  # Pour stocker les couleurs des cellules
+            
+            # Trier les types de garde
+            types_garde_sorted = sorted(types_garde_list, key=lambda x: x.get('heure_debut', '00:00'))
+            
+            for type_garde in types_garde_sorted:
+                garde_nom = type_garde.get('nom', 'N/A')
+                heure_debut = type_garde.get('heure_debut', '??:??')
+                heure_fin = type_garde.get('heure_fin', '??:??')
+                personnel_requis = type_garde.get('personnel_requis', 1)
+                jours_app = type_garde.get('jours_application', [])
+                
+                row = [f"{garde_nom}\n{heure_debut}-{heure_fin}"]
+                row_cell_colors = [PRIMARY_COLOR]  # Première colonne en rouge
+                
+                for i in range(7):
+                    d = date_debut + timedelta(days=i)
+                    date_str = d.strftime('%Y-%m-%d')
+                    day_name = d.strftime('%A').lower()
+                    
+                    # Vérifier si applicable ce jour
+                    if jours_app and day_name not in jours_app:
+                        row.append("-")
+                        row_cell_colors.append(LIGHT_GRAY)
+                        continue
+                    
+                    # Trouver les assignations
+                    assignations_jour = [a for a in assignations_list 
+                                        if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
+                    
+                    # Construire le texte
+                    noms = []
+                    for a in assignations_jour:
+                        if a['user_id'] in users_map:
+                            u = users_map[a['user_id']]
+                            noms.append(f"{u.get('prenom', '')[:1]}. {u.get('nom', '')}")
+                    
+                    if noms:
+                        cell_text = "\n".join(noms[:3])
+                        if len(noms) > 3:
+                            cell_text += f"\n+{len(noms)-3}"
+                    else:
+                        cell_text = "Vacant"
+                    
+                    row.append(cell_text)
+                    
+                    # Couleur selon statut
+                    if len(noms) == 0:
+                        row_cell_colors.append(VACANT_BG)
+                    elif len(noms) >= personnel_requis:
+                        row_cell_colors.append(COMPLETE_BG)
+                    else:
+                        row_cell_colors.append(PARTIAL_BG)
+                
+                table_data.append(row)
+                row_colors.append(row_cell_colors)
+            
+            # Largeurs de colonnes
+            col_widths = [1.5*inch] + [(page_width - 2*inch - 1.5*inch) / 7] * 7
+            
+            # Créer la table
+            table = Table(table_data, colWidths=col_widths)
+            
+            # Style de base
+            style_commands = [
+                ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ]
+            
+            # Appliquer les couleurs par cellule
+            for row_idx, colors_row in enumerate(row_colors, start=1):
+                for col_idx, bg_color in enumerate(colors_row):
+                    style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color))
+                    if col_idx == 0:
+                        style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                        style_commands.append(('ALIGN', (col_idx, row_idx), (col_idx, row_idx), 'LEFT'))
+                        style_commands.append(('LEFTPADDING', (col_idx, row_idx), (col_idx, row_idx), 8))
+            
+            table.setStyle(TableStyle(style_commands))
+            elements.append(table)
+            
+            # Légende
+            elements.append(Spacer(1, 0.3*inch))
+            legend_text = "Légende: Vert = Complet | Jaune = Partiel | Rouge = Vacant | Gris = Non applicable"
+            elements.append(Paragraph(legend_text, ParagraphStyle('Legend', fontSize=8, alignment=TA_CENTER, textColor=colors.HexColor('#6B7280'))))
+        
+        else:
+            # Mode mois - format simplifié
+            elements.append(Paragraph("Vue mensuelle - " + periode_text, subtitle_style))
+            # Pour le mois, on affiche un résumé par semaine
+            current = date_debut
+            while current <= date_fin:
+                fin_sem = min(current + timedelta(days=6), date_fin)
+                nb_jours = (fin_sem - current).days + 1
+                
+                header_row = ['Type'] + [f"{jours_fr[(current + timedelta(days=i)).weekday()]}\n{(current + timedelta(days=i)).strftime('%d')}" for i in range(nb_jours)]
+                table_data = [header_row]
+                
+                for tg in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                    row = [tg.get('nom', 'N/A')[:12]]
+                    for i in range(nb_jours):
+                        d = current + timedelta(days=i)
+                        date_str = d.strftime('%Y-%m-%d')
+                        nb = len([a for a in assignations_list if a['date'] == date_str and a['type_garde_id'] == tg['id']])
+                        row.append(str(nb) if nb > 0 else "-")
+                    table_data.append(row)
+                
+                col_w = [1*inch] + [0.5*inch] * nb_jours
+                t = Table(table_data, colWidths=col_w)
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('BACKGROUND', (0, 1), (0, -1), PRIMARY_COLOR),
+                    ('TEXTCOLOR', (0, 1), (0, -1), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ]))
+                elements.append(t)
+                elements.append(Spacer(1, 0.2*inch))
+                
+                current = fin_sem + timedelta(days=1)
+        
+        # Footer
+        def add_footer(canvas, doc_obj):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 8)
+            canvas.setFillColor(colors.HexColor('#9CA3AF'))
+            canvas.drawCentredString(page_width / 2, 0.3*inch, f"ProFireManager - {datetime.now().strftime('%d/%m/%Y %H:%M')} - Page {doc_obj.page}")
+            canvas.restoreState()
+        
+        doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=planning_{type}_{periode}.pdf"}
+        )
+        
+    except Exception as e:
+        import traceback
+        logging.error(f"Erreur export PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur export PDF: {str(e)}")
             'TitleStyle',
             parent=styles['Heading1'],
             fontSize=18,
