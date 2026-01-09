@@ -29,6 +29,7 @@ Application de gestion de caserne de pompiers multi-tenant. Gère le personnel, 
 - Nouvel endpoint `GET /{tenant}/disponibilites/statut-blocage?mois=YYYY-MM`
   - Retourne l'état du blocage pour un mois donné
   - Gère les exceptions admin/superviseur
+  - **CORRIGÉ (Jan 9, 2025)**: Déplacé AVANT l'endpoint `/{tenant}/disponibilites/{user_id}` pour éviter un conflit de routage FastAPI qui causait une erreur 403
 - Nouvel endpoint `POST /{tenant}/disponibilites/envoyer-rappels`
   - Déclenche manuellement l'envoi des rappels (pour tests admin)
 
