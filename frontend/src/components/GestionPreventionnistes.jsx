@@ -841,7 +841,7 @@ const GestionPreventionnistes = () => {
             
             <SecteurForm
               secteur={currentSecteur}
-              users={users.filter(u => u.role !== 'employe')}
+              users={users.filter(u => !['employe', 'pompier'].includes(u.role))}
               onSave={handleSaveSecteur}
               onDelete={currentSecteur ? () => handleDeleteSecteur(currentSecteur.id) : null}
               onCancel={() => {
