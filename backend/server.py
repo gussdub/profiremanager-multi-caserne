@@ -5765,7 +5765,7 @@ async def export_planning_pdf(
         modern_styles = get_modern_pdf_styles(styles)
         
         # Titre principal
-        titre = f"PLANNING DES GARDES - GRILLE V2"
+        titre = f"PLANNING DES GARDES - V3"
         elements.append(Paragraph(titre, modern_styles['title']))
         
         # Sous-titre avec période
