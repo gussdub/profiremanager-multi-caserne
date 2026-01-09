@@ -7191,9 +7191,31 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             data={
                 "type": "remplacement_proposition",
                 "demande_id": demande_id,
-                "lien": "/remplacements"
+                "lien": "/remplacements",
+                "sound": "urgent"  # Son urgent pour les remplacements
             }
         )
+        
+        # Créer des notifications in-app pour chaque remplaçant contacté
+        demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}"
+        type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+        
+        for remplacant_id in remplacant_ids:
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "user_id": remplacant_id,
+                "type": "remplacement_proposition",
+                "titre": "🚨 Demande de remplacement urgente",
+                "message": f"{demandeur_nom} cherche un remplaçant pour {type_garde_nom} le {demande_data['date']}. Répondez rapidement !",
+                "lu": False,
+                "urgent": True,  # Marqueur pour son urgent
+                "data": {
+                    "demande_id": demande_id,
+                    "lien": "/remplacements"
+                },
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
         
         # Envoyer emails aux remplaçants avec boutons Accepter/Refuser
         for remplacant in remplacants_a_contacter:
