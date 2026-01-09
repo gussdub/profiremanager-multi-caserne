@@ -139,7 +139,7 @@ const Remplacements = () => {
         apiGet(tenantSlug, '/remplacements'),
         apiGet(tenantSlug, '/demandes-conge'),
         apiGet(tenantSlug, '/types-garde'),
-        apiGet(tenantSlug, '/remplacements/mes-propositions') // Propositions reçues par l'utilisateur
+        apiGet(tenantSlug, '/remplacements/propositions').catch(() => []) // Propositions reçues par l'utilisateur
       ];
       
       if (user.role !== 'employe') {
