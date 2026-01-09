@@ -7734,15 +7734,69 @@ async def accepter_demande_remplacement(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Accepter une proposition de remplacement
+    Accepter/Approuver manuellement une demande de remplacement
+    - Si admin/superviseur: approbation manuelle (remplaçant trouvé hors système)
+    - Si remplaçant contacté: acceptation de la proposition
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    await accepter_remplacement(demande_id, current_user.id, tenant.id)
     
-    return {
-        "message": "Remplacement accepté avec succès",
-        "demande_id": demande_id
-    }
+    # Récupérer la demande
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Si admin/superviseur, c'est une approbation manuelle
+    if current_user.role in ["admin", "superviseur"]:
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "approuve_manuellement",
+                    "approuve_par_id": current_user.id,
+                    "date_approbation": maintenant.isoformat(),
+                    "updated_at": maintenant
+                }
+            }
+        )
+        
+        # Notifier le demandeur
+        demandeur_id = demande_data.get("demandeur_id")
+        if demandeur_id:
+            await send_push_notification_to_users(
+                user_ids=[demandeur_id],
+                title="✅ Demande approuvée",
+                body=f"Votre demande de remplacement du {demande_data['date']} a été approuvée par un superviseur.",
+                data={
+                    "type": "remplacement_approuve",
+                    "demande_id": demande_id
+                }
+            )
+            # Notification in-app
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": demandeur_id,
+                "type": "remplacement_approuve",
+                "titre": "✅ Demande approuvée",
+                "message": f"Votre demande de remplacement du {demande_data['date']} a été approuvée.",
+                "lu": False,
+                "data": {"demande_id": demande_id},
+                "created_at": maintenant.isoformat()
+            })
+        
+        return {
+            "message": "Demande approuvée avec succès",
+            "demande_id": demande_id
+        }
+    else:
+        # C'est un remplaçant qui accepte
+        await accepter_remplacement(demande_id, current_user.id, tenant.id)
+        
+        return {
+            "message": "Remplacement accepté avec succès",
+            "demande_id": demande_id
+        }
 
 @api_router.put("/{tenant_slug}/remplacements/{demande_id}/refuser")
 async def refuser_demande_remplacement(
