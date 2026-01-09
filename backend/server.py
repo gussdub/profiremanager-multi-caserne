@@ -8213,17 +8213,18 @@ async def export_remplacements_excel(
             row += 1
         
         # Ajuster les largeurs de colonnes
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column].width = adjusted_width
+        column_widths = {
+            'A': 12,  # Date
+            'B': 15,  # Type Garde
+            'C': 20,  # Demandeur
+            'D': 12,  # Statut
+            'E': 10,  # Priorité
+            'F': 20,  # Remplaçant
+            'G': 30,  # Notes
+            'H': 18,  # Créé le
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
         
         # Sauvegarder dans un buffer
         buffer = BytesIO()
@@ -15759,17 +15760,18 @@ async def export_disponibilites_excel(
             row += 1
         
         # Ajuster les largeurs de colonnes
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column].width = adjusted_width
+        column_widths = {
+            'A': 12,  # Date
+            'B': 15,  # Type Garde
+            'C': 20,  # Demandeur
+            'D': 12,  # Statut
+            'E': 10,  # Priorité
+            'F': 20,  # Remplaçant
+            'G': 30,  # Notes
+            'H': 18,  # Créé le
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
         
         # Sauvegarder dans un buffer
         buffer = BytesIO()
