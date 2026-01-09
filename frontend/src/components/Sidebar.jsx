@@ -273,8 +273,9 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 
   const filteredMenuItems = menuItems.filter(item => {
     if (!item.roles.includes(user?.role)) return false;
-    if (item.superAdminOnly && (typeof isSuperAdmin === 'undefined' || !isSuperAdmin)) return false;
-    if (item.id === 'disponibilites' && user.type_emploi !== 'temps_partiel') return false;
+    // superAdminOnly items ne sont visibles que pour les super admins (vérification via authTenant)
+    if (item.superAdminOnly && user?.role !== 'admin') return false;
+    if (item.id === 'disponibilites' && user?.type_emploi !== 'temps_partiel' && !['admin', 'superviseur'].includes(user?.role)) return false;
     if (item.id === 'prevention' && !authTenant?.parametres?.module_prevention_active) return false;
     return true;
   });
