@@ -20483,23 +20483,38 @@ async def get_statut_blocage_disponibilites(
                  "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
     
     if est_bloque:
+        if mois_cible_est_passe:
+            raison = f"Ce mois est passé ou en cours, modification impossible"
+        else:
+            raison = f"La date limite ({jour_blocage} {mois_noms[today.month - 1]}) pour {mois_noms[mois_mois - 1]} est dépassée"
+        
         return {
             "bloque": True,
-            "raison": f"La date limite de saisie ({jour_blocage} {mois_noms[mois_blocage - 1]}) est dépassée",
+            "raison": raison,
             "blocage_actif": True,
             "date_blocage": date_blocage.isoformat(),
             "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
         }
     else:
         jours_restants = (date_blocage - today).days
-        return {
-            "bloque": False,
-            "raison": f"Saisie autorisée jusqu'au {jour_blocage} {mois_noms[mois_blocage - 1]}",
-            "blocage_actif": True,
-            "date_blocage": date_blocage.isoformat(),
-            "jours_restants": jours_restants,
-            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
-        }
+        if jours_restants < 0:
+            # On est après la date limite mais le mois demandé n'est pas bloqué (mois futur)
+            return {
+                "bloque": False,
+                "raison": f"Mois futur - saisie libre",
+                "blocage_actif": True,
+                "date_blocage": date_blocage.isoformat(),
+                "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+            }
+        else:
+            return {
+                "bloque": False,
+                "raison": f"Saisie autorisée jusqu'au {jour_blocage} {mois_noms[today.month - 1]}",
+                "blocage_actif": True,
+                "date_blocage": date_blocage.isoformat(),
+                "jours_restants": jours_restants,
+                "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+            }
 
 
 # ==================== EPI ROUTES NFPA 1851 ====================
