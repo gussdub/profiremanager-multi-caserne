@@ -90,33 +90,20 @@ const Dashboard = () => {
       const results = await Promise.all(promises);
       
       // ===== TRAITEMENT DES RÉSULTATS =====
-      // Index des résultats change selon le rôle
-      let resultIndex = 0;
+      // Les 3 premiers résultats sont toujours: Formations, Assignations, Mes EPI
       
-      // 1. Formations
-      if (results[resultIndex]?.data) {
-        const userHeures = results[0].data.employes.find(e => e.user_id === user.id);
-        if (userHeures) {
-          setHeuresTravaillees({
-            internes: userHeures.heures_internes || 0,
-            externes: userHeures.heures_externes || 0,
-            total: userHeures.total_heures || userHeures.heures_internes || 0
-          });
-        }
-      }
-      
-      // 2. Formations inscrites
-      if (results[1]?.data) {
-        const formationsAVenir = (results[1].data || [])
+      // 1. Formations inscrites (index 0)
+      if (results[0]?.data) {
+        const formationsAVenir = (results[0].data || [])
           .filter(f => new Date(f.date_debut || f.date) >= now)
           .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
           .slice(0, 3);
         setFormationsInscrites(formationsAVenir);
       }
       
-      // 3. Prochain garde
-      if (results[2]?.data) {
-        const mesAssignations = (results[2].data || [])
+      // 2. Prochain garde (index 1)
+      if (results[1]?.data) {
+        const mesAssignations = (results[1].data || [])
           .filter(a => a.user_id === user.id && new Date(a.date) >= now)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         if (mesAssignations.length > 0) {
@@ -124,10 +111,10 @@ const Dashboard = () => {
         }
       }
       
-      // 4. Alertes EPI
-      if (results[3]?.data) {
+      // 3. Alertes EPI (index 2)
+      if (results[2]?.data) {
         const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        const alertes = (results[3].data || [])
+        const alertes = (results[2].data || [])
           .filter(epi => {
             const dateExpiration = epi.date_expiration ? new Date(epi.date_expiration) : null;
             return dateExpiration && dateExpiration <= dans30Jours;
@@ -136,17 +123,35 @@ const Dashboard = () => {
         setMesEPIAlerts(alertes);
       }
 
-      // ===== DONNÉES ADMIN =====
-      if (isAdmin && results.length > 4) {
-        // Users
-        if (results[4]?.data) {
-          setStatsGenerales(prev => ({ ...prev, personnel: results[4].data.length || 0 }));
+      // ===== DONNÉES ADMIN/SUPERVISEUR =====
+      let adminIndex = 3; // Index de départ pour les données admin
+      
+      // Heures travaillées (admin/superviseur uniquement)
+      if (isAdminOrSuperviseur && results[adminIndex]?.data?.employes) {
+        const userHeures = results[adminIndex].data.employes.find(e => e.user_id === user.id);
+        if (userHeures) {
+          setHeuresTravaillees({
+            internes: userHeures.heures_internes || 0,
+            externes: userHeures.heures_externes || 0,
+            total: userHeures.total_heures || userHeures.heures_internes || 0
+          });
         }
+        adminIndex++;
+      }
+
+      // ===== DONNÉES ADMIN UNIQUEMENT =====
+      if (isAdmin && results.length > adminIndex) {
+        // Users
+        if (results[adminIndex]?.data) {
+          setStatsGenerales(prev => ({ ...prev, personnel: results[adminIndex].data.length || 0 }));
+        }
+        adminIndex++;
         
         // Véhicules
-        if (results[5]?.data) {
-          setStatsGenerales(prev => ({ ...prev, vehicules: results[5].data.length || 0 }));
+        if (results[adminIndex]?.data) {
+          setStatsGenerales(prev => ({ ...prev, vehicules: results[adminIndex].data.length || 0 }));
         }
+        adminIndex++;
         
         // Congés
         if (results[6]?.data) {
