@@ -165,7 +165,14 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   // Jouer un son quand il y a de nouvelles notifications
   useEffect(() => {
     if (unreadCount > 0) {
-      playNotificationSound();
+      // Vérifier s'il y a une notification urgente (remplacement)
+      const hasUrgent = notifications.some(n => !n.lu && (n.urgent || n.type === 'remplacement_proposition'));
+      if (hasUrgent) {
+        // Jouer le son urgent plus fort
+        playNotificationSound({ ...notificationSettings, soundType: 'urgent', volume: Math.min(notificationSettings.volume * 1.5, 100) });
+      } else {
+        playNotificationSound();
+      }
     }
   }, [unreadCount]);
 
