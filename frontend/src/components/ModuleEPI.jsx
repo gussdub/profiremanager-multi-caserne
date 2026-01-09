@@ -1780,11 +1780,12 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               <div className="inspections-section" style={{marginTop: '2rem'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem'}}>
-                  <h3>📋 Historique des inspections ({inspections.length})</h3>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem'}}>
+                  <h3 style={{ margin: 0, fontSize: '1rem' }}>📋 Historique des inspections ({inspections.length})</h3>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {selectedEPI?.formulaire_avancee_id ? (
                       <Button 
+                        size="sm"
                         onClick={() => {
                           const formulaireId = selectedEPI.formulaire_avancee_id;
                           console.log('[DEBUG] Bouton cliqué, formulaireId:', formulaireId);
