@@ -1461,6 +1461,8 @@ const AppWithProviders = () => {
         } />
         {/* Route spéciale pour installation PWA sur iOS */}
         <Route path="/pwa/:tenantSlug" element={<PWARedirect />} />
+        {/* Route pour résultat d'action remplacement via email */}
+        <Route path="/remplacement-resultat" element={<RemplacementResultat />} />
         <Route path="/:tenant/reset-password" element={
           <AuthProvider>
             <ResetPassword />
