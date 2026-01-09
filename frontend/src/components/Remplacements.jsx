@@ -393,20 +393,30 @@ const Remplacements = () => {
 
   if (loading) return <div className="loading" data-testid="replacements-loading">Chargement...</div>;
 
-  // Calculer les KPIs
-  const totalDemandes = demandes.length;
-  const enAttente = demandes.filter(d => d.statut === 'en_cours').length;
-  const acceptees = demandes.filter(d => d.statut === 'approuve').length;
-  const refusees = demandes.filter(d => d.statut === 'refuse').length;
-  const remplacementsTrouves = demandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length;
-  const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
-  const congesDuMois = demandesConge.length;
+  // Déterminer si l'utilisateur est admin/superviseur
+  const isAdminOrSuperviseur = !['employe', 'pompier'].includes(user.role);
 
-  // Filtrer les demandes selon le rôle et le filtre
+  // Filtrer les demandes selon le rôle pour les KPIs ET l'affichage
+  const mesDemandes = isAdminOrSuperviseur 
+    ? demandes 
+    : demandes.filter(d => d.demandeur_id === user.id);
+  
+  const mesConges = isAdminOrSuperviseur
+    ? demandesConge
+    : demandesConge.filter(c => c.demandeur_id === user.id);
+
+  // Calculer les KPIs sur MES demandes (pour pompiers) ou TOUTES (pour admins)
+  const totalDemandes = mesDemandes.length;
+  const enAttente = mesDemandes.filter(d => d.statut === 'en_cours').length;
+  const acceptees = mesDemandes.filter(d => d.statut === 'approuve').length;
+  const refusees = mesDemandes.filter(d => d.statut === 'refuse').length;
+  const remplacementsTrouves = mesDemandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length;
+  const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
+  const congesDuMois = mesConges.length;
+
+  // Filtrer les demandes selon le filtre de statut
   const getFilteredDemandes = () => {
-    let filtered = ['employe', 'pompier'].includes(user.role) 
-      ? demandes.filter(d => d.demandeur_id === user.id)
-      : demandes;
+    let filtered = mesDemandes;
     
     if (filterStatut !== 'tous') {
       const statutMap = {
