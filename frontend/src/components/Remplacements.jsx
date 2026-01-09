@@ -138,7 +138,8 @@ const Remplacements = () => {
       const promises = [
         apiGet(tenantSlug, '/remplacements'),
         apiGet(tenantSlug, '/demandes-conge'),
-        apiGet(tenantSlug, '/types-garde')
+        apiGet(tenantSlug, '/types-garde'),
+        apiGet(tenantSlug, '/remplacements/mes-propositions') // Propositions reçues par l'utilisateur
       ];
       
       if (user.role !== 'employe') {
@@ -153,9 +154,10 @@ const Remplacements = () => {
       setDemandes((responses[0] || []).sort(sortByCreatedAt));
       setDemandesConge((responses[1] || []).sort(sortByCreatedAt));
       setTypesGarde(responses[2]);
+      setPropositionsRecues((responses[3] || []).sort(sortByCreatedAt));
       
-      if (responses[3]) {
-        setUsers(responses[3]);
+      if (responses[4]) {
+        setUsers(responses[4]);
       }
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
