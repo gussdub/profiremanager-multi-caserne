@@ -45,6 +45,16 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   
+  // État pour le blocage des disponibilités
+  const [blocageInfo, setBlocageInfo] = useState({
+    bloque: false,
+    raison: '',
+    blocage_actif: false,
+    date_blocage: null,
+    jours_restants: null,
+    mois_cible: null
+  });
+  
   // États pour le calendrier visuel mensuel
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(new Date().getMonth());
   const [calendarCurrentYear, setCalendarCurrentYear] = useState(new Date().getFullYear());
