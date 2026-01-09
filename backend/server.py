@@ -7015,16 +7015,26 @@ async def trouver_remplacants_potentiels(
     exclus_ids: List[str] = []
 ) -> List[Dict[str, Any]]:
     """
-    Trouve les remplaçants potentiels selon les critères:
-    1. Compétences requises pour le type de garde
-    2. Grade équivalent ou supérieur (lieutenant peut remplacer pompier)
+    Trouve les remplaçants potentiels selon les critères configurés dans Paramètres > Remplacements:
+    1. Compétences requises pour le type de garde (si competences_egales activé)
+    2. Grade équivalent ou supérieur (si grade_egal activé)
     3. Pas d'indisponibilité pour cette date
-    4. Disponibilité déclarée (bonus de tri)
+    4. Disponibilité déclarée (filtré si privilegier_disponibles activé, sinon bonus de tri)
     5. Ancienneté (date_embauche la plus ancienne)
     
     Retourne une liste triée de remplaçants par ordre de priorité
     """
     try:
+        # Récupérer les paramètres de remplacements pour ce tenant
+        parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+        
+        # Valeurs par défaut si pas de paramètres
+        privilegier_disponibles = parametres.get("privilegier_disponibles", False) if parametres else False
+        grade_egal = parametres.get("grade_egal", False) if parametres else False
+        competences_egales = parametres.get("competences_egales", False) if parametres else False
+        
+        logging.warning(f"⚙️ Paramètres remplacements - privilegier_disponibles: {privilegier_disponibles}, grade_egal: {grade_egal}, competences_egales: {competences_egales}")
+        
         # Récupérer le type de garde pour connaître les compétences requises
         type_garde_data = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant_id})
         if not type_garde_data:
@@ -7033,6 +7043,11 @@ async def trouver_remplacants_potentiels(
         
         competences_requises = type_garde_data.get("competences_requises", [])
         officier_obligatoire = type_garde_data.get("officier_obligatoire", False)
+        
+        # Récupérer le demandeur pour comparer grade/compétences
+        demandeur = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant_id})
+        demandeur_grade = demandeur.get("grade", "pompier").lower() if demandeur else "pompier"
+        demandeur_competences = set(demandeur.get("competences", [])) if demandeur else set()
         
         # Récupérer tous les utilisateurs du tenant (sauf demandeur et déjà exclus)
         exclus_ids_set = set(exclus_ids + [demandeur_id])
@@ -7049,19 +7064,41 @@ async def trouver_remplacants_potentiels(
         
         remplacants_potentiels = []
         
+        # Hiérarchie des grades (du plus bas au plus haut)
+        grades_hierarchie = {
+            "pompier": 1,
+            "lieutenant": 2,
+            "capitaine": 3,
+            "chef": 4,
+            "eligible": 2,  # Éligible = équivalent lieutenant
+            "éligible": 2
+        }
+        demandeur_grade_niveau = grades_hierarchie.get(demandeur_grade, 1)
+        
         for user in users_list:
             user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
-            
-            # 1. Vérifier les compétences
-            user_competences = set(user.get("competences", []))
-            if competences_requises and not set(competences_requises).issubset(user_competences):
-                logging.warning(f"❌ {user_name} - Compétences insuffisantes: {user_competences} vs requis: {competences_requises}")
-                continue  # Ne possède pas toutes les compétences requises
-            
-            # 2. Vérifier le grade
             user_grade = user.get("grade", "pompier")
             user_grade_lower = user_grade.lower() if user_grade else "pompier"
-            grades_hierarchie = ["pompier", "lieutenant", "capitaine", "chef"]
+            user_grade_niveau = grades_hierarchie.get(user_grade_lower, 1)
+            
+            # 1. Vérifier les compétences (SI competences_egales est activé)
+            if competences_egales:
+                user_competences = set(user.get("competences", []))
+                # Vérifier que le remplaçant a les compétences du demandeur
+                if demandeur_competences and not demandeur_competences.issubset(user_competences):
+                    logging.warning(f"❌ {user_name} - Compétences insuffisantes: {user_competences} vs demandeur: {demandeur_competences}")
+                    continue
+                # Aussi vérifier les compétences requises du type de garde
+                if competences_requises and not set(competences_requises).issubset(user_competences):
+                    logging.warning(f"❌ {user_name} - Compétences type garde insuffisantes: {user_competences} vs requis: {competences_requises}")
+                    continue
+            
+            # 2. Vérifier le grade (SI grade_egal est activé OU si officier_obligatoire)
+            if grade_egal:
+                # Le remplaçant doit avoir un grade >= au demandeur
+                if user_grade_niveau < demandeur_grade_niveau:
+                    logging.warning(f"❌ {user_name} - Grade insuffisant: {user_grade} (niveau {user_grade_niveau}) vs demandeur niveau {demandeur_grade_niveau}")
+                    continue
             
             if officier_obligatoire:
                 # Pour officier obligatoire, il faut au moins lieutenant OU être éligible
@@ -7082,13 +7119,23 @@ async def trouver_remplacants_potentiels(
                 logging.warning(f"❌ {user_name} - Indisponible pour cette date")
                 continue  # A une indisponibilité, on passe
             
-            # 3b. Vérifier les limites d'heures (gestion heures supplémentaires)
-            # Récupérer les paramètres de remplacements
-            parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
-            if parametres and parametres.get("activer_gestion_heures_sup", False):
-                # Si heures sup activées, ne pas limiter
-                pass  # Autoriser toutes les heures
-            else:
+            # 4. Vérifier s'il a une disponibilité déclarée
+            dispo = await db.disponibilites.find_one({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": date_garde,
+                "statut": "disponible"
+            })
+            
+            has_disponibilite = dispo is not None
+            
+            # Si privilegier_disponibles est activé, FILTRER ceux qui n'ont pas de dispo
+            if privilegier_disponibles and not has_disponibilite:
+                logging.warning(f"❌ {user_name} - Pas de disponibilité déclarée (filtre privilegier_disponibles actif)")
+                continue
+            
+            # 5. Vérifier les limites d'heures (gestion heures supplémentaires)
+            if parametres and not parametres.get("activer_gestion_heures_sup", False):
                 # Heures sup désactivées : vérifier la limite hebdo
                 heures_max_user = user.get("heures_max_semaine", 40)
                 
@@ -7111,19 +7158,10 @@ async def trouver_remplacants_potentiels(
                 duree_garde = type_garde_data.get("duree_heures", 8)
                 
                 if heures_semaine + duree_garde > heures_max_user:
-                    continue  # Skip car dépasse les heures max hebdo
+                    logging.warning(f"❌ {user_name} - Dépasse heures max hebdo ({heures_semaine + duree_garde} > {heures_max_user})")
+                    continue
             
-            # 4. Vérifier s'il a une disponibilité déclarée (bonus)
-            dispo = await db.disponibilites.find_one({
-                "user_id": user["id"],
-                "tenant_id": tenant_id,
-                "date": date_garde,
-                "statut": "disponible"
-            })
-            
-            has_disponibilite = dispo is not None
-            
-            # 5. Ancienneté (date_embauche)
+            # 6. Ancienneté (date_embauche)
             date_embauche = user.get("date_embauche", "2999-12-31")  # Si pas de date, le plus récent
             
             logging.warning(f"✅ {user_name} - Ajouté comme remplaçant potentiel (dispo déclarée: {has_disponibilite})")
@@ -7135,10 +7173,10 @@ async def trouver_remplacants_potentiels(
                 "grade": user_grade,
                 "date_embauche": date_embauche,
                 "has_disponibilite": has_disponibilite,
-                "formations": list(user_competences)  # Utiliser les compétences de l'utilisateur
+                "formations": list(set(user.get("competences", [])))
             })
         
-        # Trier par: 1. Disponibilité déclarée, 2. Ancienneté (date la plus ancienne)
+        # Trier par: 1. Disponibilité déclarée (si pas de filtre), 2. Ancienneté (date la plus ancienne)
         remplacants_potentiels.sort(
             key=lambda x: (
                 not x["has_disponibilite"],  # False (a dispo) avant True (pas de dispo)
