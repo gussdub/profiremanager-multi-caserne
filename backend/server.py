@@ -5955,12 +5955,31 @@ async def export_planning_pdf(
                 table_data = [header_row]
                 cell_colors_mois = []
                 
+                # Styles pour le format mois - avec retour à la ligne
+                from reportlab.lib.enums import TA_LEFT
+                header_style_mois = ParagraphStyle('HeaderMois', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10, wordWrap='CJK')
+                garde_cell_style_mois = ParagraphStyle('GardeCellMois', fontSize=7, alignment=TA_LEFT, textColor=colors.white, leading=9, wordWrap='CJK')
+                day_cell_style_mois = ParagraphStyle('DayCellMois', fontSize=7, alignment=TA_CENTER, leading=9, textColor=colors.HexColor('#1F2937'), wordWrap='CJK')
+                
+                # Reconstruire l'en-tête avec des Paragraph
+                header_row = [Paragraph("<b>Type</b>", header_style_mois)]
+                for i in range(nb_jours):
+                    d = current + timedelta(days=i)
+                    header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d')}", header_style_mois))
+                
+                table_data = [header_row]
+                cell_colors_mois = []
+                
                 for type_garde in types_garde_sorted:
-                    garde_nom = type_garde.get('nom', 'N/A')[:12]
+                    garde_nom = type_garde.get('nom', 'N/A')  # NE PLUS TRONQUER
+                    heure_debut_garde = type_garde.get('heure_debut', '')
+                    heure_fin_garde = type_garde.get('heure_fin', '')
                     personnel_requis = type_garde.get('personnel_requis', 1)
                     jours_app = type_garde.get('jours_application', [])
+                    type_garde_id = type_garde.get('id')
                     
-                    row = [garde_nom]
+                    # Première colonne avec nom complet et horaires
+                    row = [Paragraph(f"<b>{garde_nom}</b><br/><font size='6'>{heure_debut_garde}-{heure_fin_garde}</font>", garde_cell_style_mois)]
                     row_colors = [PRIMARY_RED]
                     
                     for i in range(nb_jours):
@@ -5969,22 +5988,37 @@ async def export_planning_pdf(
                         day_name = d.strftime('%A').lower()
                         
                         if jours_app and day_name not in jours_app:
-                            row.append("-")
+                            row.append(Paragraph("-", day_cell_style_mois))
                             row_colors.append(LIGHT_GRAY)
                             continue
                         
                         assignations_jour = [a for a in assignations_list 
-                                            if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
-                        nb = len(assignations_jour)
+                                            if a['date'] == date_str and a['type_garde_id'] == type_garde_id]
                         
-                        row.append(f"{nb}/{personnel_requis}" if nb > 0 else "-")
+                        # Construire les noms des pompiers
+                        noms = []
+                        for a in assignations_jour:
+                            user_id = a.get('user_id')
+                            if user_id and user_id in users_map:
+                                u = users_map[user_id]
+                                prenom = u.get('prenom', '')
+                                nom = u.get('nom', '')
+                                if prenom or nom:
+                                    noms.append(f"{prenom[:1]}. {nom}")
                         
-                        if nb == 0:
-                            row_colors.append(VACANT_RED)
-                        elif nb >= personnel_requis:
-                            row_colors.append(COMPLETE_GREEN)
+                        if noms:
+                            cell_text = "<br/>".join(noms[:3])  # Max 3 noms pour le mois
+                            if len(noms) > 3:
+                                cell_text += f"<br/><font size='5'>+{len(noms)-3}</font>"
+                            row.append(Paragraph(cell_text, day_cell_style_mois))
+                            
+                            if len(noms) >= personnel_requis:
+                                row_colors.append(COMPLETE_GREEN)
+                            else:
+                                row_colors.append(PARTIAL_YELLOW)
                         else:
-                            row_colors.append(PARTIAL_YELLOW)
+                            row.append(Paragraph("<font color='#B91C1C'>Vacant</font>", day_cell_style_mois))
+                            row_colors.append(VACANT_RED)
                     
                     table_data.append(row)
                     cell_colors_mois.append(row_colors)
