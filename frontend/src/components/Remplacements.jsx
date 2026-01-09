@@ -867,14 +867,14 @@ const Remplacements = () => {
                   </p>
                 </div>
                 <div className="pending-indicator">
-                  <span className="pending-count">{demandesConge.filter(d => d.statut === 'en_attente').length}</span>
+                  <span className="pending-count">{mesConges.filter(d => d.statut === 'en_attente').length}</span>
                   <span className="pending-label">en attente d'approbation</span>
                 </div>
               </div>
             )}
 
             {/* Boutons d'actions rapides pour admin/superviseur */}
-            {!['employe', 'pompier'].includes(user.role) && (
+            {isAdminOrSuperviseur && (
               <div className="management-actions">
                 <Button 
                   variant="outline" 
@@ -903,13 +903,13 @@ const Remplacements = () => {
               </div>
             )}
 
-            {/* Statistics Cards pour congés */}
+            {/* Statistics Cards pour congés - Affiche MES stats pour employés, TOUTES pour admins */}
             <div className="conge-stats">
               <div className="stat-card-conge pending">
                 <div className="stat-icon">⏳</div>
                 <div className="stat-content">
                   <h3>En attente</h3>
-                  <p className="stat-number">{demandesConge.filter(d => d.statut === 'en_attente').length}</p>
+                  <p className="stat-number">{mesConges.filter(d => d.statut === 'en_attente').length}</p>
                   <p className="stat-label">À approuver</p>
                 </div>
               </div>
@@ -918,7 +918,7 @@ const Remplacements = () => {
                 <div className="stat-icon">✅</div>
                 <div className="stat-content">
                   <h3>Approuvés</h3>
-                  <p className="stat-number">{demandesConge.filter(d => d.statut === 'approuve').length}</p>
+                  <p className="stat-number">{mesConges.filter(d => d.statut === 'approuve').length}</p>
                   <p className="stat-label">Ce mois</p>
                 </div>
               </div>
@@ -927,7 +927,7 @@ const Remplacements = () => {
                 <div className="stat-icon">📊</div>
                 <div className="stat-content">
                   <h3>Total jours</h3>
-                  <p className="stat-number">{demandesConge.reduce((total, d) => total + (d.nombre_jours || 0), 0)}</p>
+                  <p className="stat-number">{mesConges.reduce((total, d) => total + (d.nombre_jours || 0), 0)}</p>
                   <p className="stat-label">Jours de congé</p>
                 </div>
               </div>
@@ -935,8 +935,8 @@ const Remplacements = () => {
 
             {/* Liste des demandes de congé */}
             <div className="conges-list">
-              {demandesConge.length > 0 ? (
-                demandesConge.map(conge => (
+              {mesConges.length > 0 ? (
+                mesConges.map(conge => (
                   <div key={conge.id} className="conge-card" data-testid={`conge-${conge.id}`}>
                     <div className="conge-header">
                       <div className="conge-type">
