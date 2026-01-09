@@ -16104,22 +16104,62 @@ body.mobile-menu-open .mobile-menu-toggle {
 
 .retrait-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+@media (min-width: 480px) {
+  .retrait-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+  }
+}
+
+.retrait-card > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.retrait-card > div:first-child strong {
+  font-size: 0.95rem;
+  display: block;
+  word-break: break-word;
+}
+
+.retrait-card > div:first-child p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.retrait-card > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 480px) {
+  .retrait-card > div:last-child {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
 .age-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
   background: #E0E7FF;
   color: #3730A3;
   font-weight: 600;
-  font-size: 0.875rem;
-  margin-right: 0.5rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .tco-summary {
