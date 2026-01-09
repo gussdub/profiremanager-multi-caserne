@@ -5799,10 +5799,15 @@ async def export_planning_pdf(
             header_row = ['Type de garde']
             for i in range(7):
                 d = date_debut + timedelta(days=i)
-                header_row.append(f"{jours_fr[d.weekday()]}\n{d.strftime('%d/%m')}")
+                header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d/%m')}", 
+                    ParagraphStyle('HeaderCell', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12)))
             
             table_data = [header_row]
             cell_colors = []  # Pour stocker les couleurs de chaque ligne
+            
+            # Styles pour les cellules
+            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10)
+            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=9)
             
             # Une ligne par type de garde
             for type_garde in types_garde_sorted:
@@ -5812,8 +5817,8 @@ async def export_planning_pdf(
                 personnel_requis = type_garde.get('personnel_requis', 1)
                 jours_app = type_garde.get('jours_application', [])
                 
-                # Ne pas tronquer le nom du type de garde
-                row = [f"{garde_nom}\n{heure_debut}-{heure_fin}"]
+                # Première colonne avec Paragraph pour wrap automatique
+                row = [Paragraph(f"<b>{garde_nom}</b><br/>{heure_debut}-{heure_fin}", garde_cell_style)]
                 row_colors = [PRIMARY_RED]  # Première colonne en rouge
                 
                 for i in range(7):
@@ -5823,7 +5828,7 @@ async def export_planning_pdf(
                     
                     # Vérifier si applicable ce jour
                     if jours_app and day_name not in jours_app:
-                        row.append("-")
+                        row.append(Paragraph("-", day_cell_style))
                         row_colors.append(LIGHT_GRAY)
                         continue
                     
@@ -5842,14 +5847,14 @@ async def export_planning_pdf(
                             noms.append(f"{prenom[:1]}. {nom}")
                     
                     if noms:
-                        # Afficher tous les noms (max 4 pour éviter débordement)
-                        cell_text = "\n".join(noms[:4])
+                        # Afficher tous les noms avec <br/>
+                        cell_text = "<br/>".join(noms[:4])
                         if len(noms) > 4:
-                            cell_text += f"\n+{len(noms)-4} autres"
+                            cell_text += f"<br/>+{len(noms)-4}"
                     else:
-                        cell_text = "Vacant"
+                        cell_text = "<font color='#DC2626'>Vacant</font>"
                     
-                    row.append(cell_text)
+                    row.append(Paragraph(cell_text, day_cell_style))
                     
                     # Couleur selon statut
                     if len(noms) == 0:
@@ -5865,7 +5870,7 @@ async def export_planning_pdf(
             # Calculer les largeurs de colonnes - première colonne plus large pour les noms complets
             page_width = landscape(letter)[0]
             available_width = page_width - 1*inch
-            first_col = 1.8*inch  # Augmenté pour afficher les noms complets
+            first_col = 1.6*inch  # Largeur pour les noms de garde
             day_col = (available_width - first_col) / 7
             col_widths = [first_col] + [day_col] * 7
             
