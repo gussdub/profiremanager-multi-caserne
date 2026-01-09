@@ -668,7 +668,11 @@ const Remplacements = () => {
                           size="sm" 
                           data-testid={`approve-replacement-${demande.id}`}
                           title="Approuver manuellement cette demande (si remplaçant trouvé hors système ou validation manuelle requise)"
-                          onClick={() => handleApprouverRemplacement(demande.id, 'approuver')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleApprouverRemplacement(demande.id, 'approuver');
+                          }}
                         >
                           ✅
                         </Button>
@@ -678,7 +682,11 @@ const Remplacements = () => {
                           className="danger" 
                           data-testid={`reject-replacement-${demande.id}`}
                           title="Rejeter/Annuler cette demande (si plus nécessaire ou aucun remplaçant disponible)"
-                          onClick={() => handleApprouverRemplacement(demande.id, 'rejeter')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleApprouverRemplacement(demande.id, 'rejeter');
+                          }}
                         >
                           ❌
                         </Button>
