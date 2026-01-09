@@ -789,40 +789,42 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   key={type.id}
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
                     padding: '12px 16px',
                     background: type.est_defaut ? '#f0f9ff' : '#f9fafb',
                     borderRadius: '8px',
                     border: type.est_defaut ? '1px solid #bae6fd' : '1px solid #e5e7eb',
-                    flexWrap: 'wrap',
                     gap: '10px'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
-                    <span style={{ fontSize: '24px' }}>{type.icone}</span>
-                    <div>
-                      <p style={{ fontWeight: '600', color: '#1f2937', margin: 0, fontSize: '14px' }}>
-                        {type.nom}
-                        {type.est_defaut && (
-                          <span style={{ 
-                            marginLeft: '8px', 
-                            fontSize: '10px', 
-                            background: '#0ea5e9', 
-                            color: 'white', 
-                            padding: '2px 6px', 
-                            borderRadius: '4px' 
-                          }}>
-                            Par défaut
-                          </span>
-                        )}
-                      </p>
-                      {type.description && (
-                        <p style={{ color: '#6b7280', margin: 0, fontSize: '12px' }}>{type.description}</p>
-                      )}
-                    </div>
+                  {/* Ligne 1: Icône, Nom, Badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '24px', flexShrink: 0 }}>{type.icone}</span>
+                    <p style={{ fontWeight: '600', color: '#1f2937', margin: 0, fontSize: '14px', flex: 1, minWidth: 0 }}>
+                      {type.nom}
+                    </p>
+                    {type.est_defaut && (
+                      <span style={{ 
+                        fontSize: '10px', 
+                        background: '#0ea5e9', 
+                        color: 'white', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        Par défaut
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  
+                  {/* Ligne 2: Description (si présente) */}
+                  {type.description && (
+                    <p style={{ color: '#6b7280', margin: 0, fontSize: '12px', paddingLeft: '34px' }}>{type.description}</p>
+                  )}
+                  
+                  {/* Ligne 3: Boutons */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <Button
                       size="sm"
                       variant="outline"
