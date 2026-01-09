@@ -15525,11 +15525,17 @@ body.mobile-menu-open .mobile-menu-toggle {
 
 .epi-statut-badge {
   margin-left: auto;
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: white;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 90px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .epi-card-body {
