@@ -11199,10 +11199,14 @@ async def get_tenant_from_slug(slug: str) -> Tenant:
     cache_key = f"tenant_{slug}"
     now = time.time()
     if cache_key in _tenant_cache and (now - _tenant_cache_time.get(cache_key, 0)) < 60:
+        logging.warning(f"🗄️ Cache hit pour tenant {slug}: {_tenant_cache[cache_key].id}")
         return _tenant_cache[cache_key]
+    
+    logging.warning(f"🔍 Cache miss pour tenant {slug}, requête DB...")
     
     # Requête simplifiée avec index
     tenant_data = await db.tenants.find_one({"slug": slug}, {"_id": 0})
+    logging.warning(f"🔍 Résultat DB pour slug={slug}: id={tenant_data.get('id') if tenant_data else 'None'}, nom={tenant_data.get('nom') if tenant_data else 'None'}")
     
     # Fallback pour ancienne structure
     if not tenant_data:
