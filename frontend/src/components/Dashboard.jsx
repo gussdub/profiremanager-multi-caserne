@@ -59,17 +59,24 @@ const Dashboard = () => {
 
       // ===== APPELS EN PARALLÈLE =====
       const promises = [
-        // 1. Heures travaillées
-        axios.get(`${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
-        // 2. Formations
+        // 1. Formations
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
-        // 3. Assignations
+        // 2. Assignations
         axios.get(`${API}/${tenantSlug}/assignations?semaine_debut=${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
-        // 4. Mes EPI
+        // 3. Mes EPI
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
-      // Ajouter les appels admin si nécessaire
+      // Ajouter les appels admin/superviseur si nécessaire
+      const isAdminOrSuperviseur = user?.role === 'admin' || user?.role === 'superviseur';
+      if (isAdminOrSuperviseur) {
+        promises.push(
+          // Heures travaillées (admin/superviseur uniquement)
+          axios.get(`${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
+        );
+      }
+      
+      // Ajouter les appels admin uniquement
       if (isAdmin) {
         promises.push(
           axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 }).catch(() => null),
@@ -83,9 +90,11 @@ const Dashboard = () => {
       const results = await Promise.all(promises);
       
       // ===== TRAITEMENT DES RÉSULTATS =====
+      // Index des résultats change selon le rôle
+      let resultIndex = 0;
       
-      // 1. Heures travaillées
-      if (results[0]?.data?.employes) {
+      // 1. Formations
+      if (results[resultIndex]?.data) {
         const userHeures = results[0].data.employes.find(e => e.user_id === user.id);
         if (userHeures) {
           setHeuresTravaillees({
