@@ -1016,13 +1016,14 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                     {cat.norme_reference && <span style={{ marginRight: '1rem' }}>📜 {cat.norme_reference}</span>}
                     {cat.frequence_inspection && <span>🔄 {cat.frequence_inspection}</span>}
                   </div>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{
                       background: '#dbeafe',
                       color: '#1e40af',
                       padding: '0.125rem 0.5rem',
                       borderRadius: '9999px',
-                      fontSize: '0.75rem'
+                      fontSize: '0.7rem',
+                      whiteSpace: 'nowrap'
                     }}>
                       {countByCategorie[cat.id] || 0} équipement(s)
                     </span>
@@ -1032,7 +1033,8 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                         color: '#be185d',
                         padding: '0.125rem 0.5rem',
                         borderRadius: '9999px',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem',
+                        whiteSpace: 'nowrap'
                       }}>
                         👤 Assignable
                       </span>
@@ -1043,7 +1045,8 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                         color: '#6b7280',
                         padding: '0.125rem 0.5rem',
                         borderRadius: '9999px',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem',
+                        whiteSpace: 'nowrap'
                       }}>
                         🔒 Système
                       </span>
