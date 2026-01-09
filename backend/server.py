@@ -6947,6 +6947,31 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                         "demande_id": demande_id
                     }
                 )
+            
+            # Notifier le demandeur que sa demande a expiré
+            demandeur_id = demande_data.get("demandeur_id")
+            if demandeur_id:
+                await send_push_notification_to_users(
+                    user_ids=[demandeur_id],
+                    title="❌ Demande de remplacement expirée",
+                    body=f"Aucun remplaçant n'a été trouvé pour votre demande du {demande_data['date']}. Contactez votre superviseur.",
+                    data={
+                        "type": "remplacement_expiree",
+                        "demande_id": demande_id
+                    }
+                )
+                # Créer une notification in-app
+                await db.notifications.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant_id,
+                    "user_id": demandeur_id,
+                    "type": "remplacement_expiree",
+                    "titre": "❌ Demande de remplacement expirée",
+                    "message": f"Aucun remplaçant n'a été trouvé pour votre demande du {demande_data['date']}.",
+                    "lu": False,
+                    "data": {"demande_id": demande_id},
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                })
             return
         
         # Déterminer combien de remplaçants contacter
