@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://epi-inspect.preview.emergentagent.com
+- **URL** : https://dutyswap.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://epi-inspect.preview.emergentagent.com"
+  "apiUrl": "https://dutyswap.preview.emergentagent.com"
 }
 ```
 
