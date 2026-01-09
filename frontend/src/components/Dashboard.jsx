@@ -65,16 +65,9 @@ const Dashboard = () => {
         axios.get(`${API}/${tenantSlug}/planning/assignations/${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
         // 3. Mes EPI
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
+        // 4. Mes heures (nouvel endpoint accessible à tous les utilisateurs)
+        axios.get(`${API}/${tenantSlug}/planning/mes-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
       ];
-      
-      // Ajouter les appels admin/superviseur si nécessaire
-      const isAdminOrSuperviseur = user?.role === 'admin' || user?.role === 'superviseur';
-      if (isAdminOrSuperviseur) {
-        promises.push(
-          // Heures travaillées (admin/superviseur uniquement)
-          axios.get(`${API}/${tenantSlug}/planning/rapport-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
-        );
-      }
       
       // Ajouter les appels admin uniquement
       if (isAdmin) {
@@ -90,7 +83,7 @@ const Dashboard = () => {
       const results = await Promise.all(promises);
       
       // ===== TRAITEMENT DES RÉSULTATS =====
-      // Les 3 premiers résultats sont toujours: Formations, Assignations, Mes EPI
+      // Les 4 premiers résultats sont toujours: Formations, Assignations, Mes EPI, Mes Heures
       
       // 1. Formations inscrites (index 0)
       if (results[0]?.data) {
@@ -122,24 +115,18 @@ const Dashboard = () => {
           .slice(0, 5);
         setMesEPIAlerts(alertes);
       }
-
-      // ===== DONNÉES ADMIN/SUPERVISEUR =====
-      let adminIndex = 3; // Index de départ pour les données admin
       
-      // Heures travaillées (admin/superviseur uniquement)
-      if (isAdminOrSuperviseur && results[adminIndex]?.data?.employes) {
-        const userHeures = results[adminIndex].data.employes.find(e => e.user_id === user.id);
-        if (userHeures) {
-          setHeuresTravaillees({
-            internes: userHeures.heures_internes || 0,
-            externes: userHeures.heures_externes || 0,
-            total: userHeures.total_heures || userHeures.heures_internes || 0
-          });
-        }
-        adminIndex++;
+      // 4. Mes heures travaillées (index 3) - accessible à tous
+      if (results[3]?.data) {
+        setHeuresTravaillees({
+          internes: results[3].data.heures_internes || 0,
+          externes: results[3].data.heures_externes || 0,
+          total: results[3].data.total_heures || 0
+        });
       }
 
       // ===== DONNÉES ADMIN UNIQUEMENT =====
+      let adminIndex = 4; // Index de départ pour les données admin
       if (isAdmin && results.length > adminIndex) {
         // Users
         if (results[adminIndex]?.data) {
