@@ -7751,15 +7751,69 @@ async def refuser_demande_remplacement(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Refuser une proposition de remplacement
+    Refuser/Annuler une demande de remplacement
+    - Si admin/superviseur: annulation manuelle de la demande
+    - Si remplaçant contacté: refus de la proposition
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    await refuser_remplacement(demande_id, current_user.id, tenant.id)
     
-    return {
-        "message": "Remplacement refusé",
-        "demande_id": demande_id
-    }
+    # Récupérer la demande
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Si admin/superviseur, c'est une annulation manuelle
+    if current_user.role in ["admin", "superviseur"]:
+        maintenant = datetime.now(timezone.utc)
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "annulee",
+                    "annule_par_id": current_user.id,
+                    "date_annulation": maintenant.isoformat(),
+                    "updated_at": maintenant
+                }
+            }
+        )
+        
+        # Notifier le demandeur
+        demandeur_id = demande_data.get("demandeur_id")
+        if demandeur_id:
+            await send_push_notification_to_users(
+                user_ids=[demandeur_id],
+                title="❌ Demande annulée",
+                body=f"Votre demande de remplacement du {demande_data['date']} a été annulée par un superviseur.",
+                data={
+                    "type": "remplacement_annulee",
+                    "demande_id": demande_id
+                }
+            )
+            # Notification in-app
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": demandeur_id,
+                "type": "remplacement_annulee",
+                "titre": "❌ Demande annulée",
+                "message": f"Votre demande de remplacement du {demande_data['date']} a été annulée.",
+                "lu": False,
+                "data": {"demande_id": demande_id},
+                "created_at": maintenant.isoformat()
+            })
+        
+        return {
+            "message": "Demande annulée avec succès",
+            "demande_id": demande_id
+        }
+    else:
+        # C'est un remplaçant qui refuse
+        await refuser_remplacement(demande_id, current_user.id, tenant.id)
+        
+        return {
+            "message": "Remplacement refusé",
+            "demande_id": demande_id
+        }
 
 @api_router.delete("/{tenant_slug}/remplacements/{demande_id}")
 async def annuler_demande_remplacement(
