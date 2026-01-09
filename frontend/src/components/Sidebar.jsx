@@ -255,19 +255,19 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   };
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: '📊', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'dashboard', label: 'Tableau de bord', icon: '📊', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'personnel', label: 'Personnel', icon: '👥', roles: ['admin', 'superviseur'] },
-    { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'planning', label: 'Planning', icon: '📅', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe'] },
+    { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'planning', label: 'Planning', icon: '📅', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin'] },
     { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧', roles: ['admin'], superAdminOnly: true },
-    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe'] },
-    { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe'] }
+    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe', 'pompier'] }
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
