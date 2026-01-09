@@ -7194,6 +7194,24 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             }
         )
         
+        # Envoyer emails aux remplaçants avec boutons Accepter/Refuser
+        for remplacant in remplacants_a_contacter:
+            try:
+                # Générer un token unique pour ce remplaçant
+                token = await generer_token_remplacement(demande_id, remplacant["user_id"], tenant_id)
+                
+                # Envoyer l'email
+                await envoyer_email_remplacement(
+                    demande_data=demande_data,
+                    remplacant=remplacant,
+                    demandeur=demandeur,
+                    type_garde=type_garde,
+                    tenant_id=tenant_id,
+                    token=token
+                )
+            except Exception as email_error:
+                logging.error(f"Erreur envoi email à {remplacant['nom_complet']}: {email_error}")
+        
         logging.info(f"✅ Recherche lancée pour demande {demande_id}: {nombre_a_contacter} remplaçant(s) contacté(s)")
         
     except Exception as e:
