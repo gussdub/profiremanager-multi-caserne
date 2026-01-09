@@ -561,14 +561,36 @@ const Remplacements = () => {
         </div>
       </div>
 
-      {/* Onglets Remplacements / Congés - Harmonisés */}
+      {/* Onglets Remplacements / Congés / Propositions - Harmonisés */}
       <div style={{
         display: 'flex',
         gap: '1rem',
         marginBottom: '2rem',
         borderBottom: '2px solid #E5E7EB',
-        paddingBottom: '0.5rem'
+        paddingBottom: '0.5rem',
+        flexWrap: 'wrap'
       }}>
+        {/* Onglet Propositions reçues - Affiché en premier pour attirer l'attention */}
+        {propositionsRecues.length > 0 && (
+          <button
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              background: activeTab === 'propositions' ? '#22c55e' : '#dcfce7',
+              color: activeTab === 'propositions' ? 'white' : '#166534',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              transition: 'all 0.2s ease',
+              animation: 'pulse 2s infinite'
+            }}
+            onClick={() => setActiveTab('propositions')}
+            data-testid="tab-propositions"
+          >
+            🚨 Propositions reçues ({propositionsRecues.length})
+          </button>
+        )}
         <button
           style={{
             padding: '0.75rem 1.5rem',
@@ -607,6 +629,89 @@ const Remplacements = () => {
 
       {/* Contenu des onglets */}
       <div className="tab-content">
+        {/* Onglet Propositions reçues */}
+        {activeTab === 'propositions' && (
+          <div className="propositions-recues">
+            <div style={{
+              background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ color: '#166534', margin: 0, marginBottom: '0.5rem' }}>
+                🚨 Demandes de remplacement pour vous
+              </h3>
+              <p style={{ color: '#15803d', margin: 0, fontSize: '0.9rem' }}>
+                Un collègue a besoin d'être remplacé et vous avez été identifié comme disponible. 
+                Répondez ci-dessous pour accepter ou refuser.
+              </p>
+            </div>
+            
+            <div className="propositions-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {propositionsRecues.map(proposition => (
+                <Card key={proposition.id} style={{ 
+                  border: '2px solid #22c55e',
+                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.2)'
+                }}>
+                  <CardContent style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <h4 style={{ margin: 0, marginBottom: '0.5rem', color: '#1e3a5f' }}>
+                          {getTypeGardeName(proposition.type_garde_id)}
+                        </h4>
+                        <p style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                          📅 {parseDateLocal(proposition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                        <p style={{ margin: 0, marginBottom: '0.5rem', color: '#666' }}>
+                          👤 Demandeur : <strong>{getUserName(proposition.demandeur_id)}</strong>
+                        </p>
+                        {proposition.raison && (
+                          <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                            💬 Raison : {proposition.raison}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '200px' }}>
+                        <Button 
+                          style={{ 
+                            backgroundColor: '#22c55e', 
+                            color: 'white',
+                            padding: '1rem 2rem',
+                            fontSize: '1rem'
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRepondreProposition(proposition.id, 'accepter');
+                          }}
+                        >
+                          ✅ J'accepte ce remplacement
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          style={{ 
+                            borderColor: '#ef4444', 
+                            color: '#ef4444',
+                            padding: '0.75rem 2rem'
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRepondreProposition(proposition.id, 'refuser');
+                          }}
+                        >
+                          ❌ Je refuse
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'remplacements' && (
           <div className="remplacements-content">
               <div style={{ 
