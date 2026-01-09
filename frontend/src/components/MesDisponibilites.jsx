@@ -78,13 +78,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     jours_semaine: [] // Pour sélection des jours en mode hebdomadaire/bihebdomadaire
   });
 
-  // États pour la gestion des conflits
-  const [showConflictModal, setShowConflictModal] = useState(false);
-  const [conflictData, setConflictData] = useState({
-    conflicts: [],
-    newItem: null,
-    itemType: null
-  });
   const [generationConfig, setGenerationConfig] = useState({
     horaire_type: 'montreal',
     equipe: 'Rouge',
