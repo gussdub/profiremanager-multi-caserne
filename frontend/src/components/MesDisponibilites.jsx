@@ -1509,6 +1509,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               variant="default" 
               onClick={() => setShowCalendarModal(true)}
               data-testid="configure-availability-btn"
+              disabled={blocageInfo.bloque && !blocageInfo.exception_appliquee}
+              title={blocageInfo.bloque && !blocageInfo.exception_appliquee ? blocageInfo.raison : ''}
             >
               ✅ Mes Disponibilités
             </Button>
@@ -1516,6 +1518,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               variant="outline" 
               onClick={() => setShowGenerationModal(true)}
               data-testid="generate-indisponibilites-btn"
+              disabled={blocageInfo.bloque && !blocageInfo.exception_appliquee}
+              title={blocageInfo.bloque && !blocageInfo.exception_appliquee ? blocageInfo.raison : ''}
             >
               ❌ Indisponibilités
             </Button>
@@ -1523,6 +1527,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               variant="destructive" 
               onClick={() => setShowReinitModal(true)}
               data-testid="reinit-disponibilites-btn"
+              disabled={blocageInfo.bloque && !blocageInfo.exception_appliquee}
+              title={blocageInfo.bloque && !blocageInfo.exception_appliquee ? blocageInfo.raison : ''}
             >
               🗑️ Supprimer Tout
             </Button>
