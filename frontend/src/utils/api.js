@@ -101,8 +101,8 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
   try {
     const response = await fetch(url, config);
     
-    // Si 401 ou 403, le token est invalide - nettoyer et rediriger vers login
-    if (response.status === 401 || response.status === 403) {
+    // Si 401, le token est invalide - nettoyer et rediriger vers login
+    if (response.status === 401) {
       console.log('Token invalide ou expiré, nettoyage et redirection...');
       localStorage.clear(); // Nettoyer TOUT le localStorage
       sessionStorage.clear(); // Nettoyer aussi sessionStorage
@@ -113,6 +113,9 @@ export const apiCall = async (tenantSlug, endpoint, options = {}) => {
       }, 100);
       return;
     }
+    
+    // Si 403, c'est un problème de permissions, pas de token - ne PAS déconnecter
+    // Laisser l'appelant gérer l'erreur
     
     // Si 404 sur le tenant, rediriger vers erreur
     if (response.status === 404 && response.statusText.includes('Caserne')) {
