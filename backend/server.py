@@ -20140,6 +20140,112 @@ async def update_parametres_disponibilites(
     
     return {"message": "Paramètres disponibilités mis à jour"}
 
+
+@api_router.get("/{tenant_slug}/disponibilites/statut-blocage")
+async def get_statut_blocage_disponibilites(
+    tenant_slug: str,
+    mois: Optional[str] = None,  # Format YYYY-MM
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Vérifie si la saisie des disponibilités est bloquée pour un mois donné.
+    Retourne l'état du blocage et les informations associées.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les paramètres
+    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        return {
+            "bloque": False,
+            "raison": "Paramètres non configurés",
+            "blocage_actif": False
+        }
+    
+    blocage_actif = params.get("blocage_dispos_active", False)
+    
+    if not blocage_actif:
+        return {
+            "bloque": False,
+            "raison": "Système de blocage désactivé",
+            "blocage_actif": False
+        }
+    
+    # Déterminer le mois cible
+    today = datetime.now(timezone.utc).date()
+    
+    if mois:
+        try:
+            mois_parts = mois.split("-")
+            mois_annee = int(mois_parts[0])
+            mois_mois = int(mois_parts[1])
+        except:
+            raise HTTPException(status_code=400, detail="Format de mois invalide. Utilisez YYYY-MM")
+    else:
+        # Par défaut, vérifier pour le mois suivant
+        if today.month == 12:
+            mois_mois = 1
+            mois_annee = today.year + 1
+        else:
+            mois_mois = today.month + 1
+            mois_annee = today.year
+    
+    jour_blocage = params.get("jour_blocage_dispos", 15)
+    exceptions_admin = params.get("exceptions_admin_superviseur", True)
+    
+    # Calculer la date de blocage
+    # Le blocage s'applique au mois courant, jour X, pour le mois suivant
+    # Ex: Si on est en janvier et jour_blocage=15, alors après le 15 janvier, 
+    # on ne peut plus modifier les dispos de février
+    
+    # Le mois précédent le mois cible est le mois où se situe la date de blocage
+    if mois_mois == 1:
+        mois_blocage = 12
+        annee_blocage = mois_annee - 1
+    else:
+        mois_blocage = mois_mois - 1
+        annee_blocage = mois_annee
+    
+    date_blocage = date(annee_blocage, mois_blocage, jour_blocage)
+    
+    # Vérifier si on est après la date de blocage
+    est_bloque = today > date_blocage
+    
+    # Vérifier les exceptions pour admin/superviseur
+    if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
+        return {
+            "bloque": False,
+            "raison": "Exception admin/superviseur active",
+            "blocage_actif": True,
+            "date_blocage": date_blocage.isoformat(),
+            "exception_appliquee": True,
+            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+        }
+    
+    mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                 "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    
+    if est_bloque:
+        return {
+            "bloque": True,
+            "raison": f"La date limite de saisie ({jour_blocage} {mois_noms[mois_blocage - 1]}) est dépassée",
+            "blocage_actif": True,
+            "date_blocage": date_blocage.isoformat(),
+            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+        }
+    else:
+        jours_restants = (date_blocage - today).days
+        return {
+            "bloque": False,
+            "raison": f"Saisie autorisée jusqu'au {jour_blocage} {mois_noms[mois_blocage - 1]}",
+            "blocage_actif": True,
+            "date_blocage": date_blocage.isoformat(),
+            "jours_restants": jours_restants,
+            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+        }
+
+
 # ==================== EPI ROUTES NFPA 1851 ====================
 
 # ========== TYPES D'EPI PERSONNALISÉS ==========
