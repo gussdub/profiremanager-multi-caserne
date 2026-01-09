@@ -5946,23 +5946,14 @@ async def export_planning_pdf(
                     semaine_style
                 ))
                 
-                # En-tête de la grille
-                header_row = ['Type']
-                for i in range(nb_jours):
-                    d = current + timedelta(days=i)
-                    header_row.append(f"{jours_fr[d.weekday()]}\n{d.strftime('%d')}")
-                
-                table_data = [header_row]
-                cell_colors_mois = []
-                
                 # Styles pour le format mois - avec retour à la ligne
                 from reportlab.lib.enums import TA_LEFT
                 header_style_mois = ParagraphStyle('HeaderMois', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10, wordWrap='CJK')
                 garde_cell_style_mois = ParagraphStyle('GardeCellMois', fontSize=7, alignment=TA_LEFT, textColor=colors.white, leading=9, wordWrap='CJK')
                 day_cell_style_mois = ParagraphStyle('DayCellMois', fontSize=7, alignment=TA_CENTER, leading=9, textColor=colors.HexColor('#1F2937'), wordWrap='CJK')
                 
-                # Reconstruire l'en-tête avec des Paragraph
-                header_row = [Paragraph("<b>Type</b>", header_style_mois)]
+                # En-tête avec des Paragraph pour le retour à la ligne
+                header_row = [Paragraph("<b>Type de garde</b>", header_style_mois)]
                 for i in range(nb_jours):
                     d = current + timedelta(days=i)
                     header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d')}", header_style_mois))
