@@ -2310,8 +2310,8 @@ const ModuleEPI = ({ user }) => {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={reparationForm.cout_reparation}
-                  onChange={e => setReparationForm({...reparationForm, cout_reparation: parseFloat(e.target.value) || 0})}
+                  value={reparationForm.cout_reparation || ''}
+                  onChange={e => setReparationForm({...reparationForm, cout_reparation: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
                   placeholder="0.00"
                 />
               </div>
