@@ -1402,12 +1402,12 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
               )}
               
               {/* Employés (Pompiers) */}
-              {users.filter(u => u.role === 'employe').length > 0 && (
+              {users.filter(u => ['employe', 'pompier'].includes(u.role)).length > 0 && (
                 <div>
                   <div style={{ padding: '0.35rem 0.5rem', backgroundColor: '#F3F4F6', fontWeight: '600', fontSize: '0.75rem', color: '#4B5563', borderBottom: '1px solid #E5E7EB' }}>
                     🚒 Pompiers
                   </div>
-                  {users.filter(u => u.role === 'employe').map(user => (
+                  {users.filter(u => ['employe', 'pompier'].includes(u.role)).map(user => (
                     <label key={user.id} style={{ 
                       display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', 
                       cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
