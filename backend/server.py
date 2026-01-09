@@ -6931,10 +6931,11 @@ async def envoyer_email_remplacement(
         
         # URL de base pour les liens
         frontend_url = os.environ.get('FRONTEND_URL', 'https://epi-inspect.preview.emergentagent.com')
+        backend_url = os.environ.get('REACT_APP_BACKEND_URL', frontend_url)
         
-        # Liens avec token
-        lien_accepter = f"{frontend_url}/api/remplacement-action/{token}/accepter"
-        lien_refuser = f"{frontend_url}/api/remplacement-action/{token}/refuser"
+        # Liens avec token - utilise l'API backend
+        lien_accepter = f"{backend_url}/api/remplacement-action/{token}/accepter"
+        lien_refuser = f"{backend_url}/api/remplacement-action/{token}/refuser"
         
         # Informations de la demande
         demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}"
