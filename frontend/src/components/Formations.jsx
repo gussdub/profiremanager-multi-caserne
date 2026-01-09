@@ -75,7 +75,7 @@ const Formations = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (user?.role === 'employe') {
+      if (['employe', 'pompier'].includes(user?.role)) {
         const [formationsData, competencesData, tauxData] = await Promise.all([
           apiGet(tenantSlug, `/formations?annee=${anneeSelectionnee}`),
           apiGet(tenantSlug, '/competences'),
@@ -439,7 +439,7 @@ const Formations = () => {
         </div>
       </div>
       
-      {user?.role === 'employe' && monTauxPresence && (
+      {['employe', 'pompier'].includes(user?.role) && monTauxPresence && (
         <div className="mon-kpi-presence">
           <h2>📊 Mon Taux de Présence {anneeSelectionnee}</h2>
           <div className="kpi-personnel-grid">
@@ -463,7 +463,7 @@ const Formations = () => {
         </div>
       )}
       
-      {user?.role !== 'employe' && dashboardData && (
+      {!['employe', 'pompier'].includes(user?.role) && dashboardData && (
         <div className="formations-dashboard">
           <div className="kpi-grid">
             <div className="kpi-card"><h3>{dashboardData.heures_planifiees}h</h3><p>Heures planifiées</p></div>
@@ -477,12 +477,12 @@ const Formations = () => {
       
       <div className="formations-tabs">
         <button className={activeTab === 'formations' ? 'active' : ''} onClick={() => setActiveTab('formations')}>📋 Formations ({formations.length})</button>
-        {user?.role !== 'employe' && <button className={activeTab === 'rapports' ? 'active' : ''} onClick={() => setActiveTab('rapports')}>📊 Rapports</button>}
+        {!['employe', 'pompier'].includes(user?.role) && <button className={activeTab === 'rapports' ? 'active' : ''} onClick={() => setActiveTab('rapports')}>📊 Rapports</button>}
       </div>
       
       {activeTab === 'formations' && (
         <div className="formations-content">
-          {user?.role !== 'employe' && (
+          {!['employe', 'pompier'].includes(user?.role) && (
             <div className="formations-actions"><Button onClick={() => { setSelectedFormation(null); setFormationForm({...formationForm, annee: anneeSelectionnee}); setShowFormationModal(true); }}>➕ Nouvelle Formation</Button></div>
           )}
           <div className="formations-grid">
@@ -549,7 +549,7 @@ const Formations = () => {
                   )}
                   
                   {/* Boutons de gestion pour admin/superviseur */}
-                  {user?.role !== 'employe' && (
+                  {!['employe', 'pompier'].includes(user?.role) && (
                     <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
                       <Button 
                         size="sm" 

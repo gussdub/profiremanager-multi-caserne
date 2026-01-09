@@ -502,7 +502,7 @@ const Planning = () => {
   };
 
   const handleAttributionAuto = async () => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
 
     try {
       // Activer l'overlay de chargement
@@ -742,7 +742,7 @@ const Planning = () => {
   };
 
   const handleAssignUser = async (userId, typeGardeId, date) => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
 
     try {
       await apiPost(tenantSlug, '/planning/assignation', {
@@ -770,7 +770,7 @@ const Planning = () => {
   };
 
   const handleAdvancedAssignment = async () => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
 
     // Validation des champs requis
     if (!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut) {
@@ -1042,7 +1042,7 @@ const Planning = () => {
   };
 
   const openAssignModal = (date, typeGarde) => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
     setSelectedSlot({ date, typeGarde });
     setShowAssignModal(true);
   };
@@ -1468,7 +1468,7 @@ const Planning = () => {
       </div>
 
       {/* Boutons d'Assignation - Responsive Mobile/Desktop */}
-      {user.role !== 'employe' && (
+      {!['employe', 'pompier'].includes(user.role) && (
         <div className="planning-action-buttons" style={{
           display: 'flex', 
           flexWrap: 'wrap',
@@ -1636,7 +1636,7 @@ const Planning = () => {
                   });
                   
                   // Vérifier si c'est un quart de l'utilisateur actuel
-                  const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                  const isMyShift = ['employe', 'pompier'].includes(user.role) && assignedUsers.some(u => u.id === user.id);
                   
                   // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                   const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
@@ -1667,7 +1667,7 @@ const Planning = () => {
                       onClick={() => {
                         if (assignedUsers.length > 0) {
                           openGardeDetails(date, typeGarde);
-                        } else if (user.role !== 'employe') {
+                        } else if (!['employe', 'pompier'].includes(user.role)) {
                           openAssignModal(date, typeGarde);
                         }
                       }}
@@ -1866,7 +1866,7 @@ const Planning = () => {
                             )
                           : [];
                       
-                      const isMyShift = user.role === 'employe' && assignedUsers.some(u => u.id === user.id);
+                      const isMyShift = ['employe', 'pompier'].includes(user.role) && assignedUsers.some(u => u.id === user.id);
                       // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                       const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
                       
@@ -1945,7 +1945,7 @@ const Planning = () => {
           }}></span>
           <span style={{fontSize: '0.85rem', fontWeight: '500', color: '#1e293b', whiteSpace: 'nowrap'}}>❌ Vacant</span>
         </div>
-        {user.role === 'employe' && (
+        {['employe', 'pompier'].includes(user.role) && (
           <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
             <span style={{
               width: '20px', 
@@ -1961,7 +1961,7 @@ const Planning = () => {
       </div>
 
       {/* Assignment Modal */}
-      {showAssignModal && selectedSlot && user.role !== 'employe' && (
+      {showAssignModal && selectedSlot && !['employe', 'pompier'].includes(user.role) && (
         <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
           <div 
             className="modal-content" 
@@ -2199,7 +2199,7 @@ const Planning = () => {
                               🔍 Audit
                             </Button>
                           )}
-                          {user.role !== 'employe' && (
+                          {!['employe', 'pompier'].includes(user.role) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -2216,7 +2216,7 @@ const Planning = () => {
                 ) : (
                   <div className="no-personnel">
                     <p>Aucun personnel assigné à cette garde</p>
-                    {user.role !== 'employe' && (
+                    {!['employe', 'pompier'].includes(user.role) && (
                       <Button 
                         variant="outline" 
                         onClick={() => {
@@ -2233,7 +2233,7 @@ const Planning = () => {
               </div>
 
               <div className="garde-actions">
-                {user.role !== 'employe' && (
+                {!['employe', 'pompier'].includes(user.role) && (
                   <>
                     <Button 
                       variant="outline" 
@@ -2261,7 +2261,7 @@ const Planning = () => {
       )}
 
       {/* Modal d'assignation manuelle avancée avec récurrence */}
-      {showAdvancedAssignModal && user.role !== 'employe' && (
+      {showAdvancedAssignModal && !['employe', 'pompier'].includes(user.role) && (
         <div className="modal-overlay" onClick={() => setShowAdvancedAssignModal(false)}>
           <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="advanced-assign-modal">
             <div className="modal-header">

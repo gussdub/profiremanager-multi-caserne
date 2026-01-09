@@ -392,7 +392,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         <h1 style={{ margin: 0, fontSize: 'clamp(1.1rem, 4vw, 1.5rem)' }}>🚒 Gestion des Actifs</h1>
         
         {/* Bouton Ajouter à droite - Caché pour les employés */}
-        {activeTab === 'vehicules' && user?.role !== 'employe' && (
+        {activeTab === 'vehicules' && !['employe', 'pompier'].includes(user?.role) && (
           <button 
             onClick={openCreateModal}
             style={{

@@ -122,7 +122,7 @@ const MaterielEquipementsModule = ({ user }) => {
   // Filtrer les équipements
   // Pour les employés (pompiers) : uniquement les équipements inspectables (APRIA ou avec formulaire)
   // Pour admin/superviseur : tout l'inventaire
-  const isEmploye = user?.role === 'employe';
+  const isEmploye = ['employe', 'pompier'].includes(user?.role);
   
   const equipementsFiltres = equipements.filter(e => {
     // Si c'est un employé, ne montrer que les équipements inspectables

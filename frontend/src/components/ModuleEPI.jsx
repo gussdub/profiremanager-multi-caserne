@@ -2539,7 +2539,7 @@ const Dashboard = () => {
                 <p>{msg.contenu}</p>
                 <small>Par {msg.auteur_nom} • {new Date(msg.created_at).toLocaleDateString('fr-FR')}</small>
               </div>
-              {user?.role !== 'employe' && (
+              {!['employe', 'pompier'].includes(user?.role) && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -2555,7 +2555,7 @@ const Dashboard = () => {
       )}
 
       {/* BOUTON CRÉER MESSAGE (Admin/Superviseur) */}
-      {user?.role !== 'employe' && (
+      {!['employe', 'pompier'].includes(user?.role) && (
         <div style={{marginBottom: '2rem'}}>
           <Button onClick={() => setShowMessageModal(true)}>
             ➕ Publier un message important

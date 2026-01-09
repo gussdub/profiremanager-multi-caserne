@@ -64,7 +64,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     
     // Ne charger les notifications que pour les utilisateurs non-employés de base
     // Les pompiers temps partiel peuvent recevoir des notifications (remplacements, disponibilités)
-    if (user.role === 'employe' && user.type_emploi !== 'temps_partiel') return;
+    if (['employe', 'pompier'].includes(user.role) && user.type_emploi !== 'temps_partiel') return;
     
     try {
       const notificationsData = await apiGet(tenantSlug, '/notifications');

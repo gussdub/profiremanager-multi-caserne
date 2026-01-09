@@ -142,7 +142,7 @@ const Remplacements = () => {
         apiGet(tenantSlug, '/remplacements/propositions').catch(() => []) // Propositions reçues par l'utilisateur
       ];
       
-      if (user.role !== 'employe') {
+      if (!['employe', 'pompier'].includes(user.role)) {
         promises.push(apiGet(tenantSlug, '/users'));
       }
 
@@ -237,7 +237,7 @@ const Remplacements = () => {
   };
 
   const handleApprouverConge = async (demandeId, action, commentaire = "") => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
 
     try {
       await apiPut(tenantSlug, `/demandes-conge/${demandeId}/approuver?action=${action}&commentaire=${commentaire}`, {});
@@ -257,7 +257,7 @@ const Remplacements = () => {
   };
 
   const handleApprouverRemplacement = async (demandeId, action) => {
-    if (user.role === 'employe') return;
+    if (['employe', 'pompier'].includes(user.role)) return;
 
     try {
       const endpoint = action === 'approuver' ? 'accepter' : 'refuser';
@@ -404,7 +404,7 @@ const Remplacements = () => {
 
   // Filtrer les demandes selon le rôle et le filtre
   const getFilteredDemandes = () => {
-    let filtered = user.role === 'employe' 
+    let filtered = ['employe', 'pompier'].includes(user.role) 
       ? demandes.filter(d => d.demandeur_id === user.id)
       : demandes;
     
@@ -774,7 +774,7 @@ const Remplacements = () => {
                         <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
-                    {user.role !== 'employe' && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
+                    {!['employe', 'pompier'].includes(user.role) && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                       <div className="demande-actions">
                         <Button 
                           variant="outline" 
@@ -844,7 +844,7 @@ const Remplacements = () => {
         {activeTab === 'conges' && (
           <div className="conges-content">
             {/* En-tête de gestion toujours visible pour admin/superviseur */}
-            {user.role !== 'employe' && (
+            {!['employe', 'pompier'].includes(user.role) && (
               <div className="management-header">
                 <div className="management-info">
                   <h3>👑 Gestion des demandes de congé</h3>
@@ -862,7 +862,7 @@ const Remplacements = () => {
             )}
 
             {/* Boutons d'actions rapides pour admin/superviseur */}
-            {user.role !== 'employe' && (
+            {!['employe', 'pompier'].includes(user.role) && (
               <div className="management-actions">
                 <Button 
                   variant="outline" 
@@ -962,7 +962,7 @@ const Remplacements = () => {
                       </div>
                     </div>
 
-                    {user.role !== 'employe' && conge.statut === 'en_attente' && (
+                    {!['employe', 'pompier'].includes(user.role) && conge.statut === 'en_attente' && (
                       <div className="conge-actions">
                         <Button 
                           variant="default" 
@@ -1021,11 +1021,11 @@ const Remplacements = () => {
                 <div className="empty-state">
                   <h3>Aucune demande de congé</h3>
                   <p>
-                    {user.role !== 'employe' 
+                    {!['employe', 'pompier'].includes(user.role) 
                       ? 'Les demandes de congé des employés apparaîtront ici pour approbation.' 
                       : 'Vos demandes de congé apparaîtront ici.'}
                   </p>
-                  {user.role !== 'employe' && (
+                  {!['employe', 'pompier'].includes(user.role) && (
                     <div className="management-tips">
                       <h4>💡 Conseils de gestion :</h4>
                       <ul>
@@ -1410,7 +1410,7 @@ const Remplacements = () => {
                   <div className="workflow-step">
                     <span className="step-number">2</span>
                     <span>
-                      {user.role === 'employe' ? 'Approbation superviseur' : 'Approbation administrateur'}
+                      {['employe', 'pompier'].includes(user.role) ? 'Approbation superviseur' : 'Approbation administrateur'}
                     </span>
                   </div>
                   <div className="workflow-step">

@@ -550,7 +550,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         alignItems: 'center'
       }}>
         {/* Bouton Ajouter - Caché pour employés */}
-        {user?.role !== 'employe' && (
+        {!['employe', 'pompier'].includes(user?.role) && (
           <button
             onClick={() => openPointModal(null)}
             style={{
