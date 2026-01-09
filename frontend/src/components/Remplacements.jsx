@@ -55,6 +55,7 @@ const Remplacements = () => {
     raison: '',
     priorite: 'normale'
   });
+  const [propositionsRecues, setPropositionsRecues] = useState([]);
   const { toast } = useToast();
 
   const typesConge = [
