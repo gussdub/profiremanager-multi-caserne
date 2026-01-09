@@ -132,6 +132,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
+      // Réinitialiser la page courante vers le dashboard après connexion
+      localStorage.setItem('currentPage', 'dashboard');
+      
       return { success: true };
     } catch (error) {
       return { 
