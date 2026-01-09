@@ -830,7 +830,11 @@ const Remplacements = () => {
                         <Button 
                           variant="default" 
                           size="sm" 
-                          onClick={() => handleApprouverConge(conge.id, 'approuver')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleApprouverConge(conge.id, 'approuver');
+                          }}
                           data-testid={`approve-conge-${conge.id}`}
                         >
                           ✅ Approuver
@@ -838,7 +842,11 @@ const Remplacements = () => {
                         <Button 
                           variant="destructive" 
                           size="sm" 
-                          onClick={() => handleApprouverConge(conge.id, 'refuser')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleApprouverConge(conge.id, 'refuser');
+                          }}
                           data-testid={`reject-conge-${conge.id}`}
                         >
                           ❌ Refuser
