@@ -154,24 +154,26 @@ const Dashboard = () => {
         adminIndex++;
         
         // Congés
-        if (results[6]?.data) {
-          const enAttente = (results[6].data || [])
+        if (results[adminIndex]?.data) {
+          const enAttente = (results[adminIndex].data || [])
             .filter(d => d.statut === 'en_attente')
             .slice(0, 5);
           setDemandesConges(enAttente);
         }
+        adminIndex++;
         
         // Couverture planning
-        if (results[7]?.data) {
-          const assignations = results[7].data || [];
+        if (results[adminIndex]?.data) {
+          const assignations = results[adminIndex].data || [];
           const joursCouverts = new Set(assignations.map(a => a.date)).size;
           const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
           setTauxCouverture(taux);
         }
+        adminIndex++;
         
         // Activités récentes
-        if (results[8]?.data) {
-          const activites = (results[8].data || [])
+        if (results[adminIndex]?.data) {
+          const activites = (results[adminIndex].data || [])
             .slice(0, 5)
             .map(n => ({
               id: n.id,
