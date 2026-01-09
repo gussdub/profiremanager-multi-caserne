@@ -3290,7 +3290,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     # Vérifier que l'utilisateur appartient au tenant si tenant_slug est fourni
     if tenant_slug:
         tenant = await get_tenant_from_slug(tenant_slug)
-        if user.get("tenant_id") != tenant.id:
+        user_tenant_id = user.get("tenant_id")
+        if user_tenant_id != tenant.id:
+            logging.warning(f"❌ Accès refusé - User tenant_id={user_tenant_id} != tenant.id={tenant.id}")
             raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
     return User(**user)
