@@ -5779,81 +5779,124 @@ async def export_planning_pdf(
         elements.append(HRFlowable(width="100%", thickness=1, color=modern_styles['grid'], spaceAfter=0.3*inch))
         
         # Jours français
-        jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+        jours_fr = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
         
-        # Style pour les titres de jour
-        jour_style = ParagraphStyle(
-            'JourStyle',
-            parent=styles['Heading2'],
-            fontSize=14,
-            textColor=modern_styles['secondary_color'],
-            spaceAfter=10,
-            spaceBefore=15,
-            fontName='Helvetica-Bold'
-        )
+        # Couleurs pour la grille
+        HEADER_BG = colors.HexColor('#1F2937')
+        PRIMARY_RED = colors.HexColor('#DC2626')
+        COMPLETE_GREEN = colors.HexColor('#D1FAE5')
+        PARTIAL_YELLOW = colors.HexColor('#FEF3C7')
+        VACANT_RED = colors.HexColor('#FEE2E2')
+        LIGHT_GRAY = colors.HexColor('#F3F4F6')
+        BORDER_COLOR = colors.HexColor('#E5E7EB')
         
-        # Style pour les gardes
-        garde_style = ParagraphStyle(
-            'GardeStyle',
-            parent=styles['Normal'],
-            fontSize=11,
-            leading=16,
-            leftIndent=20,
-            spaceAfter=8
-        )
+        # Trier les types de garde par heure
+        types_garde_sorted = sorted(types_garde_list, key=lambda x: x.get('heure_debut', '00:00'))
         
         if type == 'semaine':
-            # Parcourir les jours
+            # ===== FORMAT GRILLE SEMAINE =====
+            # En-tête : Type de garde + 7 jours
+            header_row = ['Type de garde']
             for i in range(7):
-                current_date = date_debut + timedelta(days=i)
-                current_date_str = current_date.strftime('%Y-%m-%d')
-                current_day = current_date.strftime('%A').lower()
-                jour_nom = jours_fr[current_date.weekday()]
+                d = date_debut + timedelta(days=i)
+                header_row.append(f"{jours_fr[d.weekday()]}\n{d.strftime('%d/%m')}")
+            
+            table_data = [header_row]
+            cell_colors = []  # Pour stocker les couleurs de chaque ligne
+            
+            # Une ligne par type de garde
+            for type_garde in types_garde_sorted:
+                garde_nom = type_garde.get('nom', 'N/A')
+                heure_debut = type_garde.get('heure_debut', '??:??')
+                heure_fin = type_garde.get('heure_fin', '??:??')
+                personnel_requis = type_garde.get('personnel_requis', 1)
+                jours_app = type_garde.get('jours_application', [])
                 
-                # Titre du jour
-                elements.append(Paragraph(f"<b>{jour_nom.upper()} {current_date.strftime('%d/%m/%Y')}</b>", jour_style))
-                elements.append(Spacer(1, 0.1*inch))
+                row = [f"{garde_nom}\n{heure_debut}-{heure_fin}"]
+                row_colors = [PRIMARY_RED]  # Première colonne en rouge
                 
-                # Trouver les gardes applicables ce jour
-                for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
-                    jours_app = type_garde.get('jours_application', [])
+                for i in range(7):
+                    d = date_debut + timedelta(days=i)
+                    date_str = d.strftime('%Y-%m-%d')
+                    day_name = d.strftime('%A').lower()
                     
-                    if jours_app and current_day not in jours_app:
+                    # Vérifier si applicable ce jour
+                    if jours_app and day_name not in jours_app:
+                        row.append("-")
+                        row_colors.append(LIGHT_GRAY)
                         continue
                     
+                    # Trouver les assignations
                     assignations_jour = [a for a in assignations_list 
-                                        if a['date'] == current_date_str 
-                                        and a['type_garde_id'] == type_garde['id']]
+                                        if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
                     
-                    if assignations_jour or not jours_app:
-                        noms_complets = []
-                        for a in assignations_jour:
-                            if a['user_id'] in users_map:
-                                user = users_map[a['user_id']]
-                                noms_complets.append(f"{user['prenom']} {user['nom']}")
-                        
-                        garde_nom = type_garde['nom']
-                        garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
-                        personnel_requis = type_garde.get('personnel_requis', 1)
-                        personnel_assigne = len(noms_complets)
-                        
-                        if personnel_assigne == 0:
-                            coverage_icon = '[VACANT]'
-                        elif personnel_assigne >= personnel_requis:
-                            coverage_icon = '[OK]'
-                        else:
-                            coverage_icon = '[PARTIEL]'
-                        
-                        if noms_complets:
-                            personnel_str = ", ".join(noms_complets)
-                            garde_text = f"<b>{garde_nom}</b> - {garde_horaire} - {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   Personnel: {personnel_str}"
-                        else:
-                            garde_text = f"<b>{garde_nom}</b> - {garde_horaire} - {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   <i>Aucun employe assigne</i>"
-                        
-                        elements.append(Paragraph(garde_text, garde_style))
+                    # Construire les noms
+                    noms = []
+                    for a in assignations_jour:
+                        if a['user_id'] in users_map:
+                            u = users_map[a['user_id']]
+                            noms.append(f"{u.get('prenom', '')[:1]}. {u.get('nom', '')}")
+                    
+                    if noms:
+                        cell_text = "\n".join(noms[:3])
+                        if len(noms) > 3:
+                            cell_text += f"\n+{len(noms)-3}"
+                    else:
+                        cell_text = "Vacant"
+                    
+                    row.append(cell_text)
+                    
+                    # Couleur selon statut
+                    if len(noms) == 0:
+                        row_colors.append(VACANT_RED)
+                    elif len(noms) >= personnel_requis:
+                        row_colors.append(COMPLETE_GREEN)
+                    else:
+                        row_colors.append(PARTIAL_YELLOW)
                 
-                if i < 6:
-                    elements.append(Spacer(1, 0.15*inch))
+                table_data.append(row)
+                cell_colors.append(row_colors)
+            
+            # Calculer les largeurs de colonnes
+            page_width = landscape(letter)[0]
+            available_width = page_width - 1*inch
+            first_col = 1.4*inch
+            day_col = (available_width - first_col) / 7
+            col_widths = [first_col] + [day_col] * 7
+            
+            # Créer la table
+            table = Table(table_data, colWidths=col_widths)
+            
+            # Style de base
+            style_commands = [
+                ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ]
+            
+            # Appliquer les couleurs par cellule
+            for row_idx, colors_row in enumerate(cell_colors, start=1):
+                for col_idx, bg_color in enumerate(colors_row):
+                    style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color))
+                    if col_idx == 0:
+                        style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                        style_commands.append(('ALIGN', (col_idx, row_idx), (col_idx, row_idx), 'LEFT'))
+                        style_commands.append(('LEFTPADDING', (col_idx, row_idx), (col_idx, row_idx), 8))
+            
+            table.setStyle(TableStyle(style_commands))
+            elements.append(table)
+            
+            # Légende
+            elements.append(Spacer(1, 0.3*inch))
+            legend_style = ParagraphStyle('Legend', fontSize=9, alignment=TA_CENTER, textColor=colors.HexColor('#6B7280'))
+            elements.append(Paragraph("Legende: Vert = Complet | Jaune = Partiel | Rouge = Vacant | Gris = Non applicable", legend_style))
             
         elif type == 'mois':
             current = date_debut
