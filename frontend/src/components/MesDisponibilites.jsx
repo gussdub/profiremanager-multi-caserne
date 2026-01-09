@@ -147,10 +147,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       const response = await apiGet(tenantSlug, `/disponibilites/statut-blocage?mois=${moisStr}`);
       return response;
     } catch (error) {
-      // Ne pas logger les erreurs 401/403 car elles sont gérées par apiCall
-      if (error.status !== 401 && error.status !== 403) {
-        console.error('Erreur vérification blocage:', error);
-      }
+      // Ignorer les erreurs - le blocage n'est pas critique pour l'affichage
+      console.warn('Erreur vérification blocage (ignorée):', error.message || error);
       return null;
     }
   };
