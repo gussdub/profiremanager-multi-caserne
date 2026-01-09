@@ -18703,18 +18703,13 @@ async def generer_excel_audit(assignations, user_map, type_garde_map, tenant, mo
         
         row_num += 1
     
-    # Ajuster les largeurs
-    for col in ws.columns:
-        max_length = 0
-        column = col[0].column_letter
-        for cell in col:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except:
-                pass
-        adjusted_width = min(max_length + 2, 50)
-        ws.column_dimensions[column].width = adjusted_width
+    # Ajuster les largeurs avec des valeurs fixes pour éviter les erreurs MergedCell
+    column_widths = {
+        'A': 12, 'B': 12, 'C': 15, 'D': 15, 'E': 12, 'F': 12,
+        'G': 12, 'H': 12, 'I': 12, 'J': 10, 'K': 10, 'L': 25
+    }
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
     
     buffer = BytesIO()
     wb.save(buffer)
