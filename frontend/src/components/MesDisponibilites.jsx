@@ -174,7 +174,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   useEffect(() => {
     const fetchDisponibilites = async () => {
-      if (!tenantSlug) return;
+      if (!tenantSlug || !targetUser || !targetUser.id) return;
       
       try {
         const [dispoData, typesData, usersData] = await Promise.all([
@@ -187,22 +187,26 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         setUsers(usersData);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les disponibilités",
-          variant: "destructive"
-        });
+        // Ne pas afficher de toast si c'est une erreur 401/403 (déjà gérée par apiCall)
+        if (error.status !== 401 && error.status !== 403) {
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les disponibilités",
+            variant: "destructive"
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (targetUser?.id && targetUser?.type_emploi === 'temps_partiel') {
+    if (targetUser && targetUser.id && targetUser.type_emploi === 'temps_partiel') {
       fetchDisponibilites();
-    } else {
+    } else if (targetUser) {
+      // Si l'utilisateur existe mais n'est pas temps partiel, arrêter le loading
       setLoading(false);
     }
-  }, [targetUser?.id, targetUser?.type_emploi, tenantSlug, user.role, toast]);
+  }, [targetUser, tenantSlug, toast]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
