@@ -171,6 +171,13 @@ const Remplacements = () => {
     }
   };
 
+  // Basculer automatiquement vers l'onglet propositions s'il y en a
+  useEffect(() => {
+    if (propositionsRecues.length > 0 && activeTab === 'remplacements') {
+      setActiveTab('propositions');
+    }
+  }, [propositionsRecues]);
+
   const handleCreateRemplacement = async () => {
     if (!newDemande.type_garde_id || !newDemande.date || !newDemande.raison.trim()) {
       toast({
