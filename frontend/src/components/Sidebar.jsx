@@ -62,8 +62,9 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const loadNotifications = async () => {
     if (!tenantSlug || !user) return;
     
-    // Ne charger les notifications que pour les utilisateurs non-employés
-    if (user.role === 'employe') return;
+    // Ne charger les notifications que pour les utilisateurs non-employés de base
+    // Les pompiers temps partiel peuvent recevoir des notifications (remplacements, disponibilités)
+    if (user.role === 'employe' && user.type_emploi !== 'temps_partiel') return;
     
     try {
       const notificationsData = await apiGet(tenantSlug, '/notifications');
