@@ -5871,17 +5871,20 @@ async def export_planning_pdf(
                 table_data.append(row)
                 cell_colors.append(row_colors)
             
-            # Largeurs de colonnes - première colonne BEAUCOUP plus large
+            # Largeurs de colonnes - première colonne plus large pour les noms de garde
             page_width = landscape(letter)[0]
             available_width = page_width - 1*inch
-            first_col = 2.0*inch  # Augmenté à 2 pouces
+            first_col = 1.8*inch
             day_col = (available_width - first_col) / 7
             col_widths = [first_col] + [day_col] * 7
             
-            # Créer la table
-            table = Table(table_data, colWidths=col_widths)
+            # Hauteur minimale des lignes pour permettre l'affichage des noms
+            row_heights = [0.5*inch] + [0.7*inch] * (len(table_data) - 1)
             
-            # Style de base
+            # Créer la table avec hauteurs de lignes
+            table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
+            
+            # Style de base - WORDWRAP activé pour permettre le retour à la ligne
             style_commands = [
                 ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -5891,8 +5894,10 @@ async def export_planning_pdf(
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
                 ('FONTSIZE', (0, 1), (-1, -1), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 4),
             ]
             
             # Appliquer les couleurs par cellule
