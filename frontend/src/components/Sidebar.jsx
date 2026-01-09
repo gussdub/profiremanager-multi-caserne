@@ -204,7 +204,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       const frequencies = {
         default: [523.25, 659.25, 783.99],
         chime: [659.25, 783.99, 1046.50],
-        bell: [830.61, 987.77]
+        bell: [830.61, 987.77],
+        urgent: [880, 1100, 880, 1100, 880] // Son d'alerte répétitif pour les urgences
       };
       
       const freqs = frequencies[settings.soundType] || frequencies.default;
