@@ -5812,6 +5812,7 @@ async def export_planning_pdf(
                 personnel_requis = type_garde.get('personnel_requis', 1)
                 jours_app = type_garde.get('jours_application', [])
                 
+                # Ne pas tronquer le nom du type de garde
                 row = [f"{garde_nom}\n{heure_debut}-{heure_fin}"]
                 row_colors = [PRIMARY_RED]  # Première colonne en rouge
                 
@@ -5830,17 +5831,21 @@ async def export_planning_pdf(
                     assignations_jour = [a for a in assignations_list 
                                         if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
                     
-                    # Construire les noms
+                    # Construire les noms complets des pompiers
                     noms = []
                     for a in assignations_jour:
                         if a['user_id'] in users_map:
                             u = users_map[a['user_id']]
-                            noms.append(f"{u.get('prenom', '')[:1]}. {u.get('nom', '')}")
+                            prenom = u.get('prenom', '')
+                            nom = u.get('nom', '')
+                            # Format: P. Nom (ex: J. Dupont)
+                            noms.append(f"{prenom[:1]}. {nom}")
                     
                     if noms:
-                        cell_text = "\n".join(noms[:3])
-                        if len(noms) > 3:
-                            cell_text += f"\n+{len(noms)-3}"
+                        # Afficher tous les noms (max 4 pour éviter débordement)
+                        cell_text = "\n".join(noms[:4])
+                        if len(noms) > 4:
+                            cell_text += f"\n+{len(noms)-4} autres"
                     else:
                         cell_text = "Vacant"
                     
@@ -5857,10 +5862,10 @@ async def export_planning_pdf(
                 table_data.append(row)
                 cell_colors.append(row_colors)
             
-            # Calculer les largeurs de colonnes
+            # Calculer les largeurs de colonnes - première colonne plus large pour les noms complets
             page_width = landscape(letter)[0]
             available_width = page_width - 1*inch
-            first_col = 1.4*inch
+            first_col = 1.8*inch  # Augmenté pour afficher les noms complets
             day_col = (available_width - first_col) / 7
             col_widths = [first_col] + [day_col] * 7
             
