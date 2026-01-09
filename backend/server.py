@@ -20428,23 +20428,45 @@ async def get_statut_blocage_disponibilites(
     jour_blocage = params.get("jour_blocage_dispos", 15)
     exceptions_admin = params.get("exceptions_admin_superviseur", True)
     
-    # Calculer la date de blocage
-    # Le blocage s'applique au mois courant, jour X, pour le mois suivant
-    # Ex: Si on est en janvier et jour_blocage=15, alors après le 15 janvier, 
-    # on ne peut plus modifier les dispos de février
+    # Logique de blocage:
+    # La date de blocage (ex: 15 janvier) concerne les disponibilités du mois SUIVANT (février)
+    # Après le 15 janvier: 
+    #   - Février est BLOQUÉ
+    #   - Mars et au-delà restent LIBRES
     
-    # Le mois précédent le mois cible est le mois où se situe la date de blocage
-    if mois_mois == 1:
-        mois_blocage = 12
-        annee_blocage = mois_annee - 1
+    # Calculer quel est le mois "bloquable" actuellement
+    # Si on est après le jour_blocage du mois courant, le mois suivant est bloqué
+    
+    # Date de blocage = jour X du mois courant
+    try:
+        date_blocage = date(today.year, today.month, jour_blocage)
+    except ValueError:
+        # Si le jour n'existe pas dans ce mois (ex: 31 février), prendre le dernier jour
+        import calendar
+        dernier_jour = calendar.monthrange(today.year, today.month)[1]
+        date_blocage = date(today.year, today.month, min(jour_blocage, dernier_jour))
+    
+    # Quel mois est concerné par ce blocage ? Le mois SUIVANT le mois courant
+    if today.month == 12:
+        mois_bloque = 1
+        annee_mois_bloque = today.year + 1
     else:
-        mois_blocage = mois_mois - 1
-        annee_blocage = mois_annee
+        mois_bloque = today.month + 1
+        annee_mois_bloque = today.year
     
-    date_blocage = date(annee_blocage, mois_blocage, jour_blocage)
+    # Vérifier si le mois demandé (mois_cible) est concerné par le blocage
+    # Le blocage s'applique SI:
+    # 1. On est APRÈS la date de blocage (ex: après le 15 janvier)
+    # 2. ET le mois demandé est le mois suivant (février) OU un mois passé
     
-    # Vérifier si on est après la date de blocage
-    est_bloque = today > date_blocage
+    est_apres_date_limite = today > date_blocage
+    mois_cible_est_passe = (mois_annee < today.year) or (mois_annee == today.year and mois_mois <= today.month)
+    mois_cible_est_le_mois_bloque = (mois_annee == annee_mois_bloque and mois_mois == mois_bloque)
+    
+    # Le mois est bloqué si:
+    # - C'est un mois passé ou le mois courant (on ne peut pas modifier le passé)
+    # - OU c'est le mois suivant ET on est après la date limite
+    est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
     
     # Vérifier les exceptions pour admin/superviseur
     if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
