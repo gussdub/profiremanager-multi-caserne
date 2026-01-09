@@ -760,7 +760,7 @@ const FormulairesInspectionConfig = () => {
       ) : (
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '1rem'
         }}>
           {filteredFormulaires.map(formulaire => (
@@ -770,50 +770,55 @@ const FormulairesInspectionConfig = () => {
                 backgroundColor: 'white',
                 borderRadius: '12px',
                 border: `2px solid ${formulaire.est_actif ? '#22c55e' : '#e2e8f0'}`,
-                padding: '1.25rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                padding: '1rem',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                overflow: 'hidden'
               }}
             >
               {/* Header */}
               <div style={{ 
                 display: 'flex', 
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
+                flexDirection: 'column',
+                gap: '0.5rem',
                 marginBottom: '1rem'
               }}>
-                <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <h3 style={{ 
-                    margin: '0 0 0.25rem', 
-                    fontSize: '1.1rem',
+                    margin: 0, 
+                    fontSize: '1rem',
                     fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
                   }}>
                     {formulaire.nom}
                   </h3>
-                  <p style={{ 
-                    margin: 0, 
-                    fontSize: '0.85rem', 
-                    color: '#64748b',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
+                  <span style={{
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '999px',
+                    fontSize: '0.65rem',
+                    fontWeight: '500',
+                    backgroundColor: formulaire.est_actif ? '#dcfce7' : '#fee2e2',
+                    color: formulaire.est_actif ? '#166534' : '#991b1b',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}>
-                    {formulaire.description || 'Pas de description'}
-                  </p>
+                    {formulaire.est_actif ? '✅ Actif' : '⏸️ Inactif'}
+                  </span>
                 </div>
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '999px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  backgroundColor: formulaire.est_actif ? '#dcfce7' : '#fee2e2',
-                  color: formulaire.est_actif ? '#166534' : '#991b1b'
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '0.8rem', 
+                  color: '#64748b',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
                 }}>
-                  {formulaire.est_actif ? '✅ Actif' : '⏸️ Inactif'}
-                </span>
+                  {formulaire.description || 'Pas de description'}
+                </p>
               </div>
 
               {/* Infos */}
