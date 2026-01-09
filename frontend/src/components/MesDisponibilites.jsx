@@ -1482,29 +1482,43 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         const joursAvecDispo = [...new Set(myDisponibilites.map(d => d.date))].length;
         
         // Calculer le nombre de types de garde différents couverts
-        const typesGardeCouvert = [...new Set(myDisponibilites.map(d => d.type_garde_id))].length;
+        // Calculer les stats pour le mois M+1 uniquement
+        const today = new Date();
+        let nextMonth, nextYear;
+        if (today.getMonth() === 11) {
+          nextMonth = 0;
+          nextYear = today.getFullYear() + 1;
+        } else {
+          nextMonth = today.getMonth() + 1;
+          nextYear = today.getFullYear();
+        }
+        
+        const moisNoms = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", 
+                         "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+        const moisProchainLabel = `${moisNoms[nextMonth]} ${nextYear}`;
+        
+        // Filtrer les disponibilités pour le mois M+1
+        const disposMoisProchain = myDisponibilites.filter(d => {
+          const date = parseDateLocal(d.date);
+          return date.getMonth() === nextMonth && date.getFullYear() === nextYear;
+        });
+        
+        const indisposMoisProchain = myIndisponibilites.filter(d => {
+          const date = parseDateLocal(d.date);
+          return date.getMonth() === nextMonth && date.getFullYear() === nextYear;
+        });
         
         return (
-          <div className="kpi-grid" style={{marginBottom: '2rem'}}>
+          <div className="kpi-grid" style={{marginBottom: '2rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', maxWidth: '600px'}}>
             <div className="kpi-card" style={{background: '#D1FAE5'}}>
-              <h3>{myDisponibilites.length}</h3>
-              <p>Mes Disponibilités</p>
-              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
+              <h3>{disposMoisProchain.length}</h3>
+              <p>Disponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>{moisProchainLabel}</small>
             </div>
             <div className="kpi-card" style={{background: '#FCA5A5'}}>
-              <h3>{myIndisponibilites.length}</h3>
-              <p>Mes Indisponibilités</p>
-              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Total saisies</small>
-            </div>
-            <div className="kpi-card" style={{background: '#DBEAFE'}}>
-              <h3>{joursAvecDispo}</h3>
-              <p>Jours Disponibles</p>
-              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Jours uniques</small>
-            </div>
-            <div className="kpi-card" style={{background: '#FEF3C7'}}>
-              <h3>{typesGardeCouvert}</h3>
-              <p>Types de Garde</p>
-              <small style={{fontSize: '0.75rem', opacity: 0.8}}>Couverts</small>
+              <h3>{indisposMoisProchain.length}</h3>
+              <p>Indisponibilités</p>
+              <small style={{fontSize: '0.75rem', opacity: 0.8}}>{moisProchainLabel}</small>
             </div>
           </div>
         );
