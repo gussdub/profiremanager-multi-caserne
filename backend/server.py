@@ -15522,8 +15522,31 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         if tenant_slug and "tenant" not in notification_data:
             notification_data["tenant"] = tenant_slug
         
+        # Vérifier si c'est une notification urgente (remplacement)
+        is_urgent = notification_data.get("sound") == "urgent" or notification_data.get("type") == "remplacement_proposition"
+        
         # S'assurer que toutes les valeurs sont des strings (requis par FCM)
         string_data = {k: str(v) if v is not None else "" for k, v in notification_data.items()}
+        
+        # Configuration Android
+        android_config = messaging.AndroidConfig(
+            priority="high" if is_urgent else "normal",
+            notification=messaging.AndroidNotification(
+                sound="default",
+                priority="max" if is_urgent else "default",
+                channel_id="urgent_channel" if is_urgent else "default_channel"
+            )
+        )
+        
+        # Configuration iOS/APNs
+        apns_config = messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    sound=messaging.CriticalSound(name="default", critical=is_urgent, volume=1.0) if is_urgent else "default",
+                    badge=1
+                )
+            )
+        )
         
         # Créer le message
         message = messaging.MulticastMessage(
@@ -15532,7 +15555,9 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
                 body=body
             ),
             data=string_data,
-            tokens=device_tokens
+            tokens=device_tokens,
+            android=android_config,
+            apns=apns_config
         )
         
         # Envoyer
