@@ -11251,12 +11251,17 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         logging.info(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         
         # Chercher l'utilisateur dans ce tenant
+        logging.info(f"🔍 Recherche utilisateur avec email={user_login.email} et tenant_id={tenant.id}")
         user_data = await db.users.find_one({
             "email": user_login.email,
             "tenant_id": tenant.id
         })
         
+        # Debug: chercher sans tenant_id
         if not user_data:
+            user_any = await db.users.find_one({"email": user_login.email})
+            if user_any:
+                logging.warning(f"🔍 User existe mais avec tenant_id={user_any.get('tenant_id')} (attendu: {tenant.id})")
             logging.warning(f"❌ Utilisateur non trouvé: {user_login.email} dans tenant {tenant_slug}")
             raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
         
