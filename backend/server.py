@@ -7136,6 +7136,19 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
             }
         )
         
+        # Créer une notification in-app pour le demandeur
+        await db.notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant_id,
+            "user_id": demande_data["demandeur_id"],
+            "type": "remplacement_accepte",
+            "titre": "✅ Remplacement trouvé!",
+            "message": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}.",
+            "lu": False,
+            "data": {"demande_id": demande_id, "remplacant_id": remplacant_id},
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
         # Notifier les superviseurs
         superviseurs = await db.users.find({
             "tenant_id": tenant_id,
