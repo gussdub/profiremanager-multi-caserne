@@ -2188,9 +2188,9 @@ const ModuleEPI = ({ user }) => {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={nettoyageForm.cout_nettoyage}
-                  onChange={e => setNettoyageForm({...nettoyageForm, cout_nettoyage: parseFloat(e.target.value) || 0})}
-                  placeholder="0.00 (optionnel pour nettoyages externes)"
+                  value={nettoyageForm.cout_nettoyage || ''}
+                  onChange={e => setNettoyageForm({...nettoyageForm, cout_nettoyage: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                  placeholder="0.00 (optionnel)"
                 />
               </div>
               
