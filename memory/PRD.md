@@ -93,8 +93,10 @@ Application de gestion de caserne de pompiers multi-tenant. Gère le personnel, 
 ---
 
 ## Key Files Modified This Session
-- `backend/server.py` - Scheduler, endpoints blocage, fonction trouver_remplacants_potentiels
+- `backend/server.py` - Scheduler, endpoints blocage, fonction trouver_remplacants_potentiels, nouvel endpoint `mes-heures`, correction ordre routes `statut-blocage`
 - `frontend/src/components/MesDisponibilites.jsx` - Alerte blocage, vérification état
+- `frontend/src/components/Dashboard.jsx` - Utilise maintenant l'endpoint `mes-heures` pour tous les utilisateurs
+- `frontend/src/contexts/AuthContext.js` - Réinitialise `currentPage` à 'dashboard' après connexion
 - `frontend/src/components/ParametresDisponibilites.jsx` - UI paramètres (existait déjà)
 - `frontend/src/components/ParametresRemplacements.jsx` - UI paramètres (existait déjà)
 
