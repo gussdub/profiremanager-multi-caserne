@@ -15645,24 +15645,61 @@ body.mobile-menu-open .mobile-menu-toggle {
 
 .echeance-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+@media (min-width: 480px) {
+  .echeance-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+  }
+}
+
+.echeance-card > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.echeance-card > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 480px) {
+  .echeance-card > div:last-child {
+    align-items: flex-end;
+  }
+}
+
 .echeance-card strong {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  display: block;
+  word-break: break-word;
+}
+
+.echeance-card p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
 .jours-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
   background: #FEF3C7;
   color: #92400E;
   font-weight: 600;
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .jours-badge.urgent {
