@@ -5713,23 +5713,23 @@ async def export_planning_pdf(
     type: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Export du planning en PDF - Format grille visuelle simple"""
+    """Export du planning en PDF"""
     try:
-        from reportlab.lib.pagesizes import landscape, A4
+        from reportlab.lib.pagesizes import letter, landscape
         from reportlab.lib import colors
         from reportlab.lib.units import inch
-        from reportlab.pdfgen import canvas
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
         from io import BytesIO
         
         tenant = await get_tenant_from_slug(tenant_slug)
-        tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id')
-        tenant_nom = tenant.nom if hasattr(tenant, 'nom') else tenant.get('nom', 'Service Incendie')
         
         # Calculer la période
         if type == 'semaine':
             date_debut = datetime.strptime(periode, '%Y-%m-%d')
             date_fin = date_debut + timedelta(days=6)
-        else:
+        else:  # mois
             year, month = map(int, periode.split('-'))
             date_debut = datetime(year, month, 1)
             if month == 12:
@@ -5739,215 +5739,199 @@ async def export_planning_pdf(
         
         # Récupérer les données
         assignations_list = await db.assignations.find({
-            "tenant_id": tenant_id,
-            "date": {"$gte": date_debut.strftime('%Y-%m-%d'), "$lte": date_fin.strftime('%Y-%m-%d')}
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": date_debut.strftime('%Y-%m-%d'),
+                "$lte": date_fin.strftime('%Y-%m-%d')
+            }
         }).to_list(length=None)
         
-        types_garde_list = await db.types_garde.find({"tenant_id": tenant_id}).to_list(length=None)
-        users_list = await db.users.find({"tenant_id": tenant_id}).to_list(length=None)
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}).to_list(length=None)
+        users_list = await db.users.find({"tenant_id": tenant.id}).to_list(length=None)
+        
+        types_map = {t['id']: t for t in types_garde_list}
         users_map = {u['id']: u for u in users_list}
         
-        # Créer le PDF avec canvas directement
-        buffer = BytesIO()
-        page_width, page_height = landscape(A4)
-        c = canvas.Canvas(buffer, pagesize=landscape(A4))
+        # Créer le PDF avec branding
+        buffer, doc, elements = create_branded_pdf(
+            tenant,
+            pagesize=landscape(letter),
+            leftMargin=0.5*inch,
+            rightMargin=0.5*inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch
+        )
+        styles = getSampleStyleSheet()
+        modern_styles = get_modern_pdf_styles(styles)
         
-        # Couleurs
-        HEADER_BG = colors.HexColor('#1F2937')
-        PRIMARY_RED = colors.HexColor('#DC2626')
-        COMPLETE_GREEN = colors.HexColor('#D1FAE5')
-        PARTIAL_YELLOW = colors.HexColor('#FEF3C7')
-        VACANT_RED = colors.HexColor('#FEE2E2')
-        LIGHT_GRAY = colors.HexColor('#F3F4F6')
-        BORDER = colors.HexColor('#E5E7EB')
+        # Titre principal
+        titre = f"PLANIFICATION DES GARDES"
+        elements.append(Paragraph(titre, modern_styles['title']))
+        
+        # Sous-titre avec période
+        type_label = "Semaine" if type == "semaine" else "Mois"
+        periode_str = f"{type_label} du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+        elements.append(Paragraph(periode_str, modern_styles['subheading']))
+        elements.append(Spacer(1, 0.1*inch))
+        
+        # Ligne de séparation
+        from reportlab.platypus import HRFlowable
+        elements.append(HRFlowable(width="100%", thickness=1, color=modern_styles['grid'], spaceAfter=0.3*inch))
         
         # Jours français
-        jours_fr = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-        mois_fr = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre']
+        jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
         
-        # Marges et dimensions
-        margin_left = 40
-        margin_top = 50
-        margin_right = 40
+        # Style pour les titres de jour
+        jour_style = ParagraphStyle(
+            'JourStyle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=modern_styles['secondary_color'],
+            spaceAfter=10,
+            spaceBefore=15,
+            fontName='Helvetica-Bold'
+        )
         
-        # Titre
-        c.setFont("Helvetica-Bold", 18)
-        c.setFillColor(HEADER_BG)
-        c.drawCentredString(page_width / 2, page_height - margin_top, "PLANNING DES GARDES")
+        # Style pour les gardes
+        garde_style = ParagraphStyle(
+            'GardeStyle',
+            parent=styles['Normal'],
+            fontSize=11,
+            leading=16,
+            leftIndent=20,
+            spaceAfter=8
+        )
         
-        # Sous-titre
         if type == 'semaine':
-            periode_text = f"Semaine du {date_debut.strftime('%d')} au {date_fin.strftime('%d')} {mois_fr[date_debut.month-1]} {date_debut.year}"
-        else:
-            periode_text = f"{mois_fr[date_debut.month-1].capitalize()} {date_debut.year}"
-        
-        c.setFont("Helvetica", 11)
-        c.setFillColor(colors.HexColor('#6B7280'))
-        c.drawCentredString(page_width / 2, page_height - margin_top - 20, f"{tenant_nom} - {periode_text}")
-        
-        # Dimensions de la grille
-        table_top = page_height - margin_top - 50
-        table_left = margin_left
-        table_width = page_width - margin_left - margin_right
-        
-        # Calculer les largeurs de colonnes
-        first_col_width = 100
-        day_col_width = (table_width - first_col_width) / 7
-        
-        # Trier les types de garde
-        types_garde_sorted = sorted(types_garde_list, key=lambda x: x.get('heure_debut', '00:00'))
-        
-        # Hauteur des lignes
-        header_height = 35
-        row_height = 50
-        
-        # ===== DESSINER L'EN-TÊTE =====
-        # Fond de l'en-tête
-        c.setFillColor(HEADER_BG)
-        c.rect(table_left, table_top - header_height, table_width, header_height, fill=True, stroke=False)
-        
-        # Texte de l'en-tête - première colonne
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(table_left + 5, table_top - 22, "Type de garde")
-        
-        # Texte des jours
-        for i in range(7):
-            d = date_debut + timedelta(days=i)
-            jour_text = f"{jours_fr[d.weekday()]}"
-            date_text = d.strftime('%d/%m')
-            x = table_left + first_col_width + i * day_col_width + day_col_width / 2
-            c.drawCentredString(x, table_top - 15, jour_text)
-            c.setFont("Helvetica", 8)
-            c.drawCentredString(x, table_top - 28, date_text)
-            c.setFont("Helvetica-Bold", 9)
-        
-        # ===== DESSINER LES LIGNES =====
-        y = table_top - header_height
-        
-        for type_garde in types_garde_sorted:
-            garde_nom = type_garde.get('nom', 'N/A')
-            heure_debut = type_garde.get('heure_debut', '??:??')
-            heure_fin = type_garde.get('heure_fin', '??:??')
-            personnel_requis = type_garde.get('personnel_requis', 1)
-            jours_app = type_garde.get('jours_application', [])
-            
-            # Fond de la première colonne (rouge)
-            c.setFillColor(PRIMARY_RED)
-            c.rect(table_left, y - row_height, first_col_width, row_height, fill=True, stroke=False)
-            
-            # Texte de la première colonne
-            c.setFillColor(colors.white)
-            c.setFont("Helvetica-Bold", 8)
-            c.drawString(table_left + 5, y - 15, garde_nom[:15])
-            c.setFont("Helvetica", 7)
-            c.drawString(table_left + 5, y - 27, f"{heure_debut}-{heure_fin}")
-            c.drawString(table_left + 5, y - 38, f"Requis: {personnel_requis}")
-            
-            # Cellules des jours
+            # Parcourir les jours
             for i in range(7):
-                d = date_debut + timedelta(days=i)
-                date_str = d.strftime('%Y-%m-%d')
-                day_name = d.strftime('%A').lower()
+                current_date = date_debut + timedelta(days=i)
+                current_date_str = current_date.strftime('%Y-%m-%d')
+                current_day = current_date.strftime('%A').lower()
+                jour_nom = jours_fr[current_date.weekday()]
                 
-                cell_x = table_left + first_col_width + i * day_col_width
+                # Titre du jour
+                elements.append(Paragraph(f"<b>{jour_nom.upper()} {current_date.strftime('%d/%m/%Y')}</b>", jour_style))
+                elements.append(Spacer(1, 0.1*inch))
                 
-                # Vérifier si applicable ce jour
-                if jours_app and day_name not in jours_app:
-                    c.setFillColor(LIGHT_GRAY)
-                    c.rect(cell_x, y - row_height, day_col_width, row_height, fill=True, stroke=False)
-                    c.setFillColor(colors.HexColor('#9CA3AF'))
-                    c.setFont("Helvetica", 10)
-                    c.drawCentredString(cell_x + day_col_width / 2, y - row_height / 2 - 4, "-")
-                    continue
+                # Trouver les gardes applicables ce jour
+                for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                    jours_app = type_garde.get('jours_application', [])
+                    
+                    if jours_app and current_day not in jours_app:
+                        continue
+                    
+                    assignations_jour = [a for a in assignations_list 
+                                        if a['date'] == current_date_str 
+                                        and a['type_garde_id'] == type_garde['id']]
+                    
+                    if assignations_jour or not jours_app:
+                        noms_complets = []
+                        for a in assignations_jour:
+                            if a['user_id'] in users_map:
+                                user = users_map[a['user_id']]
+                                noms_complets.append(f"{user['prenom']} {user['nom']}")
+                        
+                        garde_nom = type_garde['nom']
+                        garde_horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
+                        personnel_requis = type_garde.get('personnel_requis', 1)
+                        personnel_assigne = len(noms_complets)
+                        
+                        if personnel_assigne == 0:
+                            coverage_icon = '[VACANT]'
+                        elif personnel_assigne >= personnel_requis:
+                            coverage_icon = '[OK]'
+                        else:
+                            coverage_icon = '[PARTIEL]'
+                        
+                        if noms_complets:
+                            personnel_str = ", ".join(noms_complets)
+                            garde_text = f"<b>{garde_nom}</b> - {garde_horaire} - {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   Personnel: {personnel_str}"
+                        else:
+                            garde_text = f"<b>{garde_nom}</b> - {garde_horaire} - {coverage_icon} {personnel_assigne}/{personnel_requis}<br/>   <i>Aucun employe assigne</i>"
+                        
+                        elements.append(Paragraph(garde_text, garde_style))
                 
-                # Trouver les assignations
-                assignations_jour = [a for a in assignations_list 
-                                    if a['date'] == date_str and a['type_garde_id'] == type_garde['id']]
-                
-                # Construire les noms
-                noms = []
-                for a in assignations_jour:
-                    if a['user_id'] in users_map:
-                        u = users_map[a['user_id']]
-                        noms.append(f"{u.get('prenom', '')[:1]}. {u.get('nom', '')}")
-                
-                # Couleur selon statut
-                if len(noms) == 0:
-                    bg_color = VACANT_RED
-                elif len(noms) >= personnel_requis:
-                    bg_color = COMPLETE_GREEN
-                else:
-                    bg_color = PARTIAL_YELLOW
-                
-                c.setFillColor(bg_color)
-                c.rect(cell_x, y - row_height, day_col_width, row_height, fill=True, stroke=False)
-                
-                # Texte
-                c.setFillColor(colors.black)
-                c.setFont("Helvetica", 7)
-                
-                if noms:
-                    text_y = y - 12
-                    for nom in noms[:3]:
-                        c.drawCentredString(cell_x + day_col_width / 2, text_y, nom[:12])
-                        text_y -= 10
-                    if len(noms) > 3:
-                        c.drawCentredString(cell_x + day_col_width / 2, text_y, f"+{len(noms)-3}")
-                else:
-                    c.setFillColor(colors.HexColor('#EF4444'))
-                    c.drawCentredString(cell_x + day_col_width / 2, y - row_height / 2 - 4, "Vacant")
+                if i < 6:
+                    elements.append(Spacer(1, 0.15*inch))
             
-            y -= row_height
+        elif type == 'mois':
+            current = date_debut
+            semaine_num = 1
+            
+            while current <= date_fin:
+                fin_semaine = min(current + timedelta(days=6), date_fin)
+                elements.append(Paragraph(
+                    f"<b>SEMAINE {semaine_num} - Du {current.strftime('%d/%m')} au {fin_semaine.strftime('%d/%m/%Y')}</b>",
+                    jour_style
+                ))
+                elements.append(Spacer(1, 0.15*inch))
+                
+                for day_offset in range(7):
+                    jour_actuel = current + timedelta(days=day_offset)
+                    if jour_actuel > date_fin:
+                        break
+                    
+                    date_str = jour_actuel.strftime('%Y-%m-%d')
+                    current_day = jour_actuel.strftime('%A').lower()
+                    jour_nom = jours_fr[jour_actuel.weekday()]
+                    
+                    elements.append(Paragraph(f"<b>{jour_nom} {jour_actuel.strftime('%d/%m')}</b>", garde_style))
+                    
+                    for type_garde in sorted(types_garde_list, key=lambda x: x.get('heure_debut', '')):
+                        jours_app = type_garde.get('jours_application', [])
+                        if jours_app and current_day not in jours_app:
+                            continue
+                        
+                        assignations_jour = [a for a in assignations_list 
+                                           if a['date'] == date_str 
+                                           and a['type_garde_id'] == type_garde['id']]
+                        
+                        if assignations_jour or not jours_app:
+                            noms = [f"{users_map[a['user_id']]['prenom']} {users_map[a['user_id']]['nom']}" 
+                                   for a in assignations_jour if a['user_id'] in users_map]
+                            
+                            personnel_requis = type_garde.get('personnel_requis', 1)
+                            personnel_assigne = len(noms)
+                            
+                            if personnel_assigne == 0:
+                                coverage_icon = '[VACANT]'
+                            elif personnel_assigne >= personnel_requis:
+                                coverage_icon = '[OK]'
+                            else:
+                                coverage_icon = '[PARTIEL]'
+                            
+                            if noms:
+                                personnel_str = ', '.join(noms)
+                                garde_text = f"  - <b>{type_garde['nom']}</b> ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}) {coverage_icon} {personnel_assigne}/{personnel_requis}: {personnel_str}"
+                            else:
+                                garde_text = f"  - <b>{type_garde['nom']}</b> ({type_garde.get('heure_debut', '??:??')}-{type_garde.get('heure_fin', '??:??')}) {coverage_icon} Vacant"
+                            
+                            elements.append(Paragraph(garde_text, styles['Normal']))
+                    
+                    elements.append(Spacer(1, 0.1*inch))
+                
+                current += timedelta(days=7)
+                semaine_num += 1
+                
+                if current <= date_fin:
+                    elements.append(PageBreak())
         
-        # ===== DESSINER LA GRILLE =====
-        c.setStrokeColor(BORDER)
-        c.setLineWidth(0.5)
+        # Footer
+        def add_footer(canvas, doc_obj):
+            canvas.saveState()
+            canvas.setStrokeColor(colors.HexColor('#e2e8f0'))
+            canvas.setLineWidth(1)
+            canvas.line(0.5*inch, 0.5*inch, landscape(letter)[0] - 0.5*inch, 0.5*inch)
+            canvas.setFont('Helvetica', 9)
+            canvas.setFillColor(colors.HexColor('#64748b'))
+            footer_text = f"ProFireManager - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            canvas.drawCentredString(landscape(letter)[0] / 2, 0.35*inch, footer_text)
+            canvas.setFont('Helvetica', 8)
+            canvas.drawRightString(landscape(letter)[0] - 0.5*inch, 0.35*inch, f"Page {doc_obj.page}")
+            canvas.restoreState()
         
-        # Lignes horizontales
-        for i in range(len(types_garde_sorted) + 2):
-            line_y = table_top - i * (row_height if i > 0 else header_height)
-            if i == 1:
-                line_y = table_top - header_height
-            elif i > 1:
-                line_y = table_top - header_height - (i - 1) * row_height
-            c.line(table_left, line_y, table_left + table_width, line_y)
-        
-        # Lignes verticales
-        c.line(table_left, table_top, table_left, y)
-        c.line(table_left + first_col_width, table_top, table_left + first_col_width, y)
-        for i in range(8):
-            x = table_left + first_col_width + i * day_col_width
-            c.line(x, table_top, x, y)
-        
-        # ===== LÉGENDE =====
-        legend_y = y - 30
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor('#6B7280'))
-        c.drawString(table_left, legend_y, "Legende:")
-        
-        # Cases de légende
-        legend_items = [
-            (COMPLETE_GREEN, "Complet"),
-            (PARTIAL_YELLOW, "Partiel"),
-            (VACANT_RED, "Vacant"),
-            (LIGHT_GRAY, "N/A")
-        ]
-        
-        x_offset = table_left + 60
-        for bg_color, label in legend_items:
-            c.setFillColor(bg_color)
-            c.rect(x_offset, legend_y - 3, 15, 12, fill=True, stroke=True)
-            c.setFillColor(colors.black)
-            c.drawString(x_offset + 20, legend_y, label)
-            x_offset += 80
-        
-        # ===== FOOTER =====
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor('#9CA3AF'))
-        c.drawCentredString(page_width / 2, 25, f"ProFireManager - {datetime.now().strftime('%d/%m/%Y %H:%M')} - Page 1")
-        
-        c.save()
+        doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
         buffer.seek(0)
         
         return StreamingResponse(
