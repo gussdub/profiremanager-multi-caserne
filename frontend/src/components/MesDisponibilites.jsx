@@ -1307,7 +1307,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     if (dispos.length > 0) {
       // Afficher TOUTES les disponibilités pour cette date
       setSelectedDateDetails({
-        date: normalizedDate,
+        date: dateStr,
         disponibilites: dispos, // Tableau au lieu d'un seul objet
         count: dispos.length
       });
