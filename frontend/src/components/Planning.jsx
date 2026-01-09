@@ -1151,12 +1151,15 @@ const Planning = () => {
   const handleExportPDFPlanning = async () => {
     try {
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
+      // Ajouter timestamp pour éviter le cache
+      const timestamp = Date.now();
       
       const response = await fetch(
-        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}`),
+        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`),
         {
           headers: {
-            'Authorization': `Bearer ${getTenantToken()}`
+            'Authorization': `Bearer ${getTenantToken()}`,
+            'Cache-Control': 'no-cache'
           }
         }
       );
