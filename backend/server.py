@@ -5795,10 +5795,12 @@ async def export_planning_pdf(
         
         if type == 'semaine':
             # ===== FORMAT GRILLE SEMAINE =====
-            # Styles pour les cellules
-            header_style_white = ParagraphStyle('HeaderWhite', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12)
-            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_LEFT, textColor=colors.white, leading=11)
-            day_cell_style = ParagraphStyle('DayCell', fontSize=7, alignment=TA_CENTER, leading=10)
+            from reportlab.lib.enums import TA_LEFT
+            
+            # Styles pour les cellules - taille augmentée et leading adapté
+            header_style_white = ParagraphStyle('HeaderWhite', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12, wordWrap='CJK')
+            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_LEFT, textColor=colors.white, leading=11, wordWrap='CJK')
+            day_cell_style = ParagraphStyle('DayCell', fontSize=8, alignment=TA_CENTER, leading=11, textColor=colors.HexColor('#1F2937'), wordWrap='CJK')
             
             # Debug: logger les assignations
             logging.warning(f"DEBUG PDF: {len(assignations_list)} assignations trouvées pour {date_debut.strftime('%Y-%m-%d')} à {date_fin.strftime('%Y-%m-%d')}")
