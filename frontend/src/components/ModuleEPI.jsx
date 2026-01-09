@@ -1911,13 +1911,13 @@ const ModuleEPI = ({ user }) => {
               </div>
               
               {/* Section Réparations - Phase 2 */}
-              <div className="reparations-section" style={{marginTop: '2rem'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                  <h3>🔧 Historique des réparations ({reparations.length})</h3>
-                  <Button onClick={() => {
+              <div className="reparations-section" style={{marginTop: '2rem', padding: '1rem', backgroundColor: '#FEF3C7', borderRadius: '8px'}}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem'}}>
+                  <h3 style={{ margin: 0, fontSize: '1rem' }}>🔧 Historique des réparations ({reparations.length})</h3>
+                  <Button size="sm" onClick={() => {
                     setSelectedReparation(null);
                     setShowReparationModal(true);
-                  }}>
+                  }} style={{ alignSelf: 'flex-start' }}>
                     ➕ Nouvelle réparation
                   </Button>
                 </div>
