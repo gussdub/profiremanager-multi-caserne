@@ -999,6 +999,270 @@ async def job_verifier_alertes_equipements():
     except Exception as e:
         logging.error(f"❌ Erreur dans job_verifier_alertes_equipements: {str(e)}", exc_info=True)
 
+
+async def job_verifier_rappels_disponibilites():
+    """
+    Job qui vérifie les rappels de disponibilités pour les employés temps partiel
+    S'exécute tous les jours à 9h00 du matin
+    
+    Logique:
+    - Pour chaque tenant, lire les paramètres de disponibilités
+    - Si notifications actives, vérifier si on est X jours avant la date de blocage
+    - Identifier les employés temps partiel qui n'ont pas soumis leurs disponibilités pour le mois suivant
+    - Envoyer des notifications (in-app, push, email) de rappel
+    """
+    try:
+        logging.info("🔍 Vérification des rappels de disponibilités pour tous les tenants")
+        
+        # Date du jour
+        today = datetime.now(timezone.utc).date()
+        current_day = today.day
+        current_month = today.month
+        current_year = today.year
+        
+        # Calculer le mois suivant
+        if current_month == 12:
+            next_month = 1
+            next_month_year = current_year + 1
+        else:
+            next_month = current_month + 1
+            next_month_year = current_year
+        
+        # Récupérer tous les tenants actifs
+        tenants = await db.tenants.find({"actif": True}).to_list(None)
+        
+        for tenant in tenants:
+            try:
+                tenant_id = tenant.get("id")
+                tenant_nom = tenant.get("nom", "Unknown")
+                
+                # Récupérer les paramètres de disponibilités
+                params = await db.parametres_disponibilites.find_one({"tenant_id": tenant_id})
+                
+                if not params:
+                    logging.info(f"⏭️ Pas de paramètres de disponibilités pour {tenant_nom}")
+                    continue
+                
+                # Vérifier si le blocage et les notifications sont actifs
+                blocage_actif = params.get("blocage_dispos_active", False)
+                notifications_actives = params.get("notifications_dispos_actives", True)
+                
+                if not blocage_actif:
+                    logging.info(f"⏭️ Blocage des disponibilités désactivé pour {tenant_nom}")
+                    continue
+                
+                if not notifications_actives:
+                    logging.info(f"⏭️ Notifications de disponibilités désactivées pour {tenant_nom}")
+                    continue
+                
+                # Récupérer les seuils
+                jour_blocage = params.get("jour_blocage_dispos", 15)
+                jours_avance = params.get("jours_avance_notification", 3)
+                
+                # Calculer la date de blocage (jour X du mois courant pour le mois suivant)
+                date_blocage = date(current_year, current_month, jour_blocage)
+                
+                # Calculer si on est dans la période de rappel (X jours avant le blocage)
+                jours_restants = (date_blocage - today).days
+                
+                if jours_restants > jours_avance or jours_restants < 0:
+                    logging.info(f"⏭️ Pas dans la période de rappel pour {tenant_nom} (jours restants: {jours_restants})")
+                    continue
+                
+                logging.info(f"📧 Période de rappel active pour {tenant_nom} - {jours_restants} jour(s) avant blocage")
+                
+                # Vérifier si un rappel a déjà été envoyé aujourd'hui
+                dernier_rappel = params.get("dernier_rappel_disponibilites")
+                if dernier_rappel:
+                    try:
+                        derniere_date = datetime.fromisoformat(dernier_rappel).date()
+                        if derniere_date == today:
+                            logging.info(f"⏭️ Rappel déjà envoyé aujourd'hui pour {tenant_nom}")
+                            continue
+                    except:
+                        pass
+                
+                # Récupérer les employés temps partiel actifs
+                users_temps_partiel = await db.users.find({
+                    "tenant_id": tenant_id,
+                    "type_emploi": "temps_partiel",
+                    "statut": "actif"
+                }).to_list(None)
+                
+                if not users_temps_partiel:
+                    logging.info(f"⏭️ Aucun employé temps partiel pour {tenant_nom}")
+                    continue
+                
+                # Période du mois suivant pour vérifier les disponibilités
+                periode_debut = f"{next_month_year}-{str(next_month).zfill(2)}-01"
+                # Dernier jour du mois suivant
+                if next_month == 12:
+                    dernier_jour = date(next_month_year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    dernier_jour = date(next_month_year, next_month + 1, 1) - timedelta(days=1)
+                periode_fin = dernier_jour.isoformat()
+                
+                # Identifier les employés qui n'ont pas soumis de disponibilités pour le mois suivant
+                users_a_notifier = []
+                
+                for user in users_temps_partiel:
+                    user_id = user.get("id")
+                    
+                    # Vérifier s'il a des disponibilités pour le mois suivant
+                    disponibilites_count = await db.disponibilites.count_documents({
+                        "user_id": user_id,
+                        "tenant_id": tenant_id,
+                        "date": {
+                            "$gte": periode_debut,
+                            "$lte": periode_fin
+                        }
+                    })
+                    
+                    if disponibilites_count == 0:
+                        users_a_notifier.append(user)
+                
+                if not users_a_notifier:
+                    logging.info(f"✅ Tous les employés de {tenant_nom} ont soumis leurs disponibilités")
+                    # Mettre à jour la date du dernier rappel
+                    await db.parametres_disponibilites.update_one(
+                        {"tenant_id": tenant_id},
+                        {"$set": {"dernier_rappel_disponibilites": datetime.now(timezone.utc).isoformat()}}
+                    )
+                    continue
+                
+                logging.info(f"📤 {len(users_a_notifier)} employé(s) à notifier pour {tenant_nom}")
+                
+                # Préparer le message de rappel
+                mois_suivant_texte = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                                      "juillet", "août", "septembre", "octobre", "novembre", "décembre"][next_month - 1]
+                
+                titre_notification = "📅 Rappel: Saisissez vos disponibilités"
+                message_notification = f"Vous avez jusqu'au {jour_blocage} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][current_month - 1]} pour saisir vos disponibilités de {mois_suivant_texte}. Il vous reste {jours_restants} jour(s)."
+                
+                # Récupérer la config Resend pour les emails
+                resend_api_key = os.environ.get("RESEND_API_KEY")
+                sender_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@resend.dev")
+                app_url = os.environ.get("FRONTEND_URL", os.environ.get("REACT_APP_BACKEND_URL", ""))
+                
+                for user in users_a_notifier:
+                    user_id = user.get("id")
+                    user_email = user.get("email")
+                    user_prenom = user.get("prenom", "")
+                    user_nom = user.get("nom", "")
+                    
+                    # 1. Créer notification in-app
+                    await db.notifications.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "tenant_id": tenant_id,
+                        "user_id": user_id,
+                        "type": "rappel_disponibilites",
+                        "titre": titre_notification,
+                        "message": message_notification,
+                        "lu": False,
+                        "urgent": jours_restants <= 1,  # Urgent si dernier jour
+                        "data": {
+                            "lien": "/disponibilites",
+                            "mois_cible": f"{next_month_year}-{str(next_month).zfill(2)}"
+                        },
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    
+                    # 2. Envoyer notification push
+                    try:
+                        await send_push_notification_to_users(
+                            user_ids=[user_id],
+                            title=titre_notification,
+                            body=message_notification,
+                            data={
+                                "type": "rappel_disponibilites",
+                                "lien": "/disponibilites",
+                                "sound": "default" if jours_restants > 1 else "urgent"
+                            }
+                        )
+                    except Exception as e:
+                        logging.warning(f"⚠️ Erreur push pour {user_prenom} {user_nom}: {str(e)}")
+                    
+                    # 3. Envoyer email si configuré
+                    if resend_api_key and user_email:
+                        try:
+                            resend.api_key = resend_api_key
+                            
+                            html_content = f"""
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="utf-8">
+                                <style>
+                                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                                    .header {{ background-color: #1E40AF; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+                                    .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+                                    .alert {{ background-color: {'#FEF3C7' if jours_restants > 1 else '#FEE2E2'}; border-left: 4px solid {'#F59E0B' if jours_restants > 1 else '#EF4444'}; padding: 15px; margin: 20px 0; }}
+                                    .btn {{ display: inline-block; background-color: #1E40AF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }}
+                                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="header">
+                                        <h1>📅 Rappel Disponibilités</h1>
+                                    </div>
+                                    <div class="content">
+                                        <p>Bonjour {user_prenom},</p>
+                                        
+                                        <div class="alert">
+                                            <strong>{'⚠️ Attention' if jours_restants <= 1 else '📢 Rappel'}</strong><br>
+                                            Vous n'avez pas encore saisi vos disponibilités pour le mois de <strong>{mois_suivant_texte} {next_month_year}</strong>.
+                                        </div>
+                                        
+                                        <p>La date limite de saisie est le <strong>{jour_blocage} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][current_month - 1]}</strong>.</p>
+                                        
+                                        <p>Il vous reste <strong>{jours_restants} jour(s)</strong> pour soumettre vos disponibilités. Passé cette date, vous ne pourrez plus modifier vos disponibilités pour {mois_suivant_texte}.</p>
+                                        
+                                        <center>
+                                            <a href="{app_url}/disponibilites" class="btn">Saisir mes disponibilités</a>
+                                        </center>
+                                        
+                                        <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
+                                    </div>
+                                    <div class="footer">
+                                        <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                            """
+                            
+                            params = {
+                                "from": f"{tenant_nom} <{sender_email}>",
+                                "to": [user_email],
+                                "subject": f"{'⚠️ URGENT: ' if jours_restants <= 1 else ''}Rappel - Saisissez vos disponibilités pour {mois_suivant_texte}",
+                                "html": html_content
+                            }
+                            
+                            resend.Emails.send(params)
+                            logging.info(f"✅ Email de rappel envoyé à {user_email}")
+                            
+                        except Exception as e:
+                            logging.warning(f"⚠️ Erreur email pour {user_email}: {str(e)}")
+                
+                # Mettre à jour la date du dernier rappel
+                await db.parametres_disponibilites.update_one(
+                    {"tenant_id": tenant_id},
+                    {"$set": {"dernier_rappel_disponibilites": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                logging.info(f"✅ Rappels de disponibilités envoyés pour {tenant_nom} ({len(users_a_notifier)} employé(s))")
+                
+            except Exception as e:
+                logging.error(f"❌ Erreur traitement rappels pour {tenant.get('nom', 'Unknown')}: {str(e)}", exc_info=True)
+        
+        logging.info("✅ Vérification des rappels de disponibilités terminée")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_verifier_rappels_disponibilites: {str(e)}", exc_info=True)
+
+
 async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut: str, periode_fin: str):
     """Envoie les notifications de planning (version automatique sans auth)"""
     try:
