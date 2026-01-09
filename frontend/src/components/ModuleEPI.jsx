@@ -1747,9 +1747,17 @@ const ModuleEPI = ({ user }) => {
       {showDetailModal && selectedEPI && (
         <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
           <div className="modal-content extra-large-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{getTypeIcon(selectedEPI.type_epi)} Détails EPI - #{selectedEPI.numero_serie}</h2>
-              <Button variant="ghost" onClick={() => setShowDetailModal(false)}>✕</Button>
+            <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <h2 style={{ fontSize: 'clamp(0.9rem, 3vw, 1.25rem)', margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {getTypeIcon(selectedEPI.type_epi)} Détails EPI - #{selectedEPI.numero_serie}
+              </h2>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowDetailModal(false)}
+                style={{ flexShrink: 0, padding: '0.5rem', minWidth: '40px', minHeight: '40px', fontSize: '1.25rem' }}
+              >
+                ✕
+              </Button>
             </div>
             
             <div className="modal-body">
