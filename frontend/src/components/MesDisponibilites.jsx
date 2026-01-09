@@ -148,21 +148,26 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   // Fonction pour vérifier le blocage pour un mois donné
   const checkBlocageForMonth = async (year, month) => {
-    if (!tenantSlug) return null;
+    if (!tenantSlug || !user?.id) return null;
     try {
       const moisStr = `${year}-${String(month + 1).padStart(2, '0')}`;
       const response = await apiGet(tenantSlug, `/disponibilites/statut-blocage?mois=${moisStr}`);
       return response;
     } catch (error) {
-      console.error('Erreur vérification blocage:', error);
+      // Ne pas logger les erreurs 401/403 car elles sont gérées par apiCall
+      if (error.status !== 401 && error.status !== 403) {
+        console.error('Erreur vérification blocage:', error);
+      }
       return null;
     }
   };
 
-  // Vérifier le blocage quand le mois du calendrier change
+  // Vérifier le blocage quand le mois du calendrier change (seulement si utilisateur authentifié et temps partiel)
   useEffect(() => {
     const fetchBlocageStatus = async () => {
-      if (!tenantSlug) return;
+      // Ne vérifier que si l'utilisateur est authentifié et temps partiel (ou admin gérant un autre utilisateur)
+      if (!tenantSlug || !user?.id) return;
+      if (!managingUser && targetUser?.type_emploi !== 'temps_partiel') return;
       
       // Vérifier pour le mois actuellement affiché dans le calendrier
       const blocageData = await checkBlocageForMonth(calendarCurrentYear, calendarCurrentMonth);
@@ -172,7 +177,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     };
     
     fetchBlocageStatus();
-  }, [tenantSlug, calendarCurrentYear, calendarCurrentMonth]);
+  }, [tenantSlug, calendarCurrentYear, calendarCurrentMonth, user?.id, targetUser?.type_emploi, managingUser]);
 
   useEffect(() => {
     const fetchDisponibilites = async () => {
