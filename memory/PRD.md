@@ -17,6 +17,31 @@ Application de gestion de caserne de pompiers multi-tenant. Gère le personnel, 
 
 ## Completed Features (This Session - Jan 2025)
 
+### P0: Export PDF Planning - Correction Affichage Noms
+**Status**: TERMINÉ (9 Jan 2025)
+
+**Problème initial:**
+- Le PDF du planning n'affichait pas les noms des employés assignés
+- Les types de gardes étaient tronqués (ex: "Garde de nui" au lieu de "Garde de nuit")
+- Le format mois affichait des compteurs (1/4, 2/4) au lieu des noms
+
+**Solution implémentée (`server.py` - fonction `export_planning_pdf`):**
+- **Format MOIS refait complètement:**
+  - Suppression de la troncature `[:12]` sur les noms de garde
+  - Ajout de l'affichage des noms des pompiers (format "P. Nom") au lieu des compteurs
+  - Utilisation de `Paragraph` avec `wordWrap='CJK'` pour le retour à la ligne automatique
+  - Ajout des horaires sous le nom de garde
+  - Largeur de la première colonne augmentée à 1.6 inch
+  - Hauteurs de lignes fixes (0.4 inch en-tête, 0.6 inch données)
+  
+- **Format SEMAINE amélioré:**
+  - Styles avec `wordWrap='CJK'` ajoutés
+  - Taille de police augmentée de 7 à 8
+  - Hauteurs de lignes fixes pour afficher plusieurs noms
+  - Couleur de texte claire pour les cellules
+
+**Fichier modifié:** `backend/server.py` (lignes ~5710-6050)
+
 ### P0: Système de Rappel et Blocage des Disponibilités
 **Status**: TERMINÉ
 
