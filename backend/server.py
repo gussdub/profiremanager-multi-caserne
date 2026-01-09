@@ -20108,6 +20108,7 @@ async def get_parametres_disponibilites(tenant_slug: str, current_user: User = D
         # Créer paramètres par défaut
         default_params = {
             "tenant_id": tenant.id,
+            "blocage_dispos_active": False,
             "jour_blocage_dispos": 15,
             "exceptions_admin_superviseur": True,
             "admin_peut_modifier_temps_partiel": True,
