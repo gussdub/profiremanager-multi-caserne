@@ -67,6 +67,8 @@ const Dashboard = () => {
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
         // 4. Mes heures (nouvel endpoint accessible à tous les utilisateurs)
         axios.get(`${API}/${tenantSlug}/planning/mes-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
+        // 5. Mon taux de présence formations (endpoint existant)
+        axios.get(`${API}/${tenantSlug}/formations/mon-taux-presence?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
       // Ajouter les appels admin uniquement
@@ -83,7 +85,7 @@ const Dashboard = () => {
       const results = await Promise.all(promises);
       
       // ===== TRAITEMENT DES RÉSULTATS =====
-      // Les 4 premiers résultats sont toujours: Formations, Assignations, Mes EPI, Mes Heures
+      // Les 5 premiers résultats sont toujours: Formations, Assignations, Mes EPI, Mes Heures, Mon Taux Présence
       
       // 1. Formations inscrites (index 0)
       if (results[0]?.data) {
@@ -124,9 +126,14 @@ const Dashboard = () => {
           total: results[3].data.total_heures || 0
         });
       }
+      
+      // 5. Mon taux de présence formations (index 4)
+      if (results[4]?.data) {
+        setTauxPresence(results[4].data.taux_presence || 0);
+      }
 
       // ===== DONNÉES ADMIN UNIQUEMENT =====
-      let adminIndex = 4; // Index de départ pour les données admin
+      let adminIndex = 5; // Index de départ pour les données admin
       if (isAdmin && results.length > adminIndex) {
         // Users
         if (results[adminIndex]?.data) {
