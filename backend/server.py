@@ -15062,6 +15062,145 @@ async def export_disponibilites_excel(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
 
+@api_router.get("/{tenant_slug}/disponibilites/statut-blocage")
+async def get_statut_blocage_disponibilites(
+    tenant_slug: str,
+    mois: Optional[str] = None,  # Format YYYY-MM
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Vérifie si la saisie des disponibilités est bloquée pour un mois donné.
+    Retourne l'état du blocage et les informations associées.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les paramètres
+    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+    
+    if not params:
+        return {
+            "bloque": False,
+            "raison": "Paramètres non configurés",
+            "blocage_actif": False
+        }
+    
+    blocage_actif = params.get("blocage_dispos_active", False)
+    
+    if not blocage_actif:
+        return {
+            "bloque": False,
+            "raison": "Système de blocage désactivé",
+            "blocage_actif": False
+        }
+    
+    # Déterminer le mois cible
+    today = datetime.now(timezone.utc).date()
+    
+    if mois:
+        try:
+            mois_parts = mois.split("-")
+            mois_annee = int(mois_parts[0])
+            mois_mois = int(mois_parts[1])
+        except:
+            raise HTTPException(status_code=400, detail="Format de mois invalide. Utilisez YYYY-MM")
+    else:
+        # Par défaut, vérifier pour le mois suivant
+        if today.month == 12:
+            mois_mois = 1
+            mois_annee = today.year + 1
+        else:
+            mois_mois = today.month + 1
+            mois_annee = today.year
+    
+    jour_blocage = params.get("jour_blocage_dispos", 15)
+    exceptions_admin = params.get("exceptions_admin_superviseur", True)
+    
+    # Logique de blocage:
+    # La date de blocage (ex: 15 janvier) concerne les disponibilités du mois SUIVANT (février)
+    # Après le 15 janvier: 
+    #   - Février est BLOQUÉ
+    #   - Mars et au-delà restent LIBRES
+    
+    # Date de blocage = jour X du mois courant
+    try:
+        date_blocage = date(today.year, today.month, jour_blocage)
+    except ValueError:
+        # Si le jour n'existe pas dans ce mois (ex: 31 février), prendre le dernier jour
+        import calendar
+        dernier_jour = calendar.monthrange(today.year, today.month)[1]
+        date_blocage = date(today.year, today.month, min(jour_blocage, dernier_jour))
+    
+    # Quel mois est concerné par ce blocage ? Le mois SUIVANT le mois courant
+    if today.month == 12:
+        mois_bloque = 1
+        annee_mois_bloque = today.year + 1
+    else:
+        mois_bloque = today.month + 1
+        annee_mois_bloque = today.year
+    
+    # Vérifier si le mois demandé (mois_cible) est concerné par le blocage
+    # Le blocage s'applique SI:
+    # 1. On est APRÈS la date de blocage (ex: après le 15 janvier)
+    # 2. ET le mois demandé est le mois suivant (février) OU un mois passé
+    
+    est_apres_date_limite = today > date_blocage
+    mois_cible_est_passe = (mois_annee < today.year) or (mois_annee == today.year and mois_mois <= today.month)
+    mois_cible_est_le_mois_bloque = (mois_annee == annee_mois_bloque and mois_mois == mois_bloque)
+    
+    # Le mois est bloqué si:
+    # - C'est un mois passé ou le mois courant (on ne peut pas modifier le passé)
+    # - OU c'est le mois suivant ET on est après la date limite
+    est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
+    
+    # Vérifier les exceptions pour admin/superviseur
+    if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
+        return {
+            "bloque": False,
+            "raison": "Exception admin/superviseur active",
+            "blocage_actif": True,
+            "date_blocage": date_blocage.isoformat(),
+            "exception_appliquee": True,
+            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+        }
+    
+    mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                 "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    
+    if est_bloque:
+        if mois_cible_est_passe:
+            raison = f"Ce mois est passé ou en cours, modification impossible"
+        else:
+            raison = f"La date limite ({jour_blocage} {mois_noms[today.month - 1]}) pour {mois_noms[mois_mois - 1]} est dépassée"
+        
+        return {
+            "bloque": True,
+            "raison": raison,
+            "blocage_actif": True,
+            "date_blocage": date_blocage.isoformat(),
+            "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+        }
+    else:
+        jours_restants = (date_blocage - today).days
+        if jours_restants < 0:
+            # On est après la date limite mais le mois demandé n'est pas bloqué (mois futur)
+            return {
+                "bloque": False,
+                "raison": f"Mois futur - saisie libre",
+                "blocage_actif": True,
+                "date_blocage": date_blocage.isoformat(),
+                "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+            }
+        else:
+            return {
+                "bloque": False,
+                "raison": f"Saisie autorisée jusqu'au {jour_blocage} {mois_noms[today.month - 1]}",
+                "blocage_actif": True,
+                "date_blocage": date_blocage.isoformat(),
+                "jours_restants": jours_restants,
+                "mois_cible": f"{mois_annee}-{str(mois_mois).zfill(2)}"
+            }
+
+
 @api_router.get("/{tenant_slug}/disponibilites/{user_id}", response_model=List[Disponibilite])
 async def get_user_disponibilites(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
