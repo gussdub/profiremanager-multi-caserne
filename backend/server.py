@@ -6014,24 +6014,29 @@ async def export_planning_pdf(
                     table_data.append(row)
                     cell_colors_mois.append(row_colors)
                 
-                # Largeurs
+                # Largeurs - première colonne plus large pour afficher le nom complet
                 available_width = page_width - 1*inch
-                first_col = 1.2*inch
+                first_col = 1.6*inch  # Augmenté pour les noms de garde complets
                 day_col = (available_width - first_col) / nb_jours
                 col_widths = [first_col] + [day_col] * nb_jours
                 
-                table = Table(table_data, colWidths=col_widths)
+                # Hauteurs de lignes - plus hautes pour afficher les noms des pompiers
+                row_heights = [0.4*inch] + [0.6*inch] * (len(table_data) - 1)
+                
+                table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
                 
                 style_commands = [
                     ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('FONTSIZE', (0, 0), (-1, -1), 7),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-                    ('TOPPADDING', (0, 0), (-1, -1), 5),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
                 ]
                 
                 for row_idx, colors_row in enumerate(cell_colors_mois, start=1):
@@ -6039,6 +6044,8 @@ async def export_planning_pdf(
                         style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color))
                         if col_idx == 0:
                             style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                            style_commands.append(('ALIGN', (col_idx, row_idx), (col_idx, row_idx), 'LEFT'))
+                            style_commands.append(('LEFTPADDING', (col_idx, row_idx), (col_idx, row_idx), 6))
                 
                 table.setStyle(TableStyle(style_commands))
                 elements.append(table)
