@@ -6147,6 +6147,65 @@ async def export_planning_excel(
 
 # ===== RAPPORT D'HEURES =====
 
+@api_router.get("/{tenant_slug}/planning/mes-heures")
+async def get_mes_heures(
+    tenant_slug: str,
+    date_debut: str,  # Format YYYY-MM-DD
+    date_fin: str,    # Format YYYY-MM-DD
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les heures travaillées de l'utilisateur connecté sur une période"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les assignations de l'utilisateur pour la période
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "user_id": current_user.id,
+        "date": {
+            "$gte": date_debut,
+            "$lte": date_fin
+        }
+    }).to_list(1000)
+    
+    # Récupérer les types de garde pour calculer les durées
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+    types_garde_map = {tg.get("id"): tg for tg in types_garde}
+    
+    # DÉDUPLICATION: Supprimer les doublons potentiels
+    assignations_uniques = {}
+    for assignation in assignations:
+        key = f"{assignation.get('type_garde_id')}_{assignation.get('date')}"
+        if key not in assignations_uniques:
+            assignations_uniques[key] = assignation
+    
+    # Calculer les heures
+    heures_internes = 0.0
+    heures_externes = 0.0
+    
+    for assignation in assignations_uniques.values():
+        type_garde_id = assignation.get("type_garde_id")
+        type_garde = types_garde_map.get(type_garde_id, {})
+        duree = type_garde.get("duree_heures", 8)
+        type_assignation = type_garde.get("type", "interne")
+        
+        if type_assignation == "externe":
+            heures_externes += duree
+        else:
+            heures_internes += duree
+    
+    return {
+        "user_id": current_user.id,
+        "heures_internes": heures_internes,
+        "heures_externes": heures_externes,
+        "total_heures": heures_internes + heures_externes,
+        "nb_assignations": len(assignations_uniques),
+        "periode": {
+            "debut": date_debut,
+            "fin": date_fin
+        }
+    }
+
+
 @api_router.get("/{tenant_slug}/planning/rapport-heures")
 async def get_rapport_heures(
     tenant_slug: str,
