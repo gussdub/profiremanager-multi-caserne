@@ -8042,6 +8042,122 @@ async def refuser_demande_remplacement(
             "demande_id": demande_id
         }
 
+# Endpoints publics pour actions via email (sans authentification - utilise token)
+@api_router.get("/remplacement-action/{token}/{action}")
+async def action_remplacement_via_email(
+    token: str,
+    action: str
+):
+    """
+    Traite une action de remplacement (accepter/refuser) via le lien email
+    Redirige vers l'app avec le résultat
+    """
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://epi-inspect.preview.emergentagent.com')
+    
+    try:
+        # Vérifier le token
+        token_data = await db.tokens_remplacement.find_one({"token": token})
+        
+        if not token_data:
+            # Token invalide - rediriger vers page d'erreur
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Lien invalide ou expiré",
+                status_code=302
+            )
+        
+        # Vérifier si le token est expiré
+        expiration = datetime.fromisoformat(token_data["expiration"].replace('Z', '+00:00'))
+        if datetime.now(timezone.utc) > expiration:
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Ce lien a expiré",
+                status_code=302
+            )
+        
+        # Vérifier si le token a déjà été utilisé
+        if token_data.get("utilise"):
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=info&message=Cette action a déjà été traitée",
+                status_code=302
+            )
+        
+        demande_id = token_data["demande_id"]
+        remplacant_id = token_data["remplacant_id"]
+        tenant_id = token_data["tenant_id"]
+        
+        # Vérifier que la demande existe et est toujours en cours
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Demande non trouvée",
+                status_code=302
+            )
+        
+        if demande_data["statut"] not in ["en_cours", "en_attente"]:
+            status_label = {
+                "accepte": "déjà acceptée",
+                "expiree": "expirée",
+                "annulee": "annulée",
+                "approuve_manuellement": "déjà approuvée"
+            }.get(demande_data["statut"], demande_data["statut"])
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=info&message=Cette demande est {status_label}",
+                status_code=302
+            )
+        
+        # Marquer le token comme utilisé
+        await db.tokens_remplacement.update_one(
+            {"token": token},
+            {"$set": {"utilise": True, "action": action, "date_utilisation": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Traiter l'action
+        if action == "accepter":
+            try:
+                await accepter_remplacement(demande_id, remplacant_id, tenant_id)
+                
+                # Récupérer les infos pour le message
+                demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+                demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "le demandeur"
+                
+                return RedirectResponse(
+                    url=f"{frontend_url}/remplacement-resultat?status=succes&message=Vous avez accepté le remplacement de {demandeur_nom} le {demande_data['date']}",
+                    status_code=302
+                )
+            except Exception as e:
+                logging.error(f"Erreur acceptation via email: {e}")
+                return RedirectResponse(
+                    url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Erreur lors de l'acceptation",
+                    status_code=302
+                )
+        
+        elif action == "refuser":
+            try:
+                await refuser_remplacement(demande_id, remplacant_id, tenant_id)
+                
+                return RedirectResponse(
+                    url=f"{frontend_url}/remplacement-resultat?status=info&message=Vous avez refusé cette demande de remplacement",
+                    status_code=302
+                )
+            except Exception as e:
+                logging.error(f"Erreur refus via email: {e}")
+                return RedirectResponse(
+                    url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Erreur lors du refus",
+                    status_code=302
+                )
+        
+        else:
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Action non reconnue",
+                status_code=302
+            )
+            
+    except Exception as e:
+        logging.error(f"Erreur traitement action email: {e}", exc_info=True)
+        return RedirectResponse(
+            url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Une erreur est survenue",
+            status_code=302
+        )
+
 @api_router.delete("/{tenant_slug}/remplacements/{demande_id}")
 async def annuler_demande_remplacement(
     tenant_slug: str,
