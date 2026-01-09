@@ -6120,17 +6120,12 @@ async def export_planning_excel(
                 
                 current += timedelta(days=1)
         
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column].width = adjusted_width
+        # Définir les largeurs de colonnes fixes pour éviter les erreurs avec MergedCell
+        column_widths = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+        default_widths = [12, 12, 18, 15, 25, 10, 10, 12, 12]
+        for i, col_letter in enumerate(column_widths):
+            if i < len(default_widths):
+                ws.column_dimensions[col_letter].width = default_widths[i]
         
         buffer = BytesIO()
         wb.save(buffer)
