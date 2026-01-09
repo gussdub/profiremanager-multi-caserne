@@ -146,6 +146,34 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   
   const { toast } = useToast();
 
+  // Fonction pour vérifier le blocage pour un mois donné
+  const checkBlocageForMonth = async (year, month) => {
+    if (!tenantSlug) return null;
+    try {
+      const moisStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const response = await apiGet(tenantSlug, `/disponibilites/statut-blocage?mois=${moisStr}`);
+      return response;
+    } catch (error) {
+      console.error('Erreur vérification blocage:', error);
+      return null;
+    }
+  };
+
+  // Vérifier le blocage quand le mois du calendrier change
+  useEffect(() => {
+    const fetchBlocageStatus = async () => {
+      if (!tenantSlug) return;
+      
+      // Vérifier pour le mois actuellement affiché dans le calendrier
+      const blocageData = await checkBlocageForMonth(calendarCurrentYear, calendarCurrentMonth);
+      if (blocageData) {
+        setBlocageInfo(blocageData);
+      }
+    };
+    
+    fetchBlocageStatus();
+  }, [tenantSlug, calendarCurrentYear, calendarCurrentMonth]);
+
   useEffect(() => {
     const fetchDisponibilites = async () => {
       if (!tenantSlug) return;
