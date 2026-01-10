@@ -1259,7 +1259,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
     } catch (error) {
       setSavingDisponibilites(false);
-      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les indisponibilités";
+      const errorMessage = error.data?.detail || error.message || "Impossible d'enregistrer les indisponibilités";
       console.error('Erreur sauvegarde indisponibilités:', errorMessage);
       toast({
         title: "Erreur",
