@@ -18389,18 +18389,52 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         else:
                             tf_complets.append(u)
                 
+                # Calculer l'équipe de garde du jour pour les temps partiels si activé
+                equipe_garde_du_jour = None
+                if equipes_garde_actif and privilegier_equipe_garde_tp and params_equipes_garde:
+                    tp_config = params_equipes_garde.get("temps_partiel", {})
+                    if tp_config.get("rotation_active", False):
+                        type_rotation = tp_config.get("type_rotation", "personnalisee")
+                        if type_rotation in ["montreal", "quebec", "longueuil"]:
+                            equipe_garde_du_jour = get_equipe_garde_rotation_standard(type_rotation, "", date_str)
+                        elif type_rotation == "personnalisee":
+                            date_reference = tp_config.get("date_reference", "")
+                            if date_reference:
+                                equipe_garde_du_jour = get_equipe_garde_du_jour_sync(
+                                    type_rotation=type_rotation,
+                                    date_reference=date_reference,
+                                    date_cible=date_str,
+                                    nombre_equipes=tp_config.get("nombre_equipes", 4),
+                                    pattern_mode=tp_config.get("pattern_mode", "hebdomadaire"),
+                                    pattern_personnalise=tp_config.get("pattern_personnalise", []),
+                                    duree_cycle=tp_config.get("duree_cycle", 28)
+                                )
+                        if equipe_garde_du_jour:
+                            logging.info(f"🔥 [ÉQUIPE GARDE] {date_str}: Équipe de garde du jour = {equipe_garde_du_jour}")
+                
                 # Trier chaque catégorie par équité (heures du mois) puis ancienneté
-                def sort_by_equity_and_seniority(users_list):
+                # AVEC bonus pour l'équipe de garde des temps partiels
+                def sort_by_equity_and_seniority(users_list, with_equipe_garde_bonus=False):
                     if type_garde.get("est_garde_externe", False):
                         users_list.sort(key=lambda u: (
+                            # Bonus équipe de garde: -1000 si dans l'équipe du jour, 0 sinon (plus petit = prioritaire)
+                            0 if not (with_equipe_garde_bonus and equipe_garde_du_jour and u.get("equipe_garde") == equipe_garde_du_jour) else -1000,
                             user_monthly_hours_externes.get(u["id"], 0),  # Équité mensuelle
                             -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()  # Ancienneté (plus ancien = priorité)
                         ))
                     else:
                         users_list.sort(key=lambda u: (
+                            # Bonus équipe de garde: -1000 si dans l'équipe du jour, 0 sinon
+                            0 if not (with_equipe_garde_bonus and equipe_garde_du_jour and u.get("equipe_garde") == equipe_garde_du_jour) else -1000,
                             user_monthly_hours_internes.get(u["id"], 0),  # Équité mensuelle
                             -parse_date_flexible(u.get("date_embauche", "1900-01-01")).timestamp()  # Ancienneté
                         ))
+                    
+                    # Log si bonus appliqué
+                    if with_equipe_garde_bonus and equipe_garde_du_jour:
+                        users_equipe = [u for u in users_list if u.get("equipe_garde") == equipe_garde_du_jour]
+                        if users_equipe:
+                            logging.info(f"🔥 [BONUS ÉQUIPE] {len(users_equipe)} temps partiel(s) de l'équipe {equipe_garde_du_jour} priorisé(s)")
                 
                 # Fonction helper pour parse_date_flexible
                 def parse_date_flexible(date_str):
@@ -18412,8 +18446,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         except:
                             return datetime(1900, 1, 1)
                 
-                sort_by_equity_and_seniority(tp_disponibles)
-                sort_by_equity_and_seniority(tp_standby)
+                # Appliquer le tri avec bonus équipe de garde pour les temps partiels
+                sort_by_equity_and_seniority(tp_disponibles, with_equipe_garde_bonus=True)
+                sort_by_equity_and_seniority(tp_standby, with_equipe_garde_bonus=True)
                 
                 # Pour temps plein incomplets : trier par heures manquantes (plus loin de limite = priorité)
                 def calculer_heures_user_semaine(user_id):
