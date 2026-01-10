@@ -10346,6 +10346,48 @@ class ParametresValidationPlanning(BaseModel):
     
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== PARAMÈTRES ÉQUIPES DE GARDE ====================
+
+class ConfigEquipePersonnalisee(BaseModel):
+    """Configuration pour une équipe personnalisée"""
+    numero: int  # 1, 2, 3, 4, 5
+    nom: str = ""  # Nom personnalisé (ex: "Alpha", "Bravo")
+    couleur: str = "#3B82F6"  # Couleur hex pour l'affichage
+
+class ConfigRotation(BaseModel):
+    """Configuration de rotation pour temps plein ou temps partiel"""
+    rotation_active: bool = False
+    type_rotation: str = "aucun"  # "aucun", "montreal", "quebec", "longueuil", "personnalisee"
+    date_reference: Optional[str] = None  # Date du jour 1 du cycle (YYYY-MM-DD)
+    nombre_equipes: int = 4  # 2, 3, 4, 5 équipes
+    duree_cycle: int = 28  # Durée du cycle en jours
+    pattern_mode: str = "hebdomadaire"  # "hebdomadaire", "quotidien", "deux_jours", "avance"
+    pattern_personnalise: List[int] = []  # Pattern avancé: [1,1,1,1,1,1,1,2,2,2,2,2,2,2...]
+    equipes_config: List[ConfigEquipePersonnalisee] = []  # Config des équipes personnalisées
+    pre_remplissage_auto: bool = False  # Pré-remplir automatiquement le planning (temps plein)
+    privilegier_equipe_garde: bool = True  # Privilégier l'équipe de garde (temps partiel)
+
+class ParametresEquipesGarde(BaseModel):
+    """Paramètres du système d'équipes de garde pour un tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    actif: bool = False  # Système activé ou non
+    
+    # Configuration pour les temps plein
+    temps_plein: ConfigRotation = Field(default_factory=ConfigRotation)
+    
+    # Configuration pour les temps partiel
+    temps_partiel: ConfigRotation = Field(default_factory=ConfigRotation)
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ParametresEquipesGardeUpdate(BaseModel):
+    """Mise à jour des paramètres d'équipes de garde"""
+    actif: Optional[bool] = None
+    temps_plein: Optional[ConfigRotation] = None
+    temps_partiel: Optional[ConfigRotation] = None
+
 # ==================== CONFIGURATION IMPORTS CSV ====================
 
 class ImportFieldConfig(BaseModel):
