@@ -16749,10 +16749,18 @@ async def generer_indisponibilites(
                 date_debut=generation_data.date_debut,
                 date_fin=generation_data.date_fin
             )
+        elif generation_data.horaire_type == "longueuil":
+            indispos = generer_indisponibilites_longueuil(
+                user_id=generation_data.user_id,
+                tenant_id=tenant.id,
+                equipe=generation_data.equipe,
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin
+            )
         else:
             raise HTTPException(
                 status_code=400,
-                detail="horaire_type doit être 'montreal' ou 'quebec'"
+                detail="horaire_type doit être 'montreal', 'quebec' ou 'longueuil'"
             )
         
         # Insérer les indisponibilités dans la base de données
