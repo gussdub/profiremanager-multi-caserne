@@ -18212,7 +18212,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 logging.info(f"    ❌ [JF TARDIF] EXCLU: N'accepte pas les gardes externes")
                             continue  # Skip si n'accepte pas les gardes externes
                     
-                    if user.get("type_emploi", "temps_plein") == "temps_partiel":
+                    if user.get("type_emploi", "temps_plein") in ("temps_partiel", "temporaire"):
                         # Vérifier si a déclaré une INDISPONIBILITÉ (exclusion totale)
                         has_indispo = (
                             user.get("id") in indispos_lookup and
@@ -19804,7 +19804,7 @@ async def init_disponibilites_demo_complete(current_user: User = Depends(get_cur
                     
                     # CRÉER DISPONIBILITÉ POUR TOUS (temps plein et temps partiel)
                     # Exception : respecter les heures max pour temps partiel
-                    if user.get("type_emploi", "temps_plein") == "temps_partiel":
+                    if user.get("type_emploi", "temps_plein") in ("temps_partiel", "temporaire"):
                         # Temps partiel : disponible seulement 3 jours par semaine
                         user_number = int(user["numero_employe"][-1]) if user["numero_employe"][-1].isdigit() else 0
                         
