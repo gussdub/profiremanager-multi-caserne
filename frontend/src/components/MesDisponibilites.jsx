@@ -562,17 +562,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
       // Si des erreurs bloquantes ont été détectées, afficher le modal d'erreur
       if (errorMessages.length > 0) {
+        // Toujours recharger les données pour voir ce qui a été créé
+        fetchUserDisponibilites();
+        
         setErrorModalContent({
-          title: `⚠️ ${errorMessages.length} conflit(s) détecté(s)`,
-          messages: errorMessages
+          title: `${errorMessages.length} conflit(s) détecté(s)`,
+          messages: errorMessages,
+          successCount: successCount  // Ajouter le nombre de succès
         });
         setShowErrorModal(true);
         setShowCalendarModal(false);
-        
-        // Quand même recharger les données pour voir ce qui a été créé
-        if (successCount > 0) {
-          fetchUserDisponibilites();
-        }
+        setSelectedDates([]);
         return;
       }
       
