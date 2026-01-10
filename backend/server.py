@@ -6950,7 +6950,13 @@ async def export_rapport_heures_excel(
     # Données
     row = 5
     for emp in rapport_response["employes"]:
-        type_emploi_abbr = "TP" if emp.get("type_emploi", "temps_plein") == "temps_partiel" else "TF"
+        type_emploi = emp.get("type_emploi", "temps_plein")
+        if type_emploi == "temps_plein":
+            type_emploi_abbr = "TP"
+        elif type_emploi == "temporaire":
+            type_emploi_abbr = "Tempo"
+        else:
+            type_emploi_abbr = "TPart"
         ws.cell(row=row, column=1, value=emp["nom_complet"])
         ws.cell(row=row, column=2, value=type_emploi_abbr)
         ws.cell(row=row, column=3, value=emp.get("grade", "N/A"))
