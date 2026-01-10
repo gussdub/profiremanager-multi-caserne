@@ -14674,12 +14674,19 @@ async def export_personnel_pdf(
         table_data = [["Nom", "Email", "Grade", "Rôle", "Type", "Statut"]]
         
         for user in users_data:
+            type_emploi = user.get("type_emploi", "temps_plein")
+            if type_emploi == "temps_plein":
+                type_abbr = "TP"
+            elif type_emploi == "temporaire":
+                type_abbr = "Tempo"
+            else:
+                type_abbr = "TPart"
             table_data.append([
                 f"{user.get('prenom', '')} {user.get('nom', '')}",
                 user.get("email", "N/A"),
                 user.get("grade", "N/A"),
                 user.get("role", "N/A"),
-                "TP" if user.get("type_emploi") == "temps_plein" else "TPa",
+                type_abbr,
                 user.get("statut", "N/A")
             ])
         
