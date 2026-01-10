@@ -1340,8 +1340,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 </div>
                 <div className="card-info-item">
                   <span className="info-label">Type emploi:</span>
-                  <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
-                    {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                  <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : user.type_emploi === 'temporaire' ? 'temp' : 'tpa'}`}>
+                    {user.type_emploi === 'temps_plein' ? 'Temps plein' : user.type_emploi === 'temporaire' ? 'Temporaire' : 'Temps partiel'}
                   </span>
                 </div>
                 <div className="card-info-item">
@@ -1357,7 +1357,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
                   ✏️ Modifier
                 </Button>
-                {user.type_emploi === 'temps_partiel' && (
+                {(user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
                     📅 Dispo
                   </Button>
