@@ -357,11 +357,11 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                           data-testid="input-date-ref-temps-partiel"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Date où l'équipe 1 commence un nouveau cycle
+                          Date où l&apos;équipe 1 commence un nouveau cycle
                         </p>
                       </div>
                       <div>
-                        <Label>Nombre d'équipes</Label>
+                        <Label>Nombre d&apos;équipes</Label>
                         <Input
                           type="number"
                           min="2"
