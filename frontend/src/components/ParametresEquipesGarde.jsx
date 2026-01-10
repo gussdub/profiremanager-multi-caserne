@@ -295,7 +295,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label>Pré-remplissage automatique</Label>
-                      <p className="text-xs text-gray-500">Assigner automatiquement les quarts selon l'équipe</p>
+                      <p className="text-xs text-gray-500">Assigner automatiquement les quarts selon l&apos;équipe</p>
                     </div>
                     <Switch
                       checked={params.temps_plein.pre_remplissage_auto}
