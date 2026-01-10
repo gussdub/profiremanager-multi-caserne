@@ -1298,7 +1298,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         return;
       }
 
-      // Créer l'entrée
+      // Créer l'entrée via POST pour bénéficier de la validation des conflits
       const newEntry = {
         user_id: targetUser.id,
         date: quickAddConfig.date,
@@ -1309,22 +1309,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         origine: 'manuelle'
       };
 
-      // Récupérer les disponibilités existantes
-      const existingDispos = userDisponibilites.map(d => ({
-        user_id: d.user_id,
-        date: d.date,
-        type_garde_id: d.type_garde_id || null,
-        heure_debut: d.heure_debut,
-        heure_fin: d.heure_fin,
-        statut: d.statut,
-        origine: d.origine
-      }));
-
-      // Ajouter la nouvelle entrée
-      const allDisponibilites = [...existingDispos, newEntry];
-
-      // Sauvegarder
-      await apiPut(tenantSlug, `/disponibilites/${targetUser.id}`, allDisponibilites);
+      // Utiliser POST pour la validation des conflits côté backend
+      await apiPost(tenantSlug, '/disponibilites', newEntry);
       
       toast({
         title: "✅ Enregistré !",
@@ -1337,8 +1323,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setShowQuickAddModal(false);
       
       // Recharger les disponibilités
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
-      setUserDisponibilites(dispoData);
+      fetchUserDisponibilites();
       
       // Réinitialiser le formulaire
       setQuickAddConfig({
@@ -1350,6 +1335,25 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
     } catch (error) {
       console.error('Erreur sauvegarde rapide:', error);
+      
+      // Vérifier si c'est une erreur de conflit (409)
+      if (error.response && error.response.status === 409) {
+        const conflictDetails = error.response.data.detail;
+        
+        // Si c'est un message string (conflit incompatible bloquant)
+        if (typeof conflictDetails === 'string') {
+          setErrorModalContent({
+            title: `⚠️ Conflit détecté`,
+            messages: [{
+              date: quickAddConfig.date,
+              message: conflictDetails
+            }]
+          });
+          setShowErrorModal(true);
+          return;
+        }
+      }
+      
       toast({
         title: "Erreur",
         description: error.response?.data?.detail || "Impossible d'enregistrer",
