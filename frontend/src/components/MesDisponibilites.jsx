@@ -1342,8 +1342,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         
         // Si c'est un message string (conflit incompatible bloquant)
         if (typeof conflictDetails === 'string') {
+          // Fermer le modal QuickAdd d'abord
+          setShowQuickAddModal(false);
+          
+          // Afficher le modal d'erreur avec les détails
           setErrorModalContent({
-            title: `⚠️ Conflit détecté`,
+            title: `Conflit détecté`,
             messages: [{
               date: quickAddConfig.date,
               message: conflictDetails
@@ -1356,7 +1360,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible d'enregistrer",
+        description: typeof error.response?.data?.detail === 'string' 
+          ? error.response.data.detail 
+          : "Impossible d'enregistrer",
         variant: "destructive"
       });
     }
