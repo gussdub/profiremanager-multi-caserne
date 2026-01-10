@@ -1500,7 +1500,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           : equipesGardeParams?.temps_partiel?.equipes_config
                         )?.map((equipe) => (
                           <option key={equipe.numero} value={equipe.numero}>
-                            {equipe.nom}
+                            {equipe.numero} - {equipe.nom}
                           </option>
                         ))}
                       </select>
@@ -2500,7 +2500,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           : equipesGardeParams?.temps_partiel?.equipes_config
                         )?.map((equipe) => (
                           <option key={equipe.numero} value={equipe.numero}>
-                            {equipe.nom}
+                            {equipe.numero} - {equipe.nom}
                           </option>
                         ))}
                       </select>
