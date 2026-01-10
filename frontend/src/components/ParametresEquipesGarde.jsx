@@ -56,8 +56,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
 
   useEffect(() => {
     fetchParams();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [API]);
 
   const fetchParams = async () => {
     try {
