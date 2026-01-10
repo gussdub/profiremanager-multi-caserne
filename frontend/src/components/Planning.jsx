@@ -661,11 +661,15 @@ const Planning = () => {
       setAttributionLoading(false);
       setAttributionStep('');
       
-      toast({
-        title: "Erreur",
-        description: error.response?.data?.detail || "Erreur lors de l'attribution automatique",
-        variant: "destructive"
+      // Le wrapper apiCall met le status dans error.status et les data dans error.data
+      const errorDetail = error.data?.detail || error.message;
+      
+      // Afficher le modal d'erreur pour l'attribution automatique aussi
+      setAssignErrorContent({
+        title: "Erreur d'attribution automatique",
+        message: typeof errorDetail === 'string' ? errorDetail : "Une erreur est survenue lors de l'attribution automatique"
       });
+      setShowAssignErrorModal(true);
     }
   };
 
