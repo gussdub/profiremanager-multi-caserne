@@ -7071,6 +7071,35 @@ async def create_assignation(tenant_slug: str, assignation: AssignationCreate, c
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Récupérer le type de garde pour validation
+    type_garde = await db.types_garde.find_one({"id": assignation.type_garde_id, "tenant_id": tenant.id})
+    if not type_garde:
+        raise HTTPException(status_code=404, detail="Type de garde non trouvé")
+    
+    # VALIDATION: Vérifier que le jour de la date est autorisé pour ce type de garde
+    jours_application = type_garde.get("jours_application", [])
+    if jours_application and len(jours_application) > 0:
+        # Mapper les jours français vers anglais pour la comparaison
+        jours_fr_to_en = {
+            0: "monday", 1: "tuesday", 2: "wednesday", 3: "thursday",
+            4: "friday", 5: "saturday", 6: "sunday"
+        }
+        jours_en_to_fr = {
+            "monday": "Lundi", "tuesday": "Mardi", "wednesday": "Mercredi",
+            "thursday": "Jeudi", "friday": "Vendredi", "saturday": "Samedi", "sunday": "Dimanche"
+        }
+        
+        date_obj = datetime.strptime(assignation.date, "%Y-%m-%d")
+        jour_semaine_en = jours_fr_to_en[date_obj.weekday()]
+        
+        if jour_semaine_en not in jours_application:
+            jours_autorises_fr = [jours_en_to_fr[j] for j in jours_application]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Impossible d'assigner la garde '{type_garde['nom']}' le {jours_en_to_fr[jour_semaine_en]}. "
+                       f"Cette garde est uniquement applicable les: {', '.join(jours_autorises_fr)}"
+            )
+    
     # VÉRIFICATION CRITIQUE : Empêcher les doublons
     # Vérifier si cet utilisateur est déjà assigné à cette garde à cette date
     existing_assignment = await db.assignations.find_one({
@@ -7094,7 +7123,6 @@ async def create_assignation(tenant_slug: str, assignation: AssignationCreate, c
     
     # Créer notification pour l'employé assigné (filtré par tenant)
     user_assigne = await db.users.find_one({"id": assignation.user_id, "tenant_id": tenant.id})
-    type_garde = await db.types_garde.find_one({"id": assignation.type_garde_id, "tenant_id": tenant.id})
     
     if user_assigne and type_garde:
         await creer_notification(
