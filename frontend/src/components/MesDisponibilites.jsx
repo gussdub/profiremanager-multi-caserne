@@ -563,7 +563,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       // Si des erreurs bloquantes ont été détectées, afficher le modal d'erreur
       if (errorMessages.length > 0) {
         // Toujours recharger les données pour voir ce qui a été créé
-        fetchUserDisponibilites();
+        try {
+          const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+          setUserDisponibilites(dispoData);
+        } catch (e) {
+          console.error('Erreur rechargement disponibilités:', e);
+        }
         
         setErrorModalContent({
           title: `${errorMessages.length} conflit(s) détecté(s)`,
