@@ -1375,7 +1375,8 @@ async def job_verifier_timeouts_remplacements():
 # JWT and Password configuration
 SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24 hours pour utilisateurs normaux
+SUPER_ADMIN_TOKEN_EXPIRE_MINUTES = 2 * 60  # 2 heures pour super-admins (sécurité)
 
 # Super Admin credentials
 SUPER_ADMIN_EMAIL = "gussdub@icloud.com"
