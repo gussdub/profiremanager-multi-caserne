@@ -11534,14 +11534,17 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
             if verify_password(user_login.mot_de_passe, current_hash):
                 logging.info(f"✅ Super-Admin {user_login.email} authentifié sur tenant {tenant_slug}")
                 
-                # Créer un token avec les droits admin sur ce tenant
-                access_token = create_access_token(data={
-                    "sub": super_admin_data["id"],
-                    "email": super_admin_data["email"],
-                    "tenant_id": tenant.id,
-                    "tenant_slug": tenant.slug,
-                    "is_super_admin": True  # Flag pour identifier un super-admin
-                })
+                # Créer un token avec les droits admin sur ce tenant (expiration 2h pour super-admin)
+                access_token = create_access_token(
+                    data={
+                        "sub": super_admin_data["id"],
+                        "email": super_admin_data["email"],
+                        "tenant_id": tenant.id,
+                        "tenant_slug": tenant.slug,
+                        "is_super_admin": True  # Flag pour identifier un super-admin
+                    },
+                    expires_delta=timedelta(minutes=SUPER_ADMIN_TOKEN_EXPIRE_MINUTES)
+                )
                 
                 return {
                     "access_token": access_token,
