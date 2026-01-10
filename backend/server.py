@@ -17637,7 +17637,7 @@ async def generer_justification_attribution(
             except:
                 cand_score_anc = 0
             
-            cand_score_dispo = 100 if candidate.get("type_emploi") == "temps_partiel" else 75
+            cand_score_dispo = 100 if candidate.get("type_emploi") in ("temps_partiel", "temporaire") else 75
             cand_score_comp = grade_scores.get(candidate.get("grade", "Pompier"), 50)
             cand_total = cand_score_equite + cand_score_anc + cand_score_dispo + cand_score_comp
             
