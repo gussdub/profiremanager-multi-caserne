@@ -517,8 +517,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           successCount++;
         } catch (error) {
           // Vérifier si c'est une erreur de conflit (409)
-          if (error.response && error.response.status === 409) {
-            const conflictDetails = error.response.data.detail;
+          // Le wrapper apiCall met le status dans error.status et les data dans error.data
+          if (error.status === 409) {
+            const conflictDetails = error.data?.detail;
             const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
             
             // Si c'est un message string (conflit incompatible bloquant)
@@ -530,7 +531,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               errorCount++;
             } 
             // Si c'est un objet avec des conflits à résoudre
-            else if (conflictDetails.conflicts) {
+            else if (conflictDetails?.conflicts) {
               collectedConflicts.push({
                 newItem: dispo,
                 conflicts: conflictDetails.conflicts,
@@ -542,7 +543,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             }
           } else {
             errorCount++;
-            const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
+            const errorMsg = error.data?.detail || error.message || 'Erreur inconnue';
             errorMessages.push({
               date: dispo.date,
               message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)
