@@ -3620,7 +3620,11 @@ async def super_admin_login(login: SuperAdminLogin):
         logging.info(f"✅ Mot de passe vérifié avec succès pour Super Admin {login.email}")
         
         admin = SuperAdmin(**admin_data)
-        access_token = create_access_token(data={"sub": admin.id, "role": "super_admin"})
+        # Token avec expiration de 2h pour les super-admins (sécurité)
+        access_token = create_access_token(
+            data={"sub": admin.id, "role": "super_admin"},
+            expires_delta=timedelta(minutes=SUPER_ADMIN_TOKEN_EXPIRE_MINUTES)
+        )
         
         logging.info(f"✅ Token JWT créé pour Super Admin {login.email}")
         
