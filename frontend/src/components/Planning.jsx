@@ -787,11 +787,12 @@ const Planning = () => {
       fetchPlanningData();
       setShowAssignModal(false);
     } catch (error) {
-      const errorDetail = error.response?.data?.detail;
+      // Le wrapper apiCall met le status dans error.status et les data dans error.data
+      const errorDetail = error.data?.detail || error.message;
       
       // Afficher le modal d'erreur avec le message explicite
       setAssignErrorContent({
-        title: "⚠️ Impossible de créer l'assignation",
+        title: "Impossible de créer l'assignation",
         message: typeof errorDetail === 'string' ? errorDetail : "Une erreur est survenue lors de la création de l'assignation"
       });
       setShowAssignErrorModal(true);
