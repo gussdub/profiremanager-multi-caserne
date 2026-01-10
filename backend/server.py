@@ -2993,11 +2993,11 @@ class DisponibiliteCreate(BaseModel):
     heure_debut: str
     heure_fin: str
     statut: str = "disponible"
-    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, personnalisee
+    origine: str = "manuelle"  # manuelle, montreal_7_24, quebec_10_14, longueuil_7_24, personnalisee
 
 class IndisponibiliteGenerate(BaseModel):
     user_id: str
-    horaire_type: str  # "montreal" ou "quebec"
+    horaire_type: str  # "montreal", "quebec" ou "longueuil"
     equipe: str  # "Rouge", "Jaune", "Bleu", "Vert"
     date_debut: str  # Date de début (YYYY-MM-DD)
     date_fin: str  # Date de fin (YYYY-MM-DD)
