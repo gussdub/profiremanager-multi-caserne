@@ -2481,6 +2481,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       >
                         <option value="temps_plein">Temps plein</option>
                         <option value="temps_partiel">Temps partiel</option>
+                        <option value="temporaire">Temporaire</option>
                       </select>
                     </div>
                   </div>
