@@ -13,6 +13,7 @@ const ParametresRemplacements = lazy(() => import("./ParametresRemplacements.jsx
 const ParametresDisponibilites = lazy(() => import("./ParametresDisponibilites.jsx"));
 const ParametresFormations = lazy(() => import("./ParametresFormations.jsx"));
 const ParametresImports = lazy(() => import("./ParametresImports.jsx"));
+const ParametresEquipesGarde = lazy(() => import("./ParametresEquipesGarde.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
