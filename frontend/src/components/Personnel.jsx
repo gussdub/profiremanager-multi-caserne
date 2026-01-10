@@ -1262,8 +1262,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="cell-modern">
-                <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : 'tpa'}`}>
-                  {user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                <span className={`badge-emploi ${user.type_emploi === 'temps_plein' ? 'tp' : user.type_emploi === 'temporaire' ? 'temp' : 'tpa'}`}>
+                  {user.type_emploi === 'temps_plein' ? 'Temps plein' : user.type_emploi === 'temporaire' ? 'Temporaire' : 'Temps partiel'}
                 </span>
               </div>
 
@@ -1271,7 +1271,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
                 <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
                 <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
-                {user.type_emploi === 'temps_partiel' && (
+                {(user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
                 )}
               </div>
