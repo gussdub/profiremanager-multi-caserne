@@ -18323,7 +18323,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         logging.info(f"    Type emploi: {u.get('type_emploi', 'temps_plein')}")
                         logging.info(f"    Statut: {u.get('statut', 'N/A')}")
                     
-                    if u.get("type_emploi", "temps_plein") == "temps_partiel":
+                    if u.get("type_emploi", "temps_plein") in ("temps_partiel", "temporaire"):
                         # CORRECTION CRITIQUE: Vérifier si a déclaré une disponibilité QUI COUVRE l'horaire de la garde
                         has_dispo_covering = False
                         
