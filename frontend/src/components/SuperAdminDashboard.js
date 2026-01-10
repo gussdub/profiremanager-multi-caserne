@@ -596,12 +596,51 @@ const SuperAdminDashboard = ({ onLogout }) => {
 
   return (
     <div style={{ padding: '12px', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Bannière d'avertissement d'inactivité */}
+      {showInactivityWarning && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+          color: 'white',
+          padding: '12px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 99999,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+            <div>
+              <strong>Session bientôt expirée</strong>
+              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                Déconnexion automatique dans {timeRemaining} minute(s) pour inactivité
+              </div>
+            </div>
+          </div>
+          <Button 
+            onClick={resetInactivityTimer}
+            style={{ 
+              background: 'white', 
+              color: '#D97706',
+              fontWeight: '600'
+            }}
+          >
+            Rester connecté
+          </Button>
+        </div>
+      )}
+      
       {/* Header - Responsive */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column',
         gap: '16px',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        marginTop: showInactivityWarning ? '70px' : '0'
       }}>
         <div>
           <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: 'bold', margin: '0 0 5px 0' }}>
