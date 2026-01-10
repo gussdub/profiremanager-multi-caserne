@@ -244,7 +244,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                   {params.temps_plein.type_rotation === "personnalisee" && (
                     <>
                       <div>
-                        <Label>Nombre d'équipes</Label>
+                        <Label>Nombre d&apos;équipes</Label>
                         <Input
                           type="number"
                           min="2"
