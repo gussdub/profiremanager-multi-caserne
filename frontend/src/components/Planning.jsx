@@ -98,6 +98,8 @@ const Planning = () => {
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [selectedAuditAssignation, setSelectedAuditAssignation] = useState(null);
   const [auditNotesEdit, setAuditNotesEdit] = useState('');
+  const [equipeGardeInfo, setEquipeGardeInfo] = useState(null);
+  const [equipesGardeParams, setEquipesGardeParams] = useState(null);
   const { toast } = useToast();
 
   // Fonction pour calculer l'aperçu des dates de récurrence
