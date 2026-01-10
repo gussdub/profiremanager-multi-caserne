@@ -3282,63 +3282,80 @@ const Planning = () => {
       {/* Modal d'erreur d'assignation */}
       {showAssignErrorModal && (
         <div 
-          className="modal-overlay" 
-          onClick={() => setShowAssignErrorModal(false)}
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 10000,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 99999,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            padding: '1rem'
           }}
+          onClick={() => setShowAssignErrorModal(false)}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'white',
-              borderRadius: '12px',
-              padding: '0',
-              maxWidth: '500px',
-              width: '90%',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-              overflow: 'hidden'
+              borderRadius: '16px',
+              maxWidth: '550px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
             }}
           >
             {/* Header rouge */}
             <div style={{
-              background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+              background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
               padding: '1.5rem',
               color: 'white'
             }}>
               <h2 style={{ 
                 margin: 0, 
-                fontSize: '1.25rem', 
-                fontWeight: '600',
+                fontSize: '1.5rem', 
+                fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.75rem'
               }}>
-                🚫 {assignErrorContent.title}
+                <span style={{ fontSize: '2rem' }}>🚫</span>
+                {assignErrorContent.title}
               </h2>
             </div>
             
             {/* Contenu */}
             <div style={{ padding: '1.5rem' }}>
-              <div style={{
-                background: '#FEF2F2',
-                border: '1px solid #FECACA',
-                borderRadius: '8px',
-                padding: '1rem',
-                color: '#7F1D1D',
+              <p style={{ 
+                marginBottom: '1rem', 
+                color: '#4B5563',
                 fontSize: '0.95rem',
                 lineHeight: '1.5'
               }}>
-                {assignErrorContent.message}
+                L'opération n'a pas pu être effectuée. Veuillez vérifier les informations ci-dessous.
+              </p>
+              
+              <div style={{
+                background: '#FEF2F2',
+                border: '2px solid #FECACA',
+                borderRadius: '12px',
+                padding: '1.25rem'
+              }}>
+                <div style={{
+                  color: '#7F1D1D',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.5',
+                  background: 'white',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  border: '1px solid #FECACA'
+                }}>
+                  {assignErrorContent.message}
+                </div>
               </div>
             </div>
             
@@ -3347,11 +3364,19 @@ const Planning = () => {
               padding: '1rem 1.5rem',
               borderTop: '1px solid #E5E7EB',
               display: 'flex',
-              justifyContent: 'flex-end'
+              justifyContent: 'flex-end',
+              background: '#F9FAFB'
             }}>
               <Button 
                 onClick={() => setShowAssignErrorModal(false)}
-                style={{ background: '#DC2626', color: 'white' }}
+                style={{ 
+                  background: '#DC2626', 
+                  color: 'white',
+                  padding: '0.75rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  borderRadius: '8px'
+                }}
               >
                 Compris
               </Button>
