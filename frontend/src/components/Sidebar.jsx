@@ -801,6 +801,44 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             </div>
           </div>
           <div className="sidebar-user-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+            {/* Bouton Notifications dans le sidebar */}
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="notification-sidebar-btn"
+              data-testid="notification-bell"
+              style={{ 
+                fontSize: '0.85rem', 
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                🔔 Notifications
+              </span>
+              {unreadCount > 0 && (
+                <span style={{
+                  background: '#EF4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  minWidth: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
+                }}>
+                  {unreadCount}
+                </span>
+              )}
+            </Button>
+            
             {isMobileDevice && (
               <Button 
                 variant="outline" 
