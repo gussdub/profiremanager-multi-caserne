@@ -1118,7 +1118,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.statut === 'Actif').length;
   const tempsPlein = users.filter(u => u.type_emploi === 'temps_plein').length;
-  const tempsPartiel = users.filter(u => u.type_emploi === 'temps_partiel').length;
+  const tempsPartiel = users.filter(u => u.type_emploi === 'temps_partiel' || u.type_emploi === 'temporaire').length;
 
   return (
     <div className="personnel-refonte">
