@@ -1485,8 +1485,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   </div>
 
-                  {/* Sélection équipe de garde - affiché si le système est actif */}
+                  {/* Sélection équipe de garde - affiché si le système est actif ET la rotation du type d'emploi est active */}
                   {equipesGardeParams?.actif && newUser.type_emploi && (
+                    (newUser.type_emploi === 'temps_plein' && equipesGardeParams?.temps_plein?.rotation_active) ||
+                    (newUser.type_emploi !== 'temps_plein' && equipesGardeParams?.temps_partiel?.rotation_active)
+                  ) && (
                     <div className="form-field">
                       <Label>Équipe de garde</Label>
                       <select
