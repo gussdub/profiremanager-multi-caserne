@@ -442,6 +442,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       grade: user.grade,
       fonction_superieur: user.fonction_superieur || false,
       type_emploi: user.type_emploi,
+      equipe_garde: user.equipe_garde || null,
       numero_employe: user.numero_employe,
       date_embauche: user.date_embauche,
       taux_horaire: user.taux_horaire || 0,
