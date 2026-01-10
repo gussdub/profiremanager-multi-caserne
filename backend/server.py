@@ -2709,6 +2709,7 @@ class UserUpdate(BaseModel):
     competences: Optional[List[str]] = None
     accepte_gardes_externes: Optional[bool] = None
     est_preventionniste: Optional[bool] = None
+    equipe_garde: Optional[int] = None  # Équipe de garde (1, 2, 3, 4, 5 selon config)
     photo_profil: Optional[str] = None  # Photo de profil en base64
     mot_de_passe: Optional[str] = None  # Optionnel pour les mises à jour
 
