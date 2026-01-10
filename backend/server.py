@@ -18722,7 +18722,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             tf_comp_2 = []
                             
                             for u_r2 in candidats_filtres_2:
-                                if u_r2.get("type_emploi", "temps_plein") == "temps_partiel":
+                                if u_r2.get("type_emploi", "temps_plein") in ("temps_partiel", "temporaire"):
                                     has_dispo = (u_r2["id"] in dispos_lookup and date_str in dispos_lookup[u_r2["id"]])
                                     has_indispo = (u_r2["id"] in indispos_lookup and date_str in indispos_lookup[u_r2["id"]])
                                     if has_dispo:
