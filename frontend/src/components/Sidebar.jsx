@@ -721,7 +721,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             </div>
           </div>
         )}
-      </div>
 
       {/* Mobile hamburger button */}
       <button 
