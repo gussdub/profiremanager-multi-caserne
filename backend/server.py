@@ -16649,8 +16649,8 @@ def generer_indisponibilites_longueuil(user_id: str, tenant_id: str, equipe: str
     
     logging.info(f"Longueuil 7/24 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
     
-    # Le jour 1 du cycle = 4 janvier 2026 (premier dimanche rouge)
-    jour_1_cycle = datetime(2026, 1, 4).date()
+    # Le jour 1 du cycle = 25 janvier 2026 (premier dimanche rouge)
+    jour_1_cycle = datetime(2026, 1, 25).date()
     
     # Parser les dates de début et fin
     date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
