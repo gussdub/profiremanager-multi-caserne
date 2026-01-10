@@ -187,6 +187,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       grade: '',
       fonction_superieur: false,
       type_emploi: '',
+      equipe_garde: null,
       numero_employe: '',
       date_embauche: new Date().toISOString().split('T')[0],
       taux_horaire: 0,
