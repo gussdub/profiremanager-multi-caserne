@@ -338,17 +338,30 @@ const Planning = () => {
         `${currentMonth}-01` : // Premier jour du mois
         currentWeek;
         
-      const [typesData, assignationsData, usersData, gradesData] = await Promise.all([
+      const [typesData, assignationsData, usersData, gradesData, equipesGardeData] = await Promise.all([
         apiGet(tenantSlug, '/types-garde'),
         apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
         apiGet(tenantSlug, '/users'), // Tous les rôles peuvent voir les users (lecture seule)
-        apiGet(tenantSlug, '/grades') // Pour vérifier si un utilisateur est officier
+        apiGet(tenantSlug, '/grades'), // Pour vérifier si un utilisateur est officier
+        apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null)
       ]);
       
       setTypesGarde(typesData);
       setAssignations(assignationsData);
       setUsers(usersData);
       setGrades(gradesData || []);
+      setEquipesGardeParams(equipesGardeData);
+      
+      // Charger l'équipe de garde du jour si le système est actif
+      if (equipesGardeData?.actif) {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+          const equipeInfo = await apiGet(tenantSlug, `/equipes-garde/equipe-du-jour?date=${today}&type_emploi=temps_plein`);
+          setEquipeGardeInfo(equipeInfo);
+        } catch (e) {
+          console.log('Équipe de garde non disponible:', e);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors du chargement du planning:', error);
       toast({
