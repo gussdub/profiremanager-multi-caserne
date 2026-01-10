@@ -2826,7 +2826,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               animation: 'modalAppear 0.2s ease-out'
             }}
           >
-            {/* Header rouge */}
+            {/* Header */}
             <div style={{ 
               background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
               padding: '1.5rem',
@@ -2847,14 +2847,40 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             
             {/* Corps */}
             <div style={{ padding: '1.5rem' }}>
+              {/* Message de succès si des entrées ont été créées */}
+              {errorModalContent.successCount > 0 && (
+                <div style={{
+                  background: '#ECFDF5',
+                  border: '2px solid #A7F3D0',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{ fontSize: '1.5rem' }}>✅</span>
+                  <div>
+                    <div style={{ fontWeight: '600', color: '#065F46' }}>
+                      {errorModalContent.successCount} entrée(s) créée(s) avec succès
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#047857' }}>
+                      Les entrées sans conflit ont été enregistrées.
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <p style={{ 
                 marginBottom: '1rem', 
                 color: '#4B5563',
                 fontSize: '0.95rem',
                 lineHeight: '1.5'
               }}>
-                L'entrée n'a pas pu être créée car elle est en conflit avec des données existantes.
-                <strong style={{ color: '#1F2937' }}> Supprimez d'abord l'entrée existante si vous souhaitez la remplacer.</strong>
+                {errorModalContent.messages?.length === 1 
+                  ? "L'entrée suivante n'a pas pu être créée car elle est en conflit :"
+                  : `Les ${errorModalContent.messages?.length} entrées suivantes n'ont pas pu être créées car elles sont en conflit :`
+                }
               </p>
               
               <div style={{ 
