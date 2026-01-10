@@ -352,14 +352,20 @@ const Planning = () => {
       setGrades(gradesData || []);
       setEquipesGardeParams(equipesGardeData);
       
-      // Charger l'équipe de garde du jour si le système est actif
+      // Charger les équipes de garde du jour si le système est actif
       if (equipesGardeData?.actif) {
         const today = new Date().toISOString().split('T')[0];
         try {
-          const equipeInfo = await apiGet(tenantSlug, `/equipes-garde/equipe-du-jour?date=${today}&type_emploi=temps_plein`);
-          setEquipeGardeInfo(equipeInfo);
+          const [equipeTP, equipeTPA] = await Promise.all([
+            apiGet(tenantSlug, `/equipes-garde/equipe-du-jour?date=${today}&type_emploi=temps_plein`).catch(() => null),
+            apiGet(tenantSlug, `/equipes-garde/equipe-du-jour?date=${today}&type_emploi=temps_partiel`).catch(() => null)
+          ]);
+          setEquipeGardeInfo({
+            temps_plein: equipeTP?.equipe ? equipeTP : null,
+            temps_partiel: equipeTPA?.equipe ? equipeTPA : null
+          });
         } catch (e) {
-          console.log('Équipe de garde non disponible:', e);
+          console.log('Équipes de garde non disponibles:', e);
         }
       }
     } catch (error) {
